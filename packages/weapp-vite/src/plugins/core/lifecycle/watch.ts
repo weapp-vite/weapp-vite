@@ -11,6 +11,7 @@ import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
 import { resolveVueSfcNonJsonSignature } from '../../../utils/file/vueSfcSignature'
+import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
@@ -21,6 +22,15 @@ import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
+
+function isOutputFileChange(state: CorePluginState, normalizedId: string) {
+  const outDir = state.ctx.configService?.outDir
+  if (!outDir) {
+    return false
+  }
+  const normalizedOutDir = normalizeFsResolvedId(outDir)
+  return normalizedId === normalizedOutDir || normalizedId.startsWith(`${normalizedOutDir}/`)
+}
 
 async function normalizeWatchEvent(id: string, event: ChangeEvent) {
   if (event !== 'delete') {
@@ -295,10 +305,14 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
+    if (isOutputFileChange(state, normalizedId)) {
+      return
+    }
     const event = await normalizeWatchEvent(normalizedId, change.event)
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,
+      eventId: createHmrProfileEventId(),
       event,
       file: normalizedId,
       watchToDirtyMs: performance.now() - startedAt,

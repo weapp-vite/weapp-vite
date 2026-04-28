@@ -5,7 +5,7 @@ import type { CompilerContext } from '../../../../context'
 import type { createPageEntryMatcher } from '../../../wevu'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
-import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
@@ -115,7 +115,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       })
     },
 
-    watchChange(id) {
+    watchChange(id, change) {
+      const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
       handleTransformLayoutInvalidation(normalizedId, {
         configService: ctx.configService,
@@ -129,6 +130,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         styleBlocksCache,
         existsSync: fs.existsSync,
       })
+      const profile = ctx.runtimeState?.build?.hmr?.profile
+      if (profile && !profile.file) {
+        profile.eventId = createHmrProfileEventId()
+        profile.event = change?.event ?? 'update'
+        profile.file = normalizedId
+        profile.watchToDirtyMs = performance.now() - startedAt
+      }
     },
 
     async handleHotUpdate({ file }) {

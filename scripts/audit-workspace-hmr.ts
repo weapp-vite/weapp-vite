@@ -39,8 +39,11 @@ interface ScenarioCase {
 interface HmrProfileSample {
   timestamp?: string
   totalMs?: number
+  eventId?: string
   event?: string
   file?: string
+  relativeFile?: string
+  sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
   writeMs?: number
@@ -269,7 +272,10 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     '--skipNpm',
   ], {
     cwd: repoRoot,
-    env: createDevProcessEnv(),
+    env: {
+      ...createDevProcessEnv(),
+      WEAPP_VITE_HMR_PROFILE_JSON: '1',
+    },
     stdout: 'pipe',
     stderr: 'pipe',
     all: true,
@@ -344,7 +350,7 @@ async function auditScenario(
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
     result.totalMs = performance.now() - startedAt
-    result.profile = await waitForHmrProfileSample(profilePath, profileLineCount, scenario.sourcePath, 2_000)
+    result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {
@@ -597,34 +603,75 @@ function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<str
 }
 
 async function waitForHmrProfileSample(
+  project: ProjectCase,
   profilePath: string,
   previousLineCount: number,
   sourcePath: string,
   timeoutMs: number,
 ) {
   const startedAt = Date.now()
-  const normalizedSource = normalizePath(sourcePath)
   while (Date.now() - startedAt < timeoutMs) {
-    const lines = await readJsonlLines(profilePath)
-    const candidates = lines.slice(previousLineCount).map((line) => {
-      try {
-        return JSON.parse(line) as HmrProfileSample
-      }
-      catch {
-        return undefined
-      }
-    }).filter((item): item is HmrProfileSample => item != null)
-    const matched = candidates.find((item) => {
-      return item.file && normalizePath(item.file).endsWith(normalizedSource)
-    })
+    const candidates = await readHmrProfileSamplesSince(profilePath, previousLineCount)
+    const matched = candidates.find(item => isProfileSampleForSource(project, item, sourcePath))
     if (matched) {
       return matched
     }
-    if (candidates.length) {
-      return candidates.at(-1)
+    const unattributed = candidates.find(isUnattributedProfileSample)
+    if (candidates.length === 1 && unattributed) {
+      return unattributed
     }
     await sleep(100)
   }
+  const candidates = await readHmrProfileSamplesSince(profilePath, previousLineCount)
+  const files = candidates.map((item) => {
+    return item.sourceRootFile ?? item.relativeFile ?? item.file ?? '<unknown>'
+  }).join(', ')
+  throw new Error(`Timed out waiting for matching hmr profile sample: ${formatProjectPath(sourcePath)}; candidates: ${files || '<none>'}`)
+}
+
+async function readHmrProfileSamplesSince(profilePath: string, previousLineCount: number) {
+  const lines = await readJsonlLines(profilePath)
+  return lines.slice(previousLineCount).map((line) => {
+    try {
+      return JSON.parse(line) as HmrProfileSample
+    }
+    catch {
+      return undefined
+    }
+  }).filter((item): item is HmrProfileSample => item != null)
+}
+
+function isUnattributedProfileSample(sample: HmrProfileSample) {
+  return !sample.file && !sample.relativeFile && !sample.sourceRootFile
+}
+
+function isProfileSampleForSource(project: ProjectCase, sample: HmrProfileSample, sourcePath: string) {
+  const expected = new Set([
+    normalizePath(sourcePath),
+    formatProjectPath(sourcePath),
+    normalizePath(path.relative(project.root, sourcePath)),
+    normalizePath(path.relative(project.sourceRoot, sourcePath)),
+  ])
+  const candidates = [
+    sample.file,
+    sample.relativeFile,
+    sample.sourceRootFile,
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .map(normalizePath)
+  const expectedBases = new Set([...expected].map(removeFileExtension))
+
+  return candidates.some((candidate) => {
+    return expected.has(candidate)
+      || expectedBases.has(removeFileExtension(candidate))
+      || [...expected].some(item => item.endsWith(`/${candidate}`))
+      || [...expected].some(item => candidate.endsWith(`/${item}`))
+  })
+}
+
+function removeFileExtension(filePath: string) {
+  const ext = path.extname(filePath)
+  return ext ? filePath.slice(0, -ext.length) : filePath
 }
 
 async function countJsonlLines(filePath: string) {

@@ -115,6 +115,7 @@ vi.mock('./independent', () => ({
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV
 const ORIGINAL_VITEST = process.env.VITEST
+const ORIGINAL_HMR_PROFILE_JSON = process.env.WEAPP_VITE_HMR_PROFILE_JSON
 
 function createWatcher(eventCodes: string[]) {
   const watcher: any = {
@@ -191,6 +192,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       absolutePluginRoot: undefined,
       absoluteSrcRoot: '/project/src',
       relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
+      relativeCwd: vi.fn((id: string) => id.replace('/project/', '')),
       platform: 'weapp',
       multiPlatform: {
         enabled: false,
@@ -260,6 +262,7 @@ describe('runtime buildPlugin service', () => {
     findJsEntryMock.mockResolvedValue({ path: undefined })
     chokidarWatchMock.mockClear()
     delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
+    delete process.env.WEAPP_VITE_HMR_PROFILE_JSON
   })
 
   afterEach(() => {
@@ -274,6 +277,12 @@ describe('runtime buildPlugin service', () => {
     }
     else {
       process.env.VITEST = ORIGINAL_VITEST
+    }
+    if (ORIGINAL_HMR_PROFILE_JSON === undefined) {
+      delete process.env.WEAPP_VITE_HMR_PROFILE_JSON
+    }
+    else {
+      process.env.WEAPP_VITE_HMR_PROFILE_JSON = ORIGINAL_HMR_PROFILE_JSON
     }
   })
 
@@ -509,6 +518,29 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).not.toHaveBeenCalled()
   })
 
+  it('ignores generated output updates in snapshot sidecar watcher', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', '/project/dist/pages/logs/index.wxml')
+    await flushAsyncTasks()
+
+    expect(buildMock).toHaveBeenCalledTimes(1)
+    expect(loggerSuccessMock).not.toHaveBeenCalled()
+  })
+
   it('closes snapshot sidecar watcher when main watcher closes directly', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
@@ -548,6 +580,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     ctx.runtimeState.build.hmr.profile = {
+      eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       transformMs: 9.5,
@@ -757,6 +790,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     ctx.runtimeState.build.hmr.profile = {
+      eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       transformMs: 9.5,
@@ -786,6 +820,9 @@ describe('runtime buildPlugin service', () => {
     expect(typeof payload).toBe('string')
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
+    expect(payload).toContain('"eventId":"hmr-event-1"')
+    expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
+    expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"transformMs":9.5')
     expect(payload).toContain('"writeMs":5.25')
     expect(payload).toContain('"buildCoreMs":')
@@ -861,6 +898,38 @@ describe('runtime buildPlugin service', () => {
 
     expect(mkdirMock).not.toHaveBeenCalled()
     expect(appendFileMock).not.toHaveBeenCalled()
+  })
+
+  it('writes hmr profile jsonl when env flag enables output', async () => {
+    process.env.WEAPP_VITE_HMR_PROFILE_JSON = '1'
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyCount: 1,
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+    await vi.waitFor(() => {
+      expect(appendFileMock).toHaveBeenCalledTimes(1)
+    })
+
+    expect(appendFileMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/hmr-profile.jsonl',
+      expect.stringContaining('"event":"update"'),
+      'utf8',
+    )
   })
 
   it('prints analyze hint when hmr profile is enabled and rebuild becomes much slower', async () => {
