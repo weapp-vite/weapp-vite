@@ -1,5 +1,31 @@
 # weapp-vite
 
+## 6.15.18
+
+### Patch Changes
+
+- 🐛 **修复静态资源复制扫描在使用 `fdir` 全路径遍历时无法匹配相对 glob 的问题，确保默认资源扩展名以及 `weapp.copy.include` / `weapp.copy.exclude` 配置继续生效。** [#513](https://github.com/weapp-vite/weapp-vite/pull/513) by @sonofmagic
+
+- 🐛 **修复 HMR sharedChunks=auto 下入口直接更新的源码 shared chunk 扩散判断，避免项目源码 shared chunk 在单入口重建后被内联或导致其他 importer 未同步，同时保留 vendor/runtime shared chunk 的窄范围热更新。** [`8b04a8f`](https://github.com/weapp-vite/weapp-vite/commit/8b04a8fa62572e13e9b0c21e980dc777d368abc5) by @sonofmagic
+
+- 🐛 **优化开发态 HMR 的 shared chunk 扩散策略：入口文件自身更新时不再因为历史共享运行时或 vendor chunk 反向重发所有入口，依赖变更驱动的共享模块更新仍会扩散到相关 importers，从而降低模板页面热更新耗时。** [`6edef9f`](https://github.com/weapp-vite/weapp-vite/commit/6edef9fdf2be6ae1dfca1c0db722866f8f01bdcd) by @sonofmagic
+
+- 🐛 **修复共享源码模块热更新时影响范围可能无法从 shared chunk 反查到入口的问题，确保共享 TS 依赖变更能稳定触发相关入口刷新并写出更新后的共享 chunk。** [`7a45865`](https://github.com/weapp-vite/weapp-vite/commit/7a458650cb2fde5a0af8fb5c46ed4d40cda95b09) by @sonofmagic
+
+- 🐛 **修复开发态 HMR 的 shared chunk 局部更新策略：入口文件直接变更时仅对包含项目源码的 shared chunk 扩散相关 importers，避免源码 shared chunk 被单入口构建内联，同时保留纯运行时或 vendor shared chunk 的快速单入口更新路径。** [`7e8c2fa`](https://github.com/weapp-vite/weapp-vite/commit/7e8c2fa3032e7713f2a9fcc430b8456c884f1b5e) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 开发态 HMR 的 bundle 产物生成：局部入口更新时只重新发射本轮实际 emit 的 Vue 页面/组件资产，避免历史编译缓存中的其它页面在 `generateBundle` 阶段被重复处理，从而降低 Vue 模板热更新时间。** [`624703f`](https://github.com/weapp-vite/weapp-vite/commit/624703f64b3492ca0da0c4aa4287126470862580) by @sonofmagic
+
+- 🐛 **优化 Vue SFC JSON 宏开发态热更新：当 `definePageJson` / `<json>` 仅修改页面配置时，按 metadata 更新处理并跳过 shared chunk 入口扇出，避免标题等配置变更触发多页面重构建。** [`5ee57c2`](https://github.com/weapp-vite/weapp-vite/commit/5ee57c22211ed78aa5455862100cf749389903d5) by @sonofmagic
+
+- 🐛 **优化 HMR 在 source shared chunk 场景下的影响范围计算，避免普通 entry 直接改动被误扩散到同一 shared chunk 的全部入口，同时保留 partial refresh 中 shared chunk 源模块索引，确保共享源码变更仍能稳定命中相关入口。** [`4e74e4d`](https://github.com/weapp-vite/weapp-vite/commit/4e74e4d59bb3254ba7f7b0e8e66789ac8e948e92) by @sonofmagic
+
+- 🐛 **补充 `useSlots()` 的小程序端最小可用语义：编译器会基于组件来源为 wevu/Vue SFC 组件调用注入内部 `vue-slots` 元数据，支持 `<my-card>` 这类 kebab-case 写法，运行时据此恢复可枚举的 slots 对象，让 `Object.keys(useSlots())`、`useSlots().header` 与模板中的 `$slots.header` 可以判断普通插槽是否存在。没有编译期 slot 元数据时仍返回冻结的空 slots 对象；`<template #slot v-if="expr">` 会同步把条件映射到 slot 元数据和原生 fallback 内容上；TDesign 等原生小程序组件仍避免注入该内部属性。** [`1b4b28c`](https://github.com/weapp-vite/weapp-vite/commit/1b4b28c38de0f118f6f2423fdffa77cce053f981) by @sonofmagic
+
+- 🐛 **修复隐式默认插槽直接投影 Vue 组件时的 `provide()` / `inject()` 作用域兼容问题。该场景会生成增强 scoped slot 组件，让 slot 内容实例挂载到 slot 宿主组件的运行时父链下；具名插槽、显式默认插槽、原生元素包裹的默认内容，以及 TDesign 这类 kebab-case 小程序组件的默认插槽仍保持原生 slot 输出。微信产物会为内部 scoped slot generic 补默认空组件，避免真实 IDE 报出 `wx-scoped-slots-*` 未实例化 warning。** [#513](https://github.com/weapp-vite/weapp-vite/pull/513) by @sonofmagic
+- 📦 **Dependencies** [`1b4b28c`](https://github.com/weapp-vite/weapp-vite/commit/1b4b28c38de0f118f6f2423fdffa77cce053f981)
+  → `@weapp-core/constants@0.1.4`, `wevu@6.15.18`, `@weapp-vite/ast@6.15.18`
+
 ## 6.15.17
 
 ### Patch Changes

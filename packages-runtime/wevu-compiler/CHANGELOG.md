@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.15.18
+
+### Patch Changes
+
+- 🐛 **移除 Vue SFC `<script setup>` 编译产物中运行时未使用的 `__isScriptSetup` 标识，减少每个 SFC 额外生成的无效代码体积。** [#516](https://github.com/weapp-vite/weapp-vite/pull/516) by @sonofmagic
+
+- 🐛 **补充 `useSlots()` 的小程序端最小可用语义：编译器会基于组件来源为 wevu/Vue SFC 组件调用注入内部 `vue-slots` 元数据，支持 `<my-card>` 这类 kebab-case 写法，运行时据此恢复可枚举的 slots 对象，让 `Object.keys(useSlots())`、`useSlots().header` 与模板中的 `$slots.header` 可以判断普通插槽是否存在。没有编译期 slot 元数据时仍返回冻结的空 slots 对象；`<template #slot v-if="expr">` 会同步把条件映射到 slot 元数据和原生 fallback 内容上；TDesign 等原生小程序组件仍避免注入该内部属性。** [`1b4b28c`](https://github.com/weapp-vite/weapp-vite/commit/1b4b28c38de0f118f6f2423fdffa77cce053f981) by @sonofmagic
+
+- 🐛 **修复隐式默认插槽直接投影 Vue 组件时的 `provide()` / `inject()` 作用域兼容问题。该场景会生成增强 scoped slot 组件，让 slot 内容实例挂载到 slot 宿主组件的运行时父链下；具名插槽、显式默认插槽、原生元素包裹的默认内容，以及 TDesign 这类 kebab-case 小程序组件的默认插槽仍保持原生 slot 输出。微信产物会为内部 scoped slot generic 补默认空组件，避免真实 IDE 报出 `wx-scoped-slots-*` 未实例化 warning。** [#513](https://github.com/weapp-vite/weapp-vite/pull/513) by @sonofmagic
+- 📦 **Dependencies** [`1b4b28c`](https://github.com/weapp-vite/weapp-vite/commit/1b4b28c38de0f118f6f2423fdffa77cce053f981)
+  → `@weapp-core/constants@0.1.4`, `@weapp-vite/ast@6.15.18`
+
 ## 6.15.17
 
 ### Patch Changes

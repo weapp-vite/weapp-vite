@@ -1,5 +1,13 @@
 # wevu
 
+## 6.15.18
+
+### Patch Changes
+
+- 🐛 **补充 `useSlots()` 的小程序端最小可用语义：编译器会基于组件来源为 wevu/Vue SFC 组件调用注入内部 `vue-slots` 元数据，支持 `<my-card>` 这类 kebab-case 写法，运行时据此恢复可枚举的 slots 对象，让 `Object.keys(useSlots())`、`useSlots().header` 与模板中的 `$slots.header` 可以判断普通插槽是否存在。没有编译期 slot 元数据时仍返回冻结的空 slots 对象；`<template #slot v-if="expr">` 会同步把条件映射到 slot 元数据和原生 fallback 内容上；TDesign 等原生小程序组件仍避免注入该内部属性。** [`1b4b28c`](https://github.com/weapp-vite/weapp-vite/commit/1b4b28c38de0f118f6f2423fdffa77cce053f981) by @sonofmagic
+- 📦 **Dependencies** [`79b3607`](https://github.com/weapp-vite/weapp-vite/commit/79b3607ecf16675046ba39b9d2b9e8acdd93b7ff)
+  → `@wevu/compiler@6.15.18`, `@weapp-core/constants@0.1.4`
+
 ## 6.15.17
 
 ### Patch Changes
