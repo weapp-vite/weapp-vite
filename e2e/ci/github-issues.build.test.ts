@@ -445,6 +445,40 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('_runE2E')
   })
 
+  it('issue #521: keeps generated scoped slot components virtual for flex layouts', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-521/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-521/index.json')
+    const scopedSlotJsonPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.json')
+    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.wxml')
+    const hostWxmlPath = path.join(DIST_ROOT, 'components/issue-521/ScopedFlexHost/index.wxml')
+    const runtime = await findWevuVendorRuntimePath('options: { virtualHost: true }')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
+    const scopedSlotJson = await fs.readJson(scopedSlotJsonPath) as { component?: boolean, styleIsolation?: string }
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const hostWxml = await fs.readFile(hostWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-521 scoped slot flex layout')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageWxml).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(pageJson.usingComponents).toMatchObject({
+      ScopedFlexHost: '/components/issue-521/ScopedFlexHost/index',
+      FlexItem: '/components/issue-521/FlexItem/index',
+    })
+    expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-521/index.__scoped-slot-default-0')
+    expect(scopedSlotJson).toMatchObject({
+      component: true,
+      styleIsolation: 'apply-shared',
+    })
+    expect(scopedSlotWxml).toContain('<FlexItem label="A" val="{{__wvSlotPropsData.xyz}}" /><FlexItem label="B" val="{{__wvSlotPropsData.xyz}}" />')
+    expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+    expect(runtime.code).toContain('function createScopedSlotOptions')
+    expect(runtime.code).toContain('options: { virtualHost: true }')
+  })
+
   it('experiment: flex parent keeps projected multi-node slot groups visible via view wrappers', async () => {
     await runBuild()
 

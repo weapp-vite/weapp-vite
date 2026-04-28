@@ -96,6 +96,9 @@ export function createScopedSlotOptions(
   overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ) {
   const baseOptions = {
+    options: {
+      virtualHost: true,
+    },
     properties: {
       [WEVU_SLOT_OWNER_ID_KEY]: { type: String, value: '' },
       [WEVU_SLOT_PROPS_KEY]: {
