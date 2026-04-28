@@ -125,6 +125,36 @@ import MyCard from './my-card.vue'
     expect(result.template).not.toContain('vue-slots=')
   })
 
+  it('injects slot metadata for resolver-imported vue sfc components', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <resolver-card>
+    <template #header>
+      <view>Header</view>
+    </template>
+  </resolver-card>
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        autoImportTags: {
+          enabled: true,
+          resolveUsingComponent: async (tag) => {
+            if (tag === 'resolver-card') {
+              return { name: tag, from: '/components/resolver-card/index.vue' }
+            }
+            return undefined
+          },
+        },
+      },
+    )
+
+    expect(result.template).toContain(`resolver-card vue-slots="{{['header']}}"`)
+  })
+
   it('injects inline expression map for template handlers', async () => {
     const result = await compileVueFile(
       `
