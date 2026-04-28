@@ -1,4 +1,5 @@
 import { defineConfig } from 'weapp-vite'
+import { requestClientsRealDevPlugin } from '../../e2e/utils/requestClientsRealDevPlugin'
 
 const REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS = {
   request: {
@@ -11,10 +12,9 @@ const REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS = {
 } as const
 
 export default defineConfig(async (env) => {
-  let devSetup: Awaited<ReturnType<typeof import('../../e2e/utils/requestClientsRealDevPlugin').requestClientsRealDevPlugin>> | null = null
+  let devSetup: Awaited<ReturnType<typeof requestClientsRealDevPlugin>> | null = null
 
   if (env.command === 'serve') {
-    const { requestClientsRealDevPlugin } = await import('../../e2e/utils/requestClientsRealDevPlugin')
     devSetup = await requestClientsRealDevPlugin({
       projectRoot: import.meta.dirname,
       serverPort: 60323,
