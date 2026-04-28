@@ -16,7 +16,7 @@ import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
-import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
+import { addResolvedPageLayoutWatchFiles, expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
@@ -284,7 +284,15 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const vueSource = await readVueSource()
           if (vueSource) {
             const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+            replaceLayoutDependencies(normalizedId, [])
             if (layoutPlan) {
+              if (vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout')) {
+                const layoutDependencies = new Set<string>()
+                for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+                  layoutDependencies.add(normalizeFsResolvedId(file))
+                }
+                replaceLayoutDependencies(normalizedId, layoutDependencies)
+              }
               await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
               await registerResolvedPageLayoutEntries({
                 layouts: layoutPlan.layouts,

@@ -76,6 +76,7 @@ interface ScenarioResult {
   output: string
   marker?: string
   totalMs?: number
+  observedMs?: number
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
@@ -349,8 +350,9 @@ async function auditScenario(
     await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
-    result.totalMs = performance.now() - startedAt
     result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
+    result.observedMs = performance.now() - startedAt
+    result.totalMs = result.profile?.totalMs ?? result.observedMs
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {
