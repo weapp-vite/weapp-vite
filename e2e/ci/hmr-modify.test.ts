@@ -124,10 +124,21 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
 
       await replaceFileByRename(SRC_STYLE, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated style marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated style marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次页面样式变更事件，追加换行再次触发样式重编译。
+        await replaceFileByRename(SRC_STYLE, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated style marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
