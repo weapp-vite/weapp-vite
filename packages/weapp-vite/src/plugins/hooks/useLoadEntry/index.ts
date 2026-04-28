@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { createDebugger } from '../../../debugger'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
 import { createExtendedLibManager } from './extendedLib'
@@ -14,14 +15,17 @@ export { type JsonEmitFileEntry } from './jsonEmit'
 
 type HmrSharedChunksMode = 'full' | 'auto' | 'off'
 type DirtyEntryReason = 'direct' | 'dependency' | 'metadata'
-// 小规模 source shared chunk 需要保持 chunk 形态；大 fanout 保持单入口以避免慢 HMR。
+// 可归因 source shared chunk 需要保持 chunk 形态；大 fanout 保持单入口以避免慢 HMR。
 const MAX_DIRECT_SOURCE_SHARED_CHUNK_IMPORTERS = 128
+// 图索引缺失时只对小规模 source shared chunk 做兼容扩散，避免宽 runtime chunk 拖慢尾延迟。
+const MAX_FALLBACK_DIRECT_SOURCE_SHARED_CHUNK_IMPORTERS = 8
 
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
+  entryLayoutDependencies?: Map<string, Set<string>>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
@@ -56,6 +60,26 @@ function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
   return pendingReasonSummary
 }
 
+function isDirectSourceSharedChunkForEntry(options: {
+  chunkId: string
+  entryId: string
+  sourceSharedChunks?: Set<string>
+  entryLayoutDependencies?: Map<string, Set<string>>
+  importerCount: number
+}) {
+  if (options.sourceSharedChunks?.has(options.chunkId) !== true) {
+    return false
+  }
+
+  const normalizedEntryId = normalizeFsResolvedId(options.entryId)
+  const layoutDependencies = options.entryLayoutDependencies?.get(normalizedEntryId)
+  if (layoutDependencies?.size) {
+    return true
+  }
+
+  return options.importerCount <= MAX_FALLBACK_DIRECT_SOURCE_SHARED_CHUNK_IMPORTERS
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
@@ -66,6 +90,7 @@ function resolvePendingEntryIds(options: {
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
+  entryLayoutDependencies?: Map<string, Set<string>>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
 }): PendingEntryResolution {
@@ -126,7 +151,6 @@ function resolvePendingEntryIds(options: {
     if (importers.size <= 1) {
       continue
     }
-    const isSourceSharedChunk = options.sourceSharedChunks?.has(chunkId) === true
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
     for (const importer of importers) {
@@ -135,7 +159,13 @@ function resolvePendingEntryIds(options: {
         continue
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
-        if (isSourceSharedChunk) {
+        if (isDirectSourceSharedChunkForEntry({
+          chunkId,
+          entryId: importer,
+          sourceSharedChunks: options.sourceSharedChunks,
+          entryLayoutDependencies: options.entryLayoutDependencies,
+          importerCount: importers.size,
+        })) {
           hasDirectDirtyImporter = true
         }
       }
@@ -302,6 +332,7 @@ export function useLoadEntry(
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
         sourceSharedChunks: hmrSourceSharedChunks,
+        entryLayoutDependencies,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
       })
