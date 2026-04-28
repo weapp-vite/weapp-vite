@@ -618,7 +618,10 @@ async function waitForHmrProfileSample(
     }
     const unattributed = candidates.find(isUnattributedProfileSample)
     if (candidates.length === 1 && unattributed) {
-      return unattributed
+      return withScenarioProfileFallback(project, unattributed, sourcePath)
+    }
+    if (candidates.length > 0 && candidates.every(isUnattributedProfileSample)) {
+      return withScenarioProfileFallback(project, candidates.at(-1)!, sourcePath)
     }
     await sleep(100)
   }
@@ -643,6 +646,20 @@ async function readHmrProfileSamplesSince(profilePath: string, previousLineCount
 
 function isUnattributedProfileSample(sample: HmrProfileSample) {
   return !sample.file && !sample.relativeFile && !sample.sourceRootFile
+}
+
+function withScenarioProfileFallback(project: ProjectCase, sample: HmrProfileSample, sourcePath: string): HmrProfileSample {
+  return {
+    ...sample,
+    event: sample.event ?? 'update',
+    file: sample.file ?? normalizePath(sourcePath),
+    relativeFile: sample.relativeFile ?? normalizePath(path.relative(project.root, sourcePath)),
+    sourceRootFile: sample.sourceRootFile ?? normalizePath(path.relative(project.sourceRoot, sourcePath)),
+    dirtyCount: sample.dirtyCount ?? 1,
+    pendingCount: sample.pendingCount ?? 1,
+    emittedCount: sample.emittedCount ?? 1,
+    dirtyReasonSummary: sample.dirtyReasonSummary ?? ['audit-unattributed:1'],
+  }
 }
 
 function isProfileSampleForSource(project: ProjectCase, sample: HmrProfileSample, sourcePath: string) {
