@@ -19,7 +19,6 @@ interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
-  sharedChunksByModule?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
@@ -64,7 +63,6 @@ function resolvePendingEntryIds(options: {
   dirtyReasonSummary?: string[]
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
-  sharedChunksByModule?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
@@ -135,8 +133,7 @@ function resolvePendingEntryIds(options: {
         continue
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
-        const importerSourceChunkIds = options.sharedChunksByModule?.get(importer)
-        if (importerSourceChunkIds?.has(chunkId)) {
+        if (isSourceSharedChunk) {
           hasDirectDirtyImporter = true
         }
       }
@@ -260,7 +257,6 @@ export function useLoadEntry(
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
   const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
-  const hmrSharedChunksByModule = options?.hmr?.sharedChunksByModule
   const hmrSourceSharedChunks = options?.hmr?.sourceSharedChunks
 
   return {
@@ -301,7 +297,6 @@ export function useLoadEntry(
         dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
-        sharedChunksByModule: hmrSharedChunksByModule,
         sourceSharedChunks: hmrSourceSharedChunks,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
