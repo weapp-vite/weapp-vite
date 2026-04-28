@@ -314,7 +314,7 @@ describe('core helpers graph', () => {
     )
   })
 
-  it('replaces module index for chunks included in partial refreshes', () => {
+  it('preserves and augments module index for chunks included in partial refreshes', () => {
     const state = createState()
     const entry = '/project/src/pages/hmr/index.ts'
     const previousModule = '/project/src/shared/previous.ts'
@@ -336,8 +336,32 @@ describe('core helpers graph', () => {
 
     refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
 
-    expect(state.hmrSharedChunksByModule.has(previousModule)).toBe(false)
+    expect(state.hmrSharedChunksByModule.get(previousModule)).toEqual(new Set(['common.js']))
     expect(state.hmrSharedChunksByModule.get(nextModule)).toEqual(new Set(['common.js']))
+  })
+
+  it('preserves module index when partial refresh includes shared chunk shell without module metadata', () => {
+    const state = createState()
+    const entry = '/project/src/pages/hmr/index.ts'
+    const sharedModule = '/project/src/shared/tokens.ts'
+    state.resolvedEntryMap.set(entry, { value: true })
+    state.hmrSharedChunkImporters.set('common.js', new Set([entry]))
+    state.hmrSharedChunksByModule.set(sharedModule, new Set(['common.js']))
+    state.hmrSourceSharedChunks.add('common.js')
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: entry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
+
+    expect(state.hmrSharedChunksByModule.get(sharedModule)).toEqual(new Set(['common.js']))
+    expect(state.hmrSourceSharedChunks.has('common.js')).toBe(true)
   })
 
   it('preserves transitive shared chunk importers when partial emits omit nested shared chunks', () => {

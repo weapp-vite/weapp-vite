@@ -105,22 +105,12 @@ export function refreshModuleGraph(
   }
 }
 
-function removeSharedChunkModuleIndex(state: CorePluginState, chunkId: string) {
-  for (const [moduleId, chunkIds] of state.hmrSharedChunksByModule) {
-    chunkIds.delete(chunkId)
-    if (chunkIds.size === 0) {
-      state.hmrSharedChunksByModule.delete(moduleId)
-    }
-  }
-}
-
 function appendSharedChunkImporters(
   bundle: OutputBundle,
   state: CorePluginState,
   onlyEntryIds?: Set<string>,
   previousImporters?: Map<string, Set<string>>,
   previousDependencies?: Map<string, Set<string>>,
-  replaceChunkModuleIndex = false,
 ) {
   const bundleChunks = new Map<string, OutputChunk>()
   const resolveImportedChunkId = (importerFileName: string, imported: string) => {
@@ -183,15 +173,6 @@ function appendSharedChunkImporters(
     }
     return normalizedId === normalizedRoot || normalizedId.startsWith(`${normalizedRoot}/`)
   }
-  const hasProjectSourceModule = (chunk: OutputChunk) => {
-    if (isProjectSourceModule(chunk.facadeModuleId)) {
-      return true
-    }
-    if (!Array.isArray(chunk.moduleIds)) {
-      return false
-    }
-    return chunk.moduleIds.some(moduleId => isProjectSourceModule(moduleId))
-  }
   const collectProjectSourceModules = (chunk: OutputChunk) => {
     const moduleIds = new Set<string>()
     if (isProjectSourceModule(chunk.facadeModuleId)) {
@@ -229,17 +210,12 @@ function appendSharedChunkImporters(
     if (!chunk.fileName) {
       chunk.fileName = bundleKey
     }
-    if (replaceChunkModuleIndex) {
-      removeSharedChunkModuleIndex(state, chunk.fileName)
-    }
+    const projectSourceModules = collectProjectSourceModules(chunk)
     bundleChunks.set(chunk.fileName, chunk)
-    if (hasProjectSourceModule(chunk)) {
+    if (projectSourceModules.size > 0) {
       state.hmrSourceSharedChunks.add(chunk.fileName)
     }
-    else {
-      state.hmrSourceSharedChunks.delete(chunk.fileName)
-    }
-    for (const moduleId of collectProjectSourceModules(chunk)) {
+    for (const moduleId of projectSourceModules) {
       addSharedChunkModule(moduleId, chunk.fileName)
     }
   }
@@ -403,7 +379,6 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
   for (const [chunkId, imports] of state.hmrSharedChunkDependencies) {
     previousDependencies.set(chunkId, new Set(imports))
   }
-
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     for (const entryId of refreshedEntryIds) {
       importers.delete(entryId)
@@ -418,10 +393,8 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     if (importers.size === 0) {
       state.hmrSharedChunkImporters.delete(chunkId)
       state.hmrSharedChunkDependencies.delete(chunkId)
-      removeSharedChunkModuleIndex(state, chunkId)
-      state.hmrSourceSharedChunks.delete(chunkId)
     }
   }
 
-  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies, true)
+  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)
 }

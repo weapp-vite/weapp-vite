@@ -95,6 +95,22 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
   })
 
+  it('clears unresolved dirty entries after an emit pass', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {})
+
+    hook.markEntryDirty('/project/src/pages/a.js', 'direct')
+    hook.markEntryDirty('/project/src/pages/missing.js', 'direct')
+    hook.resolvedEntryMap.set('/project/src/pages/a.js', { id: '/project/src/pages/a.js' } as any)
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
+  })
+
   it('falls back to full when shared chunk is only partially updated', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
@@ -282,12 +298,14 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sharedChunksByModule = new Map<string, Set<string>>()
     const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
+        sharedChunksByModule,
         sourceSharedChunks,
       },
     })
@@ -296,6 +314,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     sharedChunkImporters.set('common.js', new Set(ids))
     sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sharedChunksByModule.set(ids[0], new Set(['common.js']))
     sourceSharedChunks.add('common.js')
     hook.markEntryDirty(ids[0], 'direct')
 
@@ -304,6 +323,37 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:direct'])
+  })
+
+  it('keeps direct entry updates incremental when only dependency modules are in source shared chunks', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sharedChunksByModule = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sharedChunksByModule,
+        sourceSharedChunks,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sharedChunksByModule.set('/project/src/shared/tokens.ts', new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('keeps metadata entry updates incremental across source shared chunk importers', async () => {
@@ -367,11 +417,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sharedChunksByModule = new Map<string, Set<string>>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
+        sharedChunksByModule,
       },
     })
 
@@ -380,6 +432,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     sharedChunkImporters.set('common.js', new Set(ids))
     sharedChunksByEntry.set(ids[0], new Set(['common.js']))
     sharedChunksByEntry.set(ids[1], new Set(['common.js']))
+    sharedChunksByModule.set(ids[0], new Set(['common.js']))
     hook.markEntryDirty(ids[0], 'direct')
     hook.markEntryDirty(ids[1], 'dependency')
 
