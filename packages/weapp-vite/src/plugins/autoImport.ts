@@ -80,6 +80,9 @@ function normalizeChangedPath(id: string) {
 }
 
 function getAutoImportCandidateKind(filePath: string) {
+  if (AUTO_IMPORT_CONFIG_SUFFIXES.some(suffix => filePath.endsWith(suffix))) {
+    return 'config'
+  }
   if (AUTO_IMPORT_VUE_SUFFIXES.has(path.extname(filePath))) {
     return 'vue'
   }
@@ -88,9 +91,6 @@ function getAutoImportCandidateKind(filePath: string) {
   }
   if (AUTO_IMPORT_JS_SUFFIXES.has(path.extname(filePath))) {
     return 'script'
-  }
-  if (AUTO_IMPORT_CONFIG_SUFFIXES.some(suffix => filePath.endsWith(suffix))) {
-    return 'config'
   }
   return undefined
 }
