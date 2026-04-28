@@ -37,7 +37,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       sharedChunks: hmrSharedChunksMode,
       sharedChunkImporters: hmrSharedChunkImporters,
       sharedChunksByEntry: hmrSharedChunksByEntry,
-      sourceSharedChunks: hmrSourceSharedChunks,
       setDidEmitAllEntries: (value) => {
         hmrState.didEmitAllEntries = value
         if (ctx.runtimeState?.build?.hmr) {
