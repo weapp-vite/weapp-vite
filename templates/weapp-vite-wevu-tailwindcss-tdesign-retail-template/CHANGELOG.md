@@ -1,5 +1,12 @@
 # weapp-vite-wevu-tailwindcss-tdesign-retail-template
 
+## 1.0.68
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.15.19`
+
 ## 1.0.67
 
 ### Patch Changes
