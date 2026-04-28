@@ -16,6 +16,7 @@ describe('runtime: scoped slots', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
+    expect(opts.options?.virtualHost).toBe(true)
 
     const ownerId = allocateOwnerId()
     const proxy = { handle: vi.fn() }
