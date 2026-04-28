@@ -117,6 +117,39 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/index.wxml')
   })
 
+  it('does not drop pre-ready atomic restore events for known sidecar files', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const existsSpy = vi.spyOn(fs, 'existsSync')
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    existsSpy.mockImplementation((value) => {
+      const filePath = String(value)
+      return filePath === '/project/src' || filePath === '/project/src/pages/hmr/index.wxml'
+    })
+
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('add', '/project/src/pages/hmr/index.wxml')
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+
+    watcher.emit('unlink', '/project/src/pages/hmr/index.wxml')
+    await Promise.resolve()
+    await Promise.resolve()
+    invalidateEntryForSidecarMock.mockClear()
+    scanMock.mockClear()
+
+    watcher.emit('add', '/project/src/pages/hmr/index.wxml')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'create')
+    expect(loggerMock.info).toHaveBeenCalledWith('[watch:create] src/pages/hmr/index.wxml')
+  })
+
   it('derives delete for raw rename when the known sidecar file disappears', async () => {
     vi.stubEnv('VITEST', '')
     vi.stubEnv('NODE_ENV', 'development')

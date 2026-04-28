@@ -35,6 +35,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   let isReady = false
   const knownSidecarFiles = new Set<string>()
+  const preReadyDeletedKnownFiles = new Set<string>()
   const renameTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const RENAME_SETTLE_MS = 120
 
@@ -101,16 +102,22 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       return
     }
     const normalizedPath = path.normalize(input)
+    const wasKnown = knownSidecarFiles.has(normalizedPath)
+    const isPreReadyAtomicRestore = event === 'create' && preReadyDeletedKnownFiles.has(normalizedPath)
     if (event === 'create' || event === 'update') {
       knownSidecarFiles.add(normalizedPath)
+      preReadyDeletedKnownFiles.delete(normalizedPath)
     }
     else if (event === 'delete') {
+      if (!isReady && wasKnown) {
+        preReadyDeletedKnownFiles.add(normalizedPath)
+      }
       knownSidecarFiles.delete(normalizedPath)
     }
     if (!options?.silent) {
       logger.info(`[watch:${event}] ${ctx.configService.relativeCwd(normalizedPath)}`)
     }
-    handleSidecarChange(event, normalizedPath, isReady)
+    handleSidecarChange(event, normalizedPath, isReady || isPreReadyAtomicRestore)
   }
 
   watcher.on('add', path => forwardChange('create', path))
@@ -194,6 +201,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
         clearTimeout(timer)
       }
       renameTimers.clear()
+      preReadyDeletedKnownFiles.clear()
       return watcher.close()
     },
   })
