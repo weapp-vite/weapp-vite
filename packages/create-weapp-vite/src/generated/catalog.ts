@@ -9,7 +9,7 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^7.29.0',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^4.0.9',
+  '@icebreakers/eslint-config': '^4.0.10',
   '@icebreakers/stylelint-config': '^3.0.6',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
