@@ -70,6 +70,29 @@ it('collects event handler and interpolation ranges while ignoring comments', as
   assert.deepEqual(ranges, ['handleTap', 'titleText'])
 })
 
+it('collects defined static class ranges while ignoring comments and dynamic expressions', async () => {
+  vi.doMock('vscode', () => {
+    return createVscodeModule({
+      Range: class {},
+    })
+  })
+  vi.resetModules()
+
+  const {
+    collectTemplateClassSourceRanges,
+  } = await import('./templateDecorations')
+
+  const sourceText = [
+    '<view class="section-title missing {{ active ? \'dynamic-class\' : itemClass }}" hover-class="route-button"></view>',
+    '<!-- <view class="section-title"></view> -->',
+  ].join('\n')
+
+  const ranges = collectTemplateClassSourceRanges(sourceText, new Set(['section-title', 'route-button', 'dynamic-class']))
+    .map(range => sourceText.slice(range.start, range.end))
+
+  assert.deepEqual(ranges, ['section-title', 'route-button'])
+})
+
 it('maps template decoration ranges back to vue document positions', async () => {
   vi.doMock('vscode', () => {
     return createVscodeModule({
