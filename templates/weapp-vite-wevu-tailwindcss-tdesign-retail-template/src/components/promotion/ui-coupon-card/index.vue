@@ -93,10 +93,10 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`wr-coupon coupon-class theme-${theme} flex bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] bg-size-[100%_100%] bg-no-repeat relative mb-[24rpx] overflow-hidden bg-[url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png')]`">
+  <view :class="`wr-coupon coupon-class theme-${theme} flex bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] bg-size-[100%_100%] bg-no-repeat relative mb-[24rpx] overflow-hidden`">
     <view class="wr-coupon__left w-[200rpx] h-[180rpx] flex flex-col justify-center text-center text-[#fa4126] overflow-hidden relative">
       <view v-if="type == CouponType.ZK_COUPON || type === CouponType.MERCHANT_ZK_COUPON">
-        <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-[\'DIN_Alternate\',cursive] font-['DIN_Alternate',cursive]">
+        <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]">
           {{ value }}
         </text>
         <text class="wr-coupon__left--unit text-[24rpx] leading-[32rpx]">
@@ -107,7 +107,7 @@ defineComponentJson({
         </view>
       </view>
       <view v-if="type == CouponType.MJ_COUPON || type === CouponType.MERCHANT_MJ_COUPON">
-        <text v-if="isBigValue(value)" class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-[\'DIN_Alternate\',cursive] font-['DIN_Alternate',cursive]">
+        <text v-if="isBigValue(value)" class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]">
           <text class="wr-coupon__left--value-int text-[48rpx] leading-[88rpx]">
             {{ getBigValues(value)[0] }}
           </text>
@@ -115,7 +115,7 @@ defineComponentJson({
             .{{ getBigValues(value)[1] }}
           </text>
         </text>
-        <text v-else class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-[\'DIN_Alternate\',cursive] font-['DIN_Alternate',cursive]">
+        <text v-else class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]">
           {{ Number(value) / 100 }}
         </text>
         <text class="wr-coupon__left--unit text-[24rpx] leading-[32rpx]">
@@ -126,7 +126,7 @@ defineComponentJson({
         </view>
       </view>
       <view v-if="type === CouponType.MJF_COUPON || type === CouponType.MYF_COUPON">
-        <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-[\'DIN_Alternate\',cursive] font-['DIN_Alternate',cursive]" style="font-family: 'PingFang SC', sans-serif; font-size: 44rpx">
+        <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]" style="font-family: 'PingFang SC', sans-serif; font-size: 44rpx">
           免邮
         </text>
         <view class="wr-coupon__left--desc text-[24rpx] leading-[32rpx] text-[#fa4126]">
