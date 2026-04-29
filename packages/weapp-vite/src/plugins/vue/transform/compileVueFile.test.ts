@@ -71,7 +71,8 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{['header']}}"`)
+    expect(result.template).toContain(`my-card vue-slots="{{__wv_bind_0}}"`)
+    expect(result.script).toContain('__wv_bind_0')
   })
 
   it('injects slot metadata for kebab-case direct .vue imports without resolver', async () => {
@@ -91,7 +92,8 @@ import MyCard from './my-card.vue'
       '/project/src/pages/index/index.vue',
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{['header']}}"`)
+    expect(result.template).toContain(`my-card vue-slots="{{__wv_bind_0}}"`)
+    expect(result.script).toContain('__wv_bind_0')
   })
 
   it('does not inject slot metadata for kebab-case native auto-import components', async () => {
@@ -152,7 +154,8 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`resolver-card vue-slots="{{['header']}}"`)
+    expect(result.template).toContain(`resolver-card vue-slots="{{__wv_bind_0}}"`)
+    expect(result.script).toContain('__wv_bind_0')
   })
 
   it('injects inline expression map for template handlers', async () => {

@@ -23,8 +23,6 @@ import { collectSlotBindingExpression, parseSlotPropsExpression } from './slotPr
 
 export type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
 
-const SLOT_PRESENCE_SCAN_LIMIT = 32
-
 export interface ScopedSlotDeclaration {
   name: SlotNameInfo
   props: Record<string, string>
@@ -112,17 +110,17 @@ function resolveSlotStaticName(info: SlotNameInfo): string | undefined {
   return undefined
 }
 
+const SLOT_PRESENCE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+
 function createSlotPresenceExpression(info: SlotNameInfo) {
   const slotName = resolveSlotStaticName(info)
   if (!slotName) {
     return undefined
   }
-  const slotLiteral = `'${slotName.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`
-  const checks = Array.from(
-    { length: SLOT_PRESENCE_SCAN_LIMIT },
-    (_, index) => `${WEVU_SLOT_NAMES_PROP}[${index}]==${slotLiteral}`,
-  )
-  return `${WEVU_SLOT_NAMES_PROP}&&(${checks.join('||')})`
+  const access = SLOT_PRESENCE_IDENTIFIER_RE.test(slotName)
+    ? `${WEVU_SLOT_NAMES_PROP}.${slotName}`
+    : `${WEVU_SLOT_NAMES_PROP}['${slotName.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}']`
+  return `${WEVU_SLOT_NAMES_PROP}&&${access}`
 }
 
 export function buildSlotDeclaration(

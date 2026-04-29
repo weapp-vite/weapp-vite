@@ -11,6 +11,7 @@ import {
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
@@ -83,16 +84,38 @@ function pushSlotNamesAttr(
     return
   }
   const seen = new Set<string>()
-  const entries: string[] = []
+  const entries = new Map<string, { conditions: string[], unconditional: boolean }>()
   for (const item of slotNames) {
     const dedupeKey = `${item.name}:${item.condition ?? ''}`
     if (seen.has(dedupeKey)) {
       continue
     }
     seen.add(dedupeKey)
-    entries.push(item.condition ? `((${item.condition}) ? ${item.name} : '')` : item.name)
+    const entry = entries.get(item.name) ?? { conditions: [], unconditional: false }
+    if (item.condition) {
+      if (!entry.unconditional) {
+        entry.conditions.push(item.condition)
+      }
+    }
+    else {
+      entry.conditions.length = 0
+      entry.unconditional = true
+    }
+    entries.set(item.name, entry)
   }
-  attrs.push(`${WEVU_SLOT_NAMES_ATTR}="${renderMustache(`[${entries.join(',')}]`, context)}"`)
+  const properties: string[] = []
+  for (const [name, entry] of entries) {
+    const value = entry.conditions.length
+      ? entry.conditions.map(condition => `(${condition})`).join('||')
+      : 'true'
+    properties.push(`[${name}]:${value}`)
+  }
+  const slotNamesRef = registerRuntimeBindingExpression(`{${properties.join(',')}}`, context, {
+    hint: 'vue-slots 元数据',
+  })
+  if (slotNamesRef) {
+    attrs.push(`${WEVU_SLOT_NAMES_ATTR}="${renderMustache(slotNamesRef, context)}"`)
+  }
 }
 
 function shouldExposePlainSlotPresence(node: ElementNode) {

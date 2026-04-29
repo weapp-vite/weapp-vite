@@ -302,8 +302,9 @@ describe('Vue Template Compiler', () => {
         '<slot><view>Fallback content</view></slot>',
         'test.vue',
       )
-      expect(result.code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+      expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
       expect(result.code).toContain('<block wx:else><view>Fallback content</view></block>')
+      expect(result.code).not.toContain('vueSlots[')
     })
 
     it('should compile scoped slot provider bindings', () => {
@@ -337,7 +338,8 @@ describe('Vue Template Compiler', () => {
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp).toBeDefined()
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
-      expect(result.code).toContain('vue-slots="{{[\'default\']}}"')
+      expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
+      expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
       expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
@@ -400,7 +402,8 @@ describe('Vue Template Compiler', () => {
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp?.slotKey).toBe('header')
       expect(result.code).toContain(`generic:scoped-slots-header="${slotComp?.componentName}"`)
-      expect(result.code).toContain('vue-slots="{{[\'header\']}}"')
+      expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
+      expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.title}}')
     })
 
@@ -413,7 +416,8 @@ describe('Vue Template Compiler', () => {
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp?.slotKey.startsWith('dyn-')).toBe(true)
       expect(result.code).toContain(`generic:scoped-slots-${slotComp?.slotKey}`)
-      expect(result.code).toContain('vue-slots="{{[slotName]}}"')
+      expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
+      expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{[slotName]:true}`)).toBe(true)
       expect(result.warnings.some(warning => warning.includes('动态插槽名'))).toBe(true)
     })
 

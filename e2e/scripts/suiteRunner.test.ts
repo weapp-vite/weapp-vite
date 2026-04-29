@@ -209,7 +209,8 @@ describe('suiteRunner', () => {
     expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(4)
+    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
+    expect(ideGithubIssuesTasks.length).toBe(5)
   })
 
   it('uses env-based target file selection for suite vitest tasks', async () => {

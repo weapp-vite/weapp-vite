@@ -282,7 +282,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useProvideInjectScopePageWxml).toContain('<weapp-layout-provide-inject-scope')
     expect(useProvideInjectScopePageWxml).toContain('<ProvideInjectSlotProvider')
     expect(useProvideInjectScopePageWxml).toContain('generic:scoped-slots-default=')
-    expect(useProvideInjectScopePageWxml).toContain(`vue-slots="{{['default']}}"`)
+    expect(useProvideInjectScopePageWxml).toContain(`vue-slots="{{__wv_bind_`)
     expect(useProvideInjectSlotScopedWxml).toContain('<ProvideInjectSlotLeaf')
     expect(useProvideInjectScopeLevel01Wxml).toContain('<ProvideInjectScopeLevel02')
     expect(useProvideInjectScopeLevel09Wxml).toContain('<ProvideInjectScopeLeaf')

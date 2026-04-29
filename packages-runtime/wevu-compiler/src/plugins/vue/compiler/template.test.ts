@@ -585,16 +585,17 @@ describe('compileVueTemplateToWxml', () => {
 </Provider>
     `.trim()
 
-    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+    const { code, scopedSlotComponents, classStyleBindings } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
       { scopedSlotsRequireProps: false },
     )
 
     expect(code).toContain('generic:scoped-slots-default="')
-    expect(code).toContain(`vue-slots="{{['default']}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
     expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<Leaf')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
     expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
@@ -629,15 +630,16 @@ describe('compileVueTemplateToWxml', () => {
 </Provider>
     `.trim()
 
-    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+    const { code, scopedSlotComponents, classStyleBindings } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view>Default</view></Provider>`)
+    expect(code).toContain(`<Provider vue-slots="{{__wv_bind_0}}"><view>Default</view></Provider>`)
     expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
     expect(scopedSlotComponents).toBeUndefined()
   })
 
@@ -656,7 +658,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view><Leaf /></view></Provider>`)
+    expect(code).toContain(`<Provider vue-slots="{{__wv_bind_0}}"><view><Leaf /></view></Provider>`)
     expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
@@ -754,10 +756,11 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
     expect(code).toContain(`<slot name="header" /></block><block wx:else><view>Fallback header</view></block>`)
-    expect(code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(code).toContain(`<slot /></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
+    expect(code).not.toContain('vueSlots[')
     expect(code).not.toContain('<slot name="header"><view>Fallback header</view></slot>')
     expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
   })
@@ -775,12 +778,13 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{a}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{a}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
     expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>A fallback</view></block></block>`)
-    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elifAttr}="{{b}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elifAttr}="{{b}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
     expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>B fallback</view></block></block>`)
-    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
     expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>C fallback</view></block></block>`)
+    expect(code).not.toContain('vueSlots[')
   })
 
   it('warns when component v-slot and template v-slot are mixed, preferring component slot', () => {
@@ -812,7 +816,7 @@ describe('compileVueTemplateToWxml', () => {
 <slot :item="card.item"><view>fallback</view></slot>
     `.trim()
 
-    const { code, warnings } = compileVueTemplateToWxml(
+    const { code, warnings, classStyleBindings } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
       { scopedSlotsCompiler: 'off' },
@@ -821,7 +825,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(warnings.some(message => message.includes('已禁用作用域插槽参数'))).toBe(true)
     expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
     expect(code).toContain('<slot><view>fallback</view></slot>')
-    expect(code).toContain(`vue-slots="{{['header']}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
     expect(code).not.toContain('__wv-slot-props=')
   })
 
@@ -834,10 +839,11 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('<view slot="icon"><image class="img probe" src="/cover.png" /></view>')
-    expect(code).toContain(`vue-slots="{{['icon']}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['icon']:true}`)).toBe(true)
   })
 
   it('emits slot presence metadata for implicit default slots', () => {
@@ -847,9 +853,10 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`vue-slots="{{['default']}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
   })
 
   it('guards plain slot metadata and fallback content with template v-if', () => {
@@ -861,10 +868,11 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`vue-slots="{{[((showHeader) ? 'header' : '')]}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
     expect(code).not.toContain('vue-slot-flags')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:(showHeader)}`)).toBe(true)
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{showHeader}}"><view slot="header">`)
   })
 
@@ -880,10 +888,11 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`vue-slots="{{[((showPrimary) ? 'header' : ''),((showSecondary) ? 'header' : '')]}}"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
     expect(code).not.toContain('vue-slot-flags')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:(showPrimary)||(showSecondary)}`)).toBe(true)
   })
 
   it('projects plain named slot single child without synthetic view wrapper when enabled', () => {
