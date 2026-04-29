@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.0
+
+### Patch Changes
+
+- 🐛 **修复 `autoImportComponents.resolvers` 命中 wevu/Vue SFC 组件时插槽元信息识别不完整的问题，确保通过 resolver 自动导入的组件在传入子组件插槽时也会生成 `vue-slots` 属性。** [#523](https://github.com/weapp-vite/weapp-vite/pull/523) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 组件 `<slot>` 兜底内容在小程序端无法按父组件是否传入插槽正确显示的问题。编译器现在会基于合法的 `vue-slots` 数组元信息生成显式条件分支，避免宿主 `<slot>` 原生 fallback 行为不一致。** [#529](https://github.com/weapp-vite/weapp-vite/pull/529) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.0`
+
 ## 6.15.18
 
 ### Patch Changes
