@@ -11,6 +11,7 @@ const appLikeStyleFiles = [
 export default icebreaker({
   miniProgram: true,
   ignoreFiles: [
+    'e2e-apps/__temp__/**/*',
     'test/fixture-projects/weapp-vite/subPackages-shared-styles/src/packageA/styles/components.less',
   ],
   rules: {
