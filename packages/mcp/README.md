@@ -47,6 +47,25 @@ await handle.close?.()
 - `compare_weapp_screenshot`: 面向“截图对比 / diff / baseline / 视觉回归”语义，执行 `weapp-vite compare --json`
 - `run_repo_command`: 执行仓库级命令（`pnpm/node/git/rg`）
 
+### DevTools Runtime Tools
+
+这些工具复用 `weapp-ide-cli` 的 automator 会话能力，面向已经能被微信开发者工具打开的小程序项目：
+
+- `weapp_devtools_connect`: 确认 DevTools automator 会话可用
+- `weapp_devtools_active_page` / `weapp_devtools_page_stack`: 读取当前页面与页面栈
+- `weapp_devtools_route`: 执行 `navigateTo` / `redirectTo` / `reLaunch` / `switchTab` / `navigateBack`
+- `weapp_devtools_capture`: 截取当前小程序视口
+- `weapp_devtools_host_api`: 调用 `wx.*` API
+- `weapp_devtools_console`: 读取 MCP 会话期间捕获的 console/exception 日志
+- `weapp_runtime_find_node` / `weapp_runtime_find_nodes` / `weapp_runtime_wait_node`: 查询和等待页面元素
+- `weapp_runtime_page_state` / `weapp_runtime_update_page_state` / `weapp_runtime_invoke_page`: 操作页面实例
+- `weapp_runtime_tap_node` / `weapp_runtime_input_node`: 操作页面元素
+- `weapp_runtime_component_state` / `weapp_runtime_update_component_state` / `weapp_runtime_invoke_component`: 操作组件实例
+- `weapp_runtime_find_child` / `weapp_runtime_find_children`: 查询组件内部元素
+- `weapp_runtime_node_markup` / `weapp_runtime_node_styles` / `weapp_runtime_node_attrs` / `weapp_runtime_measure_node`: 读取元素结构与渲染信息
+
+建议调用顺序：先 `weapp_devtools_connect`，再 `weapp_devtools_active_page`，之后再执行 `weapp_devtools_capture` 或 `weapp_runtime_*`。
+
 ## 主要 Resources
 
 - `weapp-vite://workspace/catalog`
@@ -64,6 +83,8 @@ await handle.close?.()
 
 - `plan-weapp-vite-change`: 生成 weapp-vite/wevu 改造计划提示词
 - `debug-wevu-runtime`: 生成 wevu runtime 排查提示词
+- `inspect-mini-program-page`: 连接 DevTools 并检查页面渲染状态
+- `recover-mini-program-connection`: 按固定顺序恢复 automator 连接
 
 ## 开发
 

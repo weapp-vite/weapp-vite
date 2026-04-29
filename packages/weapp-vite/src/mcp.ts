@@ -7,6 +7,7 @@ import {
   DEFAULT_MCP_PORT,
   startWeappViteMcpServer as startMcpServer,
 } from '@weapp-vite/mcp'
+import { connectMiniProgram } from 'weapp-ide-cli'
 import logger from './logger'
 
 export {
@@ -72,6 +73,9 @@ export function resolveWeappMcpConfig(config?: boolean | WeappMcpConfig): Resolv
 
 export async function startWeappViteMcpServer(options?: WeappViteMcpServerOptions): Promise<WeappViteMcpServerHandle> {
   return startMcpServer({
+    runtimeHooks: {
+      connectMiniProgram,
+    },
     ...options,
     onReady: options?.onReady ?? ((message) => {
       logger.info(message)

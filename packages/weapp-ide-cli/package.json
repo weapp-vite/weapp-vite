@@ -89,6 +89,7 @@
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/shared": "workspace:^",
+    "@weapp-vite/devtools-runtime": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "cac": "^7.0.0",
     "execa": "9.6.1",

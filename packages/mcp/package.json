@@ -47,6 +47,7 @@
   "publishConfig": {},
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@weapp-vite/devtools-runtime": "workspace:*",
     "zod": "catalog:"
   }
 }

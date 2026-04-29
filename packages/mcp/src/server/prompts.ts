@@ -64,4 +64,62 @@ export function registerServerPrompts(
       ],
     }
   })
+
+  server.registerPrompt('inspect-mini-program-page', {
+    title: 'Inspect Mini Program Page',
+    description: '连接微信开发者工具并检查当前小程序页面的标准流程',
+    argsSchema: {
+      projectPath: z.string().min(1),
+      pagePath: z.string().optional(),
+      focus: z.string().optional(),
+    },
+  }, async ({ projectPath, pagePath, focus }) => {
+    return {
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: [
+              '请按顺序使用 weapp-vite MCP runtime tools 检查小程序页面：',
+              `1. 调用 weapp_devtools_connect，projectPath=${projectPath}`,
+              pagePath ? `2. 调用 weapp_devtools_route 跳转到 ${pagePath}` : '2. 调用 weapp_devtools_active_page 确认当前页面',
+              '3. 调用 weapp_devtools_capture 获取截图',
+              '4. 如需检查结构，优先调用 weapp_runtime_find_node/weapp_runtime_find_nodes，必要时设置 withWxml=true',
+              '5. 调用 weapp_devtools_console 检查 console/exception 日志',
+              focus ? `关注点：${focus}` : '关注点：页面是否正确渲染、是否存在运行时错误。',
+            ].join('\n'),
+          },
+        },
+      ],
+    }
+  })
+
+  server.registerPrompt('recover-mini-program-connection', {
+    title: 'Recover Mini Program Connection',
+    description: '恢复微信开发者工具 automator 连接的标准流程',
+    argsSchema: {
+      projectPath: z.string().min(1),
+      lastError: z.string().optional(),
+    },
+  }, async ({ projectPath, lastError }) => {
+    return {
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: [
+              '请按顺序恢复 weapp-vite MCP runtime 连接：',
+              `1. 调用 weapp_devtools_connect，projectPath=${projectPath}，reconnect=true`,
+              '2. 如果仍失败，检查微信开发者工具是否已开启服务端口与自动化测试能力',
+              '3. 如果是协议超时，关闭多余 DevTools 窗口后只重试一次',
+              '4. 恢复后调用 weapp_devtools_active_page 和 weapp_devtools_console 确认状态',
+              lastError ? `上一次错误：${lastError}` : '上一次错误：未提供。',
+            ].join('\n'),
+          },
+        },
+      ],
+    }
+  })
 }

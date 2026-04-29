@@ -1,4 +1,17 @@
-import type { Element, MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
+import type {
+  AutomatorElement,
+  AutomatorMiniProgram,
+  AutomatorPage,
+  DevtoolsRuntimeSessionOptions,
+  MiniProgramEventMap,
+} from '@weapp-vite/devtools-runtime'
+import {
+  acquireSharedMiniProgram as acquireRuntimeSharedMiniProgram,
+  closeSharedMiniProgram,
+  getSharedMiniProgramSessionCount,
+  releaseSharedMiniProgram,
+  withMiniProgram as withRuntimeMiniProgram,
+} from '@weapp-vite/devtools-runtime'
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import {
@@ -13,31 +26,15 @@ import {
   launchAutomator,
 } from './automator'
 
-export interface MiniProgramEventMap {
-  console: (payload: unknown) => void
-  exception: (payload: unknown) => void
+export type {
+  MiniProgramEventMap,
 }
 
-export type MiniProgramLike = InstanceType<typeof MiniProgram>
-export type MiniProgramPage = InstanceType<typeof Page>
-export type MiniProgramElement = InstanceType<typeof Element> & {
-  input?: (value: string) => Promise<void>
-}
+export type MiniProgramLike = AutomatorMiniProgram
+export type MiniProgramPage = AutomatorPage
+export type MiniProgramElement = AutomatorElement
 
-export interface AutomatorSessionOptions {
-  miniProgram?: MiniProgramLike
-  preferOpenedSession?: boolean
-  projectPath: string
-  sharedSession?: boolean
-  timeout?: number
-}
-
-interface SharedMiniProgramSessionEntry {
-  refs: number
-  session: Promise<MiniProgramLike>
-}
-
-const sharedMiniProgramSessions = new Map<string, SharedMiniProgramSessionEntry>()
+export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {}
 
 function normalizeMiniProgramConnectionError(error: unknown) {
   if (isAutomatorLoginError(error)) {
@@ -80,7 +77,7 @@ function normalizeMiniProgramConnectionError(error: unknown) {
     ))
     logger.warn(i18nText(
       '请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 `wechatwebdevtools cli auto --project ...` 进程后重试。',
-      'Please confirm the current DevTools window is the target project. If you recently ran other e2e or screenshot tasks, close extra DevTools windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
+      'Please confirm the current DevTools window is the target project. If you recently ran other e2e / screenshot tasks, close extra windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
     ))
     return new Error('DEVTOOLS_WS_CONNECT_ERROR')
   }
@@ -132,61 +129,22 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
   }
 }
 
+const runtimeHooks = {
+  connectMiniProgram,
+  normalizeConnectionError: normalizeMiniProgramConnectionError,
+}
+
 /**
  * @description 获取指定项目的共享 automator 会话；若不存在则自动创建。
  */
 export async function acquireSharedMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
-  const existing = sharedMiniProgramSessions.get(options.projectPath)
-  if (existing) {
-    existing.refs += 1
-    return await existing.session
-  }
-
-  const session = connectMiniProgram(options)
-  const entry: SharedMiniProgramSessionEntry = {
-    refs: 1,
-    session,
-  }
-  sharedMiniProgramSessions.set(options.projectPath, entry)
-
-  try {
-    return await session
-  }
-  catch (error) {
-    sharedMiniProgramSessions.delete(options.projectPath)
-    throw error
-  }
+  return await acquireRuntimeSharedMiniProgram(runtimeHooks, options)
 }
 
-/**
- * @description 释放指定项目的共享会话引用；会话对象会继续缓存，直到显式关闭或重置。
- */
-export function releaseSharedMiniProgram(projectPath: string) {
-  const entry = sharedMiniProgramSessions.get(projectPath)
-  if (!entry) {
-    return
-  }
-  entry.refs = Math.max(0, entry.refs - 1)
-}
-
-/**
- * @description 关闭并移除指定项目的共享 automator 会话。
- */
-export async function closeSharedMiniProgram(projectPath: string) {
-  const entry = sharedMiniProgramSessions.get(projectPath)
-  if (!entry) {
-    return
-  }
-  sharedMiniProgramSessions.delete(projectPath)
-  const miniProgram = await entry.session.catch(() => null)
-  miniProgram?.disconnect()
-}
-
-/**
- * @description 获取当前共享会话数量，供测试断言使用。
- */
-export function getSharedMiniProgramSessionCount() {
-  return sharedMiniProgramSessions.size
+export {
+  closeSharedMiniProgram,
+  getSharedMiniProgramSessionCount,
+  releaseSharedMiniProgram,
 }
 
 /**
@@ -196,37 +154,5 @@ export async function withMiniProgram<T>(
   options: AutomatorSessionOptions,
   runner: (miniProgram: MiniProgramLike) => Promise<T>,
 ): Promise<T> {
-  if (options.miniProgram) {
-    return await runner(options.miniProgram)
-  }
-
-  if (options.sharedSession) {
-    const miniProgram = await acquireSharedMiniProgram(options)
-
-    try {
-      return await runner(miniProgram)
-    }
-    catch (error) {
-      await closeSharedMiniProgram(options.projectPath)
-      throw normalizeMiniProgramConnectionError(error)
-    }
-    finally {
-      releaseSharedMiniProgram(options.projectPath)
-    }
-  }
-
-  let miniProgram: MiniProgramLike | null = null
-
-  try {
-    miniProgram = await connectMiniProgram(options)
-    return await runner(miniProgram)
-  }
-  catch (error) {
-    throw normalizeMiniProgramConnectionError(error)
-  }
-  finally {
-    if (miniProgram) {
-      await miniProgram.close()
-    }
-  }
+  return await withRuntimeMiniProgram(runtimeHooks, options, runner)
 }
