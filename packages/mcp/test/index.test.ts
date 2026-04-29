@@ -137,6 +137,11 @@ describe('mcp server registration', () => {
       'take_weapp_screenshot',
       'compare_weapp_screenshot',
       'run_repo_command',
+      'weapp_devtools_connect',
+      'weapp_devtools_active_page',
+      'weapp_devtools_console',
+      'weapp_runtime_find_node',
+      'weapp_runtime_tap_node',
     ]))
   })
 

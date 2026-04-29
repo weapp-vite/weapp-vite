@@ -1979,11 +1979,20 @@ importers:
         specifier: 'catalog:'
         version: 8.0.10(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
+  packages/devtools-runtime:
+    dependencies:
+      '@weapp-vite/miniprogram-automator':
+        specifier: workspace:*
+        version: link:../miniprogram-automator
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
+      '@weapp-vite/devtools-runtime':
+        specifier: workspace:*
+        version: link:../devtools-runtime
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -2045,6 +2054,9 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../../@weapp-core/shared
+      '@weapp-vite/devtools-runtime':
+        specifier: workspace:*
+        version: link:../devtools-runtime
       '@weapp-vite/miniprogram-automator':
         specifier: workspace:*
         version: link:../miniprogram-automator

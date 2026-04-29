@@ -266,10 +266,16 @@ describe('startStreamableHttpServer', () => {
       endpoint: 'my-mcp',
       quiet: true,
       unref: true,
+      runtimeHooks: {
+        connectMiniProgram: async () => null as never,
+      },
     })
 
     expect(handle.transport).toBe('streamable-http')
     expect(mocks.mockCreateWeappViteMcpServer).toHaveBeenCalledWith({
+      runtimeHooks: {
+        connectMiniProgram: expect.any(Function),
+      },
       workspaceRoot: undefined,
     })
     expect(mocks.mockConnect).toHaveBeenCalledTimes(1)

@@ -94,13 +94,14 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
     host = DEFAULT_MCP_HOST,
     port = DEFAULT_MCP_PORT,
     workspaceRoot,
+    runtimeHooks,
     unref = false,
     quiet = false,
     onReady,
   } = options
   const normalizedEndpoint = normalizeEndpoint(endpoint)
   const normalizedPort = normalizePort(port)
-  const { server: mcpServer } = await createWeappViteMcpServer({ workspaceRoot })
+  const { server: mcpServer } = await createWeappViteMcpServer({ runtimeHooks, workspaceRoot })
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   })

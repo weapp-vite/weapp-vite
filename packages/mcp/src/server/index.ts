@@ -1,3 +1,4 @@
+import type { DevtoolsRuntimeHooks } from '@weapp-vite/devtools-runtime'
 import type { ExposedPackageId } from '../constants'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
@@ -5,12 +6,14 @@ import { EXPOSED_PACKAGES, MCP_SERVER_NAME, MCP_SERVER_VERSION } from '../consta
 import { resolveWorkspaceRoot } from '../workspace'
 import { registerServerPrompts } from './prompts'
 import { registerServerResources } from './resources'
+import { registerRuntimeTools } from './runtime'
 import { registerServerTools } from './tools'
 
 const packageIds = Object.keys(EXPOSED_PACKAGES) as ExposedPackageId[]
 const packageIdSchema = z.enum(packageIds as [ExposedPackageId, ...ExposedPackageId[]])
 
 export interface CreateServerOptions {
+  runtimeHooks?: DevtoolsRuntimeHooks
   workspaceRoot?: string
 }
 
@@ -25,6 +28,10 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     workspaceRoot,
     packageIds,
     packageIdSchema,
+  })
+  registerRuntimeTools(server, {
+    runtimeHooks: options?.runtimeHooks,
+    workspaceRoot,
   })
   registerServerPrompts(server, {
     packageIds,

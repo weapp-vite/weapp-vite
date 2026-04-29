@@ -99,6 +99,9 @@ describe('startWeappViteMcpServer', () => {
     expect(forwardedOptions).toMatchObject({
       transport: 'streamable-http',
       port: 4090,
+      runtimeHooks: {
+        connectMiniProgram: expect.any(Function),
+      },
     })
 
     forwardedOptions?.onReady?.('[mcp] ready')
