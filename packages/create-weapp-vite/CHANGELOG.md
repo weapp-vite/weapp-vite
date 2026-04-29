@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.3.14
+
+### Patch Changes
+
+- 🐛 **清理零售模板中的重复 Tailwind 工具类，消除优惠券与评价页面的 `cssConflict` 编辑器提示。** [`b5a731f`](https://github.com/weapp-vite/weapp-vite/commit/b5a731fde8374ad724678bc21777c33fc876e068) by @sonofmagic
+
+- 🐛 **清理模板中的 Tailwind canonical class 与冲突工具类写法，减少新建项目的编辑器诊断噪音。** [`c6cca08`](https://github.com/weapp-vite/weapp-vite/commit/c6cca08b57fc774e4cc7d6182f7ae225616a24fb) by @sonofmagic
+
+- 🐛 **收口零售模板的 Tailwind CSS 4 迁移，清理重复背景工具类并保持新建项目使用 Tailwind 4 配置。** [`296e415`](https://github.com/weapp-vite/weapp-vite/commit/296e415ea55b2aad91b9ff9a6e481b4f6fb68d60) by @sonofmagic
+
+- 🐛 **同步模板中的 Tailwind 渐变方向工具类为 canonical 写法，消除 `suggestCanonicalClasses` 编辑器提示。** [`3da439f`](https://github.com/weapp-vite/weapp-vite/commit/3da439f5207fc42e308925b7d69d3a48163c7a71) by @sonofmagic
+
 ## 2.3.13
 
 ### Patch Changes
