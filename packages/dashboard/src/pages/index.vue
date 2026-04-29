@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DashboardIconFeatureItem } from '../features/dashboard/types'
+import { onBeforeUnmount, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
@@ -10,12 +11,74 @@ import { useDashboardWorkspace } from '../features/dashboard/composables/useDash
 import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
 
 const { commandItems, signals } = useDashboardWorkspace()
+const copiedCommand = ref<string | null>(null)
+const failedCommand = ref<string | null>(null)
+let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
 
 const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.map(item => ({
   iconName: item.iconName,
   title: item.label,
   description: item.caption,
 }))
+
+function clearCopyFeedback() {
+  copiedCommand.value = null
+  failedCommand.value = null
+}
+
+function scheduleCopyFeedbackClear() {
+  if (copyFeedbackTimer) {
+    clearTimeout(copyFeedbackTimer)
+  }
+
+  copyFeedbackTimer = setTimeout(() => {
+    clearCopyFeedback()
+    copyFeedbackTimer = null
+  }, 1800)
+}
+
+function copyTextWithFallback(text: string) {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+
+  if (!copied) {
+    throw new Error('copy command failed')
+  }
+}
+
+async function copyCommand(command: string) {
+  try {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(command)
+    }
+    else {
+      copyTextWithFallback(command)
+    }
+
+    copiedCommand.value = command
+    failedCommand.value = null
+  }
+  catch {
+    copiedCommand.value = null
+    failedCommand.value = command
+  }
+
+  scheduleCopyFeedbackClear()
+}
+
+onBeforeUnmount(() => {
+  if (copyFeedbackTimer) {
+    clearTimeout(copyFeedbackTimer)
+  }
+})
 </script>
 
 <template>
@@ -92,7 +155,7 @@ const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.m
             :key="command.command"
             class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4"
           >
-            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 class="font-medium">
                   {{ command.label }}
@@ -101,9 +164,28 @@ const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.m
                   {{ command.note }}
                 </p>
               </div>
-              <code class="rounded-xl bg-slate-950 px-3 py-2 text-xs text-slate-100 dark:bg-slate-900">
-                {{ command.command }}
-              </code>
+              <div class="flex shrink-0 items-center gap-2">
+                <code class="max-w-full rounded-xl bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100 dark:bg-slate-900 md:max-w-64">
+                  {{ command.command }}
+                </code>
+                <button
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--dashboard-border) bg-(--dashboard-panel) text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
+                  type="button"
+                  :aria-label="`复制命令 ${command.command}`"
+                  :title="copiedCommand === command.command ? '已复制' : failedCommand === command.command ? '复制失败' : '复制命令'"
+                  @click="copyCommand(command.command)"
+                >
+                  <span class="h-4.5 w-4.5">
+                    <DashboardIcon name="metric-copy" />
+                  </span>
+                </button>
+                <span
+                  v-if="copiedCommand === command.command || failedCommand === command.command"
+                  class="w-13 text-xs font-medium text-(--dashboard-accent)"
+                >
+                  {{ copiedCommand === command.command ? '已复制' : '复制失败' }}
+                </span>
+              </div>
             </div>
           </article>
         </div>
