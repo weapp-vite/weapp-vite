@@ -1,0 +1,19 @@
+<view class="page package-page">
+  <view class="package-hero">
+    <view class="package-hero__title">质量分包</view>
+    <view class="package-hero__desc">用于验证普通分包、跨包共享模块和 package file table。</view>
+    <view class="package-hero__size">{{packageSize}}</view>
+  </view>
+
+  <view class="metric-grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <SignalCard label="{{item.label}}" value="{{item.value}}" tone="{{item.tone}}" />
+    </block>
+  </view>
+
+  <view class="section">
+    <block wx:for="{{timeline}}" wx:key="title">
+      <view class="event-row">{{item.title}} · {{item.detail}}</view>
+    </block>
+  </view>
+</view>

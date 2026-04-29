@@ -1,0 +1,22 @@
+{
+  "name": "dashboard-ui-lab",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dedicated weapp-vite dashboard UI validation project",
+  "scripts": {
+    "dev": "wv dev",
+    "dev:ui": "wv dev --ui",
+    "build": "wv build",
+    "build:ui": "wv build --ui",
+    "open": "wv open",
+    "prepare:weapp": "wv prepare",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

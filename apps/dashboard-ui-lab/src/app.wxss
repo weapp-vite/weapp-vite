@@ -1,0 +1,18 @@
+page {
+  min-height: 100vh;
+  color: #172033;
+  background: #eef3f8;
+}
+
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 40rpx 28rpx 56rpx;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}

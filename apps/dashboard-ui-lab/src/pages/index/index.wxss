@@ -1,0 +1,84 @@
+.hero {
+  padding: 36rpx;
+  color: #fff;
+  background: #17324d;
+  border-radius: 24rpx;
+}
+
+.hero__eyebrow {
+  font-size: 22rpx;
+  color: rgb(255 255 255 / 68%);
+  text-transform: uppercase;
+  letter-spacing: 2rpx;
+}
+
+.hero__title {
+  margin-top: 12rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+}
+
+.hero__desc {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 78%);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.route-button {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  align-items: flex-start;
+  padding: 24rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  text-align: left;
+  background: #fff;
+  border-radius: 18rpx;
+}
+
+.route-button text {
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.timeline {
+  display: flex;
+  gap: 18rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 18rpx;
+}
+
+.timeline__time {
+  min-width: 92rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.timeline__title {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.timeline__detail {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #64748b;
+}

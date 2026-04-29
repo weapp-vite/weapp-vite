@@ -1,0 +1,36 @@
+<view class="page home">
+  <view class="hero">
+    <view class="hero__eyebrow">weapp-vite dashboard</view>
+    <view class="hero__title">UI validation lab</view>
+    <view class="hero__desc">用于在 dev:ui 中生成稳定、可观察的 dashboard analyze payload。</view>
+  </view>
+
+  <view class="metric-grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <SignalCard label="{{item.label}}" value="{{item.value}}" tone="{{item.tone}}" />
+    </block>
+  </view>
+
+  <view class="section">
+    <view class="section-title">验证入口</view>
+    <block wx:for="{{routes}}" wx:key="path">
+      <button class="route-button" data-path="{{item.path}}" bind:tap="onNavigate">
+        <view>{{item.label}}</view>
+        <text>{{item.description}}</text>
+      </button>
+    </block>
+  </view>
+
+  <view class="section">
+    <view class="section-title">推荐检查顺序</view>
+    <block wx:for="{{timeline}}" wx:key="title">
+      <view class="timeline">
+        <text class="timeline__time">{{item.time}}</text>
+        <view>
+          <view class="timeline__title">{{item.title}}</view>
+          <view class="timeline__detail">{{item.detail}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

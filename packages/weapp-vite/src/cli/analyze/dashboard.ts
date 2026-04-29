@@ -58,6 +58,8 @@ interface ResolvedDashboardRoot {
 
 interface DashboardPackageManifest {
   weappViteDashboard?: {
+    devConfigFile?: string
+    devRoot?: string
     distDir?: string
   }
 }
@@ -100,6 +102,27 @@ function resolveDashboardDistRoot(packageRoot: string, manifest: DashboardPackag
   }
 }
 
+function resolveDashboardDevRoot(packageRoot: string, manifest: DashboardPackageManifest | undefined): ResolvedDashboardRoot | undefined {
+  const devRoot = manifest?.weappViteDashboard?.devRoot
+  const devConfigFile = manifest?.weappViteDashboard?.devConfigFile
+
+  if (!devRoot || !devConfigFile) {
+    return undefined
+  }
+
+  const root = path.resolve(packageRoot, devRoot)
+  const configFile = path.resolve(root, devConfigFile)
+
+  if (!fs.existsSync(root) || !fs.existsSync(configFile)) {
+    return undefined
+  }
+
+  return {
+    root,
+    configFile,
+  }
+}
+
 function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent, watch?: boolean }) {
   const resolvePaths = options?.cwd && options.cwd !== process.cwd()
     ? [options.cwd, process.cwd()]
@@ -122,6 +145,11 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
   }
 
   if (dashboardPackageRoot) {
+    const devResolved = resolveDashboardDevRoot(dashboardPackageRoot, dashboardManifest)
+    if (devResolved) {
+      return devResolved
+    }
+
     const distResolved = resolveDashboardDistRoot(dashboardPackageRoot, dashboardManifest)
     if (distResolved) {
       return distResolved

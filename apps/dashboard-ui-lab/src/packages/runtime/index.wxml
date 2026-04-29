@@ -1,0 +1,18 @@
+<view class="page runtime-page">
+  <view class="runtime-card">
+    <view class="runtime-card__title">运行分包</view>
+    <view class="runtime-card__desc">用于观察 dashboard 活动流、运行来源和普通分包产物。</view>
+  </view>
+
+  <view class="metric-grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <SignalCard label="{{item.label}}" value="{{item.value}}" tone="{{item.tone}}" />
+    </block>
+  </view>
+
+  <view class="section">
+    <block wx:for="{{routes}}" wx:key="path">
+      <view class="route-row">{{item.label}}</view>
+    </block>
+  </view>
+</view>

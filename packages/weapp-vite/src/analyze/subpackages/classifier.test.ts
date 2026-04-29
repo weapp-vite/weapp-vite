@@ -47,6 +47,31 @@ describe('analyze subpackages classifier', () => {
     })
   })
 
+  it('classifies nested subpackage roots by longest path prefix', () => {
+    const context = {
+      subPackageRoots: new Set(['packages', 'packages/quality', 'packages/quality-pro']),
+      independentRoots: new Set(['packages/quality-pro']),
+    }
+
+    expect(classifyPackage('packages/quality/index.js', 'main', context)).toEqual({
+      id: 'packages/quality',
+      label: '分包 packages/quality',
+      type: 'subPackage',
+    })
+
+    expect(classifyPackage('packages/quality-pro/index.js', 'main', context)).toEqual({
+      id: 'packages/quality-pro',
+      label: '独立分包 packages/quality-pro',
+      type: 'independent',
+    })
+
+    expect(classifyPackage('packages/shared.js', 'main', context)).toEqual({
+      id: 'packages',
+      label: '分包 packages',
+      type: 'subPackage',
+    })
+  })
+
   it('normalizes module id only for absolute non-virtual ids', () => {
     expect(normalizeModuleId('')).toBeUndefined()
     expect(normalizeModuleId('src/index.ts')).toBeUndefined()

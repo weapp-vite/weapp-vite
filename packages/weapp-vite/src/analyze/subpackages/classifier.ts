@@ -47,6 +47,15 @@ function resolvePluginAssetAbsolute(
     : undefined
 }
 
+function resolveSubPackageRoot(fileName: string, context: PackageClassifierContext) {
+  const normalized = path.normalize(fileName)
+  const roots = Array.from(context.subPackageRoots)
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+
+  return roots.find(root => normalized === root || normalized.startsWith(`${root}/`))
+}
+
 export function classifyPackage(
   fileName: string,
   origin: BuildOrigin,
@@ -61,9 +70,8 @@ export function classifyPackage(
     }
   }
 
-  const segments = fileName.split('/')
-  const rootCandidate = segments[0] ?? ''
-  if (rootCandidate && context.subPackageRoots.has(rootCandidate)) {
+  const rootCandidate = resolveSubPackageRoot(fileName, context)
+  if (rootCandidate) {
     const isIndependent = context.independentRoots.has(rootCandidate)
     return {
       id: rootCandidate,
@@ -142,4 +150,5 @@ export function resolveAssetSource(
 export {
   classifyModuleSourceKind,
   resolvePluginAssetAbsolute,
+  resolveSubPackageRoot,
 }

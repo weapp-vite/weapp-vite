@@ -1,0 +1,32 @@
+.runtime-card {
+  padding: 32rpx;
+  color: #fff;
+  background: #0f766e;
+  border-radius: 24rpx;
+}
+
+.runtime-card__title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.runtime-card__desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 82%);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.route-row {
+  padding: 22rpx;
+  font-size: 26rpx;
+  background: #fff;
+  border-radius: 18rpx;
+}

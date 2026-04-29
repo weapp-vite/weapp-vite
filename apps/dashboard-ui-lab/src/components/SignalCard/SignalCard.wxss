@@ -1,0 +1,27 @@
+.signal {
+  padding: 24rpx;
+  background: #fff;
+  border: 1rpx solid rgb(38 73 114 / 10%);
+  border-radius: 18rpx;
+  box-shadow: 0 12rpx 36rpx rgb(38 73 114 / 8%);
+}
+
+.signal--watch {
+  background: #eff6ff;
+}
+
+.signal--risk {
+  background: #fff7ed;
+}
+
+.signal__label {
+  font-size: 24rpx;
+  color: #5f6f86;
+}
+
+.signal__value {
+  margin-top: 12rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #172033;
+}

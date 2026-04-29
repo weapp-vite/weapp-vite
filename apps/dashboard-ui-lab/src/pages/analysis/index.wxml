@@ -1,0 +1,21 @@
+<view class="page analysis">
+  <view class="panel">
+    <view class="panel__title">Analyze payload fixture</view>
+    <view class="panel__desc">这个页面用主包内的共享工具生成数据，用于观察 dashboard 的 Overview、Packages 和 Modules 面板。</view>
+  </view>
+
+  <view class="metric-grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <SignalCard label="{{item.label}}" value="{{item.value}}" tone="{{item.tone}}" />
+    </block>
+  </view>
+
+  <view class="section">
+    <block wx:for="{{summary}}" wx:key="label">
+      <view class="summary-row">
+        <text>{{item.label}}</text>
+        <text>{{item.value}}</text>
+      </view>
+    </block>
+  </view>
+</view>

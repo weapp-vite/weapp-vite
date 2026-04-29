@@ -1,0 +1,4 @@
+<view class="signal signal--{{tone}}">
+  <view class="signal__label">{{label}}</view>
+  <view class="signal__value">{{value}}</view>
+</view>

@@ -1,0 +1,13 @@
+<view class="page independent-page">
+  <view class="independent-card">
+    <view class="independent-card__title">独立分包</view>
+    <view class="independent-card__desc">用于验证 dashboard 对 independent package 的展示，以及 shared 模块复制后的体积线索。</view>
+    <view class="independent-card__size">{{packageSize}}</view>
+  </view>
+
+  <view class="metric-grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <SignalCard label="{{item.label}}" value="{{item.value}}" tone="{{item.tone}}" />
+    </block>
+  </view>
+</view>

@@ -265,6 +265,48 @@ describe('analyze dashboard', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/')
   })
 
+  it('prefers dashboard source root when the local package exposes a dev config', async () => {
+    const server = createMockServer()
+
+    readFileSyncMock.mockImplementation((value: string) => {
+      if (value !== '/mock/dashboard/package.json') {
+        return undefined
+      }
+      return `{
+        "weappViteDashboard": {
+          "devRoot": ".",
+          "devConfigFile": "vite.config.ts",
+          "distDir": "dist"
+        }
+      }`
+    })
+    existsSyncMock.mockImplementation((value: string) => {
+      return value === '/mock/dashboard'
+        || value === '/mock/dashboard/vite.config.ts'
+        || value === '/mock/dashboard/dist'
+        || value === '/mock/dashboard/package.json'
+        ? true
+        : undefined
+    })
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('source'), { watch: true, cwd: '/project' })
+    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
+
+    expect(handle).toBeDefined()
+    expect(createServerArg.root).toBe('/mock/dashboard')
+    expect(createServerArg.configFile).toBe('/mock/dashboard/vite.config.ts')
+
+    await handle?.close()
+    server.httpServer?.emit('close')
+    await handle?.waitForExit()
+  })
+
   it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {
     const server = createMockServer({
       ws: undefined,

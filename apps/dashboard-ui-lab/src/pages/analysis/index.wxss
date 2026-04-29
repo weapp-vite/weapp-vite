@@ -1,0 +1,33 @@
+.panel {
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 24rpx;
+}
+
+.panel__title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.panel__desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 24rpx;
+  font-size: 28rpx;
+  background: #fff;
+  border-radius: 18rpx;
+}

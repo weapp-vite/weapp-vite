@@ -2,7 +2,7 @@
 
 @plugin "@iconify/tailwind4" {
   prefix: icon;
-  icon-sets: from-json(mdi, './node_modules/@iconify-json/mdi/icons.json');
+  icon-sets: from-json(mdi, '../../node_modules/@iconify-json/mdi/icons.json');
 }
 
 @layer base {

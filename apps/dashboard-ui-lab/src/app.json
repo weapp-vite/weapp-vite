@@ -1,0 +1,46 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index",
+    "pages/analysis/index"
+  ],
+  "subpackages": [
+    {
+      "root": "packages/quality",
+      "name": "质量分包",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "packages/runtime",
+      "name": "运行分包",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "packages/independent",
+      "name": "独立分包",
+      "independent": true,
+      "pages": [
+        "index"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/index/index": {
+      "packages": [
+        "packages/quality",
+        "packages/runtime"
+      ],
+      "network": "all"
+    }
+  },
+  "window": {
+    "navigationBarTitleText": "Dashboard UI Lab"
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

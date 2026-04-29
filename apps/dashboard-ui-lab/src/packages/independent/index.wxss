@@ -1,0 +1,30 @@
+.independent-card {
+  padding: 32rpx;
+  color: #422006;
+  background: #ffedd5;
+  border-radius: 24rpx;
+}
+
+.independent-card__title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.independent-card__desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.independent-card__size {
+  margin-top: 18rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
