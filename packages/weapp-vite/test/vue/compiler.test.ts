@@ -302,8 +302,8 @@ describe('Vue Template Compiler', () => {
         '<slot><view>Fallback content</view></slot>',
         'test.vue',
       )
-      expect(result.code).toContain('<slot>')
-      expect(result.code).toContain('Fallback content')
+      expect(result.code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+      expect(result.code).toContain('<block wx:else><view>Fallback content</view></block>')
     })
 
     it('should compile scoped slot provider bindings', () => {

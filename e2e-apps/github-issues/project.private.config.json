@@ -372,6 +372,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-528/index",
+          "pathName": "pages/issue-528/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/index",
           "pathName": "subpackages/item/index",
           "query": "",

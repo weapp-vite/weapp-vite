@@ -636,6 +636,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view>Default</view></Provider>`)
+    expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -656,6 +657,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view><Leaf /></view></Provider>`)
+    expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -740,6 +742,47 @@ describe('compileVueTemplateToWxml', () => {
     expect(componentGenerics?.['scoped-slots-action']).toBeUndefined()
   })
 
+  it('compiles slot fallback content to presence-guarded branches', () => {
+    const template = `
+<slot name="header"><view>Fallback header</view></slot>
+<slot><text>{{ fallbackDefault }}</text></slot>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<slot name="header" /></block><block wx:else><view>Fallback header</view></block>`)
+    expect(code).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+    expect(code).toContain(`<slot /></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
+    expect(code).not.toContain('<slot name="header"><view>Fallback header</view></slot>')
+    expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
+  })
+
+  it('keeps slot fallback branches nested inside v-if chains', () => {
+    const template = `
+<slot v-if="a" name="header"><view>A fallback</view></slot>
+<slot v-else-if="b" name="header"><view>B fallback</view></slot>
+<slot v-else name="header"><view>C fallback</view></slot>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{a}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>A fallback</view></block></block>`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elifAttr}="{{b}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>B fallback</view></block></block>`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>C fallback</view></block></block>`)
+  })
+
   it('warns when component v-slot and template v-slot are mixed, preferring component slot', () => {
     const template = `
 <Child v-slot="{ item }">
@@ -821,7 +864,26 @@ describe('compileVueTemplateToWxml', () => {
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain(`vue-slots="{{[((showHeader) ? 'header' : '')]}}"`)
+    expect(code).not.toContain('vue-slot-flags')
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{showHeader}}"><view slot="header">`)
+  })
+
+  it('keeps repeated conditional slot templates in slot metadata order', () => {
+    const template = `
+<Child>
+  <template #header v-if="showPrimary">
+    <view>Primary</view>
+  </template>
+  <template #header v-if="showSecondary">
+    <view>Secondary</view>
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`vue-slots="{{[((showPrimary) ? 'header' : ''),((showSecondary) ? 'header' : '')]}}"`)
+    expect(code).not.toContain('vue-slot-flags')
   })
 
   it('projects plain named slot single child without synthetic view wrapper when enabled', () => {

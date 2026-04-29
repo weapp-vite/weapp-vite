@@ -230,6 +230,24 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-520 resolver slot default')
   })
 
+  it('issue #528: compiles slot fallback content to conditional wxml branches', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-528/index.wxml')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-528/SlotFallbackCard/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('Issue528SlotFallbackCard class="issue528-card-provided" vue-slots="{{[\'header\',\'default\']}}"')
+    expect(pageWxml).not.toContain('vue-slot-flags')
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(componentWxml).toContain('<slot name="header" /></block><block wx:else><text class="issue528-fallback-header">issue-528 fallback header</text></block>')
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+    expect(componentWxml).toContain('<slot /></block><block wx:else><text class="issue528-fallback-default">{{fallbackDefault}}</text></block>')
+    expect(componentWxml).not.toContain('<slot name="header"><text class="issue528-fallback-header">')
+    expect(componentWxml).not.toContain('<slot><text class="issue528-fallback-default">')
+  })
+
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
     await runBuild()
 
