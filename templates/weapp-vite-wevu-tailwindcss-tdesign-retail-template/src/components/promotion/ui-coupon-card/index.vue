@@ -50,6 +50,13 @@ const CouponType = {
 } as const
 
 const theme = computed(() => (props.status === 'useless' || props.status === 'disabled' ? 'weak' : 'primary'))
+const sealClass = computed(() => {
+  const sealBgClass = props.status === 'useless'
+    ? 'bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/seal-used.png)]'
+    : 'bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-expired.png)]'
+
+  return `wr-coupon__seal seal-${props.status} size-[128rpx] absolute top-0 right-0 bg-size-[100%_100%] ${sealBgClass}`
+})
 
 const {
   mask,
@@ -81,6 +88,7 @@ defineExpose({
   currency,
   status,
   image,
+  sealClass,
 })
 
 defineComponentJson({
@@ -155,7 +163,7 @@ defineComponentJson({
         <slot name="operator" />
       </view>
     </view>
-    <view v-if="status === 'useless' || status === 'disabled'" :class="`wr-coupon__seal seal-${status} size-[128rpx] absolute top-0 right-0 bg-size-[100%_100%] [&_.seal-useless]:bg-[url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/seal-used.png')] [&_.seal-disabled]:bg-[url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-expired.png')]`" />
+    <view v-if="status === 'useless' || status === 'disabled'" :class="sealClass" />
     <view v-if="mask" class="wr-coupon__mask w-[702rpx] h-[182rpx] absolute top-0 left-0 bg-[#ffffff] opacity-50" />
     <view v-if="superposable" class="wr-coupon__tag absolute top-2 right-[-24rpx] text-center w-[106rpx] h-[28rpx] opacity-90 text-[20rpx] leading-[28rpx] text-[#fa4126] [border:0.5px_solid_#fa4126] box-border transform-[rotate(45deg)]">
       可叠加

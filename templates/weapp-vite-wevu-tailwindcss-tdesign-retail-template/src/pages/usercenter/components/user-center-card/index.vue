@@ -46,7 +46,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="user-center-card fixed top-0 left-0 w-full h-[480rpx] bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/template/user-center-bg-v1.png)] bg-cover bg-no-repeat p-[0_24rpx] bg-[url('https://tdesign.gtimg.com/miniprogram/template/retail/template/user-center-bg-v1.png')]">
+  <view class="user-center-card fixed top-0 left-0 w-full h-[480rpx] bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/template/user-center-bg-v1.png)] bg-cover bg-no-repeat p-[0_24rpx]">
     <!-- 未登录的情况 -->
     <block v-if="currAuthStep === AuthStepType.ONE">
       <view class="user-center-card__header mt-[192rpx] mb-[48rpx] h-[96rpx] leading-[48rpx] flex justify-start items-center text-[#333] relative" @tap="gotoUserEditPage">
