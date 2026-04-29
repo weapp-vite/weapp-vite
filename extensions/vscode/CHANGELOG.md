@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.2.5
+
+### Patch Changes
+
+- 🐛 **为 WXML 与 Vue template 中可跳转到样式定义的静态类名增加虚线下划线提示，让可点击的 class 使用位置更明显。** [`c635745`](https://github.com/weapp-vite/weapp-vite/commit/c635745a0c19c3c860680a85c9600e90176fef08) by @sonofmagic
+
+- 🐛 **修复 WXML 模板中 `item.label` 这类 `wx:for` 隐式成员表达式的跳转，并让 VS Code 对 `section-title` 等 kebab 名称按整体 token 处理。** [`cc805b8`](https://github.com/weapp-vite/weapp-vite/commit/cc805b8269c6b2513a62d059795ddfef26a9c9b3) by @sonofmagic
+
 ## 0.2.4
 
 ### Patch Changes

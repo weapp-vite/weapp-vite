@@ -1,5 +1,13 @@
 # @weapp-vite/dashboard
 
+## 6.16.2
+
+### Patch Changes
+
+- 🐛 **增强 dashboard 首页命令面板，支持一键复制常用命令并显示复制结果反馈，方便从工作台直接衔接本地开发、构建和 CLI 联调流程。** [`9171dbc`](https://github.com/weapp-vite/weapp-vite/commit/9171dbccf412795f315f724a9963ae0215790e98) by @sonofmagic
+
+- 🐛 **新增 dashboard UI 本地验证项目，并让 `wv dev --ui` 在仓库开发态优先读取 dashboard 源码入口，方便直接验证首页、分析页、活动流和设计令牌等调试界面能力。** [`b4503ee`](https://github.com/weapp-vite/weapp-vite/commit/b4503ee178e99287be8d6df7bb30dd48bb452313) by @sonofmagic
+
 ## 6.16.1
 
 ## 6.16.0

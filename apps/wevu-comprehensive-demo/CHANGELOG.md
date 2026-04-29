@@ -1,5 +1,12 @@
 # wevu-comprehensive-demo
 
+## 0.0.106
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.16.2`
+
 ## 0.0.105
 
 ### Patch Changes
