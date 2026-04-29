@@ -881,6 +881,9 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
       '<view wx:for="{{ list }}" wx:for-item="product" wx:for-index="idx">',
       '  <view bindtap="handlers.onTap(product, idx)">{{ product.name }} {{ idx }} {{ pageTitle }}</view>',
       '</view>',
+      '<block wx:for="{{ timeline }}">',
+      '  <text>{{ item.time }}</text>',
+      '</block>',
     ].join('\n'),
     mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
@@ -892,6 +895,7 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   const productInterpolationPosition = document.positionAt(documentText.lastIndexOf('product.name') + 2)
   const idxInterpolationPosition = document.positionAt(documentText.lastIndexOf('{{ idx }}') + 3)
   const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+  const implicitItemMemberPosition = document.positionAt(documentText.indexOf('item.time') + 'item.time'.length - 1)
 
   const handlersDefinition = await definitionProvider.provideDefinition(document as any, handlersPosition as any)
   const onTapDefinition = await definitionProvider.provideDefinition(document as any, onTapPosition as any)
@@ -900,6 +904,7 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   const productInterpolationDefinition = await definitionProvider.provideDefinition(document as any, productInterpolationPosition as any)
   const idxInterpolationDefinition = await definitionProvider.provideDefinition(document as any, idxInterpolationPosition as any)
   const pageTitleDefinition = await definitionProvider.provideDefinition(document as any, pageTitlePosition as any)
+  const implicitItemMemberDefinition = await definitionProvider.provideDefinition(document as any, implicitItemMemberPosition as any)
 
   assert.equal(handlersDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(handlersDefinition), 2)
@@ -915,6 +920,8 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   assert.equal(getLocationLine(idxInterpolationDefinition), 0)
   assert.equal(pageTitleDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(pageTitleDefinition), 1)
+  assert.equal(implicitItemMemberDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxml'))
+  assert.equal(getLocationLine(implicitItemMemberDefinition), 3)
 })
 
 it('provides references and rename edits across template and companion script files', async () => {

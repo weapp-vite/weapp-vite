@@ -41,6 +41,8 @@ export interface WxmlScopedIdentifierMatch {
   definitionEnd: number | null
   definitionStart: number | null
   identifier: string
+  navigationEnd?: number
+  navigationStart?: number
 }
 
 export interface WxmlEventHandlerReference {
@@ -238,6 +240,19 @@ function getScriptIdentifierSpanAtOffset(expression: string, expressionStart: nu
     identifier,
     start: expressionStart + tokenStart,
     end: expressionStart + tokenEnd,
+  }
+}
+
+function getImplicitWxForLocalNavigationRange(attribute: WxmlAttributeMatch) {
+  const match = /[$A-Z_a-z][\w$]*/u.exec(attribute.value)
+
+  if (!match || match.index == null) {
+    return null
+  }
+
+  return {
+    end: attribute.valueStart + match.index + match[0].length,
+    start: attribute.valueStart + match.index,
   }
 }
 
@@ -584,20 +599,37 @@ export function getWxmlScopedIdentifierMatch(
     const indexAttribute = attributes.find(attribute => attribute.name === 'wx:for-index')
     const itemIdentifier = itemAttribute?.value.trim() || 'item'
     const indexIdentifier = indexAttribute?.value.trim() || 'index'
+    const implicitNavigationRange = getImplicitWxForLocalNavigationRange(forAttribute)
 
     if (normalizedIdentifier === itemIdentifier) {
+      const navigationRange = itemAttribute ? null : implicitNavigationRange
+
       return {
         definitionEnd: itemAttribute?.valueEnd ?? null,
         definitionStart: itemAttribute?.valueStart ?? null,
         identifier: normalizedIdentifier,
+        ...(navigationRange
+          ? {
+              navigationEnd: navigationRange.end,
+              navigationStart: navigationRange.start,
+            }
+          : {}),
       }
     }
 
     if (normalizedIdentifier === indexIdentifier) {
+      const navigationRange = indexAttribute ? null : implicitNavigationRange
+
       return {
         definitionEnd: indexAttribute?.valueEnd ?? null,
         definitionStart: indexAttribute?.valueStart ?? null,
         identifier: normalizedIdentifier,
+        ...(navigationRange
+          ? {
+              navigationEnd: navigationRange.end,
+              navigationStart: navigationRange.start,
+            }
+          : {}),
       }
     }
   }

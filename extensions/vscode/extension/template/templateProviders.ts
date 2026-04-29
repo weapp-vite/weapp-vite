@@ -65,6 +65,8 @@ interface TemplateIdentifierReference {
   definitionType: 'local' | 'method' | 'prop'
   end: number
   identifier: string
+  navigationEnd?: number
+  navigationStart?: number
   scopeKey: string | null
   start: number
 }
@@ -204,16 +206,23 @@ function getPositionFromSourceText(sourceText: string, offset: number) {
 
 function createScopedIdentifierLocation(
   document: vscode.TextDocument,
-  scopedIdentifierMatch: ReturnType<typeof getWxmlScopedIdentifierMatch>,
+  scopedIdentifierMatch: Pick<TemplateIdentifierReference, 'definitionEnd' | 'definitionStart' | 'navigationEnd' | 'navigationStart'> | ReturnType<typeof getWxmlScopedIdentifierMatch>,
 ) {
-  if (!scopedIdentifierMatch || scopedIdentifierMatch.definitionStart == null || scopedIdentifierMatch.definitionEnd == null) {
+  if (!scopedIdentifierMatch) {
+    return null
+  }
+
+  const start = scopedIdentifierMatch.definitionStart ?? scopedIdentifierMatch.navigationStart
+  const end = scopedIdentifierMatch.definitionEnd ?? scopedIdentifierMatch.navigationEnd
+
+  if (start == null || end == null) {
     return null
   }
 
   const range = createSourceRange(
     document,
-    scopedIdentifierMatch.definitionStart,
-    scopedIdentifierMatch.definitionEnd,
+    start,
+    end,
   )
 
   return range ? new vscode.Location(document.uri, range.start) : null
@@ -239,8 +248,8 @@ function collectExpressionTokenReferences(
     const end = start + identifier.length
     const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier)
     const scopeKey = getScopedReferenceKey(
-      scopedIdentifierMatch?.definitionStart ?? null,
-      scopedIdentifierMatch?.definitionEnd ?? null,
+      scopedIdentifierMatch?.definitionStart ?? scopedIdentifierMatch?.navigationStart ?? null,
+      scopedIdentifierMatch?.definitionEnd ?? scopedIdentifierMatch?.navigationEnd ?? null,
       identifier,
     )
 
@@ -250,7 +259,46 @@ function collectExpressionTokenReferences(
       definitionType: scopedIdentifierMatch ? 'local' : definitionType,
       end,
       identifier,
+      navigationEnd: scopedIdentifierMatch?.navigationEnd,
+      navigationStart: scopedIdentifierMatch?.navigationStart,
       scopeKey,
+      start,
+    })
+  }
+
+  return references
+}
+
+function collectScopedMemberExpressionReferences(
+  sourceText: string,
+  expression: string,
+  expressionStart: number,
+) {
+  const references: TemplateIdentifierReference[] = []
+
+  for (const match of expression.matchAll(/([$A-Za-z_][\w$]*)(?:\.[$A-Za-z_][\w$]*)+/gu)) {
+    const identifier = match[1]
+    const start = expressionStart + (match.index ?? 0)
+    const end = start + match[0].length
+    const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier)
+
+    if (!scopedIdentifierMatch) {
+      continue
+    }
+
+    references.push({
+      definitionEnd: scopedIdentifierMatch.definitionEnd,
+      definitionStart: scopedIdentifierMatch.definitionStart,
+      definitionType: 'local',
+      end,
+      identifier,
+      navigationEnd: scopedIdentifierMatch.navigationEnd,
+      navigationStart: scopedIdentifierMatch.navigationStart,
+      scopeKey: getScopedReferenceKey(
+        scopedIdentifierMatch.definitionStart ?? scopedIdentifierMatch.navigationStart ?? null,
+        scopedIdentifierMatch.definitionEnd ?? scopedIdentifierMatch.navigationEnd ?? null,
+        identifier,
+      ),
       start,
     })
   }
@@ -333,6 +381,47 @@ function createLoopLocalReferenceAtOffset(tagContext: ReturnType<typeof parseWxm
   } satisfies TemplateIdentifierReference
 }
 
+function collectScopedMemberReferences(sourceText: string) {
+  const references: TemplateIdentifierReference[] = []
+  const interpolationPattern = /\{\{([\s\S]*?)\}\}/gu
+  const eventAttributePattern = /(?:bind|catch|capture-bind|capture-catch|mut-bind|@)[\w:-]*\s*=\s*("([^"]*)"|'([^']*)')/gu
+
+  for (const match of sourceText.matchAll(interpolationPattern)) {
+    const fullMatch = match[0]
+    const expression = match[1] ?? ''
+    const matchIndex = match.index ?? -1
+
+    if (matchIndex < 0) {
+      continue
+    }
+
+    references.push(...collectScopedMemberExpressionReferences(
+      sourceText,
+      expression,
+      matchIndex + fullMatch.indexOf(expression),
+    ))
+  }
+
+  for (const match of sourceText.matchAll(eventAttributePattern)) {
+    const rawValue = match[1]
+    const value = match[2] ?? match[3] ?? ''
+    const fullMatch = match[0]
+    const matchIndex = match.index ?? -1
+
+    if (matchIndex < 0) {
+      continue
+    }
+
+    references.push(...collectScopedMemberExpressionReferences(
+      sourceText,
+      value,
+      matchIndex + fullMatch.lastIndexOf(rawValue) + 1,
+    ))
+  }
+
+  return references
+}
+
 function getTemplateIdentifierReferenceAtOffset(
   sourceText: string,
   tagContext: ReturnType<typeof parseWxmlTagContext>,
@@ -347,6 +436,21 @@ function getTemplateIdentifierReferenceAtOffset(
   return collectTemplateIdentifierReferences(sourceText)
     .find(reference => sourceOffset >= reference.start && sourceOffset <= reference.end)
     ?? null
+}
+
+function getTemplateDefinitionReferenceAtOffset(
+  sourceText: string,
+  tagContext: ReturnType<typeof parseWxmlTagContext>,
+  sourceOffset: number,
+) {
+  const memberReference = collectScopedMemberReferences(sourceText)
+    .find(reference => sourceOffset >= reference.start && sourceOffset <= reference.end)
+
+  if (memberReference) {
+    return memberReference
+  }
+
+  return getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
 }
 
 function getTemplateIdentifierReferencesForTarget(
@@ -873,7 +977,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
 
     if (!tagContext.isInsideTag) {
-      const reference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
       if (!reference) {
         return null
@@ -921,7 +1025,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
       && interpolationContext
       && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)
     ) {
-      const reference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
       if (!reference) {
         return null
@@ -935,7 +1039,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isEventAttribute(tagContext.attribute.name)) {
-      const scriptReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const scriptReference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
       if (!scriptReference) {
         return null

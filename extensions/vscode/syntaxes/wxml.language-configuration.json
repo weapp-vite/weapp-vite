@@ -2,6 +2,7 @@
   "comments": {
     "blockComment": ["<!--", "-->"]
   },
+  "wordPattern": "[$A-Za-z_][\\w$]*(?:[.-][$A-Za-z_][\\w$]*)*",
   "brackets": [
     ["<!--", "-->"],
     ["<", ">"],

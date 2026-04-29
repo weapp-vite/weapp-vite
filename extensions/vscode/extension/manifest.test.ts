@@ -11,6 +11,7 @@ const packageJsonPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 const extensionRoot = path.dirname(packageJsonPath)
 const fileIconTheme = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'assets', 'weapp-vite-icon-theme.json'), 'utf8'))
+const wxmlLanguageConfiguration = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'syntaxes', 'wxml.language-configuration.json'), 'utf8'))
 
 it('manifest exposes practical command set', () => {
   assert.equal(packageJson.name, '@weapp-vite/vscode')
@@ -170,6 +171,15 @@ it('manifest contributes wxml language and grammars', () => {
     ),
     true,
   )
+})
+
+it('wxml language word pattern keeps member expressions and kebab classes whole', () => {
+  const pattern = new RegExp(wxmlLanguageConfiguration.wordPattern, 'gu')
+  const source = '{{ item.label }} class="section-title"'
+  const words = [...source.matchAll(pattern)].map(match => match[0])
+
+  assert.equal(words.includes('item.label'), true)
+  assert.equal(words.includes('section-title'), true)
 })
 
 it('manifest contributes pages explorer view', () => {

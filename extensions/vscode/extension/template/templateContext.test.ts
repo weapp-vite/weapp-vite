@@ -126,3 +126,21 @@ it('detects wx:for scoped identifiers from the nearest active loop', () => {
     identifier: 'idx',
   })
 })
+
+it('maps implicit wx:for item navigation to the list expression', () => {
+  const source = [
+    '<block wx:for="{{ timeline }}">',
+    '  <text>{{ item.time }}</text>',
+    '</block>',
+  ].join('\n')
+
+  const itemMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('item.time') + 7, 'item')
+
+  assert.deepEqual(itemMatch, {
+    definitionStart: null,
+    definitionEnd: null,
+    identifier: 'item',
+    navigationStart: source.indexOf('timeline'),
+    navigationEnd: source.indexOf('timeline') + 'timeline'.length,
+  })
+})
