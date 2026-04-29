@@ -1,15 +1,26 @@
 /* eslint-disable ts/no-use-before-define */
+import type { WorkspaceHmrBaseline } from './workspace-hmr/baseline'
+import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { access, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { promisify } from 'node:util'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import {
+  createWorkspaceHmrBaseline,
+  evaluateWorkspaceHmrThresholds,
+  parseThresholdOverrides,
+  renderThresholdMarkdown,
+} from './workspace-hmr/baseline'
+
+const execFile = promisify(execFileCallback)
 
 interface PackageJson {
   name?: string
@@ -26,6 +37,7 @@ interface ProjectCase {
 }
 
 type RuntimePlatform = 'weapp' | 'alipay'
+type WorkspaceHmrRunMode = 'full' | 'smoke' | 'changed-project' | 'nightly-full'
 
 interface ScenarioCase {
   id: string
@@ -97,12 +109,16 @@ const cliPath = path.join(repoRoot, 'packages/weapp-vite/bin/weapp-vite.js')
 const reportRoot = path.resolve(process.env.WORKSPACE_HMR_REPORT_DIR ?? path.join(repoRoot, '.tmp/workspace-hmr'))
 const reportJsonPath = path.join(reportRoot, 'report.json')
 const reportMdPath = path.join(reportRoot, 'report.md')
+const thresholdMdPath = path.join(reportRoot, 'thresholds.md')
+const baselinePath = path.resolve(process.env.WORKSPACE_HMR_BASELINE_PATH ?? path.join(repoRoot, 'scripts/workspace-hmr/templates-baseline.json'))
 const projectFilter = process.env.WORKSPACE_HMR_FILTER?.trim()
 const failOnError = process.env.WORKSPACE_HMR_FAIL_ON_ERROR === '1'
+const writeBaseline = process.env.WORKSPACE_HMR_WRITE_BASELINE === '1'
+const runMode = readRunMode(process.env.WORKSPACE_HMR_MODE)
 const startupTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_TIMEOUT_MS', 90_000)
 const scenarioTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_TIMEOUT_MS', 30_000)
 const settleMs = readPositiveIntegerEnv('WORKSPACE_HMR_SETTLE_MS', 250)
-const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT')
+const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT') ?? (runMode === 'smoke' ? 1 : undefined)
 const ROOTS = ['apps', 'templates', 'e2e-apps'] as const
 const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }> = {
   weapp: { template: 'wxml', style: 'wxss' },
@@ -121,7 +137,7 @@ async function main() {
   await mkdir(reportRoot, { recursive: true })
   await cleanupResidualDevProcesses()
 
-  const projects = (await discoverProjects())
+  const projects = (await selectProjectsForRunMode(await discoverProjects()))
     .filter(project => !projectFilter || project.id.includes(projectFilter))
 
   const results: ProjectResult[] = []
@@ -130,26 +146,124 @@ async function main() {
     results.push(await auditProject(project))
   }
 
+  const generatedAt = new Date().toISOString()
+  let baseline = await readWorkspaceHmrBaseline(baselinePath)
+  if (writeBaseline) {
+    baseline = createWorkspaceHmrBaseline(results, {
+      generatedAt,
+      mode: 'templates-baseline',
+      scope: 'templates',
+      thresholds: baseline?.thresholds,
+    })
+    await mkdir(path.dirname(baselinePath), { recursive: true })
+    await writeFile(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8')
+    process.stdout.write(`[workspace-hmr] baseline -> ${formatReportPath(baselinePath)}\n`)
+  }
+  const thresholdEvaluation = evaluateWorkspaceHmrThresholds(results, {
+    baseline,
+    overrides: parseThresholdOverrides(process.env),
+  })
+  const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation)
   const report = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
+    mode: runMode,
+    baseline: baseline ? formatReportPath(baselinePath) : undefined,
     startupTimeoutMs,
     scenarioTimeoutMs,
     settleMs,
     maxScenariosPerProject,
     projects: results,
+    thresholds: thresholdEvaluation,
   }
   await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
-  await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
+  await writeFile(thresholdMdPath, `${thresholdMarkdown}\n`, 'utf8')
+  await writeFile(reportMdPath, renderMarkdown(results, thresholdMarkdown), 'utf8')
+  await writeGitHubStepSummary(results, thresholdMarkdown)
 
   const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
   process.stdout.write(`\n[workspace-hmr] report.json -> ${formatReportPath(reportJsonPath)}\n`)
   process.stdout.write(`[workspace-hmr] report.md -> ${formatReportPath(reportMdPath)}\n`)
+  process.stdout.write(`[workspace-hmr] thresholds.md -> ${formatReportPath(thresholdMdPath)}\n`)
+  if (thresholdEvaluation.issues.length) {
+    process.stdout.write(`[workspace-hmr] threshold issues: ${thresholdEvaluation.issues.length}\n`)
+  }
   if (failedProjects.length) {
     process.stdout.write(`[workspace-hmr] failed projects: ${failedProjects.map(project => project.id).join(', ')}\n`)
-    if (failOnError) {
-      process.exitCode = 1
+  }
+  if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
+    process.exitCode = 1
+  }
+}
+
+async function selectProjectsForRunMode(projects: ProjectCase[]) {
+  if (runMode === 'smoke') {
+    return selectSmokeProjects(projects)
+  }
+  if (runMode === 'changed-project') {
+    const changedFiles = await readChangedFiles()
+    const projectIds = resolveChangedProjectIds(changedFiles)
+    const selected = projects.filter(project => projectIds.has(project.id))
+    if (selected.length) {
+      process.stdout.write(`[workspace-hmr] changed projects: ${selected.map(project => project.id).join(', ')}\n`)
+      return selected
+    }
+    process.stdout.write('[workspace-hmr] no changed runnable projects detected; falling back to smoke templates\n')
+    return selectSmokeProjects(projects)
+  }
+  return projects
+}
+
+function selectSmokeProjects(projects: ProjectCase[]) {
+  return projects.filter(project => project.kind === 'templates')
+}
+
+async function readChangedFiles() {
+  const explicit = process.env.WORKSPACE_HMR_CHANGED_FILES
+  if (explicit) {
+    return splitChangedFiles(explicit)
+  }
+
+  const refs = [
+    process.env.WORKSPACE_HMR_BASE_REF,
+    process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : undefined,
+    process.env.GITHUB_BASE_REF,
+    'origin/main',
+    'main',
+    'HEAD~1',
+  ].filter((value): value is string => Boolean(value))
+
+  for (const ref of refs) {
+    for (const range of [`${ref}...HEAD`, `${ref}..HEAD`]) {
+      try {
+        const { stdout } = await execFile('git', ['diff', '--name-only', range], {
+          cwd: repoRoot,
+          maxBuffer: 1024 * 1024,
+        })
+        const changedFiles = splitChangedFiles(stdout)
+        if (changedFiles.length) {
+          process.stdout.write(`[workspace-hmr] changed files from ${range}: ${changedFiles.length}\n`)
+          return changedFiles
+        }
+      }
+      catch {}
     }
   }
+  return []
+}
+
+function splitChangedFiles(raw: string) {
+  return raw.split(/[\n,]+/).map(file => normalizePath(file.trim())).filter(Boolean)
+}
+
+function resolveChangedProjectIds(changedFiles: string[]) {
+  const projectIds = new Set<string>()
+  for (const file of changedFiles) {
+    const [root, name] = file.split('/')
+    if ((root === 'apps' || root === 'templates' || root === 'e2e-apps') && name) {
+      projectIds.add(`${root}/${name}`)
+    }
+  }
+  return projectIds
 }
 
 async function discoverProjects(): Promise<ProjectCase[]> {
@@ -822,13 +936,53 @@ function readOptionalPositiveIntegerEnv(name: string) {
   return value
 }
 
-function renderMarkdown(results: ProjectResult[]) {
+function readRunMode(raw: string | undefined): WorkspaceHmrRunMode {
+  if (!raw) {
+    return 'full'
+  }
+  if (raw === 'full' || raw === 'smoke' || raw === 'changed-project' || raw === 'nightly-full') {
+    return raw
+  }
+  throw new Error(`Invalid WORKSPACE_HMR_MODE: ${raw}`)
+}
+
+async function readWorkspaceHmrBaseline(filePath: string): Promise<WorkspaceHmrBaseline | undefined> {
+  if (!(await pathExists(filePath))) {
+    return undefined
+  }
+  return JSON.parse(await readFile(filePath, 'utf8')) as WorkspaceHmrBaseline
+}
+
+async function writeGitHubStepSummary(results: ProjectResult[], thresholdMarkdown: string) {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY
+  if (!summaryPath) {
+    return
+  }
+  const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
+  const lines = [
+    '## Workspace HMR Audit',
+    '',
+    `- mode: ${runMode}`,
+    `- projects: ${results.length}`,
+    `- failures: ${failedProjects.length}`,
+    `- report: ${formatReportPath(reportMdPath)}`,
+    '',
+    thresholdMarkdown,
+    '',
+  ]
+  await appendFile(summaryPath, `${lines.join('\n')}\n`, 'utf8')
+}
+
+function renderMarkdown(results: ProjectResult[], thresholdMarkdown: string) {
   const lines = [
     '# Workspace HMR Audit',
     '',
+    `- mode: ${runMode}`,
     `- generated projects: ${results.length}`,
+    `- baseline: ${pathExistsSyncLike(baselinePath) ? formatReportPath(baselinePath) : '-'}`,
     `- startup timeout: ${startupTimeoutMs}ms`,
     `- scenario timeout: ${scenarioTimeoutMs}ms`,
+    `- max scenarios per project: ${maxScenariosPerProject ?? '-'}`,
     '',
     '| project | platform | startup(ms) | scenarios | failures |',
     '| --- | --- | ---: | ---: | --- |',
@@ -868,7 +1022,14 @@ function renderMarkdown(results: ProjectResult[]) {
     }
     lines.push('')
   }
+  lines.push(thresholdMarkdown.trimEnd(), '')
   return `${lines.join('\n')}\n`
 }
 
-await main()
+function isDirectRun() {
+  return process.argv[1] != null && import.meta.url === pathToFileURL(process.argv[1]).href
+}
+
+if (isDirectRun()) {
+  await main()
+}

@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "scope": "templates",
+  "generatedAt": "2026-04-29T01:44:40.651Z",
+  "mode": "templates-baseline",
+  "thresholds": {
+    "maxStartupMs": 15000,
+    "maxScenarioMs": 5000,
+    "maxScenarioP95Ms": 5000,
+    "maxImpactFiles": 12,
+    "maxDirtyCount": 12,
+    "maxPendingCount": 12,
+    "maxEmittedCount": 12,
+    "maxRegressionMs": 1000,
+    "maxRegressionRatio": 0.75,
+    "maxImpactFileDelta": 2,
+    "maxDirtyDelta": 2,
+    "maxPendingDelta": 2,
+    "maxEmittedDelta": 2
+  },
+  "projects": {
+    "templates/weapp-vite-lib-template": {
+      "startupMs": 1256,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 514,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "native-script": {
+          "totalMs": 509,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 514,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-plugin-template": {
+      "startupMs": 753,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 506,
+          "dirtyCount": 2,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-script": {
+          "totalMs": 506,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 505,
+          "dirtyCount": 2,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-tailwindcss-tdesign-template": {
+      "startupMs": 3265,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 1008,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "native-script": {
+          "totalMs": 757,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 758,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-tailwindcss-template": {
+      "startupMs": 2760,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 1017,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "native-script": {
+          "totalMs": 760,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 758,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-tailwindcss-vant-template": {
+      "startupMs": 3014,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 757,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "native-script": {
+          "totalMs": 760,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 1011,
+          "dirtyCount": 1,
+          "pendingCount": 0,
+          "emittedCount": 0,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-template": {
+      "startupMs": 1003,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 508,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "native-script": {
+          "totalMs": 511,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 508,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template": {
+      "startupMs": 5774,
+      "scenarios": {
+        "vue-template": {
+          "totalMs": 3055,
+          "dirtyCount": 1,
+          "pendingCount": 74,
+          "emittedCount": 74,
+          "impactFiles": 1
+        },
+        "vue-script": {
+          "totalMs": 3049,
+          "dirtyCount": 1,
+          "pendingCount": 74,
+          "emittedCount": 74,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-wevu-tailwindcss-tdesign-template": {
+      "startupMs": 3769,
+      "scenarios": {
+        "vue-template": {
+          "totalMs": 1785,
+          "dirtyCount": 1,
+          "pendingCount": 27,
+          "emittedCount": 27,
+          "impactFiles": 1
+        },
+        "vue-script": {
+          "totalMs": 1780,
+          "dirtyCount": 1,
+          "pendingCount": 27,
+          "emittedCount": 27,
+          "impactFiles": 1
+        }
+      }
+    },
+    "templates/weapp-vite-wevu-template": {
+      "startupMs": 1254,
+      "scenarios": {
+        "vue-template": {
+          "totalMs": 508,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 2
+        },
+        "vue-script": {
+          "totalMs": 510,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-style": {
+          "totalMs": 512,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    }
+  }
+}
