@@ -211,7 +211,7 @@
     "debounce": "^3.0.0",
     "debug": "catalog:",
     "defu": "^6.1.7",
-    "es-toolkit": "^1.46.0",
+    "es-toolkit": "^1.46.1",
     "esbuild": "catalog:",
     "eslint": "catalog:",
     "esrap": "^2.2.5",
