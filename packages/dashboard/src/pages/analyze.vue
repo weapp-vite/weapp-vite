@@ -25,7 +25,7 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
-import { formatDuration } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
 import { formatRuntimeSourceSummary } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
