@@ -105,6 +105,34 @@ jobs:
       install_playwright: true
     secrets: inherit
 
+  workspace-hmr-pr:
+    if: github.event_name != 'schedule'
+    name: Workspace HMR Changed Projects (Node 20)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '20'
+      timeout_minutes: 60
+      fetch_depth: 0
+      build_command: pnpm build:pkgs:ci
+      main_command: pnpm audit:hmr:changed
+      increase_ulimit: true
+    secrets: inherit
+
+  workspace-hmr-nightly:
+    if: github.event_name == 'schedule'
+    name: Workspace HMR Nightly Full (Node 20)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '20'
+      timeout_minutes: 120
+      fetch_depth: 0
+      build_command: pnpm build:pkgs:ci
+      main_command: pnpm audit:hmr:nightly
+      increase_ulimit: true
+    secrets: inherit
+
   web-e2e-baseline-full:
     if: github.event_name == 'schedule'
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
