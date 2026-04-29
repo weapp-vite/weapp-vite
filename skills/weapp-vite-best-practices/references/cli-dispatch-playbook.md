@@ -33,6 +33,9 @@ else {
 ## 细节
 
 - `weapp-vite ide <args...>` 保持强制 passthrough 命名空间。
+- 但 `weapp-vite ide logs` 是 `weapp-vite` 原生日志桥接命令。
+- `close` 是 `weapp-vite` 原生命令，用于关闭微信开发者工具。
+- `mcp init|print|doctor` 是 `weapp-vite` 原生命令，用于管理 AI 客户端配置。
 - `help <cmd>`：
   - native command：保留 native help
   - ide command：转发给 `weapp-ide-cli`

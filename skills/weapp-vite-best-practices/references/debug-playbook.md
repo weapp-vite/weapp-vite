@@ -23,3 +23,9 @@
 
 - 确认 `sharedStrategy` 与 overrides
 - 先看 analyze 输出，再决定是否加更多 override
+
+### HMR 慢或热更新不稳定
+
+- 先看 `weapp.hmr.sharedChunks` 与 `touchAppWxss`
+- 临时设置 `weapp.hmr.logLevel: 'concise' | 'verbose'`
+- 需要结构化复盘时打开 `weapp.hmr.profileJson`

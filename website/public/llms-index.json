@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-13T12:10:33.376Z",
+  "generatedAt": "2026-04-29T14:34:12.662Z",
   "site": "https://vite.icebreaker.top",
-  "count": 259,
+  "count": 260,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -146,7 +146,7 @@
         "layout: section",
         "案例 2"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-25",
       "source": "blog/drafts/weapp-vite-rethinking-slidev-detailed.md"
     },
     {
@@ -411,9 +411,10 @@
         "优秀案例展示",
         "xiaomusic",
         "MBTI性格测试工具",
-        "草莓拼豆"
+        "草莓拼豆",
+        "早睡搭子小程序：按时睡教"
       ],
-      "updatedAt": "2026-03-24",
+      "updatedAt": "2026-04-22",
       "source": "community/showcase.md"
     },
     {
@@ -536,7 +537,7 @@
     {
       "id": "doc-e18a5cc790",
       "title": "开发态 HMR 配置",
-      "summary": "说明 weapp.hmr.sharedChunks 与 touchAppWxss 的默认行为、适用场景和取舍。",
+      "summary": "说明 weapp.hmr.sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。",
       "url": "/config/hmr",
       "canonical": "https://vite.icebreaker.top/config/hmr",
       "keywords": [
@@ -545,15 +546,19 @@
         "hmr",
         "sharedchunks",
         "touchappwxss",
+        "loglevel",
+        "profilejson",
         "开发态"
       ],
       "headings": [
         "开发态 HMR 配置 {#hmr-config}",
         "weapp.hmr.sharedChunks {#weapp-hmr-sharedchunks}",
         "weapp.hmr.touchAppWxss {#weapp-hmr-touchappwxss}",
+        "weapp.hmr.logLevel {#weapp-hmr-loglevel}",
+        "weapp.hmr.profileJson {#weapp-hmr-profilejson}",
         "关联阅读"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-29",
       "source": "config/hmr.md"
     },
     {
@@ -586,7 +591,7 @@
         "配置改了但编辑器没提示",
         "不知道一个字段到底归谁管"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-04-29",
       "source": "config/index.md"
     },
     {
@@ -792,7 +797,7 @@
         "weapp.mcp {#weapp-mcp}",
         "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-04-29",
       "source": "config/shared.md"
     },
     {
@@ -857,7 +862,7 @@
         "常见问题",
         "为什么改了配置后编辑器还没提示"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "config/typescript.md"
     },
     {
@@ -881,7 +886,7 @@
         "weapp.vue.template {#weapp-vue-template}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-04-09",
+      "updatedAt": "2026-04-27",
       "source": "config/vue.md"
     },
     {
@@ -1176,7 +1181,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-04-07",
+      "updatedAt": "2026-04-29",
       "source": "guide/ai.md"
     },
     {
@@ -1200,7 +1205,7 @@
         "JSON / JSONC 别名",
         "常见问题排查"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/alias.md"
     },
     {
@@ -1287,7 +1292,7 @@
         "写入 app.json 的方式",
         "常见问题"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/auto-routes.md"
     },
     {
@@ -1346,12 +1351,12 @@
         "2) build",
         "3) analyze",
         "4) open",
-        "5) ide logs",
-        "6) npm（含别名）",
-        "7) generate / g",
-        "8) init"
+        "5) close",
+        "6) ide logs",
+        "7) ide setup",
+        "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-29",
       "source": "guide/cli.md"
     },
     {
@@ -1606,7 +1611,7 @@
         "默认能力速查",
         "相关文档"
       ],
-      "updatedAt": "2026-04-12",
+      "updatedAt": "2026-04-15",
       "source": "guide/directory-structure/index.md"
     },
     {
@@ -1836,26 +1841,26 @@
     {
       "id": "doc-5ee614913d",
       "title": "vite.config.ts",
-      "summary": "Weapp-vite 目录结构能力的总开关，负责定义 srcRoot、自动路由、分包、自动导入组件等行为。",
+      "summary": "Weapp-vite 配置入口文件，负责定义 srcRoot、自动路由、分包、自动导入组件等行为。",
       "url": "/guide/directory-structure/vite-config",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/vite-config",
       "keywords": [
         "vite.config.ts",
+        "weapp-vite.config.ts",
         "weapp 配置",
         "自动路由",
         "目录结构",
+        "weapp-vite",
         "配置",
-        "guide",
-        "directory",
-        "structure"
+        "guide"
       ],
       "headings": [
-        "vite.config.ts",
+        "vite.config.ts / weapp-vite.config.ts",
         "它决定什么",
         "最小示例",
         "什么时候先看它"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/directory-structure/vite-config.md"
     },
     {
@@ -1965,7 +1970,7 @@
         "1. 先准备一个原生项目",
         "2. 接入 weapp-vite"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-19",
       "source": "guide/index.md"
     },
     {
@@ -2051,7 +2056,7 @@
         "5.1 优先级",
         "6. 运行时怎么切换 layout"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/layouts.md"
     },
     {
@@ -2109,13 +2114,13 @@
         "2. 初始化必需文件",
         "package.json",
         "tsconfig",
-        "vite.config.ts",
+        "vite.config.ts / weapp-vite.config.ts",
         "项目配置",
         "3. 调整目录",
         "4. 验证运行",
         "5. 可选增强"
       ],
-      "updatedAt": "2026-04-12",
+      "updatedAt": "2026-04-15",
       "source": "guide/manual-integration.md"
     },
     {
@@ -2196,7 +2201,7 @@
         "怎么选（建议）",
         "手动构建"
       ],
-      "updatedAt": "2026-04-10",
+      "updatedAt": "2026-04-15",
       "source": "guide/npm.md"
     },
     {
@@ -2228,7 +2233,7 @@
         "插件 WXSS 没有生成？",
         "附加功能是否生效？"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/plugin.md"
     },
     {
@@ -2287,7 +2292,7 @@
         "调试建议",
         "分析产物布局"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "guide/subpackage.md"
     },
     {
@@ -2320,6 +2325,36 @@
       ],
       "updatedAt": "2026-03-10",
       "source": "guide/vite-plugin-host.md"
+    },
+    {
+      "id": "doc-efba27915d",
+      "title": "VS Code 扩展",
+      "summary": "为 weapp-vite 项目安装官方 VS Code 扩展，获得命令入口、页面树、生成器、路由维护、配置提示与 WXML 编辑器增强。",
+      "url": "/guide/vscode-extension",
+      "canonical": "https://vite.icebreaker.top/guide/vscode-extension",
+      "keywords": [
+        "weapp-vite",
+        "guide",
+        "vscode",
+        "extension",
+        "VS Code 扩展",
+        "编辑器增强",
+        "vs",
+        "code"
+      ],
+      "headings": [
+        "VS Code 扩展",
+        "安装",
+        "主要能力",
+        "常用场景",
+        "新建页面",
+        "修复页面声明缺失",
+        "从 route 跳回源码",
+        "常见说明",
+        "相关文档"
+      ],
+      "updatedAt": "2026-04-19",
+      "source": "guide/vscode-extension.md"
     },
     {
       "id": "doc-eb961e908c",
@@ -2684,7 +2719,7 @@
         "最小配置检查清单",
         "新用户建议"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-15",
       "source": "handbook/env-and-config.md"
     },
     {
@@ -2896,7 +2931,7 @@
         "4. 忽略项目根目录的 AI / 工具文件",
         "什么时候应该运行 wv prepare"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-15",
       "source": "handbook/project-structure.md"
     },
     {
@@ -3626,7 +3661,7 @@
         "初始化后会做什么",
         "与主文档的关系"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-22",
       "source": "packages/create-weapp-vite.md"
     },
     {
@@ -3666,7 +3701,8 @@
         "mcp",
         "@weapp-vite/mcp",
         "ai",
-        "sdk"
+        "sdk",
+        "运行时"
       ],
       "headings": [
         "@weapp-vite/mcp",
@@ -3676,13 +3712,13 @@
         "启动方式",
         "主要能力",
         "Tools",
+        "DevTools Runtime Tools",
+        "Runtime Inspection Tools",
         "Resources",
         "Prompts",
-        "AI 友好的截图工具",
-        "take_weapp_screenshot 输入参数",
-        "compare_weapp_screenshot 输入参数"
+        "AI 友好的截图工具"
       ],
-      "updatedAt": "2026-04-07",
+      "updatedAt": "2026-04-29",
       "source": "packages/mcp.md"
     },
     {
@@ -5572,9 +5608,9 @@
         "3) config 子命令",
         "4) 支付宝 minidev 转发",
         "5) 程序化命令目录导出",
-        "语言切换"
+        "6) opened-session helper"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-22",
       "source": "packages/weapp-ide-cli.md"
     },
     {
@@ -6286,7 +6322,7 @@
         "阶段 3：收口（重点是“可持续”）",
         "原生到 Vue SFC 映射表（高频）"
       ],
-      "updatedAt": "2026-04-09",
+      "updatedAt": "2026-04-14",
       "source": "wevu/migration/from-native-to-vue-sfc.md"
     },
     {

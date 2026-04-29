@@ -135,7 +135,20 @@ wv open [root]
 - 当目标平台为 `weapp` 时，`wv open` 会先复用 `weapp-ide-cli` 的底层能力，自动尝试预热微信开发者工具安全设置。
 - 若你通过 `weapp config set autoTrustProject true` 开启了默认项目信任，未显式传 `--trust-project` 时也会按该策略执行。
 
-### 5) `ide logs`
+### 5) `close`
+
+关闭微信开发者工具。
+
+```bash
+wv close
+```
+
+说明：
+
+- 这是 `weapp-vite` 原生命令，不会透传到 `weapp-ide-cli`。
+- 适合在自动化或本地排障后清理 DevTools 会话。
+
+### 6) `ide logs`
 
 持续监听微信开发者工具里的小程序日志，并转发到当前终端。
 
@@ -165,7 +178,7 @@ wv ide logs --open
 wv ide logs ./dist/dev -p weapp
 ```
 
-### 6) `ide setup`
+### 7) `ide setup`
 
 只预热微信开发者工具本地配置，不立即打开 IDE。
 
@@ -185,7 +198,7 @@ wv ide setup .
 wv ide setup ./dist/dev
 ```
 
-### 7) `ide info` / `ide test-accounts` / `ide ticket*`
+### 8) `ide info` / `ide test-accounts` / `ide ticket*`
 
 读取当前已打开 DevTools 会话的信息，优先复用已打开的 automator 会话。
 
@@ -223,7 +236,7 @@ wv ide ticket:set --ticket your-ticket
 wv ide ticket:refresh
 ```
 
-### 8) `npm`（含别名）
+### 9) `npm`（含别名）
 
 调用 IDE 的 npm 构建能力。
 
@@ -233,7 +246,7 @@ wv build:npm
 wv build-npm
 ```
 
-### 9) `generate` / `g`
+### 10) `generate` / `g`
 
 生成 app / page / component 文件骨架。
 
@@ -250,7 +263,7 @@ wv g [filepath]
 | `-p, --page`        | 按 page 模板生成 |
 | `-n, --name <name>` | 指定文件名       |
 
-### 10) `init`
+### 11) `init`
 
 初始化项目配置。
 
@@ -258,7 +271,7 @@ wv g [filepath]
 wv init
 ```
 
-### 11) `prepare`
+### 12) `prepare`
 
 预生成 `.weapp-vite` 下的支持文件，包括托管 `tsconfig`、自动路由类型、自动导入组件清单与类型等。
 
@@ -272,33 +285,48 @@ wv prepare [root]
 - 老项目尚未跑过 `dev/build`，但希望编辑器先拿到类型文件；
 - 团队希望把自动路由、自动导入组件相关产物纳入显式预热流程。
 
-### 12) `mcp`
+### 13) `mcp`
 
-启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
+启动 `weapp-vite` MCP 服务，或管理 AI 客户端的 MCP 配置。
 
 ```bash
 wv mcp
+wv mcp init codex
+wv mcp print claude-code
+wv mcp doctor cursor
 ```
 
 参数：
 
-| 参数                      | 说明                                                   |
-| ------------------------- | ------------------------------------------------------ |
-| `--transport <type>`      | 传输类型：`stdio` \| `streamable-http`（默认 `stdio`） |
-| `--host <host>`           | HTTP 模式监听地址                                      |
-| `--port <port>`           | HTTP 模式端口                                          |
-| `--endpoint <path>`       | HTTP 模式 endpoint（默认 `/mcp`）                      |
-| `--unref`                 | HTTP 模式下 `unref` server（不阻塞进程退出）           |
-| `--workspace-root <path>` | 指定 workspace 根目录（默认从当前目录自动向上定位）    |
+| 参数                      | 说明                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `--transport <type>`      | 服务端支持 `stdio` / `streamable-http`；客户端配置支持 `command` / `http` 语义别名 |
+| `--host <host>`           | HTTP 模式监听地址                                                                  |
+| `--port <port>`           | HTTP 模式端口                                                                      |
+| `--endpoint <path>`       | HTTP 模式 endpoint（默认 `/mcp`）                                                  |
+| `--unref`                 | HTTP 模式下 `unref` server（不阻塞进程退出）                                       |
+| `--url <url>`             | 为 `mcp init/print --transport http` 显式指定 HTTP MCP 地址                        |
+| `--workspace-root <path>` | 指定 workspace 根目录（默认当前工作目录）                                          |
+| `-y, --yes`               | `mcp init` 写入配置时跳过确认                                                      |
 
 示例：
 
 ```bash
 wv mcp
 wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp print codex
+wv mcp init codex -y
+wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp
+wv mcp doctor codex
 ```
 
-不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
+子命令说明：
+
+- `mcp init <codex|claude-code|cursor>`：生成并写入客户端配置。
+- `mcp print <codex|claude-code|cursor>`：只打印配置预览，不写入。
+- `mcp doctor <codex|claude-code|cursor>`：检查客户端配置是否可用。
+
+不在仓库目录执行时，可选追加 `--workspace-root <repo-root>`。
 
 ## `weapp-ide-cli` 透传规则
 
@@ -309,6 +337,7 @@ wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 - `dev`
 - `serve`
 - `build`
+- `close`
 - `analyze`
 - `init`
 - `open`
@@ -412,38 +441,29 @@ wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline 
 ```bash
 # 小程序开发
 wv dev -p weapp
-wv dev -p weapp
 
 # Web 开发（指定 host）
-wv dev -p h5 --host 0.0.0.0
 wv dev -p h5 --host 0.0.0.0
 
 # 小程序生产构建（不压缩 + 产出 sourcemap）
 wv build -p weapp --minify false --sourcemap
-wv build -p weapp --minify false --sourcemap
 
 # 输出分析 JSON 到文件
-wv analyze -p weapp --output ./reports/analyze.json
 wv analyze -p weapp --output ./reports/analyze.json
 
 # 预生成 .weapp-vite 支持文件
 wv prepare
-wv prepare
 
 # 持续监听 DevTools console
-wv ide logs --open
 wv ide logs --open
 
 # 小程序截图采集
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
-wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 
 # 小程序截图对比
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
-wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 
 # 透传微信预览命令
-wv preview --project ./dist -q terminal
 wv preview --project ./dist -q terminal
 
 # 清理微信开发者工具缓存

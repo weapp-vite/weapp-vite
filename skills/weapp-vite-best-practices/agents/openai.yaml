@@ -3,7 +3,7 @@ interface:
   short_description: weapp-vite 项目配置、CLI 透传、AI 合约、分包与构建调优
   default_prompt: >-
     当任务主轴是 `weapp-vite` 项目的工程架构、`vite.config.ts` 的 `weapp` 配置、
-    `wv` / `weapp-vite` CLI、`weapp-ide-cli` 透传边界、`preview/upload/open/config`、
+    `wv` / `weapp-vite` CLI、`weapp-ide-cli` 透传边界、`preview/upload/config`、
     `dist/docs`、自动路由、分包、chunk、MCP、Web runtime、lib mode、worker，
     或下游 app/template 的验证策略时，使用
     $weapp-vite-best-practices。优先读取项目根 `AGENTS.md` 与本地

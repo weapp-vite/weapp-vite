@@ -5,8 +5,8 @@ interface:
     当任务主轴是根据当前实现同步 website、docs、README、skills、AI 指南、
     `dist/docs`、脚手架 `AGENTS.md`，或修复这些公开入口之间的内容漂移时，
     使用 $docs-and-website-sync。先核对真实源码、CLI、类型定义与生成脚本，
-    再更新文档入口；涉及 AI 能力时，明确 `wv prepare`、`wv screenshot`、
-    `wv compare`、`wv ide logs --open` 与 MCP 的最新口径。
+    再更新文档入口；涉及 AI 能力时，明确 `wv prepare`、`wv mcp init|print|doctor`、
+    `wv screenshot`、`wv compare`、`wv ide logs --open` 与 MCP 的最新口径。
 
 policy:
   allow_implicit_invocation: true

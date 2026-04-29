@@ -33,7 +33,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
    - `dist/docs`
    - 脚手架生成 `AGENTS.md`
    - AI skills 安装行为
-   - `prepare` / `mcp` / `forwardConsole`
+   - `prepare` / `mcp init|print|doctor` / `forwardConsole`
    - `wv screenshot` / `wv compare` / `wv ide logs`
    - `web` runtime / `lib` mode
 3. 若 release 涉及 `weapp-vite`、`wevu` 或 `templates/*`，默认联动补 `create-weapp-vite` bump。

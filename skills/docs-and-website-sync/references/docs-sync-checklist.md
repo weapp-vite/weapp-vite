@@ -45,7 +45,7 @@
 - 更新 `website/guide/ai.md`
 - 更新 `website/packages/mcp.md`
 - 刷新 AI 学习页里的命令示例
-- 对齐 `wv prepare`、`wv screenshot`、`wv compare`、`wv ide logs --open`
+- 对齐 `wv prepare`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
 
 ### Website 构建后
 

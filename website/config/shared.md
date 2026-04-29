@@ -117,7 +117,7 @@ export default defineConfig({
 
 ## `weapp.appPrelude` {#weapp-appprelude}
 
-- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; webRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] }; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] } }`
+- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; webRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; networkDefaults?: MiniProgramNetworkDefaults }; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; networkDefaults?: MiniProgramNetworkDefaults } }`
 - **默认值**：`{ mode: 'require' }`
 
 用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
@@ -141,6 +141,7 @@ export default defineConfig({
 - `mode: 'require'`：默认模式。按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
 - `webRuntime`：在 `appPrelude` 时机安装 Web Runtime 全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
 - `requestRuntime`：旧别名，已废弃，请迁移到 `webRuntime`
+- `networkDefaults`：传给 Web Runtime 网络兼容层的宿主默认参数，显式调用时传入的 `miniProgram` / `miniprogram` 参数优先级更高
 
 默认 `mode: 'require'` 下，构建产物通常会看到两类额外文件：
 
@@ -156,11 +157,39 @@ export default defineConfig({
         enabled: true,
         targets: ['fetch', 'Headers', 'Request', 'Response'],
         dependencies: [/^axios$/, /^graphql-request$/],
+        networkDefaults: {
+          request: {
+            timeout: 10000,
+          },
+          socket: {
+            timeout: 10000,
+          },
+        },
       },
     },
   },
 })
 ```
+
+可用的 `targets` 包括：
+
+- `fetch`
+- `Headers`
+- `Request`
+- `Response`
+- `TextEncoder`
+- `TextDecoder`
+- `AbortController`
+- `AbortSignal`
+- `XMLHttpRequest`
+- `WebSocket`
+- `atob`
+- `btoa`
+- `queueMicrotask`
+- `performance`
+- `crypto`
+- `Event`
+- `CustomEvent`
 
 适用场景：
 
@@ -276,7 +305,7 @@ export default defineConfig({
 
 ## `weapp.injectWebRuntimeGlobals` {#weapp-injectwebruntimeglobals}
 
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
+- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean; networkDefaults?: MiniProgramNetworkDefaults }`
 - **状态**：兼容配置；更推荐使用 `weapp.appPrelude.webRuntime`
 
 用于为 Web Runtime 全局对象做注入，例如：
@@ -297,6 +326,14 @@ export default defineConfig({
       prelude: true,
       targets: ['fetch', 'Headers', 'Request', 'Response'],
       dependencies: [/^axios$/, /^graphql-request$/],
+      networkDefaults: {
+        request: {
+          timeout: 10000,
+        },
+        socket: {
+          timeout: 10000,
+        },
+      },
     },
   },
 })
@@ -318,7 +355,7 @@ export default defineConfig({
 
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
+- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean; networkDefaults?: MiniProgramNetworkDefaults }`
 - **状态**：已废弃，请迁移到 `weapp.appPrelude.webRuntime` 或 `weapp.injectWebRuntimeGlobals`
 
 这是历史字段，行为仍与 `injectWebRuntimeGlobals` 兼容，但名称已经过窄。

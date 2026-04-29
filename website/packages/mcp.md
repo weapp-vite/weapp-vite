@@ -24,6 +24,12 @@ wv mcp init claude-code
 wv mcp init cursor
 ```
 
+`init` 会生成并写入对应客户端配置。当前支持的客户端名称是：
+
+- `codex`
+- `claude-code`
+- `cursor`
+
 如果你只想预览配置，不直接写入：
 
 ```bash
@@ -36,12 +42,13 @@ wv mcp print codex
 wv mcp doctor codex
 ```
 
-如果你已经启动了 `streamable-http` MCP 服务，也可以直接生成 HTTP 配置：
+如果你已经启动了 `streamable-http` MCP 服务，也可以直接生成 HTTP 配置。未传 `--url` 时，CLI 会尝试从当前 workspace 的 `weapp.mcp` 配置推导地址：
 
 ```bash
 wv mcp init codex --transport http
 wv mcp init claude-code --transport http
 wv mcp init cursor --transport http
+wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp
 ```
 
 仍然需要手动起服务时：
@@ -64,7 +71,7 @@ pnpm add @weapp-vite/mcp
 
 ## 启动方式
 
-不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
+不在仓库目录执行时，可选追加 `--workspace-root <repo-root>`。
 
 当前默认写入位置：
 
@@ -94,6 +101,34 @@ pnpm --filter @weapp-vite/mcp start
 | `compare_weapp_screenshot` | 显式截图对比工具，封装 `wv compare --json` | `projectPath`、`baselinePath`、`page`、`diffOutputPath` |
 | `run_repo_command`         | 执行仓库级白名单命令                       | `command`、`args`、`cwdRelative`                        |
 
+### DevTools Runtime Tools
+
+这组工具直接复用微信开发者工具 automator 会话，适合真实小程序运行时排查。常见调用顺序是先连接，再路由、截图、查结构、读日志。
+
+| Tool                         | 作用                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `weapp_devtools_connect`     | 确认 DevTools automator 会话可用，并返回当前页面与系统信息                   |
+| `weapp_devtools_route`       | 执行 `navigateTo` / `redirectTo` / `reLaunch` / `switchTab` / `navigateBack` |
+| `weapp_devtools_active_page` | 读取当前页面路径、查询参数、尺寸、滚动位置，可选返回页面 data                |
+| `weapp_devtools_page_stack`  | 读取当前页面栈                                                               |
+| `weapp_devtools_capture`     | 截取当前小程序视口，返回 base64 或保存图片                                   |
+| `weapp_devtools_host_api`    | 调用 `wx.*` 宿主 API                                                         |
+| `weapp_devtools_console`     | 读取 MCP 会话捕获的 console/exception 日志                                   |
+
+### Runtime Inspection Tools
+
+这组工具用于检查或操作当前页面、节点和组件实例。它们比纯截图更适合定位“结构在不在、状态对不对、事件有没有触发”。
+
+| Tool                                                                                                                                                | 作用                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `weapp_runtime_find_node` / `weapp_runtime_find_nodes` / `weapp_runtime_wait_node`                                                                  | 查询或等待页面元素                          |
+| `weapp_runtime_wait`                                                                                                                                | 在当前页面等待指定毫秒数                    |
+| `weapp_runtime_page_state` / `weapp_runtime_update_page_state` / `weapp_runtime_invoke_page`                                                        | 读取页面 data、调用 `setData`、调用页面方法 |
+| `weapp_runtime_tap_node` / `weapp_runtime_input_node`                                                                                               | 点击节点、向输入节点输入文本                |
+| `weapp_runtime_component_state` / `weapp_runtime_update_component_state` / `weapp_runtime_invoke_component`                                         | 读取/更新组件 data、调用组件方法            |
+| `weapp_runtime_find_child` / `weapp_runtime_find_children`                                                                                          | 在组件或节点内部继续查找元素                |
+| `weapp_runtime_node_markup` / `weapp_runtime_node_styles` / `weapp_runtime_node_attrs` / `weapp_runtime_scroll_node` / `weapp_runtime_measure_node` | 读取节点 WXML、样式、属性、滚动或尺寸信息   |
+
 ### Resources
 
 | Resource                                    | 说明                         |
@@ -105,10 +140,12 @@ pnpm --filter @weapp-vite/mcp start
 
 ### Prompts
 
-| Prompt                   | 说明                                  |
-| ------------------------ | ------------------------------------- |
-| `plan-weapp-vite-change` | 生成 weapp-vite / wevu 改造计划提示词 |
-| `debug-wevu-runtime`     | 生成 wevu runtime 排查提示词          |
+| Prompt                            | 说明                                  |
+| --------------------------------- | ------------------------------------- |
+| `plan-weapp-vite-change`          | 生成 weapp-vite / wevu 改造计划提示词 |
+| `debug-wevu-runtime`              | 生成 wevu runtime 排查提示词          |
+| `inspect-mini-program-page`       | 连接 DevTools 并检查页面渲染状态      |
+| `recover-mini-program-connection` | 恢复 DevTools automator 连接          |
 
 ## AI 友好的截图工具
 

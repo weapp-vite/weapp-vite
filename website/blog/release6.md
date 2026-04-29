@@ -190,7 +190,7 @@ npx skills add sonofmagic/skills
 wv mcp
 ```
 
-如果你不在仓库目录下执行，再补 `--workspace-root /path/to/weapp-vite`。
+如果你不在仓库目录下执行，再补 `--workspace-root <repo-root>`。
 
 最后是 llms 语料入口：
 

@@ -16,6 +16,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 用户问 `launchAutomator` 该怎么复用。
 - 用户问是否该用 `miniProgram.reLaunch(...)`。
 - 用户要把 e2e 和 screenshot / compare / logs 串成验收链路。
+- 用户要通过 MCP 的 `weapp_devtools_*` / `weapp_runtime_*` 工具检查真实运行时页面。
 
 ## 不适用场景
 
@@ -34,6 +35,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 2. 同一个 `e2e-app` 在同一 suite 只启动一次 automator，并在 `describe` 级别共享。
 3. 多场景优先用 `miniProgram.reLaunch(route)` 切换，不要为了切页反复重启 DevTools。
 4. 断言优先页面级、结构级、可稳定复用的 runtime 收集器；截图验收放在路由稳定之后。
+   - MCP 场景下，先用 `weapp_devtools_connect`，再用 `weapp_devtools_route` / `weapp_runtime_find_node` / `weapp_devtools_console`。
 5. 新增页面时同步：
    - `project.private.config.json` 的 `condition.miniprogram.list`
    - `project.config.json` 的真实 AppID

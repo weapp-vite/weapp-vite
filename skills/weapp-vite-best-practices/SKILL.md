@@ -43,13 +43,14 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.routeRules`
    - `weapp.typescript`
 3. 按目标启用能力：
-   - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv screenshot`、`wv compare`、`wv ide logs --open`
+   - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`
    - 进阶链路：`web`、`lib`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
-   - `preview` / `upload` / `open` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
+   - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`

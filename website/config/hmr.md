@@ -1,20 +1,24 @@
 ---
 title: 开发态 HMR 配置
-description: 说明 weapp.hmr.sharedChunks 与 touchAppWxss 的默认行为、适用场景和取舍。
+description: 说明 weapp.hmr.sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。
 keywords:
   - 配置
   - config
   - hmr
   - sharedChunks
   - touchAppWxss
+  - logLevel
+  - profileJson
 ---
 
 # 开发态 HMR 配置 {#hmr-config}
 
-`weapp.hmr` 用来控制开发态更新时的“稳定性 vs 速度”取舍。本页只覆盖两项：
+`weapp.hmr` 用来控制开发态更新时的“稳定性 vs 速度”取舍，也可以打开更细的终端诊断与结构化 profile 输出。本页覆盖：
 
 - `weapp.hmr.sharedChunks`
 - `weapp.hmr.touchAppWxss`
+- `weapp.hmr.logLevel`
+- `weapp.hmr.profileJson`
 
 [[toc]]
 
@@ -70,6 +74,62 @@ export default defineConfig({
 适用建议：
 - 如果你在开发者工具里经常遇到样式更新不稳定、必须手动刷新，优先检查这一项。
 - 若项目未使用 `weapp-tailwindcss` 且样式热更新已经稳定，可保持默认或显式关闭。
+
+## `weapp.hmr.logLevel` {#weapp-hmr-loglevel}
+
+- **类型**：`'default' | 'concise' | 'verbose'`
+- **默认值**：`'default'`
+- **适用场景**：控制 HMR 终端日志的详细程度。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    hmr: {
+      logLevel: 'concise',
+    },
+  },
+})
+```
+
+行为说明：
+
+- `default`：只输出总耗时等基础信息，适合日常开发。
+- `concise`：输出关键阶段耗时，适合定位“哪一类更新慢”。
+- `verbose`：输出更完整的阶段诊断，适合排查 HMR 链路异常。
+
+建议：
+
+- 日常保持 `default`。
+- 只有在定位 HMR 慢、共享 chunk 回退或 DevTools 热重载不稳定时，再临时提高到 `concise` 或 `verbose`。
+
+## `weapp.hmr.profileJson` {#weapp-hmr-profilejson}
+
+- **类型**：`boolean | string`
+- **默认值**：`false`
+- **适用场景**：输出 HMR 结构化 profile，方便后续脚本、AI 或报告工具分析。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    hmr: {
+      profileJson: '.tmp/weapp-vite-hmr-profile.jsonl',
+    },
+  },
+})
+```
+
+行为说明：
+
+- `false`：不输出结构化 profile。
+- `true`：使用默认 profile 输出路径。
+- 字符串：写入指定 JSONL 文件路径。
+
+> [!TIP]
+> 当你需要把 HMR 诊断交给 AI 或 CI 侧脚本复盘时，优先开启 `profileJson`，再结合 `logLevel: 'concise'` 或 `verbose` 缩小问题范围。
 
 ## 关联阅读
 

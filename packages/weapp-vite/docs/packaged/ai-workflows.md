@@ -36,6 +36,8 @@ weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index 
 weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 weapp-vite ide logs --open
 weapp-vite mcp
+weapp-vite mcp init codex
+weapp-vite mcp doctor codex
 ```
 
 等价写法：
@@ -48,7 +50,24 @@ wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv ide logs --open
 wv mcp
+wv mcp init codex
+wv mcp doctor codex
 ```
+
+`wv mcp` 既可以启动服务，也可以管理 AI 客户端配置：
+
+- `wv mcp init <codex|claude-code|cursor>`：写入客户端配置。
+- `wv mcp print <codex|claude-code|cursor>`：只打印配置预览。
+- `wv mcp doctor <codex|claude-code|cursor>`：检查配置。
+- `wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp`：为已启动的 HTTP MCP 服务生成客户端配置。
+
+当 MCP 客户端已经接入后，优先使用这些真实小程序运行时工具：
+
+- `take_weapp_screenshot` / `compare_weapp_screenshot`：截图与截图对比。
+- `weapp_devtools_connect` / `weapp_devtools_route` / `weapp_devtools_capture` / `weapp_devtools_console`：连接 DevTools、切路由、截图、读日志。
+- `weapp_runtime_find_node` / `weapp_runtime_page_state` / `weapp_runtime_component_state`：检查页面结构、页面 data 与组件 data。
+
+提示词可以直接点名 `inspect-mini-program-page` 或 `recover-mini-program-connection`，让 AI 按固定顺序检查页面或恢复 automator 连接。
 
 ## 截图与日志
 

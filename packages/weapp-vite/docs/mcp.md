@@ -138,7 +138,7 @@ weapp-vite mcp
 可选指定工作区根路径：
 
 ```bash
-weapp-vite mcp --workspace-root /path/to/weapp-vite
+weapp-vite mcp --workspace-root <repo-root>
 ```
 
 以 HTTP 方式手动启动：
@@ -203,7 +203,7 @@ await handle.close?.()
       "args": [
         "mcp",
         "--workspace-root",
-        "/absolute/path/to/weapp-vite"
+        "<repo-root>"
       ]
     }
   }
@@ -221,6 +221,22 @@ await handle.close?.()
 5. `run_package_script`
 6. `run_weapp_vite_cli`
 7. `run_repo_command`
+8. `take_weapp_screenshot`
+9. `compare_weapp_screenshot`
+10. `weapp_devtools_connect`
+11. `weapp_devtools_route`
+12. `weapp_devtools_active_page`
+13. `weapp_devtools_page_stack`
+14. `weapp_devtools_capture`
+15. `weapp_devtools_host_api`
+16. `weapp_devtools_console`
+17. `weapp_runtime_find_node` / `weapp_runtime_find_nodes` / `weapp_runtime_wait_node`
+18. `weapp_runtime_wait`
+19. `weapp_runtime_page_state` / `weapp_runtime_update_page_state` / `weapp_runtime_invoke_page`
+20. `weapp_runtime_tap_node` / `weapp_runtime_input_node`
+21. `weapp_runtime_component_state` / `weapp_runtime_update_component_state` / `weapp_runtime_invoke_component`
+22. `weapp_runtime_find_child` / `weapp_runtime_find_children`
+23. `weapp_runtime_node_markup` / `weapp_runtime_node_styles` / `weapp_runtime_node_attrs` / `weapp_runtime_scroll_node` / `weapp_runtime_measure_node`
 
 建议使用顺序：
 
@@ -245,6 +261,8 @@ await handle.close?.()
 
 1. `plan-weapp-vite-change`
 2. `debug-wevu-runtime`
+3. `inspect-mini-program-page`
+4. `recover-mini-program-connection`
 
 典型用途：
 
@@ -291,7 +309,7 @@ MCP 服务端做了以下约束：
 1. 客户端已接入 `weapp-vite` MCP。
 2. 微信开发者工具已登录，并开启「设置 -> 安全设置 -> 服务端口」。
 
-### 9.1 可直接复制的提示词
+### 11.1 可直接复制的提示词
 
 ```text
 你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图验收：
@@ -308,13 +326,13 @@ MCP 服务端做了以下约束：
 5. 最后汇总：执行命令、关键输出、最终结论。
 ```
 
-### 9.2 期望结果
+### 11.2 期望结果
 
 1. AI 输出 `screenshot-ok`。
 2. 工作区生成 `.tmp/mcp-screenshot.png`。
 3. AI 输出本次验收摘要（命令、关键日志、结论）。
 
-## 11. 示例：AI 驱动 screenshot compare 验收
+## 12. 示例：AI 驱动 screenshot compare 验收
 
 如果提示词里出现“截图对比 / baseline / diff / 视觉回归”，应优先让 AI 使用 `compare_weapp_screenshot`，或退回到 `weapp-vite compare`。
 

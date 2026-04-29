@@ -140,7 +140,7 @@ export default defineConfig(env => ({
 | [JS 配置](./js.md) | `tsconfigPaths` / `ast` 与顶层 `resolve.alias` 的边界 |
 | [Vue SFC 配置](./vue.md) | `weapp.vue.template`、模板编译开关、自动导入保留字段 |
 | [Wevu 编译期配置](./wevu.md) | `weapp.wevu.preset` / `defaults` / `autoSetDataPick` |
-| [开发态 HMR 配置](./hmr.md) | `weapp.hmr.sharedChunks` / `touchAppWxss` |
+| [开发态 HMR 配置](./hmr.md) | `weapp.hmr.sharedChunks` / `touchAppWxss` / `logLevel` / `profileJson` |
 | [分包配置](./subpackages.md) | `weapp.subPackages`、共享样式、分包级 `inlineConfig` |
 | [Worker 配置](./worker.md) | `weapp.worker.entry` |
 | [库模式配置](./lib.md) | `weapp.lib` 入口、路径、组件 JSON 与 DTS |

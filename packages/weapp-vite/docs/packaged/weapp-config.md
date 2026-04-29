@@ -55,6 +55,34 @@ export default defineConfig({
 
 不要在 `srcRoot`、路由来源、分包边界都没确认前就先调 chunk 策略。
 
+### `hmr.logLevel` / `hmr.profileJson`
+
+排查开发态热更新慢、共享 chunk 回退或 DevTools 热重载不稳定时，可以临时打开：
+
+```ts
+export default defineConfig({
+  weapp: {
+    hmr: {
+      logLevel: 'concise',
+      profileJson: '.tmp/weapp-vite-hmr-profile.jsonl',
+    },
+  },
+})
+```
+
+- `logLevel: 'default' | 'concise' | 'verbose'` 控制终端诊断详细程度。
+- `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
+
+### `mcp`
+
+`weapp.mcp` 默认启用，但默认不自动启动服务。AI 客户端接入优先走 CLI：
+
+```bash
+wv mcp init codex
+wv mcp print codex
+wv mcp doctor codex
+```
+
 ## CLI 与 IDE 命令
 
 `weapp-vite` 原生命令优先，IDE 相关命令通过 `weapp-ide-cli` 透传。

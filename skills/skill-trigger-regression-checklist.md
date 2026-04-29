@@ -158,7 +158,7 @@ pnpm skills:score:json
 1. 提问：根据现在仓库里的代码和脚本，把 `website` 的 AI 页面、Skills 文档和 `wv` 简写命令说明同步一下。
    预期 skill：`docs-and-website-sync`
 
-2. 提问：我们刚给 CLI 加了 `screenshot`、`dist/docs` 和模板 `AGENTS.md` 这些 AI 入口，帮我把站点、README 和相关 Skills 入口一起更新。
+2. 提问：我们刚给 CLI 加了 `screenshot`、`mcp init`、`dist/docs` 和模板 `AGENTS.md` 这些 AI 入口，帮我把站点、README 和相关 Skills 入口一起更新。
    预期 skill：`docs-and-website-sync`
 
 3. 提问：现在文档入口有点过期，请按真实实现刷新 `guide/ai`、组件页和生成产物。
@@ -201,7 +201,10 @@ pnpm skills:score:json
 4. 提问：为什么仓库里不建议在每个 `it` 里都 `launchAutomator()`？这个 suite 该怎么重构？
    预期 skill：`weapp-devtools-e2e-best-practices`
 
-5. 边界提问：我现在不是写 IDE e2e，而是设计 `weapp-ide-cli` 的 automator 命令。
+5. 提问：我想通过 MCP 的 `weapp_devtools_connect`、`weapp_runtime_find_node` 和 `weapp_devtools_console` 检查真实小程序页面，该按什么顺序做？
+   预期 skill：`weapp-devtools-e2e-best-practices`
+
+6. 边界提问：我现在不是写 IDE e2e，而是设计 `weapp-ide-cli` 的 automator 命令。
    预期 skill：`weapp-vite-best-practices`
 
 ### J. release-and-changeset-best-practices

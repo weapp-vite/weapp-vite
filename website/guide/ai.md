@@ -133,6 +133,7 @@ wv mcp doctor codex
 wv mcp init codex --transport http
 wv mcp init claude-code --transport http
 wv mcp init cursor --transport http
+wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp
 ```
 
 如果你的 AI 客户端支持显式工具命名，建议优先直接调用：
@@ -154,7 +155,7 @@ wv mcp
 wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
-可选：不在仓库目录执行时，再加 `--workspace-root /path/to/weapp-vite`。
+可选：不在仓库目录执行时，再加 `--workspace-root <repo-root>`。
 
 ### 示例：驱动 wv screenshot 做验收
 

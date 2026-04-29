@@ -261,7 +261,7 @@ weapp-vite dev --open
 
 ## CLI 中调用 weapp-ide-cli
 
-`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/open/init/generate/analyze/npm` 等原生命令外，其它 IDE 相关命令都可以直接调用：
+`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用：
 
 ```sh
 weapp-vite preview --project ./dist/build/mp-weixin
@@ -300,11 +300,25 @@ wv mcp init claude-code
 wv mcp init cursor
 ```
 
+只预览配置、不写入：
+
+```sh
+wv mcp print codex
+```
+
 检查配置是否可用：
 
 ```sh
 wv mcp doctor codex
 ```
+
+如果已经手动启动 HTTP MCP 服务：
+
+```sh
+wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp
+```
+
+接入后，AI 可以直接使用 `take_weapp_screenshot`、`compare_weapp_screenshot`，也可以用 `weapp_devtools_connect`、`weapp_devtools_route`、`weapp_devtools_capture`、`weapp_devtools_console` 与 `weapp_runtime_*` 工具检查真实小程序运行时。
 
 仍然需要手动启动 MCP Server 时：
 
@@ -317,9 +331,9 @@ wv mcp
 指定工作区根路径：
 
 ```sh
-weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp --workspace-root <repo-root>
 # 等价写法
-wv mcp --workspace-root /absolute/path/to/weapp-vite
+wv mcp --workspace-root <repo-root>
 ```
 
 在 `vite.config.ts` 或 `weapp-vite.config.ts` 中开启自动启动：
