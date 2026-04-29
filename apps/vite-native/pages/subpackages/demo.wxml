@@ -1,4 +1,4 @@
-<view class="min-h-screen bg-gradient-to-b from-indigo-50 to-slate-100 px-5 py-6 text-slate-900 space-y-4">
+<view class="min-h-screen bg-linear-to-b from-indigo-50 to-slate-100 px-5 py-6 text-slate-900 space-y-4">
   <view class="space-y-1">
     <view class="text-3xl font-bold">分包场景 Demo</view>
     <view class="text-sm text-slate-600">主包预览：{{mainSharedPreview}}</view>

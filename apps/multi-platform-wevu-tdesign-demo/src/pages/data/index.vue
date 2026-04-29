@@ -102,7 +102,7 @@ watch(activeRange, () => {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#f1f5ff] via-[#eef2ff] to-[#ffffff] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#f1f5ff] via-[#eef2ff] to-[#ffffff] p-[20rpx]">
       <SectionTitle title="经营仪表盘" subtitle="聚焦关键指标与趋势" />
       <view class="mt-[12rpx]">
         <t-tabs :value="activeRange" @change="onRangeChange">

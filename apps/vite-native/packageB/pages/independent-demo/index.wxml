@@ -1,4 +1,4 @@
-<view class="min-h-screen bg-gradient-to-b from-slate-50 to-white px-5 py-6 text-slate-900 space-y-4">
+<view class="min-h-screen bg-linear-to-b from-slate-50 to-white px-5 py-6 text-slate-900 space-y-4">
   <view class="text-3xl font-bold">{{title}}</view>
   <view class="text-sm text-slate-600">{{note}}</view>
   <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">

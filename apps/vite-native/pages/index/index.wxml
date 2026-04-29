@@ -1,4 +1,4 @@
-<view class="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-emerald-50 text-slate-900 px-6 py-6 space-y-6">
+<view class="min-h-screen bg-linear-to-b from-indigo-50 via-slate-50 to-emerald-50 text-slate-900 px-6 py-6 space-y-6">
   <view class="flex items-start justify-between">
     <view class="space-y-2">
       <view class="text-3xl font-bold tracking-tight">weapp-vite Showcase</view>

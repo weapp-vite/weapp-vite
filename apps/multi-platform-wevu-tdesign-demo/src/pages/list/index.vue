@@ -90,7 +90,7 @@ reload()
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#fdf2f8] via-[#fff7fb] to-[#ffffff] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#fdf2f8] via-[#fff7fb] to-[#ffffff] p-[20rpx]">
       <SectionTitle title="任务清单" subtitle="筛选、搜索与分页反馈" />
       <view class="mt-[12rpx]">
         <FilterBar v-model:query="query" v-model:active="activeStatus" :filters="statusFilters" />

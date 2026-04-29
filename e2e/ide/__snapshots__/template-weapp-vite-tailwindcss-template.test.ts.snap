@@ -291,11 +291,11 @@ text,
 .bg-white_f90 {
   background-color: #ffffffe6;
 }
-.bg-gradient-to-br {
+.bg-linear-to-br {
   --tw-gradient-position: to bottom right;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
-.bg-gradient-to-r {
+.bg-linear-to-r {
   --tw-gradient-position: to right;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
@@ -573,7 +573,7 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
             class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
         </view>
         <view
-          class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+          class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
           weapp-vite &amp; weapp-tailwindcss
         </view>
         <view>
@@ -635,7 +635,7 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
   <view class="index--layout-default">
     <view class="min-h-screen bg-slate-100 px-4 py-5">
       <view
-        class="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5 shadow-sm">
+        class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
         <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
           Native Layouts
         </view>

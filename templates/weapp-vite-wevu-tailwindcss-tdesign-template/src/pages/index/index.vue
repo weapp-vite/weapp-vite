@@ -238,7 +238,7 @@ async function onQuickAction(action: QuickActionItem) {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[32rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#2f2b5f] via-[#3b3573] to-[#5a48c5] p-[24rpx] text-white shadow-[0_24rpx_48rpx_rgba(47,43,95,0.35)]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#2f2b5f] via-[#3b3573] to-[#5a48c5] p-[24rpx] text-white shadow-[0_24rpx_48rpx_rgba(47,43,95,0.35)]">
       <text class="text-[38rpx] font-semibold">
         Weapp Studio
       </text>

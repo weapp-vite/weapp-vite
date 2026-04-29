@@ -118,7 +118,7 @@ function navigateTo(url: string) {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#ecfeff] via-[#ffffff] to-[#e0f2fe] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#ecfeff] via-[#ffffff] to-[#e0f2fe] p-[20rpx]">
       <SectionTitle title="小程序能力" subtitle="本页展示原生 API 与分包导航" />
     </view>
 

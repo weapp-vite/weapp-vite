@@ -346,7 +346,7 @@ text,
 .bg-linear-to-br {
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
-.bg-gradient-to-br {
+.bg-linear-to-br {
   --tw-gradient-position: to bottom right;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
@@ -1065,7 +1065,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
   <view
     class="min-h-screen data-index--min-h-screen bg-_b_hf6f7fb_B data-index--bg-_b_hf6f7fb_B px-_b28rpx_B data-index--px-_b28rpx_B pb-_b88rpx_B data-index--pb-_b88rpx_B pt-_b24rpx_B data-index--pt-_b24rpx_B text-_b_h1c1c3c_B data-index--text-_b_h1c1c3c_B">
     <view
-      class="rounded-_b28rpx_B data-index--rounded-_b28rpx_B bg-gradient-to-br data-index--bg-gradient-to-br from-_b_hf1f5ff_B data-index--from-_b_hf1f5ff_B via-_b_heef2ff_B data-index--via-_b_heef2ff_B to-_b_hffffff_B data-index--to-_b_hffffff_B p-_b20rpx_B data-index--p-_b20rpx_B">
+      class="rounded-_b28rpx_B data-index--rounded-_b28rpx_B bg-linear-to-br data-index--bg-linear-to-br from-_b_hf1f5ff_B data-index--from-_b_hf1f5ff_B via-_b_heef2ff_B data-index--via-_b_heef2ff_B to-_b_hffffff_B data-index--to-_b_hffffff_B p-_b20rpx_B data-index--p-_b20rpx_B">
       <view
         class="flex SectionTitle-index--flex items-end SectionTitle-index--items-end justify-between SectionTitle-index--justify-between">
         <view>
@@ -1890,7 +1890,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
   <view
     class="min-h-screen index-index--min-h-screen bg-_b_hf6f7fb_B index-index--bg-_b_hf6f7fb_B px-_b28rpx_B index-index--px-_b28rpx_B pb-_b88rpx_B index-index--pb-_b88rpx_B pt-_b32rpx_B index-index--pt-_b32rpx_B text-_b_h1c1c3c_B index-index--text-_b_h1c1c3c_B">
     <view
-      class="rounded-_b28rpx_B index-index--rounded-_b28rpx_B bg-gradient-to-br index-index--bg-gradient-to-br from-_b_h2f2b5f_B index-index--from-_b_h2f2b5f_B via-_b_h3b3573_B index-index--via-_b_h3b3573_B to-_b_h5a48c5_B index-index--to-_b_h5a48c5_B p-_b24rpx_B index-index--p-_b24rpx_B text-white index-index--text-white shadow-_b0_24rpx_48rpx_rgba_p47_m43_m95_m0_d35_P_B index-index--shadow-_b0_24rpx_48rpx_rgba_p47_m43_m95_m0_d35_P_B">
+      class="rounded-_b28rpx_B index-index--rounded-_b28rpx_B bg-linear-to-br index-index--bg-linear-to-br from-_b_h2f2b5f_B index-index--from-_b_h2f2b5f_B via-_b_h3b3573_B index-index--via-_b_h3b3573_B to-_b_h5a48c5_B index-index--to-_b_h5a48c5_B p-_b24rpx_B index-index--p-_b24rpx_B text-white index-index--text-white shadow-_b0_24rpx_48rpx_rgba_p47_m43_m95_m0_d35_P_B index-index--shadow-_b0_24rpx_48rpx_rgba_p47_m43_m95_m0_d35_P_B">
       <text
         class="text-_b38rpx_B index-index--text-_b38rpx_B font-semibold index-index--font-semibold"></text>
       <text

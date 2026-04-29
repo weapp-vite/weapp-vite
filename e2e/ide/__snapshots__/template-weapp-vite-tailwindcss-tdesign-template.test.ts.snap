@@ -230,7 +230,7 @@ text,
 .bg-white_f95 {
   background-color: #fffffff2;
 }
-.bg-gradient-to-r {
+.bg-linear-to-r {
   --tw-gradient-position: to right;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
@@ -447,7 +447,7 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
             class="w-32 HelloWorld--w-32 h-24 HelloWorld--h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B HelloWorld--bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B HelloWorld--bg-_blength_c100_v_100_v_B bg-no-repeat HelloWorld--bg-no-repeat"></view>
         </view>
         <view
-          class="bg-gradient-to-r HelloWorld--bg-gradient-to-r from-green-400 HelloWorld--from-green-400 to-sky-400 HelloWorld--to-sky-400 bg-clip-text HelloWorld--bg-clip-text text-xl HelloWorld--text-xl font-extrabold HelloWorld--font-extrabold text-transparent HelloWorld--text-transparent underline HelloWorld--underline">
+          class="bg-linear-to-r HelloWorld--bg-linear-to-r from-green-400 HelloWorld--from-green-400 to-sky-400 HelloWorld--to-sky-400 bg-clip-text HelloWorld--bg-clip-text text-xl HelloWorld--text-xl font-extrabold HelloWorld--font-extrabold text-transparent HelloWorld--text-transparent underline HelloWorld--underline">
           weapp-vite &amp; weapp-tailwindcss
         </view>
         <view

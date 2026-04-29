@@ -47,7 +47,7 @@ onShow(() => {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#ecfccb] via-[#ffffff] to-[#d9f99d] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#ecfccb] via-[#ffffff] to-[#d9f99d] p-[20rpx]">
       <SectionTitle title="系统信息" subtitle="使用原生 API 获取设备信息" />
     </view>
 

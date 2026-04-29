@@ -1,4 +1,4 @@
-<view class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-200 text-slate-900 px-6 py-6 space-y-6">
+<view class="min-h-screen bg-linear-to-b from-slate-50 to-slate-200 text-slate-900 px-6 py-6 space-y-6">
   <view class="space-y-2">
     <view class="text-3xl font-bold tracking-tight">UI & 样式</view>
     <view class="text-sm text-slate-600">全部使用 Tailwind utility class；组件来自 TDesign / Vant 自动按需。</view>
