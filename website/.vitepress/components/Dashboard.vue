@@ -55,7 +55,7 @@ onMounted(async () => {
               <div class="flex h-full flex-col items-center justify-center p-4">
                 <img class="mb-2 h-40 rounded-full" src="/icebreaker.jpg">
                 <a
-                  class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
+                  class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
                   href="https://github.com/sonofmagic" rel="nofollow" target="_blank"
                 >
                   ice breaker
@@ -68,7 +68,7 @@ onMounted(async () => {
                   <img class="absolute left-6 top-8 w-full" src="/tw-logo.png">
                 </div>
                 <a
-                  class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
+                  class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
                   href="https://tw.icebreaker.top/" rel="nofollow" target="_blank"
                 >
                   weapp-tailwindcss
@@ -79,7 +79,7 @@ onMounted(async () => {
               <div class="flex h-full flex-col items-center justify-center p-4">
                 <img class="mb-2 h-40" src="/logo.png">
                 <a
-                  class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
+                  class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
                   href="https://vite.icebreaker.top/" rel="nofollow" target="_blank"
                 >
                   weapp-vite

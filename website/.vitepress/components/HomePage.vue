@@ -81,28 +81,28 @@ const packageFeatureCards: HomeFeatureCard[] = [
           现代小程序工程化
         </div>
         <h1
-          class="mt-6 bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 dark:from-emerald-400 dark:via-lime-300 dark:to-emerald-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-6xl"
+          class="mt-6 bg-linear-to-br from-emerald-700 via-emerald-600 to-emerald-800 dark:from-emerald-400 dark:via-lime-300 dark:to-emerald-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-6xl"
         >
           Weapp‑vite
         </h1>
         <div class="hero-logo-formula" aria-label="Vue + Vite + Rolldown = weapp-vite">
           <span class="hero-logo-badge">
-            <span class="i-vscode-icons-file-type-vue h-[18px] w-[18px]" aria-hidden="true" />
+            <span class="i-vscode-icons-file-type-vue h-4.5 w-4.5" aria-hidden="true" />
             <span>Vue</span>
           </span>
           <span class="hero-logo-sign">+</span>
           <span class="hero-logo-badge">
-            <span class="i-vscode-icons-file-type-vite h-[18px] w-[18px] shrink-0 dark:brightness-110 dark:saturate-125" aria-hidden="true" />
+            <span class="i-vscode-icons-file-type-vite h-4.5 w-4.5 shrink-0 dark:brightness-110 dark:saturate-125" aria-hidden="true" />
             <span>Vite</span>
           </span>
           <span class="hero-logo-sign">+</span>
           <span class="hero-logo-badge">
-            <span class="i-vscode-icons-file-type-rolldown h-[18px] w-[18px] shrink-0 dark:brightness-115 dark:saturate-120" aria-hidden="true" />
+            <span class="i-vscode-icons-file-type-rolldown h-4.5 w-4.5 shrink-0 dark:brightness-115 dark:saturate-120" aria-hidden="true" />
             <span>Rolldown</span>
           </span>
           <span class="hero-logo-sign">=</span>
           <span class="hero-logo-badge hero-logo-badge-target">
-            <img src="/logo.svg" alt="weapp-vite logo" class="h-[18px] w-[18px] object-contain">
+            <img src="/logo.svg" alt="weapp-vite logo" class="h-4.5 w-4.5 object-contain">
             <span>Weapp‑vite</span>
           </span>
         </div>
@@ -111,13 +111,13 @@ const packageFeatureCards: HomeFeatureCard[] = [
         </p>
         <div class="mt-8 flex items-center justify-center gap-3">
           <a
-            class="group relative inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-gradient-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_16px_40px_rgba(16,185,129,0.35)] transition interactive-cta"
+            class="group relative inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-linear-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_16px_40px_rgba(16,185,129,0.35)] transition interactive-cta"
             href="/guide/"
           >
             <span class="i-mdi-rocket-launch-outline text-lg text-emerald-600 dark:text-emerald-300" />
             快速开始
             <span
-              class="absolute -inset-px -z-10 rounded-xl bg-gradient-to-r from-emerald-400/20 via-lime-300/20 to-emerald-500/20 blur-xl opacity-0 group-hover:opacity-100 transition"
+              class="absolute -inset-px -z-10 rounded-xl bg-linear-to-r from-emerald-400/20 via-lime-300/20 to-emerald-500/20 blur-xl opacity-0 group-hover:opacity-100 transition"
             />
           </a>
           <a
@@ -150,14 +150,14 @@ const packageFeatureCards: HomeFeatureCard[] = [
 
     <!-- gradient glows -->
     <div class="pointer-events-none absolute inset-x-0 top-0 z-0 overflow-hidden blur-2xl floating-glow">
-      <div class="mx-auto h-64 w-[40rem] rounded-full bg-gradient-to-tr" :class="glowClass" />
+      <div class="mx-auto h-64 w-160 rounded-full bg-linear-to-tr" :class="glowClass" />
     </div>
   </section>
 
   <!-- Features -->
   <section class="relative feature-section">
-    <div class="pointer-events-none absolute inset-0 -z-10 opacity-70 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]">
-      <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.08)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.08)_1px,transparent_1px)] bg-[size:24px_24px]" />
+    <div class="pointer-events-none absolute inset-0 -z-10 opacity-70 mask-[radial-gradient(70%_60%_at_50%_0%,black,transparent)]">
+      <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.08)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.08)_1px,transparent_1px)] bg-size-[24px_24px]" />
     </div>
     <div class="mx-auto max-w-7xl px-6 py-8 sm:py-12">
       <div class="feature-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -180,7 +180,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
             </div>
           </div>
           <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{{ feature.description }}</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
+          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-linear-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
         </a>
       </div>
     </div>
@@ -189,8 +189,8 @@ const packageFeatureCards: HomeFeatureCard[] = [
   <!-- Code demo + CTA -->
   <section class="relative">
     <!-- subtle background grid to reduce empty feel -->
-    <div class="pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(60%_50%_at_50%_0%,black,transparent)]">
-      <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:24px_24px]" />
+    <div class="pointer-events-none absolute inset-0 -z-10 opacity-60 mask-[radial-gradient(60%_50%_at_50%_0%,black,transparent)]">
+      <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px)] bg-size-[24px_24px]" />
     </div>
     <div class="mx-auto max-w-7xl px-6 py-12 lg:py-16">
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -240,7 +240,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
           </p>
           <div class="mt-5 flex items-center justify-center gap-3">
             <a
-              class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-gradient-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)]"
+              class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-linear-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)]"
               href="/guide/"
             >
               <span class="i-mdi-book-open-page-variant-outline" />
@@ -257,7 +257,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
             </a>
           </div>
           <!-- soft glow to make it less empty while staying subtle -->
-          <div class="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-b from-emerald-400/10 to-emerald-600/10 blur-xl" />
+          <div class="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-linear-to-b from-emerald-400/10 to-emerald-600/10 blur-xl" />
         </div>
       </div>
     </div>
