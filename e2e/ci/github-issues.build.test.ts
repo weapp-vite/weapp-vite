@@ -225,7 +225,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJson.usingComponents).toMatchObject({
       Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
     })
-    expect(pageWxml).toContain(`Issue520ResolverSlotCard vue-slots="{{['header','default']}}"`)
+    expect(pageWxml).toContain(`Issue520ResolverSlotCard vue-slots="{{__wv_bind_0}}"`)
     expect(pageWxml).toContain('issue-520 resolver slot header')
     expect(pageWxml).toContain('issue-520 resolver slot default')
   })
@@ -238,14 +238,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue528SlotFallbackCard class="issue528-card-provided" vue-slots="{{[\'header\',\'default\']}}"')
+    expect(pageWxml).toContain('Issue528SlotFallbackCard class="issue528-card-provided" vue-slots="{{__wv_bind_0}}"')
     expect(pageWxml).not.toContain('vue-slot-flags')
-    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='header'||`)
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
     expect(componentWxml).toContain('<slot name="header" /></block><block wx:else><text class="issue528-fallback-header">issue-528 fallback header</text></block>')
-    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&(vueSlots[0]=='default'||`)
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(componentWxml).toContain('<slot /></block><block wx:else><text class="issue528-fallback-default">{{fallbackDefault}}</text></block>')
+    expect(componentWxml).not.toContain('vueSlots[')
     expect(componentWxml).not.toContain('<slot name="header"><text class="issue528-fallback-header">')
     expect(componentWxml).not.toContain('<slot><text class="issue528-fallback-default">')
+  })
+
+  it('issue #530: compiles default slot fallback guards without slot array scans', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-530/index.wxml')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-530/SlotFallbackProbe/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('Issue530SlotFallbackProbe class="issue530-card-provided" vue-slots=')
+    expect(componentWxml).toContain('<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block><block wx:else><text class="issue530-fallback-default">issue-530 fallback default</text></block>')
+    expect(componentWxml).not.toContain('vueSlots[')
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {

@@ -14,6 +14,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue297-302.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.props.test.ts',
+  'ide/github-issues.runtime.slot-fallback.test.ts',
 ]
 const IDE_CHUNK_MODES_PATTERNS = [
   'ide/chunk-modes.runtime.duplicate.test.ts',

@@ -109,4 +109,23 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('issue #530: renders default slot fallback with short slot presence metadata', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-530/index', 'issue530-fallback-default')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-530 page')
+      }
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('issue530-fallback-default')
+      expect(renderedWxml).toContain('issue530-provided-default')
+      expect(countToken(renderedWxml, 'issue530-fallback-default')).toBe(1)
+      expect(countToken(renderedWxml, 'issue530-provided-default')).toBe(1)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })
