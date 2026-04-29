@@ -8,9 +8,13 @@ definePageJson({
   <view class="issue520-page">
     <Issue520ResolverSlotCard>
       <template #header>
-        <text>issue-520 resolver slot header</text>
+        <text data-issue520-slot="header">
+          issue-520 resolver slot header
+        </text>
       </template>
-      <text>issue-520 resolver slot default</text>
+      <text data-issue520-slot="default">
+        issue-520 resolver slot default
+      </text>
     </Issue520ResolverSlotCard>
   </view>
 </template>
