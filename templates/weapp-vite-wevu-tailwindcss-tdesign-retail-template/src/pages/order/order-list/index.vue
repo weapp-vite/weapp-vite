@@ -240,7 +240,7 @@ definePageJson({
 </script>
 
 <template>
-  <view class="page-container [&_.tab-bar__placeholder]:h-[88rpx] [&_.tab-bar__placeholder]:leading-[88rpx] [&_.tab-bar__placeholder]:[background:#fff] [&_.tab-bar__inner]:h-[88rpx] [&_.tab-bar__inner]:leading-[88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:text-[26rpx] [&_.tab-bar__inner]:text-[#333333] [&_.tab-bar__inner]:fixed [&_.tab-bar__inner]:w-screen [&_.tab-bar__inner]:top-0 [&_.tab-bar__inner]:left-0 [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:bottom-[12rpx] [&_.tab-bar__active]:text-[28rpx] [&_.specs-popup_.bottom-btn]:text-[#fa4126] [&_.specs-popup_.bottom-btn]:text-(--color-primary,#fa4126) [&_.order-number]:text-[#666666] [&_.order-number]:text-[28rpx]">
+  <view class="page-container [&_.tab-bar__placeholder]:h-[88rpx] [&_.tab-bar__placeholder]:leading-[88rpx] [&_.tab-bar__placeholder]:[background:#fff] [&_.tab-bar__inner]:h-[88rpx] [&_.tab-bar__inner]:leading-[88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:text-[26rpx] [&_.tab-bar__inner]:text-[#333333] [&_.tab-bar__inner]:fixed [&_.tab-bar__inner]:w-screen [&_.tab-bar__inner]:top-0 [&_.tab-bar__inner]:left-0 [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:bottom-[12rpx] [&_.tab-bar__active]:text-[28rpx] [&_.specs-popup_.bottom-btn]:text-(--color-primary,#fa4126) [&_.order-number]:text-[#666666] [&_.order-number]:text-[28rpx]">
     <view class="tab-bar [&_.tab-bar__active]:text-[#333333] [&_.t-tabs-track]:[background:#333333]">
       <view class="tab-bar__placeholder" />
       <t-tabs
