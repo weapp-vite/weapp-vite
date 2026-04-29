@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ATTR,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_PROPS_ATTR,
@@ -21,6 +22,8 @@ import {
 import { collectSlotBindingExpression, parseSlotPropsExpression } from './slotProps'
 
 export type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
+
+const SLOT_PRESENCE_SCAN_LIMIT = 32
 
 export interface ScopedSlotDeclaration {
   name: SlotNameInfo
@@ -97,6 +100,29 @@ export function stringifySlotName(info: SlotNameInfo, context: TransformContext)
   }
   const normalized = normalizeWxmlExpressionWithContext(info.exp, context)
   return normalized
+}
+
+function resolveSlotStaticName(info: SlotNameInfo): string | undefined {
+  if (info.type === 'default') {
+    return 'default'
+  }
+  if (info.type === 'static') {
+    return info.value || 'default'
+  }
+  return undefined
+}
+
+function createSlotPresenceExpression(info: SlotNameInfo) {
+  const slotName = resolveSlotStaticName(info)
+  if (!slotName) {
+    return undefined
+  }
+  const slotLiteral = `'${slotName.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`
+  const checks = Array.from(
+    { length: SLOT_PRESENCE_SCAN_LIMIT },
+    (_, index) => `${WEVU_SLOT_NAMES_PROP}[${index}]==${slotLiteral}`,
+  )
+  return `${WEVU_SLOT_NAMES_PROP}&&(${checks.join('||')})`
 }
 
 export function buildSlotDeclaration(
@@ -258,9 +284,17 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
-  const slotTag = fallbackContent
-    ? `<slot${slotAttrString}>${fallbackContent}</slot>`
-    : `<slot${slotAttrString} />`
+  let slotTag = `<slot${slotAttrString} />`
+
+  if (fallbackContent) {
+    const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
+    if (!slotPropsExp && slotPresentExp) {
+      slotTag = `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
+    }
+    else {
+      slotTag = `<slot${slotAttrString}>${fallbackContent}</slot>`
+    }
+  }
 
   if (!slotPropsExp && (context.scopedSlotsRequireProps || slotNameInfo.type !== 'default')) {
     return slotTag
