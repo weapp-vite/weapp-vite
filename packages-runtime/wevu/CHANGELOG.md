@@ -1,5 +1,15 @@
 # wevu
 
+## 6.16.0
+
+### Patch Changes
+
+- 🐛 **修复 `autoImportComponents.resolvers` 命中 wevu/Vue SFC 组件时插槽元信息识别不完整的问题，确保通过 resolver 自动导入的组件在传入子组件插槽时也会生成 `vue-slots` 属性。** [#523](https://github.com/weapp-vite/weapp-vite/pull/523) by @sonofmagic
+
+- 🐛 **修复 scoped slot 兼容组件未启用 `virtualHost` 导致插槽内容在 flex 父级中被额外组件节点包裹、布局无法横向排列的问题。** [#522](https://github.com/weapp-vite/weapp-vite/pull/522) by @sonofmagic
+- 📦 **Dependencies** [`b26ea58`](https://github.com/weapp-vite/weapp-vite/commit/b26ea58d09a31c48d43b96e87f4aa4f307c25110)
+  → `@wevu/compiler@6.16.0`
+
 ## 6.15.18
 
 ### Patch Changes

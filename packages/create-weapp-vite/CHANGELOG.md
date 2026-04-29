@@ -1,5 +1,25 @@
 # create-weapp-vite
 
+## 2.3.12
+
+### Patch Changes
+
+- 🐛 **为 MCP 服务新增微信开发者工具 runtime 工具集，并抽出共享 DevTools runtime 会话包，支持连接复用、页面跳转、截图、日志读取、页面数据、元素查询和组件交互等自动化能力。** [#527](https://github.com/weapp-vite/weapp-vite/pull/527) by @sonofmagic
+
+- 🐛 **修复自动导入组件扫描对 `*.json.ts` 配置文件的候选去重逻辑，避免同一组件在初始扫描中被重复注册并输出误导性的组件重名告警。** [`baf7d0e`](https://github.com/weapp-vite/weapp-vite/commit/baf7d0e361897f805b36bcafc70fb81f01705cf8) by @sonofmagic
+
+- 🐛 **修复开发态 HMR 在直接修改单个入口时误沿 source shared chunk importers 扩散的问题。直接入口更新现在默认只刷新自身，真实共享源码、layout 或 auto-routes 变更仍会通过 dependency dirty 路径扩散到相关入口，从而降低大型示例和模板的热更新 pending/emitted fanout。** [#524](https://github.com/weapp-vite/weapp-vite/pull/524) by @sonofmagic
+
+- 🐛 **收窄 direct HMR 对 source shared chunk 的大 fanout 扩散，并让 workspace HMR 审计优先使用 profile 延迟统计，降低 P90/P95 和最慢场景尾延迟。** [#525](https://github.com/weapp-vite/weapp-vite/pull/525) by @sonofmagic
+
+- 🐛 **修复 `autoImportComponents.resolvers` 命中 wevu/Vue SFC 组件时插槽元信息识别不完整的问题，确保通过 resolver 自动导入的组件在传入子组件插槽时也会生成 `vue-slots` 属性。** [#523](https://github.com/weapp-vite/weapp-vite/pull/523) by @sonofmagic
+
+- 🐛 **修复 scoped slot 兼容组件未启用 `virtualHost` 导致插槽内容在 flex 父级中被额外组件节点包裹、布局无法横向排列的问题。** [#522](https://github.com/weapp-vite/weapp-vite/pull/522) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 组件 `<slot>` 兜底内容在小程序端无法按父组件是否传入插槽正确显示的问题。编译器现在会基于合法的 `vue-slots` 数组元信息生成显式条件分支，避免宿主 `<slot>` 原生 fallback 行为不一致。** [#529](https://github.com/weapp-vite/weapp-vite/pull/529) by @sonofmagic
+
+- 🐛 **增强开发态 HMR profile 的场景关联能力，支持通过环境变量强制输出 JSONL，并在样本中记录事件 id 与相对源码路径，方便 workspace/template 审计稳定匹配每次热更新。同时修复侧车文件监听在启动初期遇到已知文件原子保存时可能漏掉恢复事件的问题，避免 package script dev 入口下的 HMR 更新偶发丢失。** [#519](https://github.com/weapp-vite/weapp-vite/pull/519) by @sonofmagic
+
 ## 2.3.11
 
 ### Patch Changes
