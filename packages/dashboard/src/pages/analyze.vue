@@ -877,8 +877,8 @@ onBeforeUnmount(() => {
       </div>
     </AppSurfaceCard>
 
-    <section class="relative z-20 flex min-w-0 items-center gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
-      <nav class="flex shrink-0 flex-nowrap gap-2">
+    <section class="relative z-20 grid min-w-0 gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow) md:flex md:items-center md:gap-3">
+      <nav class="flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-0.5 md:shrink-0">
         <button
           v-for="tab in dashboardTabs"
           :key="tab.key"
