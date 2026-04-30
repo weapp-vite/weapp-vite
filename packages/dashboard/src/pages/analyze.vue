@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, PackageInsight, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -10,10 +10,10 @@ import ActionCenterPanel from '../features/dashboard/components/ActionCenterPane
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AnalyzeDetailsPanel from '../features/dashboard/components/AnalyzeDetailsPanel.vue'
 import AnalyzeDraggableGrid from '../features/dashboard/components/AnalyzeDraggableGrid.vue'
+import AnalyzeOverviewPanel from '../features/dashboard/components/AnalyzeOverviewPanel.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
-import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import HistoryBaselinePanel from '../features/dashboard/components/HistoryBaselinePanel.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
@@ -481,6 +481,22 @@ function handleSelectBudgetWarning(warning: PackageBudgetWarning) {
     : null
 }
 
+function handleSelectPackageInsight(item: PackageInsight) {
+  activeTab.value = 'packages'
+  selectedTreemapMeta.value = {
+    kind: 'package',
+    nodeId: createTreemapPackageNodeId(item.id),
+    packageId: item.id,
+    packageLabel: item.label,
+    packageType: item.type,
+    fileCount: item.fileCount,
+    totalBytes: item.totalBytes,
+  }
+  selectedLargestFile.value = null
+  selectedBudgetWarning.value = null
+  treemapFilterMode.value = 'selected-package'
+}
+
 function focusTreemapNode(nodeId: string) {
   chart?.dispatchAction({
     type: 'treemapRootToNode',
@@ -877,7 +893,17 @@ onBeforeUnmount(() => {
           storage-key="weapp-vite:dashboard:analyze-layout:overview"
         >
           <template #metrics>
-            <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
+            <AnalyzeOverviewPanel
+              :action-items="actionItems"
+              :cards="topCards"
+              :largest-files="largestFiles"
+              :package-insights="packageInsights"
+              :package-type-summary="metricPackageTypeSummary"
+              @copy-report="copyPrReport"
+              @select-action="handleSelectAction"
+              @select-file="handleSelectLargestFile"
+              @select-package="handleSelectPackageInsight"
+            />
           </template>
         </AnalyzeDraggableGrid>
       </section>
