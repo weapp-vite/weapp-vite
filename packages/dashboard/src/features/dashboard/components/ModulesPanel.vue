@@ -8,13 +8,15 @@ import type {
   ModuleSourceSummary,
   ModuleSourceType,
 } from '../types'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { copyText } from '../utils/clipboard'
 import { formatBuildOrigin, formatBytes } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
-import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import AppSummaryValueCard from './AppSummaryValueCard.vue'
+import DuplicateModulesToolbar from './DuplicateModulesToolbar.vue'
+import ModuleInsightsSidebar from './ModuleInsightsSidebar.vue'
 
 type DuplicateModuleSourceFilter = 'all' | ModuleSourceType
 type DuplicateModuleSortMode = 'saving' | 'packages' | 'size' | 'source'
@@ -39,6 +41,8 @@ const props = defineProps<{
 const duplicateQuery = ref('')
 const duplicateSourceFilter = ref<DuplicateModuleSourceFilter>('all')
 const duplicateSortMode = ref<DuplicateModuleSortMode>('saving')
+const actionStatus = ref('')
+let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
 
 function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
   return {
@@ -78,6 +82,10 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
   }
 }
 
+function escapeMarkdownCell(value: string) {
+  return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
+}
+
 const duplicateSourceOptions = computed(() => {
   const sourceSet = new Set<ModuleSourceType>()
   for (const module of props.duplicateModules) {
@@ -86,7 +94,7 @@ const duplicateSourceOptions = computed(() => {
   return [...sourceSet].sort((a, b) => a.localeCompare(b))
 })
 
-const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => {
+const filteredDuplicateModules = computed(() => {
   const keyword = duplicateQuery.value.trim().toLowerCase()
   return props.duplicateModules
     .filter((module) => {
@@ -117,12 +125,13 @@ const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => {
       }
       return b.estimatedSavingBytes - a.estimatedSavingBytes || b.packageCount - a.packageCount || a.source.localeCompare(b.source)
     })
-    .map(module => ({
-      key: module.id,
-      packages: module.packages,
-      ...createDuplicateModuleItem(module),
-    }))
 })
+
+const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => filteredDuplicateModules.value.map(module => ({
+  key: module.id,
+  packages: module.packages,
+  ...createDuplicateModuleItem(module),
+})))
 
 const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
   key: `${item.sourceType}:${item.sourceCategory}`,
@@ -143,6 +152,63 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
   key: `${file.packageId}:${file.file}`,
   ...createLargestFileSampleItem(file),
 })))
+
+const duplicateModulesReportText = computed(() => [
+  '# dashboard 重复模块',
+  '',
+  `模块数量：${filteredDuplicateModules.value.length} / ${props.duplicateModules.length}`,
+  '',
+  '| 模块 | 来源 | 包数量 | 单份体积 | 可节省 | 建议 | 涉及包 |',
+  '| --- | --- | ---: | ---: | ---: | --- | --- |',
+  ...filteredDuplicateModules.value.map(module => [
+    module.source,
+    module.sourceType,
+    String(module.packageCount),
+    formatBytes(module.bytes),
+    formatBytes(module.estimatedSavingBytes),
+    module.advice,
+    module.packages.map(pkg => pkg.packageLabel).join(', '),
+  ].map(escapeMarkdownCell).join(' | ')).map(row => `| ${row} |`),
+  '',
+].join('\n'))
+
+function setActionStatus(status: string) {
+  actionStatus.value = status
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+  actionStatusTimer = setTimeout(() => {
+    actionStatus.value = ''
+    actionStatusTimer = null
+  }, 1800)
+}
+
+async function copyDuplicateModulesReport() {
+  try {
+    await copyText(duplicateModulesReportText.value)
+    setActionStatus('已复制')
+  }
+  catch {
+    setActionStatus('复制失败')
+  }
+}
+
+function exportDuplicateModulesJson() {
+  const blob = new Blob([`${JSON.stringify(filteredDuplicateModules.value, null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-dashboard-duplicate-modules.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  setActionStatus('已导出')
+}
+
+onBeforeUnmount(() => {
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+})
 </script>
 
 <template>
@@ -152,48 +218,20 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
         <AppPanelHeader
           icon-name="duplicate-modules"
           title="重复模块"
-          :description="`匹配 ${duplicateModuleItems.length} / ${duplicateModules.length} 个模块`"
+          :description="`${duplicateModules.length} 个重复模块样本`"
         />
-        <div class="flex flex-wrap items-center gap-2">
-          <input
-            v-model="duplicateQuery"
-            class="h-9 w-56 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"
-            placeholder="搜索模块、包或文件"
-            type="search"
-          >
-          <select
-            v-model="duplicateSourceFilter"
-            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-          >
-            <option value="all">
-              全部来源
-            </option>
-            <option
-              v-for="sourceType in duplicateSourceOptions"
-              :key="sourceType"
-              :value="sourceType"
-            >
-              {{ sourceType }}
-            </option>
-          </select>
-          <select
-            v-model="duplicateSortMode"
-            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-          >
-            <option value="saving">
-              按可节省
-            </option>
-            <option value="packages">
-              按包数量
-            </option>
-            <option value="size">
-              按单份体积
-            </option>
-            <option value="source">
-              按路径
-            </option>
-          </select>
-        </div>
+        <DuplicateModulesToolbar
+          v-model:query="duplicateQuery"
+          v-model:sort-mode="duplicateSortMode"
+          v-model:source-filter="duplicateSourceFilter"
+          :action-status="actionStatus"
+          :disabled="duplicateModuleItems.length === 0"
+          :filtered-count="duplicateModuleItems.length"
+          :source-options="duplicateSourceOptions"
+          :total-count="duplicateModules.length"
+          @copy="copyDuplicateModulesReport"
+          @export-json="exportDuplicateModulesJson"
+        />
       </div>
 
       <div v-if="duplicateModuleItems.length" class="mt-4 max-h-[calc(100%-5.75rem)] space-y-2.5 overflow-y-auto pr-1">
@@ -219,59 +257,11 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
       </AppEmptyState>
     </div>
 
-    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.8fr)]">
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="metric-time" title="增量归因" />
-        <div v-if="incrementItems.length" class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)]">
-          <div class="space-y-2 overflow-y-auto pr-1">
-            <AppSummaryValueCard
-              v-for="item in incrementSummaryItems"
-              :key="item.key"
-              :meta="item.meta"
-              :title="item.title"
-              :value="item.value"
-            />
-          </div>
-          <ul class="space-y-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
-            <AppCompactListItem
-              v-for="item in incrementItems"
-              :key="item.key"
-              :meta="item.meta"
-              mono-title
-              :title="item.title"
-              :value="item.value"
-            />
-          </ul>
-        </div>
-        <AppEmptyState v-else class="mt-4">
-          暂无可对比的正向增量。
-        </AppEmptyState>
-      </section>
-
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="module-sources" title="模块来源" />
-        <div class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-2">
-          <div class="space-y-2.5 overflow-y-auto pr-1">
-            <AppSummaryValueCard
-              v-for="item in moduleSourceItems"
-              :key="item.key"
-              :meta="item.meta"
-              :title="item.title"
-              :value="item.value"
-            />
-          </div>
-          <ul class="space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
-            <AppCompactListItem
-              v-for="item in largestFileSampleItems"
-              :key="item.key"
-              :meta="item.meta"
-              mono-title
-              :title="item.title"
-              :value="item.value"
-            />
-          </ul>
-        </div>
-      </section>
-    </div>
+    <ModuleInsightsSidebar
+      :increment-items="incrementItems"
+      :increment-summary-items="incrementSummaryItems"
+      :largest-file-sample-items="largestFileSampleItems"
+      :module-source-items="moduleSourceItems"
+    />
   </section>
 </template>
