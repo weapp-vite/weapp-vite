@@ -681,7 +681,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden">
     <AppSurfaceCard
       v-if="!resultRef"
       eyebrow="Analyze"
@@ -737,8 +737,8 @@ onBeforeUnmount(() => {
       </div>
     </AppSurfaceCard>
 
-    <section class="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-      <nav class="flex flex-wrap gap-2">
+    <section class="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
+      <nav class="flex shrink-0 flex-nowrap gap-2">
         <button
           v-for="tab in dashboardTabs"
           :key="tab.key"
@@ -751,9 +751,10 @@ onBeforeUnmount(() => {
           {{ tab.label }}
         </button>
       </nav>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5">
         <button
           v-if="resultRef"
+          class="shrink-0"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="commandPaletteOpen = true"
         >
@@ -764,6 +765,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           v-if="resultRef"
+          class="shrink-0"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="copySummary"
         >
@@ -774,6 +776,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           v-if="resultRef"
+          class="shrink-0"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="copyPrReport"
         >
@@ -784,6 +787,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           v-if="resultRef"
+          class="shrink-0"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="exportJson"
         >
@@ -794,6 +798,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           v-if="resultRef"
+          class="shrink-0"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="exportMarkdown"
         >
@@ -804,12 +809,14 @@ onBeforeUnmount(() => {
         </button>
         <AppInfoPill
           v-if="exportStatus"
+          class="shrink-0"
           :label="exportStatus"
           uppercase
         />
         <AppInfoPill
           v-for="item in statusPills"
           :key="item.label"
+          class="shrink-0"
           v-bind="item"
           uppercase
         />
@@ -817,24 +824,25 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-if="resultRef">
-      <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-        <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(42rem,0.9fr)]">
+      <div class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+        <div class="min-h-0">
           <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
-          <div class="grid min-h-0 gap-3 md:grid-cols-2 xl:grid-cols-2">
-            <ActionCenterPanel
-              :actions="actionItems"
-              :active-key="selectedActionKey"
-              @copy-report="copyPrReport"
-              @select="handleSelectAction"
-            />
-            <HistoryBaselinePanel
-              :snapshots="historySnapshots"
-              :baseline-snapshot-id="baselineSnapshotId"
-              :comparison-mode="comparisonMode"
-              @set-baseline="setBaselineSnapshot"
-              @set-comparison-mode="setComparisonMode"
-            />
-          </div>
+        </div>
+
+        <div class="grid h-[7rem] min-h-0 gap-2 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
+          <ActionCenterPanel
+            :actions="actionItems"
+            :active-key="selectedActionKey"
+            @copy-report="copyPrReport"
+            @select="handleSelectAction"
+          />
+          <HistoryBaselinePanel
+            :snapshots="historySnapshots"
+            :baseline-snapshot-id="baselineSnapshotId"
+            :comparison-mode="comparisonMode"
+            @set-baseline="setBaselineSnapshot"
+            @set-comparison-mode="setComparisonMode"
+          />
         </div>
 
         <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">

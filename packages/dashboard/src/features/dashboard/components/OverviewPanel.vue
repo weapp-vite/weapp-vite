@@ -124,7 +124,7 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch">
+  <section class="grid h-full min-h-0 gap-2 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.36fr)] xl:items-stretch">
     <TreemapCard
       :bind-chart-ref="bindChartRef"
       :can-focus-selected="canFocusTreemapSelection"
@@ -137,43 +137,52 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
       @update-filter-mode="emit('updateTreemapFilterMode', $event)"
     />
 
-    <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.74fr)_minmax(0,1fr)]">
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader
-          icon-name="top-files"
-          title="Top Files"
-          description="最大体积样本"
-        >
-          <template #meta>
-            <span class="text-[11px] uppercase tracking-[0.2em] text-(--dashboard-text-soft)">Top 10</span>
-          </template>
-        </AppPanelHeader>
-        <AppCompactListItem
-          v-if="selectedItem"
-          class="mt-3"
-          v-bind="selectedItem"
-        />
-        <ol class="mt-3 grid min-h-0 flex-1 gap-2 overflow-y-auto pr-1 text-sm xl:grid-cols-1">
+    <aside :class="surfaceStyles({ padding: 'md' })" class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1.2fr)_minmax(0,0.85fr)_minmax(0,0.7fr)] gap-2 overflow-hidden">
+      <AppPanelHeader
+        icon-name="top-files"
+        title="分析详情"
+      >
+        <template #meta>
+          <span class="text-[11px] uppercase tracking-[0.18em] text-(--dashboard-text-soft)">Top 10</span>
+        </template>
+      </AppPanelHeader>
+
+      <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-(--dashboard-text)">
+            Top Files
+          </h3>
+          <span class="text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft)">size</span>
+        </div>
+        <div class="min-h-0 overflow-y-auto pr-1">
           <AppCompactListItem
-            v-for="item in largestFileItems"
-            :key="item.key"
-            :active="item.active"
-            clickable
-            :meta="item.meta"
-            :title="item.title"
-            :value="item.value"
-            @select="emit('selectFile', item.file)"
+            v-if="selectedItem"
+            class="mb-2"
+            v-bind="selectedItem"
           />
-        </ol>
+          <ol class="grid gap-2 text-sm xl:grid-cols-1">
+            <AppCompactListItem
+              v-for="item in largestFileItems"
+              :key="item.key"
+              :active="item.active"
+              clickable
+              :meta="item.meta"
+              :title="item.title"
+              :value="item.value"
+              @select="emit('selectFile', item.file)"
+            />
+          </ol>
+        </div>
       </section>
 
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader
-          icon-name="file-samples"
-          title="文件详情"
-          description="模块明细与复用收益"
-        />
-        <ul class="mt-3 grid min-h-0 flex-1 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+      <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-(--dashboard-text)">
+            文件详情
+          </h3>
+          <span class="text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft)">modules</span>
+        </div>
+        <ul class="grid min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppEmptyState v-if="selectedFileModuleItems.length === 0" as="li" compact>
             选择一个 chunk 文件查看模块明细。
           </AppEmptyState>
@@ -188,13 +197,14 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
         </ul>
       </section>
 
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader
-          icon-name="metric-quality"
-          title="预算"
-          description="包体阈值"
-        />
-        <ul class="mt-3 grid min-h-0 flex-1 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+      <section class="min-h-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-(--dashboard-text)">
+            预算
+          </h3>
+          <span class="text-[11px] uppercase tracking-[0.18em] text-(--dashboard-text-soft)">limits</span>
+        </div>
+        <ul class="grid max-h-full min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppCompactListItem
             v-for="item in budgetItems"
             :key="item.key"
@@ -214,6 +224,6 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
           />
         </ul>
       </section>
-    </div>
+    </aside>
   </section>
 </template>

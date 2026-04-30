@@ -33,18 +33,6 @@ function canUseFilter(option: AnalyzeTreemapFilterOption) {
 
 <template>
   <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-0 flex-col overflow-hidden">
-    <div class="mb-2 flex flex-wrap gap-1.5 px-2">
-      <button
-        v-for="option in filterOptions"
-        :key="option.value"
-        :class="[pillButtonStyles({ kind: 'badge', active: filterMode === option.value }), !canUseFilter(option) ? 'cursor-not-allowed opacity-45' : undefined]"
-        :disabled="!canUseFilter(option)"
-        type="button"
-        @click="emit('updateFilterMode', option.value)"
-      >
-        {{ option.label }}
-      </button>
-    </div>
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"
@@ -71,6 +59,18 @@ function canUseFilter(option: AnalyzeTreemapFilterOption) {
         </div>
       </template>
     </AppPanelHeader>
+    <div class="mb-2 flex flex-wrap gap-1.5 px-2">
+      <button
+        v-for="option in filterOptions"
+        :key="option.value"
+        :class="[pillButtonStyles({ kind: 'badge', active: filterMode === option.value }), !canUseFilter(option) ? 'cursor-not-allowed opacity-45' : undefined]"
+        :disabled="!canUseFilter(option)"
+        type="button"
+        @click="emit('updateFilterMode', option.value)"
+      >
+        {{ option.label }}
+      </button>
+    </div>
     <div class="relative min-h-0 flex-1 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2">
       <div
         :ref="bindChartRef"
