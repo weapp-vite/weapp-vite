@@ -44,6 +44,7 @@ export type DashboardIconName
     | 'metric-health'
     | 'metric-latency'
     | 'metric-quality'
+    | 'metric-search'
     | 'token-color'
     | 'token-surface'
     | 'token-type'
@@ -348,6 +349,23 @@ export interface AnalyzeActionCenterItem {
   priority: number
   warning?: PackageBudgetWarning
   file?: LargestFileEntry
+  moduleMeta?: TreemapModuleNodeMeta
+}
+
+export type AnalyzeCommandPaletteKind = 'action' | 'budget' | 'package' | 'file' | 'module' | 'increment'
+
+export interface AnalyzeCommandPaletteItem {
+  key: string
+  kind: AnalyzeCommandPaletteKind
+  title: string
+  meta: string
+  value?: string
+  keywords: string
+  tab: DashboardTab
+  action?: AnalyzeActionCenterItem
+  warning?: PackageBudgetWarning
+  file?: LargestFileEntry
+  packageMeta?: TreemapPackageNodeMeta
   moduleMeta?: TreemapModuleNodeMeta
 }
 

@@ -7,6 +7,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ActionCenterPanel from '../features/dashboard/components/ActionCenterPanel.vue'
+import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -15,6 +16,7 @@ import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
 import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
+import { useAnalyzeCommandPalette } from '../features/dashboard/composables/useAnalyzeCommandPalette'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
 import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
@@ -39,6 +41,7 @@ const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
 const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
 const selectedBudgetWarning = shallowRef<PackageBudgetWarning | null>(null)
 const selectedActionKey = shallowRef<string | null>(null)
+const commandPaletteOpen = shallowRef(false)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
@@ -147,6 +150,14 @@ const { actionItems } = useAnalyzeActionCenter({
   budgetWarnings,
   incrementAttribution,
   duplicateModules,
+  largestFiles,
+  packageInsights,
+})
+const { commandItems } = useAnalyzeCommandPalette({
+  actionItems,
+  budgetWarnings,
+  duplicateModules,
+  incrementAttribution,
   largestFiles,
   packageInsights,
 })
@@ -390,6 +401,45 @@ function handleSelectAction(item: AnalyzeActionCenterItem) {
   activeTab.value = item.tab
 }
 
+function handleSelectCommand(item: (typeof commandItems.value)[number]) {
+  if (item.action) {
+    handleSelectAction(item.action)
+    return
+  }
+
+  if (item.warning) {
+    activeTab.value = 'overview'
+    handleSelectBudgetWarning(item.warning)
+    void nextTick(() => handleFocusTreemapSelection())
+    return
+  }
+
+  if (item.file) {
+    activeTab.value = 'overview'
+    handleSelectLargestFile(item.file)
+    void nextTick(() => handleFocusTreemapSelection())
+    return
+  }
+
+  if (item.moduleMeta) {
+    activeTab.value = item.tab
+    selectedTreemapMeta.value = item.moduleMeta
+    selectedLargestFile.value = null
+    selectedBudgetWarning.value = null
+    return
+  }
+
+  if (item.packageMeta) {
+    activeTab.value = item.tab
+    selectedTreemapMeta.value = item.packageMeta
+    selectedLargestFile.value = null
+    selectedBudgetWarning.value = null
+    return
+  }
+
+  activeTab.value = item.tab
+}
+
 function handleResetTreemapFocus() {
   chart?.setOption(treemapOption.value, true)
   chart?.resize()
@@ -451,6 +501,15 @@ function exportMarkdown() {
   exportStatus.value = '已导出 MD'
 }
 
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    if (resultRef.value) {
+      commandPaletteOpen.value = true
+    }
+  }
+}
+
 watch(
   treemapOption,
   (newOption) => {
@@ -481,11 +540,13 @@ watch(resolvedTheme, async () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
+  window.addEventListener('keydown', handleGlobalKeydown)
   void ensureChart()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('keydown', handleGlobalKeydown)
   destroyChart()
 })
 </script>
@@ -562,6 +623,16 @@ onBeforeUnmount(() => {
         </button>
       </nav>
       <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-if="resultRef"
+          :class="pillButtonStyles({ kind: 'nav', active: false })"
+          @click="commandPaletteOpen = true"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="metric-search" />
+          </span>
+          搜索
+        </button>
         <button
           v-if="resultRef"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
@@ -665,5 +736,12 @@ onBeforeUnmount(() => {
         </section>
       </div>
     </template>
+
+    <AnalyzeCommandPalette
+      :open="Boolean(resultRef && commandPaletteOpen)"
+      :items="commandItems"
+      @close="commandPaletteOpen = false"
+      @select="handleSelectCommand"
+    />
   </div>
 </template>
