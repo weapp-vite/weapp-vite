@@ -53,6 +53,11 @@ function createContext(overrides: Record<string, unknown> = {}) {
       packageManager: {
         agent: 'pnpm',
       },
+      weappViteConfig: {
+        analyze: {
+          history: false,
+        },
+      },
       configFilePath: '/virtual/project/vite.config.ts',
       weappWebConfig: {
         enabled: true,
@@ -189,6 +194,7 @@ describe('analyze command web branch', () => {
     expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
       cwd: '/virtual/project',
       packageManagerAgent: 'pnpm',
+      previousResult: null,
     })
     expect(logger.success).toHaveBeenCalledWith('分包分析完成')
   })
@@ -284,6 +290,7 @@ describe('analyze command web branch', () => {
     expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
       cwd: '/virtual/project',
       packageManagerAgent: 'pnpm',
+      previousResult: null,
     })
     expect(logger.info).toHaveBeenCalledWith('分包配置：')
     expect(logger.info).toHaveBeenCalledWith('- pkg-a，别名：pkgAlias，独立构建')
