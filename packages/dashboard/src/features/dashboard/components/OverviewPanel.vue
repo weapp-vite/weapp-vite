@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardDetailItem, LargestFileEntry, PackageBudgetWarning, SubPackageDescriptor, TreemapNodeMeta } from '../types'
+import type { DashboardDetailItem, LargestFileEntry, PackageBudgetLimitItem, PackageBudgetWarning, SelectedFileModuleDetail, SubPackageDescriptor, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
@@ -11,9 +11,15 @@ import TreemapCard from './TreemapCard.vue'
 const props = defineProps<{
   bindChartRef: (element: Element | null) => void
   visibleLargestFiles: LargestFileEntry[]
+  selectedFileModules: SelectedFileModuleDetail[]
   subPackages: SubPackageDescriptor[]
   budgetWarnings: PackageBudgetWarning[]
+  budgetLimitItems: PackageBudgetLimitItem[]
   selectedTreemapMeta: TreemapNodeMeta | null
+}>()
+
+const emit = defineEmits<{
+  selectFile: [file: LargestFileEntry]
 }>()
 
 function formatDelta(bytes?: number) {
@@ -78,6 +84,7 @@ function formatSelectedMeta(meta: TreemapNodeMeta): DashboardDetailItem {
 
 const largestFileItems = computed(() => props.visibleLargestFiles.map(file => ({
   key: `${file.packageId}:${file.file}`,
+  file,
   ...createLargestFileItem(file),
 })))
 
@@ -91,6 +98,22 @@ const budgetItems = computed(() => props.budgetWarnings.slice(0, 6).map(item => 
   ...createBudgetItem(item),
 })))
 
+const budgetLimitItems = computed(() => props.budgetLimitItems.map(item => ({
+  key: item.key,
+  title: item.label,
+  meta: item.source === 'config' ? '来自配置' : '默认阈值',
+  value: item.value,
+})))
+
+const selectedFileModuleItems = computed(() => props.selectedFileModules.map(item => ({
+  key: item.key,
+  title: item.source,
+  meta: `${item.sourceType} · ${item.duplicatePackageCount > 1 ? `${item.duplicatePackageCount} 个包复用` : '单包模块'} · 可节省 ${formatBytes(item.estimatedSavingBytes)}`,
+  value: item.originalBytes && item.originalBytes !== item.bytes
+    ? `${formatBytes(item.bytes)} / ${formatBytes(item.originalBytes)}`
+    : formatBytes(item.bytes),
+})))
+
 const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMeta(props.selectedTreemapMeta) : null)
 const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
 </script>
@@ -99,7 +122,7 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
   <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch">
     <TreemapCard :bind-chart-ref="bindChartRef" />
 
-    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.64fr)_minmax(0,0.64fr)]">
+    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.64fr)_minmax(0,0.64fr)_minmax(0,0.64fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader
           icon-name="top-files"
@@ -120,8 +143,29 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
             v-for="item in largestFileItems"
             :key="item.key"
             v-bind="item"
+            clickable
+            @select="emit('selectFile', item.file)"
           />
         </ol>
+      </section>
+
+      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
+        <AppPanelHeader
+          icon-name="file-samples"
+          title="文件详情"
+          description="模块明细与复用收益"
+        />
+        <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+          <AppEmptyState v-if="selectedFileModuleItems.length === 0" as="li" compact>
+            选择一个 chunk 文件查看模块明细。
+          </AppEmptyState>
+          <AppCompactListItem
+            v-for="item in selectedFileModuleItems"
+            :key="item.key"
+            v-bind="item"
+            mono-title
+          />
+        </ul>
       </section>
 
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
@@ -131,9 +175,11 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
           description="包体阈值"
         />
         <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
-          <AppEmptyState v-if="budgetItems.length === 0" as="li" compact>
-            当前包体未触发预算告警。
-          </AppEmptyState>
+          <AppCompactListItem
+            v-for="item in budgetLimitItems"
+            :key="item.key"
+            v-bind="item"
+          />
           <AppCompactListItem
             v-for="item in budgetItems"
             :key="item.key"

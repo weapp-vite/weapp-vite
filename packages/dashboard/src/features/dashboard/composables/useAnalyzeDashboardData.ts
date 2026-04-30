@@ -6,6 +6,7 @@ import type {
   LargestFileEntry,
   ModuleSourceSummary,
   ModuleSourceType,
+  PackageBudgetLimitItem,
   PackageBudgetWarning,
   PackageFileEntry,
   PackageInsight,
@@ -96,6 +97,7 @@ function createLargestFileEntry(
     from: file.from,
     isEntry: Boolean(file.isEntry),
     moduleCount: file.modules?.length ?? 0,
+    modules: file.modules,
     source: file.source,
   }
 }
@@ -238,6 +240,47 @@ function createBudgetWarning(options: {
   }
 }
 
+function getFileBudgetLabel(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 2)} MB`
+  }
+  if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(bytes % 1024 === 0 ? 0 : 2)} KB`
+  }
+  return `${bytes} B`
+}
+
+function createBudgetLimitItems(result: AnalyzeSubpackagesResult | null): PackageBudgetLimitItem[] {
+  const budgets = result?.metadata?.budgets
+  const source = budgets?.source ?? 'default'
+  return [
+    {
+      key: 'total',
+      label: '总包预算',
+      value: `${getFileBudgetLabel(budgets?.totalBytes ?? totalPackageBudgetBytes)}`,
+      source,
+    },
+    {
+      key: 'main',
+      label: '主包预算',
+      value: `${getFileBudgetLabel(budgets?.mainBytes ?? singlePackageBudgetBytes)}`,
+      source,
+    },
+    {
+      key: 'subPackage',
+      label: '分包预算',
+      value: `${getFileBudgetLabel(budgets?.subPackageBytes ?? singlePackageBudgetBytes)}`,
+      source,
+    },
+    {
+      key: 'independent',
+      label: '独立分包预算',
+      value: `${getFileBudgetLabel(budgets?.independentBytes ?? singlePackageBudgetBytes)}`,
+      source,
+    },
+  ]
+}
+
 export function useAnalyzeDashboardData(
   resultRef: Ref<AnalyzeSubpackagesResult | null>,
   previousResultRef?: Ref<AnalyzeSubpackagesResult | null>,
@@ -322,6 +365,8 @@ export function useAnalyzeDashboardData(
 
     return warnings.sort((a, b) => b.ratio - a.ratio || a.label.localeCompare(b.label))
   })
+
+  const budgetLimitItems = computed<PackageBudgetLimitItem[]>(() => createBudgetLimitItems(resultRef.value))
 
   const summary = computed<AnalyzeDashboardSummary>(() => {
     const result = resultRef.value
@@ -502,6 +547,7 @@ export function useAnalyzeDashboardData(
     duplicateModules,
     moduleSourceSummary,
     budgetWarnings,
+    budgetLimitItems,
     subPackages: computed(() => resultRef.value?.subPackages ?? []),
   }
 }

@@ -207,7 +207,18 @@ export interface LargestFileEntry {
   from: BuildOrigin
   isEntry: boolean
   moduleCount: number
+  modules?: ModuleInFile[]
   source?: string
+}
+
+export interface SelectedFileModuleDetail {
+  key: string
+  source: string
+  sourceType: ModuleSourceType
+  bytes: number
+  originalBytes?: number
+  duplicatePackageCount: number
+  estimatedSavingBytes: number
 }
 
 export interface DuplicateModuleEntry {
@@ -240,6 +251,13 @@ export interface PackageBudgetWarning {
   limitBytes: number
   ratio: number
   status: PackageBudgetStatus
+}
+
+export interface PackageBudgetLimitItem {
+  key: string
+  label: string
+  value: string
+  source: 'config' | 'default'
 }
 
 export interface TreemapNodeMetaBase {

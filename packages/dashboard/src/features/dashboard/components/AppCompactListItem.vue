@@ -6,11 +6,23 @@ defineProps<{
   meta: DashboardDetailItem['meta']
   value?: DashboardDetailItem['value']
   monoTitle?: boolean
+  clickable?: boolean
+}>()
+
+const emit = defineEmits<{
+  select: []
 }>()
 </script>
 
 <template>
-  <li class="rounded-xl border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5">
+  <li
+    class="rounded-xl border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5"
+    :class="clickable ? 'cursor-pointer transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)' : undefined"
+    :role="clickable ? 'button' : undefined"
+    :tabindex="clickable ? 0 : undefined"
+    @click="clickable && emit('select')"
+    @keydown.enter="clickable && emit('select')"
+  >
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p

@@ -9,6 +9,7 @@
     "dev:ui": "wv dev --ui",
     "build": "wv build",
     "build:ui": "wv build --ui",
+    "check:budget-fail": "node scripts/check-budget-fail.mjs",
     "open": "wv open",
     "prepare:weapp": "wv prepare",
     "postinstall": "wv prepare"

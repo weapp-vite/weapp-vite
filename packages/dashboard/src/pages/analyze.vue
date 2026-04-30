@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardInfoPillItem, LargestFileEntry, TreemapNodeMeta } from '../features/dashboard/types'
+import type { DashboardInfoPillItem, LargestFileEntry, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -33,6 +33,7 @@ echarts.use([
 
 const chartRef = shallowRef<HTMLDivElement>()
 const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
+const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
@@ -47,6 +48,7 @@ const {
   duplicateModules,
   moduleSourceSummary,
   budgetWarnings,
+  budgetLimitItems,
   subPackages,
 } = useAnalyzeDashboardData(resultRef, previousResultRef)
 
@@ -72,6 +74,38 @@ const filteredDuplicateModules = computed(() => {
 const visibleDuplicateModules = computed(() => filteredDuplicateModules.value.slice(0, 12))
 const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value))
 const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 10))
+const selectedFileEntry = computed(() => {
+  if (selectedLargestFile.value) {
+    return selectedLargestFile.value
+  }
+  const meta = selectedTreemapMeta.value
+  if (!meta || meta.kind === 'package') {
+    return null
+  }
+  return largestFiles.value.find(file => file.packageLabel === meta.packageLabel && file.file === meta.fileName) ?? null
+})
+const duplicateModuleMap = computed(() => new Map(duplicateModules.value.map(module => [module.id, module])))
+const selectedFileModules = computed<SelectedFileModuleDetail[]>(() => {
+  return (selectedFileEntry.value?.modules ?? [])
+    .map((module) => {
+      const duplicate = duplicateModuleMap.value.get(module.id)
+      const bytes = module.bytes ?? module.originalBytes ?? 0
+      return {
+        key: module.id,
+        source: module.source,
+        sourceType: module.sourceType,
+        bytes,
+        originalBytes: module.originalBytes,
+        duplicatePackageCount: duplicate?.packageCount ?? 1,
+        estimatedSavingBytes: duplicate?.estimatedSavingBytes ?? 0,
+      }
+    })
+    .sort((a, b) =>
+      b.estimatedSavingBytes - a.estimatedSavingBytes
+      || b.bytes - a.bytes
+      || a.source.localeCompare(b.source),
+    )
+})
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const statusPills = computed<DashboardInfoPillItem[]>(() => [
@@ -191,6 +225,20 @@ function bindChartRef(element: Element | null) {
 
 function handleChartClick(params: { data?: { meta?: TreemapNodeMeta } }) {
   selectedTreemapMeta.value = params.data?.meta ?? null
+  selectedLargestFile.value = null
+}
+
+function handleSelectLargestFile(file: LargestFileEntry) {
+  selectedLargestFile.value = file
+  selectedTreemapMeta.value = {
+    kind: 'file',
+    packageLabel: file.packageLabel,
+    fileName: file.file,
+    from: file.from,
+    childCount: file.moduleCount,
+    type: file.type,
+    bytes: file.size,
+  }
 }
 
 async function ensureChart() {
@@ -260,6 +308,7 @@ watch(activeTab, () => {
 
 watch(resultRef, () => {
   selectedTreemapMeta.value = null
+  selectedLargestFile.value = null
 })
 
 watch(resolvedTheme, async () => {
@@ -404,9 +453,12 @@ onBeforeUnmount(() => {
           <OverviewPanel
             :bind-chart-ref="bindChartRef"
             :visible-largest-files="visibleLargestFiles"
+            :selected-file-modules="selectedFileModules"
             :sub-packages="subPackages"
             :budget-warnings="budgetWarnings"
+            :budget-limit-items="budgetLimitItems"
             :selected-treemap-meta="selectedTreemapMeta"
+            @select-file="handleSelectLargestFile"
           />
         </section>
 
