@@ -29,6 +29,7 @@ const LUNA_DOM_HIGHLIGHTER_PATTERN = /\s*\.luna-dom-highlighter[\s\S]*$/
 const DUPLICATE_ROUTE_DONE_PATTERN = /"onRouteDone",\s*"onRouteDone"/g
 const OWNER_ID_PATTERN = /\bwv\d+\b/g
 const MAP_COPYRIGHT_PATTERN = /©\d{4}\s+Tencent\s+-\s+GS粤?\(\d{4}\)\d+号地图/g
+const X_SCOPED_HOST_WRAPPER_PATTERN = /<x-scoped\b[^>]*>\s*(<view\s+class="scoped-index--scoped">scoped:\s*wv_OWNER<\/view>)\s*<\/x-scoped>/g
 
 async function pathExists(filePath: string) {
   try {
@@ -125,6 +126,7 @@ export function normalizeAutomatorWxml(wxml: string) {
     .replace(DUPLICATE_ROUTE_DONE_PATTERN, '"onRouteDone"')
     .replace(OWNER_ID_PATTERN, 'wv_OWNER')
     .replace(MAP_COPYRIGHT_PATTERN, '©TENCENT-MAP-LICENSE')
+    .replace(X_SCOPED_HOST_WRAPPER_PATTERN, '$1')
 }
 
 export async function readPageOutput(platform: RuntimePlatform, pagePath: string) {

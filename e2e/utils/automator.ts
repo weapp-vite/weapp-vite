@@ -73,6 +73,7 @@ const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
+  /simulator not found/i,
   /模拟器启动失败/,
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
@@ -217,6 +218,13 @@ interface RuntimeLogMeta {
 
 interface RelaunchPatchMeta {
   wrapped: boolean
+}
+
+interface RelaunchRecoveryOptions {
+  cliPath?: string
+  cwd?: string
+  project: string
+  projectPath?: string
 }
 
 type RuntimeLogLevel = 'warn' | 'error' | 'exception'
@@ -482,6 +490,38 @@ async function resolveDevtoolsCliLoginState(cliPath?: string) {
   return null
 }
 
+function extractExecutionErrorText(error: unknown, seen = new Set<unknown>()) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+  if (seen.has(error)) {
+    return ''
+  }
+  seen.add(error)
+
+  const parts: string[] = []
+  const candidate = error as {
+    cause?: unknown
+    message?: unknown
+    shortMessage?: unknown
+    stderr?: unknown
+    stdout?: unknown
+  }
+
+  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
+    if (typeof field === 'string' && field.trim()) {
+      parts.push(field)
+    }
+  }
+
+  const causeText = extractExecutionErrorText(candidate.cause, seen)
+  if (causeText) {
+    parts.push(causeText)
+  }
+
+  return parts.join('\n')
+}
+
 async function recoverDevtoolsCompileCache(options: {
   cliPath?: string
   completedSteps?: Set<string>
@@ -489,7 +529,7 @@ async function recoverDevtoolsCompileCache(options: {
   error: unknown
   project: string
 }) {
-  const message = options.error instanceof Error ? options.error.message : String(options.error)
+  const message = extractExecutionErrorText(options.error) || String(options.error)
   if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)) {
     return false
   }
@@ -549,8 +589,10 @@ async function recoverDevtoolsCompileCache(options: {
 }
 
 async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, project: string) {
-  const message = error instanceof Error ? error.message : String(error)
-  if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)) {
+  const message = extractExecutionErrorText(error) || String(error)
+  if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)
+    && !isLikelyDevtoolsInfraErrorMessage(message)
+    && !isLikelySimulatorBootErrorMessage(message)) {
     return
   }
 
@@ -629,7 +671,8 @@ async function runWithTimeout<T>(
 
 export function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
+  return isLikelySimulatorBootErrorMessage(message)
+    || RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
 }
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
@@ -718,28 +761,6 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
   return { appConfigPath }
 }
 
-function extractExecutionErrorText(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return ''
-  }
-
-  const parts: string[] = []
-  const candidate = error as {
-    message?: unknown
-    shortMessage?: unknown
-    stderr?: unknown
-    stdout?: unknown
-  }
-
-  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
-    if (typeof field === 'string' && field.trim()) {
-      parts.push(field)
-    }
-  }
-
-  return parts.join('\n')
-}
-
 function extractLoginRequiredMessage(text: string) {
   if (!text) {
     return ''
@@ -812,7 +833,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
     return false
   }
 
-  const message = error instanceof Error ? error.message : String(error)
+  const message = extractExecutionErrorText(error) || String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
@@ -822,7 +843,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
 }
 
 function handleLaunchError(error: unknown, project: string): never {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = extractExecutionErrorText(error) || String(error)
   const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
   const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
   const summary = isInfraError
@@ -973,76 +994,6 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
       meta.dispose()
       logRuntimeStats(meta)
     }
-  }
-
-  return miniProgram
-}
-
-function enhanceMiniProgramRelaunch(miniProgram: any) {
-  const meta = (miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] as RelaunchPatchMeta | undefined
-  if (meta?.wrapped) {
-    return miniProgram
-  }
-
-  ;(miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] = { wrapped: true } as RelaunchPatchMeta
-  const rawReLaunch = miniProgram.reLaunch.bind(miniProgram)
-  miniProgram.reLaunch = async (...args: any[]) => {
-    const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
-    let lastError: unknown = null
-
-    for (let attempt = 1; attempt <= RELAUNCH_RETRIES; attempt += 1) {
-      let page: any = null
-      try {
-        page = await runWithTimeout(
-          () => rawReLaunch(...args),
-          RELAUNCH_READY_TIMEOUT,
-          `raw reLaunch ${route}`,
-        )
-        if (!page) {
-          throw new Error(`reLaunch returned empty page: ${route}`)
-        }
-
-        if (RELAUNCH_SETTLE_DELAY > 0) {
-          if (typeof page.waitFor === 'function') {
-            await page.waitFor(RELAUNCH_SETTLE_DELAY)
-          }
-          else {
-            await sleep(RELAUNCH_SETTLE_DELAY)
-          }
-        }
-
-        const pageRoot = await waitForRelaunchPageRoot(page)
-        if (!pageRoot) {
-          throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
-        }
-
-        return page
-      }
-      catch (error) {
-        lastError = error
-        try {
-          const currentPage = await runWithTimeout(
-            () => miniProgram.currentPage(),
-            5_000,
-            `read current page after reLaunch ${route}`,
-          )
-          if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
-            process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
-            return currentPage ?? page
-          }
-          process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)
-        }
-        catch {
-          // currentPage 在 DevTools 路由切换瞬态可能继续超时，这里保持原重试路径。
-        }
-        if (attempt >= RELAUNCH_RETRIES || !isLikelyRelaunchRetryableError(error)) {
-          throw error
-        }
-        await sleep(RELAUNCH_RETRY_DELAY)
-      }
-    }
-
-    throw lastError
   }
 
   return miniProgram
@@ -1236,6 +1187,131 @@ async function refreshMiniProgramProjectIndex(
     throw error
   }
   process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
+}
+
+function logRelaunchRecoveryMessage(options: RelaunchRecoveryOptions, level: 'info' | 'warn', text: string) {
+  process.stdout.write(`[${level}] [runtime:relaunch-recover] ${text} project=${options.project}\n`)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'message',
+    project: options.project,
+    level,
+    channel: 'relaunch-recover',
+    text,
+  })
+}
+
+async function recoverRelaunchProjectState(
+  miniProgram: any,
+  options: RelaunchRecoveryOptions,
+  route: string,
+  attempt: number,
+  error: unknown,
+) {
+  if (!options.projectPath) {
+    return
+  }
+
+  const reason = error instanceof Error ? error.message : String(error)
+  logRelaunchRecoveryMessage(
+    options,
+    'warn',
+    `route=${route} attempt=${attempt} reason=${reason.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim().slice(0, 240)}`,
+  )
+
+  await refreshMiniProgramProjectIndex(options.projectPath, options.project, {
+    cliPath: options.cliPath,
+    cwd: options.cwd,
+  }).catch((recoverError) => {
+    const recoverMessage = recoverError instanceof Error ? recoverError.message : String(recoverError)
+    logRelaunchRecoveryMessage(
+      options,
+      'warn',
+      `route=${route} attempt=${attempt} refresh-failed=${recoverMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim().slice(0, 240)}`,
+    )
+  })
+
+  await compileMiniProgramProject(miniProgram, options.project).catch((compileError) => {
+    const compileMessage = compileError instanceof Error ? compileError.message : String(compileError)
+    logRelaunchRecoveryMessage(
+      options,
+      'warn',
+      `route=${route} attempt=${attempt} compile-failed=${compileMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim().slice(0, 240)}`,
+    )
+  })
+
+  logRelaunchRecoveryMessage(options, 'info', `route=${route} attempt=${attempt} recovered`)
+}
+
+function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryOptions) {
+  const meta = (miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] as RelaunchPatchMeta | undefined
+  if (meta?.wrapped) {
+    return miniProgram
+  }
+
+  ;(miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] = { wrapped: true } as RelaunchPatchMeta
+  const rawReLaunch = miniProgram.reLaunch.bind(miniProgram)
+  miniProgram.reLaunch = async (...args: any[]) => {
+    const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
+    let lastError: unknown = null
+
+    for (let attempt = 1; attempt <= RELAUNCH_RETRIES; attempt += 1) {
+      let page: any = null
+      try {
+        page = await runWithTimeout(
+          () => rawReLaunch(...args),
+          RELAUNCH_READY_TIMEOUT,
+          `raw reLaunch ${route}`,
+        )
+        if (!page) {
+          throw new Error(`reLaunch returned empty page: ${route}`)
+        }
+
+        if (RELAUNCH_SETTLE_DELAY > 0) {
+          if (typeof page.waitFor === 'function') {
+            await page.waitFor(RELAUNCH_SETTLE_DELAY)
+          }
+          else {
+            await sleep(RELAUNCH_SETTLE_DELAY)
+          }
+        }
+
+        const pageRoot = await waitForRelaunchPageRoot(page)
+        if (!pageRoot) {
+          throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
+        }
+
+        return page
+      }
+      catch (error) {
+        lastError = error
+        try {
+          const currentPage = await runWithTimeout(
+            () => miniProgram.currentPage(),
+            5_000,
+            `read current page after reLaunch ${route}`,
+          )
+          if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
+            process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
+            return currentPage ?? page
+          }
+          process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)
+        }
+        catch {
+          // currentPage 在 DevTools 路由切换瞬态可能继续超时，这里保持原重试路径。
+        }
+        if (attempt >= RELAUNCH_RETRIES || !isLikelyRelaunchRetryableError(error)) {
+          throw error
+        }
+        await recoverRelaunchProjectState(miniProgram, options, route, attempt, error)
+        await sleep(RELAUNCH_RETRY_DELAY)
+      }
+    }
+
+    throw lastError
+  }
+
+  return miniProgram
 }
 
 function patchAutomatorVersionCheck() {
@@ -1494,7 +1570,12 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${projectMeta.warmupRoute} project=${project}\n`)
               await warmupMiniProgramRoute(withRuntimeLogs, projectMeta.warmupRoute, project)
             }
-            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
+            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
+              cliPath: rest.cliPath,
+              cwd: rest.cwd,
+              project,
+              projectPath: rest.projectPath,
+            })
             return withRelaunch
           },
           launchAttemptTimeout,

@@ -11,7 +11,6 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const APP_PRELUDE_IDE_LAUNCH_TIMEOUT = 180_000
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 async function runBuild(
@@ -56,10 +55,8 @@ async function launchFreshMiniProgram(
   }
 
   try {
-    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     try {
-      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       return await launchAutomator({
         projectPath: APP_ROOT,
@@ -67,12 +64,6 @@ async function launchFreshMiniProgram(
       })
     }
     finally {
-      if (previousLaunchMode == null) {
-        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-      }
-      else {
-        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
-      }
       if (previousSkipWarmup == null) {
         delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       }

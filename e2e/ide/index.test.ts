@@ -8,7 +8,6 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const INDEX_ROUTE = '/pages/index/index'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const LEADING_SLASH_RE = /^\/+/
 
 function stripAutomatorOverlay(wxml: string) {
@@ -159,20 +158,9 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    try {
-      if (previousLaunchMode) {
-        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-      }
-      sharedMiniProgram = await launchAutomator({
-        projectPath: BASE_APP_ROOT,
-      })
-    }
-    finally {
-      if (previousLaunchMode) {
-        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
-      }
-    }
+    sharedMiniProgram = await launchAutomator({
+      projectPath: BASE_APP_ROOT,
+    })
   }
   return sharedMiniProgram
 }

@@ -14,7 +14,6 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 async function runBuild() {
@@ -245,12 +244,8 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
   }
 
   try {
-    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     try {
-      if (previousLaunchMode) {
-        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-      }
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
 
       const miniProgram = await launchAutomator({
@@ -265,9 +260,6 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
       return miniProgram
     }
     finally {
-      if (previousLaunchMode) {
-        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
-      }
       if (previousSkipWarmup == null) {
         delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       }

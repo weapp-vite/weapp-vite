@@ -316,6 +316,48 @@ describe('suiteRunner', () => {
     })
   })
 
+  it('defaults devtools vitest tasks to cli bridge launch mode', () => {
+    const previousLaunchMode = process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+
+    try {
+      const options = getTaskSpawnOptions({
+        label: 'ide/task.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts'],
+      })
+
+      expect(options.env).toMatchObject({
+        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'bridge',
+        WEAPP_VITE_E2E_REPORT_MARKERS: '1',
+      })
+    }
+    finally {
+      if (previousLaunchMode == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = previousLaunchMode
+      }
+    }
+  })
+
+  it('preserves explicit devtools launch mode override', () => {
+    const options = getTaskSpawnOptions({
+      label: 'ide/task.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts'],
+      env: {
+        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      },
+    })
+
+    expect(options.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      WEAPP_VITE_E2E_REPORT_MARKERS: '1',
+    })
+  })
+
   it('skips repeated devtools login checks after the first successful devtools task', async () => {
     const tasks: SuiteTask[] = [
       {

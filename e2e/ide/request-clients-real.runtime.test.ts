@@ -21,7 +21,6 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /operation not permitted/i,
   /EACCES/i,
 ]
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
@@ -136,22 +135,14 @@ for (const jsFormat of JS_FORMATS) {
 
       try {
         await cleanupResidualIdeProcesses()
-        const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
         const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
         try {
-          delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
           delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
           miniProgram = await launchAutomator({
             projectPath: APP_ROOT,
           })
         }
         finally {
-          if (previousLaunchMode == null) {
-            delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-          }
-          else {
-            process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
-          }
           if (previousSkipWarmup == null) {
             delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
           }

@@ -284,9 +284,7 @@ exports[`wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML > we
           <view class="compat-index--row">count: 1</view>
         </view>
       </x-compat>
-      <x-scoped is="components/x-scoped/index" id="scoped">
-        <view class="scoped-index--scoped">scoped: wv_OWNER</view>
-      </x-scoped>
+      <view class="scoped-index--scoped">scoped: wv_OWNER</view>
       <text selectable="" class="details">
         { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext":
         true, "outsideSetupInstance": true, "bindModelUpdated": true, "bindModelHelpers": true,
@@ -738,9 +736,7 @@ exports[`wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML > we
           <view class="compat-index--row">count: 1</view>
         </view>
       </x-compat>
-      <x-scoped is="components/x-scoped/index" id="scoped">
-        <view class="scoped-index--scoped">scoped: wv_OWNER</view>
-      </x-scoped>
+      <view class="scoped-index--scoped">scoped: wv_OWNER</view>
       <text selectable="" class="details">
         { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext":
         true, "outsideSetupInstance": true, "bindModelUpdated": true, "bindModelHelpers": true,

@@ -135,6 +135,7 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT
   delete process.env.WEAPP_VITE_E2E_RELUNCH_RETRIES
   delete process.env.WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP
 }
 
 describe.sequential('automator launch resilience', () => {
@@ -701,6 +702,51 @@ describe.sequential('automator launch resilience', () => {
     expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
 
+  it('retries launch when devtools http reset fails through a wrapped connection error', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const firstMiniProgram = createMockMiniProgram()
+    const secondMiniProgram = createMockMiniProgram()
+    const connectionError = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:62544'), {
+      code: 'ECONNREFUSED',
+    })
+    const fetchError = Object.assign(new TypeError('fetch failed'), {
+      cause: connectionError,
+    })
+    execaMock
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9411' }),
+        stderr: '',
+      })
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9412' }),
+        stderr: '',
+      })
+    connectMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
+    resetWechatIdeFileUtilsByHttpMock
+      .mockRejectedValueOnce(fetchError)
+      .mockResolvedValue('')
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(connectMock).toHaveBeenCalledTimes(2)
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledTimes(2)
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
   it('cleans devtools compile cache and retries when cli bridge exits with path undefined error', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -747,5 +793,40 @@ describe.sequential('automator launch resilience', () => {
       wsEndpoint: 'ws://127.0.0.1:9527',
     })
     expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('refreshes project state and retries a runtime relaunch after simulator boot error', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
+    process.env.WEAPP_VITE_E2E_RELUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY = '1'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const page = createMockPage()
+    const miniProgram = createMockMiniProgram()
+    miniProgram.reLaunch = miniProgram.__rawReLaunch = vi.fn()
+      .mockRejectedValueOnce(new Error('[] simulator not found\nError: simulator not found'))
+      .mockResolvedValueOnce(page)
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launched = await launchAutomator({ projectPath: sandboxRoot })
+
+    resetWechatIdeFileUtilsByHttpMock.mockClear()
+    runWechatIdeEngineBuildByHttpMock.mockClear()
+    miniProgram.__rawCompile.mockClear()
+
+    await expect(launched.reLaunch('/pages/index/index')).resolves.toBe(page)
+
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledTimes(2)
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith(sandboxRoot)
+    expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledWith(sandboxRoot, expect.objectContaining({
+      overallTimeoutMs: 60_000,
+      pollIntervalMs: 1_000,
+    }))
+    expect(miniProgram.__rawCompile).toHaveBeenCalledWith({ force: true })
   })
 })
