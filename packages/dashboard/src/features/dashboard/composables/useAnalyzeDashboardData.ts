@@ -25,7 +25,7 @@ const budgetWarningRatio = 0.85
 interface FileComparisonMaps {
   packageBytes: Map<string, number>
   fileBytes: Map<string, number>
-  moduleBytes: Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageLabel: string, file: string }>
+  moduleBytes: Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageId: string, packageLabel: string, file: string }>
   totalBytes: number
   compressedBytes: number
 }
@@ -33,6 +33,7 @@ interface FileComparisonMaps {
 interface ModulePlacement {
   source: string
   sourceType: ModuleSourceType
+  packageId: string
   packageLabel: string
   file: string
 }
@@ -62,7 +63,7 @@ function createFileKey(packageId: string, fileName: string) {
 function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComparisonMaps {
   const packageBytes = new Map<string, number>()
   const fileBytes = new Map<string, number>()
-  const moduleBytes = new Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageLabel: string, file: string }>()
+  const moduleBytes = new Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageId: string, packageLabel: string, file: string }>()
   let totalBytes = 0
   let compressedBytes = 0
 
@@ -82,6 +83,7 @@ function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComp
             source: mod.source,
             sourceType: mod.sourceType,
             bytes,
+            packageId: pkg.id,
             packageLabel: pkg.label,
             file: file.file,
           })
@@ -109,6 +111,7 @@ function createModulePlacementMap(result: AnalyzeSubpackagesResult): Map<string,
           map.set(mod.id, {
             source: mod.source,
             sourceType: mod.sourceType,
+            packageId: pkg.id,
             packageLabel: pkg.label,
             file: file.file,
           })
@@ -485,6 +488,7 @@ export function useAnalyzeDashboardData(
           key: `file:${pkg.id}:${file.file}`,
           label: file.file,
           category,
+          packageId: pkg.id,
           packageLabel: pkg.label,
           file: file.file,
           currentBytes,
@@ -509,8 +513,11 @@ export function useAnalyzeDashboardData(
         key: `module:${id}`,
         label,
         category,
+        packageId: currentModule?.packageId ?? previousModule?.packageId,
         packageLabel: currentModule?.packageLabel ?? previousModule?.packageLabel ?? '',
         file: currentModule?.file ?? previousModule?.file,
+        moduleId: id,
+        sourceType: currentModule?.sourceType ?? mod.sourceType,
         currentBytes: mod.bytes,
         previousBytes,
         deltaBytes,

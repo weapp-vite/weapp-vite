@@ -265,7 +265,10 @@ export interface IncrementAttributionEntry {
   label: string
   category: string
   packageLabel: string
+  packageId?: string
   file?: string
+  moduleId?: string
+  sourceType?: ModuleSourceType
   currentBytes: number
   previousBytes: number
   deltaBytes: number
@@ -329,6 +332,23 @@ export interface TreemapNode {
   meta: TreemapNodeMeta
   children?: TreemapNode[]
   itemStyle?: Record<string, any>
+}
+
+export type AnalyzeActionCenterTone = 'critical' | 'warning' | 'info' | 'success'
+export type AnalyzeActionCenterKind = 'budget' | 'increment' | 'duplicate' | 'file'
+
+export interface AnalyzeActionCenterItem {
+  key: string
+  kind: AnalyzeActionCenterKind
+  title: string
+  meta: string
+  value?: string
+  tone: AnalyzeActionCenterTone
+  tab: DashboardTab
+  priority: number
+  warning?: PackageBudgetWarning
+  file?: LargestFileEntry
+  moduleMeta?: TreemapModuleNodeMeta
 }
 
 export interface DashboardNavItem {

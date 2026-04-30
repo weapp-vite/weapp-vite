@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { AnalyzeActionCenterItem, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import ActionCenterPanel from '../features/dashboard/components/ActionCenterPanel.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -13,6 +14,7 @@ import DashboardMetricGrid from '../features/dashboard/components/DashboardMetri
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
+import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
 import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
@@ -36,6 +38,7 @@ const chartRef = shallowRef<HTMLDivElement>()
 const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
 const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
 const selectedBudgetWarning = shallowRef<PackageBudgetWarning | null>(null)
+const selectedActionKey = shallowRef<string | null>(null)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
@@ -139,6 +142,13 @@ const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = us
   duplicateModules,
   moduleSourceSummary,
   lastUpdatedAt,
+})
+const { actionItems } = useAnalyzeActionCenter({
+  budgetWarnings,
+  incrementAttribution,
+  duplicateModules,
+  largestFiles,
+  packageInsights,
 })
 
 const exportSummaryText = computed(() => {
@@ -352,6 +362,34 @@ function handleFocusTreemapSelection() {
   focusTreemapNode(selectedTreemapFocusNodeId.value)
 }
 
+function handleSelectAction(item: AnalyzeActionCenterItem) {
+  selectedActionKey.value = item.key
+
+  if (item.warning) {
+    activeTab.value = 'overview'
+    handleSelectBudgetWarning(item.warning)
+    void nextTick(() => handleFocusTreemapSelection())
+    return
+  }
+
+  if (item.file) {
+    activeTab.value = 'overview'
+    handleSelectLargestFile(item.file)
+    void nextTick(() => handleFocusTreemapSelection())
+    return
+  }
+
+  if (item.moduleMeta) {
+    activeTab.value = item.tab
+    selectedTreemapMeta.value = item.moduleMeta
+    selectedLargestFile.value = null
+    selectedBudgetWarning.value = null
+    return
+  }
+
+  activeTab.value = item.tab
+}
+
 function handleResetTreemapFocus() {
   chart?.setOption(treemapOption.value, true)
   chart?.resize()
@@ -431,6 +469,7 @@ watch(resultRef, () => {
   selectedTreemapMeta.value = null
   selectedLargestFile.value = null
   selectedBudgetWarning.value = null
+  selectedActionKey.value = null
 })
 
 watch(resolvedTheme, async () => {
@@ -579,7 +618,15 @@ onBeforeUnmount(() => {
 
     <template v-if="resultRef">
       <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-        <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
+        <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.44fr)]">
+          <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
+          <ActionCenterPanel
+            :actions="actionItems"
+            :active-key="selectedActionKey"
+            @copy-report="copyPrReport"
+            @select="handleSelectAction"
+          />
+        </div>
 
         <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
           <OverviewPanel
