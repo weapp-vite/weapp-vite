@@ -6,8 +6,9 @@ import type {
   IncrementAttributionSummary,
   LargestFileEntry,
   ModuleSourceSummary,
+  ModuleSourceType,
 } from '../types'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { formatBuildOrigin, formatBytes } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
@@ -15,13 +16,8 @@ import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import AppSummaryValueCard from './AppSummaryValueCard.vue'
 
-const props = defineProps<{
-  visibleDuplicateModules: DuplicateModuleEntry[]
-  moduleSourceSummary: ModuleSourceSummary[]
-  incrementAttribution: IncrementAttributionEntry[]
-  incrementSummary: IncrementAttributionSummary[]
-  visibleLargestFiles: LargestFileEntry[]
-}>()
+type DuplicateModuleSourceFilter = 'all' | ModuleSourceType
+type DuplicateModuleSortMode = 'saving' | 'packages' | 'size' | 'source'
 
 interface DuplicateModuleItem extends DashboardDetailItem {
   key: string
@@ -31,6 +27,18 @@ interface DuplicateModuleItem extends DashboardDetailItem {
 interface ListItemRow extends DashboardDetailItem {
   key: string
 }
+
+const props = defineProps<{
+  duplicateModules: DuplicateModuleEntry[]
+  moduleSourceSummary: ModuleSourceSummary[]
+  incrementAttribution: IncrementAttributionEntry[]
+  incrementSummary: IncrementAttributionSummary[]
+  visibleLargestFiles: LargestFileEntry[]
+}>()
+
+const duplicateQuery = ref('')
+const duplicateSourceFilter = ref<DuplicateModuleSourceFilter>('all')
+const duplicateSortMode = ref<DuplicateModuleSortMode>('saving')
 
 function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
   return {
@@ -70,11 +78,51 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
   }
 }
 
-const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => props.visibleDuplicateModules.map(module => ({
-  key: module.id,
-  packages: module.packages,
-  ...createDuplicateModuleItem(module),
-})))
+const duplicateSourceOptions = computed(() => {
+  const sourceSet = new Set<ModuleSourceType>()
+  for (const module of props.duplicateModules) {
+    sourceSet.add(module.sourceType)
+  }
+  return [...sourceSet].sort((a, b) => a.localeCompare(b))
+})
+
+const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => {
+  const keyword = duplicateQuery.value.trim().toLowerCase()
+  return props.duplicateModules
+    .filter((module) => {
+      if (duplicateSourceFilter.value !== 'all' && module.sourceType !== duplicateSourceFilter.value) {
+        return false
+      }
+      if (!keyword) {
+        return true
+      }
+      return [
+        module.id,
+        module.source,
+        module.sourceType,
+        module.advice,
+        module.packages.map(pkg => pkg.packageLabel).join(' '),
+        module.packages.flatMap(pkg => pkg.files).join(' '),
+      ].some(value => value.toLowerCase().includes(keyword))
+    })
+    .sort((a, b) => {
+      if (duplicateSortMode.value === 'packages') {
+        return b.packageCount - a.packageCount || b.estimatedSavingBytes - a.estimatedSavingBytes || a.source.localeCompare(b.source)
+      }
+      if (duplicateSortMode.value === 'size') {
+        return b.bytes - a.bytes || b.packageCount - a.packageCount || a.source.localeCompare(b.source)
+      }
+      if (duplicateSortMode.value === 'source') {
+        return a.source.localeCompare(b.source)
+      }
+      return b.estimatedSavingBytes - a.estimatedSavingBytes || b.packageCount - a.packageCount || a.source.localeCompare(b.source)
+    })
+    .map(module => ({
+      key: module.id,
+      packages: module.packages,
+      ...createDuplicateModuleItem(module),
+    }))
+})
 
 const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
   key: `${item.sourceType}:${item.sourceCategory}`,
@@ -100,12 +148,55 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
 <template>
   <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]">
     <div :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-      <AppPanelHeader
-        icon-name="duplicate-modules"
-        title="重复模块"
-        description="优先看被多个包重复包含的源码与依赖。"
-      />
-      <div v-if="duplicateModuleItems.length" class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <AppPanelHeader
+          icon-name="duplicate-modules"
+          title="重复模块"
+          :description="`匹配 ${duplicateModuleItems.length} / ${duplicateModules.length} 个模块`"
+        />
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            v-model="duplicateQuery"
+            class="h-9 w-56 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"
+            placeholder="搜索模块、包或文件"
+            type="search"
+          >
+          <select
+            v-model="duplicateSourceFilter"
+            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
+          >
+            <option value="all">
+              全部来源
+            </option>
+            <option
+              v-for="sourceType in duplicateSourceOptions"
+              :key="sourceType"
+              :value="sourceType"
+            >
+              {{ sourceType }}
+            </option>
+          </select>
+          <select
+            v-model="duplicateSortMode"
+            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
+          >
+            <option value="saving">
+              按可节省
+            </option>
+            <option value="packages">
+              按包数量
+            </option>
+            <option value="size">
+              按单份体积
+            </option>
+            <option value="source">
+              按路径
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div v-if="duplicateModuleItems.length" class="mt-4 max-h-[calc(100%-5.75rem)] space-y-2.5 overflow-y-auto pr-1">
         <AppSummaryValueCard
           v-for="item in duplicateModuleItems"
           :key="item.key"

@@ -191,7 +191,6 @@ const filteredDuplicateModules = computed(() => {
   }
   return duplicateModules.value.filter(module => module.source === meta.source)
 })
-const visibleDuplicateModules = computed(() => filteredDuplicateModules.value.slice(0, 12))
 const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value, selectedBudgetWarning.value))
 const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 10))
 const activeLargestFileKey = computed(() => selectedLargestFile.value
@@ -415,6 +414,82 @@ const exportPrMarkdownText = computed(() => {
     duplicateRows || '| - | 0 | 0 B | - |',
     '',
   ].join('\n')
+})
+
+function escapeCsvCell(value: string | number | undefined) {
+  const text = String(value ?? '')
+  if (!/[",\n\r]/.test(text)) {
+    return text
+  }
+  return `"${text.replaceAll('"', '""')}"`
+}
+
+function createCsvRow(values: Array<string | number | undefined>) {
+  return values.map(escapeCsvCell).join(',')
+}
+
+const exportCsvText = computed(() => {
+  const rows = [
+    createCsvRow(['section', 'label', 'package', 'type', 'sizeBytes', 'compressedBytes', 'deltaBytes', 'count', 'detail']),
+  ]
+
+  for (const pkg of packageInsights.value) {
+    rows.push(createCsvRow([
+      'package',
+      pkg.label,
+      pkg.id,
+      pkg.type,
+      pkg.totalBytes,
+      pkg.compressedBytes,
+      pkg.sizeDeltaBytes,
+      pkg.fileCount,
+      `${pkg.moduleCount} modules; ${pkg.duplicateModuleCount} duplicate modules`,
+    ]))
+  }
+
+  for (const file of largestFiles.value) {
+    rows.push(createCsvRow([
+      'file',
+      file.file,
+      file.packageLabel,
+      file.type,
+      file.size,
+      file.compressedSize,
+      file.sizeDeltaBytes,
+      file.moduleCount,
+      file.source ?? file.from,
+    ]))
+  }
+
+  for (const module of duplicateModules.value) {
+    rows.push(createCsvRow([
+      'duplicate-module',
+      module.source,
+      module.packages.map(pkg => pkg.packageLabel).join('; '),
+      module.sourceType,
+      module.bytes,
+      module.estimatedSavingBytes,
+      undefined,
+      module.packageCount,
+      module.advice,
+    ]))
+  }
+
+  for (const item of incrementAttribution.value) {
+    rows.push(createCsvRow([
+      'increment',
+      item.label,
+      item.packageLabel,
+      item.category,
+      item.currentBytes,
+      item.deltaBytes,
+      item.deltaBytes,
+      1,
+      item.advice,
+    ]))
+  }
+
+  return rows.join('\n')
 })
 
 function handleResize() {
@@ -666,6 +741,18 @@ function exportMarkdown() {
   moreMenuOpen.value = false
 }
 
+function exportCsv() {
+  const blob = new Blob([`${exportCsvText.value}\n`], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-analyze.csv'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  exportStatus.value = '已导出 CSV'
+  moreMenuOpen.value = false
+}
+
 function handlePageClick() {
   moreMenuOpen.value = false
 }
@@ -881,6 +968,16 @@ onBeforeUnmount(() => {
             </span>
             导出 MD
           </button>
+          <button
+            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+            type="button"
+            @click="exportCsv"
+          >
+            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+              <DashboardIcon name="file-samples" />
+            </span>
+            导出 CSV
+          </button>
         </div>
       </div>
     </section>
@@ -994,7 +1091,7 @@ onBeforeUnmount(() => {
         >
           <template #modules>
             <ModulesPanel
-              :visible-duplicate-modules="visibleDuplicateModules"
+              :duplicate-modules="filteredDuplicateModules"
               :module-source-summary="moduleSourceSummary"
               :increment-attribution="incrementAttribution"
               :increment-summary="incrementSummary"
