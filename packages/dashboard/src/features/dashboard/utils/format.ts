@@ -163,7 +163,7 @@ export function getRuntimeSourceBadgeTone(errorCount: number) {
   return errorCount > 0 ? 'error' : 'info'
 }
 
-export function createRuntimeSourceBadgeItem(options: Pick<DashboardRuntimeSourceCardItem, 'count' | 'errorCount' | 'latestTimestamp'>): DashboardRuntimeBadgeItem {
+export function createRuntimeSourceBadgeItem(options: Pick<DashboardRuntimeSourceCardItem, 'count' | 'errorCount'> & { latestTimestamp?: string }): DashboardRuntimeBadgeItem {
   return {
     label: options.latestTimestamp ? `${options.count} 条` : `错误 ${options.errorCount}`,
     tone: getRuntimeSourceBadgeTone(options.errorCount),

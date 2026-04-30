@@ -2,6 +2,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "rootDir": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -16,6 +21,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
+  },
+  "vueCompilerOptions": {
+    "plugins": [],
+    "lib": "vue"
   },
   "include": [
     "src",

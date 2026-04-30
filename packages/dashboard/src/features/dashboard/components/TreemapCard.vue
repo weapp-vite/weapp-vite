@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption } from '../types'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
@@ -33,6 +34,10 @@ function getChartBadgeClassName(): string {
 
 function canUseFilter(option: AnalyzeTreemapFilterOption) {
   return option.value !== 'selected-package' || props.canUseSelectedPackageFilter
+}
+
+function handleChartRef(element: Element | ComponentPublicInstance | null) {
+  props.bindChartRef(element instanceof Element ? element : null)
 }
 </script>
 
@@ -90,7 +95,7 @@ function canUseFilter(option: AnalyzeTreemapFilterOption) {
     </div>
     <div class="relative min-h-0 flex-1 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2">
       <div
-        :ref="bindChartRef"
+        :ref="handleChartRef"
         class="h-full min-h-0 w-full"
       />
       <AppEmptyState

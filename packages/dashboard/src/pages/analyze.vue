@@ -29,7 +29,7 @@ import { dashboardTabs, treemapFilterOptions } from '../features/dashboard/const
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
-import 'echarts/theme/dark'
+import 'echarts/theme/dark.js'
 
 echarts.use([
   TreemapChart,
@@ -185,10 +185,11 @@ function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | n
 }
 
 const filteredDuplicateModules = computed(() => {
-  if (selectedTreemapMeta.value?.kind !== 'module') {
+  const meta = selectedTreemapMeta.value
+  if (meta?.kind !== 'module') {
     return duplicateModules.value
   }
-  return duplicateModules.value.filter(module => module.source === selectedTreemapMeta.value?.source)
+  return duplicateModules.value.filter(module => module.source === meta.source)
 })
 const visibleDuplicateModules = computed(() => filteredDuplicateModules.value.slice(0, 12))
 const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value, selectedBudgetWarning.value))
@@ -431,8 +432,8 @@ function bindChartRef(element: Element | null) {
     : undefined
 }
 
-function handleChartClick(params: { data?: { meta?: TreemapNodeMeta } }) {
-  selectedTreemapMeta.value = params.data?.meta ?? null
+function handleChartClick(params: unknown) {
+  selectedTreemapMeta.value = (params as { data?: { meta?: TreemapNodeMeta } | null }).data?.meta ?? null
   selectedLargestFile.value = null
   selectedBudgetWarning.value = null
 }

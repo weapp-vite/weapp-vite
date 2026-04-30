@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { AnalyzeSubpackagesResult, AnalyzeTreemapFilterMode, ResolvedTheme, TreemapNode, TreemapNodeMeta } from '../types'
+import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult, AnalyzeTreemapFilterMode, ResolvedTheme, TreemapNode, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import {
   createTreemapAssetNodeId,
@@ -58,7 +58,7 @@ function createRiskItemStyle(score: number) {
 
 function getPackageLimitBytes(
   pkg: AnalyzeSubpackagesResult['packages'][number],
-  budgets: AnalyzeSubpackagesResult['metadata']['budgets'] | undefined,
+  budgets: AnalyzeBudgetConfig | undefined,
 ) {
   if (!budgets) {
     return 0

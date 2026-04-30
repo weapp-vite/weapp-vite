@@ -617,7 +617,9 @@ export function useAnalyzeDashboardData(
         const gzipBytes = pkg.files.reduce((sum, file) => sum + (file.gzipSize ?? 0), 0)
         const brotliBytes = pkg.files.reduce((sum, file) => sum + (file.brotliSize ?? 0), 0)
         const compressedBytes = pkg.files.reduce((sum, file) => sum + getFileCompressedSize(file), 0)
-        const hasRealCompressedSize = pkg.files.some(file => typeof file.gzipSize === 'number' || typeof file.brotliSize === 'number')
+        const compressedSizeSource = pkg.files.some(file => typeof file.gzipSize === 'number' || typeof file.brotliSize === 'number')
+          ? 'real' as const
+          : 'estimated' as const
         const previousBytes = previousMaps.value.packageBytes.get(pkg.id)
 
         return {
@@ -628,7 +630,7 @@ export function useAnalyzeDashboardData(
           gzipBytes,
           brotliBytes,
           compressedBytes,
-          compressedSizeSource: hasRealCompressedSize ? 'real' : 'estimated',
+          compressedSizeSource,
           sizeDeltaBytes: typeof previousBytes === 'number' ? totalBytes - previousBytes : undefined,
           fileCount: pkg.files.length,
           chunkCount: pkg.files.filter(file => file.type === 'chunk').length,

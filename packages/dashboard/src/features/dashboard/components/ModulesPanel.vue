@@ -109,8 +109,10 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
         <AppSummaryValueCard
           v-for="item in duplicateModuleItems"
           :key="item.key"
-          v-bind="item"
           break-title
+          :meta="item.meta"
+          :title="item.title"
+          :value="item.value"
         >
           <ul class="mt-3 space-y-1.5 text-xs text-(--dashboard-text-muted)">
             <li v-for="pkg in item.packages" :key="`${item.key}:${pkg.packageId}`">
@@ -134,15 +136,19 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
             <AppSummaryValueCard
               v-for="item in incrementSummaryItems"
               :key="item.key"
-              v-bind="item"
+              :meta="item.meta"
+              :title="item.title"
+              :value="item.value"
             />
           </div>
           <ul class="space-y-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
             <AppCompactListItem
               v-for="item in incrementItems"
               :key="item.key"
-              v-bind="item"
+              :meta="item.meta"
               mono-title
+              :title="item.title"
+              :value="item.value"
             />
           </ul>
         </div>
@@ -158,15 +164,19 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
             <AppSummaryValueCard
               v-for="item in moduleSourceItems"
               :key="item.key"
-              v-bind="item"
+              :meta="item.meta"
+              :title="item.title"
+              :value="item.value"
             />
           </div>
           <ul class="space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
             <AppCompactListItem
               v-for="item in largestFileSampleItems"
               :key="item.key"
-              v-bind="item"
+              :meta="item.meta"
               mono-title
+              :title="item.title"
+              :value="item.value"
             />
           </ul>
         </div>
