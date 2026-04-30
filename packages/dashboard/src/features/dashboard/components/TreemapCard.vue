@@ -21,6 +21,11 @@ const emit = defineEmits<{
 
 const chartTitle = 'Treemap'
 const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
+const healthLegend = [
+  { label: '健康', className: 'bg-emerald-600' },
+  { label: '关注', className: 'bg-amber-500' },
+  { label: '急需改进', className: 'bg-red-600' },
+]
 
 function getChartBadgeClassName(): string {
   return pillButtonStyles({ kind: 'badge' })
@@ -59,17 +64,29 @@ function canUseFilter(option: AnalyzeTreemapFilterOption) {
         </div>
       </template>
     </AppPanelHeader>
-    <div class="mb-2 flex flex-wrap gap-1.5 px-2">
-      <button
-        v-for="option in filterOptions"
-        :key="option.value"
-        :class="[pillButtonStyles({ kind: 'badge', active: filterMode === option.value }), !canUseFilter(option) ? 'cursor-not-allowed opacity-45' : undefined]"
-        :disabled="!canUseFilter(option)"
-        type="button"
-        @click="emit('updateFilterMode', option.value)"
-      >
-        {{ option.label }}
-      </button>
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2 px-2">
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          v-for="option in filterOptions"
+          :key="option.value"
+          :class="[pillButtonStyles({ kind: 'badge', active: filterMode === option.value }), !canUseFilter(option) ? 'cursor-not-allowed opacity-45' : undefined]"
+          :disabled="!canUseFilter(option)"
+          type="button"
+          @click="emit('updateFilterMode', option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-[11px] text-(--dashboard-text-soft)">
+        <span
+          v-for="item in healthLegend"
+          :key="item.label"
+          class="inline-flex items-center gap-1.5"
+        >
+          <span class="h-2.5 w-2.5 rounded-full" :class="item.className" />
+          {{ item.label }}
+        </span>
+      </div>
     </div>
     <div class="relative min-h-0 flex-1 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2">
       <div
