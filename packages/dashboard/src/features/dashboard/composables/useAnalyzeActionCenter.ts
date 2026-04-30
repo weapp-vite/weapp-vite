@@ -101,7 +101,7 @@ export function useAnalyzeActionCenter(options: {
   const actionItems = computed<AnalyzeActionCenterItem[]>(() => {
     const items: AnalyzeActionCenterItem[] = []
 
-    for (const warning of options.budgetWarnings.value.slice(0, 4)) {
+    for (const warning of options.budgetWarnings.value) {
       items.push({
         key: `budget:${warning.id}`,
         kind: 'budget',
@@ -115,11 +115,11 @@ export function useAnalyzeActionCenter(options: {
       })
     }
 
-    for (const item of options.incrementAttribution.value.slice(0, 5)) {
+    for (const item of options.incrementAttribution.value.slice(0, 12)) {
       items.push(createIncrementAction(item, options.largestFiles.value, options.packageInsights.value))
     }
 
-    for (const module of options.duplicateModules.value.filter(item => item.estimatedSavingBytes > 0).slice(0, 5)) {
+    for (const module of options.duplicateModules.value.filter(item => item.estimatedSavingBytes > 0).slice(0, 12)) {
       items.push(createModuleAction(module, options.packageInsights.value))
     }
 
@@ -140,7 +140,6 @@ export function useAnalyzeActionCenter(options: {
 
     return items
       .sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title))
-      .slice(0, 6)
   })
 
   return {
