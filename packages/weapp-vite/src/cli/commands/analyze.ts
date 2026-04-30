@@ -399,6 +399,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         if (!outputPrReport && !outputMarkdown && !outputJson) {
           printAnalysisSummary(result)
           await startAnalyzeDashboard(result, {
+            artifactRoot: ctx.configService.outDir,
             cwd: ctx.configService.cwd,
             packageManagerAgent: ctx.configService.packageManager.agent,
             previousResult,

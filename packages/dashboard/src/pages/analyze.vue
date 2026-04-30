@@ -18,6 +18,7 @@ import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import HistoryBaselinePanel from '../features/dashboard/components/HistoryBaselinePanel.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
+import SourceArtifactComparePanel from '../features/dashboard/components/SourceArtifactComparePanel.vue'
 import TreemapCard from '../features/dashboard/components/TreemapCard.vue'
 import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
 import { useAnalyzeCommandPalette } from '../features/dashboard/composables/useAnalyzeCommandPalette'
@@ -67,6 +68,9 @@ const packagesLayoutItems = [
 ]
 const modulesLayoutItems = [
   { id: 'modules', label: '模块复用' },
+]
+const sourceLayoutItems = [
+  { id: 'source', label: '源码对比' },
 ]
 const { resolvedTheme } = useDashboardTheme()
 const {
@@ -1012,6 +1016,23 @@ onBeforeUnmount(() => {
           @select-budget-warning="handleSelectBudgetWarning"
           @select-file="handleSelectLargestFile"
         />
+      </section>
+
+      <section v-else-if="activeTab === 'source'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="sourceLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:source"
+        >
+          <template #source>
+            <SourceArtifactComparePanel
+              :active-file-key="activeLargestFileKey"
+              :files="filteredLargestFiles"
+              :theme="resolvedTheme"
+              @select-file="handleSelectLargestFile"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
       </section>
 
       <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">

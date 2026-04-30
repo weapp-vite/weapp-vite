@@ -112,6 +112,7 @@ export function registerBuildCommand(cli: CAC) {
           const analyzeDurationMs = Date.now() - analyzeStartedAt
           analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
             watch: true,
+            artifactRoot: configService.outDir,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
             previousResult: previousAnalyzeResult,

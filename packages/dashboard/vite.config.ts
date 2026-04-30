@@ -39,6 +39,9 @@ export default defineConfig({
                 if (!id.includes('node_modules')) {
                   return undefined
                 }
+                if (id.includes('monaco-editor')) {
+                  return 'monaco'
+                }
                 if (id.includes('echarts')) {
                   return 'echarts'
                 }

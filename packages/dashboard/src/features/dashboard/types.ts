@@ -18,6 +18,7 @@ export type DashboardIconName
     | 'tab-overview'
     | 'tab-packages'
     | 'tab-modules'
+    | 'tab-source'
     | 'status-dark'
     | 'status-light'
     | 'status-live'
@@ -133,7 +134,7 @@ export interface AnalyzeHistorySnapshot {
   duplicateCount: number
 }
 
-export type DashboardTab = 'overview' | 'diagnostics' | 'treemap' | 'files' | 'packages' | 'modules'
+export type DashboardTab = 'overview' | 'diagnostics' | 'treemap' | 'files' | 'source' | 'packages' | 'modules'
 
 export interface ThemeOption {
   value: 'system' | 'light' | 'dark'

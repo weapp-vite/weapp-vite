@@ -11,6 +11,7 @@ export const dashboardTabs: DashboardTabOption[] = [
   { key: 'diagnostics', label: '诊断', iconName: 'metric-health' },
   { key: 'treemap', label: '体积地图', iconName: 'treemap' },
   { key: 'files', label: '文件详情', iconName: 'top-files' },
+  { key: 'source', label: '源码对比', iconName: 'tab-source' },
   { key: 'packages', label: '包与产物', iconName: 'tab-packages' },
   { key: 'modules', label: '模块与复用', iconName: 'tab-modules' },
 ]

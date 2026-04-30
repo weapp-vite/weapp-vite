@@ -283,6 +283,7 @@ export function createAnalyzeController(options: {
       const initialAnalyze = await runAnalyze()
       analyzeHandle = await startDashboard(initialAnalyze.result, {
         watch: true,
+        artifactRoot: configService.outDir,
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
         silentStartupLog: true,

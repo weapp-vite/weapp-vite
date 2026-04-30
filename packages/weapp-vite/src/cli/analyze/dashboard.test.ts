@@ -6,6 +6,8 @@ import { startAnalyzeDashboard } from './dashboard'
 
 const existsSyncMock = vi.hoisted(() => vi.fn(() => undefined))
 const readFileSyncMock = vi.hoisted(() => vi.fn(() => undefined))
+const readFileMock = vi.hoisted(() => vi.fn(() => undefined))
+const statMock = vi.hoisted(() => vi.fn(() => undefined))
 const resolveDashboardPackageMock = vi.hoisted(() => vi.fn(() => '/mock/dashboard/package.json'))
 const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
@@ -30,15 +32,33 @@ vi.mock('node:fs', async () => {
     const mocked = readFileSyncMock(...args)
     return mocked === undefined ? actual.readFileSync(...args) : mocked
   })
+  const readFile = vi.fn((...args: Parameters<typeof actual.promises.readFile>) => {
+    const mocked = readFileMock(...args)
+    return mocked === undefined ? actual.promises.readFile(...args) : mocked
+  })
+  const stat = vi.fn((...args: Parameters<typeof actual.promises.stat>) => {
+    const mocked = statMock(...args)
+    return mocked === undefined ? actual.promises.stat(...args) : mocked
+  })
 
   return {
     ...actual,
     default: {
       ...(('default' in actual && actual.default) ? actual.default : actual),
       existsSync,
+      promises: {
+        ...actual.promises,
+        readFile,
+        stat,
+      },
       readFileSync,
     },
     existsSync,
+    promises: {
+      ...actual.promises,
+      readFile,
+      stat,
+    },
     readFileSync,
   }
 })
@@ -115,6 +135,27 @@ function createAnalyzeResult(label: string) {
     modules: [],
     subPackages: [],
   } as any
+}
+
+function createMockResponse() {
+  let resolveDone!: () => void
+  const done = new Promise<void>((resolve) => {
+    resolveDone = resolve
+  })
+  const response: any = {
+    done,
+    body: '',
+    headers: new Map<string, string>(),
+    statusCode: 200,
+    setHeader: vi.fn((key: string, value: string) => {
+      response.headers.set(key, value)
+    }),
+    end: vi.fn((body?: string) => {
+      response.body = body ?? ''
+      resolveDone()
+    }),
+  }
+  return response
 }
 
 describe('analyze dashboard', () => {
@@ -309,6 +350,160 @@ describe('analyze dashboard', () => {
     expect(handle).toBeDefined()
     expect(createServerArg.root).toBe('/mock/dashboard')
     expect(createServerArg.configFile).toBe('/mock/dashboard/vite.config.ts')
+
+    await handle?.close()
+    server.httpServer?.emit('close')
+    await handle?.waitForExit()
+  })
+
+  it('serves source and artifact content through restricted dashboard file endpoint', async () => {
+    const server = createMockServer()
+
+    statMock.mockImplementation(async (value: string) => {
+      if (
+        value === '/project/apps/lab/src/pages/index.ts'
+        || value === '/project/apps/lab/dist/pages/index/index.js'
+        || value === '/project/packages-runtime/wevu/dist/src.mjs'
+      ) {
+        return {
+          isFile: () => true,
+          size: 24,
+        }
+      }
+      return undefined
+    })
+    readFileMock.mockImplementation(async (value: string) => {
+      if (value === '/project/apps/lab/src/pages/index.ts') {
+        return 'export const page = true\n'
+      }
+      if (value === '/project/apps/lab/dist/pages/index/index.js') {
+        return 'Page({})\n'
+      }
+      if (value === '/project/packages-runtime/wevu/dist/src.mjs') {
+        return 'export const runtime = true\n'
+      }
+      return undefined
+    })
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const handle = await startAnalyzeDashboard({
+      packages: [
+        {
+          id: 'main',
+          label: 'main',
+          files: [
+            {
+              file: 'pages/index/index.js',
+              type: 'chunk',
+              from: 'main',
+              modules: [
+                {
+                  id: 'src/pages/index.ts',
+                  source: 'src/pages/index.ts',
+                  sourceType: 'src',
+                },
+                {
+                  id: '../../packages-runtime/wevu/dist/src.mjs',
+                  source: '../../packages-runtime/wevu/dist/src.mjs',
+                  sourceType: 'workspace',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      modules: [],
+      subPackages: [],
+    } as any, {
+      artifactRoot: '/project/apps/lab/dist',
+      cwd: '/project/apps/lab',
+      watch: true,
+    })
+    const middleware = server.middlewares.use.mock.calls[0]?.[0]
+
+    const sourceResponse = createMockResponse()
+    middleware(
+      { url: '/__weapp_vite_file_content?kind=source&path=src/pages/index.ts' },
+      sourceResponse,
+      vi.fn(),
+    )
+    await sourceResponse.done
+    expect(sourceResponse.statusCode).toBe(200)
+    expect(JSON.parse(sourceResponse.body)).toMatchObject({
+      kind: 'source',
+      language: 'typescript',
+      path: 'src/pages/index.ts',
+      content: 'export const page = true\n',
+    })
+
+    const workspaceResponse = createMockResponse()
+    middleware(
+      { url: '/__weapp_vite_file_content?kind=source&path=../../packages-runtime/wevu/dist/src.mjs' },
+      workspaceResponse,
+      vi.fn(),
+    )
+    await workspaceResponse.done
+    expect(workspaceResponse.statusCode).toBe(200)
+    expect(JSON.parse(workspaceResponse.body)).toMatchObject({
+      kind: 'source',
+      language: 'javascript',
+      path: '../../packages-runtime/wevu/dist/src.mjs',
+      content: 'export const runtime = true\n',
+    })
+
+    const artifactResponse = createMockResponse()
+    middleware(
+      { url: '/__weapp_vite_file_content?kind=artifact&path=pages/index/index.js' },
+      artifactResponse,
+      vi.fn(),
+    )
+    await artifactResponse.done
+    expect(artifactResponse.statusCode).toBe(200)
+    expect(JSON.parse(artifactResponse.body)).toMatchObject({
+      kind: 'artifact',
+      language: 'javascript',
+      path: 'pages/index/index.js',
+      content: 'Page({})\n',
+    })
+
+    await handle?.close()
+    server.httpServer?.emit('close')
+    await handle?.waitForExit()
+  })
+
+  it('rejects dashboard file endpoint path traversal', async () => {
+    const server = createMockServer()
+
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('escape'), {
+      artifactRoot: '/project/dist',
+      cwd: '/project',
+      watch: true,
+    })
+    const middleware = server.middlewares.use.mock.calls[0]?.[0]
+    const response = createMockResponse()
+
+    middleware(
+      { url: '/__weapp_vite_file_content?kind=source&path=../secret.txt' },
+      response,
+      vi.fn(),
+    )
+    await response.done
+    expect(response.statusCode).toBe(400)
+    expect(JSON.parse(response.body)).toMatchObject({
+      error: 'invalid_request',
+    })
 
     await handle?.close()
     server.httpServer?.emit('close')
