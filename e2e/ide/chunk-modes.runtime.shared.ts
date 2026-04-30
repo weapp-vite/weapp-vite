@@ -17,7 +17,21 @@ const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
 const LEADING_SLASHES_RE = /^\/+/
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const CHUNK_MODES_RUNTIME_CASE_TIMEOUT = 4 * 60_000
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+const ROUTE_RECOVERY_ATTEMPTS = 2
+const ROUTE_RECOVERY_ERROR_PATTERNS = [
+  /simulator not found/i,
+  /模拟器启动失败/,
+  /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
+  /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
+  /subPackages[\s\S]{0,80}undefined/i,
+  /Target closed/i,
+  /Execution context was destroyed/i,
+  /WebSocket is not open/i,
+  /not connected/i,
+]
 
 interface RuntimeRouteCase {
   route: string
@@ -36,6 +50,20 @@ let sharedLaunchInfraUnavailableMessage: string | null = null
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function restoreEnvValue(key: string, value: string | undefined) {
+  if (value == null) {
+    delete process.env[key]
+  }
+  else {
+    process.env[key] = value
+  }
+}
+
+function isRecoverableRouteError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return ROUTE_RECOVERY_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
 async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
@@ -214,7 +242,11 @@ async function getSharedMiniProgram(
 
   if (!sharedMiniProgram) {
     const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     try {
+      if (!previousLaunchMode) {
+        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = AUTOMATOR_LAUNCH_MODE_BRIDGE
+      }
       if (options.skipWarmup) {
         process.env[AUTOMATOR_SKIP_WARMUP_ENV] = '1'
       }
@@ -233,12 +265,8 @@ async function getSharedMiniProgram(
       throw error
     }
     finally {
-      if (previousSkipWarmup == null) {
-        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
-      }
-      else {
-        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
-      }
+      restoreEnvValue(AUTOMATOR_LAUNCH_MODE_ENV, previousLaunchMode)
+      restoreEnvValue(AUTOMATOR_SKIP_WARMUP_ENV, previousSkipWarmup)
     }
   }
 
@@ -252,6 +280,51 @@ async function resetDevtoolsProjectState(projectPath: string) {
   await cleanupResidualIdeProcesses()
 }
 
+async function recoverRouteLaunch(projectPath: string, runtimeCase: RuntimeMatrixCase, route: string, reason: unknown) {
+  const message = reason instanceof Error ? reason.message : String(reason)
+  process.stdout.write(`[warn] [chunk-modes:route-recover] scenario=${runtimeCase.id} route=${route} reason=${message.slice(0, 240)}\n`)
+  await resetDevtoolsProjectState(projectPath)
+}
+
+async function runRouteCaseWithRecovery(
+  runtimeCase: RuntimeMatrixCase,
+  routeCase: RuntimeRouteCase,
+  projectPath: string,
+  ctx: { skip: (message?: string) => void },
+  launchOptions: { skipWarmup?: boolean },
+) {
+  let lastError: unknown = null
+
+  for (let attempt = 1; attempt <= ROUTE_RECOVERY_ATTEMPTS; attempt += 1) {
+    const miniProgram = await getSharedMiniProgram(projectPath, ctx, launchOptions)
+    const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
+    if (!page) {
+      lastError = new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
+    }
+    else {
+      try {
+        const result = await page.callMethod('_runE2E')
+        expect(result?.ok).toBe(true)
+        expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
+        return
+      }
+      catch (error) {
+        if (!isRecoverableRouteError(error)) {
+          throw error
+        }
+        lastError = error
+      }
+    }
+
+    if (attempt >= ROUTE_RECOVERY_ATTEMPTS) {
+      break
+    }
+    await recoverRouteLaunch(projectPath, runtimeCase, routeCase.route, lastError)
+  }
+
+  throw lastError
+}
+
 export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: RuntimeMatrixCase[]) {
   describe.sequential(suiteName, () => {
     afterAll(async () => {
@@ -263,19 +336,13 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
         const projectPath = await prepareScenarioProject(runtimeCase)
         await resetDevtoolsProjectState(projectPath)
 
-        const miniProgram = await getSharedMiniProgram(projectPath, ctx, {
+        const launchOptions = {
           skipWarmup: !runtimeCase.id.startsWith('hoist-'),
-        })
+        }
+        await getSharedMiniProgram(projectPath, ctx, launchOptions)
 
         for (const routeCase of runtimeCase.routes) {
-          const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
-          if (!page) {
-            throw new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
-          }
-
-          const result = await page.callMethod('_runE2E')
-          expect(result?.ok).toBe(true)
-          expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
+          await runRouteCaseWithRecovery(runtimeCase, routeCase, projectPath, ctx, launchOptions)
         }
       }, CHUNK_MODES_RUNTIME_CASE_TIMEOUT)
     }
