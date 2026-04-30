@@ -32,6 +32,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --max-warnings=0 --no-warn-ignored src tsconfig.json",
+    "lint:styles": "stylelint 'src/**/*.vue'",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run lint:styles && pnpm run build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -48,7 +52,8 @@
     "@vitejs/plugin-vue": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
   },
   "publishConfig": {
     "access": "public",
