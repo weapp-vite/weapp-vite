@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardDetailItem, LargestFileEntry, PackageBudgetLimitItem, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
+import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, DashboardDetailItem, LargestFileEntry, PackageBudgetLimitItem, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
@@ -11,6 +11,10 @@ import TreemapCard from './TreemapCard.vue'
 const props = defineProps<{
   bindChartRef: (element: Element | null) => void
   canFocusTreemapSelection: boolean
+  treemapFilterMode: AnalyzeTreemapFilterMode
+  treemapFilterOptions: AnalyzeTreemapFilterOption[]
+  canUseSelectedPackageFilter: boolean
+  isTreemapEmpty: boolean
   visibleLargestFiles: LargestFileEntry[]
   selectedFileModules: SelectedFileModuleDetail[]
   budgetWarnings: PackageBudgetWarning[]
@@ -23,6 +27,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   focusTreemapSelection: []
   resetTreemapFocus: []
+  updateTreemapFilterMode: [mode: AnalyzeTreemapFilterMode]
   selectFile: [file: LargestFileEntry]
   selectBudgetWarning: [warning: PackageBudgetWarning]
 }>()
@@ -123,8 +128,13 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
     <TreemapCard
       :bind-chart-ref="bindChartRef"
       :can-focus-selected="canFocusTreemapSelection"
+      :filter-mode="treemapFilterMode"
+      :filter-options="treemapFilterOptions"
+      :can-use-selected-package-filter="canUseSelectedPackageFilter"
+      :is-empty="isTreemapEmpty"
       @focus-selected="emit('focusTreemapSelection')"
       @reset-focus="emit('resetTreemapFocus')"
+      @update-filter-mode="emit('updateTreemapFilterMode', $event)"
     />
 
     <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.74fr)_minmax(0,1fr)]">

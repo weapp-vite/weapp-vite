@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { AnalyzeActionCenterItem, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionCenterPanel from '../features/dashboard/components/ActionCenterPanel.vue'
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
@@ -23,7 +23,7 @@ import { useDashboardPage } from '../features/dashboard/composables/useDashboard
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
-import { dashboardTabs } from '../features/dashboard/constants/view'
+import { dashboardTabs, treemapFilterOptions } from '../features/dashboard/constants/view'
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
@@ -45,6 +45,8 @@ const selectedActionKey = shallowRef<string | null>(null)
 const commandPaletteOpen = shallowRef(false)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
+const route = useRoute()
+const router = useRouter()
 const { resolvedTheme } = useDashboardTheme()
 const {
   baselineSnapshotId,
@@ -58,7 +60,6 @@ const {
   updateCount,
 } = useDashboardWorkspace()
 
-const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
   summary,
   packageTypeSummary,
@@ -72,20 +73,96 @@ const {
   incrementSummary,
 } = useAnalyzeDashboardData(resultRef, comparisonResultRef)
 
+function resolveTreemapFilterMode(value: unknown): AnalyzeTreemapFilterMode {
+  return treemapFilterOptions.some(option => option.value === value)
+    ? value as AnalyzeTreemapFilterMode
+    : 'all'
+}
+
+const treemapFilterMode = computed<AnalyzeTreemapFilterMode>({
+  get() {
+    return resolveTreemapFilterMode(route.query.filter)
+  },
+  set(value) {
+    const query = { ...route.query }
+    if (value === 'all') {
+      delete query.filter
+    }
+    else {
+      query.filter = value
+    }
+    void router.replace({ query })
+  },
+})
+
+const growthFileKeys = computed(() =>
+  new Set(incrementAttribution.value
+    .filter(item => item.packageId && item.file)
+    .map(item => `${item.packageId}\u0000${item.file}`)),
+)
+const growthModuleIds = computed(() =>
+  new Set(incrementAttribution.value
+    .map(item => item.moduleId)
+    .filter((id): id is string => Boolean(id))),
+)
+const duplicateModuleIds = computed(() => new Set(duplicateModules.value.map(module => module.id)))
+const selectedPackageId = computed(() => {
+  if (selectedTreemapMeta.value?.packageId) {
+    return selectedTreemapMeta.value.packageId
+  }
+  if (selectedLargestFile.value?.packageId) {
+    return selectedLargestFile.value.packageId
+  }
+  if (selectedBudgetWarning.value && selectedBudgetWarning.value.scope !== 'total') {
+    return selectedBudgetWarning.value.id
+  }
+  return null
+})
+const treemapFilterState = computed(() => ({
+  mode: treemapFilterMode.value,
+  selectedPackageId: selectedPackageId.value,
+  growthFileKeys: growthFileKeys.value,
+  growthModuleIds: growthModuleIds.value,
+  duplicateModuleIds: duplicateModuleIds.value,
+}))
+const { treemapOption, treemapNodes } = useTreemapData(resultRef, resolvedTheme, treemapFilterState)
+const isTreemapEmpty = computed(() => resultRef.value !== null && treemapNodes.value.length === 0)
+const canUseSelectedPackageFilter = computed(() => Boolean(selectedPackageId.value))
+
+function matchesTreemapFilter(file: LargestFileEntry) {
+  if (treemapFilterMode.value === 'all') {
+    return true
+  }
+  if (treemapFilterMode.value === 'selected-package') {
+    return selectedPackageId.value ? file.packageId === selectedPackageId.value : false
+  }
+  if (treemapFilterMode.value === 'growth') {
+    return growthFileKeys.value.has(`${file.packageId}\u0000${file.file}`) || (file.modules ?? []).some(module => growthModuleIds.value.has(module.id))
+  }
+  if (treemapFilterMode.value === 'duplicates') {
+    return (file.modules ?? []).some(module => duplicateModuleIds.value.has(module.id))
+  }
+  if (treemapFilterMode.value === 'node_modules') {
+    return (file.modules ?? []).some(module => module.sourceType === 'node_modules')
+  }
+  return file.type === 'asset' || (file.modules ?? []).some(module => module.sourceType === 'src' || module.sourceType === 'workspace')
+}
+
 function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null, warning: PackageBudgetWarning | null) {
+  const modeFilteredFiles = files.filter(matchesTreemapFilter)
   if (warning && warning.scope !== 'total') {
-    return files.filter(file => file.packageId === warning.id)
+    return modeFilteredFiles.filter(file => file.packageId === warning.id)
   }
   if (!meta) {
-    return files
+    return modeFilteredFiles
   }
   if (meta.kind === 'package') {
-    return files.filter(file => file.packageId === meta.packageId)
+    return modeFilteredFiles.filter(file => file.packageId === meta.packageId)
   }
   if (meta.kind === 'file' || meta.kind === 'asset' || meta.kind === 'module') {
-    return files.filter(file => file.packageId === meta.packageId && file.file === meta.fileName)
+    return modeFilteredFiles.filter(file => file.packageId === meta.packageId && file.file === meta.fileName)
   }
-  return files
+  return modeFilteredFiles
 }
 
 const filteredDuplicateModules = computed(() => {
@@ -119,6 +196,21 @@ const selectedFileEntry = computed(() => {
 const duplicateModuleMap = computed(() => new Map(duplicateModules.value.map(module => [module.id, module])))
 const selectedFileModules = computed<SelectedFileModuleDetail[]>(() => {
   return (selectedFileEntry.value?.modules ?? [])
+    .filter((module) => {
+      if (treemapFilterMode.value === 'growth') {
+        return growthModuleIds.value.has(module.id)
+      }
+      if (treemapFilterMode.value === 'duplicates') {
+        return duplicateModuleIds.value.has(module.id)
+      }
+      if (treemapFilterMode.value === 'node_modules') {
+        return module.sourceType === 'node_modules'
+      }
+      if (treemapFilterMode.value === 'source') {
+        return module.sourceType === 'src' || module.sourceType === 'workspace'
+      }
+      return true
+    })
     .map((module) => {
       const duplicate = duplicateModuleMap.value.get(module.id)
       const bytes = module.bytes ?? module.originalBytes ?? 0
@@ -384,12 +476,26 @@ function handleFocusTreemapSelection() {
   focusTreemapNode(selectedTreemapFocusNodeId.value)
 }
 
+function handleUpdateTreemapFilterMode(mode: AnalyzeTreemapFilterMode) {
+  if (mode === 'selected-package' && !selectedPackageId.value) {
+    return
+  }
+  treemapFilterMode.value = mode
+}
+
 function handleSelectAction(item: AnalyzeActionCenterItem) {
   selectedActionKey.value = item.key
+  if (item.kind === 'increment') {
+    treemapFilterMode.value = 'growth'
+  }
+  else if (item.kind === 'duplicate') {
+    treemapFilterMode.value = 'duplicates'
+  }
 
   if (item.warning) {
     activeTab.value = 'overview'
     handleSelectBudgetWarning(item.warning)
+    treemapFilterMode.value = 'selected-package'
     void nextTick(() => handleFocusTreemapSelection())
     return
   }
@@ -397,6 +503,7 @@ function handleSelectAction(item: AnalyzeActionCenterItem) {
   if (item.file) {
     activeTab.value = 'overview'
     handleSelectLargestFile(item.file)
+    treemapFilterMode.value = 'selected-package'
     void nextTick(() => handleFocusTreemapSelection())
     return
   }
@@ -421,6 +528,7 @@ function handleSelectCommand(item: (typeof commandItems.value)[number]) {
   if (item.warning) {
     activeTab.value = 'overview'
     handleSelectBudgetWarning(item.warning)
+    treemapFilterMode.value = 'selected-package'
     void nextTick(() => handleFocusTreemapSelection())
     return
   }
@@ -428,6 +536,7 @@ function handleSelectCommand(item: (typeof commandItems.value)[number]) {
   if (item.file) {
     activeTab.value = 'overview'
     handleSelectLargestFile(item.file)
+    treemapFilterMode.value = 'selected-package'
     void nextTick(() => handleFocusTreemapSelection())
     return
   }
@@ -437,6 +546,7 @@ function handleSelectCommand(item: (typeof commandItems.value)[number]) {
     selectedTreemapMeta.value = item.moduleMeta
     selectedLargestFile.value = null
     selectedBudgetWarning.value = null
+    treemapFilterMode.value = item.kind === 'increment' ? 'growth' : 'duplicates'
     return
   }
 
@@ -445,6 +555,7 @@ function handleSelectCommand(item: (typeof commandItems.value)[number]) {
     selectedTreemapMeta.value = item.packageMeta
     selectedLargestFile.value = null
     selectedBudgetWarning.value = null
+    treemapFilterMode.value = 'selected-package'
     return
   }
 
@@ -465,6 +576,13 @@ async function ensureChart() {
   await nextTick()
 
   if (!chartRef.value) {
+    return
+  }
+
+  if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
+    window.requestAnimationFrame(() => {
+      void ensureChart()
+    })
     return
   }
 
@@ -700,9 +818,9 @@ onBeforeUnmount(() => {
 
     <template v-if="resultRef">
       <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-        <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.44fr)]">
+        <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(42rem,0.9fr)]">
           <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
-          <div class="grid min-h-0 gap-3 md:grid-cols-2 xl:grid-cols-1">
+          <div class="grid min-h-0 gap-3 md:grid-cols-2 xl:grid-cols-2">
             <ActionCenterPanel
               :actions="actionItems"
               :active-key="selectedActionKey"
@@ -723,6 +841,10 @@ onBeforeUnmount(() => {
           <OverviewPanel
             :bind-chart-ref="bindChartRef"
             :can-focus-treemap-selection="Boolean(selectedTreemapFocusNodeId)"
+            :treemap-filter-mode="treemapFilterMode"
+            :treemap-filter-options="treemapFilterOptions"
+            :can-use-selected-package-filter="canUseSelectedPackageFilter"
+            :is-treemap-empty="isTreemapEmpty"
             :visible-largest-files="visibleLargestFiles"
             :selected-file-modules="selectedFileModules"
             :budget-warnings="budgetWarnings"
@@ -732,6 +854,7 @@ onBeforeUnmount(() => {
             :selected-treemap-meta="selectedTreemapMeta"
             @focus-treemap-selection="handleFocusTreemapSelection"
             @reset-treemap-focus="handleResetTreemapFocus"
+            @update-treemap-filter-mode="handleUpdateTreemapFilterMode"
             @select-budget-warning="handleSelectBudgetWarning"
             @select-file="handleSelectLargestFile"
           />

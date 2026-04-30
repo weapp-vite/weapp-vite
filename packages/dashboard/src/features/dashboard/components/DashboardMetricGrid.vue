@@ -39,7 +39,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
 </script>
 
 <template>
-  <section :class="compact ? 'grid gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
+  <section :class="compact ? 'grid items-start gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid items-start gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
     <article
       v-for="card in metricCardRows"
       :key="card.label"

@@ -43,10 +43,15 @@ export function useDashboardPage(options: {
       return 'overview'
     },
     set(value) {
+      const query = { ...route.query }
+      if (value === 'overview') {
+        delete query.tab
+      }
+      else {
+        query.tab = value
+      }
       void router.replace({
-        query: value === 'overview'
-          ? {}
-          : { tab: value },
+        query,
       })
     },
   })

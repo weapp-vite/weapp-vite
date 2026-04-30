@@ -5,6 +5,7 @@ export type PackageBudgetStatus = 'warning' | 'critical'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
 export type AnalyzeComparisonMode = 'previous' | 'baseline'
+export type AnalyzeTreemapFilterMode = 'all' | 'growth' | 'duplicates' | 'node_modules' | 'source' | 'selected-package'
 export type DashboardIconName
   = | 'theme-system'
     | 'theme-light'
@@ -144,6 +145,11 @@ export interface DashboardTabOption {
   key: DashboardTab
   label: string
   iconName: DashboardIconName
+}
+
+export interface AnalyzeTreemapFilterOption {
+  value: AnalyzeTreemapFilterMode
+  label: string
 }
 
 export interface DashboardMetricCard {
