@@ -89,7 +89,7 @@ defineComponentJson({
 <template>
   <view :class="`price ${type} wr-class inline text-inherit [font-size:inherit] [text-decoration:inherit] whitespace-nowrap`">
     <view v-if="type === 'delthrough'" class="line" :style="`height:${addUnit(lineThroughWidth)};`" />
-    <view class="symbol symbol-class inline text-inherit [font-size:inherit] text-[0.8em] whitespace-nowrap">
+    <view class="symbol symbol-class inline text-inherit text-[0.8em] whitespace-nowrap">
       {{ symbol }}
     </view>
     <view class="pprice inline m-[0_0_0_4rpx] whitespace-nowrap">

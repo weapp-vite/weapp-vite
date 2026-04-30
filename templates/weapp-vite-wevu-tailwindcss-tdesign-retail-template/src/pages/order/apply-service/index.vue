@@ -655,7 +655,7 @@ definePageJson({
     <view class="order-goods-card [background:#fff] mb-[24rpx]">
       <wr-order-goods-card :goods="goodsInfo" no-top-line thumb-class="order-goods-card-title-class ![width:10rpx]">
         <template #footer>
-          <view class="order-goods-card-footer flex w-[calc(100%-190rpx)] justify-between absolute bottom-0 left-[190rpx] bottom-[20rpx]">
+          <view class="order-goods-card-footer flex w-[calc(100%-190rpx)] justify-between absolute left-[190rpx] bottom-[20rpx]">
             <wr-price
               :price="goodsInfo.paidAmountEach"
               fill
