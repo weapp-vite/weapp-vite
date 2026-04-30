@@ -5,6 +5,7 @@ import type { RuntimeTargets } from '../../runtime'
 import type { GlobalCLIOptions } from '../../types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
+import { brotliCompressSync, gzipSync } from 'node:zlib'
 import path from 'pathe'
 import { analyzeSubpackages } from '../../../analyze/subpackages'
 import { createCompilerContext } from '../../../createContext'
@@ -38,6 +39,13 @@ async function collectOutputFiles(root: string) {
   }
 
   return files
+}
+
+function getCompressedSizes(content: Uint8Array) {
+  return {
+    gzipSize: gzipSync(content).byteLength,
+    brotliSize: brotliCompressSync(content).byteLength,
+  }
 }
 
 export interface AnalyzeRunResult {
@@ -96,12 +104,14 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
     const relativeFile = path.relative(distRoot, absoluteFile).replace(REG_DIST_POSIX_SEP, '/')
     const packageInfo = classifyPackage(relativeFile)
     const stat = await fs.stat(absoluteFile)
+    const content = await fs.readFile(absoluteFile)
     const fileEntry = ensurePackage(packageInfo.id, packageInfo.type)
     fileEntry.files.push({
       file: relativeFile,
       type: relativeFile.endsWith('.js') ? 'chunk' : 'asset',
       from: packageInfo.type === 'independent' ? 'independent' : 'main',
       size: stat.size,
+      ...getCompressedSizes(content),
       isEntry: relativeFile === 'app.js' || REG_DIST_PAGE_ENTRY.test(relativeFile),
       source: relativeFile.endsWith('.js') ? undefined : relativeFile,
     })
@@ -263,6 +273,20 @@ export function createAnalyzeController(options: {
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
         silentStartupLog: true,
+        initialEvents: [
+          {
+            kind: initialAnalyze.mode === 'fallback' ? 'diagnostic' : 'build',
+            level: initialAnalyze.mode === 'fallback' ? 'warning' : 'success',
+            title: initialAnalyze.mode === 'fallback' ? 'initial analyze fallback completed' : 'initial analyze completed',
+            detail: initialAnalyze.mode === 'fallback'
+              ? initialAnalyze.fallbackReason ?? '完整分析不可用，已回退到 dist 文件扫描。'
+              : `开发态首份 analyze 结果已生成，包含 ${initialAnalyze.result.packages.length} 个包与 ${initialAnalyze.result.modules.length} 个模块。`,
+            durationMs: initialAnalyze.durationMs,
+            tags: initialAnalyze.mode === 'fallback'
+              ? ['analyze', 'fallback', 'initial']
+              : ['analyze', 'initial'],
+          },
+        ],
       }) ?? undefined
       emitDashboardEvents(analyzeHandle, [
         {

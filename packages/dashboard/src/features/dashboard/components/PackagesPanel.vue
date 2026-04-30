@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardMetricItem, PackageInsight } from '../types'
+import type { DashboardMetricItem, PackageBudgetWarning, PackageInsight, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
@@ -11,31 +11,54 @@ interface PackageInsightCard extends PackageInsight {
   typeLabel: string
   summaryText: string
   totalBytesLabel: string
+  compressedBytesLabel: string
+  deltaText: string
+  budgetText: string
+  selected: boolean
   entryCountText: string
   metrics: DashboardMetricItem[]
 }
 
 const props = defineProps<{
   packageInsights: PackageInsight[]
+  budgetWarnings: PackageBudgetWarning[]
+  selectedTreemapMeta: TreemapNodeMeta | null
 }>()
+
+function formatDelta(bytes?: number) {
+  if (typeof bytes !== 'number' || Number.isNaN(bytes) || bytes === 0) {
+    return '—'
+  }
+  return `${bytes > 0 ? '+' : '-'}${formatBytes(Math.abs(bytes))}`
+}
 
 function createPackageMetrics(pkg: PackageInsight): DashboardMetricItem[] {
   return [
     { label: 'Chunks', value: pkg.chunkCount },
     { label: 'Assets', value: pkg.assetCount },
-    { label: '模块数', value: pkg.moduleCount },
-    { label: '跨包模块', value: pkg.duplicateModuleCount },
+    { label: '压缩后', value: formatBytes(pkg.compressedBytes) },
+    { label: '较上次', value: formatDelta(pkg.sizeDeltaBytes) },
   ]
 }
 
+const budgetWarningMap = computed(() => new Map(props.budgetWarnings.map(item => [item.id, item])))
+
 const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageInsights.map((pkg) => {
   const typeLabel = formatPackageType(pkg.type)
+  const budgetWarning = budgetWarningMap.value.get(pkg.id)
+  const selected = props.selectedTreemapMeta?.packageLabel === pkg.label
 
   return {
     ...pkg,
     typeLabel,
-    summaryText: `${typeLabel} · ${pkg.fileCount} 个产物 · ${pkg.moduleCount} 个模块`,
+    summaryText: `${typeLabel} · ${pkg.fileCount} 个产物 · ${pkg.moduleCount} 个模块 · 跨包 ${pkg.duplicateModuleCount}`,
     totalBytesLabel: formatBytes(pkg.totalBytes),
+    compressedBytesLabel: `${pkg.compressedSizeSource === 'real' ? 'Brotli' : '估算'} ${formatBytes(pkg.compressedBytes)}`,
+    deltaText: formatDelta(pkg.sizeDeltaBytes),
+    budgetText: budgetWarning
+      ? `${budgetWarning.status === 'critical' ? '超预算' : '接近预算'} ${(budgetWarning.ratio * 100).toFixed(1)}%`
+      : '预算正常',
+    selected,
     entryCountText: `${pkg.entryFileCount} 个 entry`,
     metrics: createPackageMetrics(pkg),
   }
@@ -48,8 +71,11 @@ const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageIn
       <article
         v-for="pkg in packageInsightCards"
         :key="pkg.id"
-        :class="surfaceStyles({ padding: 'md' })"
-        class="min-h-0"
+        :class="[
+          surfaceStyles({ padding: 'md' }),
+          pkg.selected ? 'border-(--dashboard-accent)' : '',
+        ]"
+        class="min-h-0 border transition"
       >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
@@ -67,7 +93,10 @@ const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageIn
               {{ pkg.totalBytesLabel }}
             </p>
             <p class="text-xs text-(--dashboard-text-soft)">
-              {{ pkg.entryCountText }}
+              {{ pkg.compressedBytesLabel }}
+            </p>
+            <p class="mt-1 text-xs text-(--dashboard-accent)">
+              {{ pkg.budgetText }}
             </p>
           </div>
         </div>

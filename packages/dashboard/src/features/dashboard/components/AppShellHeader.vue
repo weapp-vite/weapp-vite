@@ -19,6 +19,7 @@ const emit = defineEmits<{
 const currentThemeIconName = computed(() =>
   props.themeOptions.find(option => option.value === props.themePreference)?.iconName ?? 'theme-system',
 )
+const hasThemeOptions = computed(() => props.themeOptions.length > 0)
 
 function handleThemeChange(event: Event): void {
   emit('setTheme', (event.target as HTMLSelectElement).value as ThemePreference)
@@ -52,6 +53,7 @@ function handleThemeChange(event: Event): void {
       </div>
 
       <label
+        v-if="hasThemeOptions"
         class="hidden items-center gap-2 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-xs font-medium text-(--dashboard-text-soft) md:inline-flex"
         for="dashboard-global-theme"
       >
@@ -77,6 +79,7 @@ function handleThemeChange(event: Event): void {
 
     <div class="flex flex-wrap items-center gap-2 md:hidden">
       <label
+        v-if="hasThemeOptions"
         class="inline-flex items-center gap-2 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-xs font-medium text-(--dashboard-text-soft)"
         for="dashboard-mobile-theme"
       >
@@ -99,7 +102,7 @@ function handleThemeChange(event: Event): void {
         </select>
       </label>
 
-      <AppInfoPill icon-name="status-live" label="shell ready" uppercase />
+      <AppInfoPill v-if="hasThemeOptions" icon-name="status-live" label="shell ready" uppercase />
     </div>
   </header>
 </template>

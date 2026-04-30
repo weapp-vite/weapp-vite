@@ -104,22 +104,32 @@ export function registerBuildCommand(cli: CAC) {
           })
         }
         if (enableAnalyze) {
+          const analyzeStartedAt = Date.now()
           const analyzeResult = await analyzeSubpackages(ctx)
+          const analyzeDurationMs = Date.now() - analyzeStartedAt
           analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
             watch: true,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
+            initialEvents: [
+              {
+                kind: 'build',
+                level: 'success',
+                title: 'mini build completed',
+                detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
+                durationMs: miniBuildDurationMs,
+                tags: ['build', 'mini'],
+              },
+              {
+                kind: 'build',
+                level: 'success',
+                title: 'analyze completed',
+                detail: `分析已完成，当前包含 ${analyzeResult.packages.length} 个包与 ${analyzeResult.modules.length} 个模块。`,
+                durationMs: analyzeDurationMs,
+                tags: ['build', 'analyze'],
+              },
+            ],
           }) ?? undefined
-          emitDashboardEvents(analyzeHandle, [
-            {
-              kind: 'build',
-              level: 'success',
-              title: 'mini build completed',
-              detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
-              durationMs: miniBuildDurationMs,
-              tags: ['build', 'mini'],
-            },
-          ])
         }
       }
       const webConfig = configService.weappWebConfig

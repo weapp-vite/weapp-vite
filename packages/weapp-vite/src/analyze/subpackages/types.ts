@@ -17,6 +17,8 @@ export interface PackageFileEntry {
   type: 'chunk' | 'asset'
   from: BuildOrigin
   size?: number
+  gzipSize?: number
+  brotliSize?: number
   isEntry?: boolean
   modules?: ModuleInFile[]
   source?: string

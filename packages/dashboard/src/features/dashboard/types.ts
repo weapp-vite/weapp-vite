@@ -1,6 +1,7 @@
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
 export type BuildOrigin = 'main' | 'independent'
+export type PackageBudgetStatus = 'warning' | 'critical'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
 export type DashboardIconName
@@ -60,6 +61,8 @@ export interface PackageFileEntry {
   type: 'chunk' | 'asset'
   from: BuildOrigin
   size?: number
+  gzipSize?: number
+  brotliSize?: number
   isEntry?: boolean
   modules?: ModuleInFile[]
   source?: string
@@ -123,9 +126,16 @@ export interface AnalyzeDashboardSummary {
   moduleCount: number
   duplicateCount: number
   totalBytes: number
+  gzipBytes: number
+  brotliBytes: number
   estimatedCompressedBytes: number
+  compressedBytes: number
+  compressedSizeSource: 'real' | 'estimated'
+  sizeDeltaBytes?: number
+  compressedDeltaBytes?: number
   subpackageCount: number
   entryCount: number
+  budgetWarningCount: number
 }
 
 export interface PackageInsight {
@@ -133,6 +143,11 @@ export interface PackageInsight {
   label: string
   type: PackageType
   totalBytes: number
+  gzipBytes: number
+  brotliBytes: number
+  compressedBytes: number
+  compressedSizeSource: 'real' | 'estimated'
+  sizeDeltaBytes?: number
   fileCount: number
   chunkCount: number
   assetCount: number
@@ -142,6 +157,11 @@ export interface PackageInsight {
   topFiles: Array<{
     file: string
     size: number
+    gzipSize?: number
+    brotliSize?: number
+    compressedSize: number
+    compressedSizeSource: 'real' | 'estimated'
+    sizeDeltaBytes?: number
     type: PackageFileEntry['type']
     from: BuildOrigin
     isEntry: boolean
@@ -155,6 +175,11 @@ export interface LargestFileEntry {
   packageType: PackageType
   file: string
   size: number
+  gzipSize?: number
+  brotliSize?: number
+  compressedSize: number
+  compressedSizeSource: 'real' | 'estimated'
+  sizeDeltaBytes?: number
   type: PackageFileEntry['type']
   from: BuildOrigin
   isEntry: boolean
@@ -168,6 +193,7 @@ export interface DuplicateModuleEntry {
   sourceType: ModuleSourceType
   packageCount: number
   bytes: number
+  advice: string
   packages: Array<{
     packageId: string
     packageLabel: string
@@ -177,8 +203,19 @@ export interface DuplicateModuleEntry {
 
 export interface ModuleSourceSummary {
   sourceType: ModuleSourceType
+  sourceCategory: string
   count: number
   bytes: number
+}
+
+export interface PackageBudgetWarning {
+  id: string
+  label: string
+  scope: 'total' | PackageType
+  currentBytes: number
+  limitBytes: number
+  ratio: number
+  status: PackageBudgetStatus
 }
 
 export interface TreemapNodeMetaBase {

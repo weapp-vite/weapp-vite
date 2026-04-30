@@ -124,11 +124,22 @@ export function registerServeCommand(cli: CAC) {
         if (targets.runMini) {
           const miniBuildStartedAt = Date.now()
           const buildResult = await buildService.build(options)
-          logger.success(`小程序初次构建完成，耗时：${formatDuration(Date.now() - miniBuildStartedAt)}`)
+          const miniBuildDurationMs = Date.now() - miniBuildStartedAt
+          logger.success(`小程序初次构建完成，耗时：${formatDuration(miniBuildDurationMs)}`)
 
           if (enableAnalyze) {
             await analyzeController.startDashboard(startAnalyzeDashboard)
             analyzeHandle = analyzeController.getHandle()
+            analyzeController.emitRuntimeEvents([
+              {
+                kind: 'build',
+                level: 'success',
+                title: 'mini initial build completed',
+                detail: '小程序开发态初次构建已完成，dashboard 可继续监听后续刷新。',
+                durationMs: miniBuildDurationMs,
+                tags: ['dev', 'mini', 'initial'],
+              },
+            ])
             const watcherControl = analyzeController.bindWatcher(buildResult)
             await watcherControl.runInitialUpdate()
           }

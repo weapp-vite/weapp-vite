@@ -16,6 +16,7 @@ const mobileNavOpen = ref(false)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
+const headerThemeOptions = computed(() => route.path.startsWith('/analyze') ? [] : themeOptions)
 
 provideDashboardTheme({
   themePreference,
@@ -111,7 +112,7 @@ function isActive(currentPath: string, targetPath: string) {
             </nav>
           </AppSurfaceCard>
           <AppSurfaceCard
-            eyebrow="Theme"
+            eyebrow="Status"
             :title="workspace.statusLabel.value"
             :description="workspace.statusSummary.value"
             :icon-name="hasPayload ? 'status-live' : (resolvedTheme === 'dark' ? 'theme-dark' : 'theme-light')"
@@ -124,7 +125,7 @@ function isActive(currentPath: string, targetPath: string) {
         <AppShellHeader
           :title="pageMeta.title"
           :description="pageMeta.description"
-          :theme-options="themeOptions"
+          :theme-options="headerThemeOptions"
           :theme-preference="themePreference"
           @menu="mobileNavOpen = true"
           @set-theme="setThemePreference"

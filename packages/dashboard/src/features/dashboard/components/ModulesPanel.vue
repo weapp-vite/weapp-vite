@@ -6,7 +6,7 @@ import type {
   ModuleSourceSummary,
 } from '../types'
 import { computed } from 'vue'
-import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
+import { formatBuildOrigin, formatBytes } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
@@ -31,13 +31,13 @@ interface ListItemRow extends DashboardDetailItem {
 function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
   return {
     title: module.source,
-    meta: `${formatSourceType(module.sourceType)} · ${module.packageCount} 个包 · ${formatBytes(module.bytes)}`,
+    meta: `${module.packageCount} 个包 · ${formatBytes(module.bytes)} · ${module.advice}`,
   }
 }
 
 function createModuleSourceItem(item: ModuleSourceSummary): DashboardDetailItem {
   return {
-    title: formatSourceType(item.sourceType),
+    title: item.sourceCategory,
     meta: `${item.count} 个模块`,
     value: formatBytes(item.bytes),
   }
@@ -57,7 +57,7 @@ const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => props.visible
 })))
 
 const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
-  key: item.sourceType,
+  key: `${item.sourceType}:${item.sourceCategory}`,
   ...createModuleSourceItem(item),
 })))
 

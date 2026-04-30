@@ -16,6 +16,13 @@ function createMetricCard(card: DashboardMetricCard): DashboardMetricCard {
   return card
 }
 
+function formatDelta(bytes?: number) {
+  if (typeof bytes !== 'number' || Number.isNaN(bytes) || bytes === 0) {
+    return ''
+  }
+  return `${bytes > 0 ? '+' : '-'}${formatBytes(Math.abs(bytes))}`
+}
+
 export function useDashboardPage(options: {
   summary: ComputedRef<AnalyzeDashboardSummary>
   packageInsights: ComputedRef<PackageInsight[]>
@@ -47,7 +54,16 @@ export function useDashboardPage(options: {
   const totalChunkCount = computed(() => options.packageInsights.value.reduce((sum, pkg) => sum + pkg.chunkCount, 0))
   const totalAssetCount = computed(() => options.packageInsights.value.reduce((sum, pkg) => sum + pkg.assetCount, 0))
   const duplicateBytes = computed(() => options.duplicateModules.value.reduce((sum, mod) => sum + mod.bytes, 0))
-  const estimatedCompressedText = computed(() => `估算压缩后 ${formatBytes(options.summary.value.estimatedCompressedBytes)}`)
+  const compressedText = computed(() => {
+    const summary = options.summary.value
+    const prefix = summary.compressedSizeSource === 'real' ? 'Brotli' : '估算压缩后'
+    const delta = formatDelta(summary.compressedDeltaBytes)
+    return `${prefix} ${formatBytes(summary.compressedBytes)}${delta ? ` · ${delta}` : ''}`
+  })
+  const totalSizeDetail = computed(() => {
+    const delta = formatDelta(options.summary.value.sizeDeltaBytes)
+    return delta ? `较上次 ${delta}` : compressedText.value
+  })
 
   function createPackagesTopCards(): DashboardMetricCard[] {
     return [
@@ -55,7 +71,7 @@ export function useDashboardPage(options: {
       createMetricCard({ label: '分包配置', value: String(options.summary.value.subpackageCount), iconName: 'metric-subpackages' }),
       createMetricCard({ label: 'Chunk 数量', value: String(totalChunkCount.value), iconName: 'metric-chunks' }),
       createMetricCard({ label: 'Asset 数量', value: String(totalAssetCount.value), iconName: 'metric-assets' }),
-      createMetricCard({ label: '总产物体积', value: formatBytes(options.summary.value.totalBytes), detail: estimatedCompressedText.value, wide: true, iconName: 'metric-size-outline' }),
+      createMetricCard({ label: '总产物体积', value: formatBytes(options.summary.value.totalBytes), detail: compressedText.value, wide: true, iconName: 'metric-size-outline' }),
     ]
   }
 
@@ -65,7 +81,7 @@ export function useDashboardPage(options: {
       createMetricCard({ label: '跨包复用', value: String(options.summary.value.duplicateCount), iconName: 'metric-duplicates' }),
       createMetricCard({ label: '来源类型', value: String(options.moduleSourceSummary.value.length), iconName: 'metric-sources' }),
       createMetricCard({ label: '复用体积', value: duplicateBytes.value > 0 ? formatBytes(duplicateBytes.value) : '0 B', iconName: 'metric-copy' }),
-      createMetricCard({ label: '最近刷新', value: options.lastUpdatedAt.value, wide: true, iconName: 'metric-time' }),
+      createMetricCard({ label: '预算告警', value: String(options.summary.value.budgetWarningCount), detail: totalSizeDetail.value, wide: true, iconName: 'metric-time' }),
     ]
   }
 
@@ -74,8 +90,8 @@ export function useDashboardPage(options: {
       createMetricCard({ label: '包体数量', value: String(options.summary.value.packageCount), iconName: 'tab-packages' }),
       createMetricCard({ label: '源码模块', value: String(options.summary.value.moduleCount), iconName: 'metric-modules' }),
       createMetricCard({ label: '跨包复用', value: String(options.summary.value.duplicateCount), iconName: 'metric-duplicates' }),
-      createMetricCard({ label: 'Entry 数量', value: String(options.summary.value.entryCount), iconName: 'metric-entries' }),
-      createMetricCard({ label: '总产物体积', value: formatBytes(options.summary.value.totalBytes), detail: estimatedCompressedText.value, wide: true, iconName: 'metric-size' }),
+      createMetricCard({ label: '预算告警', value: String(options.summary.value.budgetWarningCount), iconName: 'metric-entries' }),
+      createMetricCard({ label: '总产物体积', value: formatBytes(options.summary.value.totalBytes), detail: compressedText.value, wide: true, iconName: 'metric-size' }),
     ]
   }
 

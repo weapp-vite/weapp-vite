@@ -314,7 +314,13 @@ export interface AnalyzeDashboardHandle {
 
 export async function startAnalyzeDashboard(
   result: AnalyzeSubpackagesResult,
-  options?: { watch?: boolean, cwd?: string, packageManagerAgent?: PackageManagerAgent, silentStartupLog?: boolean },
+  options?: {
+    watch?: boolean
+    cwd?: string
+    packageManagerAgent?: PackageManagerAgent
+    silentStartupLog?: boolean
+    initialEvents?: DashboardRuntimeEventInput[]
+  },
 ): Promise<AnalyzeDashboardHandle | void> {
   const resolved = resolveDashboardRoot(options)
   if (!resolved) {
@@ -334,6 +340,7 @@ export async function startAnalyzeDashboard(
           : 'weapp-vite UI 已进入静态分析模式，当前页面展示的是一次性分析结果。',
         tags: options?.watch ? ['watch', 'analyze'] : ['static', 'analyze'],
       }),
+      ...(options?.initialEvents ?? []).map(event => createDashboardRuntimeEvent(event)),
     ],
   }
   let serverRef: ViteDevServer | undefined

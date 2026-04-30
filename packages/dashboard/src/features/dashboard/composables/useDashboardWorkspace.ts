@@ -16,6 +16,7 @@ import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from '../utils
 
 interface DashboardWorkspaceContext {
   resultRef: ShallowRef<AnalyzeSubpackagesResult | null>
+  previousResultRef: ShallowRef<AnalyzeSubpackagesResult | null>
   updateCount: Ref<number>
   lastUpdatedAt: Ref<string>
   statusLabel: ComputedRef<string>
@@ -31,6 +32,12 @@ interface DashboardWorkspaceContext {
 }
 
 const dashboardWorkspaceKey: InjectionKey<DashboardWorkspaceContext> = Symbol('dashboard-workspace')
+const analyzeResultStorageKey = 'weapp-vite-dashboard:analyze-result-history'
+
+interface StoredAnalyzeResultHistory {
+  current: AnalyzeSubpackagesResult
+  previous: AnalyzeSubpackagesResult | null
+}
 
 function formatCurrentTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
@@ -56,13 +63,62 @@ function createDiagnosticItem(item: WorkspaceDiagnosticItem): WorkspaceDiagnosti
   return item
 }
 
+function stringifyAnalyzeResult(result: AnalyzeSubpackagesResult | null | undefined) {
+  return result ? JSON.stringify(result) : ''
+}
+
+function isSameAnalyzeResult(left: AnalyzeSubpackagesResult | null | undefined, right: AnalyzeSubpackagesResult | null | undefined) {
+  return stringifyAnalyzeResult(left) === stringifyAnalyzeResult(right)
+}
+
+function readStoredAnalyzeHistory(): StoredAnalyzeResultHistory | null {
+  try {
+    const raw = window.localStorage.getItem(analyzeResultStorageKey)
+    if (!raw) {
+      return null
+    }
+    const parsed = JSON.parse(raw) as StoredAnalyzeResultHistory
+    if (!parsed?.current?.packages || !Array.isArray(parsed.current.packages)) {
+      return null
+    }
+    return {
+      current: parsed.current,
+      previous: parsed.previous?.packages ? parsed.previous : null,
+    }
+  }
+  catch {
+    return null
+  }
+}
+
+function writeStoredAnalyzeHistory(history: StoredAnalyzeResultHistory) {
+  try {
+    window.localStorage.setItem(analyzeResultStorageKey, JSON.stringify(history))
+  }
+  catch { }
+}
+
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
-  const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
+  const initialPayload = window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null
+  const storedHistory = readStoredAnalyzeHistory()
+  const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(initialPayload)
+  const previousResultRef = shallowRef<AnalyzeSubpackagesResult | null>(
+    initialPayload && storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)
+      ? storedHistory.current
+      : storedHistory?.previous ?? null,
+  )
   const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
     ? normalizeRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
     : normalizeRuntimeEvents(sampleRuntimeEvents))
   const updateCount = shallowRef(0)
   const lastUpdatedAt = shallowRef(resultRef.value ? formatCurrentTime() : '—')
+
+  if (initialPayload) {
+    writeStoredAnalyzeHistory({
+      current: initialPayload,
+      previous: previousResultRef.value,
+    })
+  }
 
   const summary = computed(() => {
     const result = resultRef.value
@@ -250,11 +306,26 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   }
 
   const syncFromWindow = () => {
-    if (!window.__WEAPP_VITE_ANALYZE_RESULT__) {
+    const incoming = window.__WEAPP_VITE_ANALYZE_RESULT__
+    if (!incoming) {
       return
     }
 
-    resultRef.value = window.__WEAPP_VITE_ANALYZE_RESULT__
+    const stored = readStoredAnalyzeHistory()
+    const previousResult = resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)
+      ? resultRef.value
+      : stored?.current && !isSameAnalyzeResult(incoming, stored.current)
+        ? stored.current
+        : stored?.previous ?? previousResultRef.value
+
+    previousResultRef.value = isSameAnalyzeResult(incoming, previousResult)
+      ? null
+      : previousResult
+    resultRef.value = incoming
+    writeStoredAnalyzeHistory({
+      current: incoming,
+      previous: previousResultRef.value,
+    })
     updateCount.value += 1
     lastUpdatedAt.value = formatCurrentTime()
   }
@@ -282,6 +353,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
 
   return {
     resultRef,
+    previousResultRef,
     updateCount,
     lastUpdatedAt,
     statusLabel,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardInfoPillItem } from '../features/dashboard/types'
+import type { DashboardInfoPillItem, LargestFileEntry, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -19,6 +19,7 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
+import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -31,9 +32,11 @@ echarts.use([
 ])
 
 const chartRef = shallowRef<HTMLDivElement>()
+const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
+const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
-const { lastUpdatedAt, resultRef, updateCount } = useDashboardWorkspace()
+const { lastUpdatedAt, previousResultRef, resultRef, updateCount } = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -43,11 +46,32 @@ const {
   largestFiles,
   duplicateModules,
   moduleSourceSummary,
+  budgetWarnings,
   subPackages,
-} = useAnalyzeDashboardData(resultRef)
+} = useAnalyzeDashboardData(resultRef, previousResultRef)
 
-const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 12))
-const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
+function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null) {
+  if (!meta) {
+    return files
+  }
+  if (meta.kind === 'package') {
+    return files.filter(file => file.packageLabel === meta.packageLabel)
+  }
+  if (meta.kind === 'file' || meta.kind === 'asset' || meta.kind === 'module') {
+    return files.filter(file => file.packageLabel === meta.packageLabel && file.file === meta.fileName)
+  }
+  return files
+}
+
+const filteredDuplicateModules = computed(() => {
+  if (selectedTreemapMeta.value?.kind !== 'module') {
+    return duplicateModules.value
+  }
+  return duplicateModules.value.filter(module => module.source === selectedTreemapMeta.value?.source)
+})
+const visibleDuplicateModules = computed(() => filteredDuplicateModules.value.slice(0, 12))
+const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value))
+const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const statusPills = computed<DashboardInfoPillItem[]>(() => [
@@ -68,6 +92,22 @@ const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = us
   lastUpdatedAt,
 })
 
+const exportSummaryText = computed(() => {
+  const summaryValue = summary.value
+  const topPackage = packageInsights.value[0]
+  const topDuplicate = duplicateModules.value[0]
+  return [
+    `总产物体积：${formatBytes(summaryValue.totalBytes)}`,
+    `Gzip：${formatBytes(summaryValue.gzipBytes)}`,
+    `Brotli/压缩后：${formatBytes(summaryValue.compressedBytes)}`,
+    `包体：${summaryValue.packageCount} 个，分包配置：${summaryValue.subpackageCount} 个`,
+    `模块：${summaryValue.moduleCount} 个，跨包复用：${summaryValue.duplicateCount} 个`,
+    `预算告警：${summaryValue.budgetWarningCount} 个`,
+    topPackage ? `最大包：${topPackage.label} ${formatBytes(topPackage.totalBytes)}` : '',
+    topDuplicate ? `首要重复模块：${topDuplicate.source}（${topDuplicate.advice}）` : '',
+  ].filter(Boolean).join('\n')
+})
+
 function handleResize() {
   chart?.resize()
 }
@@ -81,6 +121,10 @@ function bindChartRef(element: Element | null) {
   chartRef.value = element instanceof HTMLDivElement
     ? element
     : undefined
+}
+
+function handleChartClick(params: { data?: { meta?: TreemapNodeMeta } }) {
+  selectedTreemapMeta.value = params.data?.meta ?? null
 }
 
 async function ensureChart() {
@@ -97,10 +141,30 @@ async function ensureChart() {
 
   if (!chart) {
     chart = echarts.init(chartRef.value, resolvedTheme.value === 'dark' ? 'dark' : undefined, { renderer: 'canvas' })
+    chart.on('click', handleChartClick)
   }
 
   chart.setOption(treemapOption.value, true)
   chart.resize()
+}
+
+async function copySummary() {
+  await navigator.clipboard.writeText(exportSummaryText.value)
+  exportStatus.value = '已复制'
+}
+
+function exportJson() {
+  if (!resultRef.value) {
+    return
+  }
+  const blob = new Blob([`${JSON.stringify(resultRef.value, null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-analyze.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  exportStatus.value = '已导出'
 }
 
 watch(
@@ -115,6 +179,10 @@ watch(
 
 watch(activeTab, () => {
   void ensureChart()
+})
+
+watch(resultRef, () => {
+  selectedTreemapMeta.value = null
 })
 
 watch(resolvedTheme, async () => {
@@ -207,6 +275,31 @@ onBeforeUnmount(() => {
         </button>
       </nav>
       <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-if="resultRef"
+          :class="pillButtonStyles({ kind: 'nav', active: false })"
+          @click="copySummary"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="metric-copy" />
+          </span>
+          复制摘要
+        </button>
+        <button
+          v-if="resultRef"
+          :class="pillButtonStyles({ kind: 'nav', active: false })"
+          @click="exportJson"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="metric-size-outline" />
+          </span>
+          导出 JSON
+        </button>
+        <AppInfoPill
+          v-if="exportStatus"
+          :label="exportStatus"
+          uppercase
+        />
         <AppInfoPill
           v-for="item in statusPills"
           :key="item.label"
@@ -225,11 +318,17 @@ onBeforeUnmount(() => {
             :bind-chart-ref="bindChartRef"
             :visible-largest-files="visibleLargestFiles"
             :sub-packages="subPackages"
+            :budget-warnings="budgetWarnings"
+            :selected-treemap-meta="selectedTreemapMeta"
           />
         </section>
 
         <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">
-          <PackagesPanel :package-insights="packageInsights" />
+          <PackagesPanel
+            :package-insights="packageInsights"
+            :budget-warnings="budgetWarnings"
+            :selected-treemap-meta="selectedTreemapMeta"
+          />
         </section>
 
         <section v-else class="min-h-0 overflow-hidden">
