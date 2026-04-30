@@ -16,7 +16,6 @@ const mobileNavOpen = ref(false)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
-const headerThemeOptions = computed(() => route.path.startsWith('/analyze') ? [] : themeOptions)
 
 provideDashboardTheme({
   themePreference,
@@ -125,7 +124,7 @@ function isActive(currentPath: string, targetPath: string) {
         <AppShellHeader
           :title="pageMeta.title"
           :description="pageMeta.description"
-          :theme-options="headerThemeOptions"
+          :theme-options="themeOptions"
           :theme-preference="themePreference"
           @menu="mobileNavOpen = true"
           @set-theme="setThemePreference"
