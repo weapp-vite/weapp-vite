@@ -9,7 +9,7 @@ import path from 'pathe'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
-import { createAnalyzeMarkdownReport } from '../../analyze/subpackages/report'
+import { createAnalyzeBudgetCheck, createAnalyzeMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
@@ -159,6 +159,20 @@ function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
   }
 }
 
+function printBudgetCheckSummary(result: AnalyzeSubpackagesResult) {
+  const exceededItems = createAnalyzeBudgetCheck(result).filter(item => item.status === 'exceeded')
+  if (exceededItems.length === 0) {
+    logger.success('包体预算检查通过')
+    return false
+  }
+
+  logger.error(`包体预算检查失败：${exceededItems.length} 项超限`)
+  for (const item of exceededItems) {
+    logger.error(`- ${item.label}：${formatAnalyzeBytes(item.currentBytes)} / ${formatAnalyzeBytes(item.limitBytes)} (${(item.ratio * 100).toFixed(1)}%)`)
+  }
+  return true
+}
+
 function printWebAnalysisSummary(result: WebAnalyzeResult) {
   logger.success('Web 静态分析完成')
   logger.info(`- 配置状态：${result.web.enabled ? '已启用 weapp.web' : '未启用 weapp.web'}`)
@@ -257,6 +271,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
     .option('--json', `[boolean] 输出 JSON 结果`)
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
+    .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
@@ -265,6 +280,7 @@ export function registerAnalyzeCommand(cli: CAC) {
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
       const outputMarkdown = coerceBooleanOption(options.markdown)
+      const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
       try {
@@ -348,7 +364,14 @@ export function registerAnalyzeCommand(cli: CAC) {
             process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
           }
         }
-        else {
+        const budgetFailed = budgetCheck ? printBudgetCheckSummary(result) : false
+        if (budgetFailed) {
+          process.exitCode = 1
+        }
+        if (budgetCheck) {
+          return
+        }
+        if (!outputMarkdown && !outputJson) {
           printAnalysisSummary(result)
           await startAnalyzeDashboard(result, {
             cwd: ctx.configService.cwd,

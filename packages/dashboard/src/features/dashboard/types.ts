@@ -216,6 +216,7 @@ export interface DuplicateModuleEntry {
   sourceType: ModuleSourceType
   packageCount: number
   bytes: number
+  estimatedSavingBytes: number
   advice: string
   packages: Array<{
     packageId: string

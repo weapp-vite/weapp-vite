@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
@@ -18,6 +19,8 @@ const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const analyzeSubpackagesMock = vi.hoisted(() => vi.fn())
 const analyzeHmrProfileMock = vi.hoisted(() => vi.fn())
+const readLatestAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
+const writeAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   success: vi.fn(),
@@ -58,6 +61,11 @@ vi.mock('../../analyze/hmr', () => ({
   analyzeHmrProfile: analyzeHmrProfileMock,
 }))
 
+vi.mock('../../analyze/subpackages/history', () => ({
+  readLatestAnalyzeHistorySnapshot: readLatestAnalyzeHistorySnapshotMock,
+  writeAnalyzeHistorySnapshot: writeAnalyzeHistorySnapshotMock,
+}))
+
 vi.mock('../analyze/dashboard', () => ({
   startAnalyzeDashboard: startAnalyzeDashboardMock,
 }))
@@ -85,7 +93,10 @@ function createAnalyzeActionHandler() {
 describe('analyze cli command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    process.exitCode = undefined
     resolveConfigFileMock.mockReturnValue(undefined)
+    readLatestAnalyzeHistorySnapshotMock.mockResolvedValue(null)
+    writeAnalyzeHistorySnapshotMock.mockResolvedValue('/project/.weapp-vite/analyze-history/latest.json')
     createCompilerContextMock.mockResolvedValue({
       configService: {
         platform: 'weapp',
@@ -180,5 +191,54 @@ describe('analyze cli command', () => {
     expect(analyzeHmrProfile).toHaveBeenCalledWith({
       profilePath: '/project/.reports/custom-hmr.jsonl',
     })
+  })
+
+  it('fails budget check without opening dashboard when a package exceeds budget', async () => {
+    const action = createAnalyzeActionHandler()
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      metadata: {
+        generatedAt: '2026-04-30T00:00:00.000Z',
+        budgets: {
+          totalBytes: 10_000,
+          mainBytes: 1_000,
+          subPackageBytes: 1_000,
+          independentBytes: 1_000,
+          warningRatio: 0.85,
+          source: 'config',
+        },
+        history: {
+          enabled: true,
+          dir: '.weapp-vite/analyze-history',
+          limit: 20,
+        },
+      },
+      packages: [
+        {
+          id: '__main__',
+          label: '主包',
+          type: 'main',
+          files: [
+            {
+              file: 'app.js',
+              type: 'chunk',
+              from: 'main',
+              size: 2_000,
+            },
+          ],
+        },
+      ],
+      modules: [],
+      subPackages: [],
+    })
+
+    await action('/project', {
+      platform: 'weapp',
+      budgetCheck: true,
+    })
+
+    expect(process.exitCode).toBe(1)
+    expect(startAnalyzeDashboard).not.toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining('包体预算检查失败'))
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining('主包'))
   })
 })

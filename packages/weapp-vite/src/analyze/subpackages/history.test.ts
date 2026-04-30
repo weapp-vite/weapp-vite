@@ -48,11 +48,35 @@ function createResult(root: string, label = '主包') {
             size: 1024,
             gzipSize: 512,
             brotliSize: 420,
+            modules: [
+              {
+                id: '/project/src/shared.ts',
+                source: 'shared.ts',
+                sourceType: 'src' as const,
+                bytes: 256,
+              },
+            ],
           },
         ],
       },
     ],
-    modules: [],
+    modules: [
+      {
+        id: '/project/src/shared.ts',
+        source: 'shared.ts',
+        sourceType: 'src' as const,
+        packages: [
+          {
+            packageId: '__main__',
+            files: ['app.js'],
+          },
+          {
+            packageId: 'pkg-a',
+            files: ['pkg-a/index.js'],
+          },
+        ],
+      },
+    ],
     subPackages: [],
   }
 }
@@ -84,5 +108,7 @@ describe('analyze history and report', () => {
     expect(report).toContain('# weapp-vite analyze 报告')
     expect(report).toContain('较上次：+512 B')
     expect(report).toContain('| current | main | 1.00 KB | 420 B | +512 B | 正常 |')
+    expect(report).toContain('## 建议动作')
+    expect(report).toContain('| shared.ts | src | 2 | 256 B |')
   })
 })

@@ -171,10 +171,13 @@ function createDuplicateAdvice(
   sourceType: ModuleSourceType,
   packages: DuplicateModuleEntry['packages'],
   packageTypeMap: Map<string, PackageType>,
+  estimatedSavingBytes: number,
 ) {
   const hasIndependentPackage = packages.some(pkg => packageTypeMap.get(pkg.packageId) === 'independent')
   if (hasIndependentPackage) {
-    return '含独立分包，先确认隔离要求；可复用逻辑不要默认并入主包。'
+    return estimatedSavingBytes > 0
+      ? '含独立分包，先确认隔离要求，再评估公共入口。'
+      : '含独立分包，重复可能来自隔离边界。'
   }
   if (sourceType === 'node_modules') {
     return '依赖被多个包带入，检查引用边界或考虑主包公共入口。'
@@ -453,18 +456,22 @@ export function useAnalyzeDashboardData(
       .map((mod) => {
         const info = moduleInfoMap.value.get(mod.id)
         const packages = mod.packages.map(pkg => createDuplicateModulePackageEntry(packageLabelMap.value, pkg))
+        const bytes = info?.bytes ?? info?.originalBytes ?? 0
+        const estimatedSavingBytes = bytes * Math.max(mod.packages.length - 1, 0)
         return {
           id: mod.id,
           source: mod.source,
           sourceType: mod.sourceType,
           packageCount: mod.packages.length,
-          bytes: info?.bytes ?? info?.originalBytes ?? 0,
-          advice: createDuplicateAdvice(mod.sourceType, packages, packageTypeMap.value),
+          bytes,
+          estimatedSavingBytes,
+          advice: createDuplicateAdvice(mod.sourceType, packages, packageTypeMap.value, estimatedSavingBytes),
           packages,
         }
       })
       .sort((a, b) =>
-        b.packageCount - a.packageCount
+        b.estimatedSavingBytes - a.estimatedSavingBytes
+        || b.packageCount - a.packageCount
         || b.bytes - a.bytes
         || a.source.localeCompare(b.source),
       )

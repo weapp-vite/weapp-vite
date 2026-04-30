@@ -31,6 +31,7 @@ export interface GlobalCLIOptions {
 
 export interface AnalyzeCLIOptions extends GlobalCLIOptions {
   hmrProfile?: boolean | string
+  budgetCheck?: boolean | string
   json?: boolean | string
   markdown?: boolean | string
   output?: string

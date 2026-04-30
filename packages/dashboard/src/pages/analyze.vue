@@ -104,7 +104,7 @@ const exportSummaryText = computed(() => {
     `模块：${summaryValue.moduleCount} 个，跨包复用：${summaryValue.duplicateCount} 个`,
     `预算告警：${summaryValue.budgetWarningCount} 个`,
     topPackage ? `最大包：${topPackage.label} ${formatBytes(topPackage.totalBytes)}` : '',
-    topDuplicate ? `首要重复模块：${topDuplicate.source}（${topDuplicate.advice}）` : '',
+    topDuplicate ? `首要重复模块：${topDuplicate.source}，估算可节省 ${formatBytes(topDuplicate.estimatedSavingBytes)}（${topDuplicate.advice}）` : '',
   ].filter(Boolean).join('\n')
 })
 
@@ -117,15 +117,19 @@ const exportMarkdownText = computed(() => {
     .map(file => `| ${file.file} | ${file.packageLabel} | ${file.type} | ${formatBytes(file.size)} | ${formatBytes(file.compressedSize)} |`)
     .join('\n')
   const duplicateRows = duplicateModules.value.slice(0, 10)
-    .map(module => `| ${module.source} | ${module.sourceType} | ${module.packageCount} | ${module.advice} |`)
+    .map(module => `| ${module.source} | ${module.sourceType} | ${module.packageCount} | ${formatBytes(module.estimatedSavingBytes)} | ${module.advice} |`)
     .join('\n')
+  const budgetRows = budgetWarnings.value
+    .map(item => `| ${item.label} | ${item.scope} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}% |`)
+    .join('\n')
+  const topDuplicate = duplicateModules.value.find(module => module.estimatedSavingBytes > 0)
 
   return [
     '# weapp-vite analyze 报告',
     '',
     `生成时间：${resultRef.value?.metadata?.generatedAt ?? new Date().toISOString()}`,
     '',
-    '## 总览',
+    '## 本次变化摘要',
     '',
     `- 总产物体积：${formatBytes(summaryValue.totalBytes)}`,
     `- 压缩后体积：${formatBytes(summaryValue.compressedBytes)}`,
@@ -133,6 +137,21 @@ const exportMarkdownText = computed(() => {
     `- 源码模块：${summaryValue.moduleCount}`,
     `- 跨包复用：${summaryValue.duplicateCount}`,
     `- 预算告警：${summaryValue.budgetWarningCount}`,
+    '',
+    '## 预算告警',
+    '',
+    '| 对象 | 范围 | 当前体积 | 预算 | 状态 |',
+    '| --- | --- | ---: | ---: | --- |',
+    budgetRows || '| - | - | 0 B | 0 B | 正常 |',
+    '',
+    '## 建议动作',
+    '',
+    budgetWarnings.value[0]
+      ? `- 优先处理 ${budgetWarnings.value[0].label}：当前 ${formatBytes(budgetWarnings.value[0].currentBytes)}，预算 ${formatBytes(budgetWarnings.value[0].limitBytes)}。`
+      : '- 当前没有预算超限或接近预算的包体。',
+    topDuplicate
+      ? `- 优先处理重复模块 ${topDuplicate.source}，估算可节省 ${formatBytes(topDuplicate.estimatedSavingBytes)}。`
+      : '- 当前没有可估算收益的重复模块。',
     '',
     '## 包体',
     '',
@@ -148,9 +167,9 @@ const exportMarkdownText = computed(() => {
     '',
     '## 重复模块',
     '',
-    '| 模块 | 来源 | 包数量 | 建议 |',
-    '| --- | --- | ---: | --- |',
-    duplicateRows || '| - | - | 0 | - |',
+    '| 模块 | 来源 | 包数量 | 估算可节省 | 建议 |',
+    '| --- | --- | ---: | ---: | --- |',
+    duplicateRows || '| - | - | 0 | 0 B | - |',
     '',
   ].join('\n')
 })

@@ -31,7 +31,7 @@ interface ListItemRow extends DashboardDetailItem {
 function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
   return {
     title: module.source,
-    meta: `${module.packageCount} 个包 · ${formatBytes(module.bytes)} · ${module.advice}`,
+    meta: `${module.packageCount} 个包 · 单份 ${formatBytes(module.bytes)} · 可节省 ${formatBytes(module.estimatedSavingBytes)} · ${module.advice}`,
   }
 }
 
