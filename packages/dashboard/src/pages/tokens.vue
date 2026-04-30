@@ -4,7 +4,7 @@ import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureC
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import AppSurfaceSampleCard from '../features/dashboard/components/AppSurfaceSampleCard.vue'
-import AppTokenSwatch from '../features/dashboard/components/AppTokenSwatch.vue'
+import TokenInspector from '../features/dashboard/components/TokenInspector.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
 
@@ -37,22 +37,15 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
       </div>
     </AppSurfaceCard>
 
-    <section class="grid min-h-0 gap-3 overflow-hidden lg:grid-cols-3">
+    <section class="grid min-h-0 overflow-hidden">
       <AppSurfaceCard
-        v-for="group in tokenGroups"
-        :key="group.title"
-        :title="group.title"
-        :icon-name="group.iconName"
+        eyebrow="Tokens"
+        title="令牌检查器"
+        icon-name="token-color"
         padding="md"
         content-class="min-h-0 overflow-hidden"
       >
-        <ul class="grid max-h-full gap-3 overflow-y-auto pr-1">
-          <AppTokenSwatch
-            v-for="token in group.tokens"
-            :key="token.name"
-            v-bind="token"
-          />
-        </ul>
+        <TokenInspector :groups="tokenGroups" />
       </AppSurfaceCard>
     </section>
 
