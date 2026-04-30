@@ -153,7 +153,11 @@ describe('serve cli command', () => {
           outDir: '/project/dist',
           mpDistRoot: '/project/dist',
           packageManager: { agent: 'pnpm' },
-          weappViteConfig: {},
+          weappViteConfig: {
+            analyze: {
+              history: false,
+            },
+          },
         },
         webService: undefined,
         watcherService: {
@@ -227,7 +231,7 @@ describe('serve cli command', () => {
       packages: [{ id: 'refresh', label: 'refresh', files: [] }],
       modules: [{ id: 'm1', source: 'src/a.ts', sourceType: 'src', packages: [] }],
       subPackages: [],
-    })
+    }, null)
     expect(startDevHotkeysMock).toHaveBeenCalledWith({
       cwd: '/project',
       mcpConfig: undefined,
@@ -236,7 +240,11 @@ describe('serve cli command', () => {
       projectPath: '/project/dist',
       rebuild: expect.any(Function),
       silentStartupHint: true,
-      weappViteConfig: {},
+      weappViteConfig: {
+        analyze: {
+          history: false,
+        },
+      },
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
@@ -324,7 +332,11 @@ describe('serve cli command', () => {
         outDir: '/project/dist',
         mpDistRoot: '/project/dist/miniprogram',
         packageManager: { agent: 'pnpm' },
-        weappViteConfig: {},
+        weappViteConfig: {
+          analyze: {
+            history: false,
+          },
+        },
       },
       webService: undefined,
       watcherService: {

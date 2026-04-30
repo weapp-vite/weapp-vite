@@ -107,6 +107,9 @@ describe('build cli command', () => {
         mpDistRoot: '/project/dist',
         packageManager: { agent: 'pnpm' },
         weappViteConfig: {
+          analyze: {
+            history: false,
+          },
           packageSizeWarningBytes: 0,
         },
         weappWebConfig: undefined,
@@ -150,18 +153,22 @@ describe('build cli command', () => {
     }))
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
-    const handle = vi.mocked(startAnalyzeDashboard).mock.results[0]?.value
-    const resolvedHandle = await handle
-
-    expect(resolvedHandle?.emitRuntimeEvents).toHaveBeenCalledWith([
+    expect(startAnalyzeDashboard).toHaveBeenCalledWith(
       expect.objectContaining({
-        kind: 'build',
-        level: 'success',
-        title: 'mini build completed',
-        detail: expect.stringContaining('1 个包'),
-        durationMs: expect.any(Number),
+        packages: [{ id: 'main', label: 'main', files: [] }],
       }),
-    ])
+      expect.objectContaining({
+        initialEvents: expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'build',
+            level: 'success',
+            title: 'mini build completed',
+            detail: expect.stringContaining('1 个包'),
+            durationMs: expect.any(Number),
+          }),
+        ]),
+      }),
+    )
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序构建完成，耗时：'))
   })
 
