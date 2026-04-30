@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, DashboardDetailItem, LargestFileEntry, PackageBudgetLimitItem, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
+import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, DashboardDetailItem, LargestFileEntry, PackageBudgetLimitItem, PackageBudgetWarning, ResolvedTheme, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
@@ -15,6 +15,7 @@ const props = defineProps<{
   treemapFilterOptions: AnalyzeTreemapFilterOption[]
   canUseSelectedPackageFilter: boolean
   isTreemapEmpty: boolean
+  theme: ResolvedTheme
   visibleLargestFiles: LargestFileEntry[]
   selectedFileModules: SelectedFileModuleDetail[]
   budgetWarnings: PackageBudgetWarning[]
@@ -132,6 +133,7 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
       :filter-options="treemapFilterOptions"
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :is-empty="isTreemapEmpty"
+      :theme="theme"
       @focus-selected="emit('focusTreemapSelection')"
       @reset-focus="emit('resetTreemapFocus')"
       @update-filter-mode="emit('updateTreemapFilterMode', $event)"

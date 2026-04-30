@@ -983,6 +983,7 @@ onBeforeUnmount(() => {
               :filter-options="treemapFilterOptions"
               :can-use-selected-package-filter="canUseSelectedPackageFilter"
               :is-empty="isTreemapEmpty"
+              :theme="resolvedTheme"
               @focus-selected="handleFocusTreemapSelection"
               @reset-focus="handleResetTreemapFocus"
               @update-filter-mode="handleUpdateTreemapFilterMode"

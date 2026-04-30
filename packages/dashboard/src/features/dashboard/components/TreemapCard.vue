@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption } from '../types'
+import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, ResolvedTheme } from '../types'
+import { computed } from 'vue'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
@@ -12,6 +13,7 @@ const props = defineProps<{
   filterOptions: AnalyzeTreemapFilterOption[]
   canUseSelectedPackageFilter: boolean
   isEmpty: boolean
+  theme: ResolvedTheme
 }>()
 
 const emit = defineEmits<{
@@ -22,11 +24,17 @@ const emit = defineEmits<{
 
 const chartTitle = 'Treemap'
 const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
-const healthLegend = [
-  { label: '健康', color: '#8fd3ad' },
-  { label: '关注', color: '#ead486' },
-  { label: '急需改进', color: '#eaa39b' },
-]
+const healthLegend = computed(() => props.theme === 'dark'
+  ? [
+      { label: '健康', color: '#166853' },
+      { label: '关注', color: '#75601f' },
+      { label: '急需改进', color: '#81323a' },
+    ]
+  : [
+      { label: '健康', color: '#8fd3ad' },
+      { label: '关注', color: '#ead486' },
+      { label: '急需改进', color: '#eaa39b' },
+    ])
 
 function getChartBadgeClassName(): string {
   return pillButtonStyles({ kind: 'badge' })

@@ -11,11 +11,18 @@ import {
 } from '../utils/treemap'
 
 const defaultWarningRatio = 0.85
-const healthPalette = {
-  green: '#8fd3ad',
-  yellow: '#ead486',
-  red: '#eaa39b',
-}
+const healthPalettes = {
+  light: {
+    green: '#8fd3ad',
+    yellow: '#ead486',
+    red: '#eaa39b',
+  },
+  dark: {
+    green: '#166853',
+    yellow: '#75601f',
+    red: '#81323a',
+  },
+} satisfies Record<ResolvedTheme, Record<'green' | 'yellow' | 'red', string>>
 const wevuRuntimeRiskScoreLimit = 0.5
 
 function clamp(value: number, min = 0, max = 1) {
@@ -39,15 +46,25 @@ function mixColor(from: string, to: string, ratio: number) {
   return `#${mixed.map(channel => channel.toString(16).padStart(2, '0')).join('')}`
 }
 
-function createRiskColor(score: number) {
+function createRiskColor(score: number, theme: ResolvedTheme) {
   const normalizedScore = clamp(score)
+  const healthPalette = healthPalettes[theme]
   if (normalizedScore <= 0.5) {
     return mixColor(healthPalette.green, healthPalette.yellow, normalizedScore / 0.5)
   }
   return mixColor(healthPalette.yellow, healthPalette.red, (normalizedScore - 0.5) / 0.5)
 }
 
-function createRiskBorderColor(score: number) {
+function createRiskBorderColor(score: number, theme: ResolvedTheme) {
+  if (theme === 'dark') {
+    if (score >= 0.82) {
+      return '#fda4af'
+    }
+    if (score >= 0.5) {
+      return '#fde68a'
+    }
+    return '#5eead4'
+  }
   if (score >= 0.82) {
     return '#c6756f'
   }
@@ -112,13 +129,13 @@ function createRiskLabelStyle(backgroundColor: string, emphasis = false) {
   }
 }
 
-function createRiskNodeStyle(score: number) {
-  const color = createRiskColor(score)
+function createRiskNodeStyle(score: number, theme: ResolvedTheme) {
+  const color = createRiskColor(score, theme)
 
   return {
     itemStyle: {
       color,
-      borderColor: createRiskBorderColor(score),
+      borderColor: createRiskBorderColor(score, theme),
     },
     label: createRiskLabelStyle(color),
     upperLabel: createRiskLabelStyle(color, true),
@@ -179,6 +196,7 @@ function createModuleTreemapNode(
   fileBytes: number,
   moduleUsageCount: Map<string, number>,
   module: NonNullable<AnalyzeSubpackagesResult['packages'][number]['files'][number]['modules']>[number],
+  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapModuleNodeId(packageId, fileName, module.id)
   const value = Math.max(module.bytes ?? module.originalBytes ?? 1, 1)
@@ -205,7 +223,7 @@ function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createRiskNodeStyle(normalizedRiskScore),
+    ...createRiskNodeStyle(normalizedRiskScore, theme),
   }
 }
 
@@ -215,6 +233,7 @@ function createAssetTreemapNode(
   fileName: string,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
   packageBytes: number,
+  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapAssetNodeId(packageId, fileName)
   const value = Math.max(file.size ?? 1, 1)
@@ -232,7 +251,7 @@ function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore),
+    ...createRiskNodeStyle(riskScore, theme),
   }
 }
 
@@ -245,6 +264,7 @@ function createFileTreemapNode(
   value = file.size ?? 1,
   packageBytes: number,
   packageRiskScore: number,
+  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapFileNodeId(packageId, file.file)
   const fileValue = Math.max(value, 1)
@@ -270,7 +290,7 @@ function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore),
+    ...createRiskNodeStyle(riskScore, theme),
     children: children.length > 0 ? children : undefined,
   }
 }
@@ -280,6 +300,7 @@ function createPackageTreemapNode(
   totalBytes: number,
   fileNodes: TreemapNode[],
   riskScore: number,
+  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapPackageNodeId(pkg.id)
   const normalizedRiskScore = normalizeRuntimeRiskScore(riskScore, pkg.id, pkg.label)
@@ -297,7 +318,7 @@ function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createRiskNodeStyle(normalizedRiskScore),
+    ...createRiskNodeStyle(normalizedRiskScore, theme),
     children: fileNodes,
   }
 }
@@ -389,6 +410,7 @@ export function useTreemapData(
       pkg.id,
       pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0),
     ]))
+    const theme = resolvedTheme.value
 
     return result.packages.flatMap((pkg) => {
       if (filter.mode === 'selected-package' && (!filter.selectedPackageId || pkg.id !== filter.selectedPackageId)) {
@@ -400,9 +422,9 @@ export function useTreemapData(
         const fileHasGrowth = filter.mode === 'growth' && filter.growthFileKeys.has(createFileKey(pkg.id, file.file))
         const fileBytes = Math.max(file.size ?? 1, 1)
         const moduleNodes = file.type === 'chunk'
-          ? filterModules(filter, file.modules ?? []).map(module => createModuleTreemapNode(pkg.id, pkg.label, file.file, fileBytes, moduleUsageCount.value, module))
+          ? filterModules(filter, file.modules ?? []).map(module => createModuleTreemapNode(pkg.id, pkg.label, file.file, fileBytes, moduleUsageCount.value, module, theme))
           : shouldIncludeAsset(pkg.id, file, filter)
-            ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file, rawPackageBytes)]
+            ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file, rawPackageBytes, theme)]
             : []
 
         if (filter.mode !== 'all' && filter.mode !== 'selected-package' && moduleNodes.length === 0 && !fileHasGrowth) {
@@ -422,6 +444,7 @@ export function useTreemapData(
           filteredValue,
           rawPackageBytes,
           packageBudgetScores.get(pkg.id) ?? 0,
+          theme,
         )]
       })
 
@@ -433,7 +456,7 @@ export function useTreemapData(
         ? pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
         : sumNodeValues(fileNodes)
 
-      return [createPackageTreemapNode(pkg, totalBytes, fileNodes, packageBudgetScores.get(pkg.id) ?? 0)]
+      return [createPackageTreemapNode(pkg, totalBytes, fileNodes, packageBudgetScores.get(pkg.id) ?? 0, theme)]
     })
   })
 

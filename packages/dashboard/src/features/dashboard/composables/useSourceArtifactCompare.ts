@@ -7,6 +7,7 @@ import HtmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import TypeScriptWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { configureMonacoDiffEditor, resolveMonacoTheme } from '../utils/monacoDiffTheme'
 
 type Monaco = typeof MonacoApi
 type MonacoDiffEditor = ReturnType<Monaco['editor']['createDiffEditor']>
@@ -30,13 +31,6 @@ const workerByLabel: Record<string, MonacoWorkerConstructor> = {
   scss: CssWorker,
   typescript: TypeScriptWorker,
 }
-const disabledTypeScriptDiagnostics = {
-  noSemanticValidation: true,
-  noSuggestionDiagnostics: true,
-  noSyntaxValidation: true,
-}
-const disabledTypeScriptModeConfiguration = { diagnostics: false }
-
 const globalWithMonaco = globalThis as unknown as {
   MonacoEnvironment?: { getWorker: (_workerId: string, label: string) => Worker }
 }
@@ -186,11 +180,8 @@ export function useSourceArtifactCompare(options: {
     }
     const monaco = await import('monaco-editor')
     monacoRef.value = monaco
-    monaco.typescript.javascriptDefaults.setDiagnosticsOptions(disabledTypeScriptDiagnostics)
-    monaco.typescript.javascriptDefaults.setModeConfiguration(disabledTypeScriptModeConfiguration)
-    monaco.typescript.typescriptDefaults.setDiagnosticsOptions(disabledTypeScriptDiagnostics)
-    monaco.typescript.typescriptDefaults.setModeConfiguration(disabledTypeScriptModeConfiguration)
-    monaco.editor.setTheme(options.theme.value === 'dark' ? 'vs-dark' : 'vs')
+    configureMonacoDiffEditor(monaco)
+    monaco.editor.setTheme(resolveMonacoTheme(options.theme.value))
     diffEditor = monaco.editor.createDiffEditor(editorElement.value, {
       automaticLayout: true,
       minimap: { enabled: false },
@@ -273,7 +264,7 @@ export function useSourceArtifactCompare(options: {
   watch(
     options.theme,
     (theme) => {
-      monacoRef.value?.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs')
+      monacoRef.value?.editor.setTheme(resolveMonacoTheme(theme))
     },
   )
 
