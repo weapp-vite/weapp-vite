@@ -84,7 +84,7 @@ function createIncrementAction(
     meta: `${item.category} · ${item.advice}`,
     value: `+${formatBytes(item.deltaBytes)}`,
     tone: item.deltaBytes > 1024 ? 'warning' : 'info',
-    tab: file ? 'overview' : 'modules',
+    tab: file ? 'files' : 'modules',
     priority: 80 + Math.min(item.deltaBytes / 1024, 15),
     file,
     moduleMeta,
@@ -109,7 +109,7 @@ export function useAnalyzeActionCenter(options: {
         meta: `${warning.status === 'critical' ? '已超预算' : '接近预算'} · 当前 ${formatBytes(warning.currentBytes)} / ${formatBytes(warning.limitBytes)}`,
         value: formatWarningValue(warning),
         tone: warning.status === 'critical' ? 'critical' : 'warning',
-        tab: 'overview',
+        tab: 'files',
         priority: warning.status === 'critical' ? 100 + warning.ratio : 90 + warning.ratio,
         warning,
       })
@@ -132,7 +132,7 @@ export function useAnalyzeActionCenter(options: {
         meta: `${largestFile.packageLabel} · ${largestFile.type} · 压缩后 ${formatBytes(largestFile.compressedSize)}`,
         value: formatBytes(largestFile.size),
         tone: 'success',
-        tab: 'overview',
+        tab: 'files',
         priority: 45,
         file: largestFile,
       })

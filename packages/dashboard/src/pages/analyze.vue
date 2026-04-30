@@ -8,14 +8,16 @@ import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } fro
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionCenterPanel from '../features/dashboard/components/ActionCenterPanel.vue'
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
+import AnalyzeDetailsPanel from '../features/dashboard/components/AnalyzeDetailsPanel.vue'
+import AnalyzeDraggableGrid from '../features/dashboard/components/AnalyzeDraggableGrid.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import HistoryBaselinePanel from '../features/dashboard/components/HistoryBaselinePanel.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
-import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
+import TreemapCard from '../features/dashboard/components/TreemapCard.vue'
 import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
 import { useAnalyzeCommandPalette } from '../features/dashboard/composables/useAnalyzeCommandPalette'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
@@ -47,6 +49,22 @@ const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const route = useRoute()
 const router = useRouter()
+const overviewLayoutItems = [
+  { id: 'metrics', label: '关键指标' },
+]
+const diagnosticsLayoutItems = [
+  { id: 'actions', label: '问题中心' },
+  { id: 'history', label: '历史基线' },
+]
+const treemapLayoutItems = [
+  { id: 'treemap', label: '体积地图' },
+]
+const packagesLayoutItems = [
+  { id: 'packages', label: '包与产物' },
+]
+const modulesLayoutItems = [
+  { id: 'modules', label: '模块复用' },
+]
 const { resolvedTheme } = useDashboardTheme()
 const {
   baselineSnapshotId,
@@ -493,18 +511,16 @@ function handleSelectAction(item: AnalyzeActionCenterItem) {
   }
 
   if (item.warning) {
-    activeTab.value = 'overview'
+    activeTab.value = 'files'
     handleSelectBudgetWarning(item.warning)
     treemapFilterMode.value = 'selected-package'
-    void nextTick(() => handleFocusTreemapSelection())
     return
   }
 
   if (item.file) {
-    activeTab.value = 'overview'
+    activeTab.value = 'files'
     handleSelectLargestFile(item.file)
     treemapFilterMode.value = 'selected-package'
-    void nextTick(() => handleFocusTreemapSelection())
     return
   }
 
@@ -526,18 +542,16 @@ function handleSelectCommand(item: (typeof commandItems.value)[number]) {
   }
 
   if (item.warning) {
-    activeTab.value = 'overview'
+    activeTab.value = 'files'
     handleSelectBudgetWarning(item.warning)
     treemapFilterMode.value = 'selected-package'
-    void nextTick(() => handleFocusTreemapSelection())
     return
   }
 
   if (item.file) {
-    activeTab.value = 'overview'
+    activeTab.value = 'files'
     handleSelectLargestFile(item.file)
     treemapFilterMode.value = 'selected-package'
-    void nextTick(() => handleFocusTreemapSelection())
     return
   }
 
@@ -568,7 +582,7 @@ function handleResetTreemapFocus() {
 }
 
 async function ensureChart() {
-  if (activeTab.value !== 'overview') {
+  if (activeTab.value !== 'treemap') {
     destroyChart()
     return
   }
@@ -824,68 +838,113 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-if="resultRef">
-      <div class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
-        <div class="min-h-0">
-          <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
-        </div>
+      <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="overviewLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:overview"
+        >
+          <template #metrics>
+            <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
 
-        <div class="grid h-[7rem] min-h-0 gap-2 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-          <ActionCenterPanel
-            :actions="actionItems"
-            :active-key="selectedActionKey"
-            @copy-report="copyPrReport"
-            @select="handleSelectAction"
-          />
-          <HistoryBaselinePanel
-            :snapshots="historySnapshots"
-            :baseline-snapshot-id="baselineSnapshotId"
-            :comparison-mode="comparisonMode"
-            @set-baseline="setBaselineSnapshot"
-            @set-comparison-mode="setComparisonMode"
-          />
-        </div>
+      <section v-else-if="activeTab === 'diagnostics'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]"
+          :items="diagnosticsLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:diagnostics"
+        >
+          <template #actions>
+            <ActionCenterPanel
+              :actions="actionItems"
+              :active-key="selectedActionKey"
+              @copy-report="copyPrReport"
+              @select="handleSelectAction"
+            />
+          </template>
+          <template #history>
+            <HistoryBaselinePanel
+              :snapshots="historySnapshots"
+              :baseline-snapshot-id="baselineSnapshotId"
+              :comparison-mode="comparisonMode"
+              @set-baseline="setBaselineSnapshot"
+              @set-comparison-mode="setComparisonMode"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
 
-        <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
-          <OverviewPanel
-            :bind-chart-ref="bindChartRef"
-            :can-focus-treemap-selection="Boolean(selectedTreemapFocusNodeId)"
-            :treemap-filter-mode="treemapFilterMode"
-            :treemap-filter-options="treemapFilterOptions"
-            :can-use-selected-package-filter="canUseSelectedPackageFilter"
-            :is-treemap-empty="isTreemapEmpty"
-            :visible-largest-files="visibleLargestFiles"
-            :selected-file-modules="selectedFileModules"
-            :budget-warnings="budgetWarnings"
-            :budget-limit-items="budgetLimitItems"
-            :active-budget-warning-id="selectedBudgetWarning?.id ?? null"
-            :active-largest-file-key="activeLargestFileKey"
-            :selected-treemap-meta="selectedTreemapMeta"
-            @focus-treemap-selection="handleFocusTreemapSelection"
-            @reset-treemap-focus="handleResetTreemapFocus"
-            @update-treemap-filter-mode="handleUpdateTreemapFilterMode"
-            @select-budget-warning="handleSelectBudgetWarning"
-            @select-file="handleSelectLargestFile"
-          />
-        </section>
+      <section v-else-if="activeTab === 'treemap'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="treemapLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:treemap"
+        >
+          <template #treemap>
+            <TreemapCard
+              :bind-chart-ref="bindChartRef"
+              :can-focus-selected="Boolean(selectedTreemapFocusNodeId)"
+              :filter-mode="treemapFilterMode"
+              :filter-options="treemapFilterOptions"
+              :can-use-selected-package-filter="canUseSelectedPackageFilter"
+              :is-empty="isTreemapEmpty"
+              @focus-selected="handleFocusTreemapSelection"
+              @reset-focus="handleResetTreemapFocus"
+              @update-filter-mode="handleUpdateTreemapFilterMode"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
 
-        <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">
-          <PackagesPanel
-            :package-insights="packageInsights"
-            :budget-warnings="budgetWarnings"
-            :selected-treemap-meta="selectedTreemapMeta"
-          />
-        </section>
+      <section v-else-if="activeTab === 'files'" class="min-h-0 overflow-hidden">
+        <AnalyzeDetailsPanel
+          :visible-largest-files="visibleLargestFiles"
+          :selected-file-modules="selectedFileModules"
+          :budget-warnings="budgetWarnings"
+          :budget-limit-items="budgetLimitItems"
+          :active-budget-warning-id="selectedBudgetWarning?.id ?? null"
+          :active-largest-file-key="activeLargestFileKey"
+          :selected-treemap-meta="selectedTreemapMeta"
+          @select-budget-warning="handleSelectBudgetWarning"
+          @select-file="handleSelectLargestFile"
+        />
+      </section>
 
-        <section v-else class="min-h-0 overflow-hidden">
-          <ModulesPanel
-            :visible-duplicate-modules="visibleDuplicateModules"
-            :module-source-summary="moduleSourceSummary"
-            :increment-attribution="incrementAttribution"
-            :increment-summary="incrementSummary"
-            :visible-largest-files="visibleLargestFiles"
-          />
-        </section>
-      </div>
+      <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="packagesLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:packages"
+        >
+          <template #packages>
+            <PackagesPanel
+              :package-insights="packageInsights"
+              :budget-warnings="budgetWarnings"
+              :selected-treemap-meta="selectedTreemapMeta"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
+
+      <section v-else class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="modulesLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:modules"
+        >
+          <template #modules>
+            <ModulesPanel
+              :visible-duplicate-modules="visibleDuplicateModules"
+              :module-source-summary="moduleSourceSummary"
+              :increment-attribution="incrementAttribution"
+              :increment-summary="incrementSummary"
+              :visible-largest-files="visibleLargestFiles"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
     </template>
 
     <AnalyzeCommandPalette

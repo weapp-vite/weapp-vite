@@ -62,7 +62,7 @@ function createFileItem(file: LargestFileEntry): AnalyzeCommandPaletteItem {
     meta: `${file.packageLabel} · ${file.type} · 压缩后 ${formatBytes(file.compressedSize)}`,
     value: formatBytes(file.size),
     keywords: createKeywords([file.packageId, file.packageLabel, file.file, file.type, file.source, file.size]),
-    tab: 'overview',
+    tab: 'files',
     file,
   }
 }
@@ -75,7 +75,7 @@ function createBudgetItem(warning: PackageBudgetWarning): AnalyzeCommandPaletteI
     meta: `${warning.status === 'critical' ? '已超预算' : '接近预算'} · ${formatBytes(warning.currentBytes)} / ${formatBytes(warning.limitBytes)}`,
     value: `${(warning.ratio * 100).toFixed(1)}%`,
     keywords: createKeywords([warning.id, warning.label, warning.scope, warning.status, warning.currentBytes]),
-    tab: 'overview',
+    tab: 'files',
     warning,
   }
 }
@@ -127,7 +127,7 @@ function createIncrementItem(
     meta: `${item.category} · ${item.advice}`,
     value: `+${formatBytes(item.deltaBytes)}`,
     keywords: createKeywords([item.key, item.label, item.category, item.packageLabel, item.file, item.deltaBytes]),
-    tab: file ? 'overview' : 'modules',
+    tab: file ? 'files' : 'modules',
     file,
     moduleMeta: !file && item.moduleId && item.packageId && item.file && packageInfo
       ? {

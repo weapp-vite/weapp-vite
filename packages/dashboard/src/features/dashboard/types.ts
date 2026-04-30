@@ -133,7 +133,7 @@ export interface AnalyzeHistorySnapshot {
   duplicateCount: number
 }
 
-export type DashboardTab = 'overview' | 'packages' | 'modules'
+export type DashboardTab = 'overview' | 'diagnostics' | 'treemap' | 'files' | 'packages' | 'modules'
 
 export interface ThemeOption {
   value: 'system' | 'light' | 'dark'
