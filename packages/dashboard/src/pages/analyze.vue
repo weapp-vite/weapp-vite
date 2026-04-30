@@ -45,6 +45,7 @@ const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
 const selectedBudgetWarning = shallowRef<PackageBudgetWarning | null>(null)
 const selectedActionKey = shallowRef<string | null>(null)
 const commandPaletteOpen = shallowRef(false)
+const moreMenuOpen = shallowRef(false)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const route = useRoute()
@@ -612,11 +613,13 @@ async function ensureChart() {
 async function copySummary() {
   await navigator.clipboard.writeText(exportSummaryText.value)
   exportStatus.value = '已复制'
+  moreMenuOpen.value = false
 }
 
 async function copyPrReport() {
   await navigator.clipboard.writeText(exportPrMarkdownText.value)
   exportStatus.value = 'PR 摘要已复制'
+  moreMenuOpen.value = false
 }
 
 function exportJson() {
@@ -631,6 +634,7 @@ function exportJson() {
   anchor.click()
   URL.revokeObjectURL(url)
   exportStatus.value = '已导出'
+  moreMenuOpen.value = false
 }
 
 function exportMarkdown() {
@@ -642,9 +646,17 @@ function exportMarkdown() {
   anchor.click()
   URL.revokeObjectURL(url)
   exportStatus.value = '已导出 MD'
+  moreMenuOpen.value = false
+}
+
+function handlePageClick() {
+  moreMenuOpen.value = false
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    moreMenuOpen.value = false
+  }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault()
     if (resultRef.value) {
@@ -684,12 +696,14 @@ watch(resolvedTheme, async () => {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('click', handlePageClick)
   void ensureChart()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('click', handlePageClick)
   destroyChart()
 })
 </script>
@@ -777,50 +791,67 @@ onBeforeUnmount(() => {
           </span>
           搜索
         </button>
-        <button
+        <div
           v-if="resultRef"
-          class="shrink-0"
-          :class="pillButtonStyles({ kind: 'nav', active: false })"
-          @click="copySummary"
+          class="relative shrink-0"
+          @click.stop
         >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制摘要
-        </button>
-        <button
-          v-if="resultRef"
-          class="shrink-0"
-          :class="pillButtonStyles({ kind: 'nav', active: false })"
-          @click="copyPrReport"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制 PR
-        </button>
-        <button
-          v-if="resultRef"
-          class="shrink-0"
-          :class="pillButtonStyles({ kind: 'nav', active: false })"
-          @click="exportJson"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="metric-size-outline" />
-          </span>
-          导出 JSON
-        </button>
-        <button
-          v-if="resultRef"
-          class="shrink-0"
-          :class="pillButtonStyles({ kind: 'nav', active: false })"
-          @click="exportMarkdown"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="file-samples" />
-          </span>
-          导出 MD
-        </button>
+          <button
+            :class="pillButtonStyles({ kind: 'nav', active: moreMenuOpen })"
+            type="button"
+            @click="moreMenuOpen = !moreMenuOpen"
+          >
+            <span class="h-4.5 w-4.5">
+              <DashboardIcon name="nav-menu" />
+            </span>
+            更多
+          </button>
+          <div
+            v-if="moreMenuOpen"
+            class="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-48 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
+          >
+            <button
+              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+              type="button"
+              @click="copySummary"
+            >
+              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+                <DashboardIcon name="metric-copy" />
+              </span>
+              复制摘要
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+              type="button"
+              @click="copyPrReport"
+            >
+              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+                <DashboardIcon name="metric-copy" />
+              </span>
+              复制 PR
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+              type="button"
+              @click="exportJson"
+            >
+              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+                <DashboardIcon name="metric-size-outline" />
+              </span>
+              导出 JSON
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+              type="button"
+              @click="exportMarkdown"
+            >
+              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+                <DashboardIcon name="file-samples" />
+              </span>
+              导出 MD
+            </button>
+          </div>
+        </div>
         <AppInfoPill
           v-if="exportStatus"
           class="shrink-0"
