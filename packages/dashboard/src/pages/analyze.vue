@@ -27,7 +27,7 @@ import { useDashboardPage } from '../features/dashboard/composables/useDashboard
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
-import { dashboardTabs, treemapFilterOptions } from '../features/dashboard/constants/view'
+import { treemapFilterOptions } from '../features/dashboard/constants/view'
 import { copyText } from '../features/dashboard/utils/clipboard'
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
@@ -881,20 +881,7 @@ onBeforeUnmount(() => {
       </div>
     </AppSurfaceCard>
 
-    <section class="relative z-20 grid min-w-0 gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow) md:flex md:items-center md:gap-3">
-      <nav class="flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-0.5 md:shrink-0">
-        <button
-          v-for="tab in dashboardTabs"
-          :key="tab.key"
-          :class="pillButtonStyles({ kind: 'nav', active: activeTab === tab.key })"
-          @click="activeTab = tab.key"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon :name="tab.iconName" />
-          </span>
-          {{ tab.label }}
-        </button>
-      </nav>
+    <section class="relative z-20 flex min-w-0 items-center gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
       <div class="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5">
         <button
           v-if="resultRef"

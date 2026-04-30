@@ -7,10 +7,34 @@ import type {
   WorkspaceCommandItem,
   WorkspaceDiagnosticItem,
 } from '../types'
+import { dashboardTabs } from './view'
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
-  { to: '/analyze', label: '分析视图', caption: '包体、模块与分包结构', iconName: 'nav-analyze' },
+  {
+    to: '/analyze',
+    label: '分析视图',
+    caption: '包体、模块与分包结构',
+    iconName: 'nav-analyze',
+    children: dashboardTabs.map(tab => ({
+      to: tab.key === 'overview' ? '/analyze' : `/analyze?tab=${tab.key}`,
+      label: tab.label,
+      caption: tab.key === 'overview'
+        ? '全局摘要和建议动作'
+        : tab.key === 'diagnostics'
+          ? '预算、增量和历史基线'
+          : tab.key === 'treemap'
+            ? '产物体积地图'
+            : tab.key === 'files'
+              ? '文件、预算和模块明细'
+              : tab.key === 'source'
+                ? '源码与产物 Diff'
+                : tab.key === 'packages'
+                  ? '包体和产物列表'
+                  : '模块复用与来源',
+      iconName: tab.iconName,
+    })),
+  },
   { to: '/activity', label: '活动流', caption: '命令、诊断与运行事件', iconName: 'nav-activity' },
   { to: '/tokens', label: '设计令牌', caption: '主题、表面与组件状态', iconName: 'nav-tokens' },
 ]
