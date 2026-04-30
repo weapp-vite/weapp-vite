@@ -12,6 +12,7 @@ import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
+import HistoryBaselinePanel from '../features/dashboard/components/HistoryBaselinePanel.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
@@ -45,7 +46,17 @@ const commandPaletteOpen = shallowRef(false)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
-const { lastUpdatedAt, previousResultRef, resultRef, updateCount } = useDashboardWorkspace()
+const {
+  baselineSnapshotId,
+  comparisonMode,
+  comparisonResultRef,
+  historySnapshots,
+  lastUpdatedAt,
+  resultRef,
+  setBaselineSnapshot,
+  setComparisonMode,
+  updateCount,
+} = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -59,7 +70,7 @@ const {
   budgetLimitItems,
   incrementAttribution,
   incrementSummary,
-} = useAnalyzeDashboardData(resultRef, previousResultRef)
+} = useAnalyzeDashboardData(resultRef, comparisonResultRef)
 
 function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null, warning: PackageBudgetWarning | null) {
   if (warning && warning.scope !== 'total') {
@@ -691,12 +702,21 @@ onBeforeUnmount(() => {
       <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.44fr)]">
           <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
-          <ActionCenterPanel
-            :actions="actionItems"
-            :active-key="selectedActionKey"
-            @copy-report="copyPrReport"
-            @select="handleSelectAction"
-          />
+          <div class="grid min-h-0 gap-3 md:grid-cols-2 xl:grid-cols-1">
+            <ActionCenterPanel
+              :actions="actionItems"
+              :active-key="selectedActionKey"
+              @copy-report="copyPrReport"
+              @select="handleSelectAction"
+            />
+            <HistoryBaselinePanel
+              :snapshots="historySnapshots"
+              :baseline-snapshot-id="baselineSnapshotId"
+              :comparison-mode="comparisonMode"
+              @set-baseline="setBaselineSnapshot"
+              @set-comparison-mode="setComparisonMode"
+            />
+          </div>
         </div>
 
         <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">

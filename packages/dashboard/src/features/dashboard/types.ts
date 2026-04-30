@@ -4,6 +4,7 @@ export type BuildOrigin = 'main' | 'independent'
 export type PackageBudgetStatus = 'warning' | 'critical'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
+export type AnalyzeComparisonMode = 'previous' | 'baseline'
 export type DashboardIconName
   = | 'theme-system'
     | 'theme-light'
@@ -45,6 +46,7 @@ export type DashboardIconName
     | 'metric-latency'
     | 'metric-quality'
     | 'metric-search'
+    | 'metric-history'
     | 'token-color'
     | 'token-surface'
     | 'token-type'
@@ -116,6 +118,18 @@ export interface AnalyzeSubpackagesResult {
   packages: PackageReport[]
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]
+}
+
+export interface AnalyzeHistorySnapshot {
+  id: string
+  capturedAt: string
+  label: string
+  result: AnalyzeSubpackagesResult
+  totalBytes: number
+  compressedBytes: number
+  packageCount: number
+  moduleCount: number
+  duplicateCount: number
 }
 
 export type DashboardTab = 'overview' | 'packages' | 'modules'

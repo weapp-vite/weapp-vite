@@ -1,5 +1,7 @@
 import type { ComputedRef, InjectionKey, Ref, ShallowRef } from 'vue'
 import type {
+  AnalyzeComparisonMode,
+  AnalyzeHistorySnapshot,
   AnalyzeSubpackagesResult,
   DashboardLabelValueItem,
   DashboardRuntimeEvent,
@@ -17,6 +19,10 @@ import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from '../utils
 interface DashboardWorkspaceContext {
   resultRef: ShallowRef<AnalyzeSubpackagesResult | null>
   previousResultRef: ShallowRef<AnalyzeSubpackagesResult | null>
+  comparisonResultRef: ComputedRef<AnalyzeSubpackagesResult | null>
+  historySnapshots: Ref<AnalyzeHistorySnapshot[]>
+  baselineSnapshotId: Ref<string | null>
+  comparisonMode: Ref<AnalyzeComparisonMode>
   updateCount: Ref<number>
   lastUpdatedAt: Ref<string>
   statusLabel: ComputedRef<string>
@@ -29,6 +35,8 @@ interface DashboardWorkspaceContext {
   latestRuntimeEvent: ComputedRef<DashboardRuntimeEvent | null>
   eventSummary: ComputedRef<DashboardLabelValueItem[]>
   runtimeSourceSummary: ComputedRef<DashboardRuntimeSourceSummary[]>
+  setBaselineSnapshot: (id: string) => void
+  setComparisonMode: (mode: AnalyzeComparisonMode) => void
 }
 
 const dashboardWorkspaceKey: InjectionKey<DashboardWorkspaceContext> = Symbol('dashboard-workspace')
@@ -37,10 +45,23 @@ const analyzeResultStorageKey = 'weapp-vite-dashboard:analyze-result-history'
 interface StoredAnalyzeResultHistory {
   current: AnalyzeSubpackagesResult
   previous: AnalyzeSubpackagesResult | null
+  snapshots?: AnalyzeHistorySnapshot[]
+  baselineSnapshotId?: string | null
+  comparisonMode?: AnalyzeComparisonMode
 }
 
 function formatCurrentTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+function formatSnapshotLabel(date: Date) {
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 }
 
 function createLabelValueItem(label: string, value: string): DashboardLabelValueItem {
@@ -63,12 +84,73 @@ function createDiagnosticItem(item: WorkspaceDiagnosticItem): WorkspaceDiagnosti
   return item
 }
 
-function stringifyAnalyzeResult(result: AnalyzeSubpackagesResult | null | undefined) {
-  return result ? JSON.stringify(result) : ''
+function createAnalyzeResultKey(result: AnalyzeSubpackagesResult | null | undefined) {
+  if (!result) {
+    return ''
+  }
+  return JSON.stringify({
+    packages: result.packages,
+    modules: result.modules,
+    subPackages: result.subPackages,
+    budgets: result.metadata?.budgets,
+  })
 }
 
 function isSameAnalyzeResult(left: AnalyzeSubpackagesResult | null | undefined, right: AnalyzeSubpackagesResult | null | undefined) {
-  return stringifyAnalyzeResult(left) === stringifyAnalyzeResult(right)
+  return createAnalyzeResultKey(left) === createAnalyzeResultKey(right)
+}
+
+function getResultTotalBytes(result: AnalyzeSubpackagesResult) {
+  return result.packages
+    .flatMap(pkg => pkg.files)
+    .reduce((sum, file) => sum + (file.size ?? 0), 0)
+}
+
+function getResultCompressedBytes(result: AnalyzeSubpackagesResult) {
+  return result.packages
+    .flatMap(pkg => pkg.files)
+    .reduce((sum, file) => sum + (file.brotliSize ?? file.gzipSize ?? Math.round((file.size ?? 0) * 0.32)), 0)
+}
+
+function createSnapshotId(result: AnalyzeSubpackagesResult, capturedAt: string) {
+  const totalBytes = getResultTotalBytes(result)
+  return `${Date.parse(capturedAt).toString(36)}-${totalBytes.toString(36)}-${result.modules.length.toString(36)}`
+}
+
+function createAnalyzeHistorySnapshot(result: AnalyzeSubpackagesResult, capturedAt = new Date().toISOString()): AnalyzeHistorySnapshot {
+  const duplicateCount = result.modules.filter(mod => mod.packages.length > 1).length
+  return {
+    id: createSnapshotId(result, capturedAt),
+    capturedAt,
+    label: formatSnapshotLabel(new Date(capturedAt)),
+    result,
+    totalBytes: getResultTotalBytes(result),
+    compressedBytes: getResultCompressedBytes(result),
+    packageCount: result.packages.length,
+    moduleCount: result.modules.length,
+    duplicateCount,
+  }
+}
+
+function normalizeHistorySnapshots(history: StoredAnalyzeResultHistory): AnalyzeHistorySnapshot[] {
+  const snapshots = [...(history.snapshots ?? [])]
+
+  if (history.previous) {
+    snapshots.push(createAnalyzeHistorySnapshot(history.previous))
+  }
+  snapshots.push(createAnalyzeHistorySnapshot(history.current))
+
+  const deduped = new Map<string, AnalyzeHistorySnapshot>()
+  for (const snapshot of snapshots) {
+    const key = createAnalyzeResultKey(snapshot.result)
+    if (!deduped.has(key)) {
+      deduped.set(key, snapshot)
+    }
+  }
+
+  return [...deduped.values()]
+    .sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt))
+    .slice(0, 12)
 }
 
 function readStoredAnalyzeHistory(): StoredAnalyzeResultHistory | null {
@@ -84,6 +166,11 @@ function readStoredAnalyzeHistory(): StoredAnalyzeResultHistory | null {
     return {
       current: parsed.current,
       previous: parsed.previous?.packages ? parsed.previous : null,
+      snapshots: Array.isArray(parsed.snapshots)
+        ? parsed.snapshots.filter(snapshot => snapshot?.result?.packages && Array.isArray(snapshot.result.packages))
+        : undefined,
+      baselineSnapshotId: typeof parsed.baselineSnapshotId === 'string' ? parsed.baselineSnapshotId : null,
+      comparisonMode: parsed.comparisonMode === 'baseline' ? 'baseline' : 'previous',
     }
   }
   catch {
@@ -120,6 +207,17 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const previousResultRef = shallowRef<AnalyzeSubpackagesResult | null>(
     resolveInitialPreviousResult(initialPayload, initialPreviousPayload, storedHistory),
   )
+  const historySnapshots = shallowRef<AnalyzeHistorySnapshot[]>(
+    storedHistory ? normalizeHistorySnapshots(storedHistory) : initialPayload ? [createAnalyzeHistorySnapshot(initialPayload)] : [],
+  )
+  const baselineSnapshotId = shallowRef<string | null>(
+    storedHistory?.baselineSnapshotId && historySnapshots.value.some(snapshot => snapshot.id === storedHistory.baselineSnapshotId)
+      ? storedHistory.baselineSnapshotId
+      : null,
+  )
+  const comparisonMode = shallowRef<AnalyzeComparisonMode>(
+    storedHistory?.comparisonMode === 'baseline' && baselineSnapshotId.value ? 'baseline' : 'previous',
+  )
   const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
     ? normalizeRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
     : normalizeRuntimeEvents(sampleRuntimeEvents))
@@ -130,6 +228,9 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     writeStoredAnalyzeHistory({
       current: initialPayload,
       previous: previousResultRef.value,
+      snapshots: historySnapshots.value,
+      baselineSnapshotId: baselineSnapshotId.value,
+      comparisonMode: comparisonMode.value,
     })
   }
 
@@ -162,6 +263,14 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       : '尚未接收到 CLI analyze 数据',
   )
   const latestRuntimeEvent = computed(() => runtimeEvents.value[0] ?? null)
+  const baselineSnapshot = computed(() =>
+    historySnapshots.value.find(snapshot => snapshot.id === baselineSnapshotId.value) ?? null,
+  )
+  const comparisonResultRef = computed(() =>
+    comparisonMode.value === 'baseline'
+      ? baselineSnapshot.value?.result ?? previousResultRef.value
+      : previousResultRef.value,
+  )
 
   const eventSummary = computed<DashboardLabelValueItem[]>(() => {
     const errorCount = runtimeEvents.value.filter(event => event.level === 'error').length
@@ -341,12 +450,55 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       ? null
       : previousResult
     resultRef.value = incoming
+    const incomingSnapshot = createAnalyzeHistorySnapshot(incoming)
+    const nextSnapshots = normalizeHistorySnapshots({
+      current: incoming,
+      previous: previousResultRef.value,
+      snapshots: [incomingSnapshot, ...historySnapshots.value],
+    })
+    historySnapshots.value = nextSnapshots
+    if (baselineSnapshotId.value && !nextSnapshots.some(snapshot => snapshot.id === baselineSnapshotId.value)) {
+      baselineSnapshotId.value = nextSnapshots.at(-1)?.id ?? null
+    }
+    if (comparisonMode.value === 'baseline' && !baselineSnapshotId.value) {
+      comparisonMode.value = 'previous'
+    }
     writeStoredAnalyzeHistory({
       current: incoming,
       previous: previousResultRef.value,
+      snapshots: historySnapshots.value,
+      baselineSnapshotId: baselineSnapshotId.value,
+      comparisonMode: comparisonMode.value,
     })
     updateCount.value += 1
     lastUpdatedAt.value = formatCurrentTime()
+  }
+
+  const persistHistoryPreferences = () => {
+    if (!resultRef.value) {
+      return
+    }
+    writeStoredAnalyzeHistory({
+      current: resultRef.value,
+      previous: previousResultRef.value,
+      snapshots: historySnapshots.value,
+      baselineSnapshotId: baselineSnapshotId.value,
+      comparisonMode: comparisonMode.value,
+    })
+  }
+
+  const setBaselineSnapshot = (id: string) => {
+    if (!historySnapshots.value.some(snapshot => snapshot.id === id)) {
+      return
+    }
+    baselineSnapshotId.value = id
+    comparisonMode.value = 'baseline'
+    persistHistoryPreferences()
+  }
+
+  const setComparisonMode = (mode: AnalyzeComparisonMode) => {
+    comparisonMode.value = mode === 'baseline' && !baselineSnapshotId.value ? 'previous' : mode
+    persistHistoryPreferences()
   }
 
   const handleRuntimeEvent = (event: Event) => {
@@ -373,6 +525,10 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   return {
     resultRef,
     previousResultRef,
+    comparisonResultRef,
+    historySnapshots,
+    baselineSnapshotId,
+    comparisonMode,
     updateCount,
     lastUpdatedAt,
     statusLabel,
@@ -385,6 +541,8 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     latestRuntimeEvent,
     eventSummary,
     runtimeSourceSummary,
+    setBaselineSnapshot,
+    setComparisonMode,
   }
 }
 
