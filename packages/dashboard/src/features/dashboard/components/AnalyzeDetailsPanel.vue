@@ -23,9 +23,9 @@ const emit = defineEmits<{
 }>()
 
 const detailLayoutItems = [
-  { id: 'top-files', label: 'Top Files' },
-  { id: 'file-modules', label: '文件详情' },
-  { id: 'budget', label: '预算' },
+  { id: 'top-files', label: 'Top Files', className: 'min-h-[26rem] xl:min-h-0' },
+  { id: 'file-modules', label: '文件详情', className: 'min-h-[24rem] xl:min-h-0' },
+  { id: 'budget', label: '预算', className: 'min-h-[18rem] xl:min-h-0' },
 ]
 
 function createBudgetItem(item: PackageBudgetWarning): DashboardDetailItem {
@@ -53,7 +53,7 @@ const budgetLimitItems = computed(() => props.budgetLimitItems.map(item => ({
 
 <template>
   <AnalyzeDraggableGrid
-    grid-class="grid h-full min-h-0 gap-2 overflow-hidden xl:grid-cols-3"
+    grid-class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1 xl:grid-cols-3 xl:overflow-hidden xl:pr-0"
     :items="detailLayoutItems"
     storage-key="weapp-vite:dashboard:analyze-layout:files"
   >

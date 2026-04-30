@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ModuleSourceType, SelectedFileModuleDetail } from '../types'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
@@ -15,6 +16,12 @@ const props = defineProps<{
 const moduleQuery = ref('')
 const moduleSourceFilter = ref<ModuleSourceFilter>('all')
 const moduleSortMode = ref<ModuleSortMode>('saving')
+const actionStatus = ref('')
+let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
+
+function escapeMarkdownCell(value: string) {
+  return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
+}
 
 const moduleSourceOptions = computed(() => {
   const sourceSet = new Set<ModuleSourceType>()
@@ -24,7 +31,7 @@ const moduleSourceOptions = computed(() => {
   return [...sourceSet].sort((a, b) => a.localeCompare(b))
 })
 
-const selectedFileModuleItems = computed(() => {
+const filteredSelectedFileModules = computed(() => {
   const keyword = moduleQuery.value.trim().toLowerCase()
   return props.selectedFileModules
     .filter((item) => {
@@ -54,14 +61,71 @@ const selectedFileModuleItems = computed(() => {
       }
       return b.estimatedSavingBytes - a.estimatedSavingBytes || b.bytes - a.bytes || a.source.localeCompare(b.source)
     })
-    .map(item => ({
-      key: item.key,
-      title: item.source,
-      meta: `${item.sourceType} · ${item.duplicatePackageCount > 1 ? `${item.duplicatePackageCount} 个包复用` : '单包模块'} · 可节省 ${formatBytes(item.estimatedSavingBytes)}`,
-      value: item.originalBytes && item.originalBytes !== item.bytes
-        ? `${formatBytes(item.bytes)} / ${formatBytes(item.originalBytes)}`
-        : formatBytes(item.bytes),
-    }))
+})
+
+const selectedFileModuleItems = computed(() => filteredSelectedFileModules.value.map(item => ({
+  key: item.key,
+  title: item.source,
+  meta: `${item.sourceType} · ${item.duplicatePackageCount > 1 ? `${item.duplicatePackageCount} 个包复用` : '单包模块'} · 可节省 ${formatBytes(item.estimatedSavingBytes)}`,
+  value: item.originalBytes && item.originalBytes !== item.bytes
+    ? `${formatBytes(item.bytes)} / ${formatBytes(item.originalBytes)}`
+    : formatBytes(item.bytes),
+})))
+
+const moduleReportText = computed(() => [
+  '# dashboard 文件模块明细',
+  '',
+  `模块数量：${filteredSelectedFileModules.value.length} / ${props.selectedFileModules.length}`,
+  '',
+  '| 模块 | 来源 | 体积 | 原始体积 | 复用包 | 可节省 |',
+  '| --- | --- | ---: | ---: | ---: | ---: |',
+  ...filteredSelectedFileModules.value.map(item => [
+    item.source,
+    item.sourceType,
+    formatBytes(item.bytes),
+    item.originalBytes ? formatBytes(item.originalBytes) : '-',
+    String(item.duplicatePackageCount),
+    formatBytes(item.estimatedSavingBytes),
+  ].map(escapeMarkdownCell).join(' | ')).map(row => `| ${row} |`),
+  '',
+].join('\n'))
+
+function setActionStatus(status: string) {
+  actionStatus.value = status
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+  actionStatusTimer = setTimeout(() => {
+    actionStatus.value = ''
+    actionStatusTimer = null
+  }, 1800)
+}
+
+async function copyModuleReport() {
+  try {
+    await copyText(moduleReportText.value)
+    setActionStatus('已复制')
+  }
+  catch {
+    setActionStatus('复制失败')
+  }
+}
+
+function exportModuleJson() {
+  const blob = new Blob([`${JSON.stringify(filteredSelectedFileModules.value, null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-dashboard-file-modules.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  setActionStatus('已导出')
+}
+
+onBeforeUnmount(() => {
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
 })
 </script>
 
@@ -79,6 +143,27 @@ const selectedFileModuleItems = computed(() => {
       <span class="text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft)">modules</span>
     </div>
     <div class="mb-3 grid gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span v-if="actionStatus" class="text-xs font-medium text-(--dashboard-accent)">
+          {{ actionStatus }}
+        </span>
+        <button
+          type="button"
+          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+          :disabled="selectedFileModuleItems.length === 0"
+          @click="copyModuleReport"
+        >
+          复制模块
+        </button>
+        <button
+          type="button"
+          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+          :disabled="selectedFileModuleItems.length === 0"
+          @click="exportModuleJson"
+        >
+          导出 JSON
+        </button>
+      </div>
       <input
         v-model="moduleQuery"
         class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"
