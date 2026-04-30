@@ -10,6 +10,7 @@ import ActionCenterPanel from '../features/dashboard/components/ActionCenterPane
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AnalyzeDetailsPanel from '../features/dashboard/components/AnalyzeDetailsPanel.vue'
 import AnalyzeDraggableGrid from '../features/dashboard/components/AnalyzeDraggableGrid.vue'
+import AnalyzeExportMenu from '../features/dashboard/components/AnalyzeExportMenu.vue'
 import AnalyzeOverviewPanel from '../features/dashboard/components/AnalyzeOverviewPanel.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -26,6 +27,7 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs, treemapFilterOptions } from '../features/dashboard/constants/view'
+import { copyText } from '../features/dashboard/utils/clipboard'
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
@@ -703,13 +705,19 @@ async function ensureChart() {
 }
 
 async function copySummary() {
-  await navigator.clipboard.writeText(exportSummaryText.value)
+  await copyText(exportSummaryText.value)
   exportStatus.value = '已复制'
   moreMenuOpen.value = false
 }
 
+async function copyMarkdownReport() {
+  await copyText(exportMarkdownText.value)
+  exportStatus.value = '报告已复制'
+  moreMenuOpen.value = false
+}
+
 async function copyPrReport() {
-  await navigator.clipboard.writeText(exportPrMarkdownText.value)
+  await copyText(exportPrMarkdownText.value)
   exportStatus.value = 'PR 摘要已复制'
   moreMenuOpen.value = false
 }
@@ -909,77 +917,16 @@ onBeforeUnmount(() => {
           uppercase
         />
       </div>
-      <div
+      <AnalyzeExportMenu
         v-if="resultRef"
-        class="relative shrink-0"
-        @click.stop
-      >
-        <button
-          :class="pillButtonStyles({ kind: 'nav', active: moreMenuOpen })"
-          type="button"
-          @click="moreMenuOpen = !moreMenuOpen"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="nav-menu" />
-          </span>
-          更多
-        </button>
-        <div
-          v-if="moreMenuOpen"
-          class="absolute right-0 top-[calc(100%+0.45rem)] z-50 w-48 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
-        >
-          <button
-            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-            type="button"
-            @click="copySummary"
-          >
-            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-              <DashboardIcon name="metric-copy" />
-            </span>
-            复制摘要
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-            type="button"
-            @click="copyPrReport"
-          >
-            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-              <DashboardIcon name="metric-copy" />
-            </span>
-            复制 PR
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-            type="button"
-            @click="exportJson"
-          >
-            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-              <DashboardIcon name="metric-size-outline" />
-            </span>
-            导出 JSON
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-            type="button"
-            @click="exportMarkdown"
-          >
-            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-              <DashboardIcon name="file-samples" />
-            </span>
-            导出 MD
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-            type="button"
-            @click="exportCsv"
-          >
-            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-              <DashboardIcon name="file-samples" />
-            </span>
-            导出 CSV
-          </button>
-        </div>
-      </div>
+        v-model:open="moreMenuOpen"
+        @copy-markdown="copyMarkdownReport"
+        @copy-pr="copyPrReport"
+        @copy-summary="copySummary"
+        @export-csv="exportCsv"
+        @export-json="exportJson"
+        @export-markdown="exportMarkdown"
+      />
     </section>
 
     <template v-if="resultRef">
