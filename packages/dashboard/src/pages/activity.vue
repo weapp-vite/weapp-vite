@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import type { DashboardKeyOption, DashboardLabelValueItem, DashboardValueOption } from '../features/dashboard/types'
+import type { ActivityEventSortMode, DashboardKeyOption, DashboardLabelValueItem, DashboardValueOption } from '../features/dashboard/types'
 import { computed, ref, watch } from 'vue'
+import ActivityEventSortBar from '../features/dashboard/components/ActivityEventSortBar.vue'
+import ActivityInsightPanel from '../features/dashboard/components/ActivityInsightPanel.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
-import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
-import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
-import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel } from '../features/dashboard/utils/format'
@@ -25,8 +24,16 @@ type FilterPreset = DashboardKeyOption<FilterPresetKey> & {
 const eventKindFilter = ref<EventKindFilter>('all')
 const eventLevelFilter = ref<EventLevelFilter>('all')
 const eventSourceFilter = ref('all')
+const eventSortMode = ref<ActivityEventSortMode>('time')
 const searchQuery = ref('')
 const selectedEventId = ref<string | null>(null)
+
+const eventLevelRank = {
+  error: 4,
+  warning: 3,
+  success: 2,
+  info: 1,
+} satisfies Record<typeof runtimeEvents.value[number]['level'], number>
 
 const eventKindOptions: DashboardValueOption<EventKindFilter>[] = [
   { value: 'all', label: '全部类型' },
@@ -110,35 +117,48 @@ const eventSourceOptions = computed<DashboardValueOption[]>(() => {
 const filteredRuntimeEvents = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
 
-  return runtimeEvents.value.filter((event) => {
-    if (eventKindFilter.value !== 'all' && event.kind !== eventKindFilter.value) {
-      return false
-    }
+  return runtimeEvents.value
+    .filter((event) => {
+      if (eventKindFilter.value !== 'all' && event.kind !== eventKindFilter.value) {
+        return false
+      }
 
-    if (eventLevelFilter.value !== 'all' && event.level !== eventLevelFilter.value) {
-      return false
-    }
+      if (eventLevelFilter.value !== 'all' && event.level !== eventLevelFilter.value) {
+        return false
+      }
 
-    if (eventSourceFilter.value !== 'all' && (event.source ?? 'dashboard') !== eventSourceFilter.value) {
-      return false
-    }
+      if (eventSourceFilter.value !== 'all' && (event.source ?? 'dashboard') !== eventSourceFilter.value) {
+        return false
+      }
 
-    if (!keyword) {
-      return true
-    }
+      if (!keyword) {
+        return true
+      }
 
-    return [
-      event.title,
-      event.detail,
-      event.kind,
-      event.level,
-      event.source ?? '',
-      ...(event.tags ?? []),
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(keyword)
-  })
+      return [
+        event.title,
+        event.detail,
+        event.kind,
+        event.level,
+        event.source ?? '',
+        ...(event.tags ?? []),
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword)
+    })
+    .sort((a, b) => {
+      if (eventSortMode.value === 'duration') {
+        return (b.durationMs ?? -1) - (a.durationMs ?? -1) || Date.parse(b.timestamp) - Date.parse(a.timestamp)
+      }
+      if (eventSortMode.value === 'severity') {
+        return eventLevelRank[b.level] - eventLevelRank[a.level] || Date.parse(b.timestamp) - Date.parse(a.timestamp)
+      }
+      if (eventSortMode.value === 'source') {
+        return (a.source ?? 'dashboard').localeCompare(b.source ?? 'dashboard') || Date.parse(b.timestamp) - Date.parse(a.timestamp)
+      }
+      return Date.parse(b.timestamp) - Date.parse(a.timestamp)
+    })
 })
 
 const filteredEventSummary = computed<DashboardLabelValueItem[]>(() => {
@@ -168,7 +188,19 @@ const selectedEvent = computed(() =>
 )
 
 const presetDescription = computed(() => {
-  return ''
+  const activePreset = filterPresets.find((preset) => {
+    if (preset.key === 'issues') {
+      return eventKindFilter.value === 'all' && eventLevelFilter.value === 'warning' && eventSourceFilter.value === 'all' && searchQuery.value === ''
+    }
+    if (preset.key === 'commands') {
+      return eventKindFilter.value === 'command' && eventLevelFilter.value === 'all' && eventSourceFilter.value === 'all' && searchQuery.value === ''
+    }
+    if (preset.key === 'hmr') {
+      return eventKindFilter.value === 'hmr' && eventLevelFilter.value === 'all' && eventSourceFilter.value === 'all' && searchQuery.value === ''
+    }
+    return eventKindFilter.value === 'all' && eventLevelFilter.value === 'all' && eventSourceFilter.value === 'all' && searchQuery.value === ''
+  })
+  return activePreset?.description ?? ''
 })
 
 watch(filteredRuntimeEvents, (events) => {
@@ -191,8 +223,9 @@ watch(filteredRuntimeEvents, (events) => {
       icon-name="hero-commands"
       content-class="min-h-0 overflow-hidden"
     >
-      <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+      <div class="grid h-full min-h-0 grid-rows-[minmax(0,9rem)_auto_minmax(6rem,1fr)] gap-3 overflow-hidden">
         <AppEventFilterPanel
+          class="min-h-0 overflow-y-auto"
           :search-query="searchQuery"
           :preset-description="presetDescription"
           :filter-presets="filterPresets"
@@ -207,6 +240,12 @@ watch(filteredRuntimeEvents, (events) => {
           @update:event-level-filter="eventLevelFilter = $event as EventLevelFilter"
           @update:event-source-filter="eventSourceFilter = $event"
           @apply-preset="filterPresets.find(preset => preset.key === $event)?.apply()"
+        />
+
+        <ActivityEventSortBar
+          v-model="eventSortMode"
+          :filtered-count="filteredRuntimeEvents.length"
+          :total-count="runtimeEvents.length"
         />
 
         <AppEmptyState
@@ -228,65 +267,12 @@ watch(filteredRuntimeEvents, (events) => {
       </div>
     </AppSurfaceCard>
 
-    <div class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
-      <AppSurfaceCard
-        eyebrow="Runtime"
-        title="事件摘要"
-        icon-name="metric-time"
-      >
-        <div class="grid gap-2 sm:grid-cols-2">
-          <AppStatCard
-            v-for="item in [...eventSummary, ...filteredEventSummary]"
-            :key="item.label"
-            v-bind="item"
-          />
-        </div>
-      </AppSurfaceCard>
-
-      <AppSurfaceCard
-        eyebrow="Diagnostics"
-        title="当前诊断队列"
-        icon-name="metric-health"
-        content-class="min-h-0 overflow-hidden"
-      >
-        <ul class="grid max-h-44 gap-2 overflow-y-auto pr-1">
-          <li
-            v-for="item in diagnostics"
-            :key="item.label"
-            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="font-medium">
-                  {{ item.label }}
-                </p>
-                <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
-                  {{ item.detail }}
-                </p>
-              </div>
-              <AppRuntimeBadge :label="item.status" tone="info" />
-            </div>
-          </li>
-        </ul>
-      </AppSurfaceCard>
-
-      <AppSurfaceCard
-        eyebrow="Sources"
-        title="事件来源"
-        icon-name="hero-system"
-        content-class="min-h-0 overflow-hidden"
-      >
-        <div
-          v-if="sourceBreakdown.length > 0"
-          class="grid max-h-full gap-2 overflow-y-auto pr-1"
-        >
-          <AppRuntimeSourceCard
-            v-for="source in sourceBreakdown"
-            :key="source.source"
-            v-bind="source"
-          />
-        </div>
-      </AppSurfaceCard>
-    </div>
+    <ActivityInsightPanel
+      :selected-event="selectedEvent"
+      :event-summary="eventSummary"
+      :filtered-event-summary="filteredEventSummary"
+      :diagnostics="diagnostics"
+      :source-breakdown="sourceBreakdown"
+    />
   </div>
 </template>

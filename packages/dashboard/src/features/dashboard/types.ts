@@ -425,6 +425,7 @@ export interface WorkspaceSignalItem {
 
 export type DashboardRuntimeEventKind = 'command' | 'build' | 'diagnostic' | 'hmr' | 'system'
 export type DashboardRuntimeEventLevel = 'info' | 'success' | 'warning' | 'error'
+export type ActivityEventSortMode = 'time' | 'duration' | 'severity' | 'source'
 
 export interface DashboardRuntimeEvent {
   id: string

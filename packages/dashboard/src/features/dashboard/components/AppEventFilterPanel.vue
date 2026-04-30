@@ -35,7 +35,7 @@ function getOptionClassName(activeValue: string, optionValue: string): string {
 
 <template>
   <AppInsetPanel>
-    <div class="grid gap-3">
+    <div class="grid gap-3 xl:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.15fr)]">
       <div>
         <label for="dashboard-event-search">
           <AppMetaLabel>
@@ -72,51 +72,53 @@ function getOptionClassName(activeValue: string, optionValue: string): string {
           </p>
         </div>
 
-        <div>
-          <AppMetaLabel>
-            类型过滤
-          </AppMetaLabel>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button
-              v-for="option in eventKindOptions"
-              :key="option.value"
-              :class="getOptionClassName(props.eventKindFilter, option.value)"
-              @click="emit('update:eventKindFilter', option.value)"
-            >
-              {{ option.label }}
-            </button>
+        <div class="grid gap-3 md:grid-cols-3">
+          <div>
+            <AppMetaLabel>
+              类型过滤
+            </AppMetaLabel>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="option in eventKindOptions"
+                :key="option.value"
+                :class="getOptionClassName(props.eventKindFilter, option.value)"
+                @click="emit('update:eventKindFilter', option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <AppMetaLabel>
-            等级过滤
-          </AppMetaLabel>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button
-              v-for="option in eventLevelOptions"
-              :key="option.value"
-              :class="getOptionClassName(props.eventLevelFilter, option.value)"
-              @click="emit('update:eventLevelFilter', option.value)"
-            >
-              {{ option.label }}
-            </button>
+          <div>
+            <AppMetaLabel>
+              等级过滤
+            </AppMetaLabel>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="option in eventLevelOptions"
+                :key="option.value"
+                :class="getOptionClassName(props.eventLevelFilter, option.value)"
+                @click="emit('update:eventLevelFilter', option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <AppMetaLabel>
-            来源过滤
-          </AppMetaLabel>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button
-              v-for="option in eventSourceOptions"
-              :key="option.value"
-              :class="getOptionClassName(props.eventSourceFilter, option.value)"
-              @click="emit('update:eventSourceFilter', option.value)"
-            >
-              {{ option.label }}
-            </button>
+          <div>
+            <AppMetaLabel>
+              来源过滤
+            </AppMetaLabel>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="option in eventSourceOptions"
+                :key="option.value"
+                :class="getOptionClassName(props.eventSourceFilter, option.value)"
+                @click="emit('update:eventSourceFilter', option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
