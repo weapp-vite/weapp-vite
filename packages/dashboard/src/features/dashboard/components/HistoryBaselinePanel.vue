@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { AnalyzeComparisonMode, AnalyzeHistorySnapshot } from '../types'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
+import HistoryBaselineToolbar from './HistoryBaselineToolbar.vue'
 
 type HistorySnapshotSortMode = 'capturedAt' | 'total' | 'compressed' | 'modules' | 'duplicates'
 
@@ -21,6 +23,8 @@ const emit = defineEmits<{
 
 const snapshotQuery = ref('')
 const snapshotSortMode = ref<HistorySnapshotSortMode>('capturedAt')
+const actionStatus = ref('')
+let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
 
 function formatDelta(bytes: number) {
   if (bytes === 0) {
@@ -105,6 +109,63 @@ const filteredSnapshots = computed(() => {
       return Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
     })
 })
+
+const baselineReportText = computed(() => {
+  const current = currentSnapshot.value
+  const baseline = baselineSnapshot.value
+  const previous = previousSnapshot.value
+  return [
+    '# dashboard 历史基线',
+    '',
+    current ? `当前快照：${formatSnapshotDate(current)} · ${formatBytes(current.totalBytes)} · 压缩后 ${formatBytes(current.compressedBytes)}` : '当前快照：暂无',
+    baseline ? `基线快照：${formatSnapshotDate(baseline)} · ${formatBytes(baseline.totalBytes)} · 压缩后 ${formatBytes(baseline.compressedBytes)}` : '基线快照：未设置',
+    previous ? `上次快照：${formatSnapshotDate(previous)} · ${formatBytes(previous.totalBytes)} · 压缩后 ${formatBytes(previous.compressedBytes)}` : '上次快照：暂无',
+    `当前对比：${activeComparisonLabel.value}`,
+    '',
+    '| 时间 | 总体积 | 压缩后 | 包 | 模块 | 复用模块 |',
+    '| --- | ---: | ---: | ---: | ---: | ---: |',
+    ...filteredSnapshots.value.map(snapshot => `| ${formatSnapshotDate(snapshot)} | ${formatBytes(snapshot.totalBytes)} | ${formatBytes(snapshot.compressedBytes)} | ${snapshot.packageCount} | ${snapshot.moduleCount} | ${snapshot.duplicateCount} |`),
+    '',
+  ].join('\n')
+})
+
+function setActionStatus(status: string) {
+  actionStatus.value = status
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+  actionStatusTimer = setTimeout(() => {
+    actionStatus.value = ''
+    actionStatusTimer = null
+  }, 1800)
+}
+
+async function copyBaselineReport() {
+  try {
+    await copyText(baselineReportText.value)
+    setActionStatus('已复制')
+  }
+  catch {
+    setActionStatus('复制失败')
+  }
+}
+
+function exportFilteredSnapshots() {
+  const blob = new Blob([`${JSON.stringify(filteredSnapshots.value, null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-dashboard-history.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  setActionStatus('已导出')
+}
+
+onBeforeUnmount(() => {
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+})
 </script>
 
 <template>
@@ -158,31 +219,15 @@ const filteredSnapshots = computed(() => {
       </div>
 
       <div class="grid gap-2">
-        <div class="flex items-center justify-between gap-2">
-          <p class="text-xs text-(--dashboard-text-soft)">
-            匹配 {{ filteredSnapshots.length }} / {{ snapshots.length }} 个快照
-          </p>
-          <select
-            v-model="snapshotSortMode"
-            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-          >
-            <option value="capturedAt">
-              按时间
-            </option>
-            <option value="total">
-              按体积
-            </option>
-            <option value="compressed">
-              按压缩后
-            </option>
-            <option value="modules">
-              按模块数
-            </option>
-            <option value="duplicates">
-              按复用模块
-            </option>
-          </select>
-        </div>
+        <HistoryBaselineToolbar
+          v-model="snapshotSortMode"
+          :action-status="actionStatus"
+          :disabled="filteredSnapshots.length === 0"
+          :filtered-count="filteredSnapshots.length"
+          :total-count="snapshots.length"
+          @copy="copyBaselineReport"
+          @export-json="exportFilteredSnapshots"
+        />
         <input
           v-model="snapshotQuery"
           class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"
