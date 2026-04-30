@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardInfoPillItem, LargestFileEntry, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -34,6 +34,7 @@ echarts.use([
 const chartRef = shallowRef<HTMLDivElement>()
 const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
 const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
+const selectedBudgetWarning = shallowRef<PackageBudgetWarning | null>(null)
 const exportStatus = shallowRef('')
 let chart: echarts.ECharts | undefined
 const { resolvedTheme } = useDashboardTheme()
@@ -49,10 +50,12 @@ const {
   moduleSourceSummary,
   budgetWarnings,
   budgetLimitItems,
-  subPackages,
 } = useAnalyzeDashboardData(resultRef, previousResultRef)
 
-function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null) {
+function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null, warning: PackageBudgetWarning | null) {
+  if (warning && warning.scope !== 'total') {
+    return files.filter(file => file.packageId === warning.id)
+  }
   if (!meta) {
     return files
   }
@@ -72,8 +75,11 @@ const filteredDuplicateModules = computed(() => {
   return duplicateModules.value.filter(module => module.source === selectedTreemapMeta.value?.source)
 })
 const visibleDuplicateModules = computed(() => filteredDuplicateModules.value.slice(0, 12))
-const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value))
+const filteredLargestFiles = computed(() => filterLargestFiles(largestFiles.value, selectedTreemapMeta.value, selectedBudgetWarning.value))
 const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 10))
+const activeLargestFileKey = computed(() => selectedLargestFile.value
+  ? `${selectedLargestFile.value.packageId}:${selectedLargestFile.value.file}`
+  : null)
 const selectedFileEntry = computed(() => {
   if (selectedLargestFile.value) {
     return selectedLargestFile.value
@@ -226,6 +232,7 @@ function bindChartRef(element: Element | null) {
 function handleChartClick(params: { data?: { meta?: TreemapNodeMeta } }) {
   selectedTreemapMeta.value = params.data?.meta ?? null
   selectedLargestFile.value = null
+  selectedBudgetWarning.value = null
 }
 
 function handleSelectLargestFile(file: LargestFileEntry) {
@@ -239,6 +246,32 @@ function handleSelectLargestFile(file: LargestFileEntry) {
     type: file.type,
     bytes: file.size,
   }
+}
+
+function handleSelectBudgetWarning(warning: PackageBudgetWarning) {
+  selectedBudgetWarning.value = warning
+  selectedLargestFile.value = filterLargestFiles(largestFiles.value, null, warning)[0] ?? null
+
+  if (!selectedLargestFile.value) {
+    selectedTreemapMeta.value = null
+    return
+  }
+
+  if (warning.scope === 'total') {
+    selectedTreemapMeta.value = null
+    return
+  }
+
+  const packageInfo = packageInsights.value.find(pkg => pkg.id === warning.id)
+  selectedTreemapMeta.value = packageInfo
+    ? {
+        kind: 'package',
+        packageLabel: packageInfo.label,
+        packageType: packageInfo.type,
+        fileCount: packageInfo.fileCount,
+        totalBytes: packageInfo.totalBytes,
+      }
+    : null
 }
 
 async function ensureChart() {
@@ -309,6 +342,7 @@ watch(activeTab, () => {
 watch(resultRef, () => {
   selectedTreemapMeta.value = null
   selectedLargestFile.value = null
+  selectedBudgetWarning.value = null
 })
 
 watch(resolvedTheme, async () => {
@@ -454,10 +488,12 @@ onBeforeUnmount(() => {
             :bind-chart-ref="bindChartRef"
             :visible-largest-files="visibleLargestFiles"
             :selected-file-modules="selectedFileModules"
-            :sub-packages="subPackages"
             :budget-warnings="budgetWarnings"
             :budget-limit-items="budgetLimitItems"
+            :active-budget-warning-id="selectedBudgetWarning?.id ?? null"
+            :active-largest-file-key="activeLargestFileKey"
             :selected-treemap-meta="selectedTreemapMeta"
+            @select-budget-warning="handleSelectBudgetWarning"
             @select-file="handleSelectLargestFile"
           />
         </section>
