@@ -2,6 +2,8 @@
 import type {
   DashboardDetailItem,
   DuplicateModuleEntry,
+  IncrementAttributionEntry,
+  IncrementAttributionSummary,
   LargestFileEntry,
   ModuleSourceSummary,
 } from '../types'
@@ -16,6 +18,8 @@ import AppSummaryValueCard from './AppSummaryValueCard.vue'
 const props = defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
   moduleSourceSummary: ModuleSourceSummary[]
+  incrementAttribution: IncrementAttributionEntry[]
+  incrementSummary: IncrementAttributionSummary[]
   visibleLargestFiles: LargestFileEntry[]
 }>()
 
@@ -43,6 +47,22 @@ function createModuleSourceItem(item: ModuleSourceSummary): DashboardDetailItem 
   }
 }
 
+function createIncrementItem(item: IncrementAttributionEntry): DashboardDetailItem {
+  return {
+    title: item.label,
+    meta: `${item.category} · ${item.packageLabel} · ${item.advice}`,
+    value: `+${formatBytes(item.deltaBytes)}`,
+  }
+}
+
+function createIncrementSummaryItem(item: IncrementAttributionSummary): DashboardDetailItem {
+  return {
+    title: item.category,
+    meta: `${item.count} 项增长`,
+    value: `+${formatBytes(item.deltaBytes)}`,
+  }
+}
+
 function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailItem {
   return {
     title: file.file,
@@ -59,6 +79,16 @@ const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => props.visible
 const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
   key: `${item.sourceType}:${item.sourceCategory}`,
   ...createModuleSourceItem(item),
+})))
+
+const incrementItems = computed<ListItemRow[]>(() => props.incrementAttribution.slice(0, 8).map(item => ({
+  key: item.key,
+  ...createIncrementItem(item),
+})))
+
+const incrementSummaryItems = computed<ListItemRow[]>(() => props.incrementSummary.slice(0, 6).map(item => ({
+  key: item.category,
+  ...createIncrementSummaryItem(item),
 })))
 
 const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLargestFiles.slice(0, 6).map(file => ({
@@ -96,28 +126,50 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
       </AppEmptyState>
     </div>
 
-    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,0.8fr)_minmax(0,1fr)]">
+    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.8fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="module-sources" title="模块来源" />
-        <div class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1">
-          <AppSummaryValueCard
-            v-for="item in moduleSourceItems"
-            :key="item.key"
-            v-bind="item"
-          />
+        <AppPanelHeader icon-name="metric-time" title="增量归因" />
+        <div v-if="incrementItems.length" class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)]">
+          <div class="space-y-2 overflow-y-auto pr-1">
+            <AppSummaryValueCard
+              v-for="item in incrementSummaryItems"
+              :key="item.key"
+              v-bind="item"
+            />
+          </div>
+          <ul class="space-y-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+            <AppCompactListItem
+              v-for="item in incrementItems"
+              :key="item.key"
+              v-bind="item"
+              mono-title
+            />
+          </ul>
         </div>
+        <AppEmptyState v-else class="mt-4">
+          暂无可对比的正向增量。
+        </AppEmptyState>
       </section>
 
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="file-samples" title="文件样本" />
-        <ul class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
-          <AppCompactListItem
-            v-for="item in largestFileSampleItems"
-            :key="item.key"
-            v-bind="item"
-            mono-title
-          />
-        </ul>
+        <AppPanelHeader icon-name="module-sources" title="模块来源" />
+        <div class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-2">
+          <div class="space-y-2.5 overflow-y-auto pr-1">
+            <AppSummaryValueCard
+              v-for="item in moduleSourceItems"
+              :key="item.key"
+              v-bind="item"
+            />
+          </div>
+          <ul class="space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+            <AppCompactListItem
+              v-for="item in largestFileSampleItems"
+              :key="item.key"
+              v-bind="item"
+              mono-title
+            />
+          </ul>
+        </div>
       </section>
     </div>
   </section>

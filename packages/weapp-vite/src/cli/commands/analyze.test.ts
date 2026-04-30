@@ -241,4 +241,59 @@ describe('analyze cli command', () => {
     expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining('包体预算检查失败'))
     expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining('主包'))
   })
+
+  it('prints PR report without opening dashboard', async () => {
+    const action = createAnalyzeActionHandler()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    readLatestAnalyzeHistorySnapshotMock.mockResolvedValueOnce({
+      packages: [
+        {
+          id: '__main__',
+          label: '主包',
+          type: 'main',
+          files: [
+            {
+              file: 'app.js',
+              type: 'chunk',
+              from: 'main',
+              size: 512,
+              modules: [{ id: 'shared', source: 'shared.ts', sourceType: 'src', bytes: 128 }],
+            },
+          ],
+        },
+      ],
+      modules: [],
+      subPackages: [],
+    })
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      packages: [
+        {
+          id: '__main__',
+          label: '主包',
+          type: 'main',
+          files: [
+            {
+              file: 'app.js',
+              type: 'chunk',
+              from: 'main',
+              size: 1024,
+              modules: [{ id: 'shared', source: 'shared.ts', sourceType: 'src', bytes: 256 }],
+            },
+          ],
+        },
+      ],
+      modules: [],
+      subPackages: [],
+    })
+
+    await action('/project', {
+      platform: 'weapp',
+      report: 'pr',
+    })
+
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('## weapp-vite analyze PR 摘要'))
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('### Top 增量'))
+    expect(startAnalyzeDashboard).not.toHaveBeenCalled()
+    writeSpy.mockRestore()
+  })
 })

@@ -9,7 +9,7 @@ import path from 'pathe'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
-import { createAnalyzeBudgetCheck, createAnalyzeMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
+import { createAnalyzeBudgetCheck, createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
@@ -193,7 +193,7 @@ async function writeAnalyzeResult(
   result: AnalyzeSubpackagesResult | WebAnalyzeResult | HmrProfileAnalyzeResult,
   outputOption: string,
   configService: ConfigService,
-  format: 'json' | 'markdown' = 'json',
+  format: 'json' | 'markdown' | 'pr' = 'json',
   previousResult?: AnalyzeSubpackagesResult | null,
 ) {
   if (!outputOption) {
@@ -206,7 +206,9 @@ async function writeAnalyzeResult(
   await fs.ensureDir(path.dirname(resolvedOutputPath))
   const content = format === 'markdown' && 'packages' in result
     ? createAnalyzeMarkdownReport(result, previousResult)
-    : JSON.stringify(result, null, 2)
+    : format === 'pr' && 'packages' in result
+      ? createAnalyzePrMarkdownReport(result, previousResult)
+      : JSON.stringify(result, null, 2)
   await fs.writeFile(resolvedOutputPath, `${content}\n`, 'utf8')
   const relativeOutput = configService.relativeCwd(resolvedOutputPath)
   logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
@@ -271,6 +273,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
     .option('--json', `[boolean] 输出 JSON 结果`)
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
+    .option('--report <type>', `[string] 输出指定报告类型（pr）`)
     .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
@@ -280,6 +283,11 @@ export function registerAnalyzeCommand(cli: CAC) {
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
       const outputMarkdown = coerceBooleanOption(options.markdown)
+      const reportType = typeof options.report === 'string' ? options.report.trim() : ''
+      const outputPrReport = reportType === 'pr'
+      if (reportType && !outputPrReport) {
+        throw new Error(`不支持的 analyze report 类型：${reportType}`)
+      }
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
@@ -351,10 +359,15 @@ export function registerAnalyzeCommand(cli: CAC) {
           result,
           outputOption,
           ctx.configService,
-          outputMarkdown ? 'markdown' : 'json',
+          outputPrReport ? 'pr' : outputMarkdown ? 'markdown' : 'json',
           previousResult,
         )
-        if (outputMarkdown) {
+        if (outputPrReport) {
+          if (!writtenPath) {
+            process.stdout.write(`${createAnalyzePrMarkdownReport(result, previousResult)}\n`)
+          }
+        }
+        else if (outputMarkdown) {
           if (!writtenPath) {
             process.stdout.write(`${createAnalyzeMarkdownReport(result, previousResult)}\n`)
           }
@@ -371,7 +384,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         if (budgetCheck) {
           return
         }
-        if (!outputMarkdown && !outputJson) {
+        if (!outputPrReport && !outputMarkdown && !outputJson) {
           printAnalysisSummary(result)
           await startAnalyzeDashboard(result, {
             cwd: ctx.configService.cwd,

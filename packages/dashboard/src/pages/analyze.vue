@@ -51,6 +51,8 @@ const {
   moduleSourceSummary,
   budgetWarnings,
   budgetLimitItems,
+  incrementAttribution,
+  incrementSummary,
 } = useAnalyzeDashboardData(resultRef, previousResultRef)
 
 function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | null, warning: PackageBudgetWarning | null) {
@@ -221,6 +223,56 @@ const exportMarkdownText = computed(() => {
   ].join('\n')
 })
 
+const exportPrMarkdownText = computed(() => {
+  const summaryValue = summary.value
+  const topIncrementRows = incrementAttribution.value.slice(0, 8)
+    .map(item => `| ${item.label} | ${item.category} | ${item.packageLabel} | +${formatBytes(item.deltaBytes)} | ${item.advice} |`)
+    .join('\n')
+  const incrementSummaryRows = incrementSummary.value.slice(0, 6)
+    .map(item => `| ${item.category} | ${item.count} | +${formatBytes(item.deltaBytes)} |`)
+    .join('\n')
+  const budgetRows = budgetWarnings.value.slice(0, 5)
+    .map(item => `| ${item.label} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}% |`)
+    .join('\n')
+  const duplicateRows = duplicateModules.value.slice(0, 5)
+    .map(module => `| ${module.source} | ${module.packageCount} | ${formatBytes(module.estimatedSavingBytes)} | ${module.advice} |`)
+    .join('\n')
+  return [
+    '## weapp-vite analyze PR 摘要',
+    '',
+    `- 总产物体积：${formatBytes(summaryValue.totalBytes)}${typeof summaryValue.sizeDeltaBytes === 'number' ? `（较上次 ${summaryValue.sizeDeltaBytes >= 0 ? '+' : '-'}${formatBytes(Math.abs(summaryValue.sizeDeltaBytes))}）` : ''}`,
+    `- 压缩后体积：${formatBytes(summaryValue.compressedBytes)}`,
+    `- 预算告警：${budgetWarnings.value.length}`,
+    `- 增量归因：${incrementAttribution.value.length > 0 ? `${incrementAttribution.value.length} 项正向增长` : '无正向增长'}`,
+    `- 跨包复用：${duplicateModules.value.length}`,
+    '',
+    '### 增量来源',
+    '',
+    '| 来源 | 项数 | 增量 |',
+    '| --- | ---: | ---: |',
+    incrementSummaryRows || '| - | 0 | 0 B |',
+    '',
+    '### Top 增量',
+    '',
+    '| 文件/模块 | 来源 | 包 | 增量 | 建议 |',
+    '| --- | --- | --- | ---: | --- |',
+    topIncrementRows || '| - | - | - | 0 B | - |',
+    '',
+    '### 预算状态',
+    '',
+    '| 对象 | 当前体积 | 预算 | 状态 |',
+    '| --- | ---: | ---: | --- |',
+    budgetRows || '| - | 0 B | 0 B | 正常 |',
+    '',
+    '### 重复模块',
+    '',
+    '| 模块 | 包数量 | 估算可节省 | 建议 |',
+    '| --- | ---: | ---: | --- |',
+    duplicateRows || '| - | 0 | 0 B | - |',
+    '',
+  ].join('\n')
+})
+
 function handleResize() {
   chart?.resize()
 }
@@ -329,6 +381,11 @@ async function ensureChart() {
 async function copySummary() {
   await navigator.clipboard.writeText(exportSummaryText.value)
   exportStatus.value = '已复制'
+}
+
+async function copyPrReport() {
+  await navigator.clipboard.writeText(exportPrMarkdownText.value)
+  exportStatus.value = 'PR 摘要已复制'
 }
 
 function exportJson() {
@@ -479,6 +536,16 @@ onBeforeUnmount(() => {
         <button
           v-if="resultRef"
           :class="pillButtonStyles({ kind: 'nav', active: false })"
+          @click="copyPrReport"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="metric-copy" />
+          </span>
+          复制 PR
+        </button>
+        <button
+          v-if="resultRef"
+          :class="pillButtonStyles({ kind: 'nav', active: false })"
           @click="exportJson"
         >
           <span class="h-4.5 w-4.5">
@@ -544,6 +611,8 @@ onBeforeUnmount(() => {
           <ModulesPanel
             :visible-duplicate-modules="visibleDuplicateModules"
             :module-source-summary="moduleSourceSummary"
+            :increment-attribution="incrementAttribution"
+            :increment-summary="incrementSummary"
             :visible-largest-files="visibleLargestFiles"
           />
         </section>

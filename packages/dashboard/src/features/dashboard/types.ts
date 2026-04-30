@@ -260,6 +260,24 @@ export interface PackageBudgetLimitItem {
   source: 'config' | 'default'
 }
 
+export interface IncrementAttributionEntry {
+  key: string
+  label: string
+  category: string
+  packageLabel: string
+  file?: string
+  currentBytes: number
+  previousBytes: number
+  deltaBytes: number
+  advice: string
+}
+
+export interface IncrementAttributionSummary {
+  category: string
+  count: number
+  deltaBytes: number
+}
+
 export interface TreemapNodeMetaBase {
   kind: 'package' | 'file' | 'module' | 'asset'
   nodeId: string

@@ -34,5 +34,6 @@ export interface AnalyzeCLIOptions extends GlobalCLIOptions {
   budgetCheck?: boolean | string
   json?: boolean | string
   markdown?: boolean | string
+  report?: string
   output?: string
 }

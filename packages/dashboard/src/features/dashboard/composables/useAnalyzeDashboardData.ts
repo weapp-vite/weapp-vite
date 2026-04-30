@@ -3,6 +3,8 @@ import type {
   AnalyzeDashboardSummary,
   AnalyzeSubpackagesResult,
   DuplicateModuleEntry,
+  IncrementAttributionEntry,
+  IncrementAttributionSummary,
   LargestFileEntry,
   ModuleSourceSummary,
   ModuleSourceType,
@@ -23,8 +25,16 @@ const budgetWarningRatio = 0.85
 interface FileComparisonMaps {
   packageBytes: Map<string, number>
   fileBytes: Map<string, number>
+  moduleBytes: Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageLabel: string, file: string }>
   totalBytes: number
   compressedBytes: number
+}
+
+interface ModulePlacement {
+  source: string
+  sourceType: ModuleSourceType
+  packageLabel: string
+  file: string
 }
 
 function getFileSize(file: PackageFileEntry) {
@@ -52,6 +62,7 @@ function createFileKey(packageId: string, fileName: string) {
 function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComparisonMaps {
   const packageBytes = new Map<string, number>()
   const fileBytes = new Map<string, number>()
+  const moduleBytes = new Map<string, { source: string, sourceType: ModuleSourceType, bytes: number, packageLabel: string, file: string }>()
   let totalBytes = 0
   let compressedBytes = 0
 
@@ -63,6 +74,19 @@ function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComp
       totalBytes += size
       compressedBytes += getFileCompressedSize(file)
       fileBytes.set(createFileKey(pkg.id, file.file), size)
+      for (const mod of file.modules ?? []) {
+        const bytes = mod.bytes ?? mod.originalBytes ?? 0
+        const existing = moduleBytes.get(mod.id)
+        if (!existing || existing.bytes < bytes) {
+          moduleBytes.set(mod.id, {
+            source: mod.source,
+            sourceType: mod.sourceType,
+            bytes,
+            packageLabel: pkg.label,
+            file: file.file,
+          })
+        }
+      }
     }
     packageBytes.set(pkg.id, packageTotal)
   }
@@ -70,9 +94,29 @@ function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComp
   return {
     packageBytes,
     fileBytes,
+    moduleBytes,
     totalBytes,
     compressedBytes,
   }
+}
+
+function createModulePlacementMap(result: AnalyzeSubpackagesResult): Map<string, ModulePlacement> {
+  const map = new Map<string, ModulePlacement>()
+  for (const pkg of result.packages) {
+    for (const file of pkg.files) {
+      for (const mod of file.modules ?? []) {
+        if (!map.has(mod.id)) {
+          map.set(mod.id, {
+            source: mod.source,
+            sourceType: mod.sourceType,
+            packageLabel: pkg.label,
+            file: file.file,
+          })
+        }
+      }
+    }
+  }
+  return map
 }
 
 function createLargestFileEntry(
@@ -158,6 +202,41 @@ function classifyModuleSourceCategory(source: string, sourceType: ModuleSourceTy
     return '业务共享'
   }
   return '业务源码'
+}
+
+function classifyIncrementCategory(source: string, sourceType?: ModuleSourceType) {
+  if (source.includes('wevu') || source.includes('@weapp-vite/dashboard')) {
+    return 'WeVu / runtime'
+  }
+  if (sourceType === 'node_modules' || source.includes('node_modules')) {
+    return '第三方依赖'
+  }
+  if (sourceType === 'workspace') {
+    return '工作区包'
+  }
+  if (sourceType === 'plugin') {
+    return '插件生成'
+  }
+  if (source.endsWith('.wxss') || source.endsWith('.css') || source.endsWith('.scss')) {
+    return '样式资源'
+  }
+  if (source.endsWith('.wxml') || source.endsWith('.json')) {
+    return '页面结构'
+  }
+  return '业务源码'
+}
+
+function createIncrementAdvice(category: string, isNew: boolean) {
+  if (category === '第三方依赖') {
+    return '检查依赖边界或公共入口。'
+  }
+  if (category === 'WeVu / runtime') {
+    return '排查组件和 API 引用边界。'
+  }
+  if (category === '样式资源') {
+    return '检查样式复用和生成范围。'
+  }
+  return isNew ? '确认分包归属和懒加载边界。' : '对比新增引用和共享模块。'
 }
 
 function createModuleSourceSummary(sourceType: ModuleSourceType, sourceCategory: string): ModuleSourceSummary {
@@ -281,6 +360,22 @@ function createBudgetLimitItems(result: AnalyzeSubpackagesResult | null): Packag
   ]
 }
 
+function createIncrementSummary(items: IncrementAttributionEntry[]): IncrementAttributionSummary[] {
+  const map = new Map<string, IncrementAttributionSummary>()
+  for (const item of items) {
+    const entry = map.get(item.category) ?? {
+      category: item.category,
+      count: 0,
+      deltaBytes: 0,
+    }
+    entry.count += 1
+    entry.deltaBytes += item.deltaBytes
+    map.set(item.category, entry)
+  }
+  return [...map.values()]
+    .sort((a, b) => b.deltaBytes - a.deltaBytes || b.count - a.count || a.category.localeCompare(b.category))
+}
+
 export function useAnalyzeDashboardData(
   resultRef: Ref<AnalyzeSubpackagesResult | null>,
   previousResultRef?: Ref<AnalyzeSubpackagesResult | null>,
@@ -367,6 +462,70 @@ export function useAnalyzeDashboardData(
   })
 
   const budgetLimitItems = computed<PackageBudgetLimitItem[]>(() => createBudgetLimitItems(resultRef.value))
+
+  const incrementAttribution = computed<IncrementAttributionEntry[]>(() => {
+    const result = resultRef.value
+    const previousResult = previousResultRef?.value
+    if (!result || !previousResult) {
+      return []
+    }
+
+    const items: IncrementAttributionEntry[] = []
+    const currentModulePlacementMap = createModulePlacementMap(result)
+    for (const pkg of result.packages) {
+      for (const file of pkg.files) {
+        const currentBytes = getFileSize(file)
+        const previousBytes = previousMaps.value.fileBytes.get(createFileKey(pkg.id, file.file)) ?? 0
+        const deltaBytes = currentBytes - previousBytes
+        if (deltaBytes <= 0) {
+          continue
+        }
+        const category = classifyIncrementCategory(file.source ?? file.file)
+        items.push({
+          key: `file:${pkg.id}:${file.file}`,
+          label: file.file,
+          category,
+          packageLabel: pkg.label,
+          file: file.file,
+          currentBytes,
+          previousBytes,
+          deltaBytes,
+          advice: createIncrementAdvice(category, previousBytes === 0),
+        })
+      }
+    }
+
+    for (const [id, mod] of moduleInfoMap.value) {
+      const previousBytes = previousMaps.value.moduleBytes.get(id)?.bytes ?? 0
+      const deltaBytes = mod.bytes - previousBytes
+      if (deltaBytes <= 0) {
+        continue
+      }
+      const previousModule = previousMaps.value.moduleBytes.get(id)
+      const currentModule = currentModulePlacementMap.get(id)
+      const label = currentModule?.source ?? previousModule?.source ?? id
+      const category = classifyIncrementCategory(label, currentModule?.sourceType ?? mod.sourceType)
+      items.push({
+        key: `module:${id}`,
+        label,
+        category,
+        packageLabel: currentModule?.packageLabel ?? previousModule?.packageLabel ?? '',
+        file: currentModule?.file ?? previousModule?.file,
+        currentBytes: mod.bytes,
+        previousBytes,
+        deltaBytes,
+        advice: createIncrementAdvice(category, previousBytes === 0),
+      })
+    }
+
+    return items.sort((a, b) =>
+      b.deltaBytes - a.deltaBytes
+      || a.category.localeCompare(b.category)
+      || a.label.localeCompare(b.label),
+    )
+  })
+
+  const incrementSummary = computed<IncrementAttributionSummary[]>(() => createIncrementSummary(incrementAttribution.value))
 
   const summary = computed<AnalyzeDashboardSummary>(() => {
     const result = resultRef.value
@@ -548,6 +707,8 @@ export function useAnalyzeDashboardData(
     moduleSourceSummary,
     budgetWarnings,
     budgetLimitItems,
+    incrementAttribution,
+    incrementSummary,
     subPackages: computed(() => resultRef.value?.subPackages ?? []),
   }
 }
