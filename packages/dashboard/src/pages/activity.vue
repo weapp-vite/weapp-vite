@@ -244,6 +244,7 @@ watch(filteredRuntimeEvents, (events) => {
 
         <ActivityEventSortBar
           v-model="eventSortMode"
+          :events="filteredRuntimeEvents"
           :filtered-count="filteredRuntimeEvents.length"
           :total-count="runtimeEvents.length"
         />
