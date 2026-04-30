@@ -1,7 +1,7 @@
 import { tv } from 'tailwind-variants'
 
 export const surfaceStyles = tv({
-  base: 'rounded-5 border shadow-(--dashboard-shadow)',
+  base: 'flex flex-col rounded-lg border shadow-(--dashboard-shadow)',
   variants: {
     tone: {
       default: 'border-(--dashboard-border) bg-(--dashboard-panel)',
@@ -22,7 +22,7 @@ export const surfaceStyles = tv({
 })
 
 export const iconFrameStyles = tv({
-  base: 'flex items-center justify-center rounded-xl bg-(--dashboard-accent-soft) text-(--dashboard-accent)',
+  base: 'flex items-center justify-center rounded-md bg-(--dashboard-accent-soft) text-(--dashboard-accent)',
   variants: {
     size: {
       sm: 'h-8 w-8',
@@ -36,7 +36,7 @@ export const iconFrameStyles = tv({
 })
 
 export const mutedPanelStyles = tv({
-  base: 'rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted)',
+  base: 'rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted)',
   variants: {
     padding: {
       sm: 'px-4 py-3',
@@ -89,5 +89,5 @@ export const runtimeBadgeStyles = tv({
 })
 
 export const sectionNoteStyles = tv({
-  base: 'rounded-5 border border-(--dashboard-border) bg-(--dashboard-panel) px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-(--dashboard-text-soft) shadow-(--dashboard-shadow)',
+  base: 'rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-(--dashboard-text-soft) shadow-(--dashboard-shadow)',
 })

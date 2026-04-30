@@ -36,13 +36,13 @@ const hasHeader = Boolean(props.title || props.description || slots.header)
 <template>
   <section :class="cn(surfaceStyles({ tone, padding }), contentClass)">
     <header v-if="hasHeader" class="flex items-start justify-between gap-4">
-      <div class="flex items-start gap-3">
+      <div class="flex min-w-0 items-start gap-3">
         <span v-if="iconName" :class="iconFrameStyles({ size: 'md' })" class="shrink-0">
           <span class="h-5 w-5">
             <DashboardIcon :name="iconName" />
           </span>
         </span>
-        <div>
+        <div class="min-w-0">
           <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-accent)">
             {{ eyebrow }}
           </p>
@@ -56,7 +56,7 @@ const hasHeader = Boolean(props.title || props.description || slots.header)
       </div>
       <slot name="header" />
     </header>
-    <div :class="hasHeader ? 'mt-4' : ''">
+    <div :class="cn('min-h-0 flex-1', hasHeader ? 'mt-4' : '')">
       <slot />
     </div>
   </section>

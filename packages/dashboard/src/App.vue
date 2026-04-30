@@ -28,27 +28,23 @@ const pageMeta = computed(() => {
   if (route.path.startsWith('/analyze')) {
     return {
       title: 'Analyze Workspace',
-      description: '保留现有构建分析能力，并把包、模块与分包视图收敛进可持续扩展的应用框架。',
     }
   }
 
   if (route.path.startsWith('/activity')) {
     return {
       title: 'Activity Stream',
-      description: '用统一的事件、诊断和下一步动作承载未来的 dev/build/ui 运行轨迹。',
     }
   }
 
   if (route.path.startsWith('/tokens')) {
     return {
       title: 'Design Tokens',
-      description: '集中验证 dashboard 的色彩、表面和排版语义，避免后续页面各自漂移。',
     }
   }
 
   return {
     title: 'Workspace Console',
-    description: '这是 dashboard 的新入口页，用来承载基础壳子、命令面板和后续不断增强的调试模块。',
   }
 })
 
@@ -66,24 +62,24 @@ function isActive(currentPath: string, targetPath: string) {
 </script>
 
 <template>
-  <div class="min-h-screen px-3 py-3 text-(--dashboard-text) md:px-4 md:py-4 lg:px-5">
-    <div class="mx-auto grid max-w-400 gap-3 lg:grid-cols-[18.5rem_minmax(0,1fr)]">
-      <aside class="hidden lg:block">
-        <div class="sticky top-4 space-y-3">
+  <div class="h-dvh overflow-hidden px-3 py-3 text-(--dashboard-text) md:px-4 md:py-4 lg:px-5">
+    <div class="mx-auto grid h-full max-w-400 gap-3 overflow-hidden lg:grid-cols-[17rem_minmax(0,1fr)]">
+      <aside class="hidden min-h-0 overflow-hidden lg:block">
+        <div class="grid h-full grid-rows-[minmax(0,1fr)_auto] gap-3">
           <AppSurfaceCard
             eyebrow="Shell"
             title="weapp-vite dashboard"
-            description="先搭好稳定壳子，再把 analyze、诊断、日志、MCP 等能力持续挂接进来。"
             icon-name="hero-system"
             tone="strong"
+            content-class="min-h-0 overflow-hidden"
           >
-            <nav class="grid gap-2">
+            <nav class="grid gap-2 overflow-y-auto pr-1">
               <RouterLink
                 v-for="item in workspaceNavigation"
                 :key="item.to"
                 :to="item.to"
                 :class="cn(
-                  'group rounded-4.5 border px-3 py-3 transition',
+                  'group rounded-md border px-3 py-3 transition',
                   isActive(route.path, item.to)
                     ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) shadow-(--dashboard-shadow)'
                     : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
@@ -92,7 +88,7 @@ function isActive(currentPath: string, targetPath: string) {
                 <div class="flex items-start gap-3">
                   <span
                     :class="cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-md',
                       isActive(route.path, item.to)
                         ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
                         : 'bg-(--dashboard-panel) text-(--dashboard-text-soft) group-hover:text-(--dashboard-accent)',
@@ -106,7 +102,7 @@ function isActive(currentPath: string, targetPath: string) {
                     <p class="font-medium text-(--dashboard-text)">
                       {{ item.label }}
                     </p>
-                    <p class="mt-1 text-xs leading-5 text-(--dashboard-text-soft)">
+                    <p class="mt-0.5 truncate text-xs leading-5 text-(--dashboard-text-soft)">
                       {{ item.caption }}
                     </p>
                   </div>
@@ -124,7 +120,7 @@ function isActive(currentPath: string, targetPath: string) {
         </div>
       </aside>
 
-      <div class="min-w-0 space-y-3">
+      <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <AppShellHeader
           :title="pageMeta.title"
           :description="pageMeta.description"
@@ -134,7 +130,9 @@ function isActive(currentPath: string, targetPath: string) {
           @set-theme="setThemePreference"
         />
 
-        <RouterView />
+        <div class="min-h-0 overflow-hidden">
+          <RouterView />
+        </div>
       </div>
     </div>
 
@@ -168,7 +166,7 @@ function isActive(currentPath: string, targetPath: string) {
         <AppSurfaceCard
           eyebrow="Navigation"
           title="Workspace Modules"
-          description="路由已经是第一层扩展边界，后续增强优先新增页面，不再继续堆叠单页。"
+          description="选择要查看的工作区。"
           icon-name="nav-menu"
           tone="strong"
           content-class="h-full"
@@ -179,7 +177,7 @@ function isActive(currentPath: string, targetPath: string) {
               :key="item.to"
               :to="item.to"
               :class="cn(
-                'group rounded-4.5 border px-3 py-3 transition',
+                'group rounded-md border px-3 py-3 transition',
                 isActive(route.path, item.to)
                   ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) shadow-(--dashboard-shadow)'
                   : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
@@ -189,7 +187,7 @@ function isActive(currentPath: string, targetPath: string) {
               <div class="flex items-start gap-3">
                 <span
                   :class="cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-md',
                     isActive(route.path, item.to)
                       ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
                       : 'bg-(--dashboard-panel) text-(--dashboard-text-soft) group-hover:text-(--dashboard-accent)',

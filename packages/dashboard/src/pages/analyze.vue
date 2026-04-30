@@ -7,26 +7,18 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
-import AppMetaLabel from '../features/dashboard/components/AppMetaLabel.vue'
-import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
-import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
-import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
-import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
-import SectionNote from '../features/dashboard/components/SectionNote.vue'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
 import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
-import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
-import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
-import { formatRuntimeSourceSummary } from '../features/dashboard/utils/runtimeEvents'
+import { dashboardTabs } from '../features/dashboard/constants/view'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -40,8 +32,8 @@ echarts.use([
 
 const chartRef = shallowRef<HTMLDivElement>()
 let chart: echarts.ECharts | undefined
-const { themePreference, resolvedTheme, setThemePreference } = useDashboardTheme()
-const { eventSummary, lastUpdatedAt, latestRuntimeEvent, resultRef, runtimeEvents, runtimeSourceSummary, updateCount } = useDashboardWorkspace()
+const { resolvedTheme } = useDashboardTheme()
+const { lastUpdatedAt, resultRef, updateCount } = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -67,11 +59,6 @@ const statusPills = computed<DashboardInfoPillItem[]>(() => [
     label: lastUpdatedAt.value,
   },
 ])
-const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
-const visibleRuntimeSourceSummary = computed(() =>
-  formatRuntimeSourceSummary(runtimeSourceSummary.value)
-    .slice(0, 4),
-)
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
   summary,
   packageInsights,
@@ -149,18 +136,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="grid gap-3">
+  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
     <AppSurfaceCard
       v-if="!resultRef"
       eyebrow="Analyze"
       title="等待分析数据注入"
-      description="当前路由已经可独立打开，但还没有接收到来自 CLI 的 analyze payload。你可以先从工作台查看壳子结构，或者通过命令启动真实数据联调。"
       icon-name="hero-commands"
       tone="strong"
       padding="header"
     >
       <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.92fr)]">
-        <div class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4">
+        <div class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4">
           <p class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-text-soft)">
             recommended commands
           </p>
@@ -172,7 +158,7 @@ onBeforeUnmount(() => {
                 'weapp-vite dev --ui',
               ]"
               :key="command"
-              class="rounded-xl bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900"
+              class="rounded-md bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900"
             >
               {{ command }}
             </code>
@@ -181,32 +167,32 @@ onBeforeUnmount(() => {
 
         <div class="grid gap-2">
           <RouterLink
-            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
+            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             to="/"
           >
             <p class="font-medium">
               返回工作台
             </p>
             <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
-              继续查看应用壳子、命令面板和当前增强节奏。
+              查看当前状态和命令。
             </p>
           </RouterLink>
           <RouterLink
-            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
+            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             to="/activity"
           >
             <p class="font-medium">
               查看活动流
             </p>
             <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
-              后续可以在这里观察真实的构建事件和诊断状态。
+              观察命令、构建、HMR 和诊断事件。
             </p>
           </RouterLink>
         </div>
       </div>
     </AppSurfaceCard>
 
-    <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+    <section class="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
       <nav class="flex flex-wrap gap-2">
         <button
           v-for="tab in dashboardTabs"
@@ -221,19 +207,6 @@ onBeforeUnmount(() => {
         </button>
       </nav>
       <div class="flex flex-wrap items-center gap-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            v-for="option in themeOptions"
-            :key="option.value"
-            :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
-            @click="setThemePreference(option.value)"
-          >
-            <span class="h-4 w-4">
-              <DashboardIcon :name="option.iconName" />
-            </span>
-            {{ option.label }}
-          </button>
-        </div>
         <AppInfoPill
           v-for="item in statusPills"
           :key="item.label"
@@ -244,110 +217,29 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-if="resultRef">
-      <section class="grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
-        <AppSurfaceCard
-          eyebrow="Runtime Context"
-          title="分析视图关联的运行上下文"
-          description="treemap 和包体指标不再是孤立结果，这里会同步展示最近的运行事件，让你知道这份分析结果处在什么执行背景里。"
-          icon-name="metric-time"
-        >
-          <div class="grid gap-3 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <AppRuntimeFocusCard
-              :event="latestRuntimeEvent"
-              eyebrow="latest event"
-              :duration-text="latestRuntimeEvent?.durationMs !== undefined ? `最近一次耗时: ${formatDuration(latestRuntimeEvent.durationMs)}` : undefined"
-            >
-              <RouterLink
-                class="mt-4 inline-flex rounded-full border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-1.5 text-xs font-medium text-(--dashboard-text) transition hover:border-(--dashboard-border-strong)"
-                to="/activity"
-              >
-                打开事件控制台
-              </RouterLink>
-            </AppRuntimeFocusCard>
+      <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+        <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" compact />
 
-            <div class="grid gap-2 sm:grid-cols-2">
-              <AppStatCard
-                v-for="item in eventSummary"
-                :key="item.label"
-                v-bind="item"
-              />
-            </div>
-          </div>
-        </AppSurfaceCard>
+        <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
+          <OverviewPanel
+            :bind-chart-ref="bindChartRef"
+            :visible-largest-files="visibleLargestFiles"
+            :sub-packages="subPackages"
+          />
+        </section>
 
-        <AppSurfaceCard
-          eyebrow="Source Signals"
-          title="事件来源摘要"
-          description="分析页直接按来源折叠运行事件，方便判断当前这份 payload 主要来自哪条链路。"
-          icon-name="hero-system"
-        >
-          <div class="grid gap-2 sm:grid-cols-2">
-            <AppRuntimeSourceCard
-              v-for="source in visibleRuntimeSourceSummary"
-              :key="source.source"
-              :source="source.source"
-              :count="source.count"
-              :error-count="source.errorCount"
-              :average-duration="source.averageDuration"
-              count-label="条事件"
-            />
-          </div>
-        </AppSurfaceCard>
+        <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">
+          <PackagesPanel :package-insights="packageInsights" />
+        </section>
 
-        <AppSurfaceCard
-          eyebrow="Recent Feed"
-          title="最近事件样本"
-          description="这些事件是分析页最直接的上游线索。后面如果某次 analyze 或 build 结果异常，这里会比看全量时间线更快定位。"
-          icon-name="hero-commands"
-        >
-          <ul class="grid gap-2">
-            <li
-              v-for="event in recentRuntimeEvents"
-              :key="event.id"
-              class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="font-medium text-(--dashboard-text)">
-                    {{ event.title }}
-                  </p>
-                  <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
-                    {{ event.detail }}
-                  </p>
-                  <AppMetaLabel class="mt-2">
-                    {{ formatRuntimeEventMeta(event) }}
-                  </AppMetaLabel>
-                </div>
-                <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
-              </div>
-            </li>
-          </ul>
-        </AppSurfaceCard>
-      </section>
-
-      <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
-
-      <section v-if="activeTab === 'overview'">
-        <OverviewPanel
-          :bind-chart-ref="bindChartRef"
-          :visible-largest-files="visibleLargestFiles"
-          :sub-packages="subPackages"
-        />
-      </section>
-
-      <section v-else-if="activeTab === 'packages'" class="grid gap-3">
-        <SectionNote text="包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。" />
-        <PackagesPanel :package-insights="packageInsights" />
-      </section>
-
-      <section v-else class="grid gap-3">
-        <SectionNote text="模块与复用视图聚焦跨包重复、来源分布与文件样本。" />
-        <ModulesPanel
-          :visible-duplicate-modules="visibleDuplicateModules"
-          :module-source-summary="moduleSourceSummary"
-          :visible-largest-files="visibleLargestFiles"
-        />
-      </section>
+        <section v-else class="min-h-0 overflow-hidden">
+          <ModulesPanel
+            :visible-duplicate-modules="visibleDuplicateModules"
+            :module-source-summary="moduleSourceSummary"
+            :visible-largest-files="visibleLargestFiles"
+          />
+        </section>
+      </div>
     </template>
   </div>
 </template>

@@ -22,14 +22,13 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
 </script>
 
 <template>
-  <div class="grid gap-3">
+  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden">
     <AppSurfaceCard tone="strong" padding="md">
       <AppSectionHeading
         eyebrow="System"
-        title="设计令牌与组件语义"
-        description="这个页面不是给最终用户看的功能页，而是给 dashboard 自己看的设计控制台。后面改视觉体系时，先看这里再改其它页面。"
+        title="设计令牌"
       />
-      <div class="mt-5 grid gap-3 lg:grid-cols-3">
+      <div class="mt-4 grid gap-3 lg:grid-cols-3">
         <AppIconFeatureCard
           v-for="item in themeFeatureItems"
           :key="item.meta"
@@ -38,15 +37,16 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
       </div>
     </AppSurfaceCard>
 
-    <section class="grid gap-3 lg:grid-cols-3">
+    <section class="grid min-h-0 gap-3 overflow-hidden lg:grid-cols-3">
       <AppSurfaceCard
         v-for="group in tokenGroups"
         :key="group.title"
         :title="group.title"
         :icon-name="group.iconName"
         padding="md"
+        content-class="min-h-0 overflow-hidden"
       >
-        <ul class="grid gap-3">
+        <ul class="grid max-h-full gap-3 overflow-y-auto pr-1">
           <AppTokenSwatch
             v-for="token in group.tokens"
             :key="token.name"
@@ -60,7 +60,6 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
       <AppSurfaceCard
         eyebrow="Components"
         title="标准表面"
-        description="统一的圆角、边框和阴影会比单独页面自由发挥更重要。"
         icon-name="token-surface"
       >
         <div class="grid gap-3 md:grid-cols-3">
@@ -75,15 +74,11 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
       <AppSurfaceCard
         eyebrow="Typography"
         title="文本层级"
-        description="dashboard 需要明显的技术控制台语义，而不是普通后台模板样式。"
         icon-name="token-type"
       >
         <div class="space-y-3">
-          <p class="text-3xl font-semibold tracking-tight">
+          <p class="text-2xl font-semibold tracking-tight">
             IBM Plex Sans Console
-          </p>
-          <p class="text-base text-(--dashboard-text-muted)">
-            说明文案采用偏紧凑的行高和较高的信息密度，适合后续挂载构建分析、事件流和诊断面板。
           </p>
           <p class="text-sm uppercase tracking-[0.24em] text-(--dashboard-text-soft)">
             uppercased meta labels for control surfaces

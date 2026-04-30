@@ -108,6 +108,7 @@ export interface DashboardTabOption {
 export interface DashboardMetricCard {
   label: string
   value: string
+  detail?: string
   iconName: DashboardIconName
   wide?: boolean
 }
@@ -122,6 +123,7 @@ export interface AnalyzeDashboardSummary {
   moduleCount: number
   duplicateCount: number
   totalBytes: number
+  estimatedCompressedBytes: number
   subpackageCount: number
   entryCount: number
 }

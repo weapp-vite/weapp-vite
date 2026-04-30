@@ -47,7 +47,7 @@ function getOptionClassName(activeValue: string, optionValue: string): string {
           :value="searchQuery"
           type="text"
           placeholder="搜索标题、详情、来源或标签"
-          class="mt-2 w-full rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-border-strong)"
+          class="mt-2 w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-border-strong)"
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         >
       </div>
@@ -67,7 +67,7 @@ function getOptionClassName(activeValue: string, optionValue: string): string {
               {{ preset.label }}
             </button>
           </div>
-          <p class="mt-2 text-xs leading-5 text-(--dashboard-text-soft)">
+          <p v-if="presetDescription" class="mt-2 text-xs leading-5 text-(--dashboard-text-soft)">
             {{ presetDescription }}
           </p>
         </div>

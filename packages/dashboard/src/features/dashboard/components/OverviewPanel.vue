@@ -43,10 +43,10 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
 </script>
 
 <template>
-  <section class="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch">
+  <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch">
     <TreemapCard :bind-chart-ref="bindChartRef" />
 
-    <div class="grid gap-3 xl:h-[min(58vh,36rem)] xl:grid-rows-[minmax(0,1fr)_minmax(0,0.82fr)]">
+    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.82fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader
           icon-name="top-files"

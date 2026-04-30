@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DashboardIconFeatureItem } from '../features/dashboard/types'
 import { onBeforeUnmount, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
@@ -8,18 +7,12 @@ import AppSectionHeading from '../features/dashboard/components/AppSectionHeadin
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
-import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
+import { workspaceNavigation } from '../features/dashboard/constants/shell'
 
 const { commandItems, signals } = useDashboardWorkspace()
 const copiedCommand = ref<string | null>(null)
 const failedCommand = ref<string | null>(null)
 let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
-
-const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.map(item => ({
-  iconName: item.iconName,
-  title: item.label,
-  description: item.caption,
-}))
 
 function clearCopyFeedback() {
   copiedCommand.value = null
@@ -82,78 +75,55 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="grid gap-3">
+  <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.72fr)]">
     <AppSurfaceCard
-      eyebrow="Workspace"
-      title="面向持续增强的 dashboard 壳子"
-      description="这一版先不急着继续堆业务逻辑，而是把信息架构、导航分层、主题切换和组件基座先收住。后面要接 analyze、dev server、MCP 或任务执行状态，都可以直接沿着路由扩展。"
-      icon-name="hero-workspace"
+      eyebrow="Status"
+      title="当前工作区"
+      icon-name="status-live"
       tone="strong"
-      padding="header"
+      padding="md"
+      content-class="min-h-0 overflow-hidden"
     >
-      <div class="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.8fr)]">
-        <div class="grid gap-3 md:grid-cols-3">
-          <AppIconFeatureCard
-            v-for="item in workspaceHighlights"
-            :key="item.title"
-            v-bind="item"
-          />
-        </div>
+      <AppInsetPanel>
+        <ul class="grid gap-2 text-sm md:grid-cols-2">
+          <li
+            v-for="item in signals"
+            :key="item.label"
+            class="flex items-center justify-between gap-3 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-3"
+          >
+            <span class="inline-flex min-w-0 items-center gap-2">
+              <span class="h-4.5 w-4.5 shrink-0 text-(--dashboard-accent)">
+                <DashboardIcon :name="item.iconName" />
+              </span>
+              <span class="truncate">{{ item.label }}</span>
+            </span>
+            <strong class="shrink-0 text-(--dashboard-text)">{{ item.value }}</strong>
+          </li>
+        </ul>
+      </AppInsetPanel>
 
-        <div class="grid gap-3">
-          <AppInsetPanel eyebrow="rollout signal">
-            <ul class="grid gap-2 text-sm">
-              <li
-                v-for="item in signals"
-                :key="item.label"
-                class="flex items-center justify-between gap-3 rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-3"
-              >
-                <span class="inline-flex items-center gap-2">
-                  <span class="h-4.5 w-4.5 text-(--dashboard-accent)">
-                    <DashboardIcon :name="item.iconName" />
-                  </span>
-                  {{ item.label }}
-                </span>
-                <strong class="text-(--dashboard-text)">{{ item.value }}</strong>
-              </li>
-            </ul>
-          </AppInsetPanel>
-        </div>
-      </div>
-    </AppSurfaceCard>
-
-    <AppSurfaceCard
-      eyebrow="Routes"
-      title="页面跳转入口"
-      description="工作台本身也要承担路由索引职责，后续页面越来越多时，首页需要负责把用户送到正确的功能区域。"
-      icon-name="nav-home"
-    >
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <RouterLink
-          v-for="(item, index) in workspaceNavigation"
-          :key="item.to"
-          :to="item.to"
-        >
+      <div class="mt-3 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+        <RouterLink v-for="item in workspaceNavigation" :key="item.to" :to="item.to">
           <AppIconFeatureCard
-            v-bind="navigationFeatureItems[index]"
+            :icon-name="item.iconName"
+            :title="item.label"
             interactive
           />
         </RouterLink>
       </div>
     </AppSurfaceCard>
 
-    <section class="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
-      <AppSurfaceCard tone="default" padding="md">
+    <section class="grid min-h-0 gap-3 overflow-hidden">
+      <AppSurfaceCard tone="default" padding="md" content-class="min-h-0 overflow-hidden">
         <AppSectionHeading
           eyebrow="Commands"
-          title="首轮操作面板"
-          description="这里先用假数据承载常用动作。等 CLI 和 dashboard 进一步打通后，可以把这些条目替换成真实任务状态、最近运行记录和直接操作入口。"
+          title="常用操作"
         />
-        <div class="mt-4 grid gap-3">
+        <div class="mt-4 grid max-h-[calc(100dvh-13rem)] gap-3 overflow-y-auto pr-1">
           <article
             v-for="command in commandItems"
             :key="command.command"
-            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4"
+            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
@@ -165,11 +135,11 @@ onBeforeUnmount(() => {
                 </p>
               </div>
               <div class="flex shrink-0 items-center gap-2">
-                <code class="max-w-full rounded-xl bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100 dark:bg-slate-900 md:max-w-64">
+                <code class="max-w-full rounded-md bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100 dark:bg-slate-900 md:max-w-64">
                   {{ command.command }}
                 </code>
                 <button
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--dashboard-border) bg-(--dashboard-panel) text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
                   type="button"
                   :aria-label="`复制命令 ${command.command}`"
                   :title="copiedCommand === command.command ? '已复制' : failedCommand === command.command ? '复制失败' : '复制命令'"
@@ -189,23 +159,6 @@ onBeforeUnmount(() => {
             </div>
           </article>
         </div>
-      </AppSurfaceCard>
-
-      <AppSurfaceCard
-        eyebrow="Guardrails"
-        title="第一轮增强原则"
-        description="先做壳子，不急着过度抽象数据模型。所有新增页面都要能在没有真实 payload 的情况下独立预览。"
-        icon-name="metric-quality"
-      >
-        <ol class="grid gap-2 text-sm leading-6 text-(--dashboard-text-muted)">
-          <li
-            v-for="item in releaseChecklist"
-            :key="item"
-            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
-          >
-            {{ item }}
-          </li>
-        </ol>
       </AppSurfaceCard>
     </section>
   </div>

@@ -12,6 +12,7 @@ import type {
   SummaryMetric,
 } from '../types'
 import { computed } from 'vue'
+import { estimateCompressedBytes } from '../utils/format'
 
 function getFileSize(file: PackageFileEntry) {
   return file.size ?? 0
@@ -111,6 +112,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
         moduleCount: 0,
         duplicateCount: 0,
         totalBytes: 0,
+        estimatedCompressedBytes: 0,
         subpackageCount: 0,
         entryCount: 0,
       }
@@ -122,6 +124,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
       moduleCount: result.modules.length,
       duplicateCount: result.modules.filter(mod => mod.packages.length > 1).length,
       totalBytes: files.reduce((sum, file) => sum + getFileSize(file), 0),
+      estimatedCompressedBytes: files.reduce((sum, file) => sum + estimateCompressedBytes(getFileSize(file), file.file, file.type), 0),
       subpackageCount: result.subPackages.length,
       entryCount: files.filter(file => file.isEntry).length,
     }

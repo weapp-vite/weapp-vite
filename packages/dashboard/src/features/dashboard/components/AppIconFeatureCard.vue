@@ -24,12 +24,12 @@ defineProps<{
       {{ eyebrow }}
     </p>
     <div :class="eyebrow ? 'mt-3 flex items-start gap-3' : 'flex items-start gap-3'">
-      <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
         <span class="h-5 w-5">
           <DashboardIcon :name="iconName" />
         </span>
       </span>
-      <div>
+      <div class="min-w-0">
         <h3 class="font-semibold tracking-tight">
           {{ title }}
         </h3>

@@ -68,14 +68,14 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
 </script>
 
 <template>
-  <section class="grid gap-3 xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]">
-    <div :class="surfaceStyles({ padding: 'md' })">
+  <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]">
+    <div :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
       <AppPanelHeader
         icon-name="duplicate-modules"
         title="重复模块"
         description="优先看被多个包重复包含的源码与依赖。"
       />
-      <div v-if="duplicateModuleItems.length" class="mt-4 space-y-2.5">
+      <div v-if="duplicateModuleItems.length" class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1">
         <AppSummaryValueCard
           v-for="item in duplicateModuleItems"
           :key="item.key"
@@ -96,10 +96,10 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
       </AppEmptyState>
     </div>
 
-    <div class="flex flex-col gap-3">
-      <section :class="surfaceStyles({ padding: 'md' })">
+    <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,0.8fr)_minmax(0,1fr)]">
+      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader icon-name="module-sources" title="模块来源" />
-        <div class="mt-4 space-y-2.5">
+        <div class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1">
           <AppSummaryValueCard
             v-for="item in moduleSourceItems"
             :key="item.key"
@@ -108,9 +108,9 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
         </div>
       </section>
 
-      <section :class="surfaceStyles({ padding: 'md' })">
+      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader icon-name="file-samples" title="文件样本" />
-        <ul class="mt-4 space-y-2.5 text-sm text-(--dashboard-text-muted)">
+        <ul class="mt-4 max-h-[calc(100%-3.5rem)] space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppCompactListItem
             v-for="item in largestFileSampleItems"
             :key="item.key"

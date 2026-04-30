@@ -8,6 +8,7 @@ import DashboardIcon from './DashboardIcon.vue'
 const props = defineProps<{
   cards: DashboardMetricCard[]
   packageTypeSummary: SummaryMetric[]
+  compact?: boolean
 }>()
 
 interface MetricSummaryTag {
@@ -38,7 +39,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
 </script>
 
 <template>
-  <section class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-6">
+  <section :class="compact ? 'grid gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
     <article
       v-for="card in metricCardRows"
       :key="card.label"
@@ -49,8 +50,11 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
           <p class="text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)">
             {{ card.label }}
           </p>
-          <p class="mt-2 text-2xl font-semibold md:text-[1.65rem]">
+          <p :class="compact ? 'mt-1 text-xl font-semibold md:text-[1.35rem]' : 'mt-2 text-2xl font-semibold md:text-[1.65rem]'">
             {{ card.value }}
+          </p>
+          <p v-if="card.detail" class="mt-1 text-xs font-medium text-(--dashboard-accent)">
+            {{ card.detail }}
           </p>
         </div>
         <span :class="iconFrameStyles({ size: 'lg' })">

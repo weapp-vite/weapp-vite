@@ -24,6 +24,60 @@ export function formatBytes(bytes?: number) {
   return `${value.toFixed(value >= 100 || unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`
 }
 
+export function estimateCompressedBytes(bytes?: number, fileName = '', fileType = '') {
+  if (!bytes || Number.isNaN(bytes) || bytes <= 0) {
+    return 0
+  }
+
+  const normalizedFileName = fileName.toLowerCase()
+  const extension = normalizedFileName.split('.').pop() ?? ''
+  const textExtensions = new Set([
+    'cjs',
+    'css',
+    'html',
+    'js',
+    'json',
+    'map',
+    'mjs',
+    'svg',
+    'txt',
+    'wxml',
+    'wxss',
+    'xml',
+  ])
+  const precompressedExtensions = new Set([
+    'avif',
+    'br',
+    'gif',
+    'gz',
+    'jpeg',
+    'jpg',
+    'mp3',
+    'mp4',
+    'ogg',
+    'otf',
+    'png',
+    'webp',
+    'woff',
+    'woff2',
+    'zip',
+  ])
+
+  if (textExtensions.has(extension)) {
+    return Math.max(1, Math.round(bytes * 0.34))
+  }
+
+  if (precompressedExtensions.has(extension)) {
+    return Math.max(1, Math.round(bytes * 0.92))
+  }
+
+  if (fileType === 'chunk') {
+    return Math.max(1, Math.round(bytes * 0.38))
+  }
+
+  return Math.max(1, Math.round(bytes * 0.72))
+}
+
 export function formatPackageType(type: string) {
   switch (type) {
     case 'main':

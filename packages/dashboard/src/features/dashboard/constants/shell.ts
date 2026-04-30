@@ -10,27 +10,27 @@ import type {
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
-  { to: '/analyze', label: '分析视图', caption: '保留现有 analyze 面板', iconName: 'nav-analyze' },
-  { to: '/activity', label: '活动流', caption: '诊断、事件与后续动作', iconName: 'nav-activity' },
-  { to: '/tokens', label: '设计令牌', caption: '主题、表面与组件预览', iconName: 'nav-tokens' },
+  { to: '/analyze', label: '分析视图', caption: '包体、模块与分包结构', iconName: 'nav-analyze' },
+  { to: '/activity', label: '活动流', caption: '命令、诊断与运行事件', iconName: 'nav-activity' },
+  { to: '/tokens', label: '设计令牌', caption: '主题、表面与组件状态', iconName: 'nav-tokens' },
 ]
 
 export const workspaceHighlights: DashboardIconFeatureItem[] = [
   {
     title: 'Workspace Readiness',
-    description: '把 dashboard 从单页分析器抬升成完整 UI 外壳，便于后续不断挂接调试能力。',
+    description: '工作台、分析、活动流和令牌检查各有独立入口。',
     iconName: 'hero-workspace' as const,
     eyebrow: 'Structure',
   },
   {
     title: 'Command Surface',
-    description: '为 CLI、MCP、构建分析和任务编排预留固定入口，不再把所有操作塞在一个页面里。',
+    description: '常用 dev、build、analyze 命令集中呈现并支持复制。',
     iconName: 'hero-commands' as const,
     eyebrow: 'Action',
   },
   {
     title: 'System Language',
-    description: '通过统一表面、徽标、区块标题和主题令牌，保证后续新增页面不会继续发散。',
+    description: '统一表面、状态徽标、列表密度和明暗主题。',
     iconName: 'hero-system' as const,
     eyebrow: 'Design',
   },
@@ -43,9 +43,9 @@ export const quickCommands: WorkspaceCommandItem[] = [
 ]
 
 export const releaseChecklist = [
-  '先保留 `analyze` 现有数据契约，不在第一轮改动里破坏 CLI 注入。',
-  '新增页面全部基于假数据和通用组件，后面按模块逐步替换成真实数据源。',
-  '主题切换提升到应用级，避免每个页面各自维护深浅色状态。',
+  '`analyze` payload 契约保持兼容，CLI 注入无需迁移。',
+  '工作台可在无 payload 状态下展示稳定空态和示例事件。',
+  '主题偏好在应用级共享，页面之间状态一致。',
 ]
 
 export const activityFeed: WorkspaceActivityItem[] = [
@@ -58,20 +58,20 @@ export const activityFeed: WorkspaceActivityItem[] = [
   {
     time: '09:26',
     title: 'workspace shell extended',
-    summary: '新增工作台、活动流、设计令牌三个页面骨架，后续能力可按路由继续扩展。',
+    summary: '工作台、活动流、设计令牌已经拆成独立页面。',
     tone: 'default',
   },
   {
     time: '10:03',
     title: 'theme system unified',
-    summary: '主题偏好收敛到应用根部，分析页和未来面板共享同一套明暗模式。',
+    summary: '主题偏好收敛到应用根部，所有页面共享同一套明暗模式。',
     tone: 'default',
   },
 ]
 
 export const diagnosticsQueue: WorkspaceDiagnosticItem[] = [
   { label: 'CLI 注入链路', detail: '保留 `window.__WEAPP_VITE_ANALYZE_RESULT__` 兼容层。', status: '兼容' },
-  { label: '路由拓展性', detail: '新增页面采用文件路由，后续新增面板不需要修改主路由表。', status: '可扩展' },
+  { label: '路由拓展性', detail: '页面采用文件路由，主路由表保持稳定。', status: '可扩展' },
   { label: '组件复用', detail: '通用卡片与区块标题已独立，避免页面继续拷贝结构。', status: '已落地' },
   { label: '视觉令牌', detail: '颜色、表面、排版预览集中在 tokens 页面统一检查。', status: '可验证' },
 ]
@@ -93,7 +93,7 @@ export const sampleRuntimeEvents: DashboardRuntimeEvent[] = [
     kind: 'hmr',
     level: 'info',
     title: 'workspace shell hot updated',
-    detail: '应用壳子页面已完成一次热更新，后续可以继续细分到模块级刷新记录。',
+    detail: '工作台页面已完成一次热更新并记录到事件流。',
     timestamp: '10:19:44',
     source: 'vite-hmr',
     tags: ['hmr', 'shell'],
@@ -103,7 +103,7 @@ export const sampleRuntimeEvents: DashboardRuntimeEvent[] = [
     kind: 'diagnostic',
     level: 'warning',
     title: 'analyze payload pending',
-    detail: '示例事件: 当前页面支持在没有 payload 时进入空态，而不是直接崩溃。',
+    detail: '当前页面支持在没有 payload 时进入空态。',
     timestamp: '10:20:07',
     source: 'dashboard',
     tags: ['diagnostic'],

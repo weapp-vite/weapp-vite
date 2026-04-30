@@ -8,6 +8,7 @@
 
 - 主包页面、普通分包、独立分包。
 - 多页面、多样式文件、组件和静态资源。
+- WeVu / Vue SFC 页面与组件，用于观察 dashboard 对 Vue runtime chunk、SFC 页面和 SFC 组件的分析结果。
 - 跨包复用的 `src/shared/*` 模块，用于观察 duplicate module 与 module source 面板。
 - `dev:ui` 实时模式，用于验证 dashboard 首页、分析页、活动流、设计 token 和主题切换。
 

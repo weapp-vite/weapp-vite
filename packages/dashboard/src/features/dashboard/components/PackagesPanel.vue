@@ -43,12 +43,13 @@ const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageIn
 </script>
 
 <template>
-  <section class="grid gap-3">
-    <div class="grid gap-3 xl:grid-cols-2">
+  <section class="h-full min-h-0 overflow-hidden">
+    <div class="grid h-full min-h-0 gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
       <article
         v-for="pkg in packageInsightCards"
         :key="pkg.id"
         :class="surfaceStyles({ padding: 'md' })"
+        class="min-h-0"
       >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">

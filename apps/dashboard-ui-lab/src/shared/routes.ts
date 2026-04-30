@@ -8,6 +8,7 @@ export interface DashboardLabRoute {
 
 const routes = [
   '/pages/analysis/index',
+  '/pages/vue-sfc/index',
   '/packages/quality/index',
   '/packages/runtime/index',
   '/packages/independent/index',

@@ -16,7 +16,7 @@ function getChartBadgeClassName(): string {
 </script>
 
 <template>
-  <div :class="surfaceStyles({ padding: 'sm' })">
+  <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-0 flex-col overflow-hidden">
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"
@@ -31,7 +31,7 @@ function getChartBadgeClassName(): string {
     </AppPanelHeader>
     <div
       :ref="bindChartRef"
-      class="h-[min(58vh,36rem)] min-h-84 rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2"
+      class="min-h-0 flex-1 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2"
     />
   </div>
 </template>

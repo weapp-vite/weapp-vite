@@ -17,6 +17,7 @@
     "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "typescript": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

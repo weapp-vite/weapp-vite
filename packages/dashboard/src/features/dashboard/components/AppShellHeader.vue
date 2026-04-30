@@ -6,7 +6,7 @@ import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
   title: DashboardTitleBlock['title']
-  description: NonNullable<DashboardTitleBlock['description']>
+  description?: DashboardTitleBlock['description']
   themeOptions: ThemeOption[]
   themePreference: ThemePreference
 }>()
@@ -26,11 +26,11 @@ function handleThemeChange(event: Event): void {
 </script>
 
 <template>
-  <header class="flex flex-col gap-4 rounded-6 border border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) px-4 py-4 shadow-(--dashboard-shadow) md:px-5">
+  <header class="flex flex-col gap-3 rounded-lg border border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) px-4 py-3 shadow-(--dashboard-shadow) md:px-5">
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-start gap-3">
         <button
-          class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text) md:hidden"
+          class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text) md:hidden"
           type="button"
           @click="emit('menu')"
         >
@@ -42,10 +42,10 @@ function handleThemeChange(event: Event): void {
           <p class="text-[11px] uppercase tracking-[0.28em] text-(--dashboard-accent)">
             weapp-vite dashboard
           </p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight md:text-[2rem]">
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight md:text-[1.8rem]">
             {{ title }}
           </h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-(--dashboard-text-muted)">
+          <p v-if="description" class="mt-1 max-w-3xl text-sm leading-6 text-(--dashboard-text-muted)">
             {{ description }}
           </p>
         </div>
