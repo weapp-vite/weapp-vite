@@ -782,7 +782,7 @@ onBeforeUnmount(() => {
       </div>
     </AppSurfaceCard>
 
-    <section class="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
+    <section class="relative z-20 flex min-w-0 items-center gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
       <nav class="flex shrink-0 flex-nowrap gap-2">
         <button
           v-for="tab in dashboardTabs"
@@ -808,67 +808,6 @@ onBeforeUnmount(() => {
           </span>
           搜索
         </button>
-        <div
-          v-if="resultRef"
-          class="relative shrink-0"
-          @click.stop
-        >
-          <button
-            :class="pillButtonStyles({ kind: 'nav', active: moreMenuOpen })"
-            type="button"
-            @click="moreMenuOpen = !moreMenuOpen"
-          >
-            <span class="h-4.5 w-4.5">
-              <DashboardIcon name="nav-menu" />
-            </span>
-            更多
-          </button>
-          <div
-            v-if="moreMenuOpen"
-            class="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-48 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
-          >
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-              type="button"
-              @click="copySummary"
-            >
-              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-                <DashboardIcon name="metric-copy" />
-              </span>
-              复制摘要
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-              type="button"
-              @click="copyPrReport"
-            >
-              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-                <DashboardIcon name="metric-copy" />
-              </span>
-              复制 PR
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-              type="button"
-              @click="exportJson"
-            >
-              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-                <DashboardIcon name="metric-size-outline" />
-              </span>
-              导出 JSON
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
-              type="button"
-              @click="exportMarkdown"
-            >
-              <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
-                <DashboardIcon name="file-samples" />
-              </span>
-              导出 MD
-            </button>
-          </div>
-        </div>
         <AppInfoPill
           v-if="exportStatus"
           class="shrink-0"
@@ -882,6 +821,67 @@ onBeforeUnmount(() => {
           v-bind="item"
           uppercase
         />
+      </div>
+      <div
+        v-if="resultRef"
+        class="relative shrink-0"
+        @click.stop
+      >
+        <button
+          :class="pillButtonStyles({ kind: 'nav', active: moreMenuOpen })"
+          type="button"
+          @click="moreMenuOpen = !moreMenuOpen"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="nav-menu" />
+          </span>
+          更多
+        </button>
+        <div
+          v-if="moreMenuOpen"
+          class="absolute right-0 top-[calc(100%+0.45rem)] z-50 w-48 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
+        >
+          <button
+            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+            type="button"
+            @click="copySummary"
+          >
+            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+              <DashboardIcon name="metric-copy" />
+            </span>
+            复制摘要
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+            type="button"
+            @click="copyPrReport"
+          >
+            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+              <DashboardIcon name="metric-copy" />
+            </span>
+            复制 PR
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+            type="button"
+            @click="exportJson"
+          >
+            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+              <DashboardIcon name="metric-size-outline" />
+            </span>
+            导出 JSON
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) transition hover:bg-(--dashboard-panel-muted)"
+            type="button"
+            @click="exportMarkdown"
+          >
+            <span class="h-4.5 w-4.5 text-(--dashboard-text-soft)">
+              <DashboardIcon name="file-samples" />
+            </span>
+            导出 MD
+          </button>
+        </div>
       </div>
     </section>
 
