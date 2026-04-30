@@ -1,4 +1,5 @@
 import type { SubPackageMetaValue } from '../../types'
+import type { AnalyzeComponentUsage } from '../components'
 
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
@@ -71,6 +72,7 @@ export interface AnalyzeSubpackagesResult {
   packages: PackageReport[]
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]
+  components?: AnalyzeComponentUsage[]
 }
 
 export interface PackageAccumulator {

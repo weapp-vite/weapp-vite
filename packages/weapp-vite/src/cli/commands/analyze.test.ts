@@ -296,4 +296,40 @@ describe('analyze cli command', () => {
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
     writeSpy.mockRestore()
   })
+
+  it('prints component suggestions in default mini analyze summary', async () => {
+    const action = createAnalyzeActionHandler()
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      packages: [],
+      modules: [],
+      subPackages: [{ root: 'pkgA', independent: false }],
+      components: [
+        {
+          component: 'components/detail-card',
+          componentPackage: '__main__',
+          totalUsageCount: 1,
+          pageUsageCount: 1,
+          pages: [{ page: 'pkgA/pages/detail/index', packageId: 'pkgA', usageCount: 1 }],
+          suggestions: [
+            {
+              kind: 'move-to-subpackage',
+              component: 'components/detail-card',
+              componentPackage: '__main__',
+              targetPackage: 'pkgA',
+              pagePackages: ['pkgA'],
+              message: '主包组件 components/detail-card 仅被分包 pkgA 使用，建议评估移动到该分包。',
+            },
+          ],
+        },
+      ],
+    })
+
+    await action('/project', {
+      platform: 'weapp',
+    })
+
+    expect(loggerMock.info).toHaveBeenCalledWith('组件依赖：1 个组件，1 条分包优化建议')
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('components/detail-card'))
+    expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
+  })
 })

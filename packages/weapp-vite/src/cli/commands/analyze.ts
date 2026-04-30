@@ -136,6 +136,18 @@ function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
     }
   }
 
+  const componentUsages = result.components ?? []
+  if (componentUsages.length > 0) {
+    const suggestions = componentUsages.flatMap(component => component.suggestions)
+    logger.info(`组件依赖：${componentUsages.length} 个组件，${suggestions.length} 条分包优化建议`)
+    for (const suggestion of suggestions.slice(0, 5)) {
+      logger.info(`- ${suggestion.message}`)
+    }
+    if (suggestions.length > 5) {
+      logger.info(`- …其余 ${suggestions.length - 5} 条组件建议请使用 ${colors.bold(colors.green('weapp-vite analyze --json'))} 查看`)
+    }
+  }
+
   const duplicates = result.modules.filter(module => module.packages.length > 1)
   if (duplicates.length === 0) {
     logger.info('未检测到跨包复用的源码模块。')

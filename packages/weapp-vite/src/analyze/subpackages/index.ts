@@ -1,12 +1,21 @@
 import type { RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
+import type { AnalyzeComponentJsonConfig } from '../components'
 import type { AnalyzeSubpackagesResult, ModuleAccumulator, PackageAccumulator, PackageClassifierContext } from './types'
 import { build } from 'vite'
 import { createSharedBuildConfig } from '../../runtime/sharedBuildConfig'
+import { analyzeComponentUsage, collectAnalyzeComponentJsonConfigs } from '../components'
 import { createAnalyzeMetadata } from './metadata'
 import { processOutput } from './output'
 import { expandVirtualModulePlacements, summarizeModules, summarizePackages, summarizeSubPackages } from './summary'
 
+export type {
+  AnalyzeComponentJsonConfig,
+  AnalyzeComponentPageUsage,
+  AnalyzeComponentSuggestion,
+  AnalyzeComponentSuggestionKind,
+  AnalyzeComponentUsage,
+} from '../components'
 export type {
   AnalyzeBudgetConfig,
   AnalyzeHistoryMetadata,
@@ -63,22 +72,30 @@ export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeS
 
   const packages = new Map<string, PackageAccumulator>()
   const modules = new Map<string, ModuleAccumulator>()
+  const componentJsonConfigs: AnalyzeComponentJsonConfig[] = []
 
   for (const output of mainOutputs) {
     processOutput(output as RolldownOutput, 'main', ctx, classifierContext, packages, modules)
+    componentJsonConfigs.push(...collectAnalyzeComponentJsonConfigs(output as RolldownOutput))
   }
 
   for (const root of independentRoots) {
     const output = buildService.getIndependentOutput(root)
     processOutput(output, 'independent', ctx, classifierContext, packages, modules)
+    componentJsonConfigs.push(...collectAnalyzeComponentJsonConfigs(output))
   }
 
   expandVirtualModulePlacements(modules, packages, classifierContext)
+  const subPackages = summarizeSubPackages(subPackageMetas)
 
   return {
     metadata: createAnalyzeMetadata(ctx.configService),
     packages: summarizePackages(packages),
     modules: summarizeModules(modules),
-    subPackages: summarizeSubPackages(subPackageMetas),
+    subPackages,
+    components: analyzeComponentUsage({
+      jsonConfigs: componentJsonConfigs,
+      subPackages,
+    }),
   }
 }
