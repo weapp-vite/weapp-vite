@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DashboardDetailItem, LargestFileEntry, TreemapNodeMeta } from '../types'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { copyText } from '../utils/clipboard'
 import { formatBytes, formatPackageType } from '../utils/format'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
@@ -21,6 +22,8 @@ const emit = defineEmits<{
 const fileQuery = ref('')
 const fileTypeFilter = ref<FileTypeFilter>('all')
 const fileSortMode = ref<FileSortMode>('size')
+const actionStatus = ref('')
+let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
 
 function formatDelta(bytes?: number) {
   if (typeof bytes !== 'number' || Number.isNaN(bytes) || bytes === 0) {
@@ -65,6 +68,10 @@ function formatSelectedMeta(meta: TreemapNodeMeta): DashboardDetailItem {
     meta: `${meta.packageLabel} · ${meta.fileName}`,
     value: formatBytes(meta.bytes),
   }
+}
+
+function escapeMarkdownCell(value: string) {
+  return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
 }
 
 const fileTypeOptions = computed(() => {
@@ -123,6 +130,64 @@ const largestFileItems = computed(() => {
 })
 
 const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMeta(props.selectedTreemapMeta) : null)
+
+const fileReportText = computed(() => [
+  '# dashboard 文件详情',
+  '',
+  `文件数量：${largestFileItems.value.length} / ${props.largestFiles.length}`,
+  '',
+  '| 文件 | 包 | 类型 | 总体积 | 压缩后 | 较上次 | 模块 | 来源 |',
+  '| --- | --- | --- | ---: | ---: | ---: | ---: | --- |',
+  ...largestFileItems.value.map(({ file }) => [
+    file.file,
+    file.packageLabel,
+    file.type,
+    formatBytes(file.size),
+    formatBytes(file.compressedSize),
+    formatDelta(file.sizeDeltaBytes) || '-',
+    String(file.moduleCount),
+    file.source ?? '-',
+  ].map(escapeMarkdownCell).join(' | ')).map(row => `| ${row} |`),
+  '',
+].join('\n'))
+
+function setActionStatus(status: string) {
+  actionStatus.value = status
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+  actionStatusTimer = setTimeout(() => {
+    actionStatus.value = ''
+    actionStatusTimer = null
+  }, 1800)
+}
+
+async function copyFileReport() {
+  try {
+    await copyText(fileReportText.value)
+    setActionStatus('已复制')
+  }
+  catch {
+    setActionStatus('复制失败')
+  }
+}
+
+function exportFileJson() {
+  const blob = new Blob([`${JSON.stringify(largestFileItems.value.map(item => item.file), null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-dashboard-files.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  setActionStatus('已导出')
+}
+
+onBeforeUnmount(() => {
+  if (actionStatusTimer) {
+    clearTimeout(actionStatusTimer)
+  }
+})
 </script>
 
 <template>
@@ -139,6 +204,27 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
       <span class="text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft)">size</span>
     </div>
     <div class="mb-3 grid gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span v-if="actionStatus" class="text-xs font-medium text-(--dashboard-accent)">
+          {{ actionStatus }}
+        </span>
+        <button
+          type="button"
+          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+          :disabled="largestFileItems.length === 0"
+          @click="copyFileReport"
+        >
+          复制文件
+        </button>
+        <button
+          type="button"
+          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+          :disabled="largestFileItems.length === 0"
+          @click="exportFileJson"
+        >
+          导出 JSON
+        </button>
+      </div>
       <input
         v-model="fileQuery"
         class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"
