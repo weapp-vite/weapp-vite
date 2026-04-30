@@ -16,6 +16,7 @@ const healthPalette = {
   yellow: '#ead486',
   red: '#eaa39b',
 }
+const wevuRuntimeRiskScoreLimit = 0.5
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value))
@@ -54,6 +55,27 @@ function createRiskBorderColor(score: number) {
     return '#c3a24d'
   }
   return '#5caf82'
+}
+
+function isWevuRuntimeReference(...references: Array<string | undefined>) {
+  return references.some((reference) => {
+    if (!reference) {
+      return false
+    }
+
+    const normalizedReference = reference.replaceAll('\\', '/')
+    return normalizedReference.includes('packages-runtime/wevu/')
+      || normalizedReference.includes('node_modules/wevu/')
+      || normalizedReference.includes('node_modules/@weapp-vite/wevu/')
+      || normalizedReference.includes('weapp-vendors/wevu-')
+  })
+}
+
+function normalizeRuntimeRiskScore(score: number, ...references: Array<string | undefined>) {
+  if (isWevuRuntimeReference(...references)) {
+    return Math.min(score, wevuRuntimeRiskScoreLimit)
+  }
+  return score
 }
 
 function getReadableTextColor(backgroundColor: string) {
@@ -166,6 +188,7 @@ function createModuleTreemapNode(
     usageCount > 1 ? 0.62 : 0,
     module.sourceType === 'node_modules' ? 0.52 : 0,
   )
+  const normalizedRiskScore = normalizeRuntimeRiskScore(riskScore, module.id, module.source, fileName)
   return {
     id: nodeId,
     name: module.source,
@@ -182,7 +205,7 @@ function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createRiskNodeStyle(riskScore),
+    ...createRiskNodeStyle(normalizedRiskScore),
   }
 }
 
@@ -195,7 +218,7 @@ function createAssetTreemapNode(
 ): TreemapNode {
   const nodeId = createTreemapAssetNodeId(packageId, fileName)
   const value = Math.max(file.size ?? 1, 1)
-  const riskScore = createShareRiskScore(value, packageBytes)
+  const riskScore = normalizeRuntimeRiskScore(createShareRiskScore(value, packageBytes), file.file, file.source, packageId, packageLabel)
   return {
     id: nodeId,
     name: file.source ?? fileName,
@@ -225,7 +248,13 @@ function createFileTreemapNode(
 ): TreemapNode {
   const nodeId = createTreemapFileNodeId(packageId, file.file)
   const fileValue = Math.max(value, 1)
-  const riskScore = Math.max(createShareRiskScore(fileValue, packageBytes), packageRiskScore * 0.72)
+  const riskScore = normalizeRuntimeRiskScore(
+    Math.max(createShareRiskScore(fileValue, packageBytes), packageRiskScore * 0.72),
+    file.file,
+    file.source,
+    packageId,
+    packageLabel,
+  )
   return {
     id: nodeId,
     name: file.file,
@@ -253,6 +282,7 @@ function createPackageTreemapNode(
   riskScore: number,
 ): TreemapNode {
   const nodeId = createTreemapPackageNodeId(pkg.id)
+  const normalizedRiskScore = normalizeRuntimeRiskScore(riskScore, pkg.id, pkg.label)
 
   return {
     id: nodeId,
@@ -267,7 +297,7 @@ function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createRiskNodeStyle(riskScore),
+    ...createRiskNodeStyle(normalizedRiskScore),
     children: fileNodes,
   }
 }
