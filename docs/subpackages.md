@@ -328,7 +328,7 @@ export default defineConfig({
 
 ## 调试与排查清单
 
-- 执行 `pnpm run analyze`（或 `pnpm run analyze -- --report`）查看每个（子）包的产物结构与共享模块。
+- 执行 `pnpm run analyze`（或 `pnpm run analyze -- --report`）查看每个（子）包的产物结构、共享模块与组件依赖建议；需要完整组件使用图时使用 `pnpm run analyze -- --json --output report/analyze.json`。
 - 若分包样式缺失，确认 `styles` 定义的文件是否存在，以及 `include` / `exclude` 是否匹配实际路径。
 - 关注构建日志中的 `[subpackages]` 警告：它们通常意味着路径超出 `srcRoot`、格式不受支持或重复注册。
 - 检查微信开发者工具的包体积面板，确保主包 < 2MB、单个分包 < 2MB，所有分包合计 < 20MB。

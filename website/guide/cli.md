@@ -101,7 +101,7 @@ wv build [root]
 
 ### 3) `analyze`
 
-分析小程序分包产物映射，或输出 Web 静态分析结果。
+分析小程序分包产物映射、组件依赖链路，或输出 Web 静态分析结果。
 
 ```bash
 wv analyze [root]
@@ -115,6 +115,8 @@ wv analyze [root]
 | `--output <file>`           | 将分析结果写入文件                |
 | `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）       |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径 |
+
+小程序模式下，JSON 结果会包含 `components` 字段，用于展示组件被哪些页面递归引用、组件所属主包/分包、总使用次数，以及主包组件跨分包使用时的优化建议。默认终端摘要会展示组件建议数量和前几条高优先级建议，完整列表可通过 `--json` 或 `--output` 查看。
 
 ### 4) `open`
 
