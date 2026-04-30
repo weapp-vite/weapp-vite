@@ -1055,7 +1055,7 @@ onBeforeUnmount(() => {
 
       <section v-else-if="activeTab === 'files'" class="min-h-0 overflow-hidden">
         <AnalyzeDetailsPanel
-          :visible-largest-files="visibleLargestFiles"
+          :largest-files="filteredLargestFiles"
           :selected-file-modules="selectedFileModules"
           :budget-warnings="budgetWarnings"
           :budget-limit-items="budgetLimitItems"
