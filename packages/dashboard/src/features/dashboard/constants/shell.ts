@@ -37,9 +37,9 @@ export const workspaceHighlights: DashboardIconFeatureItem[] = [
 ]
 
 export const quickCommands: WorkspaceCommandItem[] = [
-  { label: '启动开发', command: 'pnpm --filter @weapp-vite/dashboard dev', note: '本地预览完整 UI 壳子' },
-  { label: '生产构建', command: 'pnpm --filter @weapp-vite/dashboard build', note: '验证静态产物可发布' },
-  { label: '主包联调', command: 'weapp-vite build --ui', note: '从 CLI 注入真实分析数据' },
+  { label: '启动开发', command: 'pnpm --filter @weapp-vite/dashboard dev', note: '本地预览完整 UI 壳子', category: 'dev' },
+  { label: '生产构建', command: 'pnpm --filter @weapp-vite/dashboard build', note: '验证静态产物可发布', category: 'build' },
+  { label: '主包联调', command: 'weapp-vite build --ui', note: '从 CLI 注入真实分析数据', category: 'analyze' },
 ]
 
 export const releaseChecklist = [

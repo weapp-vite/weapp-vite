@@ -402,7 +402,10 @@ export interface WorkspaceCommandItem {
   label: string
   command: string
   note: string
+  category: WorkspaceCommandCategory
 }
+
+export type WorkspaceCommandCategory = 'dev' | 'build' | 'analyze'
 
 export interface WorkspaceActivityItem {
   time: string

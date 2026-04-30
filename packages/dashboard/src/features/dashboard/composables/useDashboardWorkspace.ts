@@ -333,16 +333,19 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
         label: '重新分析当前工程',
         command: 'weapp-vite analyze',
         note: `最近同步于 ${lastUpdatedAt.value}，当前可读取 ${summary.value.packageCount} 个包。`,
+        category: 'analyze',
       }),
       createCommandItem({
         label: '进入构建联调',
         command: 'weapp-vite build --ui',
         note: `当前产物总体积 ${formatBytes(summary.value.totalBytes)}，适合继续核对 chunk 结构。`,
+        category: 'build',
       }),
       createCommandItem({
         label: '观察开发态更新',
         command: 'weapp-vite dev --ui',
         note: `已记录 ${updateCount.value} 次 payload 同步，后续可继续接入更细粒度事件。`,
+        category: 'dev',
       }),
     ]
   })
