@@ -1,19 +1,32 @@
 import type { Ref } from 'vue'
 import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
-import { formatTreemapTooltip, PACKAGE_STYLES, TREEMAP_LEVELS } from '../utils/treemap'
+import {
+  createTreemapAssetNodeId,
+  createTreemapFileNodeId,
+  createTreemapModuleNodeId,
+  createTreemapPackageNodeId,
+  formatTreemapTooltip,
+  PACKAGE_STYLES,
+  TREEMAP_LEVELS,
+} from '../utils/treemap'
 
 function createModuleTreemapNode(
+  packageId: string,
   packageLabel: string,
   fileName: string,
   moduleUsageCount: Map<string, number>,
   module: NonNullable<AnalyzeSubpackagesResult['packages'][number]['files'][number]['modules']>[number],
 ): TreemapNode {
+  const nodeId = createTreemapModuleNodeId(packageId, fileName, module.id)
   return {
+    id: nodeId,
     name: module.source,
     value: Math.max(module.bytes ?? module.originalBytes ?? 1, 1),
     meta: {
       kind: 'module',
+      nodeId,
+      packageId,
       packageLabel,
       fileName,
       source: module.source,
@@ -26,15 +39,20 @@ function createModuleTreemapNode(
 }
 
 function createAssetTreemapNode(
+  packageId: string,
   packageLabel: string,
   fileName: string,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
 ): TreemapNode {
+  const nodeId = createTreemapAssetNodeId(packageId, fileName)
   return {
+    id: nodeId,
     name: file.source ?? fileName,
     value: Math.max(file.size ?? 1, 1),
     meta: {
       kind: 'asset',
+      nodeId,
+      packageId,
       packageLabel,
       fileName,
       source: file.source ?? fileName,
@@ -50,11 +68,15 @@ function createFileTreemapNode(
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
   children: TreemapNode[],
 ): TreemapNode {
+  const nodeId = createTreemapFileNodeId(packageId, file.file)
   return {
+    id: nodeId,
     name: file.file,
     value: Math.max(file.size ?? 1, 1),
     meta: {
       kind: 'file',
+      nodeId,
+      packageId,
       packageLabel: packageLabelMap.get(packageId) ?? packageLabel,
       fileName: file.file,
       from: file.from,
@@ -72,12 +94,16 @@ function createPackageTreemapNode(
   fileNodes: TreemapNode[],
 ): TreemapNode {
   const style = PACKAGE_STYLES[pkg.type]
+  const nodeId = createTreemapPackageNodeId(pkg.id)
 
   return {
+    id: nodeId,
     name: pkg.label,
     value: Math.max(totalBytes, 1),
     meta: {
       kind: 'package',
+      nodeId,
+      packageId: pkg.id,
       packageLabel: pkg.label,
       packageType: pkg.type,
       fileCount: pkg.files.length,
@@ -110,9 +136,9 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>, 
       const totalBytes = pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
       const fileNodes = pkg.files.map((file) => {
         const moduleNodes = file.type === 'chunk'
-          ? (file.modules ?? []).map(module => createModuleTreemapNode(pkg.label, file.file, moduleUsageCount.value, module))
+          ? (file.modules ?? []).map(module => createModuleTreemapNode(pkg.id, pkg.label, file.file, moduleUsageCount.value, module))
           : file.source
-            ? [createAssetTreemapNode(pkg.label, file.file, file)]
+            ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file)]
             : []
 
         return createFileTreemapNode(pkg.label, pkg.id, packageLabelMap.value, file, moduleNodes)
@@ -135,8 +161,10 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>, 
     series: [
       {
         type: 'treemap',
-        nodeClick: false,
-        roam: false,
+        nodeClick: 'zoomToNode',
+        roam: true,
+        roamTrigger: 'global',
+        zoomToNodeRatio: 0.72,
         breadcrumb: {
           show: false,
         },

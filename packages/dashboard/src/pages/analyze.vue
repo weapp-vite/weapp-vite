@@ -21,6 +21,7 @@ import { useTreemapData } from '../features/dashboard/composables/useTreemapData
 import { dashboardTabs } from '../features/dashboard/constants/view'
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
+import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -60,10 +61,10 @@ function filterLargestFiles(files: LargestFileEntry[], meta: TreemapNodeMeta | n
     return files
   }
   if (meta.kind === 'package') {
-    return files.filter(file => file.packageLabel === meta.packageLabel)
+    return files.filter(file => file.packageId === meta.packageId)
   }
   if (meta.kind === 'file' || meta.kind === 'asset' || meta.kind === 'module') {
-    return files.filter(file => file.packageLabel === meta.packageLabel && file.file === meta.fileName)
+    return files.filter(file => file.packageId === meta.packageId && file.file === meta.fileName)
   }
   return files
 }
@@ -80,6 +81,12 @@ const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 1
 const activeLargestFileKey = computed(() => selectedLargestFile.value
   ? `${selectedLargestFile.value.packageId}:${selectedLargestFile.value.file}`
   : null)
+const selectedTreemapFocusNodeId = computed(() => {
+  if (selectedLargestFile.value) {
+    return createTreemapFileNodeId(selectedLargestFile.value.packageId, selectedLargestFile.value.file)
+  }
+  return selectedTreemapMeta.value?.nodeId ?? null
+})
 const selectedFileEntry = computed(() => {
   if (selectedLargestFile.value) {
     return selectedLargestFile.value
@@ -88,7 +95,7 @@ const selectedFileEntry = computed(() => {
   if (!meta || meta.kind === 'package') {
     return null
   }
-  return largestFiles.value.find(file => file.packageLabel === meta.packageLabel && file.file === meta.fileName) ?? null
+  return largestFiles.value.find(file => file.packageId === meta.packageId && file.file === meta.fileName) ?? null
 })
 const duplicateModuleMap = computed(() => new Map(duplicateModules.value.map(module => [module.id, module])))
 const selectedFileModules = computed<SelectedFileModuleDetail[]>(() => {
@@ -239,6 +246,8 @@ function handleSelectLargestFile(file: LargestFileEntry) {
   selectedLargestFile.value = file
   selectedTreemapMeta.value = {
     kind: 'file',
+    nodeId: createTreemapFileNodeId(file.packageId, file.file),
+    packageId: file.packageId,
     packageLabel: file.packageLabel,
     fileName: file.file,
     from: file.from,
@@ -266,12 +275,34 @@ function handleSelectBudgetWarning(warning: PackageBudgetWarning) {
   selectedTreemapMeta.value = packageInfo
     ? {
         kind: 'package',
+        nodeId: createTreemapPackageNodeId(packageInfo.id),
+        packageId: packageInfo.id,
         packageLabel: packageInfo.label,
         packageType: packageInfo.type,
         fileCount: packageInfo.fileCount,
         totalBytes: packageInfo.totalBytes,
       }
     : null
+}
+
+function focusTreemapNode(nodeId: string) {
+  chart?.dispatchAction({
+    type: 'treemapRootToNode',
+    seriesIndex: 0,
+    targetNodeId: nodeId,
+  })
+}
+
+function handleFocusTreemapSelection() {
+  if (!selectedTreemapFocusNodeId.value) {
+    return
+  }
+  focusTreemapNode(selectedTreemapFocusNodeId.value)
+}
+
+function handleResetTreemapFocus() {
+  chart?.setOption(treemapOption.value, true)
+  chart?.resize()
 }
 
 async function ensureChart() {
@@ -486,6 +517,7 @@ onBeforeUnmount(() => {
         <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
           <OverviewPanel
             :bind-chart-ref="bindChartRef"
+            :can-focus-treemap-selection="Boolean(selectedTreemapFocusNodeId)"
             :visible-largest-files="visibleLargestFiles"
             :selected-file-modules="selectedFileModules"
             :budget-warnings="budgetWarnings"
@@ -493,6 +525,8 @@ onBeforeUnmount(() => {
             :active-budget-warning-id="selectedBudgetWarning?.id ?? null"
             :active-largest-file-key="activeLargestFileKey"
             :selected-treemap-meta="selectedTreemapMeta"
+            @focus-treemap-selection="handleFocusTreemapSelection"
+            @reset-treemap-focus="handleResetTreemapFocus"
             @select-budget-warning="handleSelectBudgetWarning"
             @select-file="handleSelectLargestFile"
           />

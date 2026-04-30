@@ -4,11 +4,16 @@ import AppPanelHeader from './AppPanelHeader.vue'
 
 defineProps<{
   bindChartRef: (element: Element | null) => void
+  canFocusSelected: boolean
+}>()
+
+const emit = defineEmits<{
+  focusSelected: []
+  resetFocus: []
 }>()
 
 const chartTitle = 'Treemap'
 const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
-const chartBadgeLabel = 'overview'
 
 function getChartBadgeClassName(): string {
   return pillButtonStyles({ kind: 'badge' })
@@ -24,9 +29,23 @@ function getChartBadgeClassName(): string {
       :description="chartDescription"
     >
       <template #meta>
-        <span :class="getChartBadgeClassName()">
-          {{ chartBadgeLabel }}
-        </span>
+        <div class="flex items-center gap-2">
+          <button
+            :class="[getChartBadgeClassName(), !canFocusSelected ? 'cursor-not-allowed opacity-45' : undefined]"
+            :disabled="!canFocusSelected"
+            type="button"
+            @click="emit('focusSelected')"
+          >
+            聚焦选中
+          </button>
+          <button
+            :class="getChartBadgeClassName()"
+            type="button"
+            @click="emit('resetFocus')"
+          >
+            重置
+          </button>
+        </div>
       </template>
     </AppPanelHeader>
     <div

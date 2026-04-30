@@ -10,6 +10,7 @@ import TreemapCard from './TreemapCard.vue'
 
 const props = defineProps<{
   bindChartRef: (element: Element | null) => void
+  canFocusTreemapSelection: boolean
   visibleLargestFiles: LargestFileEntry[]
   selectedFileModules: SelectedFileModuleDetail[]
   budgetWarnings: PackageBudgetWarning[]
@@ -20,6 +21,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  focusTreemapSelection: []
+  resetTreemapFocus: []
   selectFile: [file: LargestFileEntry]
   selectBudgetWarning: [warning: PackageBudgetWarning]
 }>()
@@ -117,7 +120,12 @@ const selectedItem = computed(() => props.selectedTreemapMeta ? formatSelectedMe
 
 <template>
   <section class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch">
-    <TreemapCard :bind-chart-ref="bindChartRef" />
+    <TreemapCard
+      :bind-chart-ref="bindChartRef"
+      :can-focus-selected="canFocusTreemapSelection"
+      @focus-selected="emit('focusTreemapSelection')"
+      @reset-focus="emit('resetTreemapFocus')"
+    />
 
     <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-rows-[minmax(0,1fr)_minmax(0,0.74fr)_minmax(0,1fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">

@@ -262,8 +262,10 @@ export interface PackageBudgetLimitItem {
 
 export interface TreemapNodeMetaBase {
   kind: 'package' | 'file' | 'module' | 'asset'
+  nodeId: string
   bytes?: number
   totalBytes?: number
+  packageId: string
   packageLabel: string
 }
 
@@ -303,6 +305,7 @@ export type TreemapNodeMeta
     | TreemapAssetNodeMeta
 
 export interface TreemapNode {
+  id: string
   name: string
   value: number
   meta: TreemapNodeMeta

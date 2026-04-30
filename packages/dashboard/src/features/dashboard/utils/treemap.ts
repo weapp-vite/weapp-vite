@@ -1,6 +1,8 @@
 import type { PackageType, TreemapNodeMeta } from '../types'
 import { formatBytes, formatSourceType } from './format'
 
+const nodeIdDelimiter = '\u0000'
+
 export const PACKAGE_STYLES: Record<PackageType, { fill: string, border: string }> = {
   main: {
     fill: '#1d4ed8',
@@ -46,6 +48,22 @@ export const TREEMAP_LEVELS = [
     },
   },
 ] as const
+
+export function createTreemapPackageNodeId(packageId: string) {
+  return `package${nodeIdDelimiter}${packageId}`
+}
+
+export function createTreemapFileNodeId(packageId: string, fileName: string) {
+  return `file${nodeIdDelimiter}${packageId}${nodeIdDelimiter}${fileName}`
+}
+
+export function createTreemapModuleNodeId(packageId: string, fileName: string, moduleId: string) {
+  return `module${nodeIdDelimiter}${packageId}${nodeIdDelimiter}${fileName}${nodeIdDelimiter}${moduleId}`
+}
+
+export function createTreemapAssetNodeId(packageId: string, fileName: string) {
+  return `asset${nodeIdDelimiter}${packageId}${nodeIdDelimiter}${fileName}`
+}
 
 export function formatTreemapTooltip(meta: TreemapNodeMeta | undefined) {
   if (!meta) {
