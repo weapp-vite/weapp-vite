@@ -35,8 +35,9 @@ export const TREEMAP_LEVELS = [
       fontWeight: '700',
       lineHeight: 16,
       overflow: 'truncate',
-      textBorderColor: 'rgba(255, 255, 255, 0.72)',
-      textBorderWidth: 2,
+      textBorderWidth: 0,
+      textShadowBlur: 1,
+      textShadowColor: 'rgba(255, 255, 255, 0.32)',
     },
   },
   {

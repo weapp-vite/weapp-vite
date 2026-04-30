@@ -67,8 +67,9 @@ function createRiskLabelStyle(backgroundColor: string, emphasis = false) {
   const isDarkText = color === '#17231d'
   const contrastStyle = emphasis
     ? {
-        textBorderColor: isDarkText ? 'rgba(255, 255, 255, 0.72)' : 'rgba(15, 23, 42, 0.45)',
-        textBorderWidth: 2,
+        textBorderWidth: 0,
+        textShadowBlur: 1,
+        textShadowColor: isDarkText ? 'rgba(255, 255, 255, 0.32)' : 'rgba(15, 23, 42, 0.34)',
       }
     : {
         backgroundColor: isDarkText ? 'rgba(255, 255, 255, 0.58)' : 'rgba(15, 23, 42, 0.46)',
@@ -420,7 +421,7 @@ export function useTreemapData(
       {
         type: 'treemap',
         nodeClick: 'zoomToNode',
-        roam: true,
+        roam: 'move',
         roamTrigger: 'global',
         zoomToNodeRatio: 0.72,
         breadcrumb: {
@@ -448,8 +449,9 @@ export function useTreemapData(
           fontWeight: 700,
           lineHeight: 16,
           overflow: 'truncate',
-          textBorderColor: 'rgba(255, 255, 255, 0.72)',
-          textBorderWidth: 2,
+          textBorderWidth: 0,
+          textShadowBlur: 1,
+          textShadowColor: 'rgba(255, 255, 255, 0.32)',
         },
         itemStyle: {
           borderColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
