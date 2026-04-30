@@ -12,21 +12,28 @@ import {
 
 const defaultWarningRatio = 0.85
 const healthPalette = {
-  green: '#16a34a',
-  yellow: '#f59e0b',
-  red: '#dc2626',
+  green: '#8fd3ad',
+  yellow: '#ead486',
+  red: '#eaa39b',
 }
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value))
 }
 
+function parseHexColor(color: string) {
+  const value = Number.parseInt(color.slice(1), 16)
+  return {
+    red: (value >> 16) & 255,
+    green: (value >> 8) & 255,
+    blue: value & 255,
+  }
+}
+
 function mixColor(from: string, to: string, ratio: number) {
   const progress = clamp(ratio)
-  const fromValue = Number.parseInt(from.slice(1), 16)
-  const toValue = Number.parseInt(to.slice(1), 16)
-  const fromRgb = [(fromValue >> 16) & 255, (fromValue >> 8) & 255, fromValue & 255]
-  const toRgb = [(toValue >> 16) & 255, (toValue >> 8) & 255, toValue & 255]
+  const fromRgb = Object.values(parseHexColor(from))
+  const toRgb = Object.values(parseHexColor(to))
   const mixed = fromRgb.map((channel, index) => Math.round(channel + (toRgb[index] - channel) * progress))
   return `#${mixed.map(channel => channel.toString(16).padStart(2, '0')).join('')}`
 }
@@ -41,18 +48,57 @@ function createRiskColor(score: number) {
 
 function createRiskBorderColor(score: number) {
   if (score >= 0.82) {
-    return '#991b1b'
+    return '#c6756f'
   }
   if (score >= 0.5) {
-    return '#b45309'
+    return '#c3a24d'
   }
-  return '#15803d'
+  return '#5caf82'
 }
 
-function createRiskItemStyle(score: number) {
+function getReadableTextColor(backgroundColor: string) {
+  const { red, green, blue } = parseHexColor(backgroundColor)
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+  return luminance > 0.56 ? '#17231d' : '#f8fafc'
+}
+
+function createRiskLabelStyle(backgroundColor: string, emphasis = false) {
+  const color = getReadableTextColor(backgroundColor)
+  const isDarkText = color === '#17231d'
+  const contrastStyle = emphasis
+    ? {
+        textBorderColor: isDarkText ? 'rgba(255, 255, 255, 0.72)' : 'rgba(15, 23, 42, 0.45)',
+        textBorderWidth: 2,
+      }
+    : {
+        backgroundColor: isDarkText ? 'rgba(255, 255, 255, 0.58)' : 'rgba(15, 23, 42, 0.46)',
+        borderRadius: 3,
+        padding: [1, 4],
+        textBorderWidth: 0,
+      }
+
   return {
-    color: createRiskColor(score),
-    borderColor: createRiskBorderColor(score),
+    color,
+    ellipsis: '…',
+    fontSize: 12,
+    fontWeight: emphasis ? 700 : 600,
+    lineHeight: 16,
+    minMargin: 4,
+    overflow: 'truncate',
+    ...contrastStyle,
+  }
+}
+
+function createRiskNodeStyle(score: number) {
+  const color = createRiskColor(score)
+
+  return {
+    itemStyle: {
+      color,
+      borderColor: createRiskBorderColor(score),
+    },
+    label: createRiskLabelStyle(color),
+    upperLabel: createRiskLabelStyle(color, true),
   }
 }
 
@@ -135,9 +181,7 @@ function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    itemStyle: {
-      ...createRiskItemStyle(riskScore),
-    },
+    ...createRiskNodeStyle(riskScore),
   }
 }
 
@@ -164,9 +208,7 @@ function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    itemStyle: {
-      ...createRiskItemStyle(riskScore),
-    },
+    ...createRiskNodeStyle(riskScore),
   }
 }
 
@@ -198,9 +240,7 @@ function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    itemStyle: {
-      ...createRiskItemStyle(riskScore),
-    },
+    ...createRiskNodeStyle(riskScore),
     children: children.length > 0 ? children : undefined,
   }
 }
@@ -226,9 +266,7 @@ function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    itemStyle: {
-      ...createRiskItemStyle(riskScore),
-    },
+    ...createRiskNodeStyle(riskScore),
     children: fileNodes,
   }
 }
@@ -391,13 +429,27 @@ export function useTreemapData(
         visibleMin: 1,
         label: {
           show: true,
-          color: '#f8fafc',
+          backgroundColor: 'rgba(255, 255, 255, 0.58)',
+          borderRadius: 3,
+          color: '#17231d',
           formatter: '{b}',
-          textBorderColor: 'rgba(15, 23, 42, 0.32)',
-          textBorderWidth: 2,
+          fontSize: 12,
+          fontWeight: 600,
+          lineHeight: 16,
+          minMargin: 4,
+          overflow: 'truncate',
+          padding: [1, 4],
+          textBorderWidth: 0,
         },
         upperLabel: {
           show: true,
+          color: '#17231d',
+          fontSize: 12,
+          fontWeight: 700,
+          lineHeight: 16,
+          overflow: 'truncate',
+          textBorderColor: 'rgba(255, 255, 255, 0.72)',
+          textBorderWidth: 2,
         },
         itemStyle: {
           borderColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',

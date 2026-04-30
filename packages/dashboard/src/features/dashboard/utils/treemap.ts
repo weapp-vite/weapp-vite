@@ -31,8 +31,12 @@ export const TREEMAP_LEVELS = [
     upperLabel: {
       show: true,
       height: 32,
-      color: '#f8fafc',
-      fontWeight: '600',
+      color: '#17231d',
+      fontWeight: '700',
+      lineHeight: 16,
+      overflow: 'truncate',
+      textBorderColor: 'rgba(255, 255, 255, 0.72)',
+      textBorderWidth: 2,
     },
   },
   {

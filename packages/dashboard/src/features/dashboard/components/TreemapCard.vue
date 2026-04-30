@@ -23,9 +23,9 @@ const emit = defineEmits<{
 const chartTitle = 'Treemap'
 const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
 const healthLegend = [
-  { label: '健康', className: 'bg-emerald-600' },
-  { label: '关注', className: 'bg-amber-500' },
-  { label: '急需改进', className: 'bg-red-600' },
+  { label: '健康', color: '#8fd3ad' },
+  { label: '关注', color: '#ead486' },
+  { label: '急需改进', color: '#eaa39b' },
 ]
 
 function getChartBadgeClassName(): string {
@@ -88,7 +88,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
           :key="item.label"
           class="inline-flex items-center gap-1.5"
         >
-          <span class="h-2.5 w-2.5 rounded-full" :class="item.className" />
+          <span class="h-2.5 w-2.5 rounded-full border border-(--dashboard-border)" :style="{ backgroundColor: item.color }" />
           {{ item.label }}
         </span>
       </div>

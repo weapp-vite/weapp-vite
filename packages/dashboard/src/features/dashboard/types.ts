@@ -352,7 +352,9 @@ export interface TreemapNode {
   value: number
   meta: TreemapNodeMeta
   children?: TreemapNode[]
-  itemStyle?: Record<string, any>
+  itemStyle?: Record<string, unknown>
+  label?: Record<string, unknown>
+  upperLabel?: Record<string, unknown>
 }
 
 export type AnalyzeActionCenterTone = 'critical' | 'warning' | 'info' | 'success'
