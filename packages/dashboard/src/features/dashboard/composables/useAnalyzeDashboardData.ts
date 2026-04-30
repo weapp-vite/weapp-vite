@@ -189,9 +189,26 @@ function createDuplicateAdvice(
 }
 
 function getPackageBudgetLimit(type: PackageType) {
-  return type === 'virtual'
-    ? undefined
-    : singlePackageBudgetBytes
+  if (type === 'virtual') {
+    return undefined
+  }
+  return singlePackageBudgetBytes
+}
+
+function resolvePackageBudgetLimit(type: PackageType, result: AnalyzeSubpackagesResult) {
+  const budgets = result.metadata?.budgets
+  if (!budgets) {
+    return getPackageBudgetLimit(type)
+  }
+  if (type === 'main') {
+    return budgets.mainBytes
+  }
+  if (type === 'subPackage') {
+    return budgets.subPackageBytes
+  }
+  if (type === 'independent') {
+    return budgets.independentBytes
+  }
 }
 
 function createBudgetWarning(options: {
@@ -200,13 +217,19 @@ function createBudgetWarning(options: {
   scope: PackageBudgetWarning['scope']
   currentBytes: number
   limitBytes: number
+  warningRatio?: number
 }): PackageBudgetWarning | undefined {
   const ratio = options.limitBytes > 0 ? options.currentBytes / options.limitBytes : 0
-  if (ratio < budgetWarningRatio) {
+  const warningRatio = options.warningRatio ?? budgetWarningRatio
+  if (ratio < warningRatio) {
     return undefined
   }
   return {
-    ...options,
+    id: options.id,
+    label: options.label,
+    scope: options.scope,
+    currentBytes: options.currentBytes,
+    limitBytes: options.limitBytes,
     ratio,
     status: ratio >= 1 ? 'critical' : 'warning',
   }
@@ -263,19 +286,21 @@ export function useAnalyzeDashboardData(
 
     const warnings: PackageBudgetWarning[] = []
     const totalBytes = result.packages.flatMap(pkg => pkg.files).reduce((sum, file) => sum + getFileSize(file), 0)
+    const budgets = result.metadata?.budgets
     const totalWarning = createBudgetWarning({
       id: '__total__',
       label: '总包',
       scope: 'total',
       currentBytes: totalBytes,
-      limitBytes: totalPackageBudgetBytes,
+      limitBytes: budgets?.totalBytes ?? totalPackageBudgetBytes,
+      warningRatio: budgets?.warningRatio,
     })
     if (totalWarning) {
       warnings.push(totalWarning)
     }
 
     for (const pkg of result.packages) {
-      const limit = getPackageBudgetLimit(pkg.type)
+      const limit = resolvePackageBudgetLimit(pkg.type, result)
       if (!limit) {
         continue
       }
@@ -285,6 +310,7 @@ export function useAnalyzeDashboardData(
         scope: pkg.type,
         currentBytes: pkg.files.reduce((sum, file) => sum + getFileSize(file), 0),
         limitBytes: limit,
+        warningRatio: budgets?.warningRatio,
       })
       if (warning) {
         warnings.push(warning)

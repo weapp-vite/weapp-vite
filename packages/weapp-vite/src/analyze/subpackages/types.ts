@@ -4,6 +4,28 @@ export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
 export type BuildOrigin = 'main' | 'independent'
 
+export interface AnalyzeBudgetConfig {
+  totalBytes: number
+  mainBytes: number
+  subPackageBytes: number
+  independentBytes: number
+  warningRatio: number
+  source: 'config' | 'default'
+}
+
+export interface AnalyzeHistoryMetadata {
+  enabled: boolean
+  dir: string
+  limit: number
+  latestSnapshot?: string
+}
+
+export interface AnalyzeSubpackagesMetadata {
+  generatedAt: string
+  budgets: AnalyzeBudgetConfig
+  history: AnalyzeHistoryMetadata
+}
+
 export interface ModuleInFile {
   id: string
   source: string
@@ -45,6 +67,7 @@ export interface SubPackageDescriptor {
 }
 
 export interface AnalyzeSubpackagesResult {
+  metadata?: AnalyzeSubpackagesMetadata
   packages: PackageReport[]
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]

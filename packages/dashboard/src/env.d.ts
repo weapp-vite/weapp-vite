@@ -5,6 +5,7 @@ import type { AnalyzeSubpackagesResult, DashboardRuntimeEvent } from './features
 declare global {
   interface Window {
     __WEAPP_VITE_ANALYZE_RESULT__?: AnalyzeSubpackagesResult
+    __WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__?: AnalyzeSubpackagesResult | null
     __WEAPP_VITE_DASHBOARD_EVENTS__?: DashboardRuntimeEvent[]
   }
 }

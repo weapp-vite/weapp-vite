@@ -4,6 +4,7 @@ import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../anal
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
+import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
@@ -105,12 +106,15 @@ export function registerBuildCommand(cli: CAC) {
         }
         if (enableAnalyze) {
           const analyzeStartedAt = Date.now()
+          const previousAnalyzeResult = await readLatestAnalyzeHistorySnapshot(configService)
           const analyzeResult = await analyzeSubpackages(ctx)
+          await writeAnalyzeHistorySnapshot(analyzeResult, configService)
           const analyzeDurationMs = Date.now() - analyzeStartedAt
           analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
             watch: true,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
+            previousResult: previousAnalyzeResult,
             initialEvents: [
               {
                 kind: 'build',

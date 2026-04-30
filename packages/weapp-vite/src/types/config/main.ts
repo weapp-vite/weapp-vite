@@ -87,6 +87,64 @@ export interface WeappForwardConsoleConfig {
 }
 
 /**
+ * @description analyze 包体预算配置。
+ */
+export interface WeappAnalyzeBudgetConfig {
+  /**
+   * 总包预算阈值（字节）。
+   */
+  totalBytes?: number
+  /**
+   * 主包预算阈值（字节）。
+   */
+  mainBytes?: number
+  /**
+   * 普通分包预算阈值（字节）。
+   */
+  subPackageBytes?: number
+  /**
+   * 独立分包预算阈值（字节）。
+   */
+  independentBytes?: number
+  /**
+   * 预算预警比例，默认 0.85。
+   */
+  warningRatio?: number
+}
+
+/**
+ * @description analyze 历史快照配置。
+ */
+export interface WeappAnalyzeHistoryConfig {
+  /**
+   * 是否写入历史快照。
+   */
+  enabled?: boolean
+  /**
+   * 历史快照目录，默认 `.weapp-vite/analyze-history`。
+   */
+  dir?: string
+  /**
+   * 保留快照数量，默认 20。
+   */
+  limit?: number
+}
+
+/**
+ * @description analyze 配置。
+ */
+export interface WeappAnalyzeConfig {
+  /**
+   * dashboard 与 Markdown 报告使用的包体预算。
+   */
+  budgets?: WeappAnalyzeBudgetConfig
+  /**
+   * CLI 侧历史快照。设置为 `false` 可关闭。
+   */
+  history?: boolean | WeappAnalyzeHistoryConfig
+}
+
+/**
  * @description weapp-vite 主配置
  */
 export interface WeappViteConfig {
@@ -123,6 +181,10 @@ export interface WeappViteConfig {
    * 主包/分包体积告警阈值（字节）。
    */
   packageSizeWarningBytes?: number
+  /**
+   * analyze 报告配置。
+   */
+  analyze?: WeappAnalyzeConfig
   jsonAlias?: AliasOptions
   npm?: WeappNpmConfig
   generate?: GenerateOptions

@@ -56,6 +56,28 @@ export interface ModuleInFile {
   originalBytes?: number
 }
 
+export interface AnalyzeBudgetConfig {
+  totalBytes: number
+  mainBytes: number
+  subPackageBytes: number
+  independentBytes: number
+  warningRatio: number
+  source: 'config' | 'default'
+}
+
+export interface AnalyzeHistoryMetadata {
+  enabled: boolean
+  dir: string
+  limit: number
+  latestSnapshot?: string
+}
+
+export interface AnalyzeSubpackagesMetadata {
+  generatedAt: string
+  budgets: AnalyzeBudgetConfig
+  history: AnalyzeHistoryMetadata
+}
+
 export interface PackageFileEntry {
   file: string
   type: 'chunk' | 'asset'
@@ -89,6 +111,7 @@ export interface SubPackageDescriptor {
 }
 
 export interface AnalyzeSubpackagesResult {
+  metadata?: AnalyzeSubpackagesMetadata
   packages: PackageReport[]
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]

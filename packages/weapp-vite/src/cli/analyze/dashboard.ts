@@ -11,6 +11,7 @@ import logger, { colors } from '../../logger'
 import { parseCommentJson } from '../../utils'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
+const PREVIOUS_ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__'
 const DASHBOARD_EVENTS_GLOBAL_KEY = '__WEAPP_VITE_DASHBOARD_EVENTS__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 const ANALYZE_SSE_PATH = '/__weapp_vite_analyze'
@@ -162,16 +163,19 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
 }
 
 function createAnalyzeHtmlPlugin(
-  state: { current: AnalyzeSubpackagesResult },
+  state: { current: AnalyzeSubpackagesResult, previous: AnalyzeSubpackagesResult | null },
   runtimeEvents: { current: DashboardRuntimeEvent[] },
   onServerInstance: (server: ViteDevServer) => void,
-  onBroadcastReady: (broadcast: (payload: AnalyzeSubpackagesResult) => void) => void,
+  onBroadcastReady: (broadcast: (payload: { current: AnalyzeSubpackagesResult, previous: AnalyzeSubpackagesResult | null }) => void) => void,
 ): PluginOption {
   const sseClients = new Set<ServerResponse>()
   const hotBridgeScript = `
     const applyAnalyzePayload = (payload) => {
-      window.${ANALYZE_GLOBAL_KEY} = payload
-      window.dispatchEvent(new CustomEvent('weapp-analyze:update', { detail: payload }))
+      const current = payload?.current ?? payload
+      const previous = payload?.previous ?? window.${PREVIOUS_ANALYZE_GLOBAL_KEY} ?? null
+      window.${ANALYZE_GLOBAL_KEY} = current
+      window.${PREVIOUS_ANALYZE_GLOBAL_KEY} = previous
+      window.dispatchEvent(new CustomEvent('weapp-analyze:update', { detail: { current, previous } }))
     }
     const applyDashboardEvents = (payload) => {
       const events = Array.isArray(payload) ? payload : [payload]
@@ -202,7 +206,7 @@ function createAnalyzeHtmlPlugin(
     }
   `.trim()
 
-  const broadcast = (payload: AnalyzeSubpackagesResult) => {
+  const broadcast = (payload: { current: AnalyzeSubpackagesResult, previous: AnalyzeSubpackagesResult | null }) => {
     const serialized = `data: ${JSON.stringify(payload)}\n\n`
     for (const client of sseClients) {
       client.write(serialized)
@@ -220,6 +224,11 @@ function createAnalyzeHtmlPlugin(
           {
             tag: 'script',
             children: `window.${ANALYZE_GLOBAL_KEY} = ${JSON.stringify(state.current)}`,
+            injectTo: 'head-prepend',
+          },
+          {
+            tag: 'script',
+            children: `window.${PREVIOUS_ANALYZE_GLOBAL_KEY} = ${JSON.stringify(state.previous)}`,
             injectTo: 'head-prepend',
           },
           {
@@ -258,7 +267,7 @@ function createAnalyzeHtmlPlugin(
         res.setHeader('Content-Type', 'text/event-stream')
         res.setHeader('Cache-Control', 'no-cache, no-transform')
         res.setHeader('Connection', 'keep-alive')
-        res.write(`data: ${JSON.stringify(state.current)}\n\n`)
+        res.write(`data: ${JSON.stringify(state)}\n\n`)
         sseClients.add(res)
 
         req.on('close', () => {
@@ -305,7 +314,7 @@ async function waitForServerExit(server: ViteDevServer) {
 }
 
 export interface AnalyzeDashboardHandle {
-  update: (result: AnalyzeSubpackagesResult) => Promise<void>
+  update: (result: AnalyzeSubpackagesResult, previousResult?: AnalyzeSubpackagesResult | null) => Promise<void>
   emitRuntimeEvents: (events: DashboardRuntimeEventInput[]) => void
   waitForExit: () => Promise<void>
   close: () => Promise<void>
@@ -320,6 +329,7 @@ export async function startAnalyzeDashboard(
     packageManagerAgent?: PackageManagerAgent
     silentStartupLog?: boolean
     initialEvents?: DashboardRuntimeEventInput[]
+    previousResult?: AnalyzeSubpackagesResult | null
   },
 ): Promise<AnalyzeDashboardHandle | void> {
   const resolved = resolveDashboardRoot(options)
@@ -328,7 +338,7 @@ export async function startAnalyzeDashboard(
   }
   const { root, configFile } = resolved
 
-  const state = { current: result }
+  const state = { current: result, previous: options?.previousResult ?? null }
   const runtimeEvents = {
     current: [
       createDashboardRuntimeEvent({
@@ -344,7 +354,7 @@ export async function startAnalyzeDashboard(
     ],
   }
   let serverRef: ViteDevServer | undefined
-  let broadcastAnalyzeResult: ((payload: AnalyzeSubpackagesResult) => void) | undefined
+  let broadcastAnalyzeResult: ((payload: { current: AnalyzeSubpackagesResult, previous: AnalyzeSubpackagesResult | null }) => void) | undefined
 
   const plugins: PluginOption[] = [
     createAnalyzeHtmlPlugin(
@@ -401,7 +411,7 @@ export async function startAnalyzeDashboard(
     serverRef.ws.send({
       type: 'custom',
       event: 'weapp-analyze:update',
-      data: state.current,
+      data: state,
     })
     serverRef.ws.send({
       type: 'custom',
@@ -409,7 +419,7 @@ export async function startAnalyzeDashboard(
       data: runtimeEvents.current,
     })
   }
-  broadcastAnalyzeResult?.(state.current)
+  broadcastAnalyzeResult?.(state)
 
   const emitRuntimeEvents = (events: DashboardRuntimeEventInput[]) => {
     if (events.length === 0) {
@@ -429,7 +439,8 @@ export async function startAnalyzeDashboard(
   }
 
   const handle: AnalyzeDashboardHandle = {
-    async update(nextResult) {
+    async update(nextResult, previousResult) {
+      state.previous = previousResult ?? state.current
       state.current = nextResult
       emitRuntimeEvents([
         {
@@ -444,10 +455,10 @@ export async function startAnalyzeDashboard(
         serverRef.ws.send({
           type: 'custom',
           event: 'weapp-analyze:update',
-          data: nextResult,
+          data: state,
         })
       }
-      broadcastAnalyzeResult?.(nextResult)
+      broadcastAnalyzeResult?.(state)
     },
     emitRuntimeEvents,
     waitForExit: () => waitPromise,

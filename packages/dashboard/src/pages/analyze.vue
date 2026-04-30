@@ -108,6 +108,53 @@ const exportSummaryText = computed(() => {
   ].filter(Boolean).join('\n')
 })
 
+const exportMarkdownText = computed(() => {
+  const summaryValue = summary.value
+  const packageRows = packageInsights.value
+    .map(pkg => `| ${pkg.label} | ${pkg.type} | ${formatBytes(pkg.totalBytes)} | ${formatBytes(pkg.compressedBytes)} | ${typeof pkg.sizeDeltaBytes === 'number' ? `${pkg.sizeDeltaBytes > 0 ? '+' : '-'}${formatBytes(Math.abs(pkg.sizeDeltaBytes))}` : '无变化'} |`)
+    .join('\n')
+  const topFileRows = largestFiles.value.slice(0, 10)
+    .map(file => `| ${file.file} | ${file.packageLabel} | ${file.type} | ${formatBytes(file.size)} | ${formatBytes(file.compressedSize)} |`)
+    .join('\n')
+  const duplicateRows = duplicateModules.value.slice(0, 10)
+    .map(module => `| ${module.source} | ${module.sourceType} | ${module.packageCount} | ${module.advice} |`)
+    .join('\n')
+
+  return [
+    '# weapp-vite analyze 报告',
+    '',
+    `生成时间：${resultRef.value?.metadata?.generatedAt ?? new Date().toISOString()}`,
+    '',
+    '## 总览',
+    '',
+    `- 总产物体积：${formatBytes(summaryValue.totalBytes)}`,
+    `- 压缩后体积：${formatBytes(summaryValue.compressedBytes)}`,
+    `- 包体数量：${summaryValue.packageCount}`,
+    `- 源码模块：${summaryValue.moduleCount}`,
+    `- 跨包复用：${summaryValue.duplicateCount}`,
+    `- 预算告警：${summaryValue.budgetWarningCount}`,
+    '',
+    '## 包体',
+    '',
+    '| 包 | 类型 | 体积 | 压缩后 | 较上次 |',
+    '| --- | --- | ---: | ---: | ---: |',
+    packageRows || '| - | - | 0 B | 0 B | 无变化 |',
+    '',
+    '## Top 文件',
+    '',
+    '| 文件 | 包 | 类型 | 体积 | 压缩后 |',
+    '| --- | --- | --- | ---: | ---: |',
+    topFileRows || '| - | - | - | 0 B | 0 B |',
+    '',
+    '## 重复模块',
+    '',
+    '| 模块 | 来源 | 包数量 | 建议 |',
+    '| --- | --- | ---: | --- |',
+    duplicateRows || '| - | - | 0 | - |',
+    '',
+  ].join('\n')
+})
+
 function handleResize() {
   chart?.resize()
 }
@@ -165,6 +212,17 @@ function exportJson() {
   anchor.click()
   URL.revokeObjectURL(url)
   exportStatus.value = '已导出'
+}
+
+function exportMarkdown() {
+  const blob = new Blob([`${exportMarkdownText.value}\n`], { type: 'text/markdown' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'weapp-vite-analyze.md'
+  anchor.click()
+  URL.revokeObjectURL(url)
+  exportStatus.value = '已导出 MD'
 }
 
 watch(
@@ -294,6 +352,16 @@ onBeforeUnmount(() => {
             <DashboardIcon name="metric-size-outline" />
           </span>
           导出 JSON
+        </button>
+        <button
+          v-if="resultRef"
+          :class="pillButtonStyles({ kind: 'nav', active: false })"
+          @click="exportMarkdown"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon name="file-samples" />
+          </span>
+          导出 MD
         </button>
         <AppInfoPill
           v-if="exportStatus"

@@ -18,6 +18,14 @@ function dispatchDashboardEvents(payload: unknown) {
   window.dispatchEvent(new CustomEvent('weapp-dashboard:event', { detail: validEvents }))
 }
 
+function applyAnalyzePayload(payload: any) {
+  const current = payload?.current ?? payload
+  const previous = payload?.previous ?? window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
+  window.__WEAPP_VITE_ANALYZE_RESULT__ = current
+  window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ = previous
+  window.dispatchEvent(new CustomEvent('weapp-analyze:update', { detail: { current, previous } }))
+}
+
 function bootstrap() {
   const app = createApp(App)
 
@@ -33,8 +41,7 @@ function bootstrap() {
 
   if (import.meta.hot) {
     import.meta.hot.on('weapp-analyze:update', (payload) => {
-      window.__WEAPP_VITE_ANALYZE_RESULT__ = payload
-      window.dispatchEvent(new CustomEvent('weapp-analyze:update'))
+      applyAnalyzePayload(payload)
     })
     import.meta.hot.on('weapp-dashboard:event', (payload) => {
       dispatchDashboardEvents(payload)

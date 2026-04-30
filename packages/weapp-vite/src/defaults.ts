@@ -52,6 +52,20 @@ export function getWeappViteConfig(): WeappViteConfig {
     // 已废弃：保留默认关闭，仅兼容旧配置。
     es5: false,
     packageSizeWarningBytes: 2 * 1024 * 1024,
+    analyze: {
+      budgets: {
+        totalBytes: 20 * 1024 * 1024,
+        mainBytes: 2 * 1024 * 1024,
+        subPackageBytes: 2 * 1024 * 1024,
+        independentBytes: 2 * 1024 * 1024,
+        warningRatio: 0.85,
+      },
+      history: {
+        enabled: true,
+        dir: '.weapp-vite/analyze-history',
+        limit: 20,
+      },
+    },
     jsFormat: 'cjs',
     isAdditionalWxml: () => {
       return false

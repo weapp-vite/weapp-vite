@@ -3,10 +3,14 @@ import type { CompilerContext } from '../../context'
 import type { AnalyzeSubpackagesResult, ModuleAccumulator, PackageAccumulator, PackageClassifierContext } from './types'
 import { build } from 'vite'
 import { createSharedBuildConfig } from '../../runtime/sharedBuildConfig'
+import { createAnalyzeMetadata } from './metadata'
 import { processOutput } from './output'
 import { expandVirtualModulePlacements, summarizeModules, summarizePackages, summarizeSubPackages } from './summary'
 
 export type {
+  AnalyzeBudgetConfig,
+  AnalyzeHistoryMetadata,
+  AnalyzeSubpackagesMetadata,
   AnalyzeSubpackagesResult,
   ModuleInFile,
   ModuleUsage,
@@ -72,6 +76,7 @@ export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeS
   expandVirtualModulePlacements(modules, packages, classifierContext)
 
   return {
+    metadata: createAnalyzeMetadata(ctx.configService),
     packages: summarizePackages(packages),
     modules: summarizeModules(modules),
     subPackages: summarizeSubPackages(subPackageMetas),

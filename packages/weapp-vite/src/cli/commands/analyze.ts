@@ -8,6 +8,8 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
+import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
+import { createAnalyzeMarkdownReport } from '../../analyze/subpackages/report'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
@@ -177,6 +179,8 @@ async function writeAnalyzeResult(
   result: AnalyzeSubpackagesResult | WebAnalyzeResult | HmrProfileAnalyzeResult,
   outputOption: string,
   configService: ConfigService,
+  format: 'json' | 'markdown' = 'json',
+  previousResult?: AnalyzeSubpackagesResult | null,
 ) {
   if (!outputOption) {
     return undefined
@@ -186,7 +190,10 @@ async function writeAnalyzeResult(
     ? outputOption
     : path.resolve(baseDir, outputOption)
   await fs.ensureDir(path.dirname(resolvedOutputPath))
-  await fs.writeFile(resolvedOutputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8')
+  const content = format === 'markdown' && 'packages' in result
+    ? createAnalyzeMarkdownReport(result, previousResult)
+    : JSON.stringify(result, null, 2)
+  await fs.writeFile(resolvedOutputPath, `${content}\n`, 'utf8')
   const relativeOutput = configService.relativeCwd(resolvedOutputPath)
   logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
   return resolvedOutputPath
@@ -249,13 +256,15 @@ export function registerAnalyzeCommand(cli: CAC) {
     .command('analyze [root]', 'analyze 两端包体与源码映射')
     .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
     .option('--json', `[boolean] 输出 JSON 结果`)
-    .option('--output <file>', `[string] 将分析结果写入指定文件（JSON）`)
+    .option('--markdown', `[boolean] 输出 Markdown 报告`)
+    .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
+      const outputMarkdown = coerceBooleanOption(options.markdown)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
       try {
@@ -268,7 +277,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           projectConfigPath: options.projectConfig,
         })
         logRuntimeTarget(targets, {
-          silent: outputJson,
+          silent: outputJson || outputMarkdown,
           resolvedConfigPlatform: ctx.configService.platform,
         })
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
@@ -319,9 +328,22 @@ export function registerAnalyzeCommand(cli: CAC) {
           return
         }
 
+        const previousResult = await readLatestAnalyzeHistorySnapshot(ctx.configService)
         const result = await analyzeSubpackages(ctx)
-        const writtenPath = await writeAnalyzeResult(result, outputOption, ctx.configService)
-        if (outputJson) {
+        await writeAnalyzeHistorySnapshot(result, ctx.configService)
+        const writtenPath = await writeAnalyzeResult(
+          result,
+          outputOption,
+          ctx.configService,
+          outputMarkdown ? 'markdown' : 'json',
+          previousResult,
+        )
+        if (outputMarkdown) {
+          if (!writtenPath) {
+            process.stdout.write(`${createAnalyzeMarkdownReport(result, previousResult)}\n`)
+          }
+        }
+        else if (outputJson) {
           if (!writtenPath) {
             process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
           }
@@ -331,6 +353,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           await startAnalyzeDashboard(result, {
             cwd: ctx.configService.cwd,
             packageManagerAgent: ctx.configService.packageManager.agent,
+            previousResult,
           })
         }
       }

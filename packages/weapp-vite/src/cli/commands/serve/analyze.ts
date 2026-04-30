@@ -8,6 +8,8 @@ import process from 'node:process'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
 import path from 'pathe'
 import { analyzeSubpackages } from '../../../analyze/subpackages'
+import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../../analyze/subpackages/history'
+import { createAnalyzeMetadata } from '../../../analyze/subpackages/metadata'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
 import { createInlineConfig } from '../../runtime'
@@ -50,6 +52,7 @@ function getCompressedSizes(content: Uint8Array) {
 
 export interface AnalyzeRunResult {
   result: AnalyzeSubpackagesResult
+  previousResult: AnalyzeSubpackagesResult | null
   durationMs: number
   mode: 'full' | 'fallback'
   fallbackReason?: string
@@ -118,6 +121,7 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
   }
 
   return {
+    metadata: createAnalyzeMetadata(configService),
     packages: Array.from(packages.values()).sort((a, b) => {
       if (a.id === '__main__') {
         return -1
@@ -152,6 +156,7 @@ export function createAnalyzeController(options: {
 
   const runAnalyze = async (): Promise<AnalyzeRunResult> => {
     const startedAt = Date.now()
+    const previousResult = await readLatestAnalyzeHistorySnapshot(configService)
     try {
       const analyzeCtx = await createCompilerContext({
         key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
@@ -166,8 +171,10 @@ export function createAnalyzeController(options: {
       })
       const result = await analyzeSubpackages(analyzeCtx)
       if (hasAnalyzeData(result)) {
+        await writeAnalyzeHistorySnapshot(result, configService)
         return {
           result,
+          previousResult,
           durationMs: Date.now() - startedAt,
           mode: 'full',
         }
@@ -176,16 +183,22 @@ export function createAnalyzeController(options: {
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       logger.warn(`[ui] 完整分析失败，已回退到 dist 文件扫描：${message}`)
+      const result = await analyzeUiFallback(ctx)
+      await writeAnalyzeHistorySnapshot(result, configService)
       return {
-        result: await analyzeUiFallback(ctx),
+        result,
+        previousResult,
         durationMs: Date.now() - startedAt,
         mode: 'fallback',
         fallbackReason: message,
       }
     }
 
+    const result = await analyzeUiFallback(ctx)
+    await writeAnalyzeHistorySnapshot(result, configService)
     return {
-      result: await analyzeUiFallback(ctx),
+      result,
+      previousResult,
       durationMs: Date.now() - startedAt,
       mode: 'fallback',
       fallbackReason: '完整分析结果为空，已回退到 dist 文件扫描。',
@@ -220,7 +233,7 @@ export function createAnalyzeController(options: {
         },
       ])
     }
-    await analyzeHandle.update(next.result)
+    await analyzeHandle.update(next.result, next.previousResult)
     emitDashboardEvents(analyzeHandle, [
       {
         kind: next.mode === 'fallback' ? 'diagnostic' : 'build',
@@ -273,6 +286,7 @@ export function createAnalyzeController(options: {
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
         silentStartupLog: true,
+        previousResult: initialAnalyze.previousResult,
         initialEvents: [
           {
             kind: initialAnalyze.mode === 'fallback' ? 'diagnostic' : 'build',

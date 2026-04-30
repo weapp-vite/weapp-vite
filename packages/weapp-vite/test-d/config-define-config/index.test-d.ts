@@ -20,6 +20,20 @@ const objectConfig = defineConfig({
       enabled: true,
       prelude: true,
     },
+    analyze: {
+      budgets: {
+        totalBytes: 20 * 1024 * 1024,
+        mainBytes: 2 * 1024 * 1024,
+        subPackageBytes: 2 * 1024 * 1024,
+        independentBytes: 2 * 1024 * 1024,
+        warningRatio: 0.85,
+      },
+      history: {
+        enabled: true,
+        dir: '.weapp-vite/analyze-history',
+        limit: 20,
+      },
+    },
     vue: {
       template: {
         htmlTagToWxml: {
@@ -62,6 +76,20 @@ expectAssignable<boolean | {
   dependencies?: (string | RegExp)[]
   prelude?: boolean
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
+expectAssignable<{
+  budgets?: {
+    totalBytes?: number
+    mainBytes?: number
+    subPackageBytes?: number
+    independentBytes?: number
+    warningRatio?: number
+  }
+  history?: boolean | {
+    enabled?: boolean
+    dir?: string
+    limit?: number
+  }
+} | undefined>(objectConfig.weapp?.analyze)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSingleRootNoWrapper)

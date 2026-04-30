@@ -182,7 +182,10 @@ describe('analyze dashboard', () => {
     expect(server.ws?.send).toHaveBeenCalledWith({
       type: 'custom',
       event: 'weapp-analyze:update',
-      data: initial,
+      data: {
+        current: initial,
+        previous: null,
+      },
     })
     expect(server.ws?.send).toHaveBeenCalledWith({
       type: 'custom',
@@ -212,7 +215,10 @@ describe('analyze dashboard', () => {
     expect(server.ws?.send).toHaveBeenLastCalledWith({
       type: 'custom',
       event: 'weapp-analyze:update',
-      data: updatePayload,
+      data: {
+        current: updatePayload,
+        previous: initial,
+      },
     })
 
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
@@ -221,9 +227,11 @@ describe('analyze dashboard', () => {
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
-    const eventScript = transformed.tags[1]?.children as string
+    const previousScript = transformed.tags[1]?.children as string
+    const eventScript = transformed.tags[2]?.children as string
     const bridgeScript = transformed.tags.find((tag: any) => tag?.attrs?.type === 'module' && typeof tag?.children === 'string')
     expect(script).toContain('"label":"next"')
+    expect(previousScript).toContain('__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__')
     expect(eventScript).toContain('__WEAPP_VITE_DASHBOARD_EVENTS__')
     expect(bridgeScript).toMatchObject({
       tag: 'script',

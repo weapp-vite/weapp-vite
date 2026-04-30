@@ -98,14 +98,27 @@ function writeStoredAnalyzeHistory(history: StoredAnalyzeResultHistory) {
   catch { }
 }
 
+function resolveInitialPreviousResult(
+  initialPayload: AnalyzeSubpackagesResult | null,
+  initialPreviousPayload: AnalyzeSubpackagesResult | null,
+  storedHistory: StoredAnalyzeResultHistory | null,
+) {
+  if (initialPreviousPayload) {
+    return initialPreviousPayload
+  }
+  if (initialPayload && storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
+    return storedHistory.current
+  }
+  return storedHistory?.previous ?? null
+}
+
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const initialPayload = window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null
+  const initialPreviousPayload = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
   const storedHistory = readStoredAnalyzeHistory()
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(initialPayload)
   const previousResultRef = shallowRef<AnalyzeSubpackagesResult | null>(
-    initialPayload && storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)
-      ? storedHistory.current
-      : storedHistory?.previous ?? null,
+    resolveInitialPreviousResult(initialPayload, initialPreviousPayload, storedHistory),
   )
   const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
     ? normalizeRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
@@ -311,12 +324,18 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       return
     }
 
+    const previousFromWindow = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
     const stored = readStoredAnalyzeHistory()
-    const previousResult = resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)
-      ? resultRef.value
-      : stored?.current && !isSameAnalyzeResult(incoming, stored.current)
-        ? stored.current
-        : stored?.previous ?? previousResultRef.value
+    let previousResult = stored?.previous ?? previousResultRef.value
+    if (stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
+      previousResult = stored.current
+    }
+    if (resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)) {
+      previousResult = resultRef.value
+    }
+    if (previousFromWindow && !isSameAnalyzeResult(incoming, previousFromWindow)) {
+      previousResult = previousFromWindow
+    }
 
     previousResultRef.value = isSameAnalyzeResult(incoming, previousResult)
       ? null
