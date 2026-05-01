@@ -3,16 +3,18 @@ import type { DashboardMetricItem, PackageBudgetWarning, PackageInsight, Package
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatBytes, formatPackageType } from '../utils/format'
+import { createPackageHealthSummary } from '../utils/packageHealth'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
 import AppPackageFileTable from './AppPackageFileTable.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import PackageExplorerToolbar from './PackageExplorerToolbar.vue'
+import PackageHealthPanel from './PackageHealthPanel.vue'
 
 type PackageFilterType = 'all' | PackageType
 type PackageBudgetFilter = 'all' | 'warning' | 'normal'
-type PackageSortMode = 'size' | 'compressed' | 'delta' | 'duplicates' | 'files' | 'name'
+type PackageSortMode = 'health' | 'size' | 'compressed' | 'delta' | 'duplicates' | 'files' | 'name'
 
 interface PackageInsightCard extends PackageInsight {
   typeLabel: string
@@ -23,6 +25,7 @@ interface PackageInsightCard extends PackageInsight {
   budgetText: string
   selected: boolean
   entryCountText: string
+  healthScore: number
   metrics: DashboardMetricItem[]
 }
 
@@ -60,6 +63,11 @@ function escapeMarkdownCell(value: string) {
 }
 
 const budgetWarningMap = computed(() => new Map(props.budgetWarnings.map(item => [item.id, item])))
+const packageHealth = computed(() => createPackageHealthSummary({
+  packageInsights: props.packageInsights,
+  budgetWarnings: props.budgetWarnings,
+}))
+const packageHealthScoreMap = computed(() => new Map(packageHealth.value.items.map(item => [item.id, item.score])))
 const packageTypeOptions = computed(() => {
   const typeSet = new Set<PackageType>()
   for (const pkg of props.packageInsights) {
@@ -85,6 +93,7 @@ const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageIn
       : '预算正常',
     selected,
     entryCountText: `${pkg.entryFileCount} 个 entry`,
+    healthScore: packageHealthScoreMap.value.get(pkg.id) ?? 100,
     metrics: createPackageMetrics(pkg),
   }
 }))
@@ -129,6 +138,9 @@ const filteredPackageInsightCards = computed(() => {
       }
       if (packageSortMode.value === 'name') {
         return a.label.localeCompare(b.label)
+      }
+      if (packageSortMode.value === 'health') {
+        return a.healthScore - b.healthScore || b.totalBytes - a.totalBytes || a.label.localeCompare(b.label)
       }
       return b.totalBytes - a.totalBytes || a.label.localeCompare(b.label)
     })
@@ -196,25 +208,29 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-    <div :class="surfaceStyles({ padding: 'md' })" class="grid gap-3">
-      <AppPanelHeader
-        icon-name="tab-packages"
-        title="包体探索"
-        :description="`${packageInsightCards.length} 个包体样本`"
-      />
-      <PackageExplorerToolbar
-        v-model:budget-filter="packageBudgetFilter"
-        v-model:query="packageQuery"
-        v-model:sort-mode="packageSortMode"
-        v-model:type-filter="packageTypeFilter"
-        :action-status="actionStatus"
-        :disabled="filteredPackageInsightCards.length === 0"
-        :filtered-count="filteredPackageInsightCards.length"
-        :total-count="packageInsightCards.length"
-        :type-options="packageTypeOptions"
-        @copy="copyPackageReport"
-        @export-json="exportPackageJson"
-      />
+    <div class="grid gap-3">
+      <PackageHealthPanel :health="packageHealth" />
+
+      <div :class="surfaceStyles({ padding: 'md' })" class="grid gap-3">
+        <AppPanelHeader
+          icon-name="tab-packages"
+          title="包体探索"
+          :description="`${packageInsightCards.length} 个包体样本`"
+        />
+        <PackageExplorerToolbar
+          v-model:budget-filter="packageBudgetFilter"
+          v-model:query="packageQuery"
+          v-model:sort-mode="packageSortMode"
+          v-model:type-filter="packageTypeFilter"
+          :action-status="actionStatus"
+          :disabled="filteredPackageInsightCards.length === 0"
+          :filtered-count="filteredPackageInsightCards.length"
+          :total-count="packageInsightCards.length"
+          :type-options="packageTypeOptions"
+          @copy="copyPackageReport"
+          @export-json="exportPackageJson"
+        />
+      </div>
     </div>
 
     <div class="grid min-h-0 auto-rows-max gap-3 overflow-y-auto pr-1 xl:grid-cols-2">

@@ -4,7 +4,7 @@ import { formatPackageType } from '../utils/format'
 
 type PackageFilterType = 'all' | PackageType
 type PackageBudgetFilter = 'all' | 'warning' | 'normal'
-type PackageSortMode = 'size' | 'compressed' | 'delta' | 'duplicates' | 'files' | 'name'
+type PackageSortMode = 'health' | 'size' | 'compressed' | 'delta' | 'duplicates' | 'files' | 'name'
 
 defineProps<{
   filteredCount: number
@@ -91,6 +91,9 @@ const sortMode = defineModel<PackageSortMode>('sortMode', { required: true })
         v-model="sortMode"
         class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
       >
+        <option value="health">
+          按健康分
+        </option>
         <option value="size">
           按体积
         </option>
