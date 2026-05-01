@@ -3,10 +3,12 @@ import type { AnalyzeComparisonMode, AnalyzeHistorySnapshot } from '../types'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
+import { createHistoryTrendSummary } from '../utils/historyTrend'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import HistoryBaselineToolbar from './HistoryBaselineToolbar.vue'
+import HistoryTrendPanel from './HistoryTrendPanel.vue'
 
 type HistorySnapshotSortMode = 'capturedAt' | 'total' | 'compressed' | 'modules' | 'duplicates'
 
@@ -59,6 +61,7 @@ function getSnapshotKeyword(snapshot: AnalyzeHistorySnapshot) {
 const baselineSnapshot = computed(() => props.snapshots.find(snapshot => snapshot.id === props.baselineSnapshotId) ?? null)
 const currentSnapshot = computed(() => props.snapshots[0] ?? null)
 const previousSnapshot = computed(() => props.snapshots[1] ?? null)
+const historyTrend = computed(() => createHistoryTrendSummary(props.snapshots))
 const baselineDelta = computed(() => {
   if (!currentSnapshot.value || !baselineSnapshot.value) {
     return ''
@@ -192,7 +195,7 @@ onBeforeUnmount(() => {
       </template>
     </AppPanelHeader>
 
-    <div class="mt-3 grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+    <div class="mt-3 grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
       <div class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2">
         <div class="flex items-center justify-between gap-3">
           <p class="text-xs text-(--dashboard-text-soft)">
@@ -217,6 +220,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+
+      <HistoryTrendPanel :trend="historyTrend" />
 
       <div class="grid gap-2">
         <HistoryBaselineToolbar
