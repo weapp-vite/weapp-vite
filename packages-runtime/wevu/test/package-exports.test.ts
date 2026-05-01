@@ -4,82 +4,74 @@ import { describe, expect, it } from 'vitest'
 function readExports() {
   const packageJsonPath = new URL('../package.json', import.meta.url)
   const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
-    exports?: Record<string, { types?: string, import?: { types?: string, default?: string } }>
+    exports?: Record<string, {
+      types?: string
+      import?: {
+        types?: string
+        development?: string
+        default?: string
+      }
+    }>
   }
 
   return packageJson.exports ?? {}
 }
 
+const publicEntries = [
+  ['.', 'index'],
+  ['./compiler', 'compiler'],
+  ['./jsx-runtime', 'jsx-runtime'],
+  ['./store', 'store'],
+  ['./api', 'api'],
+  ['./fetch', 'fetch'],
+  ['./web-apis', 'web-apis'],
+  ['./router', 'router'],
+  ['./vue-demi', 'vue-demi'],
+] as const
+
+function entryExport(fileName: string) {
+  const types = `./dist/${fileName}.d.mts`
+
+  return {
+    types,
+    import: {
+      types,
+      development: `./dist/debug/${fileName}.mjs`,
+      default: `./dist/${fileName}.mjs`,
+    },
+  }
+}
+
+function debugEntryExport(fileName: string) {
+  const types = `./dist/${fileName}.d.mts`
+
+  return {
+    types,
+    import: {
+      types,
+      default: `./dist/debug/${fileName}.mjs`,
+    },
+  }
+}
+
 describe('package exports', () => {
-  it('declares store subpath export', () => {
+  it('declares production and development exports for every public entry', () => {
     const exportsField = readExports()
 
-    expect(exportsField['./store']).toEqual({
-      types: './dist/store.d.mts',
-      import: {
-        types: './dist/store.d.mts',
-        default: './dist/store.mjs',
-      },
-    })
+    for (const [exportName, fileName] of publicEntries) {
+      expect(exportsField[exportName]).toEqual(entryExport(fileName))
+    }
   })
 
-  it('declares api subpath export', () => {
+  it('declares explicit debug exports for manual runtime switching', () => {
     const exportsField = readExports()
 
-    expect(exportsField['./api']).toEqual({
-      types: './dist/api.d.mts',
-      import: {
-        types: './dist/api.d.mts',
-        default: './dist/api.mjs',
-      },
-    })
-  })
+    for (const [exportName, fileName] of publicEntries) {
+      const debugExportName = exportName === '.'
+        ? './debug'
+        : `./debug/${exportName.slice(2)}`
 
-  it('declares fetch subpath export', () => {
-    const exportsField = readExports()
-
-    expect(exportsField['./fetch']).toEqual({
-      types: './dist/fetch.d.mts',
-      import: {
-        types: './dist/fetch.d.mts',
-        default: './dist/fetch.mjs',
-      },
-    })
-  })
-
-  it('declares web-apis subpath export', () => {
-    const exportsField = readExports()
-
-    expect(exportsField['./web-apis']).toEqual({
-      types: './dist/web-apis.d.mts',
-      import: {
-        types: './dist/web-apis.d.mts',
-        default: './dist/web-apis.mjs',
-      },
-    })
-  })
-
-  it('declares router subpath export', () => {
-    const exportsField = readExports()
-
-    expect(exportsField['./router']).toEqual({
-      types: './dist/router.d.mts',
-      import: {
-        types: './dist/router.d.mts',
-        default: './dist/router.mjs',
-      },
-    })
-  })
-
-  it('declares vue-demi subpath export', () => {
-    const exportsField = readExports()
-
-    expect(exportsField['./vue-demi']).toEqual({
-      types: './dist/vue-demi.d.mts',
-      import: {
-        types: './dist/vue-demi.d.mts',
-        default: './dist/vue-demi.mjs',
-      },
-    })
+      expect(exportsField[debugExportName]).toEqual(debugEntryExport(fileName))
+    }
   })
 })

@@ -1,28 +1,43 @@
 import { defineConfig } from 'tsdown'
 
-export default defineConfig({
-  entry: [
-    './src/index.ts',
-    './src/compiler',
-    './src/jsx-runtime',
-    './src/store',
-    './src/api',
-    './src/fetch',
-    './src/router',
-    './src/web-apis',
-    './src/vue-demi',
-  ],
-  format: ['esm'],
-  target: 'es2018',
-  dts: true,
-  // dts: {
-  //   compilerOptions: {
-  //     declarationMap: true,
-  //   },
-  //   sourcemap: true,
-  // },
-  clean: true,
-  minify: true,
-  sourcemap: false,
-  failOnWarn: false,
-})
+const entry = {
+  'index': './src/index.ts',
+  'compiler': './src/compiler',
+  'jsx-runtime': './src/jsx-runtime',
+  'store': './src/store',
+  'api': './src/api',
+  'fetch': './src/fetch',
+  'router': './src/router',
+  'web-apis': './src/web-apis',
+  'vue-demi': './src/vue-demi',
+}
+
+export default defineConfig([
+  {
+    entry,
+    format: ['esm'],
+    target: 'es2018',
+    dts: true,
+    // dts: {
+    //   compilerOptions: {
+    //     declarationMap: true,
+    //   },
+    //   sourcemap: true,
+    // },
+    clean: true,
+    minify: true,
+    sourcemap: false,
+    failOnWarn: false,
+  },
+  {
+    entry,
+    outDir: './dist/debug',
+    format: ['esm'],
+    target: 'es2018',
+    dts: false,
+    clean: false,
+    minify: false,
+    sourcemap: true,
+    failOnWarn: false,
+  },
+])

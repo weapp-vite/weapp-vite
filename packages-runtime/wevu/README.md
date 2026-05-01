@@ -146,6 +146,14 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 - 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
 - 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
+## 调试产物
+
+`wevu` 默认导出压缩后的生产产物，用于降低小程序包体积。包内同时提供未压缩并带 sourcemap 的调试产物：
+
+- 支持 `development` export condition 的构建器会在开发模式下优先解析到 `dist/debug/*`。
+- 需要手动切换时，可以把 `wevu` alias 到 `wevu/debug`，也可以把 `wevu/router` alias 到 `wevu/debug/router` 等同名调试入口。
+- 生产构建默认仍使用 `dist/*.mjs` 压缩产物，避免调试产物进入正式包。
+
 ## 本地开发
 
 ```bash
