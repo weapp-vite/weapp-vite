@@ -5,14 +5,17 @@ import type {
   DashboardRuntimeSourceCardItem,
   WorkspaceDiagnosticItem,
 } from '../types'
+import type { RuntimeIncidentDigest } from '../utils/runtimeIncidentDigest'
 import ActivitySelectedEventPanel from './ActivitySelectedEventPanel.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 import AppRuntimeSourceCard from './AppRuntimeSourceCard.vue'
 import AppStatCard from './AppStatCard.vue'
 import AppSurfaceCard from './AppSurfaceCard.vue'
+import RuntimeIncidentDigestPanel from './RuntimeIncidentDigestPanel.vue'
 
 defineProps<{
   selectedEvent: DashboardRuntimeEvent | null
+  incidentDigest: RuntimeIncidentDigest
   eventSummary: DashboardLabelValueItem[]
   filteredEventSummary: DashboardLabelValueItem[]
   diagnostics: WorkspaceDiagnosticItem[]
@@ -21,8 +24,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
+  <div class="grid min-h-0 content-start gap-3 overflow-y-auto pr-1">
     <ActivitySelectedEventPanel :event="selectedEvent" />
+
+    <RuntimeIncidentDigestPanel :digest="incidentDigest" />
 
     <AppSurfaceCard
       eyebrow="Runtime"

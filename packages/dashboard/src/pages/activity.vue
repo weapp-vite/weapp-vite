@@ -10,6 +10,7 @@ import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel } from '../features/dashboard/utils/format'
 import { formatRuntimeSourceSummary, summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
+import { createRuntimeIncidentDigest } from '../features/dashboard/utils/runtimeIncidentDigest'
 
 const { diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
@@ -181,6 +182,8 @@ const sourceBreakdown = computed(() => {
   return formatRuntimeSourceSummary(summarizeRuntimeEventsBySource(filteredRuntimeEvents.value))
 })
 
+const incidentDigest = computed(() => createRuntimeIncidentDigest(filteredRuntimeEvents.value))
+
 const selectedEvent = computed(() =>
   filteredRuntimeEvents.value.find(event => event.id === selectedEventId.value)
   ?? filteredRuntimeEvents.value[0]
@@ -270,6 +273,7 @@ watch(filteredRuntimeEvents, (events) => {
 
     <ActivityInsightPanel
       :selected-event="selectedEvent"
+      :incident-digest="incidentDigest"
       :event-summary="eventSummary"
       :filtered-event-summary="filteredEventSummary"
       :diagnostics="diagnostics"
