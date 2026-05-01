@@ -51,6 +51,8 @@ export type DashboardIconName
     | 'metric-search'
     | 'metric-history'
     | 'metric-bookmark'
+    | 'metric-link'
+    | 'metric-reset'
     | 'token-color'
     | 'token-surface'
     | 'token-type'

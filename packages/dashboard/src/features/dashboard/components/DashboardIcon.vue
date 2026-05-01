@@ -50,6 +50,8 @@ const ICON_CLASS_MAP: Record<DashboardIconName, string> = {
   'metric-search': 'icon-[mdi--magnify]',
   'metric-history': 'icon-[mdi--history]',
   'metric-bookmark': 'icon-[mdi--bookmark-check-outline]',
+  'metric-link': 'icon-[mdi--link-variant]',
+  'metric-reset': 'icon-[mdi--restore]',
   'token-color': 'icon-[mdi--palette-outline]',
   'token-surface': 'icon-[mdi--card-bulleted-outline]',
   'token-type': 'icon-[mdi--format-letter-spacing]',

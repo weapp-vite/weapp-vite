@@ -15,6 +15,7 @@ const {
   bindChartRef,
   budgetWarnings,
   canUseSelectedPackageFilter,
+  canResetView,
   clearCompletedWorkQueueItems,
   commandItems,
   commandPaletteOpen,
@@ -23,6 +24,7 @@ const {
   copyPrReport,
   copyPrReviewChecklist,
   copySummary,
+  copyViewLink,
   copyWorkQueueReport,
   diagnosticsLayoutItems,
   exportCsv,
@@ -58,6 +60,7 @@ const {
   prReviewChecklist,
   queuedActionKeys,
   removeWorkQueueItem,
+  resetAnalyzeView,
   resolvedTheme,
   resultRef,
   reviewLayoutItems,
@@ -86,6 +89,7 @@ const {
 
     <AnalyzeToolbar
       v-model:more-menu-open="moreMenuOpen"
+      :can-reset-view="canResetView"
       :can-search="Boolean(resultRef)"
       :export-status="exportStatus"
       :open-work-queue-count="openWorkQueueItems.length"
@@ -93,10 +97,12 @@ const {
       @copy-markdown="copyMarkdownReport"
       @copy-pr="copyPrReport"
       @copy-summary="copySummary"
+      @copy-view-link="copyViewLink"
       @export-csv="exportCsv"
       @export-json="exportJson"
       @export-markdown="exportMarkdown"
       @open-search="commandPaletteOpen = true"
+      @reset-view="resetAnalyzeView"
     />
 
     <AnalyzeResultSections

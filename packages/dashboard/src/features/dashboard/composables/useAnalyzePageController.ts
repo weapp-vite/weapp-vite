@@ -8,6 +8,7 @@ import { useAnalyzeDashboardData } from './useAnalyzeDashboardData'
 import { useAnalyzePageInteractions } from './useAnalyzePageInteractions'
 import { useAnalyzeReportActions } from './useAnalyzeReportActions'
 import { useAnalyzeTreemapController } from './useAnalyzeTreemapController'
+import { useAnalyzeViewActions } from './useAnalyzeViewActions'
 import { useAnalyzeWorkQueue } from './useAnalyzeWorkQueue'
 import { useDashboardPage } from './useDashboardPage'
 import { useDashboardTheme } from './useDashboardTheme'
@@ -116,6 +117,12 @@ export function useAnalyzePageController() {
     handleSelectBudgetWarning: treemapController.handleSelectBudgetWarning,
     handleSelectLargestFile: treemapController.handleSelectLargestFile,
   })
+  const viewActions = useAnalyzeViewActions({
+    exportStatus: reportActions.exportStatus,
+    moreMenuOpen,
+    resetPageSelection: interactions.resetPageSelection,
+    resetTreemapSelection: treemapController.resetTreemapSelection,
+  })
 
   const statusText = computed(() => `${updateCount.value} 次数据同步`)
   const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
@@ -170,6 +177,7 @@ export function useAnalyzePageController() {
     ...interactions,
     ...reportActions,
     ...treemapController,
+    ...viewActions,
     ...workQueue,
     actionItems,
     activeTab,

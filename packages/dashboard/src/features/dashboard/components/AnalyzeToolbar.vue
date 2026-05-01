@@ -7,6 +7,7 @@ import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   canSearch: boolean
+  canResetView: boolean
   exportStatus: string
   moreMenuOpen: boolean
   openWorkQueueCount: number
@@ -17,10 +18,12 @@ const emit = defineEmits<{
   'copyMarkdown': []
   'copyPr': []
   'copySummary': []
+  'copyViewLink': []
   'exportCsv': []
   'exportJson': []
   'exportMarkdown': []
   'openSearch': []
+  'resetView': []
   'update:moreMenuOpen': [value: boolean]
 }>()
 </script>
@@ -38,6 +41,29 @@ const emit = defineEmits<{
           <DashboardIcon name="metric-search" />
         </span>
         搜索
+      </button>
+      <button
+        v-if="canSearch"
+        class="shrink-0"
+        :class="pillButtonStyles({ kind: 'nav', active: false })"
+        @click="emit('copyViewLink')"
+      >
+        <span class="h-4.5 w-4.5">
+          <DashboardIcon name="metric-link" />
+        </span>
+        复制视图
+      </button>
+      <button
+        v-if="canSearch"
+        class="shrink-0 disabled:cursor-not-allowed disabled:opacity-55"
+        :class="pillButtonStyles({ kind: 'nav', active: false })"
+        :disabled="!canResetView"
+        @click="emit('resetView')"
+      >
+        <span class="h-4.5 w-4.5">
+          <DashboardIcon name="metric-reset" />
+        </span>
+        重置视图
       </button>
       <AppInfoPill
         v-if="exportStatus"
