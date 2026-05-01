@@ -98,7 +98,6 @@ const {
   duplicateModules,
   moduleSourceSummary,
   budgetWarnings,
-  budgetLimitItems,
   incrementAttribution,
   incrementSummary,
 } = useAnalyzeDashboardData(resultRef, comparisonResultRef)
@@ -1056,7 +1055,9 @@ onBeforeUnmount(() => {
           :largest-files="filteredLargestFiles"
           :selected-file-modules="selectedFileModules"
           :budget-warnings="budgetWarnings"
-          :budget-limit-items="budgetLimitItems"
+          :budget-config="resultRef.metadata?.budgets"
+          :package-insights="packageInsights"
+          :total-bytes="summary.totalBytes"
           :active-budget-warning-id="selectedBudgetWarning?.id ?? null"
           :active-largest-file-key="activeLargestFileKey"
           :selected-treemap-meta="selectedTreemapMeta"
