@@ -1647,13 +1647,11 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
   let miniProgram: any = null
   let closeError: unknown = null
   try {
-    if (resolveAutomatorLaunchMode() === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-      const loginState = await resolveDevtoolsCliLoginState()
-      if (loginState === false) {
-        throw createDevtoolsLoginRequiredError('需要重新登录')
-      }
+    const loginState = await resolveDevtoolsCliLoginState()
+    if (loginState === false) {
+      throw createDevtoolsLoginRequiredError('需要重新登录')
     }
-    else {
+    if (loginState === null && resolveAutomatorLaunchMode() !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
       miniProgram = await launchAutomator({
         projectPath,
         timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,

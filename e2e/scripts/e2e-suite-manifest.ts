@@ -9,6 +9,7 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
@@ -97,6 +98,21 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
   }
 }
 
+function isGithubIssuesIdeTask(label: string) {
+  return label.startsWith('ide/github-issues.runtime.')
+}
+
+function createIdeVitestTask(filePath: string) {
+  const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
+  if (isGithubIssuesIdeTask(task.label)) {
+    task.env = {
+      ...task.env,
+      [AUTOMATOR_LAUNCH_MODE_ENV]: 'direct',
+    }
+  }
+  return task
+}
+
 function createHeadlessVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
   const targetFile = toRelativeLabel(filePath)
   return {
@@ -148,7 +164,7 @@ export function getIdeTasks() {
     onlyFiles: true,
   })
     .sort()
-    .map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath))
+    .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {
     const leftIsChunkModes = IDE_CHUNK_MODES_PATTERNS.includes(left.label)
@@ -161,7 +177,7 @@ export function getIdeTasks() {
 }
 
 function getIdePatternTasks(patterns: string[]) {
-  return patterns.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, path.resolve(ROOT, filePath)))
+  return patterns.map(filePath => createIdeVitestTask(path.resolve(ROOT, filePath)))
 }
 
 export function getIdeGateTasks() {

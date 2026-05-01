@@ -1,12 +1,12 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
-  launchFreshMiniProgram,
+  getSharedMiniProgram,
+  prepareGithubIssuesBuild,
   readClassName,
   readFirstClassFromWxmlByToken,
   readPageWxml,
   relaunchPage,
-  releaseSharedMiniProgram,
   tapControlAndReadClass,
 } from './github-issues.runtime.shared'
 
@@ -22,6 +22,10 @@ async function runIssue289Step<T>(label: string, task: () => Promise<T>, timeout
 }
 
 describe.sequential('e2e app: github-issues / issue-289', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
@@ -33,17 +37,12 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
     label: string,
     run: (page: any) => Promise<T>,
   ) {
-    const miniProgram = await launchFreshMiniProgram(ctx)
-    try {
-      const page = await relaunchPage(miniProgram, route, readyText, 30_000)
-      if (!page) {
-        throw new Error(`Failed to launch ${label} page`)
-      }
-      return await run(page)
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const page = await relaunchPage(miniProgram, route, readyText, 30_000)
+    if (!page) {
+      throw new Error(`Failed to launch ${label} page`)
     }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
+    return await run(page)
   }
 
   it('issue #289: updates runtime classes on object-literal page', async (ctx) => {

@@ -1,7 +1,8 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  prepareGithubIssuesBuild,
   relaunchPage,
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
@@ -90,6 +91,10 @@ async function waitForUpdatedComputedProbeState(miniProgram: any, timeoutMs = 20
 }
 
 describe.sequential('github-issues runtime miniprogram-computed', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

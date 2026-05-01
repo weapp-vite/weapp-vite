@@ -1,12 +1,17 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   launchFreshMiniProgram,
+  prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
 } from './github-issues.runtime.shared'
 
 describe.sequential('github-issues runtime import.meta bindings', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

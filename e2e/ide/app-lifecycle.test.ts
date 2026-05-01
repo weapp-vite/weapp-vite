@@ -4,7 +4,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { relaunchPage, waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -40,6 +40,8 @@ async function launchFreshMiniProgram(root: string) {
   await cleanupResidualIdeProcesses()
 
   if (!sharedBuildPreparedRoots.has(root)) {
+    // 同一路径首次打开前先清理 IDE 缓存，避免 DevTools 复用旧 app.json/compile 状态导致模拟器首启失败。
+    await cleanDevtoolsCache('all', { cwd: root })
     await runBuild(root)
     sharedBuildPreparedRoots.add(root)
   }

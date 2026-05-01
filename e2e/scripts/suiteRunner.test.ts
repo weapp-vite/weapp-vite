@@ -66,6 +66,34 @@ describe('suiteRunner', () => {
     process.exitCode = previousExitCode
   })
 
+  it('can stop running remaining tasks after the first failure', async () => {
+    const previousExitCode = process.exitCode
+    const tasks: SuiteTask[] = [
+      { label: 'first', command: 'pnpm', args: ['vitest'] },
+      { label: 'second', command: 'pnpm', args: ['vitest'] },
+      { label: 'third', command: 'pnpm', args: ['vitest'] },
+    ]
+    const beforeEachTask = vi.fn()
+    const runTask = vi
+      .fn<(task: SuiteTask) => Promise<number>>()
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+
+    const exitCode = await runTaskSuite('e2e:test', tasks, {
+      beforeEachTask,
+      runTask,
+      stopOnTaskFailure: true,
+      writeReport: false,
+    })
+
+    expect(exitCode).toBe(1)
+    expect(beforeEachTask).toHaveBeenCalledTimes(2)
+    expect(runTask).toHaveBeenCalledTimes(2)
+
+    process.exitCode = previousExitCode
+  })
+
   it('can continue with failing tasks without setting process exit code', async () => {
     const previousExitCode = process.exitCode
     process.exitCode = undefined
@@ -211,6 +239,7 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
     expect(ideGithubIssuesTasks.length).toBe(5)
+    expect(ideGithubIssuesTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBe(true)
   })
 
   it('uses env-based target file selection for suite vitest tasks', async () => {

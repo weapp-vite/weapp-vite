@@ -1,7 +1,8 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  prepareGithubIssuesBuild,
   readPageWxml,
   releaseSharedMiniProgram,
   tapElement,
@@ -92,6 +93,10 @@ async function waitForIssue466MainRuntime(page: any, timeoutMs = 20_000) {
 }
 
 describe.sequential('github-issues runtime issue-466', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

@@ -10,11 +10,55 @@ const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const WHITESPACE_RE = /\s+/g
 const REGEXP_ESCAPE_RE = /[.*+?^${}()|[\]\\]/g
 const LEADING_SLASH_RE = /^\/+/
+const PROJECT_ID_SAFE_RE = /[^\w.-]+/g
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
+const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
+const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
+const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
+const SOURCE_PROJECT_COPY_ENTRIES = [
+  '.env',
+  'auto-import-components.json',
+  'mini.project.json',
+  'package.json',
+  'project.config.json',
+  'project.private.config.json',
+  'src',
+  'tsconfig.json',
+  'typed-router.d.ts',
+  'weapp-vite.config.ts',
+] as const
+
+function resolveGithubIssuesProjectId() {
+  const targetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? 'all'
+  return targetFile
+    .replace(PROJECT_ID_SAFE_RE, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'all'
+}
+
+const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+
+async function prepareIsolatedProjectRoot() {
+  await fs.remove(APP_ROOT)
+  await fs.ensureDir(APP_ROOT)
+
+  await Promise.all(SOURCE_PROJECT_COPY_ENTRIES.map(async (entry) => {
+    const source = path.join(SOURCE_APP_ROOT, entry)
+    if (!(await fs.pathExists(source))) {
+      return
+    }
+    await fs.copy(source, path.join(APP_ROOT, entry), {
+      dereference: false,
+    })
+  }))
+
+  if (await fs.pathExists(SOURCE_NODE_MODULES)) {
+    await fs.symlink(SOURCE_NODE_MODULES, path.join(APP_ROOT, 'node_modules'), 'junction')
+  }
+}
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -29,12 +73,71 @@ async function runBuild() {
   })
 }
 
+function resolveAppConfigRoutes(config: Record<string, any>) {
+  const pages = Array.isArray(config.pages)
+    ? config.pages.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : []
+  const subPackages = [
+    ...(Array.isArray(config.subPackages) ? config.subPackages : []),
+    ...(Array.isArray(config.subpackages) ? config.subpackages : []),
+  ].filter((item): item is Record<string, any> => Boolean(item) && typeof item === 'object')
+
+  return {
+    pages,
+    subPackages,
+  }
+}
+
+async function assertGithubIssuesAppConfigReady() {
+  const appConfigPath = path.join(DIST_ROOT, 'app.json')
+  const config = await fs.readJSON(appConfigPath).catch(() => undefined) as Record<string, any> | undefined
+  if (!config || typeof config !== 'object') {
+    throw new Error(`github-issues dist app.json is not readable: ${appConfigPath}`)
+  }
+
+  const { pages, subPackages } = resolveAppConfigRoutes(config)
+  if (pages.length === 0) {
+    throw new Error(`github-issues dist app.json has no pages: ${appConfigPath}`)
+  }
+  if (config.subPackages != null && !Array.isArray(config.subPackages)) {
+    throw new Error(`github-issues dist app.json subPackages is not an array: ${appConfigPath}`)
+  }
+  if (config.subpackages != null && !Array.isArray(config.subpackages)) {
+    throw new Error(`github-issues dist app.json subpackages is not an array: ${appConfigPath}`)
+  }
+
+  const routeCount = pages.length + subPackages.reduce((total, subPackage) => {
+    const packagePages = Array.isArray(subPackage.pages) ? subPackage.pages.length : 0
+    return total + packagePages
+  }, 0)
+  if (routeCount === 0) {
+    throw new Error(`github-issues dist app.json has no routable pages: ${appConfigPath}`)
+  }
+}
+
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 let sharedLaunchInfraUnavailableMessage: string | null = null
 
 export async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export async function prepareGithubIssuesBuild() {
+  if (sharedBuildPrepared) {
+    return
+  }
+
+  // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
+  // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
+  await cleanupResidualIdeProcesses()
+  await prepareIsolatedProjectRoot()
+  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  await runBuild()
+  await assertGithubIssuesAppConfigReady()
+  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  await delay(600)
+  sharedBuildPrepared = true
 }
 
 async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
@@ -235,13 +338,7 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
 
   await cleanupResidualIdeProcesses()
 
-  if (!sharedBuildPrepared) {
-    // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
-    // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
-    await runBuild()
-    sharedBuildPrepared = true
-  }
+  await prepareGithubIssuesBuild()
 
   try {
     const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
@@ -287,8 +384,7 @@ export async function closeSharedMiniProgram() {
 }
 
 export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  await closeSharedMiniProgram()
-  sharedMiniProgram = await launchGithubIssuesMiniProgram(ctx)
+  sharedMiniProgram ??= await launchGithubIssuesMiniProgram(ctx)
   return sharedMiniProgram
 }
 
@@ -298,7 +394,7 @@ export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) =>
 
 export async function releaseSharedMiniProgram(miniProgram: any) {
   if (sharedMiniProgram === miniProgram) {
-    sharedMiniProgram = null
+    return
   }
   await closeMiniProgramSafely(miniProgram)
 }

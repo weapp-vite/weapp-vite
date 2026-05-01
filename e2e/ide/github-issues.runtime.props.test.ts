@@ -1,11 +1,12 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
   expectPropsProbeCase,
   getSharedMiniProgram,
+  prepareGithubIssuesBuild,
   readClassName,
   readPageWxml,
   relaunchPage,
@@ -14,6 +15,10 @@ import {
 } from './github-issues.runtime.shared'
 
 describe.sequential('e2e app: github-issues / props', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

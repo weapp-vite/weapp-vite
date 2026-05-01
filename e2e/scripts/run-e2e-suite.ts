@@ -26,6 +26,10 @@ export function shouldCleanupIdeBeforeEachTask(mode: string) {
   return /^ide(?:$|-|:)(?!headless)/.test(mode)
 }
 
+export function shouldStopIdeSuiteAfterTaskFailure(mode: string) {
+  return shouldCleanupIdeBeforeEachTask(mode)
+}
+
 export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   const allowFailures = args.includes('--allow-failures')
   const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
@@ -60,6 +64,7 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
       }
       : undefined,
     failOnTaskFailure: !allowFailures,
+    stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(mode),
   })
 }
 

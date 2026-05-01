@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shouldCleanupIdeBeforeEachTask } from './run-e2e-suite'
+import { shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
 
 describe('run-e2e-suite ide cleanup hooks', () => {
   it('enables cleanup hooks for devtools-backed ide suites', () => {
@@ -17,5 +17,12 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(shouldCleanupIdeBeforeEachTask('ide-headless-smoke')).toBe(false)
     expect(shouldCleanupIdeBeforeEachTask('ide-headless-gate')).toBe(false)
     expect(shouldCleanupIdeBeforeEachTask('ide-headless-full')).toBe(false)
+  })
+
+  it('stops devtools-backed ide suites after the first failed task', () => {
+    expect(shouldStopIdeSuiteAfterTaskFailure('ide-full')).toBe(true)
+    expect(shouldStopIdeSuiteAfterTaskFailure('ide-full:github-issues')).toBe(true)
+    expect(shouldStopIdeSuiteAfterTaskFailure('ide-headless-full')).toBe(false)
+    expect(shouldStopIdeSuiteAfterTaskFailure('ci')).toBe(false)
   })
 })

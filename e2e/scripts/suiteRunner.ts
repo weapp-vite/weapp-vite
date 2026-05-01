@@ -31,6 +31,7 @@ interface RunSuiteOptions {
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
   failOnTaskFailure?: boolean
   runTask?: (task: SuiteTask) => Promise<number>
+  stopOnTaskFailure?: boolean
   writeReport?: boolean
 }
 
@@ -345,6 +346,10 @@ export async function runTaskSuite(
 
     if (exitCode === 0 && isDevtoolsVitestTask(task)) {
       devtoolsLoginPreflightPassed = true
+    }
+    if (exitCode !== 0 && options.stopOnTaskFailure) {
+      console.warn(`[${suiteName}] stop after failed task: ${task.label}`)
+      break
     }
   }
 

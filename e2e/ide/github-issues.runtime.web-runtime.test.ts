@@ -1,7 +1,8 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
@@ -86,6 +87,10 @@ function expectRandomBytesPayload(randomBytes: string) {
 }
 
 describe.sequential('github-issues runtime web runtime globals', () => {
+  beforeAll(async () => {
+    await prepareGithubIssuesBuild()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
