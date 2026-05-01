@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
@@ -7,10 +8,20 @@ import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import WorkspaceActivityTimeline from '../features/dashboard/components/WorkspaceActivityTimeline.vue'
 import WorkspaceCommandCenter from '../features/dashboard/components/WorkspaceCommandCenter.vue'
+import WorkspaceReadinessPanel from '../features/dashboard/components/WorkspaceReadinessPanel.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { releaseChecklist, workspaceNavigation } from '../features/dashboard/constants/shell'
+import { createWorkspaceReadinessSummary } from '../features/dashboard/utils/workspaceReadiness'
 
-const { activityItems, commandItems, signals } = useDashboardWorkspace()
+const { activityItems, commandItems, diagnostics, lastUpdatedAt, resultRef, runtimeEvents, signals, updateCount } = useDashboardWorkspace()
+
+const readinessSummary = computed(() => createWorkspaceReadinessSummary({
+  result: resultRef.value,
+  runtimeEvents: runtimeEvents.value,
+  diagnostics: diagnostics.value,
+  updateCount: updateCount.value,
+  lastUpdatedAt: lastUpdatedAt.value,
+}))
 </script>
 
 <template>
@@ -59,13 +70,15 @@ const { activityItems, commandItems, signals } = useDashboardWorkspace()
       </div>
     </AppSurfaceCard>
 
-    <section class="grid min-h-0 gap-3 overflow-hidden">
+    <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+      <WorkspaceReadinessPanel :summary="readinessSummary" />
+
       <AppSurfaceCard tone="default" padding="md" content-class="min-h-0 overflow-hidden">
         <AppSectionHeading
           eyebrow="Commands"
           title="常用操作"
         />
-        <div class="mt-4 h-[calc(100dvh-13rem)] min-h-80">
+        <div class="mt-4 h-full min-h-0">
           <WorkspaceCommandCenter :commands="commandItems" />
         </div>
       </AppSurfaceCard>
