@@ -4,11 +4,19 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import VueRouter from 'vue-router/vite'
 
+const dashboardDevServer = {
+  host: '127.0.0.1',
+  port: 6188,
+  strictPort: false,
+}
+
 export default defineConfig({
   root: __dirname,
   base: './',
   appType: 'spa',
   publicDir: false,
+  server: dashboardDevServer,
+  preview: dashboardDevServer,
   plugins: [
     VueRouter({
       root: __dirname,

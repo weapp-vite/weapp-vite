@@ -30,5 +30,5 @@
   - `pnpm --filter @weapp-vite/dashboard build`
 - 真实联调入口：
   - `pnpm --filter dashboard-ui-lab dev:ui`
-  - `http://127.0.0.1:5173/analyze`
+  - 终端输出的 dashboard URL，包级 dashboard 默认从 `http://127.0.0.1:6188/analyze` 起，如果端口被占用会自动递增。
 - 包级 `pnpm --filter @weapp-vite/dashboard dev` 只能用于空态或组件局部排查，不能作为最终验收入口。
