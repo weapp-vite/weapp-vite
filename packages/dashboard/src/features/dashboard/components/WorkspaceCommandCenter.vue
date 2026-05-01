@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DashboardValueOption, WorkspaceCommandCategory, WorkspaceCommandItem } from '../types'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import type { WorkspaceCommandItem } from '../types'
+import { useWorkspaceCommandCenter } from '../composables/useWorkspaceCommandCenter'
 import AppEmptyState from './AppEmptyState.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 import DashboardIcon from './DashboardIcon.vue'
@@ -9,138 +9,20 @@ const props = defineProps<{
   commands: WorkspaceCommandItem[]
 }>()
 
-type CommandCategoryFilter = 'all' | WorkspaceCommandCategory
-
-const categoryLabels: Record<WorkspaceCommandCategory, string> = {
-  dev: '开发',
-  build: '构建',
-  analyze: '分析',
-}
-
-const categoryTones: Record<WorkspaceCommandCategory, 'info' | 'success' | 'warning'> = {
-  dev: 'info',
-  build: 'success',
-  analyze: 'warning',
-}
-
-const searchQuery = ref('')
-const categoryFilter = ref<CommandCategoryFilter>('all')
-const selectedCommandValue = ref<string | null>(null)
-const copiedCommand = ref<string | null>(null)
-const failedCommand = ref<string | null>(null)
-let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
-
-const categoryOptions: DashboardValueOption<CommandCategoryFilter>[] = [
-  { value: 'all', label: '全部命令' },
-  { value: 'dev', label: categoryLabels.dev },
-  { value: 'build', label: categoryLabels.build },
-  { value: 'analyze', label: categoryLabels.analyze },
-]
-
-const filteredCommands = computed(() => {
-  const keyword = searchQuery.value.trim().toLowerCase()
-
-  return props.commands.filter((command) => {
-    if (categoryFilter.value !== 'all' && command.category !== categoryFilter.value) {
-      return false
-    }
-
-    if (!keyword) {
-      return true
-    }
-
-    return [
-      command.label,
-      command.command,
-      command.note,
-      categoryLabels[command.category],
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(keyword)
-  })
-})
-
-const selectedCommand = computed(() =>
-  filteredCommands.value.find(command => command.command === selectedCommandValue.value)
-  ?? filteredCommands.value[0]
-  ?? null,
-)
-
-const commandSummary = computed(() => {
-  const totalCount = props.commands.length
-  const filteredCount = filteredCommands.value.length
-  const categoryText = categoryFilter.value === 'all'
-    ? '全部'
-    : categoryLabels[categoryFilter.value]
-
-  return `匹配 ${filteredCount} / ${totalCount} 条 · ${categoryText}`
-})
-
-function clearCopyFeedback() {
-  copiedCommand.value = null
-  failedCommand.value = null
-}
-
-function scheduleCopyFeedbackClear() {
-  if (copyFeedbackTimer) {
-    clearTimeout(copyFeedbackTimer)
-  }
-
-  copyFeedbackTimer = setTimeout(() => {
-    clearCopyFeedback()
-    copyFeedbackTimer = null
-  }, 1800)
-}
-
-function copyTextWithFallback(text: string) {
-  const textarea = document.createElement('textarea')
-  textarea.value = text
-  textarea.setAttribute('readonly', 'true')
-  textarea.style.position = 'fixed'
-  textarea.style.opacity = '0'
-  document.body.appendChild(textarea)
-  textarea.select()
-
-  const copied = document.execCommand('copy')
-  document.body.removeChild(textarea)
-
-  if (!copied) {
-    throw new Error('copy command failed')
-  }
-}
-
-async function copyCommand(command: string) {
-  try {
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      await navigator.clipboard.writeText(command)
-    }
-    else {
-      copyTextWithFallback(command)
-    }
-
-    copiedCommand.value = command
-    failedCommand.value = null
-  }
-  catch {
-    copiedCommand.value = null
-    failedCommand.value = command
-  }
-
-  scheduleCopyFeedbackClear()
-}
-
-watch(filteredCommands, (commands) => {
-  if (!commands.some(command => command.command === selectedCommandValue.value)) {
-    selectedCommandValue.value = commands[0]?.command ?? null
-  }
-}, { immediate: true })
-
-onBeforeUnmount(() => {
-  if (copyFeedbackTimer) {
-    clearTimeout(copyFeedbackTimer)
-  }
-})
+const {
+  categoryFilter,
+  categoryLabels,
+  categoryOptions,
+  categoryTones,
+  commandSummary,
+  copiedCommand,
+  copyCommand,
+  failedCommand,
+  filteredCommands,
+  searchQuery,
+  selectedCommand,
+  selectedCommandValue,
+} = useWorkspaceCommandCenter(props)
 </script>
 
 <template>

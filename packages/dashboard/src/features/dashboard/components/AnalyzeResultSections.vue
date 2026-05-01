@@ -22,12 +22,10 @@ import type {
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
-import ActionCenterPanel from './ActionCenterPanel.vue'
 import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
+import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
 import AnalyzeOverviewPanel from './AnalyzeOverviewPanel.vue'
-import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
-import HistoryBaselinePanel from './HistoryBaselinePanel.vue'
 import ModulesPanel from './ModulesPanel.vue'
 import PackagesPanel from './PackagesPanel.vue'
 import PrReviewChecklistPanel from './PrReviewChecklistPanel.vue'
@@ -125,42 +123,27 @@ const emit = defineEmits<{
   </section>
 
   <section v-else-if="activeTab === 'diagnostics'" class="min-h-0 overflow-hidden">
-    <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.38fr)_minmax(20rem,0.38fr)] xl:overflow-hidden xl:pr-0"
-      :items="diagnosticsLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:diagnostics"
-    >
-      <template #actions>
-        <ActionCenterPanel
-          :actions="actionItems"
-          :active-key="selectedActionKey"
-          :queued-action-keys="queuedActionKeys"
-          @add-to-queue="emit('addActionToQueue', $event)"
-          @copy-report="emit('copyPr')"
-          @select="emit('selectAction', $event)"
-        />
-      </template>
-      <template #work-queue>
-        <AnalyzeWorkQueuePanel
-          :items="workQueueItems"
-          :active-id="activeWorkQueueItemId"
-          @clear-completed="emit('clearCompletedWorkQueue')"
-          @copy="emit('copyWorkQueue')"
-          @remove="emit('removeWorkQueueItem', $event)"
-          @select="emit('selectWorkQueueItem', $event)"
-          @toggle="emit('toggleWorkQueueItem', $event)"
-        />
-      </template>
-      <template #history>
-        <HistoryBaselinePanel
-          :snapshots="historySnapshots"
-          :baseline-snapshot-id="baselineSnapshotId"
-          :comparison-mode="comparisonMode"
-          @set-baseline="emit('setBaseline', $event)"
-          @set-comparison-mode="emit('setComparisonMode', $event)"
-        />
-      </template>
-    </AnalyzeDraggableGrid>
+    <AnalyzeDiagnosticsSection
+      :action-items="actionItems"
+      :active-work-queue-item-id="activeWorkQueueItemId"
+      :baseline-snapshot-id="baselineSnapshotId"
+      :comparison-mode="comparisonMode"
+      :history-snapshots="historySnapshots"
+      :layout-items="diagnosticsLayoutItems"
+      :queued-action-keys="queuedActionKeys"
+      :selected-action-key="selectedActionKey"
+      :work-queue-items="workQueueItems"
+      @add-action-to-queue="emit('addActionToQueue', $event)"
+      @clear-completed-work-queue="emit('clearCompletedWorkQueue')"
+      @copy-pr="emit('copyPr')"
+      @copy-work-queue="emit('copyWorkQueue')"
+      @remove-work-queue-item="emit('removeWorkQueueItem', $event)"
+      @select-action="emit('selectAction', $event)"
+      @select-work-queue-item="emit('selectWorkQueueItem', $event)"
+      @set-baseline="emit('setBaseline', $event)"
+      @set-comparison-mode="emit('setComparisonMode', $event)"
+      @toggle-work-queue-item="emit('toggleWorkQueueItem', $event)"
+    />
   </section>
 
   <section v-else-if="activeTab === 'review'" class="min-h-0 overflow-hidden">

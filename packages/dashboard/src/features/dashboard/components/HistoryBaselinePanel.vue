@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import type { AnalyzeComparisonMode, AnalyzeHistorySnapshot } from '../types'
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { copyText } from '../utils/clipboard'
+import { useHistoryBaselinePanel } from '../composables/useHistoryBaselinePanel'
 import { formatBytes } from '../utils/format'
-import { createHistoryTrendSummary } from '../utils/historyTrend'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import HistoryBaselineToolbar from './HistoryBaselineToolbar.vue'
 import HistoryTrendPanel from './HistoryTrendPanel.vue'
-
-type HistorySnapshotSortMode = 'capturedAt' | 'total' | 'compressed' | 'modules' | 'duplicates'
 
 const props = defineProps<{
   snapshots: AnalyzeHistorySnapshot[]
@@ -23,152 +19,18 @@ const emit = defineEmits<{
   setComparisonMode: [mode: AnalyzeComparisonMode]
 }>()
 
-const snapshotQuery = ref('')
-const snapshotSortMode = ref<HistorySnapshotSortMode>('capturedAt')
-const actionStatus = ref('')
-let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
-
-function formatDelta(bytes: number) {
-  if (bytes === 0) {
-    return '无变化'
-  }
-  return `${bytes > 0 ? '+' : '-'}${formatBytes(Math.abs(bytes))}`
-}
-
-function formatSnapshotDate(snapshot: AnalyzeHistorySnapshot) {
-  return new Date(snapshot.capturedAt).toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
-
-function getSnapshotKeyword(snapshot: AnalyzeHistorySnapshot) {
-  return [
-    snapshot.id,
-    snapshot.label,
-    snapshot.capturedAt,
-    snapshot.packageCount,
-    snapshot.moduleCount,
-    snapshot.duplicateCount,
-    snapshot.totalBytes,
-    snapshot.compressedBytes,
-  ].join(' ').toLowerCase()
-}
-
-const baselineSnapshot = computed(() => props.snapshots.find(snapshot => snapshot.id === props.baselineSnapshotId) ?? null)
-const currentSnapshot = computed(() => props.snapshots[0] ?? null)
-const previousSnapshot = computed(() => props.snapshots[1] ?? null)
-const historyTrend = computed(() => createHistoryTrendSummary(props.snapshots))
-const baselineDelta = computed(() => {
-  if (!currentSnapshot.value || !baselineSnapshot.value) {
-    return ''
-  }
-  return formatDelta(currentSnapshot.value.totalBytes - baselineSnapshot.value.totalBytes)
-})
-const previousDelta = computed(() => {
-  if (!currentSnapshot.value || !previousSnapshot.value) {
-    return ''
-  }
-  return formatDelta(currentSnapshot.value.totalBytes - previousSnapshot.value.totalBytes)
-})
-const activeComparisonLabel = computed(() => {
-  if (props.comparisonMode === 'baseline') {
-    return baselineDelta.value || '未设置'
-  }
-  return previousDelta.value || '上次快照'
-})
-const baselineSummaryItems = computed(() => {
-  const snapshot = baselineSnapshot.value
-  if (!snapshot) {
-    return []
-  }
-  return [
-    { label: '基线体积', value: formatBytes(snapshot.totalBytes) },
-    { label: '压缩后', value: formatBytes(snapshot.compressedBytes) },
-    { label: '模块数', value: String(snapshot.moduleCount) },
-    { label: '复用模块', value: String(snapshot.duplicateCount) },
-  ]
-})
-const filteredSnapshots = computed(() => {
-  const keyword = snapshotQuery.value.trim().toLowerCase()
-  return props.snapshots
-    .filter(snapshot => !keyword || getSnapshotKeyword(snapshot).includes(keyword))
-    .sort((a, b) => {
-      if (snapshotSortMode.value === 'total') {
-        return b.totalBytes - a.totalBytes || Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
-      }
-      if (snapshotSortMode.value === 'compressed') {
-        return b.compressedBytes - a.compressedBytes || Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
-      }
-      if (snapshotSortMode.value === 'modules') {
-        return b.moduleCount - a.moduleCount || Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
-      }
-      if (snapshotSortMode.value === 'duplicates') {
-        return b.duplicateCount - a.duplicateCount || Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
-      }
-      return Date.parse(b.capturedAt) - Date.parse(a.capturedAt)
-    })
-})
-
-const baselineReportText = computed(() => {
-  const current = currentSnapshot.value
-  const baseline = baselineSnapshot.value
-  const previous = previousSnapshot.value
-  return [
-    '# dashboard 历史基线',
-    '',
-    current ? `当前快照：${formatSnapshotDate(current)} · ${formatBytes(current.totalBytes)} · 压缩后 ${formatBytes(current.compressedBytes)}` : '当前快照：暂无',
-    baseline ? `基线快照：${formatSnapshotDate(baseline)} · ${formatBytes(baseline.totalBytes)} · 压缩后 ${formatBytes(baseline.compressedBytes)}` : '基线快照：未设置',
-    previous ? `上次快照：${formatSnapshotDate(previous)} · ${formatBytes(previous.totalBytes)} · 压缩后 ${formatBytes(previous.compressedBytes)}` : '上次快照：暂无',
-    `当前对比：${activeComparisonLabel.value}`,
-    '',
-    '| 时间 | 总体积 | 压缩后 | 包 | 模块 | 复用模块 |',
-    '| --- | ---: | ---: | ---: | ---: | ---: |',
-    ...filteredSnapshots.value.map(snapshot => `| ${formatSnapshotDate(snapshot)} | ${formatBytes(snapshot.totalBytes)} | ${formatBytes(snapshot.compressedBytes)} | ${snapshot.packageCount} | ${snapshot.moduleCount} | ${snapshot.duplicateCount} |`),
-    '',
-  ].join('\n')
-})
-
-function setActionStatus(status: string) {
-  actionStatus.value = status
-  if (actionStatusTimer) {
-    clearTimeout(actionStatusTimer)
-  }
-  actionStatusTimer = setTimeout(() => {
-    actionStatus.value = ''
-    actionStatusTimer = null
-  }, 1800)
-}
-
-async function copyBaselineReport() {
-  try {
-    await copyText(baselineReportText.value)
-    setActionStatus('已复制')
-  }
-  catch {
-    setActionStatus('复制失败')
-  }
-}
-
-function exportFilteredSnapshots() {
-  const blob = new Blob([`${JSON.stringify(filteredSnapshots.value, null, 2)}\n`], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = 'weapp-vite-dashboard-history.json'
-  anchor.click()
-  URL.revokeObjectURL(url)
-  setActionStatus('已导出')
-}
-
-onBeforeUnmount(() => {
-  if (actionStatusTimer) {
-    clearTimeout(actionStatusTimer)
-  }
-})
+const {
+  actionStatus,
+  activeComparisonLabel,
+  baselineSummaryItems,
+  copyBaselineReport,
+  exportFilteredSnapshots,
+  filteredSnapshots,
+  formatSnapshotDate,
+  historyTrend,
+  snapshotQuery,
+  snapshotSortMode,
+} = useHistoryBaselinePanel(props)
 </script>
 
 <template>

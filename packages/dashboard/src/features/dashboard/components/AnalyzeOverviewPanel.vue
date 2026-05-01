@@ -1,23 +1,13 @@
 <script setup lang="ts">
-import type { AnalyzeActionCenterItem, AnalyzeActionCenterTone, DashboardMetricCard, LargestFileEntry, PackageInsight, SummaryMetric } from '../types'
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { copyText } from '../utils/clipboard'
+import type { AnalyzeActionCenterItem, DashboardMetricCard, LargestFileEntry, PackageInsight, SummaryMetric } from '../types'
+import { useAnalyzeOverviewPanel } from '../composables/useAnalyzeOverviewPanel'
 import { formatBytes, formatPackageType } from '../utils/format'
-import { createReleaseGateSummary } from '../utils/releaseGate'
-import { runtimeBadgeStyles, surfaceStyles } from '../utils/styles'
+import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import DashboardIcon from './DashboardIcon.vue'
 import DashboardMetricGrid from './DashboardMetricGrid.vue'
 import ReleaseGatePanel from './ReleaseGatePanel.vue'
-
-interface PackageOverviewItem extends PackageInsight {
-  typeLabel: string
-  sizeLabel: string
-  compressedLabel: string
-  sharePercent: number
-  shareStyle: Record<string, string>
-}
 
 const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
@@ -34,85 +24,16 @@ const emit = defineEmits<{
   selectPackage: [item: PackageInsight]
 }>()
 
-const visibleActions = computed(() => props.actionItems.slice(0, 4))
-const visibleLargestFiles = computed(() => props.largestFiles.slice(0, 5))
-const totalPackageBytes = computed(() => props.packageInsights.reduce((sum, item) => sum + item.totalBytes, 0))
-const releaseGate = computed(() => createReleaseGateSummary({
-  actionItems: props.actionItems,
-  largestFiles: props.largestFiles,
-  packageInsights: props.packageInsights,
-}))
-const gateCopyStatus = ref('')
-let gateCopyStatusTimer: ReturnType<typeof setTimeout> | null = null
-const packageOverviewItems = computed<PackageOverviewItem[]>(() => props.packageInsights.slice(0, 5).map((item) => {
-  const sharePercent = totalPackageBytes.value > 0
-    ? item.totalBytes / totalPackageBytes.value * 100
-    : 0
-
-  return {
-    ...item,
-    typeLabel: formatPackageType(item.type),
-    sizeLabel: formatBytes(item.totalBytes),
-    compressedLabel: `${item.compressedSizeSource === 'real' ? 'Brotli' : '估算'} ${formatBytes(item.compressedBytes)}`,
-    sharePercent,
-    shareStyle: {
-      width: `${Math.max(sharePercent, 2).toFixed(1)}%`,
-    },
-  }
-}))
-
-function getToneClassName(tone: AnalyzeActionCenterTone) {
-  if (tone === 'critical') {
-    return runtimeBadgeStyles({ tone: 'error' })
-  }
-  if (tone === 'warning') {
-    return runtimeBadgeStyles({ tone: 'warning' })
-  }
-  if (tone === 'success') {
-    return runtimeBadgeStyles({ tone: 'success' })
-  }
-  return runtimeBadgeStyles({ tone: 'info' })
-}
-
-function getToneLabel(tone: AnalyzeActionCenterTone) {
-  if (tone === 'critical') {
-    return '必须处理'
-  }
-  if (tone === 'warning') {
-    return '建议处理'
-  }
-  if (tone === 'success') {
-    return '可查看'
-  }
-  return '定位'
-}
-
-function setGateCopyStatus(status: string) {
-  gateCopyStatus.value = status
-  if (gateCopyStatusTimer) {
-    clearTimeout(gateCopyStatusTimer)
-  }
-  gateCopyStatusTimer = setTimeout(() => {
-    gateCopyStatus.value = ''
-    gateCopyStatusTimer = null
-  }, 1800)
-}
-
-async function copyReleaseGateReport() {
-  try {
-    await copyText(releaseGate.value.report)
-    setGateCopyStatus('已复制')
-  }
-  catch {
-    setGateCopyStatus('复制失败')
-  }
-}
-
-onBeforeUnmount(() => {
-  if (gateCopyStatusTimer) {
-    clearTimeout(gateCopyStatusTimer)
-  }
-})
+const {
+  copyReleaseGateReport,
+  gateCopyStatus,
+  getToneClassName,
+  getToneLabel,
+  packageOverviewItems,
+  releaseGate,
+  visibleActions,
+  visibleLargestFiles,
+} = useAnalyzeOverviewPanel(props)
 </script>
 
 <template>

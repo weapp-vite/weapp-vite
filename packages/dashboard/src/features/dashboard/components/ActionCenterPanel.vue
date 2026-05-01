@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import type { AnalyzeActionCenterItem, AnalyzeActionCenterKind, AnalyzeActionCenterTone } from '../types'
-import { computed, ref } from 'vue'
-import { runtimeBadgeStyles, surfaceStyles } from '../utils/styles'
+import type { AnalyzeActionCenterItem } from '../types'
+import { useActionCenterPanel } from '../composables/useActionCenterPanel'
+import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import DashboardIcon from './DashboardIcon.vue'
-
-type ActionToneFilter = 'all' | AnalyzeActionCenterTone
-type ActionKindFilter = 'all' | AnalyzeActionCenterKind
-type ActionSortMode = 'priority' | 'severity' | 'title' | 'value'
 
 const props = defineProps<{
   actions: AnalyzeActionCenterItem[]
@@ -22,113 +18,19 @@ const emit = defineEmits<{
   select: [item: AnalyzeActionCenterItem]
 }>()
 
-const actionQuery = ref('')
-const actionToneFilter = ref<ActionToneFilter>('all')
-const actionKindFilter = ref<ActionKindFilter>('all')
-const actionSortMode = ref<ActionSortMode>('priority')
-
-const toneRank: Record<AnalyzeActionCenterTone, number> = {
-  critical: 4,
-  warning: 3,
-  info: 2,
-  success: 1,
-}
-
-function getKindLabel(kind: AnalyzeActionCenterKind) {
-  if (kind === 'budget') {
-    return '预算'
-  }
-  if (kind === 'increment') {
-    return '增量'
-  }
-  if (kind === 'duplicate') {
-    return '重复'
-  }
-  return '文件'
-}
-
-const toneOptions = computed(() => {
-  const toneSet = new Set<AnalyzeActionCenterTone>()
-  for (const item of props.actions) {
-    toneSet.add(item.tone)
-  }
-  return [...toneSet].sort((a, b) => toneRank[b] - toneRank[a])
-})
-
-const kindOptions = computed(() => {
-  const kindSet = new Set<AnalyzeActionCenterKind>()
-  for (const item of props.actions) {
-    kindSet.add(item.kind)
-  }
-  return [...kindSet].sort((a, b) => getKindLabel(a).localeCompare(getKindLabel(b)))
-})
-
-const filteredActions = computed(() => {
-  const keyword = actionQuery.value.trim().toLowerCase()
-  return props.actions
-    .filter((item) => {
-      if (actionToneFilter.value !== 'all' && item.tone !== actionToneFilter.value) {
-        return false
-      }
-      if (actionKindFilter.value !== 'all' && item.kind !== actionKindFilter.value) {
-        return false
-      }
-      if (!keyword) {
-        return true
-      }
-      return [
-        item.key,
-        item.kind,
-        item.tone,
-        item.title,
-        item.meta,
-        item.value,
-        item.tab,
-      ].some(value => String(value ?? '').toLowerCase().includes(keyword))
-    })
-    .sort((a, b) => {
-      if (actionSortMode.value === 'severity') {
-        return toneRank[b.tone] - toneRank[a.tone] || b.priority - a.priority || a.title.localeCompare(b.title)
-      }
-      if (actionSortMode.value === 'title') {
-        return a.title.localeCompare(b.title)
-      }
-      if (actionSortMode.value === 'value') {
-        return b.priority - a.priority || String(a.value ?? '').localeCompare(String(b.value ?? '')) || a.title.localeCompare(b.title)
-      }
-      return b.priority - a.priority || toneRank[b.tone] - toneRank[a.tone] || a.title.localeCompare(b.title)
-    })
-})
-
-function getToneClassName(tone: AnalyzeActionCenterTone) {
-  if (tone === 'critical') {
-    return runtimeBadgeStyles({ tone: 'error' })
-  }
-  if (tone === 'warning') {
-    return runtimeBadgeStyles({ tone: 'warning' })
-  }
-  if (tone === 'success') {
-    return runtimeBadgeStyles({ tone: 'success' })
-  }
-  return runtimeBadgeStyles({ tone: 'info' })
-}
-
-function getToneLabel(tone: AnalyzeActionCenterTone) {
-  if (tone === 'critical') {
-    return '必须处理'
-  }
-  if (tone === 'warning') {
-    return '建议处理'
-  }
-  if (tone === 'success') {
-    return '可查看'
-  }
-  return '定位'
-}
-
-function isQueued(item: AnalyzeActionCenterItem) {
-  return props.queuedActionKeys.includes(item.key)
-}
+const {
+  actionKindFilter,
+  actionQuery,
+  actionSortMode,
+  actionToneFilter,
+  filteredActions,
+  getKindLabel,
+  getToneClassName,
+  getToneLabel,
+  isQueued,
+  kindOptions,
+  toneOptions,
+} = useActionCenterPanel(props)
 </script>
 
 <template>

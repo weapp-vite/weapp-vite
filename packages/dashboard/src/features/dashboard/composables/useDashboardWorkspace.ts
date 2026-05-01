@@ -1,18 +1,15 @@
-import type { ComputedRef, InjectionKey, Ref, ShallowRef } from 'vue'
 import type {
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
   AnalyzeSubpackagesResult,
-  DashboardLabelValueItem,
   DashboardRuntimeEvent,
-  DashboardRuntimeSourceSummary,
   WorkspaceActivityItem,
   WorkspaceCommandItem,
   WorkspaceDiagnosticItem,
   WorkspaceSignalItem,
 } from '../types'
+import type { DashboardWorkspaceContext } from './dashboardWorkspaceContext'
 import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
-import { sampleRuntimeEvents } from '../constants/shell'
 import {
   createAnalyzeHistorySnapshot,
   isSameAnalyzeResult,
@@ -21,9 +18,7 @@ import {
   resolveInitialPreviousResult,
   writeStoredAnalyzeHistory,
 } from '../utils/analyzeHistory'
-import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from '../utils/runtimeEvents'
 import {
-  createRuntimeEventSummary,
   createWorkspaceActivityItems,
   createWorkspaceCommands,
   createWorkspaceDiagnostics,
@@ -31,31 +26,11 @@ import {
   createWorkspaceSummaryStats,
   formatWorkspaceCurrentTime,
 } from '../utils/workspaceSummaries'
-
-interface DashboardWorkspaceContext {
-  resultRef: ShallowRef<AnalyzeSubpackagesResult | null>
-  previousResultRef: ShallowRef<AnalyzeSubpackagesResult | null>
-  comparisonResultRef: ComputedRef<AnalyzeSubpackagesResult | null>
-  historySnapshots: Ref<AnalyzeHistorySnapshot[]>
-  baselineSnapshotId: Ref<string | null>
-  comparisonMode: Ref<AnalyzeComparisonMode>
-  updateCount: Ref<number>
-  lastUpdatedAt: Ref<string>
-  statusLabel: ComputedRef<string>
-  statusSummary: ComputedRef<string>
-  commandItems: ComputedRef<WorkspaceCommandItem[]>
-  activityItems: ComputedRef<WorkspaceActivityItem[]>
-  diagnostics: ComputedRef<WorkspaceDiagnosticItem[]>
-  signals: ComputedRef<WorkspaceSignalItem[]>
-  runtimeEvents: Ref<DashboardRuntimeEvent[]>
-  latestRuntimeEvent: ComputedRef<DashboardRuntimeEvent | null>
-  eventSummary: ComputedRef<DashboardLabelValueItem[]>
-  runtimeSourceSummary: ComputedRef<DashboardRuntimeSourceSummary[]>
-  setBaselineSnapshot: (id: string) => void
-  setComparisonMode: (mode: AnalyzeComparisonMode) => void
-}
-
-const dashboardWorkspaceKey: InjectionKey<DashboardWorkspaceContext> = Symbol('dashboard-workspace')
+import { dashboardWorkspaceKey } from './dashboardWorkspaceContext'
+import {
+  createInitialDashboardRuntimeEvents,
+  useDashboardRuntimeEventStream,
+} from './useDashboardRuntimeEventStream'
 
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const initialPayload = window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null
@@ -76,9 +51,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const comparisonMode = shallowRef<AnalyzeComparisonMode>(
     storedHistory?.comparisonMode === 'baseline' && baselineSnapshotId.value ? 'baseline' : 'previous',
   )
-  const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
-    ? normalizeRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
-    : normalizeRuntimeEvents(sampleRuntimeEvents))
+  const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(createInitialDashboardRuntimeEvents())
   const updateCount = shallowRef(0)
   const lastUpdatedAt = shallowRef(resultRef.value ? formatWorkspaceCurrentTime() : '—')
 
@@ -93,6 +66,11 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   }
 
   const summary = computed(() => createWorkspaceSummaryStats(resultRef.value))
+  const {
+    eventSummary,
+    latestRuntimeEvent,
+    runtimeSourceSummary,
+  } = useDashboardRuntimeEventStream(runtimeEvents)
 
   const statusLabel = computed(() => resultRef.value ? 'payload ready' : 'awaiting payload')
   const statusSummary = computed(() =>
@@ -100,7 +78,6 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       ? `${summary.value.packageCount} 个包 · ${summary.value.moduleCount} 个模块`
       : '尚未接收到 CLI analyze 数据',
   )
-  const latestRuntimeEvent = computed(() => runtimeEvents.value[0] ?? null)
   const baselineSnapshot = computed(() =>
     historySnapshots.value.find(snapshot => snapshot.id === baselineSnapshotId.value) ?? null,
   )
@@ -108,12 +85,6 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     comparisonMode.value === 'baseline'
       ? baselineSnapshot.value?.result ?? previousResultRef.value
       : previousResultRef.value,
-  )
-
-  const eventSummary = computed<DashboardLabelValueItem[]>(() => createRuntimeEventSummary(runtimeEvents.value))
-
-  const runtimeSourceSummary = computed<DashboardRuntimeSourceSummary[]>(() =>
-    summarizeRuntimeEventsBySource(runtimeEvents.value),
   )
 
   const signals = computed<WorkspaceSignalItem[]>(() => createWorkspaceSignals({
@@ -143,24 +114,6 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     latestRuntimeEvent: latestRuntimeEvent.value,
     summary: summary.value,
   }))
-
-  const pushRuntimeEvents = (payload: DashboardRuntimeEvent[] | null | undefined) => {
-    const normalizedPayload = normalizeRuntimeEvents(payload)
-
-    if (normalizedPayload.length === 0) {
-      return
-    }
-
-    const nextEvents = [...normalizedPayload, ...runtimeEvents.value]
-    const deduped = new Map<string, DashboardRuntimeEvent>()
-
-    for (const event of nextEvents) {
-      deduped.set(event.id, event)
-    }
-
-    runtimeEvents.value = [...deduped.values()].slice(0, 24)
-    window.__WEAPP_VITE_DASHBOARD_EVENTS__ = [...runtimeEvents.value]
-  }
 
   const syncFromWindow = () => {
     const incoming = window.__WEAPP_VITE_ANALYZE_RESULT__
@@ -236,25 +189,13 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     persistHistoryPreferences()
   }
 
-  const handleRuntimeEvent = (event: Event) => {
-    const payload = event instanceof CustomEvent
-      ? event.detail
-      : null
-    const events = Array.isArray(payload) ? payload : payload ? [payload] : null
-
-    pushRuntimeEvents(events)
-  }
-
   onMounted(() => {
     window.addEventListener('weapp-analyze:update', syncFromWindow)
-    window.addEventListener('weapp-dashboard:event', handleRuntimeEvent)
     syncFromWindow()
-    pushRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('weapp-analyze:update', syncFromWindow)
-    window.removeEventListener('weapp-dashboard:event', handleRuntimeEvent)
   })
 
   return {
