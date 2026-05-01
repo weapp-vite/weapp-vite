@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createBudgetConfigSnippet, createBudgetSandboxWarnings, normalizeBudgetSandboxConfig } from './budgetSandbox'
+import {
+  budgetSandboxPresets,
+  createBudgetConfigSnippet,
+  createBudgetSandboxWarnings,
+  findMatchingBudgetPreset,
+  normalizeBudgetSandboxConfig,
+} from './budgetSandbox'
 
 describe('budgetSandbox', () => {
   it('normalizes invalid sandbox config values', () => {
@@ -46,5 +52,12 @@ describe('budgetSandbox', () => {
       independentBytes: 400,
       warningRatio: 0.8,
     })).toContain('warningRatio: 0.8')
+  })
+
+  it('matches normalized sandbox presets', () => {
+    expect(findMatchingBudgetPreset({
+      ...budgetSandboxPresets[1]!.config,
+      totalBytes: 20 * 1024 * 1024 + 0.2,
+    })?.id).toBe('release-buffer')
   })
 })

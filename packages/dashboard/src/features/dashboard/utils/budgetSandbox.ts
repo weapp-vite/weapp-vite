@@ -24,6 +24,54 @@ export interface BudgetSandboxConfig {
   warningRatio: number
 }
 
+export interface BudgetSandboxPreset {
+  id: string
+  label: string
+  detail: string
+  config: BudgetSandboxConfig
+}
+
+const mib = 1024 * 1024
+
+export const budgetSandboxPresets: BudgetSandboxPreset[] = [
+  {
+    id: 'wechat-default',
+    label: '平台上限',
+    detail: '按小程序常见包体限制和 85% 预警线评估。',
+    config: {
+      totalBytes: 20 * mib,
+      mainBytes: 2 * mib,
+      subPackageBytes: 2 * mib,
+      independentBytes: 2 * mib,
+      warningRatio: 0.85,
+    },
+  },
+  {
+    id: 'release-buffer',
+    label: '发布缓冲',
+    detail: '保留更早预警空间，适合发版前巡检。',
+    config: {
+      totalBytes: 20 * mib,
+      mainBytes: 2 * mib,
+      subPackageBytes: 2 * mib,
+      independentBytes: 2 * mib,
+      warningRatio: 0.75,
+    },
+  },
+  {
+    id: 'near-limit',
+    label: '临界排查',
+    detail: '只标记接近上限的包，适合聚焦最紧急项。',
+    config: {
+      totalBytes: 20 * mib,
+      mainBytes: 2 * mib,
+      subPackageBytes: 2 * mib,
+      independentBytes: 2 * mib,
+      warningRatio: 0.95,
+    },
+  },
+]
+
 function normalizeLimit(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? Math.round(value) : fallback
 }
@@ -79,6 +127,19 @@ export function normalizeBudgetSandboxConfig(config: Partial<BudgetSandboxConfig
     independentBytes: normalizeLimit(config?.independentBytes ?? defaultAnalyzeBudgetConfig.independentBytes, defaultAnalyzeBudgetConfig.independentBytes),
     warningRatio: normalizeWarningRatio(config?.warningRatio ?? defaultAnalyzeBudgetConfig.warningRatio),
   }
+}
+
+function isSameBudgetConfig(left: BudgetSandboxConfig, right: BudgetSandboxConfig) {
+  return left.totalBytes === right.totalBytes
+    && left.mainBytes === right.mainBytes
+    && left.subPackageBytes === right.subPackageBytes
+    && left.independentBytes === right.independentBytes
+    && left.warningRatio === right.warningRatio
+}
+
+export function findMatchingBudgetPreset(config: BudgetSandboxConfig): BudgetSandboxPreset | undefined {
+  const normalizedConfig = normalizeBudgetSandboxConfig(config)
+  return budgetSandboxPresets.find(preset => isSameBudgetConfig(normalizeBudgetSandboxConfig(preset.config), normalizedConfig))
 }
 
 export function createBudgetSandboxWarnings(options: {

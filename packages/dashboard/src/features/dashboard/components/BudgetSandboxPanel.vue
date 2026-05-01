@@ -2,9 +2,11 @@
 import type { AnalyzeBudgetConfig, PackageBudgetWarning, PackageInsight } from '../types'
 import { computed, onBeforeUnmount, reactive, watch } from 'vue'
 import {
+  budgetSandboxPresets,
   createBudgetConfigSnippet,
   createBudgetSandboxWarnings,
   defaultAnalyzeBudgetConfig,
+  findMatchingBudgetPreset,
   normalizeBudgetSandboxConfig,
 } from '../utils/budgetSandbox'
 import { copyText } from '../utils/clipboard'
@@ -67,6 +69,7 @@ const projectedWarnings = computed(() => createBudgetSandboxWarnings({
   packages: props.packageInsights,
   config: sandboxConfig.value,
 }))
+const activePresetId = computed(() => findMatchingBudgetPreset(sandboxConfig.value)?.id ?? null)
 const currentWarningIds = computed(() => new Set(props.currentWarnings.map(item => item.id)))
 const projectedWarningIds = computed(() => new Set(projectedWarnings.value.map(item => item.id)))
 const newWarningCount = computed(() => projectedWarnings.value.filter(item => !currentWarningIds.value.has(item.id)).length)
@@ -90,6 +93,21 @@ function setActionStatus(text: string) {
     actionStatus.text = ''
     actionStatus.timer = null
   }, 1800)
+}
+
+function applyPreset(presetId: string) {
+  const preset = budgetSandboxPresets.find(item => item.id === presetId)
+  if (!preset) {
+    return
+  }
+
+  const config = normalizeBudgetSandboxConfig(preset.config)
+  draft.totalMiB = bytesToMiB(config.totalBytes)
+  draft.mainMiB = bytesToMiB(config.mainBytes)
+  draft.subPackageMiB = bytesToMiB(config.subPackageBytes)
+  draft.independentMiB = bytesToMiB(config.independentBytes)
+  draft.warningPercent = Math.round(config.warningRatio * 100)
+  setActionStatus(`已应用 ${preset.label}`)
 }
 
 async function copyBudgetSnippet() {
@@ -131,7 +149,25 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
-    <div class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
+    <div class="grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
+      <div class="grid grid-cols-3 gap-2">
+        <button
+          v-for="preset in budgetSandboxPresets"
+          :key="preset.id"
+          class="rounded-md border px-2 py-2 text-left transition"
+          :class="activePresetId === preset.id ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft) text-(--dashboard-text)' : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text-soft) hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)'"
+          type="button"
+          @click="applyPreset(preset.id)"
+        >
+          <span class="block truncate text-xs font-semibold">
+            {{ preset.label }}
+          </span>
+          <span class="mt-1 line-clamp-2 block text-[11px] leading-4 opacity-80">
+            {{ preset.detail }}
+          </span>
+        </button>
+      </div>
+
       <div class="grid grid-cols-2 gap-2">
         <label class="grid gap-1 text-[11px] text-(--dashboard-text-soft)">
           总包 MB
