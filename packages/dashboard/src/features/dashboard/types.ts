@@ -49,6 +49,7 @@ export type DashboardIconName
     | 'metric-quality'
     | 'metric-search'
     | 'metric-history'
+    | 'metric-bookmark'
     | 'token-color'
     | 'token-surface'
     | 'token-type'
@@ -373,6 +374,21 @@ export interface AnalyzeActionCenterItem {
   warning?: PackageBudgetWarning
   file?: LargestFileEntry
   moduleMeta?: TreemapModuleNodeMeta
+}
+
+export type AnalyzeWorkQueueTargetKind = 'action' | 'file' | 'budget'
+
+export interface AnalyzeWorkQueueItem {
+  id: string
+  targetKind: AnalyzeWorkQueueTargetKind
+  targetKey: string
+  title: string
+  meta: string
+  value?: string
+  tone: AnalyzeActionCenterTone
+  tab: DashboardTab
+  createdAt: string
+  completedAt?: string
 }
 
 export type AnalyzeCommandPaletteKind = 'action' | 'budget' | 'package' | 'file' | 'module' | 'increment'

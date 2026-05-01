@@ -13,11 +13,13 @@ type ActionSortMode = 'priority' | 'severity' | 'title' | 'value'
 const props = defineProps<{
   actions: AnalyzeActionCenterItem[]
   activeKey: string | null
+  queuedActionKeys: string[]
 }>()
 
 const emit = defineEmits<{
-  select: [item: AnalyzeActionCenterItem]
+  addToQueue: [item: AnalyzeActionCenterItem]
   copyReport: []
+  select: [item: AnalyzeActionCenterItem]
 }>()
 
 const actionQuery = ref('')
@@ -123,6 +125,10 @@ function getToneLabel(tone: AnalyzeActionCenterTone) {
   }
   return '定位'
 }
+
+function isQueued(item: AnalyzeActionCenterItem) {
+  return props.queuedActionKeys.includes(item.key)
+}
 </script>
 
 <template>
@@ -210,20 +216,22 @@ function getToneLabel(tone: AnalyzeActionCenterTone) {
         暂无匹配当前筛选条件的事项。
       </AppEmptyState>
 
-      <ol v-else class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1">
+      <ol v-else class="grid h-full min-h-0 content-start gap-2 overflow-y-auto pr-1">
         <li
           v-for="item in filteredActions"
           :key="item.key"
           class="list-none"
         >
-          <button
-            type="button"
-            class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
+          <article
+            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             :class="activeKey === item.key ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft)' : undefined"
-            @click="emit('select', item)"
           >
             <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
+              <button
+                type="button"
+                class="min-w-0 text-left"
+                @click="emit('select', item)"
+              >
                 <div class="flex min-w-0 items-center gap-2">
                   <span :class="getToneClassName(item.tone)">
                     {{ getToneLabel(item.tone) }}
@@ -238,7 +246,7 @@ function getToneLabel(tone: AnalyzeActionCenterTone) {
                 <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
                   {{ item.meta }}
                 </p>
-              </div>
+              </button>
               <span
                 v-if="item.value"
                 class="whitespace-nowrap text-sm font-medium text-(--dashboard-accent)"
@@ -246,7 +254,17 @@ function getToneLabel(tone: AnalyzeActionCenterTone) {
                 {{ item.value }}
               </span>
             </div>
-          </button>
+            <div class="mt-2 flex items-center justify-end border-t border-(--dashboard-border) pt-2">
+              <button
+                type="button"
+                class="rounded-full border border-(--dashboard-border) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text) disabled:cursor-not-allowed disabled:opacity-55"
+                :disabled="isQueued(item)"
+                @click="emit('addToQueue', item)"
+              >
+                {{ isQueued(item) ? '已在清单' : '加入清单' }}
+              </button>
+            </div>
+          </article>
         </li>
       </ol>
     </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, PackageInsight, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, AnalyzeWorkQueueItem, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, PackageInsight, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -12,6 +12,7 @@ import AnalyzeDetailsPanel from '../features/dashboard/components/AnalyzeDetails
 import AnalyzeDraggableGrid from '../features/dashboard/components/AnalyzeDraggableGrid.vue'
 import AnalyzeExportMenu from '../features/dashboard/components/AnalyzeExportMenu.vue'
 import AnalyzeOverviewPanel from '../features/dashboard/components/AnalyzeOverviewPanel.vue'
+import AnalyzeWorkQueuePanel from '../features/dashboard/components/AnalyzeWorkQueuePanel.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -23,6 +24,7 @@ import TreemapCard from '../features/dashboard/components/TreemapCard.vue'
 import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
 import { useAnalyzeCommandPalette } from '../features/dashboard/composables/useAnalyzeCommandPalette'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
+import { useAnalyzeWorkQueue } from '../features/dashboard/composables/useAnalyzeWorkQueue'
 import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
@@ -32,6 +34,7 @@ import { copyText } from '../features/dashboard/utils/clipboard'
 import { formatBytes } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
+import { createActionWorkQueueItem, createWorkQueueMarkdown } from '../features/dashboard/utils/workQueue'
 import 'echarts/theme/dark.js'
 
 echarts.use([
@@ -50,6 +53,7 @@ const selectedActionKey = shallowRef<string | null>(null)
 const commandPaletteOpen = shallowRef(false)
 const moreMenuOpen = shallowRef(false)
 const exportStatus = shallowRef('')
+const activeWorkQueueItemId = shallowRef<string | null>(null)
 let chart: echarts.ECharts | undefined
 const route = useRoute()
 const router = useRouter()
@@ -58,6 +62,7 @@ const overviewLayoutItems = [
 ]
 const diagnosticsLayoutItems = [
   { id: 'actions', label: '问题中心' },
+  { id: 'work-queue', label: '处理清单' },
   { id: 'history', label: '历史基线' },
 ]
 const treemapLayoutItems = [
@@ -281,6 +286,15 @@ const { actionItems } = useAnalyzeActionCenter({
   largestFiles,
   packageInsights,
 })
+const {
+  openWorkQueueItems,
+  queuedActionKeys,
+  workQueueItems,
+  addWorkQueueItem,
+  clearCompletedWorkQueueItems,
+  removeWorkQueueItem,
+  toggleWorkQueueItem,
+} = useAnalyzeWorkQueue()
 const { commandItems } = useAnalyzeCommandPalette({
   actionItems,
   budgetWarnings,
@@ -726,6 +740,30 @@ async function copyPrReport() {
   moreMenuOpen.value = false
 }
 
+async function copyWorkQueueReport() {
+  await copyText(createWorkQueueMarkdown(workQueueItems.value))
+  exportStatus.value = '处理清单已复制'
+}
+
+function handleAddActionToWorkQueue(item: AnalyzeActionCenterItem) {
+  addWorkQueueItem(createActionWorkQueueItem(item))
+  exportStatus.value = '已加入清单'
+}
+
+function handleSelectWorkQueueItem(item: AnalyzeWorkQueueItem) {
+  activeWorkQueueItemId.value = item.id
+
+  if (item.targetKind === 'action') {
+    const action = actionItems.value.find(candidate => candidate.key === item.targetKey)
+    if (action) {
+      handleSelectAction(action)
+      return
+    }
+  }
+
+  activeTab.value = item.tab
+}
+
 function exportJson() {
   if (!resultRef.value) {
     return
@@ -800,6 +838,7 @@ watch(resultRef, () => {
   selectedLargestFile.value = null
   selectedBudgetWarning.value = null
   selectedActionKey.value = null
+  activeWorkQueueItemId.value = null
 })
 
 watch(resolvedTheme, async () => {
@@ -901,6 +940,13 @@ onBeforeUnmount(() => {
           uppercase
         />
         <AppInfoPill
+          v-if="openWorkQueueItems.length > 0"
+          class="shrink-0"
+          icon-name="metric-bookmark"
+          :label="`${openWorkQueueItems.length} 个待处理`"
+          uppercase
+        />
+        <AppInfoPill
           v-for="item in statusPills"
           :key="item.label"
           class="shrink-0"
@@ -945,7 +991,7 @@ onBeforeUnmount(() => {
 
       <section v-else-if="activeTab === 'diagnostics'" class="min-h-0 overflow-hidden">
         <AnalyzeDraggableGrid
-          grid-class="grid h-full min-h-0 gap-2 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]"
+          grid-class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.38fr)_minmax(20rem,0.38fr)] xl:overflow-hidden xl:pr-0"
           :items="diagnosticsLayoutItems"
           storage-key="weapp-vite:dashboard:analyze-layout:diagnostics"
         >
@@ -953,8 +999,21 @@ onBeforeUnmount(() => {
             <ActionCenterPanel
               :actions="actionItems"
               :active-key="selectedActionKey"
+              :queued-action-keys="queuedActionKeys"
+              @add-to-queue="handleAddActionToWorkQueue"
               @copy-report="copyPrReport"
               @select="handleSelectAction"
+            />
+          </template>
+          <template #work-queue>
+            <AnalyzeWorkQueuePanel
+              :items="workQueueItems"
+              :active-id="activeWorkQueueItemId"
+              @clear-completed="clearCompletedWorkQueueItems"
+              @copy="copyWorkQueueReport"
+              @remove="removeWorkQueueItem"
+              @select="handleSelectWorkQueueItem"
+              @toggle="toggleWorkQueueItem"
             />
           </template>
           <template #history>
