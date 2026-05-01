@@ -18,6 +18,8 @@
   "scripts": {
     "dev": "wv dev",
     "dev:open": "wv dev -o",
+    "dev:ui": "wv dev --ui",
+    "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -38,6 +40,7 @@
     "@icebreakers/stylelint-config": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",

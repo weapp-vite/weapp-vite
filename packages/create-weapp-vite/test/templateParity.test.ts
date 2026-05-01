@@ -247,10 +247,14 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   const { version: wevuVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
   )
+  const { version: dashboardVersion } = await readPackageJson(
+    path.resolve(import.meta.dirname, '../../..', 'packages/dashboard/package.json'),
+  )
   normalizeDependencySpecs(expectedPackageJson)
   expectedPackageJson.devDependencies ??= {}
   upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
   upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
+  upsertDependencyVersion(expectedPackageJson, '@weapp-vite/dashboard', `^${dashboardVersion}`)
 
   if (
     !expectedPackageJson.dependencies?.['@types/node']

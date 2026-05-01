@@ -4,6 +4,7 @@ import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'
+import { version as dashboardVersion } from '../../dashboard/package.json'
 import { version } from '../../weapp-vite/package.json'
 import { createAgentsGuidelines } from './agents'
 import { TemplateName } from './enums'
@@ -332,6 +333,7 @@ export async function createProject(
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
+  upsertExistingDependencyVersion(pkgJson, '@weapp-vite/dashboard', toCaretVersion(dashboardVersion))
   await upsertTailwindcssVersion(pkgJson)
 
   await writeJsonFile(packageJsonPath, pkgJson)
