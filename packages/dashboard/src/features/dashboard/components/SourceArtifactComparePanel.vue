@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { LargestFileEntry } from '../types'
+import type { SourceCompareInsightTone } from '../utils/sourceCompareSummary'
 import { computed, onBeforeUnmount, ref, toRefs } from 'vue'
 import { useSourceArtifactCompare } from '../composables/useSourceArtifactCompare'
 import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
-import { createSourceCompareReport, formatSignedBytes } from '../utils/sourceCompareSummary'
+import { createSourceCompareInsights, createSourceCompareReport, formatSignedBytes } from '../utils/sourceCompareSummary'
 import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
 
@@ -55,6 +56,17 @@ const compareMetricItems = computed(() => compareStats.value
 const compareSizeText = computed(() => compareStats.value
   ? `${formatBytes(compareStats.value.sourceBytes)} → ${formatBytes(compareStats.value.artifactBytes)}`
   : '')
+const compareInsights = computed(() => compareStats.value ? createSourceCompareInsights(compareStats.value) : [])
+
+function getInsightClassName(tone: SourceCompareInsightTone) {
+  if (tone === 'warning') {
+    return 'border-amber-300/60 bg-amber-50 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200'
+  }
+  if (tone === 'success') {
+    return 'border-emerald-300/60 bg-emerald-50 text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200'
+  }
+  return 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text)'
+}
 
 function setCopyStatus(status: string) {
   copyStatus.value = status
@@ -76,6 +88,7 @@ async function copyCompareReport() {
       sourcePath: sourceContent.value.path,
       artifactPath: artifactContent.value.path,
       stats: compareStats.value,
+      insights: compareInsights.value,
     }))
     setCopyStatus('已复制')
   }
@@ -157,6 +170,26 @@ onBeforeUnmount(() => {
         <p class="text-xs text-(--dashboard-text-soft)">
           {{ compareSizeText }}
         </p>
+      </div>
+      <div v-if="compareInsights.length" class="grid gap-2 lg:grid-cols-3">
+        <article
+          v-for="item in compareInsights"
+          :key="item.id"
+          class="rounded-md border px-3 py-2.5"
+          :class="getInsightClassName(item.tone)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">
+              {{ item.label }}
+            </p>
+            <p class="shrink-0 text-sm font-semibold">
+              {{ item.value }}
+            </p>
+          </div>
+          <p class="mt-2 line-clamp-2 text-xs leading-5 opacity-80">
+            {{ item.detail }}
+          </p>
+        </article>
       </div>
     </div>
 

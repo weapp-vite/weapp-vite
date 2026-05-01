@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSourceCompareReport, createSourceCompareStats, formatSignedBytes } from './sourceCompareSummary'
+import { createSourceCompareInsights, createSourceCompareReport, createSourceCompareStats, formatSignedBytes } from './sourceCompareSummary'
 
 describe('sourceCompareSummary', () => {
   it('estimates added and removed lines with repeated lines', () => {
@@ -23,6 +23,16 @@ describe('sourceCompareSummary', () => {
       sourcePath: 'src/index.ts',
       artifactPath: 'dist/index.js',
       stats,
-    })).toContain('源码：src/index.ts')
+    })).toContain('## 洞察')
+  })
+
+  it('creates warning insights for rewritten and larger artifacts', () => {
+    const insights = createSourceCompareInsights(createSourceCompareStats(
+      Array.from({ length: 20 }, (_, index) => `source-${index}`).join('\n'),
+      Array.from({ length: 500 }, (_, index) => `artifact-${index}-with-extra-runtime-code-and-generated-wrapper`).join('\n'),
+    ))
+
+    expect(insights.map(item => [item.id, item.tone])).toContainEqual(['retention', 'warning'])
+    expect(insights.map(item => [item.id, item.tone])).toContainEqual(['size', 'warning'])
   })
 })
