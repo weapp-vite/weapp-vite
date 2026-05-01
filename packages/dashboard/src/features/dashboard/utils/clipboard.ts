@@ -15,11 +15,36 @@ function copyTextWithFallback(text: string) {
   }
 }
 
+async function writeClipboardText(text: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  try {
+    await Promise.race([
+      navigator.clipboard.writeText(text),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('clipboard write timeout'))
+        }, 800)
+      }),
+    ])
+  }
+  finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+  }
+}
+
 export async function copyText(text: string) {
-  if (navigator.clipboard?.writeText && window.isSecureContext) {
-    await navigator.clipboard.writeText(text)
+  try {
+    copyTextWithFallback(text)
     return
   }
+  catch {
+    if (navigator.clipboard && window.isSecureContext) {
+      await writeClipboardText(text)
+      return
+    }
+  }
 
-  copyTextWithFallback(text)
+  throw new Error('copy text failed')
 }

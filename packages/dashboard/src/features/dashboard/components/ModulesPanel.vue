@@ -11,6 +11,7 @@ import type {
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatBuildOrigin, formatBytes } from '../utils/format'
+import { createModuleOptimizationPlanSummary } from '../utils/moduleOptimizationPlan'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
@@ -153,6 +154,12 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
   ...createLargestFileSampleItem(file),
 })))
 
+const moduleOptimizationPlan = computed(() => createModuleOptimizationPlanSummary({
+  duplicateModules: props.duplicateModules,
+  incrementAttribution: props.incrementAttribution,
+  largestFiles: props.visibleLargestFiles,
+}))
+
 const duplicateModulesReportText = computed(() => [
   '# dashboard 重复模块',
   '',
@@ -262,6 +269,7 @@ onBeforeUnmount(() => {
       :increment-summary-items="incrementSummaryItems"
       :largest-file-sample-items="largestFileSampleItems"
       :module-source-items="moduleSourceItems"
+      :optimization-plan="moduleOptimizationPlan"
     />
   </section>
 </template>
