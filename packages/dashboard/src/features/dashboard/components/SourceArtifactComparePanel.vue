@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { LargestFileEntry } from '../types'
-import { toRefs } from 'vue'
+import { computed, onBeforeUnmount, ref, toRefs } from 'vue'
 import { useSourceArtifactCompare } from '../composables/useSourceArtifactCompare'
+import { copyText } from '../utils/clipboard'
+import { formatBytes } from '../utils/format'
+import { createSourceCompareReport, formatSignedBytes } from '../utils/sourceCompareSummary'
 import AppEmptyState from './AppEmptyState.vue'
+import AppMetricTile from './AppMetricTile.vue'
 
 const props = defineProps<{
   activeFileKey: string | null
@@ -15,9 +19,12 @@ const emit = defineEmits<{
 }>()
 
 const { activeFileKey, files, theme } = toRefs(props)
+const copyStatus = ref('')
+let copyStatusTimer: ReturnType<typeof setTimeout> | null = null
 const {
   artifactContent,
   artifactOptions,
+  compareStats,
   editorElement,
   loadComparison,
   loadError,
@@ -35,6 +42,53 @@ const {
     emit('selectFile', file)
   },
 })
+
+const compareMetricItems = computed(() => compareStats.value
+  ? [
+      { label: '源码行数', value: String(compareStats.value.sourceLines) },
+      { label: '产物行数', value: String(compareStats.value.artifactLines) },
+      { label: '新增 / 删除', value: `${compareStats.value.addedLines} / ${compareStats.value.removedLines}` },
+      { label: '字节变化', value: formatSignedBytes(compareStats.value.byteDelta) },
+    ]
+  : [])
+
+const compareSizeText = computed(() => compareStats.value
+  ? `${formatBytes(compareStats.value.sourceBytes)} → ${formatBytes(compareStats.value.artifactBytes)}`
+  : '')
+
+function setCopyStatus(status: string) {
+  copyStatus.value = status
+  if (copyStatusTimer) {
+    clearTimeout(copyStatusTimer)
+  }
+  copyStatusTimer = setTimeout(() => {
+    copyStatus.value = ''
+    copyStatusTimer = null
+  }, 1800)
+}
+
+async function copyCompareReport() {
+  if (!compareStats.value || !sourceContent.value || !artifactContent.value) {
+    return
+  }
+  try {
+    await copyText(createSourceCompareReport({
+      sourcePath: sourceContent.value.path,
+      artifactPath: artifactContent.value.path,
+      stats: compareStats.value,
+    }))
+    setCopyStatus('已复制')
+  }
+  catch {
+    setCopyStatus('复制失败')
+  }
+}
+
+onBeforeUnmount(() => {
+  if (copyStatusTimer) {
+    clearTimeout(copyStatusTimer)
+  }
+})
 </script>
 
 <template>
@@ -49,14 +103,27 @@ const {
             {{ statusText }}
           </p>
         </div>
-        <button
-          type="button"
-          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-          :disabled="loading || !selectedArtifactKey || !selectedSourcePath"
-          @click="loadComparison"
-        >
-          刷新
-        </button>
+        <div class="flex items-center gap-2">
+          <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
+            {{ copyStatus }}
+          </span>
+          <button
+            type="button"
+            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+            :disabled="!compareStats"
+            @click="copyCompareReport"
+          >
+            复制摘要
+          </button>
+          <button
+            type="button"
+            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
+            :disabled="loading || !selectedArtifactKey || !selectedSourcePath"
+            @click="loadComparison"
+          >
+            刷新
+          </button>
+        </div>
       </div>
       <div class="grid gap-2 lg:grid-cols-2">
         <select
@@ -78,6 +145,18 @@ const {
             {{ item.label }}
           </option>
         </select>
+      </div>
+      <div v-if="compareStats" class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <AppMetricTile
+            v-for="item in compareMetricItems"
+            :key="item.label"
+            v-bind="item"
+          />
+        </div>
+        <p class="text-xs text-(--dashboard-text-soft)">
+          {{ compareSizeText }}
+        </p>
       </div>
     </div>
 

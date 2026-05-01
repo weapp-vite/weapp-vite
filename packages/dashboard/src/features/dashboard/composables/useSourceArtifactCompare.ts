@@ -8,6 +8,7 @@ import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import TypeScriptWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { configureMonacoDiffEditor, resolveMonacoTheme } from '../utils/monacoDiffTheme'
+import { createSourceCompareStats } from '../utils/sourceCompareSummary'
 
 type Monaco = typeof MonacoApi
 type MonacoDiffEditor = ReturnType<Monaco['editor']['createDiffEditor']>
@@ -136,6 +137,9 @@ export function useSourceArtifactCompare(options: {
     }
     return '等待文件'
   })
+  const compareStats = computed(() => sourceContent.value && artifactContent.value
+    ? createSourceCompareStats(sourceContent.value.content, artifactContent.value.content)
+    : null)
 
   function resolveSelectedArtifactKey() {
     if (options.activeFileKey.value && artifactOptions.value.some(item => item.key === options.activeFileKey.value)) {
@@ -276,6 +280,7 @@ export function useSourceArtifactCompare(options: {
   return {
     artifactContent,
     artifactOptions,
+    compareStats,
     editorElement,
     loadComparison,
     loadError,
