@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-29T14:34:12.662Z",
+  "generatedAt": "2026-05-01T15:39:51.825Z",
   "site": "https://vite.icebreaker.top",
   "count": 260,
   "items": [
@@ -1356,7 +1356,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-04-29",
+      "updatedAt": "2026-04-30",
       "source": "guide/cli.md"
     },
     {
@@ -6245,8 +6245,8 @@
         "响应式",
         "setdata",
         "store",
-        "编译",
-        "api"
+        "调试",
+        "编译"
       ],
       "headings": [
         "Wevu 概览",
@@ -6256,13 +6256,13 @@
         "4. 诞生的小故事",
         "5. 你会用到的能力",
         "6. 其他子路径导出",
-        "7. 已弃用 API 提示",
-        "8. 编译侧桥接（wevu/compiler）",
-        "9. 推荐学习顺序（按“最短上手 → 深入理解”）",
-        "10. 速查表",
-        "11. 扩展阅读"
+        "7. 开发产物与源码调试",
+        "8. 已弃用 API 提示",
+        "9. 编译侧桥接（wevu/compiler）",
+        "10. 推荐学习顺序（按“最短上手 → 深入理解”）",
+        "10. 速查表"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-05-01",
       "source": "wevu/index.md"
     },
     {

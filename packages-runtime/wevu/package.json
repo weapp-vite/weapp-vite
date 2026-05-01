@@ -31,7 +31,7 @@
       "types": "./dist/index.d.mts",
       "import": {
         "types": "./dist/index.d.mts",
-        "development": "./dist/debug/index.mjs",
+        "development": "./dist/dev/index.mjs",
         "default": "./dist/index.mjs"
       }
     },
@@ -39,7 +39,7 @@
       "types": "./dist/compiler.d.mts",
       "import": {
         "types": "./dist/compiler.d.mts",
-        "development": "./dist/debug/compiler.mjs",
+        "development": "./dist/dev/compiler.mjs",
         "default": "./dist/compiler.mjs"
       }
     },
@@ -47,7 +47,7 @@
       "types": "./dist/jsx-runtime.d.mts",
       "import": {
         "types": "./dist/jsx-runtime.d.mts",
-        "development": "./dist/debug/jsx-runtime.mjs",
+        "development": "./dist/dev/jsx-runtime.mjs",
         "default": "./dist/jsx-runtime.mjs"
       }
     },
@@ -55,7 +55,7 @@
       "types": "./dist/store.d.mts",
       "import": {
         "types": "./dist/store.d.mts",
-        "development": "./dist/debug/store.mjs",
+        "development": "./dist/dev/store.mjs",
         "default": "./dist/store.mjs"
       }
     },
@@ -63,7 +63,7 @@
       "types": "./dist/api.d.mts",
       "import": {
         "types": "./dist/api.d.mts",
-        "development": "./dist/debug/api.mjs",
+        "development": "./dist/dev/api.mjs",
         "default": "./dist/api.mjs"
       }
     },
@@ -71,7 +71,7 @@
       "types": "./dist/fetch.d.mts",
       "import": {
         "types": "./dist/fetch.d.mts",
-        "development": "./dist/debug/fetch.mjs",
+        "development": "./dist/dev/fetch.mjs",
         "default": "./dist/fetch.mjs"
       }
     },
@@ -79,7 +79,7 @@
       "types": "./dist/web-apis.d.mts",
       "import": {
         "types": "./dist/web-apis.d.mts",
-        "development": "./dist/debug/web-apis.mjs",
+        "development": "./dist/dev/web-apis.mjs",
         "default": "./dist/web-apis.mjs"
       }
     },
@@ -87,7 +87,7 @@
       "types": "./dist/router.d.mts",
       "import": {
         "types": "./dist/router.d.mts",
-        "development": "./dist/debug/router.mjs",
+        "development": "./dist/dev/router.mjs",
         "default": "./dist/router.mjs"
       }
     },
@@ -95,71 +95,71 @@
       "types": "./dist/vue-demi.d.mts",
       "import": {
         "types": "./dist/vue-demi.d.mts",
-        "development": "./dist/debug/vue-demi.mjs",
+        "development": "./dist/dev/vue-demi.mjs",
         "default": "./dist/vue-demi.mjs"
       }
     },
-    "./debug": {
+    "./dev": {
       "types": "./dist/index.d.mts",
       "import": {
         "types": "./dist/index.d.mts",
-        "default": "./dist/debug/index.mjs"
+        "default": "./dist/dev/index.mjs"
       }
     },
-    "./debug/compiler": {
+    "./dev/compiler": {
       "types": "./dist/compiler.d.mts",
       "import": {
         "types": "./dist/compiler.d.mts",
-        "default": "./dist/debug/compiler.mjs"
+        "default": "./dist/dev/compiler.mjs"
       }
     },
-    "./debug/jsx-runtime": {
+    "./dev/jsx-runtime": {
       "types": "./dist/jsx-runtime.d.mts",
       "import": {
         "types": "./dist/jsx-runtime.d.mts",
-        "default": "./dist/debug/jsx-runtime.mjs"
+        "default": "./dist/dev/jsx-runtime.mjs"
       }
     },
-    "./debug/store": {
+    "./dev/store": {
       "types": "./dist/store.d.mts",
       "import": {
         "types": "./dist/store.d.mts",
-        "default": "./dist/debug/store.mjs"
+        "default": "./dist/dev/store.mjs"
       }
     },
-    "./debug/api": {
+    "./dev/api": {
       "types": "./dist/api.d.mts",
       "import": {
         "types": "./dist/api.d.mts",
-        "default": "./dist/debug/api.mjs"
+        "default": "./dist/dev/api.mjs"
       }
     },
-    "./debug/fetch": {
+    "./dev/fetch": {
       "types": "./dist/fetch.d.mts",
       "import": {
         "types": "./dist/fetch.d.mts",
-        "default": "./dist/debug/fetch.mjs"
+        "default": "./dist/dev/fetch.mjs"
       }
     },
-    "./debug/web-apis": {
+    "./dev/web-apis": {
       "types": "./dist/web-apis.d.mts",
       "import": {
         "types": "./dist/web-apis.d.mts",
-        "default": "./dist/debug/web-apis.mjs"
+        "default": "./dist/dev/web-apis.mjs"
       }
     },
-    "./debug/router": {
+    "./dev/router": {
       "types": "./dist/router.d.mts",
       "import": {
         "types": "./dist/router.d.mts",
-        "default": "./dist/debug/router.mjs"
+        "default": "./dist/dev/router.mjs"
       }
     },
-    "./debug/vue-demi": {
+    "./dev/vue-demi": {
       "types": "./dist/vue-demi.d.mts",
       "import": {
         "types": "./dist/vue-demi.d.mts",
-        "default": "./dist/debug/vue-demi.mjs"
+        "default": "./dist/dev/vue-demi.mjs"
       }
     }
   },

@@ -92,7 +92,33 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [wevu/router](/wevu/router)：更接近 Vue Router 心智的路由入口
 - [wevu/jsx-runtime](/wevu/jsx-runtime)：给 TSX / JSX 类型系统使用的入口
 
-## 7. 已弃用 API 提示
+## 7. 开发产物与源码调试
+
+`wevu` 默认入口指向压缩后的生产产物，用来降低小程序包体积。发布包里也会同时包含一份未压缩并带 sourcemap 的开发产物：
+
+- 支持 `development` export condition 的构建器会在开发模式下优先解析到 `dist/dev/*`。
+- 需要手动切换时，可以把 `wevu` alias 到 `wevu/dev`，也可以把 `wevu/router` alias 到 `wevu/dev/router` 等同名开发入口。
+- 生产构建应继续使用默认入口，避免 `dist/dev/*` 进入正式小程序包。
+
+例如只在本地排查 Wevu 运行时源码时，可以临时改成：
+
+```ts
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      'wevu/router': 'wevu/dev/router',
+      'wevu/store': 'wevu/dev/store',
+      'wevu': 'wevu/dev',
+    },
+  },
+})
+```
+
+排查结束后移除 alias，让正式构建回到默认压缩产物。
+
+## 8. 已弃用 API 提示
 
 当前源码里已明确标记为弃用、但仍保留导出的公开 API 主要是：
 
@@ -105,7 +131,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 > **注意**：`useRouter()` 不属于 `wevu` 根入口；如果你要使用高阶导航，请从 [`wevu/router`](/wevu/router) 导入。
 
-## 8. 编译侧桥接（wevu/compiler）
+## 9. 编译侧桥接（wevu/compiler）
 
 `wevu/compiler` 用来承载 Wevu 与编译工具之间的共享常量，避免在多个项目里重复写字符串：
 
@@ -115,7 +141,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 这些导出面向编译工具（例如 Weapp-vite），应用代码不要依赖它们作为稳定 API。
 
-## 9. 推荐学习顺序（按“最短上手 → 深入理解”）
+## 10. 推荐学习顺序（按“最短上手 → 深入理解”）
 
 1. [快速上手](/wevu/quick-start)：先跑通一个页面/组件（含 store）
 2. [运行时与生命周期](/wevu/runtime)：理解 `setup(props, ctx)`、生命周期 hooks、`bindModel`、watch 策略

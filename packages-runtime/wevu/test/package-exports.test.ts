@@ -36,20 +36,20 @@ function entryExport(fileName: string) {
     types,
     import: {
       types,
-      development: `./dist/debug/${fileName}.mjs`,
+      development: `./dist/dev/${fileName}.mjs`,
       default: `./dist/${fileName}.mjs`,
     },
   }
 }
 
-function debugEntryExport(fileName: string) {
+function devEntryExport(fileName: string) {
   const types = `./dist/${fileName}.d.mts`
 
   return {
     types,
     import: {
       types,
-      default: `./dist/debug/${fileName}.mjs`,
+      default: `./dist/dev/${fileName}.mjs`,
     },
   }
 }
@@ -63,15 +63,15 @@ describe('package exports', () => {
     }
   })
 
-  it('declares explicit debug exports for manual runtime switching', () => {
+  it('declares explicit dev exports for manual runtime switching', () => {
     const exportsField = readExports()
 
     for (const [exportName, fileName] of publicEntries) {
-      const debugExportName = exportName === '.'
-        ? './debug'
-        : `./debug/${exportName.slice(2)}`
+      const devExportName = exportName === '.'
+        ? './dev'
+        : `./dev/${exportName.slice(2)}`
 
-      expect(exportsField[debugExportName]).toEqual(debugEntryExport(fileName))
+      expect(exportsField[devExportName]).toEqual(devEntryExport(fileName))
     }
   })
 })

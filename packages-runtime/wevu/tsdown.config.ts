@@ -31,7 +31,7 @@ export default defineConfig([
   },
   {
     entry,
-    outDir: './dist/debug',
+    outDir: './dist/dev',
     format: ['esm'],
     target: 'es2018',
     dts: false,
