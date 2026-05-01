@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { AnalyzeActionCenterItem, AnalyzeActionCenterTone, DashboardMetricCard, LargestFileEntry, PackageInsight, SummaryMetric } from '../types'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { copyText } from '../utils/clipboard'
 import { formatBytes, formatPackageType } from '../utils/format'
+import { createReleaseGateSummary } from '../utils/releaseGate'
 import { runtimeBadgeStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import DashboardIcon from './DashboardIcon.vue'
 import DashboardMetricGrid from './DashboardMetricGrid.vue'
+import ReleaseGatePanel from './ReleaseGatePanel.vue'
 
 interface PackageOverviewItem extends PackageInsight {
   typeLabel: string
@@ -34,6 +37,13 @@ const emit = defineEmits<{
 const visibleActions = computed(() => props.actionItems.slice(0, 4))
 const visibleLargestFiles = computed(() => props.largestFiles.slice(0, 5))
 const totalPackageBytes = computed(() => props.packageInsights.reduce((sum, item) => sum + item.totalBytes, 0))
+const releaseGate = computed(() => createReleaseGateSummary({
+  actionItems: props.actionItems,
+  largestFiles: props.largestFiles,
+  packageInsights: props.packageInsights,
+}))
+const gateCopyStatus = ref('')
+let gateCopyStatusTimer: ReturnType<typeof setTimeout> | null = null
 const packageOverviewItems = computed<PackageOverviewItem[]>(() => props.packageInsights.slice(0, 5).map((item) => {
   const sharePercent = totalPackageBytes.value > 0
     ? item.totalBytes / totalPackageBytes.value * 100
@@ -76,11 +86,44 @@ function getToneLabel(tone: AnalyzeActionCenterTone) {
   }
   return '定位'
 }
+
+function setGateCopyStatus(status: string) {
+  gateCopyStatus.value = status
+  if (gateCopyStatusTimer) {
+    clearTimeout(gateCopyStatusTimer)
+  }
+  gateCopyStatusTimer = setTimeout(() => {
+    gateCopyStatus.value = ''
+    gateCopyStatusTimer = null
+  }, 1800)
+}
+
+async function copyReleaseGateReport() {
+  try {
+    await copyText(releaseGate.value.report)
+    setGateCopyStatus('已复制')
+  }
+  catch {
+    setGateCopyStatus('复制失败')
+  }
+}
+
+onBeforeUnmount(() => {
+  if (gateCopyStatusTimer) {
+    clearTimeout(gateCopyStatusTimer)
+  }
+})
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden">
+  <section class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
     <DashboardMetricGrid compact :cards="cards" :package-type-summary="packageTypeSummary" />
+
+    <ReleaseGatePanel
+      :gate="releaseGate"
+      :copy-status="gateCopyStatus"
+      @copy="copyReleaseGateReport"
+    />
 
     <div class="grid min-h-0 gap-2 overflow-hidden xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
