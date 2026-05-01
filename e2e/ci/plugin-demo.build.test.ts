@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { findWevuVendorChunkContaining } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/plugin-demo')
@@ -31,9 +32,12 @@ describe.sequential('plugin-demo build e2e', () => {
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/native-meter/index.js'))).toBe(true)
 
-    const pluginVendorCode = await fs.readFile(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-ref.js'), 'utf8')
-    expect(pluginVendorCode).toContain('dayjs')
-    expect(pluginVendorCode).toContain('2026-03-19T12:34:00')
-    expect(pluginVendorCode).toContain('npm(dayjs) 构建标记')
+    const pluginVendor = await findWevuVendorChunkContaining(PLUGIN_DIST_ROOT, [
+      'miniprogram_npm/dayjs/index',
+      'npm(dayjs) 构建标记',
+    ])
+    expect(pluginVendor.code).toContain('dayjs')
+    expect(pluginVendor.code).toContain('2026-03-19T12:34:00')
+    expect(pluginVendor.code).toContain('npm(dayjs) 构建标记')
   })
 })

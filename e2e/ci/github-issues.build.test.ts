@@ -5,6 +5,7 @@ import { fdir } from 'fdir'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../utils/buildLog'
+import { findWevuVendorChunk, findWevuVendorChunkContaining } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -100,27 +101,6 @@ function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) 
 
   return candidates.find(candidate => candidate.includes(`${path.sep}weapp-vendors${path.sep}`))
     ?? candidates[0]
-}
-
-async function findWevuVendorRuntimePath(expectedSnippet: string) {
-  const vendorRoot = path.join(DIST_ROOT, 'weapp-vendors')
-  const files = await scanFiles(vendorRoot)
-
-  for (const relativeFile of files) {
-    if (!relativeFile.endsWith('.js')) {
-      continue
-    }
-    const absoluteFile = path.join(vendorRoot, relativeFile)
-    const code = await fs.readFile(absoluteFile, 'utf-8')
-    if (code.includes(expectedSnippet)) {
-      return {
-        path: absoluteFile,
-        code,
-      }
-    }
-  }
-
-  throw new Error(`Failed to resolve wevu vendor runtime containing snippet: ${expectedSnippet}`)
 }
 
 async function runIssue393Build() {
@@ -501,7 +481,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const scopedSlotJsonPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.json')
     const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.wxml')
     const hostWxmlPath = path.join(DIST_ROOT, 'components/issue-521/ScopedFlexHost/index.wxml')
-    const runtime = await findWevuVendorRuntimePath('options: { virtualHost: true }')
+    const runtime = await findWevuVendorChunk(
+      DIST_ROOT,
+      code => code.includes('virtualHost') && /options:\s*\{\s*virtualHost:\s*(?:true|!0)\s*\}/.test(code),
+      'scoped slot virtualHost options',
+    )
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
@@ -523,8 +507,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     })
     expect(scopedSlotWxml).toContain('<FlexItem label="A" val="{{__wvSlotPropsData.xyz}}" /><FlexItem label="B" val="{{__wvSlotPropsData.xyz}}" />')
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
-    expect(runtime.code).toContain('function createScopedSlotOptions')
-    expect(runtime.code).toContain('options: { virtualHost: true }')
+    expect(runtime.code).toContain('virtualHost')
+    expect(runtime.code).toMatch(/options:\s*\{\s*virtualHost:\s*(?:true|!0)\s*\}/)
   })
 
   it('experiment: flex parent keeps projected multi-node slot groups visible via view wrappers', async () => {
@@ -1059,7 +1043,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-294/index.json')
     const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
-    const { code: wevuRuntime } = await findWevuVendorRuntimePath('showShareMenu')
+    const { code: wevuRuntime } = await findWevuVendorChunkContaining(DIST_ROOT, ['showShareMenu'])
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
     expect(issuePageJs).toContain('enableOnShareAppMessage: true')
@@ -1549,7 +1533,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const launchPageJs = await fs.readFile(launchPageJsPath, 'utf-8')
     const resultPageWxml = await fs.readFile(resultPageWxmlPath, 'utf-8')
     const resultPageJs = await fs.readFile(resultPageJsPath, 'utf-8')
-    const { code: wevuRuntime } = await findWevuVendorRuntimePath('storeToRefs')
+    const { code: wevuRuntime } = await findWevuVendorChunkContaining(DIST_ROOT, ['useIssue373Store'])
 
     expect(launchPageWxml).toContain('issue-373 store computed survives reLaunch')
     expect(launchPageWxml).toContain('launch count: {{count}}')
@@ -1565,8 +1549,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('increment')
     expect(resultPageJs).toContain('_runE2E')
 
-    expect(wevuRuntime).toMatch(/Object\.defineProperty\(exports,\s*"storeToRefs"|export\s+\{[^}]*storeToRefs/)
-    expect(launchPageJs).toContain('storeToRefs(store)')
-    expect(resultPageJs).toContain('storeToRefs(store)')
+    expect(wevuRuntime).toContain('issue-373-store')
+    expect(launchPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*require_common\.\w+\(store\)/)
+    expect(resultPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*require_common\.\w+\(store\)/)
   })
 })

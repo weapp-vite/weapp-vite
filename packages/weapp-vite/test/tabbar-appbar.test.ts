@@ -27,14 +27,15 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'custom-tab-bar/index.js': [
     /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/weapp-vendors\/wevu-ref\.js["']\)/,
+    /require\(["']\.\.\/weapp-vendors\/wevu-router\.js["']\)\.require_other\(\)/,
     /\bComponent\(/,
     /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
   ],
   'pages/index/async.js': [/exports\.async/, /exports\.default/],
   'pages/index/index.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-router\.js["']\)/,
+    /\.require_other\(\)/,
     /\bPage\(/,
     /require\.async\(["']\.\/async["']\)/,
   ],
@@ -46,25 +47,23 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
   ],
-  'weapp-vendors/wevu-defineProperty.js': [
+  'weapp-vendors/wevu-router.js': [
     /__commonJS(?:Min)?/,
-    /\bnextTick\b/,
+    /require_other/,
+    /Object\.defineProperty\(exports, ["']require_other["']/,
   ],
   'wevu-runtime.js': [
-    /require\(["']\.\/(?:weapp-vendors\/)?wevu-ref\.js["']\)/,
-    /\bcreateWevuComponent\b/,
+    /require\(["']\.\/(?:weapp-vendors\/)?wevu-router\.js["']\)/,
+    /Object\.defineProperty\(exports, ["']Ma["']/,
   ],
   'weapp-vendors/wevu-src.js': [
-    /require\(["']\.\/wevu-ref\.js["']\)/,
-    /\bcreateWevuComponent\b/,
+    /require\(["']\.\/wevu-router\.js["']\)/,
+    /Object\.defineProperty\(exports, ["']Ma["']/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
 
 function normalizeDistFile(file: string) {
-  if (/^weapp-vendors\/wevu-ref\.js$/.test(file)) {
-    return 'weapp-vendors/wevu-defineProperty.js'
-  }
   if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
     return 'wevu-runtime.js'
   }

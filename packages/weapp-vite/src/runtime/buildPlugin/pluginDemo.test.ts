@@ -28,14 +28,17 @@ async function resolvePluginWevuRuntimePath(pluginDistRoot: string) {
 }
 
 async function resolvePluginWevuSupportPath(pluginDistRoot: string) {
-  const stableSupportPath = path.join(pluginDistRoot, 'weapp-vendors/wevu-ref.js')
-  if (await fs.pathExists(stableSupportPath)) {
-    return stableSupportPath
-  }
-
-  const legacySupportPath = path.join(pluginDistRoot, 'weapp-vendors/wevu-defineProperty.js')
-  if (await fs.pathExists(legacySupportPath)) {
-    return legacySupportPath
+  const vendorRoot = path.join(pluginDistRoot, 'weapp-vendors')
+  const files = await fs.readdir(vendorRoot)
+  for (const file of files) {
+    if (!file.endsWith('.js')) {
+      continue
+    }
+    const filePath = path.join(vendorRoot, file)
+    const code = await readFile(filePath)
+    if (code.includes('miniprogram_npm/dayjs/index') && code.includes('npm(dayjs) 构建标记')) {
+      return filePath
+    }
   }
 
   return undefined
@@ -88,10 +91,11 @@ describe('plugin-demo build regression', () => {
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
+    expect(pluginSupportPath).toContain('weapp-vendors/wevu-')
     expect(pluginVendorCode).toContain('miniprogram_npm/dayjs/index')
     expect(pluginVendorCode).toContain('2026-03-19T12:34:00')
     expect(pluginVendorCode).toContain('npm(dayjs) 构建标记')
-    expect(pluginWevuRuntimeCode).toContain('createWevuComponent')
+    expect(pluginWevuRuntimeCode).toContain('Object.defineProperty(exports, "Ma"')
     expect(pluginPageJson.usingComponents ?? {}).toEqual({})
     expect(nativePlaygroundJson.usingComponents).toMatchObject({
       'hello-showcase': '../../components/hello-component/index',

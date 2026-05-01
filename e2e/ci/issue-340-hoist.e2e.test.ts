@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { findWevuVendorChunkContaining, toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/issue-340-hoist')
@@ -9,6 +10,10 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
 function expectModuleReference(code: string, patternSource: string) {
   expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${patternSource}\\1\\)|from\\s+(['"\`])${patternSource}\\2)`))
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 async function runBuild() {
@@ -40,18 +45,17 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     const userVendorsPath = path.join(DIST_ROOT, 'subpackages/user/vendors.js')
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
     const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
-    const rootWevuRefPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
+    const rootWevuShared = await findWevuVendorChunkContaining(DIST_ROOT, ['useIssue340SharedMessage', 'issue-340-hoist'])
 
     const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
     const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
-    const rootWevuRefJs = await fs.readFile(rootWevuRefPath, 'utf-8')
     expect(itemPageJs).toContain('item-login-required:issue-340-hoist:shared')
     expect(userPageJs).toContain('user-register-form:issue-340-hoist:shared')
-    expect(rootWevuRefJs).toContain('useIssue340SharedMessage')
-    expect(rootWevuRefJs).toContain('issue-340-hoist')
+    expect(rootWevuShared.code).toContain('useIssue340SharedMessage')
+    expect(rootWevuShared.code).toContain('issue-340-hoist')
 
-    expectModuleReference(itemPageJs, '\\.\\.\\/\\.\\.\\/\\.\\.\\/weapp-vendors\\/wevu-ref\\.js')
-    expectModuleReference(userPageJs, '\\.\\.\\/\\.\\.\\/\\.\\.\\/weapp-vendors\\/wevu-ref\\.js')
+    expectModuleReference(itemPageJs, escapeRegex(toRelativeImport(itemPageJsPath, rootWevuShared.path)))
+    expectModuleReference(userPageJs, escapeRegex(toRelativeImport(userPageJsPath, rootWevuShared.path)))
     expect(itemPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
     expect(userPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
     expect(itemPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\2)/)
@@ -67,7 +71,7 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     expect(await fs.pathExists(rootVendorsPath)).toBe(false)
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
     expect(await fs.pathExists(userVendorsPath)).toBe(false)
-    expect(await fs.pathExists(rootWevuRefPath)).toBe(true)
+    expect(await fs.pathExists(rootWevuShared.path)).toBe(true)
     expect(await fs.pathExists(itemRuntimePath)).toBe(false)
     expect(await fs.pathExists(userRuntimePath)).toBe(false)
   })

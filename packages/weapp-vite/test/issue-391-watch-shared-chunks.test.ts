@@ -80,19 +80,37 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
-async function resolveIssue391SharedRuntimeOutputPath(outDir: string) {
-  const candidates = [
-    path.resolve(outDir, 'weapp-vendors/wevu-ref.js'),
-    path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js'),
-  ]
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
-  for (const candidate of candidates) {
-    if (await fs.pathExists(candidate)) {
-      return candidate
+async function waitForVendorFileContains(outDir: string, marker: string, timeoutMs = 45_000) {
+  const vendorRoot = path.resolve(outDir, 'weapp-vendors')
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await fs.pathExists(vendorRoot)) {
+      const files = await fs.readdir(vendorRoot)
+      for (const file of files) {
+        if (!file.endsWith('.js')) {
+          continue
+        }
+
+        const filePath = path.join(vendorRoot, file)
+        const content = await fs.readFile(filePath, 'utf8')
+        if (content.includes(marker)) {
+          return filePath
+        }
+      }
     }
+    await new Promise(resolve => setTimeout(resolve, 200))
   }
 
-  return candidates[0]
+  throw new Error(`watch build timed out, vendor output missing marker: ${marker}`)
+}
+
+function createRequirePattern(outDir: string, filePath: string) {
+  const relativePath = path.relative(outDir, filePath).replaceAll('\\', '/')
+  return new RegExp(`require\\((['"])\\.\\.\\/\\.\\.\\/${escapeRegExp(relativePath)}\\1\\)`)
 }
 
 describe.sequential('issue #391 watch shared chunk rebuild', () => {
@@ -128,12 +146,11 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       const outDir = ctxResult.ctx.configService.outDir
       const pageOutputPath = path.resolve(outDir, 'pages/issue-391/index.js')
       const peerOutputPath = path.resolve(outDir, 'pages/issue-391-peer/index.js')
-      const sharedRuntimeOutputPath = await resolveIssue391SharedRuntimeOutputPath(outDir)
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-391/index.ts')
-      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/(?:wevu-ref|wevu-defineProperty)\.js\1\)/
 
       await waitForFileContains(pageOutputPath, 'issue-391-initial-marker')
-      await waitForFileContains(sharedRuntimeOutputPath, 'issue-391-shared-sentinel')
+      const sharedRuntimeOutputPath = await waitForVendorFileContains(outDir, 'issue-391-shared-sentinel')
+      const sharedImportPattern = createRequirePattern(outDir, sharedRuntimeOutputPath)
 
       const initialPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const initialPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
@@ -153,10 +170,11 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await fs.writeFile(pageSourcePath, updatedSource, 'utf8')
       await buildPromise
       await waitForFileContains(pageOutputPath, 'issue-391-updated-marker')
+      const updatedSharedRuntimeOutputPath = await waitForVendorFileContains(outDir, 'issue-391-shared-sentinel')
 
       const updatedPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const updatedPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
-      const updatedSharedRuntimeOutput = await fs.readFile(sharedRuntimeOutputPath, 'utf8')
+      const updatedSharedRuntimeOutput = await fs.readFile(updatedSharedRuntimeOutputPath, 'utf8')
 
       expect(updatedPageOutput).toContain('issue-391-updated-marker')
       expect(updatedPageOutput).toMatch(sharedImportPattern)

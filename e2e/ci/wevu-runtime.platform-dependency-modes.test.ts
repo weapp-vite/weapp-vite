@@ -5,6 +5,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
+import { findWevuVendorChunk } from '../utils/wevu-vendor'
 import { CLI_PATH } from '../wevu-runtime.utils'
 
 type DependencyMode = 'dependencies' | 'devDependencies'
@@ -64,9 +65,13 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
   const output = result.all ?? `${result.stdout}\n${result.stderr}`
   expect(output).not.toContain('未安装 wevu')
 
-  const runtimeScriptPath = path.join(distRoot, 'weapp-vendors/wevu-ref.js')
-  expect(await fs.pathExists(runtimeScriptPath)).toBe(true)
-  return await fs.readFile(runtimeScriptPath, 'utf8')
+  const runtimeScript = await findWevuVendorChunk(
+    distRoot,
+    code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+    `${platform} platform runtime`,
+  )
+  expect(await fs.pathExists(runtimeScript.path)).toBe(true)
+  return runtimeScript.code
 }
 
 function assertPlatformTreeShaking(commonScript: string, platform: RuntimePlatform) {

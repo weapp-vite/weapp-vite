@@ -4,6 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { waitForWevuVendorChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT } from '../wevu-runtime.utils'
 
 interface HmrProfileSample {
@@ -20,7 +21,6 @@ const HMR_PROFILE_PATH = path.join(APP_ROOT, '.weapp-vite/hmr-profile.jsonl')
 const PAGE_HMR_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/hmr/index.ts')
 const PAGE_HMR_DIST_PATH = path.join(DIST_ROOT, 'pages/hmr/index.js')
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
-const SHARED_STORE_DIST_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
 
 function enableHmrProfileJson(configSource: string) {
@@ -183,10 +183,10 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, updatedSource)
 
       const updatedOutput = await dev.waitFor(
-        waitForFileContains(SHARED_STORE_DIST_PATH, marker),
+        waitForWevuVendorChunkContaining(DIST_ROOT, marker),
         'shared dependency output updated',
       )
-      expect(updatedOutput).toContain(marker)
+      expect(updatedOutput.code).toContain(marker)
 
       const sample = await dev.waitFor(
         waitForHmrProfileSample(profile =>

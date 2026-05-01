@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS } from '../utils/requestClientsRealHostTraceRuntime'
+import { toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
@@ -120,7 +121,8 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
     for (const jsFormat of JS_FORMATS) {
       it(`emits installer runtime chunk and top-level bindings for ${testCase.label} in ${jsFormat}`, async () => {
         const distRoot = await runBuild(testCase.appRoot, testCase.label, jsFormat)
-        const runtimeJs = await fs.readFile(await resolveRuntimeChunkPath(distRoot), 'utf8')
+        const runtimeChunkPath = await resolveRuntimeChunkPath(distRoot)
+        const runtimeJs = await fs.readFile(runtimeChunkPath, 'utf8')
         const appJs = await fs.readFile(path.join(distRoot, 'app.js'), 'utf8')
 
         expect(runtimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
@@ -134,17 +136,11 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         }
 
         for (const entryFile of testCase.entryFiles) {
-          const entryJs = await fs.readFile(path.join(distRoot, entryFile), 'utf8')
+          const entryJsPath = path.join(distRoot, entryFile)
+          const entryJs = await fs.readFile(entryJsPath, 'utf8')
 
           expect(entryJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-          expectOneModuleReference(entryJs, [
-            '../../request-globals-runtime.js',
-            '../../weapp-vendors/wevu-ref.js',
-            '../../weapp-vendors/wevu-defineProperty.js',
-            '../../request-globals-web-apis-shared.js',
-            '../../weapp-vendors/web-apis-shared.js',
-            '../../request-globals-wevu-web-apis-shared.js',
-          ])
+          expectOneModuleReference(entryJs, [toRelativeImport(entryJsPath, runtimeChunkPath)])
           expect(entryJs).toContain('var fetch =')
           expect(entryJs).toContain('.fetch')
           expect(entryJs).toContain('var XMLHttpRequest =')

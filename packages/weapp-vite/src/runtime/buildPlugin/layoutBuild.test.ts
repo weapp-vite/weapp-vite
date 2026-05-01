@@ -210,15 +210,16 @@ describe('layout build regression', () => {
       return output.type === 'chunk'
         && output.fileName.endsWith('.js')
         && output.code.includes('LAYOUT-SHARED-MARKER')
-        && !output.code.includes('createWevuComponent')
     })
+    const candidateSharedWevuChunkNames = new Set([
+      ...(layoutChunk?.type === 'chunk' ? layoutChunk.imports : []),
+      ...(pageChunk?.type === 'chunk' ? pageChunk.imports : []),
+    ])
+    candidateSharedWevuChunkNames.delete(sharedRuntimeChunk?.fileName ?? '')
     const sharedWevuChunk = outputs.find((output) => {
       return output.type === 'chunk'
-        && output.fileName.endsWith('.js')
-        && output.fileName !== 'layouts/default.js'
-        && output.fileName !== 'pages/index/index.js'
-        && output.fileName !== sharedRuntimeChunk?.fileName
-        && output.code.includes('createWevuComponent')
+        && candidateSharedWevuChunkNames.has(output.fileName)
+        && output.imports.includes(sharedRuntimeChunk?.fileName ?? '')
     })
     const pageJson = outputs.find(output => output.type === 'asset' && output.fileName === 'pages/index/index.json')
 
@@ -228,10 +229,9 @@ describe('layout build regression', () => {
     expect(sharedWevuChunk).toBeTruthy()
     expect(pageJson).toBeTruthy()
 
-    expect(sharedRuntimeChunk!.fileName).toMatch(/weapp-vendors\/wevu-(?:ref|defineProperty)\.js$/)
+    expect(sharedRuntimeChunk!.fileName).toMatch(/weapp-vendors\/wevu-[\w-]+\.js$/)
     expect(sharedRuntimeChunk!.code).toContain('LAYOUT-SHARED-MARKER')
     expect(sharedRuntimeChunk!.code).not.toContain('//#region src/layouts/default.vue')
-    expect(sharedRuntimeChunk!.code).not.toContain('createWevuComponent({')
     expect(layoutChunk!.code).not.toContain('Component({})')
     expect(layoutChunk!.code).toContain('setup(')
     expect(layoutChunk!.imports).toContain(sharedWevuChunk!.fileName)

@@ -3,11 +3,11 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
+import { toRelativeImport, waitForWevuVendorChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
-const SHARED_RUNTIME_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
 const STORE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store/index.js')
 const STORE_SHARE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store-share/index.js')
 const PLATFORM_LIST = resolvePlatforms()
@@ -25,11 +25,11 @@ async function waitForCommonMarkerWithRetry(
   retrySourceContent: string,
 ) {
   try {
-    return await waitForFileContains(SHARED_RUNTIME_PATH, marker, 20_000)
+    return await waitForWevuVendorChunkContaining(DIST_ROOT, marker, 20_000)
   }
   catch {
     await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${retrySourceContent}\n`)
-    return await waitForFileContains(SHARED_RUNTIME_PATH, marker, 20_000)
+    return await waitForWevuVendorChunkContaining(DIST_ROOT, marker, 20_000)
   }
 }
 
@@ -56,16 +56,17 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(SHARED_RUNTIME_PATH, 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForWevuVendorChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
       await dev.waitFor(waitForFile(STORE_PAGE_JS_PATH, 90_000), `${platform} initial store page js`)
       await dev.waitFor(waitForFile(STORE_SHARE_PAGE_JS_PATH, 90_000), `${platform} initial store-share page js`)
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, updatedSource)
 
-      const commonJs = await dev.waitFor(
+      const sharedRuntime = await dev.waitFor(
         waitForCommonMarkerWithRetry(marker, updatedSource),
         `${platform} updated shared store marker`,
       )
+      const commonJs = sharedRuntime.code
       expect(commonJs).toContain(marker)
       expect(commonJs).toContain('setupCounter')
       expect(commonJs).toContain('optionsCounter')
@@ -75,8 +76,8 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
         fs.readFile(STORE_SHARE_PAGE_JS_PATH, 'utf8'),
       ])
 
-      expect(storePageJs).toContain('require("../../weapp-vendors/wevu-ref.js")')
-      expect(storeSharePageJs).toContain('require("../../weapp-vendors/wevu-ref.js")')
+      expect(storePageJs).toContain(`require("${toRelativeImport(STORE_PAGE_JS_PATH, sharedRuntime.path)}")`)
+      expect(storeSharePageJs).toContain(`require("${toRelativeImport(STORE_SHARE_PAGE_JS_PATH, sharedRuntime.path)}")`)
       expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
@@ -101,15 +102,16 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(SHARED_RUNTIME_PATH, 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForWevuVendorChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, firstUpdatedSource)
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, secondUpdatedSource)
 
-      const commonJs = await dev.waitFor(
+      const sharedRuntime = await dev.waitFor(
         waitForCommonMarkerWithRetry(secondMarker, secondUpdatedSource),
         `${platform} updated shared store second marker`,
       )
+      const commonJs = sharedRuntime.code
       expect(commonJs).toContain(secondMarker)
       expect(commonJs).not.toContain(firstMarker)
       expect(commonJs).toContain('setupCounter')

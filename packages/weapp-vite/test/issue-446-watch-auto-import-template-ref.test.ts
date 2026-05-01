@@ -80,7 +80,15 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
-async function readWevuComputedRuntime(outDir: string) {
+function resolveComputedExportName(pageOutput: string) {
+  const computedCall = pageOutput.match(/(?:^|\s)(?:computed|require_common\.([\w$]+))\(\(\) => nativeAnchorRef\.value != null\)/)
+  if (!computedCall) {
+    throw new Error('watch build output missing computed template-ref call')
+  }
+  return computedCall[1] ?? 'computed'
+}
+
+async function readWevuComputedRuntime(outDir: string, exportName: string) {
   const vendorRoot = path.resolve(outDir, 'weapp-vendors')
   const files = await fs.readdir(vendorRoot)
   for (const file of files) {
@@ -89,12 +97,12 @@ async function readWevuComputedRuntime(outDir: string) {
     }
     const filePath = path.join(vendorRoot, file)
     const code = await fs.readFile(filePath, 'utf8')
-    if (code.includes('Object.defineProperty(exports, "computed"')) {
+    if (code.includes(`Object.defineProperty(exports, "${exportName}"`)) {
       return code
     }
   }
 
-  throw new Error('watch build output missing wevu computed export')
+  throw new Error(`watch build output missing wevu computed export: ${exportName}`)
 }
 
 describe.sequential('issue #446 watch auto-import component template ref', () => {
@@ -136,11 +144,12 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       await waitForFileContains(pageJsonPath, '"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
 
       const initialPageOutput = await fs.readFile(pageOutputPath, 'utf8')
-      const initialRuntimeOutput = await readWevuComputedRuntime(outDir)
+      const initialComputedExport = resolveComputedExportName(initialPageOutput)
+      const initialRuntimeOutput = await readWevuComputedRuntime(outDir, initialComputedExport)
 
-      expect(initialPageOutput).toContain('computed(() => nativeAnchorRef.value != null)')
-      expect(initialPageOutput).toContain('computed(() => typeof shortBindProbeRef.value?.snapshot === "function")')
-      expect(initialRuntimeOutput).toContain('Object.defineProperty(exports, "computed"')
+      expect(initialPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
+      expect(initialPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
+      expect(initialRuntimeOutput).toContain(`Object.defineProperty(exports, "${initialComputedExport}"`)
 
       const originalSource = await fs.readFile(pageSourcePath, 'utf8')
       const updatedSource = originalSource.replaceAll('issue-446-short-bind', 'issue-446-short-bind-updated')
@@ -152,12 +161,13 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       await waitForFileContains(pageOutputPath, 'issue-446-short-bind-updated')
 
       const updatedPageOutput = await fs.readFile(pageOutputPath, 'utf8')
-      const updatedRuntimeOutput = await readWevuComputedRuntime(outDir)
+      const updatedComputedExport = resolveComputedExportName(updatedPageOutput)
+      const updatedRuntimeOutput = await readWevuComputedRuntime(outDir, updatedComputedExport)
 
       expect(updatedPageOutput).toContain('issue-446-short-bind-updated')
-      expect(updatedPageOutput).toContain('computed(() => nativeAnchorRef.value != null)')
-      expect(updatedPageOutput).toContain('computed(() => typeof shortBindProbeRef.value?.snapshot === "function")')
-      expect(updatedRuntimeOutput).toContain('Object.defineProperty(exports, "computed"')
+      expect(updatedPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
+      expect(updatedPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
+      expect(updatedRuntimeOutput).toContain(`Object.defineProperty(exports, "${updatedComputedExport}"`)
     }
     finally {
       await watcher?.close()
