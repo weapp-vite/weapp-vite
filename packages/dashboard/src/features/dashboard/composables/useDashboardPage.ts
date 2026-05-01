@@ -37,7 +37,7 @@ export function useDashboardPage(options: {
   const activeTab = computed<DashboardTab>({
     get() {
       const value = route.query.tab
-      if (value === 'diagnostics' || value === 'treemap' || value === 'files' || value === 'source' || value === 'packages' || value === 'modules') {
+      if (value === 'diagnostics' || value === 'review' || value === 'treemap' || value === 'files' || value === 'source' || value === 'packages' || value === 'modules') {
         return value
       }
       return 'overview'

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AnalyzeActionCenterItem, AnalyzeTreemapFilterMode, AnalyzeWorkQueueItem, DashboardInfoPillItem, LargestFileEntry, PackageBudgetWarning, PackageInsight, SelectedFileModuleDetail, TreemapNodeMeta } from '../features/dashboard/types'
+import type { PrReviewChecklistItem } from '../features/dashboard/utils/prReviewChecklist'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -19,6 +20,7 @@ import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import HistoryBaselinePanel from '../features/dashboard/components/HistoryBaselinePanel.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
+import PrReviewChecklistPanel from '../features/dashboard/components/PrReviewChecklistPanel.vue'
 import SourceArtifactComparePanel from '../features/dashboard/components/SourceArtifactComparePanel.vue'
 import TreemapCard from '../features/dashboard/components/TreemapCard.vue'
 import { useAnalyzeActionCenter } from '../features/dashboard/composables/useAnalyzeActionCenter'
@@ -32,6 +34,7 @@ import { useTreemapData } from '../features/dashboard/composables/useTreemapData
 import { treemapFilterOptions } from '../features/dashboard/constants/view'
 import { copyText } from '../features/dashboard/utils/clipboard'
 import { formatBytes } from '../features/dashboard/utils/format'
+import { createPrReviewChecklistSummary } from '../features/dashboard/utils/prReviewChecklist'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../features/dashboard/utils/treemap'
 import { createActionWorkQueueItem, createWorkQueueMarkdown } from '../features/dashboard/utils/workQueue'
@@ -64,6 +67,9 @@ const diagnosticsLayoutItems = [
   { id: 'actions', label: '问题中心' },
   { id: 'work-queue', label: '处理清单' },
   { id: 'history', label: '历史基线' },
+]
+const reviewLayoutItems = [
+  { id: 'review', label: 'PR 风险清单' },
 ]
 const treemapLayoutItems = [
   { id: 'treemap', label: '体积地图' },
@@ -294,6 +300,10 @@ const {
   removeWorkQueueItem,
   toggleWorkQueueItem,
 } = useAnalyzeWorkQueue()
+const prReviewChecklist = computed(() => createPrReviewChecklistSummary({
+  actionItems: actionItems.value,
+  workQueueItems: workQueueItems.value,
+}))
 const { commandItems } = useAnalyzeCommandPalette({
   actionItems,
   budgetWarnings,
@@ -739,6 +749,11 @@ async function copyPrReport() {
   moreMenuOpen.value = false
 }
 
+async function copyPrReviewChecklist() {
+  await copyText(prReviewChecklist.value.report)
+  exportStatus.value = '评审清单已复制'
+}
+
 async function copyWorkQueueReport() {
   await copyText(createWorkQueueMarkdown(workQueueItems.value))
   exportStatus.value = '处理清单已复制'
@@ -756,6 +771,26 @@ function handleSelectWorkQueueItem(item: AnalyzeWorkQueueItem) {
     const action = actionItems.value.find(candidate => candidate.key === item.targetKey)
     if (action) {
       handleSelectAction(action)
+      return
+    }
+  }
+
+  activeTab.value = item.tab
+}
+
+function handleSelectReviewChecklistItem(item: PrReviewChecklistItem) {
+  if (item.actionKey) {
+    const action = actionItems.value.find(candidate => candidate.key === item.actionKey)
+    if (action) {
+      handleSelectAction(action)
+      return
+    }
+  }
+
+  if (item.workQueueItemId) {
+    const workQueueItem = workQueueItems.value.find(candidate => candidate.id === item.workQueueItemId)
+    if (workQueueItem) {
+      handleSelectWorkQueueItem(workQueueItem)
       return
     }
   }
@@ -1022,6 +1057,23 @@ onBeforeUnmount(() => {
               :comparison-mode="comparisonMode"
               @set-baseline="setBaselineSnapshot"
               @set-comparison-mode="setComparisonMode"
+            />
+          </template>
+        </AnalyzeDraggableGrid>
+      </section>
+
+      <section v-else-if="activeTab === 'review'" class="min-h-0 overflow-hidden">
+        <AnalyzeDraggableGrid
+          grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+          :items="reviewLayoutItems"
+          storage-key="weapp-vite:dashboard:analyze-layout:review"
+        >
+          <template #review>
+            <PrReviewChecklistPanel
+              :checklist="prReviewChecklist"
+              :copy-status="exportStatus"
+              @copy="copyPrReviewChecklist"
+              @select="handleSelectReviewChecklistItem"
             />
           </template>
         </AnalyzeDraggableGrid>
