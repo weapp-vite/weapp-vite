@@ -4,7 +4,7 @@
 export const TEMPLATE_CATALOG = {
   '@babel/core': '^7.29.0',
   '@babel/generator': '^7.29.1',
-  '@babel/parser': '^7.29.2',
+  '@babel/parser': '^7.29.3',
   '@babel/traverse': '^7.29.0',
   '@babel/types': '^7.29.0',
   '@douyin-microapp/typings': '^1.3.1',
@@ -48,13 +48,13 @@ export const TEMPLATE_CATALOG = {
   debug: '^4.4.3',
   echarts: '^6.0.0',
   esbuild: '^0.28.0',
-  eslint: '^10.2.1',
+  eslint: '^10.3.0',
   fdir: '^6.5.0',
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
   merge: '^2.1.1',
   pathe: '^2.0.3',
-  postcss: '^8.5.12',
+  postcss: '^8.5.13',
   rolldown: '1.0.0-rc.17',
   sass: '^1.99.0',
   stylelint: '^17.9.1',
@@ -63,7 +63,7 @@ export const TEMPLATE_CATALOG = {
   typescript: '^6.0.3',
   vite: '8.0.10',
   vue: '^3.5.33',
-  zod: '^4.3.6'
+  zod: '^4.4.1'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
