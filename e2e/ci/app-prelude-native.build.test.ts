@@ -12,6 +12,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
+const REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH = 'weapp-vendors/request-globals-web-apis-shared.js'
 
 function toPosixPath(value: string) {
   return value.replace(/\\/g, '/')
@@ -227,10 +228,10 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
       path.join(DIST_ROOT, 'weapp-vendors/request-globals-runtime.js'),
       path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
       path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
-      path.join(DIST_ROOT, 'weapp-vendors/request-globals-web-apis-shared.js'),
       path.join(DIST_ROOT, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
       path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
     ]
+    const requestGlobalsInstallerPath = path.join(DIST_ROOT, REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH)
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
@@ -238,10 +239,12 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(appJs).toContain('installWebRuntimeGlobals')
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
-    expect(rootPreludeJs).toContain(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)
+    expect(rootPreludeJs).not.toContain(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)
+    expect(rootPreludeJs).toContain(`require("./${REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH}")`)
     expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')
+    expect(await fs.pathExists(requestGlobalsInstallerPath)).toBe(true)
     for (const candidate of legacySharedRuntimeCandidates) {
       expect(await fs.pathExists(candidate)).toBe(false)
     }

@@ -12,12 +12,16 @@ export interface JsonEmitRecord {
   entry: Required<JsonEmitFileEntry>
 }
 
+type AppJsonSubPackage = Record<string, any> & {
+  pages?: any
+}
+
 function normalizeAppJson(json: any) {
   if (!json || typeof json !== 'object' || Array.isArray(json)) {
     return json
   }
 
-  const subPackages = Array.isArray(json.subPackages)
+  const subPackages: AppJsonSubPackage[] = Array.isArray(json.subPackages)
     ? json.subPackages
     : Array.isArray(json.subpackages)
       ? json.subpackages

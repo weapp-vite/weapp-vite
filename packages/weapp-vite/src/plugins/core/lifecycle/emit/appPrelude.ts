@@ -23,6 +23,7 @@ import {
 import {
   createRequestGlobalsPreludeAssetCode,
   createRequestGlobalsPreludeCode,
+  resolveRequestGlobalsInstallerImport,
 } from './requestGlobals'
 import { prependChunkCodePreservingDirectives } from './rewrite'
 
@@ -141,8 +142,9 @@ export function emitAppPreludeRequireAssets(
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
 ) {
+  const preservedRequestGlobalsInstallerChunks = new Set<string>()
   if (!appPreludeCode) {
-    return
+    return preservedRequestGlobalsInstallerChunks
   }
   const preludeFileNames = new Set<string>()
   if (state.subPackageMeta?.subPackage.root) {
@@ -175,9 +177,18 @@ export function emitAppPreludeRequireAssets(
           ))
           .find(Boolean)
       : undefined
+    if (requestGlobalsPreludeCode) {
+      const installerImport = scopeChunks
+        .map(chunk => resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
+        .find(Boolean)
+      if (installerImport?.installerChunkFileName) {
+        preservedRequestGlobalsInstallerChunks.add(installerImport.installerChunkFileName)
+      }
+    }
     const source = [requestGlobalsPreludeCode, appPreludeCode].filter(Boolean).join('\n')
     emitFile?.({ type: 'asset', fileName, source: `${source}\n` })
   }
+  return preservedRequestGlobalsInstallerChunks
 }
 
 export function injectAppPreludeCode(
@@ -194,12 +205,13 @@ export function injectAppPreludeCode(
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
 ) {
+  let preservedRequestGlobalsInstallerChunks = new Set<string>()
   if (!options.enabled) {
-    return
+    return preservedRequestGlobalsInstallerChunks
   }
   const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
   if (options.mode === 'require' && appPreludeCode) {
-    emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
+    preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
   }
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -235,4 +247,5 @@ export function injectAppPreludeCode(
     }
     chunk.code = prependChunkCodePreservingDirectives(chunk.code, injectedCode)
   }
+  return preservedRequestGlobalsInstallerChunks
 }

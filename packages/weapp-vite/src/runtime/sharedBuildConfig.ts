@@ -1,5 +1,6 @@
 import type { InlineConfig } from 'vite'
 import type { SharedChunkMode, SharedChunkOverride } from '../types'
+import type { AdvancedChunkNameResolver } from './advancedChunks'
 import type { ConfigService } from './config/types'
 import type { ScanService } from './scanPlugin'
 import path from 'pathe'

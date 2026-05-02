@@ -624,20 +624,20 @@ function rewriteChunkStaticImportsToExpression(
   }
 }
 
-function rewriteAssetRequireCallsToExpression(
+function hasAssetRequireCallToFile(
   source: string,
   fileName: string,
   targetFileName: string,
-  expression: string,
 ) {
-  return rewriteRequireCallLiterals(source, (_requireLiteral, importee) => {
+  let hasRequireCall = false
+  rewriteRequireCallLiterals(source, (_requireLiteral, importee) => {
     const resolvedImport = normalizeRelativeChunkImport(fileName, importee)
-    if (resolvedImport !== targetFileName) {
-      return undefined
+    if (resolvedImport === targetFileName) {
+      hasRequireCall = true
     }
-
-    return expression
+    return undefined
   })
+  return hasRequireCall
 }
 
 function shouldInlineRequestGlobalsAppRegisteredInstallerChunk(fileName: string) {
@@ -649,10 +649,18 @@ function toRequestGlobalsAppRegisteredModuleExpression(fileName: string) {
   return `globalThis[${JSON.stringify(`${REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX}${fileName}`)}]`
 }
 
-function toRequestGlobalsInstallerModuleExpression(fromFileName: string, installerChunkFileName: string) {
-  return shouldInlineRequestGlobalsAppRegisteredInstallerChunk(installerChunkFileName)
+function toRequestGlobalsRequireModuleExpression(fromFileName: string, installerChunkFileName: string) {
+  return `require(${JSON.stringify(toRequireRequestPath(fromFileName, installerChunkFileName))})`
+}
+
+function toRequestGlobalsInstallerModuleExpression(
+  fromFileName: string,
+  installerChunkFileName: string,
+  options: { appRegisteredModule?: boolean } = {},
+) {
+  return options.appRegisteredModule !== false && shouldInlineRequestGlobalsAppRegisteredInstallerChunk(installerChunkFileName)
     ? toRequestGlobalsAppRegisteredModuleExpression(installerChunkFileName)
-    : `require(${JSON.stringify(toRequireRequestPath(fromFileName, installerChunkFileName))})`
+    : toRequestGlobalsRequireModuleExpression(fromFileName, installerChunkFileName)
 }
 
 export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) {
@@ -767,6 +775,7 @@ export function injectRequestGlobalsAppRegistration(
 export function inlineRequestGlobalsAppRegisteredInstallerChunks(
   bundle: OutputBundle,
   installerChunks: Map<string, string>,
+  preservedInstallerChunks = new Set<string>(),
 ) {
   if (installerChunks.size === 0) {
     return
@@ -793,6 +802,7 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
     const globalModuleExpression = toRequestGlobalsAppRegisteredModuleExpression(installerChunkFileName)
     const installerChunk = installerOutput as OutputChunk
     const embeddedCode = rewriteEmbeddedRequirePaths(installerChunk.code, installerChunk.fileName, appChunk.fileName)
+    let hasPreservedAssetRequire = preservedInstallerChunks.has(installerChunkFileName)
     inlinedModules.push([
       `const ${moduleRef} = (() => {`,
       '  const module = { exports: {} }',
@@ -823,13 +833,14 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
       if (!source) {
         continue
       }
-      const nextSource = rewriteAssetRequireCallsToExpression(source, output.fileName, installerChunkFileName, globalModuleExpression)
-      if (nextSource !== source) {
-        output.source = nextSource
+      if (hasAssetRequireCallToFile(source, output.fileName, installerChunkFileName)) {
+        hasPreservedAssetRequire = true
       }
     }
 
-    delete bundle[installerChunkFileName]
+    if (!hasPreservedAssetRequire) {
+      delete bundle[installerChunkFileName]
+    }
   }
 
   if (inlinedModules.length === 0) {
@@ -906,7 +917,7 @@ export function createRequestGlobalsPreludeAssetCode(
     return undefined
   }
 
-  const installerHostCode = `${toRequestGlobalsInstallerModuleExpression(preludeFileName, installerImport.installerChunkFileName)}[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
+  const installerHostCode = `${toRequestGlobalsInstallerModuleExpression(preludeFileName, installerImport.installerChunkFileName, { appRegisteredModule: false })}[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

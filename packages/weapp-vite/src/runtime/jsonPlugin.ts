@@ -18,12 +18,16 @@ export interface JsonService {
   cache: FileCache<any>
 }
 
+type AppConfigSubPackage = Record<string, any> & {
+  pages?: any
+}
+
 function normalizeAppConfigJson(config: any) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) {
     return config
   }
 
-  const subPackages = Array.isArray(config.subPackages)
+  const subPackages: AppConfigSubPackage[] = Array.isArray(config.subPackages)
     ? config.subPackages
     : Array.isArray(config.subpackages)
       ? config.subpackages

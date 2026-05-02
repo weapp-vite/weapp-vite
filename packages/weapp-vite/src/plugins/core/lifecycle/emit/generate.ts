@@ -350,7 +350,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         ? configService.relativeAbsoluteSrcRoot(scanService.appEntry.preludePath)
         : undefined,
     })
-    injectAppPreludeCode(
+    const preservedRequestGlobalsInstallerChunks = injectAppPreludeCode(
       rolldownBundle,
       appPreludeCode,
       {
@@ -368,7 +368,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       asset => this.emitFile(asset),
     )
     if (injectRequestGlobalsOptions?.targets?.length) {
-      inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks)
+      inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
     }
 
     syncChunkImportsFromRequireCalls(rolldownBundle)

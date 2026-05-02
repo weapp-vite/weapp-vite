@@ -103,7 +103,12 @@ async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...a
 }
 
 for (const jsFormat of JS_FORMATS) {
-  describe.sequential(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
+  const describeForJsFormat = jsFormat === 'esm' ? describe.skip : describe.sequential
+
+  // 微信开发者工具 3.15.x 在 Vue App 根入口的 ESM appservice 装载阶段，
+  // 会出现 `module 'app.js' is not defined`，导致 app 入口无法完成初始化。
+  // CI 构建测试继续覆盖 ESM 产物形态，IDE runtime 保留 CJS 真运行链路。
+  describeForJsFormat(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
     let miniProgram: any
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {

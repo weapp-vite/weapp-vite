@@ -78,7 +78,9 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
       return miniProgram
     }
     try {
-      await ensureWevuRuntimeDemoBuilt()
+      // 微信开发者工具 3.15.x 在 Vue App 根入口的 ESM appservice 装载阶段，
+      // 会出现 `module 'app.js' is not defined`，IDE runtime 保留 CJS 真运行链路。
+      await ensureWevuRuntimeDemoBuilt('cjs')
       miniProgram = await launchAutomator({
         projectPath: APP_ROOT,
       })
