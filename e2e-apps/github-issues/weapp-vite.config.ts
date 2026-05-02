@@ -21,6 +21,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'subpackages/issue-466/**',
   ],
   'github-issues.runtime.lifecycle.test.ts': [
+    'pages/issue-289/**',
     'pages/issue-309/**',
     'pages/issue-309-created/**',
     'pages/issue-312/**',

@@ -118,7 +118,7 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
       expect(slotsResult?.checks?.headerChanged).toBe(true)
       expect(slotsResult?.checks?.countChanged).toBe(true)
       const slotsWxml = await readPageWxml(slotsPage)
-      expect(slotsWxml).toContain('slots: []')
+      expect(slotsWxml).toContain('slots: ["default","header"]')
 
       const modelPage = await relaunchPage(miniProgram, '/pages/use-model/index', 'wevu useModel 特性展示')
       if (!modelPage) {

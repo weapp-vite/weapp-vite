@@ -54,6 +54,7 @@ export interface TemplateE2EOptions {
   jsFormat?: 'cjs' | 'esm'
   templateRoot: string
   templateName: string
+  warmupRoute?: string
 }
 
 export async function formatWxml(wxml: string) {
@@ -519,7 +520,7 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
 }
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
-  const { templateRoot, templateName, jsFormat } = options
+  const { templateRoot, templateName, jsFormat, warmupRoute } = options
   debugTemplateE2E(templateName, 'start')
   await runBuild(templateRoot, jsFormat)
   debugTemplateE2E(templateName, 'build-done')
@@ -543,6 +544,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   debugTemplateE2E(templateName, 'automator-launching')
   const miniProgram = await launchAutomator({
     projectPath: templateRoot,
+    warmupRoute,
   })
 
   try {

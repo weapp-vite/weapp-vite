@@ -41,6 +41,9 @@ async function resolveRuntimeJsPath() {
   const candidates = [
     path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
     path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
+    path.join(DIST_ROOT, 'weapp-vendors/request-globals-web-apis-shared.js'),
+    path.join(DIST_ROOT, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
+    path.join(DIST_ROOT, 'weapp-vendors/request-globals-runtime.js'),
     path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
   ]
 
@@ -110,6 +113,9 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
         expectOneModuleReference(pageJs, [
           '../../request-globals-web-apis-shared.js',
           '../../request-globals-wevu-web-apis-shared.js',
+          '../../weapp-vendors/request-globals-web-apis-shared.js',
+          '../../weapp-vendors/request-globals-wevu-web-apis-shared.js',
+          '../../weapp-vendors/request-globals-runtime.js',
           '../../weapp-vendors/web-apis-shared.js',
         ])
         for (const target of FULL_REQUEST_GLOBAL_TARGETS) {

@@ -39,6 +39,8 @@ function resolveGithubIssuesProjectId() {
 const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
+const GITHUB_ISSUES_LAUNCH_RETRIES = 2
+const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 async function prepareIsolatedProjectRoot() {
@@ -330,6 +332,43 @@ async function ensureGithubIssuesWarmupPage(miniProgram: any) {
   return warmupReady ? page : null
 }
 
+function isGithubIssuesLaunchRetryableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Timeout in warmup reLaunch')
+    || message.includes('Timed out waiting page root after warmup reLaunch')
+}
+
+async function launchGithubIssuesMiniProgramOnce() {
+  const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+  try {
+    delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const warmupPage = await ensureGithubIssuesWarmupPage(miniProgram)
+      if (!warmupPage) {
+        process.stdout.write(`[github-issues:launch] warmup-check-skip route=${GITHUB_ISSUES_WARMUP_ROUTE}\n`)
+      }
+    }
+    catch (error) {
+      process.stdout.write(`[github-issues:launch] warmup-check-skip route=${GITHUB_ISSUES_WARMUP_ROUTE} reason=${error instanceof Error ? error.message : String(error)}\n`)
+    }
+    await delay(600)
+    return miniProgram
+  }
+  finally {
+    if (previousSkipWarmup == null) {
+      delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    }
+    else {
+      process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+    }
+  }
+}
+
 async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
   if (sharedLaunchInfraUnavailableMessage) {
     ctx?.skip(sharedLaunchInfraUnavailableMessage)
@@ -340,38 +379,28 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
 
   await prepareGithubIssuesBuild()
 
-  try {
-    const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+  let lastError: unknown
+  for (let attempt = 1; attempt <= GITHUB_ISSUES_LAUNCH_RETRIES; attempt += 1) {
     try {
-      delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
-
-      const miniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-      })
-
-      const warmupPage = await ensureGithubIssuesWarmupPage(miniProgram)
-      if (!warmupPage) {
-        throw new Error(`Failed to reach github-issues warmup route: ${GITHUB_ISSUES_WARMUP_ROUTE}`)
-      }
-      await delay(600)
-      return miniProgram
+      return await launchGithubIssuesMiniProgramOnce()
     }
-    finally {
-      if (previousSkipWarmup == null) {
-        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    catch (error) {
+      lastError = error
+      if (attempt < GITHUB_ISSUES_LAUNCH_RETRIES && isGithubIssuesLaunchRetryableError(error)) {
+        process.stdout.write(`[github-issues:launch] retry attempt=${attempt + 1}/${GITHUB_ISSUES_LAUNCH_RETRIES} reason=${error instanceof Error ? error.message : String(error)}\n`)
+        await cleanupResidualIdeProcesses()
+        await delay(GITHUB_ISSUES_LAUNCH_RETRY_DELAY)
+        continue
       }
-      else {
-        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
-      }
+      break
     }
   }
-  catch (error) {
-    if (ctx && isDevtoolsHttpPortError(error)) {
-      sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
-      ctx.skip(sharedLaunchInfraUnavailableMessage)
-    }
-    throw error
+
+  if (ctx && isDevtoolsHttpPortError(lastError)) {
+    sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
+    ctx.skip(sharedLaunchInfraUnavailableMessage)
   }
+  throw lastError
 }
 
 export async function closeSharedMiniProgram() {

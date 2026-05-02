@@ -146,7 +146,7 @@ export default defineConfig({
 默认 `mode: 'require'` 下，构建产物通常会看到两类额外文件：
 
 - `app.prelude.js`：按主包 / 分包作用域拆分的前置脚本
-- `request-globals-runtime.js`：Web Runtime 共享 installer（启用 `webRuntime`、旧版 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
+- `weapp-vendors/request-globals-runtime.js`：Web Runtime 共享 installer（启用 `webRuntime`、旧版 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
 
 ```ts
 export default defineConfig({
@@ -351,7 +351,7 @@ export default defineConfig({
 >
 > 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装所需的 Web Runtime 全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
 >
-> 历史版本里这个共享产物可能叫 `dist.js`；当前已经统一改为更易识别的 `request-globals-runtime.js`。
+> 历史版本里这个共享产物可能叫 `dist.js` 或位于根目录；当前已经统一改为更易识别且更利于开发者工具发现的 `weapp-vendors/request-globals-runtime.js`。
 
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 

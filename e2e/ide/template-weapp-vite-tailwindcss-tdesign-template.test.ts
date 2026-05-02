@@ -8,6 +8,7 @@ describe.sequential('template e2e: weapp-vite-tailwindcss-tdesign-template', () 
     await runTemplateE2E({
       templateRoot: TEMPLATE_ROOT,
       templateName: 'weapp-vite-tailwindcss-tdesign-template',
+      warmupRoute: '/pages/layouts/index',
     })
   })
 })

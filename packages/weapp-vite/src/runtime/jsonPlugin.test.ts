@@ -57,6 +57,7 @@ describe('runtime/jsonPlugin', () => {
 
     expect(result).toEqual({
       pages: ['pages/index/index'],
+      subPackages: [],
     })
   })
 

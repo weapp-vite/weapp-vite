@@ -122,7 +122,10 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
     miniprogramRoot: 'dist',
   })
   if (appJson) {
-    writeJson(path.join(projectRoot, 'dist/app.json'), appJson)
+    writeJson(path.join(projectRoot, 'dist/app.json'), {
+      subPackages: [],
+      ...appJson,
+    })
   }
 }
 
@@ -657,6 +660,25 @@ describe.sequential('automator launch resilience', () => {
     expect(resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
       miniProgram.__rawReLaunch.mock.invocationCallOrder[0]!,
     )
+  })
+
+  it('uses explicit warmup route when launch options provide one', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const miniProgram = createMockMiniProgram()
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({
+      projectPath: sandboxRoot,
+      warmupRoute: '/subpackages/lab/class-binding/index',
+    })
+
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/subpackages/lab/class-binding/index')
   })
 
   it('does not rewrite project config when launch options do not pass projectConfig', async () => {

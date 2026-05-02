@@ -215,6 +215,16 @@ function resolveDistChunkPackageToken(cleanedAbsoluteId: string) {
   return sanitizePackageToken(packageToken)
 }
 
+function isRequestGlobalsRuntimeModuleId(id: string) {
+  const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
+  REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.lastIndex = 0
+  if (REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId)) {
+    return true
+  }
+
+  return resolveDistChunkPackageToken(cleanedAbsoluteId)?.endsWith('web-apis') === true
+}
+
 function resolveStableHashedDistChunkFileName(
   chunk: { moduleIds?: string[] | readonly string[], facadeModuleId?: string | null },
 ) {
@@ -242,7 +252,7 @@ function resolveStableHashedDistChunkFileName(
 
     REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.lastIndex = 0
     if (REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId) || packageToken.endsWith('web-apis')) {
-      return `request-globals-${packageToken}-${baseName}.js`
+      return `weapp-vendors/request-globals-${packageToken}-${baseName}.js`
     }
 
     return `weapp-vendors/${packageToken}-${baseName}.js`
@@ -279,7 +289,14 @@ function createSharedBuildResolver(
     resolveSharedPath,
   })
 
-  return { resolveAdvancedChunkName }
+  const resolveSharedBuildChunkName: AdvancedChunkNameResolver = (id, ctx) => {
+    if (isRequestGlobalsRuntimeModuleId(id)) {
+      return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME.replace(/\.js$/, '')
+    }
+    return resolveAdvancedChunkName(id, ctx)
+  }
+
+  return { resolveAdvancedChunkName: resolveSharedBuildChunkName }
 }
 
 export function createSharedBuildOutput(
@@ -340,6 +357,7 @@ export {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   isRequestGlobalsRuntimeChunk,
+  isRequestGlobalsRuntimeModuleId,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,

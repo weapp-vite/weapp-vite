@@ -5,6 +5,10 @@ definePageJson({
   navigationBarTitleText: 'issue-448',
 })
 
+definePageMeta({
+  layout: false,
+})
+
 const encoded = btoa('AB')
 const decoded = atob(encoded)
 const duration = Number(performance.now().toFixed(2))

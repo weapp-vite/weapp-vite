@@ -11,6 +11,7 @@ import {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   isRequestGlobalsRuntimeChunk,
+  isRequestGlobalsRuntimeModuleId,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
@@ -139,6 +140,28 @@ describe('sharedBuildConfig', () => {
     })).toBe(REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME)
   })
 
+  it('isolates request globals modules before generic vendor grouping', () => {
+    const resolveName = createChunkNameResolver()
+
+    expect(isRequestGlobalsRuntimeModuleId(
+      '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
+    )).toBe(true)
+    expect(isRequestGlobalsRuntimeModuleId(
+      '/project/packages-runtime/web-apis/dist/shared-BD3I133J.mjs',
+    )).toBe(true)
+    expect(resolveName(
+      '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
+      {
+        getModuleInfo: () => ({
+          importers: [
+            '/project/src/app.ts',
+            '/project/src/pages/index/index.ts',
+          ],
+        }),
+      },
+    )).toBe(REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME.replace(/\.js$/, ''))
+  })
+
   it('renames hashed workspace dist chunks to stable vendor file names', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
@@ -157,10 +180,10 @@ describe('sharedBuildConfig', () => {
     })).toBe('weapp-vendors/scope-pkg-store.js')
   })
 
-  it('keeps request globals support chunks at the dist root for devtools module discovery', () => {
+  it('keeps request globals support chunks under weapp-vendors for devtools module discovery', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/shared-BD3I133J.mjs',
-    })).toBe('request-globals-wevu-web-apis-shared.js')
+    })).toBe('weapp-vendors/request-globals-wevu-web-apis-shared.js')
   })
 
   it('returns undefined for path mode when there is only one importer', () => {

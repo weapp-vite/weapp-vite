@@ -239,6 +239,12 @@ interface LaunchProjectMeta {
   warmupRoute?: string
 }
 
+interface LaunchAppConfigValidationResult {
+  ready: boolean
+  reason?: string
+  warmupRoute?: string
+}
+
 interface AutomatorCliBridgePayload {
   projectPath?: string
   cliPath?: string
@@ -730,6 +736,63 @@ function resolveRouteFromAppConfig(config: Record<string, any>) {
   return undefined
 }
 
+function validateLaunchAppConfig(config: Record<string, any>): LaunchAppConfigValidationResult {
+  const pages = Array.isArray(config.pages) ? config.pages : []
+  const hasPage = pages.some(item => typeof item === 'string' && item.trim())
+  if (!hasPage) {
+    return {
+      ready: false,
+      reason: 'pages is empty',
+    }
+  }
+
+  if (!Object.hasOwn(config, 'subPackages')) {
+    return {
+      ready: false,
+      reason: 'subPackages is missing',
+      warmupRoute: resolveRouteFromAppConfig(config),
+    }
+  }
+
+  if (!Array.isArray(config.subPackages)) {
+    return {
+      ready: false,
+      reason: 'subPackages is not an array',
+      warmupRoute: resolveRouteFromAppConfig(config),
+    }
+  }
+
+  if (config.subpackages != null && !Array.isArray(config.subpackages)) {
+    return {
+      ready: false,
+      reason: 'subpackages is not an array',
+      warmupRoute: resolveRouteFromAppConfig(config),
+    }
+  }
+
+  for (const subPackage of [...config.subPackages, ...(Array.isArray(config.subpackages) ? config.subpackages : [])]) {
+    if (!subPackage || typeof subPackage !== 'object') {
+      return {
+        ready: false,
+        reason: 'subPackages contains non-object item',
+        warmupRoute: resolveRouteFromAppConfig(config),
+      }
+    }
+    if (!Array.isArray(subPackage.pages)) {
+      return {
+        ready: false,
+        reason: 'subPackages contains item without pages array',
+        warmupRoute: resolveRouteFromAppConfig(config),
+      }
+    }
+  }
+
+  return {
+    ready: true,
+    warmupRoute: resolveRouteFromAppConfig(config),
+  }
+}
+
 async function resolveLaunchProjectMeta(projectPath: string | undefined): Promise<LaunchProjectMeta | undefined> {
   if (!projectPath) {
     return undefined
@@ -737,18 +800,25 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
 
   const appConfigPath = path.resolve(projectPath, resolveMiniprogramRoot(projectPath), 'app.json')
   const start = Date.now()
+  let lastReason = 'app.json is not readable'
+  let lastWarmupRoute: string | undefined
   while (Date.now() - start <= APP_CONFIG_READY_TIMEOUT) {
     const config = readJsonObject(appConfigPath)
     if (config) {
-      return {
-        appConfigPath,
-        warmupRoute: resolveRouteFromAppConfig(config),
+      const validation = validateLaunchAppConfig(config)
+      lastReason = validation.reason ?? 'app.json is ready'
+      lastWarmupRoute = validation.warmupRoute
+      if (validation.ready) {
+        return {
+          appConfigPath,
+          warmupRoute: validation.warmupRoute,
+        }
       }
     }
     await sleep(120)
   }
 
-  const timeoutLine = `[warn] [runtime:launch-preflight] app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${appConfigPath}`
+  const timeoutLine = `[warn] [runtime:launch-preflight] app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${appConfigPath} reason=${lastReason}`
   process.stdout.write(`${timeoutLine}\n`)
   appendIdeReportEvent({
     source: 'runtime',
@@ -756,9 +826,9 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
     project: resolveReportProjectPath(projectPath),
     level: 'warn',
     channel: 'launch-preflight',
-    text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)}`,
+    text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)} reason=${lastReason}`,
   })
-  return { appConfigPath }
+  return { appConfigPath, warmupRoute: lastWarmupRoute }
 }
 
 function extractLoginRequiredMessage(text: string) {
@@ -1509,7 +1579,7 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
   return miniProgram
 }
 
-export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
+export function launchAutomator(options: Parameters<typeof automator.launch>[0] & { warmupRoute?: string }) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
     return launchHeadlessAutomator({
@@ -1519,7 +1589,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { projectConfig, timeout, trustProject, ...rest } = options
+  const { projectConfig, timeout, trustProject, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -1537,7 +1607,10 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
           async () => {
             process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
             const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
-            process.stdout.write(`[info] [runtime:launch-step] preflight-ready project=${project} warmup=${projectMeta?.warmupRoute ?? '<none>'}\n`)
+            const resolvedWarmupRoute = typeof warmupRoute === 'string' && warmupRoute.trim()
+              ? `/${warmupRoute.trim().replace(LEADING_SLASH_PATTERN, '')}`
+              : projectMeta?.warmupRoute
+            process.stdout.write(`[info] [runtime:launch-step] preflight-ready project=${project} warmup=${resolvedWarmupRoute ?? '<none>'}\n`)
             const mergedProjectConfig = projectConfig
               ? {
                   libVersion: DEFAULT_LIB_VERSION,
@@ -1566,9 +1639,9 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
               refreshProject: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
             })
             await compileMiniProgramProject(withRuntimeLogs, project)
-            if (projectMeta?.warmupRoute && !shouldSkipAutomatorWarmup()) {
-              process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${projectMeta.warmupRoute} project=${project}\n`)
-              await warmupMiniProgramRoute(withRuntimeLogs, projectMeta.warmupRoute, project)
+            if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup()) {
+              process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
+              await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project)
             }
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
               cliPath: rest.cliPath,

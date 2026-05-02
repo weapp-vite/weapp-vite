@@ -42,15 +42,15 @@ describe('core helper bundle', () => {
         fileName: 'app.js',
         code: [
           'require("./app.prelude.js")',
-          'const runtime = require("./request-globals-runtime.js")',
+          'const runtime = require("./weapp-vendors/request-globals-runtime.js")',
           'const shared = require("./weapp-vendors/web-apis-shared.js")',
         ].join('\n'),
         imports: [],
       },
-      'request-globals-runtime.js': {
+      'weapp-vendors/request-globals-runtime.js': {
         type: 'chunk',
-        fileName: 'request-globals-runtime.js',
-        code: 'const shared = require("./weapp-vendors/web-apis-shared.js")',
+        fileName: 'weapp-vendors/request-globals-runtime.js',
+        code: 'const shared = require("./web-apis-shared.js")',
         imports: [],
       },
       'app.prelude.js': {
@@ -71,10 +71,10 @@ describe('core helper bundle', () => {
 
     expect(bundle['app.js'].imports).toEqual([
       'app.prelude.js',
-      'request-globals-runtime.js',
+      'weapp-vendors/request-globals-runtime.js',
       'weapp-vendors/web-apis-shared.js',
     ])
-    expect(bundle['request-globals-runtime.js'].imports).toEqual([
+    expect(bundle['weapp-vendors/request-globals-runtime.js'].imports).toEqual([
       'weapp-vendors/web-apis-shared.js',
     ])
   })

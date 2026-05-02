@@ -9,7 +9,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
-const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
+const LAUNCH_WARMUP_ROUTE = '/pages/category/index'
+const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
 
 async function runBuild() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -36,6 +37,7 @@ async function launchRetailTemplateAutomator() {
     try {
       return await launchAutomator({
         projectPath: TEMPLATE_ROOT,
+        warmupRoute: LAUNCH_WARMUP_ROUTE,
       })
     }
     catch (error) {

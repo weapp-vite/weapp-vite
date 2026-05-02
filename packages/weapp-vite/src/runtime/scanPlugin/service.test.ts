@@ -225,6 +225,31 @@ describe('scanPlugin service', () => {
     )
   })
 
+  it('normalizes missing app config subPackages to a stable empty array', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue(undefined)
+
+    const ctx = createCtx({
+      jsonService: {
+        read: vi.fn(async () => ({
+          pages: ['pages/index/index'],
+        })),
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(entry.json.subPackages).toEqual([])
+  })
+
   it('warns app/app config conflicts only once within the same scan context', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
     findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })

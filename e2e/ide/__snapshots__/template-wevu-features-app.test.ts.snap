@@ -649,15 +649,13 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
           <view class="provider-index--provide-inject-slot-provider__line" id="scope-slot-provider">
             slot provider = slot-provider-value
           </view>
-          <scoped-slots-default is="pages/use-provide-inject-scope/index.__scoped-slot-default-0">
-            <provideinjectslotleaf is="components/provide-inject-slot-leaf/index">
-              <view class="leaf-index--provide-inject-slot-leaf">
-                <view class="leaf-index--provide-inject-slot-leaf__line" id="scope-slot-value">
-                  slot inject = slot-provider-value
-                </view>
+          <provideinjectslotleaf is="components/provide-inject-slot-leaf/index">
+            <view class="leaf-index--provide-inject-slot-leaf">
+              <view class="leaf-index--provide-inject-slot-leaf__line" id="scope-slot-value">
+                slot inject = slot-provider-value
               </view>
-            </provideinjectslotleaf>
-          </scoped-slots-default>
+            </view>
+          </provideinjectslotleaf>
         </view>
       </provideinjectslotprovider>
     </view>
@@ -682,7 +680,9 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view id="slots-panel" class="index--use-slots-feature__panel index--slot-panel-open">
         panel: open
       </view>
-      <view class="index--use-slots-feature__summary" id="slots-summary">slots: []</view>
+      <view class="index--use-slots-feature__summary" id="slots-summary">
+        slots: ["default","header"]
+      </view>
       <view class="index--use-slots-feature__content">
         <view><view class="use-slots-page__header">header slot content</view></view>
         <view class="use-slots-page__body">default slot content 1</view>

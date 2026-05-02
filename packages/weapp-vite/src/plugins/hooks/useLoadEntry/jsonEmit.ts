@@ -12,6 +12,26 @@ export interface JsonEmitRecord {
   entry: Required<JsonEmitFileEntry>
 }
 
+function normalizeAppJson(json: any) {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    return json
+  }
+
+  const subPackages = Array.isArray(json.subPackages)
+    ? json.subPackages
+    : Array.isArray(json.subpackages)
+      ? json.subpackages
+      : []
+
+  return {
+    ...json,
+    subPackages: subPackages.map(subPackage => ({
+      ...subPackage,
+      pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
+    })),
+  }
+}
+
 export function createJsonEmitManager(
   configService: CompilerContext['configService'],
 ) {
@@ -23,10 +43,16 @@ export function createJsonEmitManager(
     }
 
     const fileName = resolveRelativeJsonOutputFileName(configService, entry.jsonPath)
+    const normalizedEntry = entry.type === 'app'
+      ? {
+          ...entry,
+          json: normalizeAppJson(entry.json),
+        }
+      : entry
 
     map.set(fileName, {
       fileName,
-      entry: entry as Required<JsonEmitFileEntry>,
+      entry: normalizedEntry as Required<JsonEmitFileEntry>,
     })
   }
 

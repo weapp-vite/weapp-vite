@@ -102,6 +102,23 @@ function mergeAutoRouteSubPackages(
   ]
 }
 
+function normalizeAppConfigSubPackages(
+  config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
+) {
+  const subPackages = Array.isArray(config.subPackages)
+    ? config.subPackages
+    : Array.isArray(config.subpackages)
+      ? config.subpackages
+      : []
+
+  ;(config as any).subPackages = subPackages.map(subPackage => ({
+    ...subPackage,
+    pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
+  }))
+
+  return config
+}
+
 async function applyAutoRoutesToAppConfigIfNeeded(
   ctx: MutableCompilerContext,
   config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
@@ -140,7 +157,7 @@ async function applyAutoRoutesToAppConfigIfNeeded(
     ;(config as any).subPackages = normalizedSubPackages
   }
 
-  return config
+  return normalizeAppConfigSubPackages(config)
 }
 
 export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanServiceStateLike) {
@@ -206,6 +223,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
     await applyAutoRoutesToAppConfigIfNeeded(ctx, config)
 
     if (isObject(config)) {
+      normalizeAppConfigSubPackages(config)
       const finalEntryPath = appEntryPath || vueAppPath!
       const resolvedAppEntry: AppEntry = {
         path: finalEntryPath,

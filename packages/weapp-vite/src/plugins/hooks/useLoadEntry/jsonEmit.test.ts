@@ -39,4 +39,23 @@ describe('createJsonEmitManager', () => {
 
     expect(manager.map.size).toBe(0)
   })
+
+  it('normalizes emitted app json with a stable subPackages array', () => {
+    const manager = createJsonEmitManager({
+      relativeOutputPath(filePath: string) {
+        return filePath.replace('/project/src/', '')
+      },
+    } as any)
+
+    manager.register({
+      type: 'app',
+      json: { pages: ['pages/index/index'] },
+      jsonPath: '/project/src/app.vue',
+    })
+
+    expect(Array.from(manager.map.values())[0]?.entry.json).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+  })
 })

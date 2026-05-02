@@ -18,6 +18,26 @@ export interface JsonService {
   cache: FileCache<any>
 }
 
+function normalizeAppConfigJson(config: any) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return config
+  }
+
+  const subPackages = Array.isArray(config.subPackages)
+    ? config.subPackages
+    : Array.isArray(config.subpackages)
+      ? config.subpackages
+      : []
+
+  return {
+    ...config,
+    subPackages: subPackages.map(subPackage => ({
+      ...subPackage,
+      pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
+    })),
+  }
+}
+
 function createJsonService(ctx: MutableCompilerContext): JsonService {
   const cache = ctx.runtimeState.json.cache
 
@@ -83,6 +103,9 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
       }
       else {
         resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))
+      }
+      if (isAppConfig) {
+        resultJson = normalizeAppConfigJson(resultJson)
       }
       cache.set(filepath, resultJson)
       return resultJson

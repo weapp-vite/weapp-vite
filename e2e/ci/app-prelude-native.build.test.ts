@@ -222,10 +222,12 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
 
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
-    const runtimeJs = await fs.readFile(path.join(DIST_ROOT, 'request-globals-runtime.js'), 'utf8')
+    const runtimeJs = await fs.readFile(path.join(DIST_ROOT, 'weapp-vendors/request-globals-runtime.js'), 'utf8')
     const legacySharedRuntimeCandidates = [
       path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
       path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
+      path.join(DIST_ROOT, 'weapp-vendors/request-globals-web-apis-shared.js'),
+      path.join(DIST_ROOT, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
       path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
     ]
 
@@ -233,7 +235,7 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
-    expect(rootPreludeJs).toContain('require("./request-globals-runtime.js")')
+    expect(rootPreludeJs).toContain('require("./weapp-vendors/request-globals-runtime.js")')
     expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')

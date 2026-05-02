@@ -11,6 +11,10 @@ definePageJson({
   navigationBarTitleText: 'issue-459',
 })
 
+definePageMeta({
+  layout: false,
+})
+
 const request = new RequestPolyfill(new URLPolyfill('/abc', 'https://issue-459.invalid'))
 const response = new ResponsePolyfill('123')
 const requestUrl = request.url

@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
+import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
@@ -26,6 +27,8 @@ import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addWatchTarget } from './watch'
+
+const VUE_LIKE_PAGE_ENTRY_RE = /\.(?:vue|jsx|tsx)$/
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -190,6 +193,51 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
+    const registerPageLayoutComponentEntries = async (
+      layoutPlan: ResolvedPageLayoutPlan,
+      options?: {
+        trackLayoutDependencies?: boolean
+      },
+    ) => {
+      if (options?.trackLayoutDependencies) {
+        const layoutDependencies = new Set<string>()
+        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+          layoutDependencies.add(normalizeFsResolvedId(file))
+        }
+        replaceLayoutDependencies(normalizedId, layoutDependencies)
+      }
+
+      await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
+      await registerResolvedPageLayoutEntries({
+        layouts: layoutPlan.layouts,
+        entries,
+        explicitEntryTypes,
+        nativeScriptEntries: nativeLayoutScriptEntries,
+        normalizeEntry,
+        jsonPath,
+      })
+      for (const layout of layoutPlan.layouts) {
+        if (layout.kind === 'native') {
+          continue
+        }
+        if (!layout.file.endsWith('.vue')) {
+          continue
+        }
+        if (!await shouldEmitScriptlessVueLayoutJs(layout.file)) {
+          continue
+        }
+        const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))
+        if (!relativeLayoutBase || emittedScriptlessVueLayoutJs.has(relativeLayoutBase)) {
+          continue
+        }
+        emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
+        const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+        emitScriptlessComponentAsset(
+          this,
+          resolveScriptlessComponentFileName(relativeLayoutBase, scriptExtension),
+        )
+      }
+    }
 
     if (type === 'app') {
       appResult = await collectAppEntries({
@@ -286,45 +334,21 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
             replaceLayoutDependencies(normalizedId, [])
             if (layoutPlan) {
-              if (vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout')) {
-                const layoutDependencies = new Set<string>()
-                for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
-                  layoutDependencies.add(normalizeFsResolvedId(file))
-                }
-                replaceLayoutDependencies(normalizedId, layoutDependencies)
-              }
-              await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
-              await registerResolvedPageLayoutEntries({
-                layouts: layoutPlan.layouts,
-                entries,
-                explicitEntryTypes,
-                nativeScriptEntries: nativeLayoutScriptEntries,
-                normalizeEntry,
-                jsonPath,
+              await registerPageLayoutComponentEntries(layoutPlan, {
+                trackLayoutDependencies: vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout'),
               })
-              for (const layout of layoutPlan.layouts) {
-                if (layout.kind === 'native') {
-                  continue
-                }
-                if (!layout.file.endsWith('.vue')) {
-                  continue
-                }
-                if (!await shouldEmitScriptlessVueLayoutJs(layout.file)) {
-                  continue
-                }
-                const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))
-                if (!relativeLayoutBase || emittedScriptlessVueLayoutJs.has(relativeLayoutBase)) {
-                  continue
-                }
-                emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
-                const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-                emitScriptlessComponentAsset(
-                  this,
-                  resolveScriptlessComponentFileName(relativeLayoutBase, scriptExtension),
-                )
-              }
             }
           }
+        }
+      }
+      else if (type === 'page' && templatePath && !VUE_LIKE_PAGE_ENTRY_RE.test(id)) {
+        replaceLayoutDependencies(normalizedId, [])
+        const source = await fs.readFile(id, 'utf-8')
+        const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
+        if (layoutPlan) {
+          await registerPageLayoutComponentEntries(layoutPlan, {
+            trackLayoutDependencies: true,
+          })
         }
       }
 

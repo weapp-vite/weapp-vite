@@ -1548,6 +1548,66 @@ import { VueCard } from '../../components'
     )
   })
 
+  it('includes vue layout components for native page entries', async () => {
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: {
+        kind: 'vue',
+        file: '/project/src/layouts/default.vue',
+        importPath: '/layouts/default',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          kind: 'vue',
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+      ],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/layouts/default.vue') {
+        return '<template><slot /></template>'
+      }
+      if (target === '/project/src/pages/index/index.wxml') {
+        return '<view>home</view>'
+      }
+      return 'Page({})'
+    })
+
+    const { loader, emitEntriesChunks, normalizeEntry } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+
+    const addWatchFile = pluginCtx.addWatchFile as Mock
+    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
+    expect(watched).toContain('/project/src/layouts/default.vue')
+    expect(normalizeEntry).toHaveBeenCalledWith('/layouts/default', '/project/src/pages/index/index.json')
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'layouts/default.js',
+      source: 'Component({})',
+    })
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
+    expect(emittedResolvedIds).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: '/layouts/default',
+        }),
+      ]),
+    )
+  })
+
   it('bundles vue layout scripts with imports through chunk emission', async () => {
     mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
     mockFindTemplateEntry.mockResolvedValue({

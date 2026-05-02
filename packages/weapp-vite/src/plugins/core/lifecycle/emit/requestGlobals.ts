@@ -34,6 +34,9 @@ import {
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
+const REQUEST_GLOBAL_REQUIRE_CALL_RE = /require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
+const REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX = '__weappViteRequestGlobalsModule:'
+
 function resolveChunkRequestGlobalsTargets(
   code: string,
   targets: WeappInjectRequestGlobalsTarget[],
@@ -42,6 +45,37 @@ function resolveChunkRequestGlobalsTargets(
   return mode === 'auto'
     ? resolveAutoRequestGlobalsTargets(code, targets)
     : targets
+}
+
+function collectTopLevelDeclaredIdentifiers(code: string) {
+  const identifiers = new Set<string>()
+  try {
+    const ast = parseJsLike(code) as any
+    const body = ast?.program?.body
+    if (!Array.isArray(body)) {
+      return identifiers
+    }
+    for (const statement of body) {
+      if (
+        (statement?.type === 'FunctionDeclaration' || statement?.type === 'ClassDeclaration')
+        && statement.id?.type === 'Identifier'
+      ) {
+        identifiers.add(statement.id.name)
+      }
+      if (statement?.type !== 'VariableDeclaration') {
+        continue
+      }
+      for (const declaration of statement.declarations ?? []) {
+        if (declaration?.id?.type === 'Identifier') {
+          identifiers.add(declaration.id.name)
+        }
+      }
+    }
+  }
+  catch {
+    return identifiers
+  }
+  return identifiers
 }
 
 export function resolveRequestGlobalsInstallerName(code: string) {
@@ -200,7 +234,9 @@ export function injectRequestGlobalsBundleRuntime(
     if (bindingTargets.length === 0) {
       continue
     }
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets)
+    const topLevelDeclaredIdentifiers = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const passiveBindingTargets = bindingTargets.filter(target => !topLevelDeclaredIdentifiers.has(target))
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, passiveBindingTargets)
     const syntheticExportCode = exportName
       ? ''
       : `Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return ${installerName}}});`
@@ -210,7 +246,7 @@ export function injectRequestGlobalsBundleRuntime(
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
     ].join(';')
-    const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode}\n`
+    const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode ? `${passiveBindingsCode}\n` : ''}`
     const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
     if (firstRequireMatch?.[0]) {
       chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${syntheticExportCode}${runtimeBindingCode}`)}\n`
@@ -440,6 +476,60 @@ function rewriteChunkRequireLiteral(
   }
 }
 
+function hasBareRequireRegistration(code: string, requirePath: string) {
+  const escapedRequireLiteral = JSON.stringify(requirePath).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|[;\\n])\\s*require\\(${escapedRequireLiteral}\\);`).test(code)
+}
+
+function getRequireCallImportee(args: unknown[]) {
+  return args[2] ?? args[3] ?? args[4]
+}
+
+function rewriteRequireCallLiterals(
+  code: string,
+  rewrite: (requireLiteral: string, importee: string) => string | undefined,
+) {
+  return code.replaceAll(REQUEST_GLOBAL_REQUIRE_CALL_RE, (...args) => {
+    const match = args[0] as string
+    const requireLiteral = args[1] as string
+    const importee = getRequireCallImportee(args)
+    if (typeof importee !== 'string') {
+      return match
+    }
+    const replacement = rewrite(requireLiteral, importee)
+    return replacement ?? match
+  })
+}
+
+function rewriteEmbeddedRequirePaths(code: string, fromFileName: string, toFileName: string) {
+  return rewriteRequireCallLiterals(code, (_requireLiteral, importee) => {
+    const resolvedImport = normalizeRelativeChunkImport(fromFileName, importee)
+    return `require(${JSON.stringify(toRequireRequestPath(toFileName, resolvedImport))})`
+  })
+}
+
+function rewriteChunkRequireCallsToExpression(
+  chunk: OutputChunk,
+  targetFileName: string,
+  expression: string,
+) {
+  let didRewrite = false
+  const nextCode = rewriteRequireCallLiterals(chunk.code, (_requireLiteral, importee) => {
+    const resolvedImport = normalizeRelativeChunkImport(chunk.fileName, importee)
+    if (resolvedImport !== targetFileName) {
+      return undefined
+    }
+
+    didRewrite = true
+    return expression
+  })
+
+  if (didRewrite) {
+    chunk.code = nextCode
+  }
+  return didRewrite
+}
+
 export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) {
   const runtimeChunk = bundle[REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME]
   if (!runtimeChunk || runtimeChunk.type !== 'chunk') {
@@ -515,6 +605,96 @@ export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) 
     }
     rewriteChunkRequireLiteral(chunk, supportChunkFileName, runtimeOutput.fileName)
   }
+}
+
+export function injectRequestGlobalsAppRegistration(
+  bundle: OutputBundle,
+  installerChunks: Map<string, string>,
+) {
+  if (installerChunks.size === 0) {
+    return
+  }
+  const appOutput = bundle['app.js']
+  if (!appOutput || appOutput.type !== 'chunk') {
+    return
+  }
+
+  const appChunk = appOutput as OutputChunk
+  const requireStatements: string[] = []
+  for (const installerChunkFileName of installerChunks.keys()) {
+    const installerOutput = bundle[installerChunkFileName]
+    if (!installerOutput || installerOutput.type !== 'chunk') {
+      continue
+    }
+    const requirePath = toRequireRequestPath(appChunk.fileName, installerChunkFileName)
+    if (hasBareRequireRegistration(appChunk.code, requirePath)) {
+      continue
+    }
+    requireStatements.push(`require(${JSON.stringify(requirePath)});`)
+  }
+
+  if (requireStatements.length === 0) {
+    return
+  }
+  appChunk.code = `${requireStatements.join('\n')}\n${appChunk.code}`
+}
+
+export function inlineRequestGlobalsAppRegisteredInstallerChunks(
+  bundle: OutputBundle,
+  installerChunks: Map<string, string>,
+) {
+  if (installerChunks.size === 0) {
+    return
+  }
+  const appOutput = bundle['app.js']
+  if (!appOutput || appOutput.type !== 'chunk') {
+    return
+  }
+  const appChunk = appOutput as OutputChunk
+  const inlinedModules: string[] = []
+  let inlinedIndex = 0
+
+  for (const installerChunkFileName of installerChunks.keys()) {
+    if (
+      installerChunkFileName === REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
+      || !installerChunkFileName.startsWith('weapp-vendors/request-globals-')
+    ) {
+      continue
+    }
+
+    const installerOutput = bundle[installerChunkFileName]
+    if (!installerOutput || installerOutput.type !== 'chunk') {
+      continue
+    }
+
+    const moduleRef = `__wvRGA${inlinedIndex++}__`
+    const globalModuleExpression = `globalThis[${JSON.stringify(`${REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX}${installerChunkFileName}`)}]`
+    const installerChunk = installerOutput as OutputChunk
+    const embeddedCode = rewriteEmbeddedRequirePaths(installerChunk.code, installerChunk.fileName, appChunk.fileName)
+    inlinedModules.push([
+      `const ${moduleRef} = (() => {`,
+      '  const module = { exports: {} }',
+      '  const exports = module.exports',
+      embeddedCode,
+      '  return module.exports',
+      '})();',
+      `try{${globalModuleExpression}=${moduleRef}}catch{}`,
+    ].join('\n'))
+
+    for (const output of Object.values(bundle)) {
+      if (!output || output.type !== 'chunk') {
+        continue
+      }
+      rewriteChunkRequireCallsToExpression(output as OutputChunk, installerChunkFileName, globalModuleExpression)
+    }
+
+    delete bundle[installerChunkFileName]
+  }
+
+  if (inlinedModules.length === 0) {
+    return
+  }
+  appChunk.code = `${inlinedModules.join('\n')}\n${appChunk.code}`
 }
 
 export function createRequestGlobalsPreludeCode(

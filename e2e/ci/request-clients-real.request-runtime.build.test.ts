@@ -67,7 +67,7 @@ async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat) 
 }
 
 async function resolveRuntimeChunkPath(distRoot: string) {
-  const requestGlobalsRuntimePath = path.join(distRoot, 'request-globals-runtime.js')
+  const requestGlobalsRuntimePath = path.join(distRoot, 'weapp-vendors/request-globals-runtime.js')
   if (await fs.pathExists(requestGlobalsRuntimePath)) {
     return requestGlobalsRuntimePath
   }
@@ -76,8 +76,10 @@ async function resolveRuntimeChunkPath(distRoot: string) {
     path.join(distRoot, 'weapp-vendors/wevu-ref.js'),
     path.join(distRoot, 'weapp-vendors/wevu-defineProperty.js'),
     path.join(distRoot, 'request-globals-web-apis-shared.js'),
-    path.join(distRoot, 'weapp-vendors/web-apis-shared.js'),
     path.join(distRoot, 'request-globals-wevu-web-apis-shared.js'),
+    path.join(distRoot, 'weapp-vendors/request-globals-web-apis-shared.js'),
+    path.join(distRoot, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
+    path.join(distRoot, 'weapp-vendors/web-apis-shared.js'),
   ]
 
   for (const fallbackPath of fallbackPaths) {

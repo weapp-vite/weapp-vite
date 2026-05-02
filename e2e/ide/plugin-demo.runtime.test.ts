@@ -115,12 +115,8 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await runAutomatorOp('launch automator', () => launchAutomator({
+    sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-    }), {
-      timeoutMs: 24_000,
-      retries: 3,
-      retryDelayMs: 320,
     })
   }
   return sharedMiniProgram

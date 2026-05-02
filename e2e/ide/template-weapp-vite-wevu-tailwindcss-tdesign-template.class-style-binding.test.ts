@@ -78,6 +78,7 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: TEMPLATE_ROOT,
+      warmupRoute: ROUTE,
     })
   }
   return sharedMiniProgram
