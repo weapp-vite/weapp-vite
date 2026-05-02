@@ -139,6 +139,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - Never run more than one of the above commands at the same time in the same workspace or on the same machine/user session.
   - `pnpm e2e:ci` must not overlap with any `pnpm e2e:ide*`, `pnpm e2e`, other `pnpm e2e:*`, or other long-lived E2E/dev-watch commands.
   - `pnpm e2e:ide` / `pnpm e2e:ide:full` must not overlap with `pnpm e2e:ci`, other DevTools E2E commands, or any other command that may start DevTools, automator bridges, dev servers, file watchers, or local verification servers for E2E.
+  - For long-running E2E commands, especially `pnpm e2e:ide:full`, keep the computer awake for the whole run. On macOS, prefer wrapping the command with `caffeinate -dimsu -- pnpm e2e:ide:full`; on other platforms, use the equivalent OS-level sleep inhibitor before starting the task and release it after the command exits.
   - Before starting any E2E command, first check for active residual E2E/dev-watch processes and stop them; if an E2E command is already running, wait for it to finish or terminate it intentionally before launching another one.
   - When diagnosing flaky HMR, dev-watch, DevTools, or automator failures, treat concurrent or residual E2E processes as the first suspect and eliminate concurrency before changing product code or test assertions.
 - For package-level TypeScript work (`packages/*`, `packages-runtime/*`, `mpcore/packages/*`), verify the owning package first with the smallest package-scoped command:
