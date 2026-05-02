@@ -1575,6 +1575,66 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).not.toContain('require("../../weapp-vendors/request-globals-web-apis-shared.js")')
   })
 
+  it('rewrites esm imports when request globals installer chunks are registered through app.js', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: [
+          'import { t as installWebRuntimeGlobals } from "../../weapp-vendors/request-globals-web-apis-shared.js";',
+          'Page({ onLoad(){ installWebRuntimeGlobals({ targets: ["fetch"] }) } })',
+        ].join('\n'),
+        imports: ['weapp-vendors/request-globals-web-apis-shared.js'],
+        dynamicImports: [],
+      },
+      'weapp-vendors/request-globals-web-apis-shared.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-globals-web-apis-shared.js',
+        code: [
+          `function installWebRuntimeGlobals(){return ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL}&&globalThis}`,
+          'Object.defineProperty(exports,`t`,{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
+          'export { installWebRuntimeGlobals as t }',
+        ].join('\n'),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const pageCode = bundle['pages/request-globals/fetch.js'].code
+    expect(bundle['weapp-vendors/request-globals-web-apis-shared.js']).toBeUndefined()
+    expect(bundle['app.js'].code).toContain('const __wvRGA0__ = (() => {')
+    expect(pageCode).toContain('const { t: installWebRuntimeGlobals } = globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"];')
+    expect(pageCode).not.toContain('from "../../weapp-vendors/request-globals-web-apis-shared.js"')
+    expect(bundle['pages/request-globals/fetch.js'].imports).toEqual([])
+  })
+
   it('keeps app-level bare registration when app already imports request globals installer chunk', async () => {
     const state = createState({
       subPackageMeta: null,

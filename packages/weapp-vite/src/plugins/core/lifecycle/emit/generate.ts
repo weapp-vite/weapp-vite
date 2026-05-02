@@ -341,7 +341,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       injectAxiosFetchAdapterEnv(rolldownBundle)
       injectRequestGlobalsAppRegistration(rolldownBundle, installerChunks)
       collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
-      inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks)
     }
 
     const appPreludeOptions = resolveAppPreludeOptions(state)
@@ -368,6 +367,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       },
       asset => this.emitFile(asset),
     )
+    if (injectRequestGlobalsOptions?.targets?.length) {
+      inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks)
+    }
 
     syncChunkImportsFromRequireCalls(rolldownBundle)
 

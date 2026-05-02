@@ -12,6 +12,7 @@ import { toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
+const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
 
 const CASES = [
   {
@@ -49,7 +50,7 @@ function expectOneModuleReference(code: string, specifiers: string[]) {
   expect(specifiers.some((specifier) => {
     const escapedSpecifier = escapeRegex(specifier)
     return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`).test(code)
-  })).toBe(true)
+  }) || code.includes(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)).toBe(true)
 }
 
 async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat) {

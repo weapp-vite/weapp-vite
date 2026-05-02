@@ -530,6 +530,131 @@ function rewriteChunkRequireCallsToExpression(
   return didRewrite
 }
 
+function createRequestGlobalsStaticImportReplacement(node: any, expression: string) {
+  const declarations: string[] = []
+  const namedSpecifiers: string[] = []
+
+  for (const specifier of node.specifiers ?? []) {
+    if (specifier?.type === 'ImportNamespaceSpecifier' && specifier.local?.type === 'Identifier') {
+      declarations.push(`const ${specifier.local.name} = ${expression};`)
+      continue
+    }
+
+    if (specifier?.type === 'ImportDefaultSpecifier' && specifier.local?.type === 'Identifier') {
+      declarations.push(`const ${specifier.local.name} = ${expression}.default;`)
+      continue
+    }
+
+    if (specifier?.type !== 'ImportSpecifier' || specifier.local?.type !== 'Identifier') {
+      continue
+    }
+
+    const importedName = specifier.imported?.type === 'Identifier'
+      ? specifier.imported.name
+      : getStaticStringLiteral(specifier.imported)
+    if (!importedName) {
+      continue
+    }
+
+    const propertyName = /^[_a-z]\w*$/i.test(importedName)
+      ? importedName
+      : JSON.stringify(importedName)
+    namedSpecifiers.push(
+      specifier.local.name === importedName && propertyName === importedName
+        ? importedName
+        : `${propertyName}: ${specifier.local.name}`,
+    )
+  }
+
+  if (namedSpecifiers.length > 0) {
+    declarations.unshift(`const { ${namedSpecifiers.join(', ')} } = ${expression};`)
+  }
+
+  return declarations.length > 0
+    ? declarations.join('\n')
+    : `${expression};`
+}
+
+function rewriteChunkStaticImportsToExpression(
+  chunk: OutputChunk,
+  targetFileName: string,
+  expression: string,
+) {
+  try {
+    const ast = parseJsLike(chunk.code)
+    const replacements: { end: number, start: number, value: string }[] = []
+
+    traverse(ast as any, {
+      ImportDeclaration(path: any) {
+        const importee = getStaticStringLiteral(path.node?.source)
+        if (!importee) {
+          return
+        }
+
+        const resolvedImport = normalizeRelativeChunkImport(chunk.fileName, importee)
+        if (resolvedImport !== targetFileName) {
+          return
+        }
+
+        if (typeof path.node.start !== 'number' || typeof path.node.end !== 'number') {
+          return
+        }
+
+        replacements.push({
+          end: path.node.end,
+          start: path.node.start,
+          value: createRequestGlobalsStaticImportReplacement(path.node, expression),
+        })
+      },
+    })
+
+    if (replacements.length === 0) {
+      return false
+    }
+
+    let nextCode = chunk.code
+    for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
+      nextCode = `${nextCode.slice(0, replacement.start)}${replacement.value}${nextCode.slice(replacement.end)}`
+    }
+    chunk.code = nextCode
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function rewriteAssetRequireCallsToExpression(
+  source: string,
+  fileName: string,
+  targetFileName: string,
+  expression: string,
+) {
+  return rewriteRequireCallLiterals(source, (_requireLiteral, importee) => {
+    const resolvedImport = normalizeRelativeChunkImport(fileName, importee)
+    if (resolvedImport !== targetFileName) {
+      return undefined
+    }
+
+    return expression
+  })
+}
+
+function shouldInlineRequestGlobalsAppRegisteredInstallerChunk(fileName: string) {
+  return fileName !== REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
+    && fileName.startsWith('weapp-vendors/request-globals-')
+}
+
+function toRequestGlobalsAppRegisteredModuleExpression(fileName: string) {
+  return `globalThis[${JSON.stringify(`${REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX}${fileName}`)}]`
+}
+
+function toRequestGlobalsInstallerModuleExpression(fromFileName: string, installerChunkFileName: string) {
+  return shouldInlineRequestGlobalsAppRegisteredInstallerChunk(installerChunkFileName)
+    ? toRequestGlobalsAppRegisteredModuleExpression(installerChunkFileName)
+    : `require(${JSON.stringify(toRequireRequestPath(fromFileName, installerChunkFileName))})`
+}
+
 export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) {
   const runtimeChunk = bundle[REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME]
   if (!runtimeChunk || runtimeChunk.type !== 'chunk') {
@@ -655,10 +780,7 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
   let inlinedIndex = 0
 
   for (const installerChunkFileName of installerChunks.keys()) {
-    if (
-      installerChunkFileName === REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
-      || !installerChunkFileName.startsWith('weapp-vendors/request-globals-')
-    ) {
+    if (!shouldInlineRequestGlobalsAppRegisteredInstallerChunk(installerChunkFileName)) {
       continue
     }
 
@@ -668,7 +790,7 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
     }
 
     const moduleRef = `__wvRGA${inlinedIndex++}__`
-    const globalModuleExpression = `globalThis[${JSON.stringify(`${REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX}${installerChunkFileName}`)}]`
+    const globalModuleExpression = toRequestGlobalsAppRegisteredModuleExpression(installerChunkFileName)
     const installerChunk = installerOutput as OutputChunk
     const embeddedCode = rewriteEmbeddedRequirePaths(installerChunk.code, installerChunk.fileName, appChunk.fileName)
     inlinedModules.push([
@@ -685,7 +807,26 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
       if (!output || output.type !== 'chunk') {
         continue
       }
-      rewriteChunkRequireCallsToExpression(output as OutputChunk, installerChunkFileName, globalModuleExpression)
+      const chunk = output as OutputChunk
+      const didRewriteRequire = rewriteChunkRequireCallsToExpression(chunk, installerChunkFileName, globalModuleExpression)
+      const didRewriteImport = rewriteChunkStaticImportsToExpression(chunk, installerChunkFileName, globalModuleExpression)
+      if ((didRewriteRequire || didRewriteImport) && Array.isArray(chunk.imports)) {
+        chunk.imports = chunk.imports.filter(importee => importee !== installerChunkFileName)
+      }
+    }
+
+    for (const output of Object.values(bundle)) {
+      if (!output || output.type !== 'asset' || typeof output.fileName !== 'string') {
+        continue
+      }
+      const source = typeof output.source === 'string' ? output.source : output.source?.toString()
+      if (!source) {
+        continue
+      }
+      const nextSource = rewriteAssetRequireCallsToExpression(source, output.fileName, installerChunkFileName, globalModuleExpression)
+      if (nextSource !== source) {
+        output.source = nextSource
+      }
     }
 
     delete bundle[installerChunkFileName]
@@ -725,7 +866,7 @@ export function createRequestGlobalsPreludeCode(
     if (!installerImport?.exportName || !installerImport.installerChunkFileName) {
       return undefined
     }
-    installerHostCode = `require(${JSON.stringify(toRequireRequestPath(chunk.fileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
+    installerHostCode = `${toRequestGlobalsInstallerModuleExpression(chunk.fileName, installerImport.installerChunkFileName)}[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
   }
 
   return [
@@ -765,7 +906,7 @@ export function createRequestGlobalsPreludeAssetCode(
     return undefined
   }
 
-  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
+  const installerHostCode = `${toRequestGlobalsInstallerModuleExpression(preludeFileName, installerImport.installerChunkFileName)}[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

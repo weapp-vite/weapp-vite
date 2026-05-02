@@ -19,7 +19,8 @@ exports[`build basic > dist > app.json 1`] = `
   "window": {},
   "style": "v2",
   "componentFramework": "glass-easel",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "subPackages": []
 }"
 `;
 

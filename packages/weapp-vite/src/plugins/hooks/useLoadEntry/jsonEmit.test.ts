@@ -50,12 +50,30 @@ describe('createJsonEmitManager', () => {
     manager.register({
       type: 'app',
       json: { pages: ['pages/index/index'] },
-      jsonPath: '/project/src/app.vue',
+      jsonPath: '/project/src/app.json',
     })
 
     expect(Array.from(manager.map.values())[0]?.entry.json).toEqual({
       pages: ['pages/index/index'],
       subPackages: [],
+    })
+  })
+
+  it('does not normalize app side json files as app config', () => {
+    const manager = createJsonEmitManager({
+      relativeOutputPath(filePath: string) {
+        return filePath.replace('/project/src/', '')
+      },
+    } as any)
+
+    manager.register({
+      type: 'app',
+      json: { rules: [{ action: 'allow', page: '*' }] },
+      jsonPath: '/project/src/sitemap.json',
+    })
+
+    expect(manager.map.get('sitemap.json')?.entry.json).toEqual({
+      rules: [{ action: 'allow', page: '*' }],
     })
   })
 })

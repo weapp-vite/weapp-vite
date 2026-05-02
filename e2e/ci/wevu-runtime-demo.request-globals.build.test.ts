@@ -13,6 +13,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-runtime-demo
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
+const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -22,7 +23,7 @@ function expectOneModuleReference(code: string, specifiers: string[]) {
   expect(specifiers.some((specifier) => {
     const escapedSpecifier = escapeRegex(specifier)
     return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`).test(code)
-  })).toBe(true)
+  }) || code.includes(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)).toBe(true)
 }
 
 async function runBuild(jsFormat: TestJsFormat) {
@@ -39,6 +40,7 @@ async function runBuild(jsFormat: TestJsFormat) {
 
 async function resolveRuntimeJsPath() {
   const candidates = [
+    path.join(DIST_ROOT, 'app.js'),
     path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
     path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
     path.join(DIST_ROOT, 'weapp-vendors/request-globals-web-apis-shared.js'),

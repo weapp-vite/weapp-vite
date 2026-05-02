@@ -23,7 +23,8 @@ exports[`worker-shared > dist > app.json 1`] = `
   "workers": {
     "path": "workers",
     "isSubpackage": true
-  }
+  },
+  "subPackages": []
 }"
 `;
 

@@ -43,7 +43,8 @@ export function createJsonEmitManager(
     }
 
     const fileName = resolveRelativeJsonOutputFileName(configService, entry.jsonPath)
-    const normalizedEntry = entry.type === 'app'
+    const shouldNormalizeAppJson = entry.type === 'app' && fileName === 'app.json'
+    const normalizedEntry = shouldNormalizeAppJson
       ? {
           ...entry,
           json: normalizeAppJson(entry.json),

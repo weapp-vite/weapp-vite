@@ -17,7 +17,8 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
   "appBar": {},
   "usingComponents": {
     "Test": "/components/Test"
-  }
+  },
+  "subPackages": []
 }"
 `;
 

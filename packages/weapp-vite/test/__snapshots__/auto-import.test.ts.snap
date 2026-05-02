@@ -52,7 +52,8 @@ exports[`auto-import > scanFiles 2`] = `
   "window": {},
   "style": "v2",
   "componentFramework": "glass-easel",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "subPackages": []
 }",
   "{
   "component": true,
