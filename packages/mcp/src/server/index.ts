@@ -6,7 +6,7 @@ import { EXPOSED_PACKAGES, MCP_SERVER_NAME, MCP_SERVER_VERSION } from '../consta
 import { resolveWorkspaceRoot } from '../workspace'
 import { registerServerPrompts } from './prompts'
 import { registerServerResources } from './resources'
-import { registerRuntimeTools } from './runtime'
+import { registerRuntimeTools, RuntimeSessionManager } from './runtime'
 import { registerServerTools } from './tools'
 
 const packageIds = Object.keys(EXPOSED_PACKAGES) as ExposedPackageId[]
@@ -23,6 +23,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     name: MCP_SERVER_NAME,
     version: MCP_SERVER_VERSION,
   })
+  const runtimeManager = new RuntimeSessionManager(workspaceRoot, options?.runtimeHooks)
 
   registerServerTools(server, {
     workspaceRoot,
@@ -30,6 +31,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     packageIdSchema,
   })
   registerRuntimeTools(server, {
+    manager: runtimeManager,
     runtimeHooks: options?.runtimeHooks,
     workspaceRoot,
   })
@@ -43,6 +45,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
   })
 
   return {
+    runtimeManager,
     server,
     workspaceRoot,
   }

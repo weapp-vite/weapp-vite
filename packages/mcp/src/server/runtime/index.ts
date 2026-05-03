@@ -9,10 +9,12 @@ export function registerRuntimeTools(
   server: McpServer,
   options: RuntimeToolOptions,
 ) {
-  const manager = new RuntimeSessionManager(options.workspaceRoot, options.runtimeHooks)
+  const manager = options.manager ?? new RuntimeSessionManager(options.workspaceRoot, options.runtimeHooks)
   registerDevtoolsRuntimeTools(server, manager)
   registerRuntimePageTools(server, manager)
   registerRuntimeNodeTools(server, manager)
+
+  return manager
 }
 
 export {

@@ -87,6 +87,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       host: '127.0.0.1',
       port: 3088,
       endpoint: '/mcp',
+      restEndpoint: '/api/weapp/devtools',
     },
     forwardConsole: {
       enabled: 'auto',

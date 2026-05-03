@@ -22,6 +22,8 @@ interface McpCommandOptions {
   endpoint?: string
   host?: string
   port?: number | string
+  rest?: boolean
+  restEndpoint?: string
   transport?: 'command' | 'http' | 'stdio' | 'streamable-http'
   unref?: boolean
   url?: string
@@ -164,6 +166,7 @@ async function handleServer(options: McpCommandOptions) {
     endpoint: options.endpoint,
     host: options.host,
     port: resolvePort(options.port),
+    restEndpoint: options.rest === false ? false : options.restEndpoint,
     transport: resolvedTransport,
     unref: options.unref,
     workspaceRoot: options.workspaceRoot,
@@ -186,6 +189,8 @@ export function registerMcpCommand(cli: CAC) {
     .option('--host <host>', '[string] streamable-http host')
     .option('--port <port>', '[number] streamable-http port')
     .option('--endpoint <path>', '[string] streamable-http endpoint path')
+    .option('--rest-endpoint <path>', '[string] streamable-http REST runtime endpoint path')
+    .option('--no-rest', '[boolean] disable streamable-http REST runtime endpoints')
     .option('--unref', '[boolean] unref HTTP server to not block process exit')
     .option('--url <url>', '[string] explicit HTTP MCP url')
     .option('--workspace-root <path>', '[string] workspace root path, defaults to cwd')

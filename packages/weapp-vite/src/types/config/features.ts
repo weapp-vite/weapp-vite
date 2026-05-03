@@ -106,6 +106,10 @@ export interface WeappMcpConfig {
   host?: string
   port?: number
   endpoint?: string
+  /**
+   * @description streamable-http 模式下的 DevTools runtime REST 入口；设为 false 可关闭。
+   */
+  restEndpoint?: string | false
 }
 
 /**

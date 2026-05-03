@@ -81,6 +81,7 @@ vi.mock('../mcp', () => ({
         endpoint: '/mcp',
         host: '127.0.0.1',
         port: 3088,
+        restEndpoint: '/api/weapp/devtools',
       }
     }
     return {
@@ -89,6 +90,7 @@ vi.mock('../mcp', () => ({
       endpoint: input?.endpoint ?? '/mcp',
       host: input?.host ?? '127.0.0.1',
       port: input?.port ?? 3088,
+      restEndpoint: input?.restEndpoint ?? '/api/weapp/devtools',
     }
   }),
   startWeappViteMcpServer: startWeappViteMcpServerMock,
@@ -392,6 +394,7 @@ describe('devHotkeys', () => {
       endpoint: '/mcp',
       host: '127.0.0.1',
       port: 3088,
+      restEndpoint: '/api/weapp/devtools',
       transport: 'streamable-http',
       unref: false,
       workspaceRoot: '/project',

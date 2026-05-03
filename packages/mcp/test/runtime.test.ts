@@ -30,7 +30,44 @@ interface MockHttpServer {
 const mocks = vi.hoisted(() => {
   const transportInstances: any[] = []
   const mockConnect = vi.fn(async () => {})
+  const mockMiniProgram = {
+    callWxMethod: vi.fn(async () => ({ ok: true })),
+    currentPage: vi.fn(async () => ({
+      path: 'pages/index/index',
+      query: { id: '1' },
+      size: vi.fn(async () => ({ width: 390, height: 844 })),
+      scrollTop: vi.fn(async () => 0),
+      data: vi.fn(async () => ({ title: 'home' })),
+      waitFor: vi.fn(async () => {}),
+    })),
+    navigateTo: vi.fn(async () => ({
+      path: 'pages/detail/index',
+      query: {},
+      waitFor: vi.fn(async () => {}),
+    })),
+    pageStack: vi.fn(async () => [
+      {
+        path: 'pages/index/index',
+        query: { id: '1' },
+      },
+    ]),
+    screenshot: vi.fn(async () => Buffer.from('png').toString('base64')),
+    systemInfo: vi.fn(async () => ({ platform: 'devtools' })),
+  }
+  const mockRuntimeManager = {
+    clearLogs: vi.fn(),
+    close: vi.fn(async () => {}),
+    getLogs: vi.fn(() => [{ level: 'log', message: 'ready', timestamp: 1, raw: 'ready' }]),
+    resolveProjectPath: vi.fn((projectPath: string) => path.resolve('/workspace', projectPath)),
+    resolveWorkspacePath: vi.fn((filePath: string) => path.resolve('/workspace', filePath)),
+    withMiniProgram: vi.fn(async (_connection: unknown, runner: (miniProgram: typeof mockMiniProgram) => Promise<unknown>) => await runner(mockMiniProgram)),
+    withPage: vi.fn(async (_connection: unknown, runner: (page: Awaited<ReturnType<typeof mockMiniProgram.currentPage>>, miniProgram: typeof mockMiniProgram) => Promise<unknown>) => {
+      const page = await mockMiniProgram.currentPage()
+      return await runner(page, mockMiniProgram)
+    }),
+  }
   const mockCreateWeappViteMcpServer = vi.fn(async (_options?: unknown) => ({
+    runtimeManager: mockRuntimeManager,
     server: {
       connect: mockConnect,
     },
@@ -78,6 +115,8 @@ const mocks = vi.hoisted(() => {
     mockConnect,
     mockCreateWeappViteMcpServer,
     mockHandleRequestImpl,
+    mockMiniProgram,
+    mockRuntimeManager,
     MockStdioServerTransport,
     MockStreamableHTTPServerTransport,
     stdioInstances,
@@ -192,8 +231,22 @@ beforeEach(() => {
   mocks.transportInstances.length = 0
   mocks.mockConnect.mockReset()
   mocks.mockHandleRequestImpl.mockReset()
+  mocks.mockMiniProgram.callWxMethod.mockClear()
+  mocks.mockMiniProgram.currentPage.mockClear()
+  mocks.mockMiniProgram.navigateTo.mockClear()
+  mocks.mockMiniProgram.pageStack.mockClear()
+  mocks.mockMiniProgram.screenshot.mockClear()
+  mocks.mockMiniProgram.systemInfo.mockClear()
+  mocks.mockRuntimeManager.clearLogs.mockClear()
+  mocks.mockRuntimeManager.close.mockClear()
+  mocks.mockRuntimeManager.getLogs.mockClear()
+  mocks.mockRuntimeManager.resolveProjectPath.mockClear()
+  mocks.mockRuntimeManager.resolveWorkspacePath.mockClear()
+  mocks.mockRuntimeManager.withMiniProgram.mockClear()
+  mocks.mockRuntimeManager.withPage.mockClear()
   mocks.mockCreateWeappViteMcpServer.mockReset()
   mocks.mockCreateWeappViteMcpServer.mockResolvedValue({
+    runtimeManager: mocks.mockRuntimeManager,
     server: {
       connect: mocks.mockConnect,
     },
@@ -370,6 +423,94 @@ describe('startStreamableHttpServer', () => {
     expect(transport.requests.at(1)?.body).toBeUndefined()
     expect(transport.requests.at(2)?.body).toBeUndefined()
     expect(onReady).toHaveBeenCalledWith(`[mcp] streamable-http ready at http://127.0.0.1:${port}/mcp`)
+    expect(onReady).toHaveBeenCalledWith(`[mcp] REST runtime ready at http://127.0.0.1:${port}/api/weapp/devtools`)
+
+    await handle.close?.()
+  })
+
+  it('serves DevTools runtime REST routes beside the mcp endpoint', async () => {
+    const { startWeappViteMcpServer } = await loadRuntimeModule()
+    const port = 7088
+    mockHttpCreateServer()
+
+    const handle = await startWeappViteMcpServer({
+      transport: 'streamable-http',
+      host: '127.0.0.1',
+      port,
+      quiet: true,
+      restEndpoint: '/api/runtime',
+    })
+    const httpServer = mocks.httpServers.at(-1)!
+
+    const root = await dispatchHttpRequest(httpServer, {
+      method: 'GET',
+      path: '/api/runtime',
+    })
+    expect(root.statusCode).toBe(200)
+    expect(JSON.parse(root.text).result.routes).toContain('POST /capture')
+
+    const connect = await dispatchHttpRequest(httpServer, {
+      method: 'POST',
+      path: '/api/runtime/connect',
+      body: JSON.stringify({
+        projectPath: 'apps/demo',
+      }),
+    })
+    expect(connect.statusCode).toBe(200)
+    expect(JSON.parse(connect.text).result).toMatchObject({
+      connected: true,
+      currentPage: {
+        path: 'pages/index/index',
+      },
+    })
+
+    const route = await dispatchHttpRequest(httpServer, {
+      method: 'POST',
+      path: '/api/runtime/route',
+      body: JSON.stringify({
+        projectPath: 'apps/demo',
+        path: 'pages/detail/index',
+      }),
+    })
+    expect(route.statusCode).toBe(200)
+    expect(JSON.parse(route.text).result).toMatchObject({
+      transition: 'navigateTo',
+      url: '/pages/detail/index',
+    })
+    expect(mocks.mockMiniProgram.navigateTo).toHaveBeenCalledWith('/pages/detail/index')
+
+    const capture = await dispatchHttpRequest(httpServer, {
+      method: 'POST',
+      path: '/api/runtime/capture',
+      body: JSON.stringify({
+        projectPath: 'apps/demo',
+      }),
+    })
+    expect(capture.statusCode).toBe(200)
+    expect(JSON.parse(capture.text).result).toMatchObject({
+      base64: Buffer.from('png').toString('base64'),
+      bytes: 3,
+    })
+
+    await handle.close?.()
+  })
+
+  it('can disable DevTools runtime REST routes', async () => {
+    const { startWeappViteMcpServer } = await loadRuntimeModule()
+    mockHttpCreateServer()
+
+    const handle = await startWeappViteMcpServer({
+      transport: 'streamable-http',
+      quiet: true,
+      restEndpoint: false,
+    })
+    const httpServer = mocks.httpServers.at(-1)!
+
+    const response = await dispatchHttpRequest(httpServer, {
+      method: 'GET',
+      path: '/api/weapp/devtools',
+    })
+    expect(response.statusCode).toBe(404)
 
     await handle.close?.()
   })

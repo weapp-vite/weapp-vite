@@ -7,6 +7,9 @@ import process from 'node:process'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { createWeappViteMcpServer } from './server'
+import { DEFAULT_RUNTIME_REST_ENDPOINT, handleRuntimeRestRequest, normalizeRuntimeRestEndpoint } from './server/runtime/rest'
+
+export { DEFAULT_RUNTIME_REST_ENDPOINT }
 
 export const DEFAULT_MCP_HOST = '127.0.0.1'
 export const DEFAULT_MCP_PORT = 3088
@@ -17,6 +20,7 @@ export interface StartMcpServerOptions extends CreateServerOptions {
   host?: string
   port?: number
   endpoint?: string
+  restEndpoint?: string | false
   unref?: boolean
   quiet?: boolean
   onReady?: (message: string) => void
@@ -93,6 +97,7 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
     endpoint = DEFAULT_MCP_ENDPOINT,
     host = DEFAULT_MCP_HOST,
     port = DEFAULT_MCP_PORT,
+    restEndpoint = DEFAULT_RUNTIME_REST_ENDPOINT,
     workspaceRoot,
     runtimeHooks,
     unref = false,
@@ -101,7 +106,8 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
   } = options
   const normalizedEndpoint = normalizeEndpoint(endpoint)
   const normalizedPort = normalizePort(port)
-  const { server: mcpServer } = await createWeappViteMcpServer({ runtimeHooks, workspaceRoot })
+  const normalizedRestEndpoint = normalizeRuntimeRestEndpoint(restEndpoint)
+  const { runtimeManager, server: mcpServer } = await createWeappViteMcpServer({ runtimeHooks, workspaceRoot })
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   })
@@ -111,6 +117,14 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
     try {
       const hostHeader = req.headers.host ?? `${host}:${normalizedPort}`
       const url = new URL(req.url ?? '/', `http://${hostHeader}`)
+      const handledByRest = await handleRuntimeRestRequest(req, res, {
+        endpoint: normalizedRestEndpoint,
+        manager: runtimeManager,
+      })
+      if (handledByRest) {
+        return
+      }
+
       if (url.pathname !== normalizedEndpoint) {
         writeJson(res, 404, {
           jsonrpc: '2.0',
@@ -164,6 +178,9 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
 
   if (!quiet) {
     onReady?.(`[mcp] streamable-http ready at http://${host}:${normalizedPort}${normalizedEndpoint}`)
+    if (normalizedRestEndpoint !== false) {
+      onReady?.(`[mcp] REST runtime ready at http://${host}:${normalizedPort}${normalizedRestEndpoint}`)
+    }
   }
 
   return {

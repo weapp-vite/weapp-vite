@@ -16,6 +16,7 @@ vi.mock('@weapp-vite/mcp', () => {
     DEFAULT_MCP_HOST: '127.0.0.1',
     DEFAULT_MCP_PORT: 3088,
     DEFAULT_MCP_ENDPOINT: '/mcp',
+    DEFAULT_RUNTIME_REST_ENDPOINT: '/api/weapp/devtools',
   }
 })
 
@@ -43,26 +44,38 @@ describe('weapp mcp config', () => {
   })
 
   it('uses defaults when config is omitted', async () => {
-    const { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_PORT, resolveWeappMcpConfig } = await loadMcpModule()
+    const { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_PORT, DEFAULT_RUNTIME_REST_ENDPOINT, resolveWeappMcpConfig } = await loadMcpModule()
     const resolved = resolveWeappMcpConfig(undefined)
 
     expect(resolved.enabled).toBe(true)
     expect(resolved.autoStart).toBe(false)
     expect(resolved.port).toBe(DEFAULT_MCP_PORT)
     expect(resolved.endpoint).toBe(DEFAULT_MCP_ENDPOINT)
+    expect(resolved.restEndpoint).toBe(DEFAULT_RUNTIME_REST_ENDPOINT)
   })
 
-  it('normalizes endpoint, host, and port', async () => {
+  it('normalizes endpoint, REST endpoint, host, and port', async () => {
     const { DEFAULT_MCP_PORT, resolveWeappMcpConfig } = await loadMcpModule()
     const resolved = resolveWeappMcpConfig({
       endpoint: ' my-mcp ',
       host: ' 0.0.0.0 ',
       port: -1,
+      restEndpoint: ' api/devtools ',
     })
 
     expect(resolved.endpoint).toBe('/my-mcp')
+    expect(resolved.restEndpoint).toBe('/api/devtools')
     expect(resolved.host).toBe('0.0.0.0')
     expect(resolved.port).toBe(DEFAULT_MCP_PORT)
+  })
+
+  it('can disable REST runtime endpoints', async () => {
+    const { resolveWeappMcpConfig } = await loadMcpModule()
+    const resolved = resolveWeappMcpConfig({
+      restEndpoint: false,
+    })
+
+    expect(resolved.restEndpoint).toBe(false)
   })
 
   it('falls back to defaults for empty host and invalid endpoint/port values', async () => {

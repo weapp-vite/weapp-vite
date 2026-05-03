@@ -62,6 +62,7 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
       endpoint: resolvedMcp.endpoint,
       host: resolvedMcp.host,
       port: resolvedMcp.port,
+      restEndpoint: resolvedMcp.restEndpoint,
       quiet: true,
       transport: 'streamable-http',
       unref: true,
@@ -71,6 +72,9 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
     const mcpUrl = `http://${resolvedMcp.host}:${resolvedMcp.port}${resolvedMcp.endpoint}`
     logger.success('MCP 服务已自动启动：')
     logger.info(`  ➜  ${colors.cyan(mcpUrl)}`)
+    if (resolvedMcp.restEndpoint !== false) {
+      logger.info(`  REST ➜  ${colors.cyan(`http://${resolvedMcp.host}:${resolvedMcp.port}${resolvedMcp.restEndpoint}`)}`)
+    }
     for (const line of formatMcpQuickStart({
       httpUrl: mcpUrl,
       transport: 'http',

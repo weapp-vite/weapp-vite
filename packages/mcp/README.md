@@ -35,6 +35,16 @@ const handle = await startWeappViteMcpServer({
 await handle.close?.()
 ```
 
+`streamable-http` 模式会同时暴露 DevTools runtime REST 接口，默认前缀为
+`/api/weapp/devtools`。可以通过 `restEndpoint` 调整，或设为 `false` 关闭：
+
+```ts
+const handle = await startWeappViteMcpServer({
+  transport: 'streamable-http',
+  restEndpoint: '/api/weapp/devtools',
+})
+```
+
 ## 主要 Tools
 
 - `workspace_catalog`: 输出 `weapp-vite / wevu / wevu-compiler` 目录、版本、脚本
@@ -65,6 +75,31 @@ await handle.close?.()
 - `weapp_runtime_node_markup` / `weapp_runtime_node_styles` / `weapp_runtime_node_attrs` / `weapp_runtime_measure_node`: 读取元素结构与渲染信息
 
 建议调用顺序：先 `weapp_devtools_connect`，再 `weapp_devtools_active_page`，之后再执行 `weapp_devtools_capture` 或 `weapp_runtime_*`。
+
+### DevTools Runtime REST
+
+REST 接口和 MCP runtime tools 复用同一个 automator 会话管理器，适合脚本或其他非 MCP 客户端连续操控模拟器：
+
+- `POST /api/weapp/devtools/connect`
+- `POST /api/weapp/devtools/route`
+- `GET|POST /api/weapp/devtools/active-page`
+- `GET|POST /api/weapp/devtools/page-stack`
+- `POST /api/weapp/devtools/capture`
+- `POST /api/weapp/devtools/host-api`
+- `GET|DELETE /api/weapp/devtools/console`
+- `DELETE /api/weapp/devtools/session`
+
+示例：
+
+```bash
+curl -X POST http://127.0.0.1:3088/api/weapp/devtools/route \
+  -H 'content-type: application/json' \
+  -d '{"projectPath":"dist/build/mp-weixin","transition":"reLaunch","path":"pages/index/index"}'
+
+curl -X POST http://127.0.0.1:3088/api/weapp/devtools/capture \
+  -H 'content-type: application/json' \
+  -d '{"projectPath":"dist/build/mp-weixin","outputPath":".tmp/home.png"}'
+```
 
 ## 主要 Resources
 

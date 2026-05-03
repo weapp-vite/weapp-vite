@@ -51,6 +51,7 @@ export interface RuntimeConnectionInput {
 }
 
 export interface RuntimeToolOptions {
+  manager?: RuntimeSessionManager
   workspaceRoot: string
   runtimeHooks?: DevtoolsRuntimeHooks
 }

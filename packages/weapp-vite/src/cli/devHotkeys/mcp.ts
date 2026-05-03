@@ -8,6 +8,7 @@ interface ResolvedMcpConfig {
   endpoint: string
   host: string
   port: number
+  restEndpoint: string | false
 }
 
 function formatMcpUrl(host: string, port: number, endpoint: string) {
@@ -44,6 +45,7 @@ export function createToggleMcpAction(options: {
       endpoint: resolvedMcp.endpoint,
       host: resolvedMcp.host,
       port: resolvedMcp.port,
+      restEndpoint: resolvedMcp.restEndpoint,
       transport: 'streamable-http',
       unref: false,
       workspaceRoot: cwd,

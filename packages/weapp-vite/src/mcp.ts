@@ -5,6 +5,7 @@ import {
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
+  DEFAULT_RUNTIME_REST_ENDPOINT,
   startWeappViteMcpServer as startMcpServer,
 } from '@weapp-vite/mcp'
 import { connectMiniProgram } from 'weapp-ide-cli'
@@ -15,6 +16,7 @@ export {
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
+  DEFAULT_RUNTIME_REST_ENDPOINT,
 }
 export type { CreateServerOptions }
 
@@ -24,6 +26,7 @@ export interface ResolvedWeappMcpConfig {
   host: string
   port: number
   endpoint: string
+  restEndpoint: string | false
 }
 
 export interface WeappViteMcpServerOptions extends StartMcpServerOptions {}
@@ -53,6 +56,7 @@ export function resolveWeappMcpConfig(config?: boolean | WeappMcpConfig): Resolv
       host: DEFAULT_MCP_HOST,
       port: DEFAULT_MCP_PORT,
       endpoint: DEFAULT_MCP_ENDPOINT,
+      restEndpoint: DEFAULT_RUNTIME_REST_ENDPOINT,
     }
   }
 
@@ -68,6 +72,7 @@ export function resolveWeappMcpConfig(config?: boolean | WeappMcpConfig): Resolv
       : DEFAULT_MCP_HOST,
     port: normalizePort(record.port),
     endpoint: normalizeEndpoint(record.endpoint),
+    restEndpoint: record.restEndpoint === false ? false : normalizeEndpoint(record.restEndpoint ?? DEFAULT_RUNTIME_REST_ENDPOINT),
   }
 }
 

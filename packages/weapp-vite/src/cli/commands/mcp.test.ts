@@ -19,6 +19,7 @@ vi.mock('../../mcp', () => ({
     endpoint: '/mcp',
     host: '127.0.0.1',
     port: 3088,
+    restEndpoint: '/api/weapp/devtools',
   })),
 }))
 
@@ -98,6 +99,7 @@ describe('mcp cli command', () => {
       endpoint: undefined,
       host: undefined,
       port: undefined,
+      restEndpoint: undefined,
       transport: 'stdio',
       unref: undefined,
       workspaceRoot: undefined,
@@ -116,6 +118,7 @@ describe('mcp cli command', () => {
       endpoint: undefined,
       host: undefined,
       port: undefined,
+      restEndpoint: undefined,
       transport: 'stdio',
       unref: undefined,
       workspaceRoot: './packages/weapp-vite',
@@ -146,11 +149,55 @@ describe('mcp cli command', () => {
       endpoint: '/mcp',
       host: '0.0.0.0',
       port: 3199,
+      restEndpoint: undefined,
       transport: 'streamable-http',
       unref: undefined,
       workspaceRoot: undefined,
     })
     expect(loggerInfoMock).toHaveBeenCalledWith('hint line')
+  })
+
+  it('supports REST endpoint options', async () => {
+    const { registerMcpCommand } = await import('./mcp')
+    const cli = cac('weapp-vite')
+    registerMcpCommand(cli)
+
+    cli.parse([
+      'node',
+      'weapp-vite',
+      'mcp',
+      '--transport',
+      'http',
+      '--rest-endpoint',
+      '/api/runtime',
+    ], { run: false })
+    await cli.runMatchedCommand()
+
+    expect(startWeappViteMcpServerMock).toHaveBeenCalledWith(expect.objectContaining({
+      restEndpoint: '/api/runtime',
+      transport: 'streamable-http',
+    }))
+  })
+
+  it('can disable REST runtime endpoints', async () => {
+    const { registerMcpCommand } = await import('./mcp')
+    const cli = cac('weapp-vite')
+    registerMcpCommand(cli)
+
+    cli.parse([
+      'node',
+      'weapp-vite',
+      'mcp',
+      '--transport',
+      'http',
+      '--no-rest',
+    ], { run: false })
+    await cli.runMatchedCommand()
+
+    expect(startWeappViteMcpServerMock).toHaveBeenCalledWith(expect.objectContaining({
+      restEndpoint: false,
+      transport: 'streamable-http',
+    }))
   })
 
   it('writes client config for init command', async () => {

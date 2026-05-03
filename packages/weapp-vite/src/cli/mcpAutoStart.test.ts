@@ -30,6 +30,7 @@ vi.mock('../mcp', () => ({
         endpoint: '/mcp',
         host: '127.0.0.1',
         port: 3088,
+        restEndpoint: '/api/weapp/devtools',
       }
     }
     return {
@@ -38,6 +39,7 @@ vi.mock('../mcp', () => ({
       endpoint: '/mcp',
       host: '127.0.0.1',
       port: 3088,
+      restEndpoint: '/api/weapp/devtools',
     }
   }),
   startWeappViteMcpServer: startWeappViteMcpServerMock,

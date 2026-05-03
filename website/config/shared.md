@@ -373,10 +373,12 @@ export default defineConfig({
   host?: string
   port?: number
   endpoint?: string
+  restEndpoint?: string | false
 }
 ```
 
-用于控制本地 MCP 服务。
+用于控制本地 MCP 服务。`streamable-http` 模式会同时暴露 DevTools runtime REST 接口，默认
+`restEndpoint` 为 `/api/weapp/devtools`；设为 `false` 可关闭。
 
 ```ts
 export default defineConfig({
@@ -387,6 +389,7 @@ export default defineConfig({
       host: '127.0.0.1',
       port: 8099,
       endpoint: '/mcp',
+      restEndpoint: '/api/weapp/devtools',
     },
   },
 })
