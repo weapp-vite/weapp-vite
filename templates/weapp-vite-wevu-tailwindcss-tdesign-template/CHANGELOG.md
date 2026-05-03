@@ -1,5 +1,11 @@
 # weapp-vite-wevu-template
 
+## 1.0.7
+
+### Patch Changes
+
+- 🐛 **精简 wevu 与 wevu + Tailwind CSS + TDesign 脚手架模板，仅保留最小首页入口，并将原有 layout、分包、表单、样式绑定等验证性页面迁移到 e2e-apps 回归用例中。** [`b76e310`](https://github.com/weapp-vite/weapp-vite/commit/b76e31079fccca9d254b9fb44750969ba59f470a) by @sonofmagic
+
 ## 1.0.6
 
 ### Patch Changes

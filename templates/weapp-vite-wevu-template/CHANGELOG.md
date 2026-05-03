@@ -1,5 +1,13 @@
 # weapp-vite-wevu-template
 
+## 1.0.5
+
+### Patch Changes
+
+- 🐛 **为 wevu 模板补齐默认布局、管理布局和布局示例页，使脚手架生成的 Vue SFC 模板与布局能力保持一致。** [`f8f7d3d`](https://github.com/weapp-vite/weapp-vite/commit/f8f7d3d7bd7751aa595f3d4d9dea90bf809b9ff0) by @sonofmagic
+
+- 🐛 **精简 wevu 与 wevu + Tailwind CSS + TDesign 脚手架模板，仅保留最小首页入口，并将原有 layout、分包、表单、样式绑定等验证性页面迁移到 e2e-apps 回归用例中。** [`b76e310`](https://github.com/weapp-vite/weapp-vite/commit/b76e31079fccca9d254b9fb44750969ba59f470a) by @sonofmagic
+
 ## 1.0.4
 
 ### Patch Changes
