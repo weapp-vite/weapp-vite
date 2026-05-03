@@ -6,8 +6,8 @@ interface GoodsCardData {
   thumb?: string
   title?: string
   tags?: string[]
-  price?: number
-  originPrice?: number
+  price?: string | number
+  originPrice?: string | number
   [key: string]: any
 }
 
@@ -16,7 +16,6 @@ defineOptions({
   options: {
     addGlobalClass: true,
   },
-  pageLifeTimes: {},
 })
 
 const props = withDefaults(defineProps<{
@@ -178,7 +177,7 @@ defineComponentJson({
       <view class="goods-card__thumb shrink-0 relative size-[340rpx] empty:hidden empty:m-0" @tap="clickThumbHandle">
         <t-image
           v-if="!!goods.thumb"
-          t-class="goods-card__img [display:block] [width:100%] [height:100%] [border-radius:16rpx_16rpx_0_0] [overflow:hidden]"
+          t-class="goods-card__img"
           :src="goods.thumb"
           mode="aspectFill"
           lazy-load
@@ -230,3 +229,144 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.goods-card {
+  box-sizing: border-box;
+  display: block;
+  width: 342rpx;
+  overflow: hidden;
+  font-size: 24rpx;
+  border-bottom: none;
+  border-radius: 0 0 16rpx 16rpx;
+}
+
+.goods-card__main {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 342rpx;
+  padding: 0;
+  margin-bottom: 16rpx;
+  overflow: hidden;
+  line-height: 1;
+  background: transparent;
+  border-radius: 0 0 16rpx 16rpx;
+}
+
+.goods-card__thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 340rpx;
+  height: 340rpx;
+  overflow: hidden;
+  background: #f5f5f5;
+  border-radius: 16rpx 16rpx 0 0;
+}
+
+.goods-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16rpx 16rpx 0 0;
+}
+
+.goods-card__body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 340rpx;
+  min-height: 176rpx;
+  padding: 16rpx 24rpx 18rpx;
+  background: #fff;
+  border-radius: 0 0 16rpx 16rpx;
+}
+
+.goods-card__upper {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.goods-card__title {
+  display: -webkit-box;
+  height: 72rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  font-size: 28rpx;
+  font-weight: normal;
+  line-height: 36rpx;
+  color: #333;
+  word-break: break-all;
+  -webkit-box-orient: vertical;
+}
+
+.goods-card__tags {
+  display: flex;
+  flex-flow: row wrap;
+  margin-top: 8rpx;
+}
+
+.goods-card__tag {
+  box-sizing: border-box;
+  display: block;
+  max-width: 100%;
+  padding: 0 8rpx;
+  margin: 0 8rpx 8rpx 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #fa4126;
+  white-space: nowrap;
+  background: transparent;
+  border: 1rpx solid #fa4126;
+  border-radius: 16rpx;
+}
+
+.goods-card__down {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: flex-start;
+  min-height: 48rpx;
+  padding-right: 56rpx;
+  margin-top: 8rpx;
+  line-height: 32rpx;
+}
+
+.spec-for-price {
+  order: 1;
+  margin: 0;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fa4126;
+  white-space: nowrap;
+}
+
+.spec-for-symbol {
+  font-size: 24rpx;
+}
+
+.goods-card__origin-price {
+  order: 2;
+  margin-left: 8rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #bbb;
+  white-space: nowrap;
+}
+
+.goods-card__add-cart {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  order: 3;
+}
+</style>

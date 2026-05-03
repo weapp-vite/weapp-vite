@@ -14,6 +14,7 @@
 - 优惠券与营销活动页
 - 地址管理、个人资料、昵称修改
 - Tailwind + TDesign 组件体系
+- 默认使用 Skyline 渲染引擎与 GlassEasel 组件框架
 - Mock 数据开箱可跑，适合二开落地
 
 ## 开发与构建

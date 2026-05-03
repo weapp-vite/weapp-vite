@@ -119,3 +119,83 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.cart-bar__placeholder {
+  width: 100%;
+  height: 100rpx;
+}
+
+.cart-bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 112rpx;
+  padding: 16rpx 32rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #333;
+  background: #fff;
+  border-top: 1rpx solid #e5e5e5;
+}
+
+.cart-bar--fixed {
+  position: fixed;
+  right: 0;
+  bottom: 100rpx;
+  left: 0;
+  z-index: 99;
+}
+
+.cart-bar__check {
+  margin-right: 12rpx;
+}
+
+.cart-bar__total {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin-left: 24rpx;
+}
+
+.cart-bar__total--bold {
+  font-size: 28rpx;
+  font-weight: bold;
+  line-height: 40rpx;
+  color: #333;
+}
+
+.cart-bar__total--normal {
+  font-size: 24rpx;
+  line-height: 32rpx;
+  color: #999;
+}
+
+.cart-bar__total--price {
+  color: #fa4126;
+}
+
+.text-padding-right {
+  padding-right: 4rpx;
+}
+
+.account-btn {
+  width: 192rpx;
+  height: 80rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  line-height: 80rpx;
+  color: #fff;
+  text-align: center;
+  background: #fa4126;
+  border-radius: 40rpx;
+}
+
+.disabled-btn {
+  background: #ccc;
+}
+
+.hover-btn {
+  opacity: 0.5;
+}
+</style>

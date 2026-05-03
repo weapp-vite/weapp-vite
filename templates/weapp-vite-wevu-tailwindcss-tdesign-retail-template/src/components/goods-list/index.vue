@@ -14,7 +14,7 @@ defineOptions({
 const props = withDefaults(defineProps<{
   goodsList?: GoodsListItem[]
   id?: string
-  thresholds?: unknown[]
+  thresholds?: number[]
 }>(), {
   goodsList: () => [],
   id: '',
@@ -95,3 +95,21 @@ defineComponentJson({
     </block>
   </view>
 </template>
+
+<style>
+.goods-list-wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: #fff;
+}
+
+.goods-card-inside {
+  display: block;
+  width: 342rpx;
+  margin-bottom: 16rpx;
+}
+</style>

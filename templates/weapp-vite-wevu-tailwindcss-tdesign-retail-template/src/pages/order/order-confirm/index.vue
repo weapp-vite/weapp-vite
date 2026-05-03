@@ -814,3 +814,132 @@ definePageJson({
     />
   </view>
 </template>
+
+<style>
+.order-sure {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24rpx 0 calc(env(safe-area-inset-bottom) + 136rpx);
+  background: #f6f6f6;
+}
+
+.wx-pay-cover {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  height: 112rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+}
+
+.wx-pay {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100rpx;
+  padding: 0 32rpx;
+}
+
+.wx-pay .price {
+  font-size: 63rpx;
+  font-weight: bold;
+  line-height: 88rpx;
+  color: #fa4126;
+}
+
+.submit-btn {
+  width: 240rpx;
+  height: 80rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  line-height: 80rpx;
+  color: #fff;
+  text-align: center;
+  background: #fa4126;
+  border-radius: 40rpx;
+}
+
+.submit-btn.btn-gray {
+  background: #ccc;
+}
+
+.pay-detail {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16rpx 32rpx;
+  background: #fff;
+}
+
+.pay-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 72rpx;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  color: #666;
+}
+
+.pay-item__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 400rpx;
+  font-size: 24rpx;
+  color: #333;
+}
+
+[class~='font-bold'] {
+  font-weight: bold;
+}
+
+.pay-item .primary,
+.pay-item__right.primary {
+  color: #fa4126;
+}
+
+.pay-remark {
+  display: -webkit-box;
+  max-width: 400rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.amount-wrapper {
+  box-sizing: border-box;
+  width: 100%;
+  height: 96rpx;
+  padding: 0 32rpx;
+  background: #fff;
+}
+
+.pay-amount {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: 96rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.order-num {
+  padding-right: 8rpx;
+  color: #999;
+}
+
+.total-price {
+  padding-left: 8rpx;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #fa4126;
+}
+</style>

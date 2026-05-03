@@ -126,3 +126,11 @@ defineComponentJson({
     <slot />
   </scroll-view>
 </template>
+
+<style>
+.c-sidebar {
+  width: 176rpx;
+  height: 100%;
+  background: #f5f5f5;
+}
+</style>

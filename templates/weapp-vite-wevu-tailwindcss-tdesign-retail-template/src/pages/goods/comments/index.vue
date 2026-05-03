@@ -202,27 +202,27 @@ definePageJson({
 
 <template>
   <view class="comments-header flex flex-wrap p-[32rpx_32rpx_0rpx] bg-white mt-[-24rpx] ml-[-24rpx]">
-    <t-tag :t-class="`comments-header-tag ${commentType === '' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="" @tap="changeTag">
+    <t-tag :t-class="`comments-header-tag ${commentType === '' ? 'comments-header-active' : ''}`" data-commentType="" @tap="changeTag">
       全部({{ countObj.commentCount }})
     </t-tag>
     <t-tag
       v-if="countObj.uidCount !== '0'"
-      :t-class="`comments-header-tag ${commentType === '5' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`"
+      :t-class="`comments-header-tag ${commentType === '5' ? 'comments-header-active' : ''}`"
       data-commentType="5"
       @tap="changeTag"
     >
       自己({{ countObj.uidCount }})
     </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '4' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="4" @tap="changeTag">
+    <t-tag :t-class="`comments-header-tag ${commentType === '4' ? 'comments-header-active' : ''}`" data-commentType="4" @tap="changeTag">
       带图({{ countObj.hasImageCount }})
     </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '3' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="3" @tap="changeTag">
+    <t-tag :t-class="`comments-header-tag ${commentType === '3' ? 'comments-header-active' : ''}`" data-commentType="3" @tap="changeTag">
       好评({{ countObj.goodCount }})
     </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '2' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="2" @tap="changeTag">
+    <t-tag :t-class="`comments-header-tag ${commentType === '2' ? 'comments-header-active' : ''}`" data-commentType="2" @tap="changeTag">
       中评({{ countObj.middleCount }})
     </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '1' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="1" @tap="changeTag">
+    <t-tag :t-class="`comments-header-tag ${commentType === '1' ? 'comments-header-active' : ''}`" data-commentType="1" @tap="changeTag">
       差评({{ countObj.badCount }})
     </t-tag>
   </view>
@@ -251,3 +251,36 @@ definePageJson({
     />
   </view>
 </template>
+
+<style>
+.comments-header {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 32rpx 32rpx 0;
+  margin-top: -24rpx;
+  margin-left: -24rpx;
+  background: #fff;
+}
+
+.comments-header-tag {
+  justify-content: center;
+  height: 56rpx;
+  margin-top: 24rpx;
+  margin-left: 24rpx;
+  font-size: 24rpx;
+  color: #333;
+  background-color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+  border-radius: 8rpx;
+}
+
+.comments-header-active {
+  color: #fa4126;
+  background-color: #ffece9;
+  border-color: #fa4126;
+}
+
+.comments-card-list {
+  background: #fff;
+}
+</style>

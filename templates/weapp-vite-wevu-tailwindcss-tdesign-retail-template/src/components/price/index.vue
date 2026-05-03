@@ -4,7 +4,6 @@ import { computed, toRefs } from 'wevu'
 defineOptions({
   setupLifecycle: 'created',
   externalClasses: ['wr-class', 'symbol-class', 'decimal-class'],
-  useStore: [],
 })
 
 const props = withDefaults(defineProps<{
@@ -102,3 +101,56 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.price {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  font-size: inherit;
+  line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+  text-decoration: inherit;
+}
+
+.price .line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  background: currentcolor;
+  transform: translateY(-50%);
+}
+
+.price .symbol {
+  display: inline-block;
+  font-size: 0.8em;
+  line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.price .pprice {
+  display: inline-flex;
+  align-items: baseline;
+  margin-left: 4rpx;
+  font-size: inherit;
+  line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.price .integer,
+.price .decimal {
+  display: inline-block;
+  font-size: inherit;
+  line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.price .decimal.smaller {
+  font-size: 0.8em;
+}
+</style>

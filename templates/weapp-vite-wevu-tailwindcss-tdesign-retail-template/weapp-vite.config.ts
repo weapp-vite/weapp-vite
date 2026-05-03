@@ -10,6 +10,16 @@ export default defineConfig({
   },
   weapp: {
     srcRoot: 'src',
+    json: {
+      defaults: {
+        page: {
+          navigationStyle: 'custom',
+        },
+        component: {
+          styleIsolation: 'shared',
+        },
+      },
+    },
     typescript: {
       app: {
         compilerOptions: {

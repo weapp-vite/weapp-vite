@@ -43,13 +43,13 @@ defineComponentJson({
   <view class="comments-card-item wr-class p-[32rpx] flex bg-white relative">
     <view class="comments-card-item-container w-full [&_.comments-title]:flex [&_.comments-title]:items-center [&_.comments-title]:relative [&_.comments-card-reply]:bg-[#f5f5f5] [&_.comments-card-reply]:p-[24rpx_16rpx] [&_.comments-card-reply]:mt-[24rpx] [&_.comments-card-reply_.prefix]:text-[26rpx] [&_.comments-card-reply_.prefix]:[font-weight:bold] [&_.comments-card-reply_.prefix]:text-[#666666] [&_.comments-card-reply_.content]:text-[26rpx] [&_.comments-card-reply_.content]:text-[#666666]">
       <view class="comments-title [&_.userName]:text-[26rpx] [&_.userName]:text-[#333333] [&_.userName]:ml-[24rpx] [&_.commentTime]:text-[24rpx] [&_.commentTime]:text-[#999999] [&_.commentTime]:absolute [&_.commentTime]:right-0">
-        <view class="comments-card-item-userImg flex [&_.userImg]:size-[64rpx] [&_.userImg]:rounded-[50%]">
-          <t-image t-class="userImg" :src="userHeadUrl" />
+        <view class="comments-card-item__avatar flex [&_.comments-card-item__user-img]:size-[64rpx] [&_.comments-card-item__user-img]:rounded-[50%]">
+          <t-image t-class="comments-card-item__user-img" :src="userHeadUrl" />
         </view>
-        <view class="userName">
+        <view class="comments-card-item__user-name">
           {{ userName }}
         </view>
-        <text class="commentTime">
+        <text class="comments-card-item__time">
           {{ commentTime }}
         </text>
       </view>
@@ -80,3 +80,116 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.comments-card-item {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  padding: 32rpx;
+  background: #fff;
+}
+
+.comments-card-item-container {
+  width: 100%;
+}
+
+.comments-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 64rpx;
+  padding-right: 210rpx;
+}
+
+.comments-card-item__avatar {
+  display: flex;
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.comments-card-item__user-img {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+}
+
+.comments-card-item__user-name {
+  margin-left: 24rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  color: #333;
+  white-space: nowrap;
+}
+
+.comments-card-item__time {
+  position: absolute;
+  right: 0;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #999;
+}
+
+.comments-info {
+  display: flex;
+  align-items: center;
+  margin-top: 18rpx;
+}
+
+.rate {
+  margin-right: 24rpx;
+}
+
+.goods-info-text {
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #999;
+}
+
+.comments-card-item-container-content {
+  position: relative;
+  margin-top: 16rpx;
+}
+
+.content-text {
+  font-size: 28rpx;
+  font-weight: normal;
+  line-height: 42rpx;
+  color: #111;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.comments-card-item-container-image {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 24rpx;
+}
+
+.comments-card-reply {
+  box-sizing: border-box;
+  padding: 24rpx 16rpx;
+  margin-top: 24rpx;
+  background: #f5f5f5;
+}
+
+.comments-card-reply .prefix {
+  font-size: 26rpx;
+  font-weight: bold;
+  line-height: 38rpx;
+  color: #666;
+}
+
+.comments-card-reply .content {
+  font-size: 26rpx;
+  line-height: 38rpx;
+  color: #666;
+}
+</style>

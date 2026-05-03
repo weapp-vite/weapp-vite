@@ -75,9 +75,9 @@ function onReTry() {
 
 async function loadGoodsList(fresh = false) {
   if (fresh) {
-    await wpi.pageScrollTo({
+    void Promise.resolve(wpi.pageScrollTo({
       scrollTop: 0,
-    })
+    })).catch(() => {})
   }
 
   goodsListLoadStatus.value = 1

@@ -144,3 +144,78 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.goods-category {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.custom-sidebar {
+  width: 180rpx;
+  height: 100%;
+  background: #f5f5f5;
+}
+
+.goods-category__right {
+  position: relative;
+  display: flex;
+  flex: 1;
+  width: 0;
+  height: 100%;
+  overflow: scroll;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.goods-category-normal {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 28rpx 34rpx 0 32rpx;
+}
+
+.goods-category-normal-item-title {
+  display: flex;
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 40rpx;
+  color: #222427;
+}
+
+.goods-category-normal-item-container {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 8rpx;
+  margin-top: 20rpx;
+  margin-bottom: 30rpx;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.goods-category-normal-item-container-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 33.33%;
+  height: 196rpx;
+  margin-top: 24rpx;
+}
+
+.goods-category-normal-item-container-item-title {
+  display: flex;
+  justify-content: center;
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #666;
+  text-align: center;
+}
+
+.image {
+  width: 144rpx;
+  height: 144rpx;
+}
+</style>

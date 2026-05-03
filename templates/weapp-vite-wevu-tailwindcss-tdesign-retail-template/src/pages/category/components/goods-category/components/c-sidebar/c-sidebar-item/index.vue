@@ -73,3 +73,62 @@ defineComponentJson({
     </view>
   </view>
 </template>
+
+<style>
+.c-sidebar-item-container {
+  background: #fff;
+}
+
+.c-sidebar-item {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  min-height: 96rpx;
+  padding: 20rpx 0;
+  font-size: 26rpx;
+  color: #222427;
+  text-align: center;
+  background: #f5f5f5;
+}
+
+.c-sidebar-item.active {
+  position: relative;
+  background: #fff;
+}
+
+.c-sidebar-item.disabled {
+  opacity: 0.4;
+}
+
+.c-sidebar-item.top-right-radius {
+  border-top-right-radius: 16rpx;
+}
+
+.c-sidebar-item.bottom-right-radius {
+  border-bottom-right-radius: 16rpx;
+}
+
+.c-sidebar-item__text {
+  box-sizing: border-box;
+  width: 136rpx;
+  height: 52rpx;
+  padding: 8rpx 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  color: #666;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.c-sidebar-item.active .c-sidebar-item__text {
+  color: #fa4126;
+  background: #fff;
+  border-radius: 36rpx;
+}
+
+.c-sidebar-item--hover {
+  opacity: 0.7;
+}
+</style>
