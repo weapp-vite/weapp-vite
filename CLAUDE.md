@@ -17,12 +17,14 @@ Vue SFC support is now **built directly into `weapp-vite`**.
 ## Common Commands
 
 ### Development
+
 ```bash
 pnpm dev              # Watch mode for all packages (excludes apps, templates, website)
 pnpm dev --filter=<package-name>  # Watch specific package
 ```
 
 ### Building
+
 ```bash
 pnpm build            # Build core workspace packages and extensions
 pnpm build:all        # Build every workspace, including apps/templates/e2e fixtures
@@ -32,6 +34,7 @@ pnpm ci               # CI build (excludes apps, templates, website)
 ```
 
 ### Testing
+
 ```bash
 pnpm test             # Run tests
 pnpm test:coverage    # Run tests with coverage
@@ -41,12 +44,14 @@ pnpm e2e:dev          # Watch mode for E2E tests
 ```
 
 ### Linting & Publishing
+
 ```bash
 pnpm lint             # Run linters via turbo
 pnpm publish-packages # Publish to npm
 ```
 
 ### Utility Scripts
+
 ```bash
 pnpm builtin          # Fetch WeChat official components from docs
 pnpm auto-import:components  # Update component resolvers (TDesign, Vant, WeUI)
@@ -58,6 +63,7 @@ pnpm script:mirror    # Mirror configuration across packages
 ```
 
 ### Changesets (Version Management)
+
 ```bash
 pnpm release          # Add changeset
 pnpm cv               # Version changesets
@@ -71,14 +77,11 @@ This repo includes installable user-facing skills in `./skills`:
 
 - `weapp-vite-best-practices`
 - `docs-and-website-sync`
-- `github-issue-fix-workflow`
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`
-- `weapp-vite-wevu-performance-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
-- `weapp-ide-cli-best-practices`
 - Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
 
 Recommended remote install source for all public skills:
@@ -100,6 +103,7 @@ pnpm skills:link:dry
 ```
 
 Notes:
+
 - Maintainer-only skills live in `maintainers/skills/*` and should not be treated as user-facing defaults.
 - Running `pnpm skills:link` syncs both `skills/*` and `./.claude/skills/*`, so Codex can directly use project Claude skills too.
 - When tasks clearly match one of the skill scopes above, load the corresponding `SKILL.md` and follow its workflow and references.
@@ -142,21 +146,25 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 ### Key Concepts
 
 #### Rolldown Integration
+
 - Uses Rolldown (Rust-based bundler) instead of Rollup for faster builds
 - Custom `rolldown-require` package handles miniprogram-specific module resolution
 - Rolldown is patched via `node_modules/.pnpm_patches/` for .wxss support
 
 #### Auto-import System
+
 - **Components**: Automatically imports components from WeChat APIs and UI libraries (TDesign, Vant, WeUI)
 - **APIs**: Platform-specific API imports (weapp/h5)
 - Component lists are scraped from official docs using `scripts/builtin.ts` and `scripts/update-auto-import-components.ts`
 
 #### WXML Processing
+
 - WXML templates are parsed and compiled to JavaScript
 - Component discovery and dependency tracking
 - Event binding extraction and virtual DOM generation
 
 #### Platform Support
+
 - **Native**: Traditional WeChat miniprogram rendering
 - **Skyline**: New renderer with enhanced capabilities
 - **Web**: Progressive Web App support
@@ -164,36 +172,43 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 ## Important Implementation Notes
 
 ### Package Manager
+
 - **Must use pnpm** (enforced by `preinstall` script and `only-allow`)
 - `shamefullyHoist: true` in `pnpm-workspace.yaml` for compatibility
 
 ### Build Tools
+
 - **tsup** is used for building most packages (not tsdown anymore)
 - **Vite 8 beta** for development
 - **Rolldown beta** for bundling
 - **Turbo** for task orchestration
 
 ### Testing
+
 - **Vitest** for unit tests
 - E2E tests in `./e2e/` directory
 - Test fixtures in `packages/weapp-vite/test/fixtures/`
 
 ### File Extensions
+
 - `.wxss` is the miniprogram equivalent of `.css`
 - `.wxml` is the miniprogram equivalent of `.html`
 - The `vite:patch` script modifies Vite to support `.wxss` resolution
 
 ### Type Generation
+
 - Volar support in `@weapp-vite/volar` package
 - Auto-generated types for components and APIs
 
 ## AI 代码规范
 
 ### 语言规范
+
 - 所有 AI 添加的 JSDoc 代码注释必须使用中文
 - 所有 AI 添加的 changeset 摘要段落必须使用中文
 
 ### 编码规范
+
 - TypeScript + ESM + 2空格缩进
 - 包名：kebab-case（如 `weapp-vite`）
 - 变量/文件：camelCase（如 `myVariable`）
@@ -209,6 +224,7 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
   - 避免 `foo.style.ts` / `foo.helpers.ts`
 
 ### Commit 和 Changeset 规范
+
 - 使用 Conventional Commits，如：`feat(weapp-vite): add css preprocess support`
 - 每次提交前必须先跑与 staged 改动范围匹配的最小 lint 校验，不能把 eslint/stylelint 问题留给 CI 兜底
 - `lint-staged` 与 `.husky/pre-commit` 属于强制校验层；如果调整 lint 范围或提交流程，必须同步更新两者，保证 staged 文件在本地提交前就会失败，包括 `git worktree` 场景
@@ -221,6 +237,7 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 ## Development Workflow
 
 When making changes:
+
 1. Run `pnpm dev` to start watch mode for all packages
 2. For changes in templates/apps, use specific filters: `pnpm dev --filter=<name>`
 3. Run tests before committing: `pnpm test`
@@ -228,7 +245,9 @@ When making changes:
 5. Add changesets for user-facing changes: `pnpm release`
 
 ### Updating Component Lists
+
 If WeChat adds new components or UI libraries update:
+
 ```bash
 pnpm builtin                  # Update WeChat components
 pnpm auto-import:components   # Update TDesign/Vant/WeUI

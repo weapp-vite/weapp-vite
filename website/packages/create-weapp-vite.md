@@ -43,6 +43,8 @@ npx skills add sonofmagic/skills
 
 同时，脚手架还会在项目根目录生成 `AGENTS.md`，把当前模板推荐的 AI 工作流、命令入口与约束一起写进去。
 
+如果你想先了解这些 AI skills 分别适合什么任务，可以阅读 [AI Skills 使用指南](/guide/skills)；如果要把 issue 修复、文档同步、DevTools e2e 或迁移任务串成流程，可以阅读 [AI 任务工作流](/guide/ai-workflows)。
+
 ### 非交互模式
 
 ```bash
@@ -118,3 +120,4 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 ## 与主文档的关系
 
 - 工程创建后，日常开发请转到 [指引](/guide/) 与 [配置](/config/)。
+- AI 协作、skills 与 MCP 接入请转到 [AI 协作指南](/guide/ai)、[AI Skills 使用指南](/guide/skills) 与 [@weapp-vite/mcp](/packages/mcp)。

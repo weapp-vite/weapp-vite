@@ -31,15 +31,28 @@ const mcpActions = [
   },
 ]
 
+const skillActions = [
+  {
+    title: '/guide/skills',
+    desc: '按任务选择公开 Skills，并查看触发边界。',
+    href: '/guide/skills',
+  },
+  {
+    title: '/guide/ai-workflows',
+    desc: '把 issue、文档同步、e2e、迁移等任务串成可验收流程。',
+    href: '/guide/ai-workflows',
+  },
+]
+
 const mcpCommands = [
   {
     title: 'stdio（推荐）',
-    code: 'weapp-vite mcp',
+    code: 'wv mcp',
     key: 'mcp-stdio',
   },
   {
     title: 'streamable-http（URL 连接）',
-    code: 'weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp',
+    code: 'wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp',
     key: 'mcp-http',
   },
 ]
@@ -47,14 +60,11 @@ const mcpCommands = [
 const directSkills = [
   'weapp-vite-best-practices',
   'docs-and-website-sync',
-  'github-issue-fix-workflow',
   'release-and-changeset-best-practices',
   'weapp-devtools-e2e-best-practices',
-  'weapp-vite-wevu-performance-best-practices',
   'weapp-vite-vue-sfc-best-practices',
   'wevu-best-practices',
   'native-to-weapp-vite-wevu-migration',
-  'weapp-ide-cli-best-practices',
 ]
 const localProjectSkills = [
   'playwright-cli',
@@ -246,6 +256,20 @@ function copyText(text: string, key: string) {
           <p class="skill-note">
             `skills/*` 面向公开分发；`.claude/skills/*` 面向这个仓库的本地附加能力，并通过 `pnpm skills:link` 一起同步。
           </p>
+
+          <div class="link-grid">
+            <a
+              v-for="item in skillActions"
+              :key="item.href"
+              :href="item.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-card"
+            >
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.desc }}</span>
+            </a>
+          </div>
 
           <ul class="chip-list">
             <li v-for="skill in directSkills" :key="skill">

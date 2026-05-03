@@ -81,6 +81,8 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'CLI', link: '/guide/cli' },
       { text: 'VS Code 扩展', link: '/guide/vscode-extension' },
       { text: 'AI 协作', link: '/guide/ai' },
+      { text: 'AI Skills', link: '/guide/skills' },
+      { text: 'AI 任务工作流', link: '/guide/ai-workflows' },
       { text: '目录结构', link: '/guide/directory-structure/' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],

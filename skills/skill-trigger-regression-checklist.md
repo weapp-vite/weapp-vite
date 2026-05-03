@@ -19,6 +19,28 @@
 3. 记录实际命中的 skill，与“预期 skill”对比。
 4. 若命中错误，记录误命中的 skill 与触发语句。
 
+> 说明：`pnpm skills:score` 只统计下方“记录模板”中已经填入的实际 skill，不会自动替你调用 agent。空表会得到 `filledCount: 0`，这表示还没有执行人工或半自动回归。
+
+## 维护规则
+
+新增、删除、拆分或合并公开 skill 时，同步更新以下位置：
+
+| 位置                                                | 需要同步的内容                                      |
+| --------------------------------------------------- | --------------------------------------------------- |
+| `skills/*/SKILL.md`                                 | 公开 skill 的真实列表与触发场景                     |
+| `skills/*/agents/openai.yaml`                       | 隐式触发提示与简短描述                              |
+| `skills/skill-trigger-regression-checklist.md`      | 用例清单、边界用例、冲突场景和记录模板              |
+| `skills/scripts/score-skill-trigger-regression.mjs` | `EXPECTED_BY_ID`、`MAIN_SKILL_CASES`、边界/冲突集合 |
+| `website/guide/skills.md`                           | 对外 skill 索引与任务路由                           |
+| `website/.vitepress/components/AiLearningPage.vue`  | `/ai` 页面展示和复制清单                            |
+| `CLAUDE.md` 与脚手架 `AGENTS.md` 模板               | AI 客户端默认可见清单                               |
+
+快速核对当前公开 skill：
+
+```bash
+find skills -maxdepth 2 -name SKILL.md | sort
+```
+
 ## 半自动打分
 
 填完“记录模板”后，可运行：

@@ -61,6 +61,8 @@ $native-to-weapp-vite-wevu-migration
 $playwright-cli
 ```
 
+如果你需要按任务快速选择 skill，可以直接看 [AI Skills 使用指南](/guide/skills)。如果你希望把 issue 修复、文档同步、DevTools e2e、SFC 排障和原生迁移串成可验收流程，可以看 [AI 任务工作流](/guide/ai-workflows)。
+
 建议：
 
 1. 面向用户公开分发的流程优先沉淀到 `skills/*`。
@@ -309,8 +311,10 @@ export default defineConfig({
 ## 关联阅读
 
 1. [CLI 命令参考](/guide/cli)
-2. [共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
-3. [共享配置：weapp.mcp](/config/shared#weapp-mcp)
-4. [调试与贡献](/guide/debug)
-5. [@weapp-vite/mcp 包说明](/packages/mcp)
-6. [AI 学习入口](/ai)
+2. [AI Skills 使用指南](/guide/skills)
+3. [AI 任务工作流](/guide/ai-workflows)
+4. [共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
+5. [共享配置：weapp.mcp](/config/shared#weapp-mcp)
+6. [调试与贡献](/guide/debug)
+7. [@weapp-vite/mcp 包说明](/packages/mcp)
+8. [AI 学习入口](/ai)

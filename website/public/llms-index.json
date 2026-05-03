@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-01T15:39:51.825Z",
+  "generatedAt": "2026-05-03T07:54:06.743Z",
   "site": "https://vite.icebreaker.top",
-  "count": 260,
+  "count": 262,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -797,7 +797,7 @@
         "weapp.mcp {#weapp-mcp}",
         "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-04-29",
+      "updatedAt": "2026-05-02",
       "source": "config/shared.md"
     },
     {
@@ -1152,6 +1152,36 @@
       "source": "demos/my-app/README.md"
     },
     {
+      "id": "doc-40a9999290",
+      "title": "AI 任务工作流",
+      "summary": "将 Weapp-vite 常见 AI 协作任务拆成可执行流程，覆盖 issue 修复、文档同步、DevTools e2e、SFC 排障和原生迁移。",
+      "url": "/guide/ai-workflows",
+      "canonical": "https://vite.icebreaker.top/guide/ai-workflows",
+      "keywords": [
+        "weapp-vite",
+        "ai",
+        "workflow",
+        "mcp",
+        "skills",
+        "devtools",
+        "e2e",
+        "wevu"
+      ],
+      "headings": [
+        "AI 任务工作流",
+        "工作流总览",
+        "文档同步",
+        "GitHub issue 修复",
+        "DevTools runtime 验收",
+        "SFC 与 wevu 排障",
+        "原生迁移",
+        "给 AI 的统一交付格式",
+        "关联阅读"
+      ],
+      "updatedAt": "2026-05-03",
+      "source": "guide/ai-workflows.md"
+    },
+    {
       "id": "doc-08bd36b182",
       "title": "AI 协作指南",
       "summary": "面向 weapp-vite 团队的 AI 协作入口，聚焦 Skills、MCP 与 llms.txt 三大章节。",
@@ -1181,7 +1211,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-04-29",
+      "updatedAt": "2026-05-03",
       "source": "guide/ai.md"
     },
     {
@@ -2261,6 +2291,34 @@
       ],
       "updatedAt": "2026-02-26",
       "source": "guide/seo-governance.md"
+    },
+    {
+      "id": "doc-2ea27b5a57",
+      "title": "AI Skills 使用指南",
+      "summary": "按任务场景选择 Weapp-vite 公开 Skills，说明安装方式、触发边界、关联文档和最小验证命令。",
+      "url": "/guide/skills",
+      "canonical": "https://vite.icebreaker.top/guide/skills",
+      "keywords": [
+        "weapp-vite",
+        "ai",
+        "skills",
+        "codex",
+        "Claude Code",
+        "guide",
+        "工作流",
+        "使用指南"
+      ],
+      "headings": [
+        "AI Skills 使用指南",
+        "什么时候需要安装",
+        "公开 Skills 速查",
+        "任务路由建议",
+        "给 AI 的推荐提示词",
+        "维护公开 Skills",
+        "关联阅读"
+      ],
+      "updatedAt": "2026-05-03",
+      "source": "guide/skills.md"
     },
     {
       "id": "doc-44abce2120",
@@ -3661,7 +3719,7 @@
         "初始化后会做什么",
         "与主文档的关系"
       ],
-      "updatedAt": "2026-04-22",
+      "updatedAt": "2026-05-03",
       "source": "packages/create-weapp-vite.md"
     },
     {
