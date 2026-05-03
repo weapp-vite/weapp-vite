@@ -19,6 +19,7 @@ const commandMocks = vi.hoisted(() => ({
 
 const runScreenshotMock = vi.hoisted(() => vi.fn())
 const runCompareMock = vi.hoisted(() => vi.fn())
+const tryRunRuntimeServiceCommandMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
 }))
@@ -29,6 +30,9 @@ vi.mock('../src/cli/screenshot', () => ({
 }))
 vi.mock('../src/cli/compare', () => ({
   runCompare: runCompareMock,
+}))
+vi.mock('../src/cli/runtime-service', () => ({
+  tryRunRuntimeServiceCommand: tryRunRuntimeServiceCommandMock,
 }))
 vi.mock('../src/logger', () => ({
   default: loggerMock,
@@ -53,6 +57,8 @@ describe('run-automator', () => {
     runScreenshotMock.mockResolvedValue(undefined)
     runCompareMock.mockReset()
     runCompareMock.mockResolvedValue(undefined)
+    tryRunRuntimeServiceCommandMock.mockReset()
+    tryRunRuntimeServiceCommandMock.mockResolvedValue(false)
     loggerMock.warn.mockReset()
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
@@ -74,6 +80,26 @@ describe('run-automator', () => {
     await runAutomatorCommand('screenshot', ['-p', '/tmp/demo'])
 
     expect(runScreenshotMock).toHaveBeenCalledWith(['-p', '/tmp/demo'])
+  })
+
+  it('skips direct automator command when runtime service handles it', async () => {
+    const { runAutomatorCommand } = await loadModule()
+    tryRunRuntimeServiceCommandMock.mockResolvedValueOnce(true)
+
+    await runAutomatorCommand('screenshot', ['-p', '/tmp/demo'])
+
+    expect(tryRunRuntimeServiceCommandMock).toHaveBeenCalledWith('screenshot', ['-p', '/tmp/demo'])
+    expect(runScreenshotMock).not.toHaveBeenCalled()
+  })
+
+  it('skips direct route command when runtime service handles it', async () => {
+    const { runAutomatorCommand } = await loadModule()
+    tryRunRuntimeServiceCommandMock.mockResolvedValueOnce(true)
+
+    await runAutomatorCommand('navigate', ['pages/detail/index', '-p', '/tmp/demo'])
+
+    expect(tryRunRuntimeServiceCommandMock).toHaveBeenCalledWith('navigate', ['pages/detail/index', '-p', '/tmp/demo'])
+    expect(commandMocks.navigateTo).not.toHaveBeenCalled()
   })
 
   it('delegates compare command', async () => {
@@ -159,6 +185,7 @@ describe('run-automator', () => {
       '\'remote\' 命令不支持参数 \'--unknown\'',
     )
     expect(commandMocks.remote).not.toHaveBeenCalled()
+    expect(tryRunRuntimeServiceCommandMock).not.toHaveBeenCalled()
   })
 
   it('prints english help when locale is en', async () => {

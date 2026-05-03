@@ -19,6 +19,7 @@ import {
   tap,
 } from './commands'
 import { runCompare } from './compare'
+import { tryRunRuntimeServiceCommand } from './runtime-service'
 import { runScreenshot } from './screenshot'
 
 interface LocalizedText {
@@ -47,12 +48,14 @@ interface CommandDefinition {
 const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
   { flag: '-p, --project <path>', description: { zh: '项目路径（默认：当前目录）', en: 'Project path (default: current directory)' } },
   { flag: '-t, --timeout <ms>', description: { zh: '连接超时时间（默认：30000）', en: 'Connection timeout (default: 30000)' } },
+  { flag: '--runtime-url <url>', description: { zh: '复用本地 runtime service 地址', en: 'Runtime service URL for shared sessions' } },
+  { flag: '--no-runtime-service', description: { zh: '跳过 runtime service，直接连接 DevTools', en: 'Skip runtime service and connect to DevTools directly' } },
   { flag: '--json', description: { zh: '支持时以 JSON 输出', en: 'Output as JSON when supported' } },
   { flag: '--lang <lang>', description: { zh: '语言切换：zh | en（默认：zh）', en: 'Language: zh | en (default: zh)' } },
   { flag: '-h, --help', description: { zh: '显示命令帮助', en: 'Show command help' } },
 ]
 
-const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--json', '--lang', '-h', '--help'])
+const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--runtime-url', '--no-runtime-service', '--json', '--lang', '-h', '--help'])
 
 function createDefinition(input: {
   description: LocalizedText
@@ -284,6 +287,10 @@ function printCommandHelp(command: string) {
  */
 export async function runAutomatorCommand(command: string, argv: string[]) {
   if (command === 'screenshot') {
+    if (!argv.includes('-h') && !argv.includes('--help') && await tryRunRuntimeServiceCommand(command, argv)) {
+      return
+    }
+
     await runScreenshot(argv)
     return
   }
@@ -304,6 +311,10 @@ export async function runAutomatorCommand(command: string, argv: string[]) {
   }
 
   validateUnsupportedOptions(command, argv, definition.allowedOptions)
+
+  if (await tryRunRuntimeServiceCommand(command, argv)) {
+    return
+  }
 
   const args = parseAutomatorArgs(argv)
   await definition.handler({ argv, args })

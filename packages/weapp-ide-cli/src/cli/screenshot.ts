@@ -16,6 +16,8 @@ ${colors.bold('参数:')}
       --page <path>      截图前先跳转页面
       --full-page        输出整页长截图
   -t, --timeout <ms>     连接超时时间（默认：30000）
+      --runtime-url <url> 复用本地 runtime service 地址
+      --no-runtime-service 跳过 runtime service，直接连接 DevTools
       --json             以 JSON 格式输出
       --lang <lang>      语言切换：zh | en（默认：zh）
   -h, --help             显示此帮助信息
@@ -44,6 +46,8 @@ ${colors.bold('Options:')}
       --page <path>      Navigate to page before taking screenshot
       --full-page        Capture a stitched full-page screenshot
   -t, --timeout <ms>     Connection timeout in milliseconds (default: 30000)
+      --runtime-url <url> Runtime service URL for shared sessions
+      --no-runtime-service Skip runtime service and connect to DevTools directly
       --json             Output as JSON format
       --lang <lang>      Language: zh | en (default: zh)
   -h, --help             Show this help message

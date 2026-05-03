@@ -27,6 +27,7 @@ function takesValue(optionName: string) {
     || optionName === '--login-retry-timeout'
     || optionName === '--lang'
     || optionName === '--platform'
+    || optionName === '--runtime-url'
     || optionName === '--qr-output'
     || optionName === '-r'
     || optionName === '--result-output'
