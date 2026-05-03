@@ -63,7 +63,7 @@ export const TEMPLATE_CATALOG = {
   typescript: '^6.0.3',
   vite: '8.0.10',
   vue: '^3.5.33',
-  zod: '^4.4.1'
+  zod: '^4.4.2'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
