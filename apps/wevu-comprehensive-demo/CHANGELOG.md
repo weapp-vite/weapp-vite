@@ -1,5 +1,12 @@
 # wevu-comprehensive-demo
 
+## 0.0.106
+
+### Patch Changes
+
+- 📦 **Dependencies** [`a934ef3`](https://github.com/weapp-vite/weapp-vite/commit/a934ef32641a63273fe67453e4177acda2607550)
+  → `wevu@6.16.2`
+
 ## 0.0.105
 
 ### Patch Changes
