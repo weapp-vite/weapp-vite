@@ -140,6 +140,12 @@ describe('sharedBuildConfig', () => {
     })).toBe(REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME)
   })
 
+  it('keeps shared chunk exports semantic for DevTools incremental rebuilds', () => {
+    const output = createSharedBuildOutput(createConfigService(), () => [])
+
+    expect(output.minifyInternalExports).toBe(false)
+  })
+
   it('isolates request globals modules before generic vendor grouping', () => {
     const resolveName = createChunkNameResolver()
 

@@ -3,6 +3,7 @@
 import { common } from '../../shared/common'
 import { inlineOnly } from '../../shared/inline-only'
 import { pathOnly } from '../../shared/path-only'
+import { scenarioId } from '../../shared/scenario'
 import { useVendor } from '../../shared/vendor'
 
 const tokens = [
@@ -15,6 +16,7 @@ const tokens = [
 Page({
   data: {
     route: 'pages/index/index',
+    scenarioId,
     title: 'shared chunk modes',
     tokens,
   },
@@ -26,6 +28,7 @@ Page({
     return {
       ok: this.data.tokens.length === tokens.length,
       route: this.data.route,
+      scenarioId: this.data.scenarioId,
       tokens: this.data.tokens,
     }
   },

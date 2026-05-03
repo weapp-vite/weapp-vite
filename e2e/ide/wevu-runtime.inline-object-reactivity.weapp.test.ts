@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
 
 function escapeRegExp(input: string) {
@@ -49,6 +50,12 @@ function shouldRetryAutomatorError(error: unknown) {
     || message.includes('Timeout in ')
     || message.includes('listen EPERM')
     || message.includes('EADDRINUSE')
+    || message.includes('Target closed')
+    || message.includes('WebSocket is not open')
+    || message.includes('Connection closed, check if wechat web devTools is still running')
+    || message.includes('simulator not found')
+    || message.includes('模拟器启动失败')
+    || /subPackages[\s\S]{0,80}undefined/i.test(message)
 }
 
 async function runAutomatorOp<T>(
@@ -80,14 +87,27 @@ async function runAutomatorOp<T>(
 }
 
 async function launchMiniProgramWithRetry(ctx: { skip: (message?: string) => void }) {
+  let lastError: unknown
   try {
-    return await runAutomatorOp('launch automator', () => launchAutomator({
-      projectPath: APP_ROOT,
-    }), {
-      timeoutMs: 24_000,
-      retries: 3,
-      retryDelayMs: 320,
-    })
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await cleanupResidualIdeProcesses()
+        if (attempt > 1) {
+          await cleanDevtoolsCache(attempt === 2 ? 'compile' : 'all', { cwd: APP_ROOT }).catch(() => {})
+          await sleep(500)
+        }
+        return await launchAutomator({
+          projectPath: APP_ROOT,
+        })
+      }
+      catch (error) {
+        lastError = error
+        if (attempt < 3 && shouldRetryAutomatorError(error)) {
+          continue
+        }
+        throw error
+      }
+    }
   }
   catch (error) {
     if (isDevtoolsHttpPortError(error)) {
@@ -95,6 +115,7 @@ async function launchMiniProgramWithRetry(ctx: { skip: (message?: string) => voi
     }
     throw error
   }
+  throw lastError
 }
 
 let sharedMiniProgram: any = null
@@ -300,7 +321,7 @@ async function runInlineObjectScenario(
   scenario: (page: any) => Promise<void>,
 ) {
   let lastError: unknown
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       const miniProgram = await getSharedMiniProgram(ctx)
       const page = await openInlineObjectPage(miniProgram)
@@ -310,7 +331,7 @@ async function runInlineObjectScenario(
     }
     catch (error) {
       lastError = error
-      if (attempt < 2 && shouldRetryAutomatorError(error)) {
+      if (attempt < 3 && shouldRetryAutomatorError(error)) {
         await resetSharedMiniProgram(ctx)
         await sleep(300)
         continue

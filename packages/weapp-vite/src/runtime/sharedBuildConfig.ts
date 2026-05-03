@@ -320,6 +320,7 @@ export function createSharedBuildOutput(
         },
       ],
     },
+    minifyInternalExports: false,
     chunkFileNames: (chunk: { name: string, moduleIds?: string[] | readonly string[], facadeModuleId?: string | null }) => {
       if (isRequestGlobalsRuntimeChunk(chunk)) {
         return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME

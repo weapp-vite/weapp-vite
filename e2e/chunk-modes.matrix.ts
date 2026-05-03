@@ -31,6 +31,16 @@ export interface ChunkExtraCase {
   env: Record<string, string>
 }
 
+const IDE_RUNTIME_MATRIX_CASE_IDS = new Set([
+  'duplicate-common-none-preserve',
+  'duplicate-inline-mixed-inline',
+  'hoist-common-mixed-inline',
+])
+
+const IDE_RUNTIME_EXTRA_CASE_IDS = new Set([
+  'path-root-shared',
+])
+
 export const markers = {
   common: '__COMMON_MARKER__',
   subOnly: '__SUB_ONLY_MARKER__',
@@ -263,3 +273,11 @@ export const chunkExtraCases: ChunkExtraCase[] = [
     },
   },
 ]
+
+export function selectIdeRuntimeChunkMatrixCases(cases: ChunkMatrixCase[]) {
+  return cases.filter(item => IDE_RUNTIME_MATRIX_CASE_IDS.has(item.id))
+}
+
+export function selectIdeRuntimeChunkExtraCases(cases: ChunkExtraCase[]) {
+  return cases.filter(item => IDE_RUNTIME_EXTRA_CASE_IDS.has(item.id))
+}

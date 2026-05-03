@@ -466,6 +466,7 @@ async function main() {
     env: {
       ...process.env,
       ...scenarioEnv,
+      WEAPP_CHUNK_SCENARIO: scenarioId,
       WEAPP_CHUNK_OUTDIR: path.relative(chunkModesRoot, targetDist),
     },
   })

@@ -186,6 +186,19 @@ function shouldRetryAutomatorError(error: unknown) {
     || message.includes('socket hang up')
 }
 
+function isSessionFatalRelaunchError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /Timeout in raw reLaunch/i.test(message)
+    || /Timed out waiting page root after reLaunch/i.test(message)
+    || /reLaunch returned empty page/i.test(message)
+    || /simulator not found/i.test(message)
+    || /模拟器启动失败/.test(message)
+    || /subPackages[\s\S]{0,80}undefined/i.test(message)
+    || /Target closed/i.test(message)
+    || /WebSocket is not open/i.test(message)
+    || /not connected/i.test(message)
+}
+
 async function runAutomatorOp<T>(
   label: string,
   factory: () => Promise<T>,
@@ -439,14 +452,14 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
       process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route} attempt=${attempt + 1}/4\n`)
       let page: any = null
       try {
-        page = await runAutomatorOp(`reLaunch ${route}`, () => targetMiniProgram.reLaunch(route), {
-          timeoutMs,
-          retries: 1,
-        })
+        page = await targetMiniProgram.reLaunch(route)
       }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         process.stdout.write(`[github-issues:relaunch] error route=${route} phase=${phase} attempt=${attempt + 1} message=${message}\n`)
+        if (isSessionFatalRelaunchError(error)) {
+          return null
+        }
         await delay(280)
         continue
       }

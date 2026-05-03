@@ -10,6 +10,7 @@ import {
   cleanDevtoolsCache,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
+import { assertNoRecentDevtoolsSimulatorBootIssues } from '../utils/ide-devtools-logs'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
@@ -20,8 +21,9 @@ const CHUNK_MODES_RUNTIME_CASE_TIMEOUT = 4 * 60_000
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
-const ROUTE_RECOVERY_ATTEMPTS = 2
+const ROUTE_RECOVERY_ATTEMPTS = 3
 const ROUTE_RECOVERY_ERROR_PATTERNS = [
+  /Timeout in raw reLaunch/i,
   /simulator not found/i,
   /模拟器启动失败/,
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
@@ -32,6 +34,7 @@ const ROUTE_RECOVERY_ERROR_PATTERNS = [
   /WebSocket is not open/i,
   /not connected/i,
 ]
+const chunkModesIdeSmokeRoutes = [runtimeBaseRoutes[0]!]
 
 interface RuntimeRouteCase {
   route: string
@@ -66,38 +69,17 @@ function isRecoverableRouteError(error: unknown) {
   return ROUTE_RECOVERY_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
-async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
-  let timer: ReturnType<typeof setTimeout> | null = null
-  let settled = false
-  const task = Promise.resolve()
-    .then(factory)
-    .then((value) => {
-      settled = true
-      return value
-    })
-    .catch((error) => {
-      settled = true
-      throw error
-    })
-
-  try {
-    return await Promise.race([
-      task,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
-        }, timeoutMs)
-      }),
-    ])
-  }
-  finally {
-    if (timer) {
-      clearTimeout(timer)
-    }
-    if (!settled) {
-      void task.catch(() => {})
-    }
-  }
+function isSessionFatalRouteError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /Timeout in raw reLaunch/i.test(message)
+    || /Timed out waiting page root after reLaunch/i.test(message)
+    || /reLaunch returned empty page/i.test(message)
+    || /simulator not found/i.test(message)
+    || /模拟器启动失败/.test(message)
+    || /subPackages[\s\S]{0,80}undefined/i.test(message)
+    || /Target closed/i.test(message)
+    || /WebSocket is not open/i.test(message)
+    || /not connected/i.test(message)
 }
 
 function normalizeRoutePath(routePath: string) {
@@ -167,17 +149,31 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
-async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 15_000) {
+export async function relaunchPage(
+  miniProgram: any,
+  route: string,
+  readyText?: string,
+  timeoutMs = 15_000,
+  options: { currentPageOnly?: boolean, forceRelaunch?: boolean } = {},
+) {
+  if (!options.forceRelaunch) {
+    const bootedPage = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
+    if (bootedPage && await waitForPageWxml(bootedPage, readyText, timeoutMs)) {
+      return bootedPage
+    }
+  }
+  if (options.currentPageOnly) {
+    return null
+  }
   for (let attempt = 0; attempt < 5; attempt += 1) {
     let page: any = null
     try {
-      page = await runWithTimeout(
-        () => miniProgram.reLaunch(route),
-        timeoutMs,
-        `chunk-modes reLaunch ${route}#${attempt + 1}`,
-      )
+      page = await miniProgram.reLaunch(route)
     }
-    catch {
+    catch (error) {
+      if (isSessionFatalRouteError(error)) {
+        return null
+      }
       await delay(280)
       continue
     }
@@ -227,6 +223,7 @@ async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
     throw new Error(`[${runtimeCase.id}] prepare scenario failed\n${result.all ?? ''}`)
   }
 
+  // 每个 chunk 拓扑使用独立项目路径，避免 DevTools 复用旧 simulator appConfig 缓存。
   return scenarioRoot
 }
 
@@ -296,15 +293,33 @@ async function runRouteCaseWithRecovery(
   let lastError: unknown = null
 
   for (let attempt = 1; attempt <= ROUTE_RECOVERY_ATTEMPTS; attempt += 1) {
+    const attemptStartedAt = Date.now()
     const miniProgram = await getSharedMiniProgram(projectPath, ctx, launchOptions)
-    const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
+    const isInitialRoute = routeCase.route === runtimeCase.routes[0]?.route
+    let page: any = null
+    try {
+      page = await relaunchPage(miniProgram, routeCase.route, runtimeCase.id, isInitialRoute ? 45_000 : 15_000, {
+        currentPageOnly: isInitialRoute,
+      })
+      assertNoRecentDevtoolsSimulatorBootIssues({
+        label: `${runtimeCase.id}:${routeCase.route}`,
+        sinceMs: attemptStartedAt,
+      })
+    }
+    catch (error) {
+      if (!isRecoverableRouteError(error)) {
+        throw error
+      }
+      lastError = error
+    }
     if (!page) {
-      lastError = new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
+      lastError ??= new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
     }
     else {
       try {
         const result = await page.callMethod('_runE2E')
         expect(result?.ok).toBe(true)
+        expect(result?.scenarioId).toBe(runtimeCase.id)
         expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
         return
       }
@@ -337,7 +352,7 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
         await resetDevtoolsProjectState(projectPath)
 
         const launchOptions = {
-          skipWarmup: !runtimeCase.id.startsWith('hoist-'),
+          skipWarmup: true,
         }
         await getSharedMiniProgram(projectPath, ctx, launchOptions)
 
@@ -349,9 +364,20 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
   })
 }
 
-export function withBaseRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
+function withRoutes(
+  cases: Array<{ id: string, env: Record<string, string> }>,
+  routes: RuntimeRouteCase[],
+): RuntimeMatrixCase[] {
   return cases.map(item => ({
     ...item,
-    routes: runtimeBaseRoutes,
+    routes,
   }))
+}
+
+export function withBaseRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
+  return withRoutes(cases, runtimeBaseRoutes)
+}
+
+export function withIdeSmokeRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
+  return withRoutes(cases, chunkModesIdeSmokeRoutes)
 }

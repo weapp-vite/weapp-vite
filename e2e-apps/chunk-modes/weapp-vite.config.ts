@@ -33,6 +33,7 @@ const duplicateWarningBytes = process.env.WEAPP_CHUNK_DUPLICATE_WARNING_BYTES
   ? Number(process.env.WEAPP_CHUNK_DUPLICATE_WARNING_BYTES)
   : undefined
 const outDir = process.env.WEAPP_CHUNK_OUTDIR ?? 'dist'
+const scenarioId = process.env.WEAPP_CHUNK_SCENARIO ?? 'default'
 
 const sharedPathRootByPreset: Record<SharedPathRootPreset, string> = {
   src: 'src',
@@ -46,6 +47,9 @@ const forceDuplicatePatternsByPreset: Record<ForceDuplicatePreset, (string | Reg
 }
 
 export default defineConfig({
+  define: {
+    __WEAPP_CHUNK_SCENARIO__: JSON.stringify(scenarioId),
+  },
   weapp: {
     srcRoot: 'src',
     chunks: {

@@ -1,5 +1,6 @@
 <view>{{title}}</view>
 <view>{{route}}</view>
+<view>{{scenarioId}}</view>
 <view wx:for="{{tokens}}" wx:key="*this">
   <text>{{item}}</text>
 </view>
