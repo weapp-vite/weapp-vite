@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { runBuild as runWevuRuntimeBuild, CLI_PATH as WEVU_RUNTIME_CLI_PATH, DIST_ROOT as WEVU_RUNTIME_DIST_ROOT } from '../wevu-runtime.utils'
 
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const TEMPLATE_DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 
 async function buildTemplate(projectRoot: string, label: string) {
@@ -23,7 +23,7 @@ async function readDistFile(root: string, relativePath: string) {
 
 describe.sequential('layout runtime switching build integration', () => {
   beforeAll(async () => {
-    await buildTemplate(TEMPLATE_ROOT, 'ci:layouts-runtime-switching:template')
+    await buildTemplate(TEMPLATE_ROOT, 'ci:layouts-runtime-switching:template-wevu-regression')
     await runWevuRuntimeBuild('weapp')
   }, 120_000)
 

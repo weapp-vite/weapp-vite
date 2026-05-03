@@ -5,7 +5,7 @@ import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/pages/form/index'
 
@@ -16,7 +16,7 @@ async function runBuild() {
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-form',
+    label: 'ide:template-wevu-tdesign-regression-form',
   })
 }
 
@@ -54,7 +54,7 @@ async function getFormState(page: any) {
   }
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template form', () => {
+describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

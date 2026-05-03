@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@config "../tailwind.config.ts";
+
+page {
+  font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background-color: #f6f7fb;
+}

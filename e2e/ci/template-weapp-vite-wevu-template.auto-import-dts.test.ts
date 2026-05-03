@@ -4,7 +4,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const INTERNAL_OUTPUT_ROOT = path.join(TEMPLATE_ROOT, '.weapp-vite')
 const COMPONENTS_DTS = path.join(INTERNAL_OUTPUT_ROOT, 'components.d.ts')
@@ -16,7 +16,7 @@ async function runBuild(root: string) {
   })
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', () => {
+describe.sequential('e2e app: template-wevu-regression auto-import dts', () => {
   it('does not emit default support dts files during production build', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(COMPONENTS_DTS)

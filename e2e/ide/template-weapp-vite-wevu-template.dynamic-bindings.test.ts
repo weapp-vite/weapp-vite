@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 
 async function runBuild() {
@@ -15,11 +15,11 @@ async function runBuild() {
     platform: 'weapp',
     skipNpm: true,
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-simplified-portal',
+    label: 'ide:template-wevu-regression-simplified-portal',
   })
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-template simplified portal', () => {
+describe.sequential('e2e app: template-wevu-regression simplified portal', () => {
   it('emits the simplified portal structure and auto-imported component usage', async () => {
     await runBuild()
 

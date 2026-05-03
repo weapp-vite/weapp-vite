@@ -6,7 +6,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTES = [
   '/pages/index/index',
@@ -21,7 +21,7 @@ async function runBuild() {
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-tdesign-runtime-errors',
+    label: 'ide:template-wevu-tdesign-regression-runtime-errors',
   })
 }
 
@@ -79,7 +79,7 @@ function attachConsoleWarningCollector(miniProgram: any) {
   }
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template runtime errors', () => {
+describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

@@ -50,6 +50,12 @@ export const useLayoutInteractionDemoStore = defineStore('layout-interaction-dem
     }
   }
 
+  function finishCommand(message: string) {
+    lastResult.value = message
+    commandStatus.value = 'idle'
+    appendLog(message)
+  }
+
   async function runCommand(command: LayoutCommand) {
     commandStatus.value = 'running'
     appendLog(`Store 请求 ${command.title}`)
@@ -100,12 +106,6 @@ export const useLayoutInteractionDemoStore = defineStore('layout-interaction-dem
     return runCommand(
       createCommand('confirm', `Store Confirm #${commandSeed.value + 1}`, `请确认由 ${activeLayout.value} layout 宿主承载的确认弹窗。`),
     )
-  }
-
-  function finishCommand(message: string) {
-    lastResult.value = message
-    commandStatus.value = 'idle'
-    appendLog(message)
   }
 
   function resetLogs() {

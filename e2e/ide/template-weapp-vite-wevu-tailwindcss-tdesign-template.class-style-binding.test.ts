@@ -5,7 +5,7 @@ import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/subpackages/lab/class-binding/index'
 
@@ -63,7 +63,7 @@ async function runBuild() {
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-class-style-bindings',
+    label: 'ide:template-wevu-tdesign-regression-class-style-bindings',
   })
 }
 
@@ -100,7 +100,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template class/style binding lab', () => {
+describe.sequential('e2e app: template-wevu-tdesign-regression class/style binding lab', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

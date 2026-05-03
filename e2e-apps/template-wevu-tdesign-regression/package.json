@@ -1,0 +1,45 @@
+{
+  "name": "e2e-app-template-wevu-tdesign-regression",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "weapp-vite + wevu + TDesign 模板回归用例",
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "dev:ui": "wv dev --ui",
+    "dev:open:ui": "wv dev --ui -o",
+    "build": "wv build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "open": "wv open",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "postinstall": "weapp-tw patch && wv prepare"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "catalog:"
+  },
+  "devDependencies": {
+    "@egoist/tailwindcss-icons": "catalog:",
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "@iconify-json/mdi": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
+    "autoprefixer": "catalog:",
+    "eslint": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "postcss": "catalog:",
+    "sass": "catalog:",
+    "stylelint": "catalog:",
+    "tailwindcss": "catalog:tailwind4",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-tailwindcss": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

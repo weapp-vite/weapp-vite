@@ -353,7 +353,7 @@ const isAdminLayout = computed(() => layout.name === 'admin')
 - 页面负责 `watch` store，并调用 `setPageLayout()`
 - layout 继续只关心自己的 props 和宿主能力
 
-示例可以参考模板里的 `templates/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/layout-store/index.vue`。
+示例可以参考 e2e 用例里的 `e2e-apps/template-wevu-tdesign-regression/src/pages/layout-store/index.vue`。
 
 ```vue
 <script setup lang="ts">

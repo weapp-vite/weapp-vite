@@ -1,6 +1,6 @@
 # weapp-vite-wevu-template
 
-`weapp-vite` + `wevu`（Vue SFC）模板
+`weapp-vite` + `wevu`（Vue SFC）最小模板。
 
 ## 使用方式
 
@@ -14,8 +14,8 @@
 
 - 页面/组件优先使用 Vue `<script setup>`（编译宏）写法
 - 配置使用 `<json>` 自定义块
-- `src/components` 下的 Vue SFC（`*.vue`）与原生组件（`*.wxml`）默认开启自动导入，页面中可直接使用组件标签
-- `app.json` 里的 `pages` 与 `subPackages` 通过 `weapp-vite/auto-routes` 自动生成，普通分包页面也会自动收集
+- `app.json` 里的 `pages` 通过 `weapp-vite/auto-routes` 自动生成
+- layout、分包、router 等验证性示例在 `e2e-apps/template-wevu-regression`
 
 ### 构建
 

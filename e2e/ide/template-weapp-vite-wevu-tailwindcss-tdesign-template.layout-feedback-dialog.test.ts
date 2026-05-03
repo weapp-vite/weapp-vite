@@ -6,7 +6,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/pages/layout-feedback/index'
 
@@ -17,7 +17,7 @@ async function runBuild() {
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-tdesign-layout-feedback-dialog',
+    label: 'ide:template-wevu-tdesign-regression-layout-feedback-dialog',
   })
 }
 
@@ -46,7 +46,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template layout feedback dialog', () => {
+describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback dialog', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

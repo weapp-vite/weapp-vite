@@ -5,7 +5,7 @@ import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/pages/layouts/index'
 const LEADING_SLASH_RE = /^\/+/
@@ -17,7 +17,7 @@ async function runBuild() {
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-weapp-vite-wevu-template-layouts',
+    label: 'ide:template-wevu-regression-layouts',
   })
 }
 
@@ -273,7 +273,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-template layouts runtime', () => {
+describe.sequential('e2e app: template-wevu-regression layouts runtime', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

@@ -1,11 +1,6 @@
 # weapp-vite-wevu-template
 
-`weapp-vite` + `wevu`（Vue SFC）模板
-
-## 页面结构
-
-- TabBar：`首页` / `数据` / `表单` / `清单` / `能力`
-- 子包：`组件实验室`（subpackages/lab）与 `API 场景`（subpackages/ability）
+`weapp-vite` + `wevu` + `TDesign` + `Tailwind CSS` 最小模板。
 
 ## 使用方式
 
@@ -19,6 +14,8 @@
 
 - 页面/组件优先使用 Vue `<script setup>`（编译宏）写法
 - 配置使用 `<json>` 自定义块
+- TDesign 组件通过 `TDesignResolver()` 自动导入
+- 复杂页面、layout feedback、class/style 绑定等验证性示例在 `e2e-apps/template-wevu-tdesign-regression`
 
 ### 构建
 

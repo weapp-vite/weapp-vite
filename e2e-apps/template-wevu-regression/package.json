@@ -1,0 +1,34 @@
+{
+  "name": "e2e-app-template-wevu-regression",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "weapp-vite + wevu (Vue SFC) 模板回归用例",
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "dev:ui": "wv dev --ui",
+    "dev:open:ui": "wv dev --ui -o",
+    "build": "wv build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "open": "wv open",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "@types/node": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
+    "eslint": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "stylelint": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

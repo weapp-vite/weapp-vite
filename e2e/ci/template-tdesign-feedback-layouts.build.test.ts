@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const BASE_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const BASE_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const RETAIL_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
@@ -37,11 +37,11 @@ function expectLayoutWrappers(wxml: string) {
 
 describe.sequential('template build: tdesign feedback layouts', () => {
   beforeAll(async () => {
-    await buildTemplate(BASE_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:base')
+    await buildTemplate(BASE_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:template-wevu-tdesign-regression')
     await buildTemplate(RETAIL_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:retail')
   }, 120_000)
 
-  it('emits shared feedback nodes from the base template layouts', async () => {
+  it('emits shared feedback nodes from the tdesign regression app layouts', async () => {
     const defaultLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.wxml')
     const adminLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.wxml')
     const pageWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'pages/index/index.wxml')

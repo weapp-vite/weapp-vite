@@ -1,0 +1,17 @@
+import type { Config } from 'tailwindcss'
+import { getIconCollections, iconsPlugin } from '@egoist/tailwindcss-icons'
+
+export default {
+  content: [
+    // 添加你需要提取的文件目录
+    'src/**/*.{wxml,js,ts,vue}',
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [
+    iconsPlugin({
+      collections: getIconCollections(['mdi']),
+    }),
+  ],
+} satisfies Config
