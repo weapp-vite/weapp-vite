@@ -2,6 +2,7 @@ import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { CreateServerOptions } from './server'
 import { Buffer } from 'node:buffer'
+import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import process from 'node:process'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -109,7 +110,7 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
   const normalizedRestEndpoint = normalizeRuntimeRestEndpoint(restEndpoint)
   const { runtimeManager, server: mcpServer } = await createWeappViteMcpServer({ runtimeHooks, workspaceRoot })
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
+    sessionIdGenerator: randomUUID,
   })
   await mcpServer.connect(transport)
 

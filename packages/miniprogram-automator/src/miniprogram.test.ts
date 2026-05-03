@@ -92,6 +92,20 @@ describe('MiniProgram', () => {
     await expect(miniProgram.exposeFunction('bridge', binding)).rejects.toThrow('already exists')
   })
 
+  it('keeps console listeners safe when enabling logs fails', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+    const onConsole = vi.fn()
+
+    connection.send.mockRejectedValueOnce(new Error('enable log timeout'))
+    miniProgram.on('console', onConsole)
+    await Promise.resolve()
+    connection.emit('App.logAdded', { msg: 'hello' })
+
+    expect(connection.send).toHaveBeenCalledWith('App.enableLog', {})
+    expect(onConsole).toHaveBeenCalledWith({ msg: 'hello' })
+  })
+
   it('checks sdk version compatibility', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)

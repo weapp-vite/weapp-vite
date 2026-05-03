@@ -244,7 +244,7 @@ export default class MiniProgram extends EventEmitter {
 
   override on(event: string | symbol, listener: (...args: any[]) => void): this {
     if (event === 'console') {
-      void this.send('App.enableLog')
+      this.send('App.enableLog').catch(() => {})
     }
     super.on(event, listener)
     return this
