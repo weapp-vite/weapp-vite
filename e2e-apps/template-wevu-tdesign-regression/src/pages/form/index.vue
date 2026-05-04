@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { UploadFile } from 'tdesign-miniprogram/upload/type'
 
-import { computed, reactive, ref, watch } from 'wevu'
+import { computed, reactive, ref, useChangeModel, watch } from 'wevu'
 
 import FormRow from '@/components/FormRow/index.vue'
 import FormStep from '@/components/FormStep/index.vue'
 import ResultCard from '@/components/ResultCard/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
-import { useFormBinder } from '@/hooks/useFormBinder'
 import { useToast } from '@/hooks/useToast'
 import { resolveBooleanChangeValue } from '@/utils/changeEvent'
 
@@ -16,7 +15,7 @@ definePageJson({
   backgroundColor: '#f6f7fb',
 })
 
-const { changeModel } = useFormBinder()
+const changeModel = useChangeModel()
 const { showToast } = useToast()
 
 const steps = [

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HomeResponse } from '../../services/home/home'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
+import { onLoad, onReachBottom, onShow, ref, useAsyncPullDownRefresh, useNativeInstance } from 'wevu'
 import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { fetchGoodsList } from '../../services/good/fetchGoods'
@@ -41,7 +41,6 @@ function init() {
 }
 
 async function loadHomePage() {
-  await wpi.stopPullDownRefresh()
   pageLoading.value = true
   try {
     const { swiper, tabList: nextTabList } = await fetchHome() as HomeResponse
@@ -148,9 +147,7 @@ onReachBottom(() => {
   }
 })
 
-onPullDownRefresh(() => {
-  init()
-})
+useAsyncPullDownRefresh(loadHomePage)
 
 defineExpose({
   imgSrcs,

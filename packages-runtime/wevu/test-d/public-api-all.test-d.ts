@@ -67,6 +67,7 @@ import type {
   MiniProgramUnhandledRejectionResult,
   ModelBinding,
   ModelBindingOptions,
+  ModelBindingPayload,
   MutationKind,
   MutationOp,
   MutationRecord,
@@ -92,6 +93,7 @@ import type {
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
+  UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
   WeappCSSProperties,
@@ -222,8 +224,10 @@ type RuntimeApiName
     | 'triggerRef'
     | 'unref'
     | 'useAttrs'
+    | 'useAsyncPullDownRefresh'
     | 'useBindModel'
     | 'useBoundingClientRect'
+    | 'useChangeModel'
     | 'useDisposables'
     | 'useElementIntersectionObserver'
     | 'useIntersectionObserver'
@@ -359,6 +363,7 @@ type _TypeCoverage = [
   MiniProgramUnhandledRejectionResult,
   ModelBinding<any>,
   ModelBindingOptions<any>,
+  ModelBindingPayload<any>,
   MutationKind,
   MutationOp,
   MutationRecord,
@@ -384,6 +389,7 @@ type _TypeCoverage = [
   SetupFunction<any, any, any, any>,
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
+  UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
   WeappIntrinsicElementBaseAttributes,

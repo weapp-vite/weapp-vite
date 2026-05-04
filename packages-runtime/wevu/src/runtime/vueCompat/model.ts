@@ -165,6 +165,20 @@ export function useBindModel<
   return bindModel
 }
 
+/**
+ * useChangeModel 返回以 change 事件为默认更新事件的 model 绑定助手。
+ */
+export function useChangeModel() {
+  const bindModel = useBindModel({ event: 'change' })
+
+  return function changeModel<T = any, ValueProp extends string = 'value', Formatted = T>(
+    path: string,
+    options?: ModelBindingOptions<T, 'change', ValueProp, Formatted>,
+  ): ModelBindingPayload<T, 'change', ValueProp, Formatted> {
+    return bindModel.model<T, 'change', ValueProp, Formatted>(path, options)
+  }
+}
+
 export function mergeModels<T>(a: T, b: T): T {
   if (a == null) {
     return b

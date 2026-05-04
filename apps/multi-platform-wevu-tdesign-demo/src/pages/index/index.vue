@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
-import { computed, ref, watch } from 'wevu'
+import { computed, ref, useAsyncPullDownRefresh, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
-import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
 import { useToast } from '@/hooks/useToast'
 
 definePageJson({
@@ -141,12 +140,12 @@ watch(refreshSeed, () => {
   lastUpdated.value = `更新于 ${new Date().toLocaleTimeString()}`
 })
 
-usePullDownRefresh(refreshDashboard)
-
 function refreshDashboard() {
   refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
   showToast('指标已刷新')
 }
+
+useAsyncPullDownRefresh(refreshDashboard)
 
 function onQuickAction(action: QuickActionItem) {
   if (!action.path) {

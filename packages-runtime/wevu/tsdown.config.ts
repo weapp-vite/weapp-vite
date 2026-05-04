@@ -28,6 +28,9 @@ export default defineConfig([
     minify: true,
     sourcemap: false,
     failOnWarn: false,
+    checks: {
+      pluginTimings: false,
+    },
   },
   {
     entry,
@@ -39,5 +42,8 @@ export default defineConfig([
     minify: false,
     sourcemap: true,
     failOnWarn: false,
+    checks: {
+      pluginTimings: false,
+    },
   },
 ])

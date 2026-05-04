@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu'
+import { onLoad, onShow, ref, useAsyncPullDownRefresh, useNativeInstance } from 'wevu'
 import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter'
@@ -104,7 +104,7 @@ function init() {
 }
 
 function fetUseriInfoHandle() {
-  fetchUserCenter().then(({
+  return fetchUserCenter().then(({
     userInfo: nextUserInfo,
     countsData,
     orderTagInfos: orderInfo,
@@ -135,7 +135,6 @@ function fetUseriInfoHandle() {
     orderTagInfos.value = info
     customerServiceInfo.value = nextCustomerServiceInfo
     currAuthStep.value = 2
-    return wpi.stopPullDownRefresh()
   })
 }
 
@@ -244,9 +243,7 @@ onShow(() => {
   init()
 })
 
-onPullDownRefresh(() => {
-  init()
-})
+useAsyncPullDownRefresh(fetUseriInfoHandle)
 
 defineExpose({
   showMakePhone,

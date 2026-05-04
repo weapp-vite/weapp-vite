@@ -3,9 +3,11 @@ import type { FlattenedRouteRecordSeed, RouteOptionSource } from './types'
 import { createAbsoluteRoutePath, resolvePath } from './path'
 
 export function warnRouteConfig(message: string): void {
+  // eslint-disable-next-line no-console
   if (typeof console === 'undefined' || typeof console.warn !== 'function') {
     return
   }
+  // eslint-disable-next-line no-console
   console.warn(`[wevu/router] ${message}`)
 }
 

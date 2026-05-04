@@ -4,6 +4,7 @@ export {
   type ModelModifiers,
   type ModelRef,
   useBindModel,
+  useChangeModel,
   useModel,
   type UseModelOptions,
 } from './vueCompat/model'

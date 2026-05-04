@@ -756,11 +756,15 @@ state.instance.value++ // ❌ 不会触发 effect
 **策略 3：防抖**
 
 ```typescript
-import { debounce } from 'lodash-es'
-
-const job = debounce(() => {
+let timer: ReturnType<typeof setTimeout> | undefined
+function job() {
+  if (timer) {
+    clearTimeout(timer)
+  }
+  timer = setTimeout(() => {
   // diff + setData
-}, 100)
+  }, 100)
+}
 
 const tracker = effect(
   () => {

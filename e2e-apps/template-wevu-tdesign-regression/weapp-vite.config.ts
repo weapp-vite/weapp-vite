@@ -9,6 +9,13 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, 'src'),
     },
   },
+  build: {
+    rolldownOptions: {
+      checks: {
+        pluginTimings: false,
+      },
+    },
+  },
   weapp: {
     srcRoot: 'src',
     typescript: {

@@ -29,9 +29,11 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     }
     const message = `[wevu:setData] ${parts.join(' ')}`
     if (isFallbackReason(info.reason)) {
+      // eslint-disable-next-line no-console
       console.warn(message)
       return
     }
+    // eslint-disable-next-line no-console
     console.info(message)
   }
 }

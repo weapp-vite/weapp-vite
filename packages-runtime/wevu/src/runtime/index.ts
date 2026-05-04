@@ -26,6 +26,7 @@ export * from './pageEnvironment'
 export * from './pageLayout'
 export * from './pageScroll'
 export * from './provide'
+export * from './pullDownRefresh'
 export * from './register'
 export * from './selectorQuery'
 export * from './template'
@@ -36,6 +37,7 @@ export {
   mergeModels,
   useAttrs,
   useBindModel,
+  useChangeModel,
   useModel,
   useNativeInstance,
   useNativePageRouter,

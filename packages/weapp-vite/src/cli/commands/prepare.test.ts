@@ -92,6 +92,33 @@ describe('prepare cli command', () => {
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 
+  it('passes platform to compiler context for multi-platform projects', async () => {
+    createCompilerContextMock.mockResolvedValue({
+      configService: {
+        outDir: 'dist/weapp',
+      },
+    })
+
+    const { registerPrepareCommand } = await import('./prepare')
+    const cli = cac('weapp-vite')
+    registerPrepareCommand(cli)
+
+    cli.parse(['node', 'weapp-vite', 'prepare', '/project', '-p', 'weapp'], { run: false })
+    await cli.runMatchedCommand()
+
+    expect(createCompilerContextMock).toHaveBeenCalledWith({
+      cwd: '/project',
+      isDev: false,
+      mode: 'development',
+      configFile: undefined,
+      configLoader: 'native',
+      syncSupportFiles: false,
+      preloadAppEntry: false,
+      cliPlatform: 'weapp',
+    })
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+  })
+
   it('warns and skips when prepare runs before project config is ready', async () => {
     createCompilerContextMock.mockRejectedValue(new Error('找不到项目配置文件：/project/project.config.json'))
 

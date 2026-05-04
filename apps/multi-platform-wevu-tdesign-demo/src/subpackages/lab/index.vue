@@ -22,6 +22,30 @@ const tabs = [
   { value: 'display', label: '展示' },
 ]
 
+function resolveChangeValue<T>(event: unknown, fallback: T): T {
+  const detail = (event as { detail?: unknown })?.detail
+  if (detail && typeof detail === 'object' && 'value' in detail) {
+    return (detail as { value?: T }).value ?? fallback
+  }
+  return (detail as T | undefined) ?? fallback
+}
+
+function handleTabChange(event: unknown) {
+  activeTab.value = resolveChangeValue(event, activeTab.value)
+}
+
+function handleRatingChange(event: unknown) {
+  rating.value = resolveChangeValue(event, rating.value)
+}
+
+function handleSliderChange(event: unknown) {
+  slider.value = resolveChangeValue(event, slider.value)
+}
+
+function handleToggleChange(event: unknown) {
+  toggle.value = resolveChangeValue(event, toggle.value)
+}
+
 function navigateTo(url: string) {
   wx.navigateTo({
     url,
@@ -34,7 +58,7 @@ function navigateTo(url: string) {
     <view class="rounded-[28rpx] bg-linear-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
       <SectionTitle title="TDesign 组件实验室" subtitle="常用组件的组合应用" />
       <view class="mt-[12rpx]">
-        <t-tabs :value="activeTab" @change="(e) => (activeTab = e.detail.value)">
+        <t-tabs :value="activeTab" @change="handleTabChange">
           <t-tab-panel v-for="tab in tabs" :key="tab.value" :value="tab.value" :label="tab.label" />
         </t-tabs>
       </view>
@@ -92,14 +116,14 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             满意度评分
           </text>
-          <t-rate :value="rating" @change="(e) => (rating = e.detail.value)" />
+          <t-rate :value="rating" @change="handleRatingChange" />
         </view>
         <view class="flex items-center justify-between">
           <text class="text-[22rpx] text-[#6f6b8a]">
             阈值调整
           </text>
           <view class="flex items-center gap-[12rpx]">
-            <t-slider :value="slider" @change="(e) => (slider = e.detail.value)" />
+            <t-slider :value="slider" @change="handleSliderChange" />
             <text class="text-[22rpx] text-[#6f6b8a]">
               {{ slider }}%
             </text>
@@ -109,7 +133,7 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             自动提醒
           </text>
-          <t-switch :value="toggle" @change="(e) => (toggle = e.detail.value)" />
+          <t-switch :value="toggle" @change="handleToggleChange" />
         </view>
       </view>
 

@@ -20,13 +20,23 @@ function formatPrepareSkipMessage(error: unknown) {
   return `跳过 .weapp-vite 支持文件预生成：${message}`
 }
 
+function resolvePreparePlatform(options: GlobalCLIOptions) {
+  return typeof options.platform === 'string'
+    ? options.platform
+    : typeof options.p === 'string'
+      ? options.p
+      : undefined
+}
+
 export function registerPrepareCommand(cli: CAC) {
   cli
     .command('prepare [...input]', 'generate .weapp-vite support files')
+    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
     .action(async (input: string[] | undefined, options: GlobalCLIOptions) => {
       try {
         filterDuplicateOptions(options)
         const cwd = path.resolve(resolvePrepareRoot(input))
+        const cliPlatform = resolvePreparePlatform(options)
         const ctx = await createCompilerContext({
           cwd,
           isDev: false,
@@ -35,6 +45,7 @@ export function registerPrepareCommand(cli: CAC) {
           configLoader: 'native',
           syncSupportFiles: false,
           preloadAppEntry: false,
+          ...(cliPlatform ? { cliPlatform } : {}),
         })
 
         await syncProjectSupportFiles(ctx)

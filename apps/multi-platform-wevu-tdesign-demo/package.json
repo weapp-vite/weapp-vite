@@ -16,7 +16,7 @@
   },
   "keywords": [],
   "scripts": {
-    "prepare:weapp": "wv prepare",
+    "prepare:weapp": "wv prepare -p weapp",
     "dev": "wv dev -p weapp",
     "dev:open": "wv dev -p weapp -o",
     "dev:weapp": "wv dev -p weapp",
@@ -37,7 +37,7 @@
     "build:web": "wv build -p h5",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "wv open",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "weapp-tw patch && wv prepare -p weapp",
     "dev:ui": "wv dev --ui -p weapp",
     "build:ui": "wv build --ui -p weapp"
   },

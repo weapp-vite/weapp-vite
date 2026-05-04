@@ -1,6 +1,6 @@
 import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -143,6 +143,28 @@ describe('runtime: vue compat helpers', () => {
     model.onChange({ detail: { value: true } })
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.enabled).toBe(true)
+  })
+
+  it('useChangeModel creates value+change binding payloads', () => {
+    defineComponent({
+      data: () => ({ title: '' }),
+      setup() {
+        const changeModel = useChangeModel()
+        const titleModel = changeModel<string>('title')
+        return { titleModel }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData() {}, properties: {} }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const model = inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.titleModel
+    expect(model.value).toBe('')
+    model.onChange({ detail: { value: 'next title' } })
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.title).toBe('next title')
   })
 
   it('ctx.emit supports Vue style variadic args and normalizes triggerEvent payload', () => {

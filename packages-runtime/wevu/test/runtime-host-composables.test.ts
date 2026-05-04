@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from '@/reactivity'
-import { getCurrentPageStackSnapshot, getNavigationBarMetrics, useBoundingClientRect, useElementIntersectionObserver, useNavigationBarMetrics, usePageStack } from '@/runtime'
+import { getCurrentPageStackSnapshot, getNavigationBarMetrics, useAsyncPullDownRefresh, useBoundingClientRect, useElementIntersectionObserver, useNavigationBarMetrics, usePageStack } from '@/runtime'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { callHookList } from '@/runtime/hooks/base'
 
 type QueryResolver = (selector: string, multiple: boolean) => any
+
+function flushAsyncHooks() {
+  return new Promise<void>(resolve => setTimeout(resolve, 0))
+}
 
 function createSelectorQueryFactory(resolver: QueryResolver) {
   return () => {
@@ -164,5 +168,45 @@ describe('runtime host composables', () => {
     callHookList(instance, 'onReady')
     expect(instance.createIntersectionObserver).not.toHaveBeenCalled()
     expect(controller.observer).toBeNull()
+  })
+
+  it('stops pull-down refresh after async refresh callbacks', async () => {
+    const instance = {} as any
+    const refresh = vi.fn(async () => {})
+    const stopPullDownRefresh = vi.fn(async () => {})
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance })
+
+    useAsyncPullDownRefresh(refresh, { stopPullDownRefresh })
+    callHookList(instance, 'onPullDownRefresh')
+
+    await flushAsyncHooks()
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(stopPullDownRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('reports pull-down refresh errors and still stops refresh state', async () => {
+    const instance = {} as any
+    const error = new Error('refresh failed')
+    const onError = vi.fn()
+    const stopPullDownRefresh = vi.fn()
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance })
+
+    useAsyncPullDownRefresh(() => {
+      throw error
+    }, {
+      onError,
+      stopPullDownRefresh,
+    })
+    callHookList(instance, 'onPullDownRefresh')
+
+    await flushAsyncHooks()
+
+    expect(onError).toHaveBeenCalledWith(error)
+    expect(stopPullDownRefresh).toHaveBeenCalledOnce()
   })
 })

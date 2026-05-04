@@ -40,33 +40,6 @@ function resolveRouteRecordName(
   return ''
 }
 
-export function normalizeRouteRecordRaw(
-  route: RouteRecordInput,
-  parentName?: string,
-  source: RouteOptionSource = 'namedRoutes',
-): RouteRecordNormalized | undefined {
-  const normalizedPath = resolvePath(route.path, '')
-  if (!normalizedPath && route.path !== '/') {
-    return undefined
-  }
-
-  const routeName = resolveRouteRecordName(route, normalizedPath, source)
-  if (!routeName) {
-    return undefined
-  }
-  const aliasPaths = normalizeRouteRecordAliasPaths(route.alias, normalizedPath)
-
-  return {
-    name: routeName,
-    path: normalizedPath,
-    aliasPaths,
-    parentName,
-    meta: route.meta,
-    beforeEnterGuards: normalizeBeforeEnterGuards(route.beforeEnter),
-    redirect: route.redirect,
-  }
-}
-
 function normalizeRouteRecordAliasPaths(
   alias: RouteRecordRaw['alias'],
   normalizedPath: string,
@@ -95,48 +68,31 @@ function normalizeRouteRecordAliasPaths(
   return normalizedAliasPaths
 }
 
-function normalizeNamedRouteEntries(
-  namedRoutes?: NamedRoutes | readonly RouteRecordInput[],
+export function normalizeRouteRecordRaw(
+  route: RouteRecordInput,
+  parentName?: string,
   source: RouteOptionSource = 'namedRoutes',
-): FlattenedRouteRecordSeed[] {
-  if (!namedRoutes) {
-    return []
+): RouteRecordNormalized | undefined {
+  const normalizedPath = resolvePath(route.path, '')
+  if (!normalizedPath && route.path !== '/') {
+    return undefined
   }
 
-  if (Array.isArray(namedRoutes)) {
-    return flattenNamedRouteRecords(namedRoutes, undefined, undefined, [], source, source)
+  const routeName = resolveRouteRecordName(route, normalizedPath, source)
+  if (!routeName) {
+    return undefined
   }
+  const aliasPaths = normalizeRouteRecordAliasPaths(route.alias, normalizedPath)
 
-  const normalizedEntries: FlattenedRouteRecordSeed[] = []
-  for (const [rawName, rawPath] of Object.entries(namedRoutes)) {
-    const routeName = typeof rawName === 'string'
-      ? rawName.trim()
-      : ''
-    if (!routeName) {
-      warnRouteConfig(`ignored route record at ${source}: route name is required`)
-      continue
-    }
-    if (typeof rawPath !== 'string' || !rawPath) {
-      warnRouteConfig(`ignored route record "${routeName}" at ${source}: route path is required`)
-      continue
-    }
-    normalizedEntries.push({
-      route: {
-        name: routeName,
-        path: rawPath,
-      },
-      source,
-    })
+  return {
+    name: routeName,
+    path: normalizedPath,
+    aliasPaths,
+    parentName,
+    meta: route.meta,
+    beforeEnterGuards: normalizeBeforeEnterGuards(route.beforeEnter),
+    redirect: route.redirect,
   }
-
-  return normalizedEntries
-}
-
-export function resolveRouteOptionEntries(options: UseRouterOptions): FlattenedRouteRecordSeed[] {
-  return [
-    ...normalizeNamedRouteEntries(options.routes, 'routes'),
-    ...normalizeNamedRouteEntries(options.namedRoutes, 'namedRoutes'),
-  ]
 }
 
 function normalizeNestedRoutePath(path: string, parentPath?: string): string {
@@ -276,6 +232,50 @@ export function flattenNamedRouteRecords(
   }
 
   return flattenedRecords
+}
+
+function normalizeNamedRouteEntries(
+  namedRoutes?: NamedRoutes | readonly RouteRecordInput[],
+  source: RouteOptionSource = 'namedRoutes',
+): FlattenedRouteRecordSeed[] {
+  if (!namedRoutes) {
+    return []
+  }
+
+  if (Array.isArray(namedRoutes)) {
+    return flattenNamedRouteRecords(namedRoutes, undefined, undefined, [], source, source)
+  }
+
+  const normalizedEntries: FlattenedRouteRecordSeed[] = []
+  for (const [rawName, rawPath] of Object.entries(namedRoutes)) {
+    const routeName = typeof rawName === 'string'
+      ? rawName.trim()
+      : ''
+    if (!routeName) {
+      warnRouteConfig(`ignored route record at ${source}: route name is required`)
+      continue
+    }
+    if (typeof rawPath !== 'string' || !rawPath) {
+      warnRouteConfig(`ignored route record "${routeName}" at ${source}: route path is required`)
+      continue
+    }
+    normalizedEntries.push({
+      route: {
+        name: routeName,
+        path: rawPath,
+      },
+      source,
+    })
+  }
+
+  return normalizedEntries
+}
+
+export function resolveRouteOptionEntries(options: UseRouterOptions): FlattenedRouteRecordSeed[] {
+  return [
+    ...normalizeNamedRouteEntries(options.routes, 'routes'),
+    ...normalizeNamedRouteEntries(options.namedRoutes, 'namedRoutes'),
+  ]
 }
 
 export function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, RouteRecordNormalized>): Map<string, string> {

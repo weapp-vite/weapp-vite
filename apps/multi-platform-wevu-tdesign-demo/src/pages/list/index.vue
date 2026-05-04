@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { ListItem, StatusFilter, StatusFilterValue } from '@/types/list'
 
-import { computed, ref, watch } from 'wevu'
+import { computed, ref, useAsyncPullDownRefresh, watch } from 'wevu'
 import EmptyState from '@/components/EmptyState/index.vue'
 import FilterBar from '@/components/FilterBar/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
-import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
 import { useToast } from '@/hooks/useToast'
 import { buildStatusFilters, filterListItems } from '@/utils/listFilters'
 
@@ -83,7 +82,7 @@ function onAction(item: (typeof items.value)[number]) {
   showToast(`打开「${item.title}」详情`)
 }
 
-usePullDownRefresh(reload)
+useAsyncPullDownRefresh(reload)
 
 reload()
 </script>

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
-import { computed, getCurrentInstance, ref, resolveLayoutBridge, resolveLayoutHost, watch } from 'wevu'
+import { computed, getCurrentInstance, ref, resolveLayoutBridge, resolveLayoutHost, useAsyncPullDownRefresh, watch } from 'wevu'
 import { wpi } from 'wevu/api'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
 import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
-import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
 import { useToast } from '@/hooks/useToast'
 
 definePageJson({
@@ -217,7 +216,7 @@ function runLayoutToastE2E() {
 
 void runLayoutToastE2E
 
-usePullDownRefresh(refreshDashboard)
+useAsyncPullDownRefresh(refreshDashboard)
 
 async function onQuickAction(action: QuickActionItem) {
   if (!action.path) {
