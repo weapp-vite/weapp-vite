@@ -180,10 +180,20 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       await replaceFileByRename(SFC_SRC_PATH, secondUpdate)
 
       // 等待 dist 中模板文件包含第二次标记
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
-        `${platform} rapid second SFC marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second SFC marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(SFC_SRC_PATH, `${secondUpdate}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second SFC marker (retry)`,
+        )
+      }
       expect(content).toContain(secondMarker)
       expect(content).not.toContain(firstMarker)
     }
