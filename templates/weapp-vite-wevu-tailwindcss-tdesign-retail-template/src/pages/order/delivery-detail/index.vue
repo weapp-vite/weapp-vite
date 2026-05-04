@@ -62,8 +62,8 @@ onLoad((query: QueryOptions = {}) => {
   try {
     data = JSON.parse(decodeURIComponent(query.data || '{}'))
   }
-  catch (error) {
-    console.warn('物流节点数据解析失败', error)
+  catch {
+    data = null
   }
 
   if (Number(query.source) === 2) {

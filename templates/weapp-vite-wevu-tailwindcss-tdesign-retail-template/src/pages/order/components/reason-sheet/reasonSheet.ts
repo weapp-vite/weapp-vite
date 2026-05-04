@@ -34,10 +34,6 @@ function getInstance(context?: ReasonSheetContext | null, selector = '#wr-reason
     nextContext = (pages.at(-1) ?? null) as ReasonSheetContext | null
   }
   const instance = nextContext?.selectComponent?.(selector) ?? null
-  if (!instance) {
-    console.warn(`未找到reason-sheet组件,请检查selector是否正确`)
-    return null
-  }
   return instance
 }
 

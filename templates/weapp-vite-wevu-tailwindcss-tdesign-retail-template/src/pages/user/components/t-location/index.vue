@@ -104,8 +104,7 @@ defineOptions({
             })
           }
         }
-        catch (err) {
-          console.warn('未选择微信收货地址', err)
+        catch {
         }
       })
     },

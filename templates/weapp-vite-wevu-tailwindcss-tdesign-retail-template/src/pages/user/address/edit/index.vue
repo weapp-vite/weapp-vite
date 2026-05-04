@@ -287,7 +287,6 @@ async function builtInSearch({ code, name }: { code: string, name: string }) {
   const openSettingRes = await wpi.openSetting()
   const nextAuthSetting = openSettingRes.authSetting as Record<string, boolean | undefined>
   if (nextAuthSetting[code] !== true) {
-    console.warn('用户未打开权限', name, code)
     throw new Error(`用户未开启${name}权限`)
   }
 }
@@ -315,7 +314,6 @@ async function onSearchAddress() {
     })
   }
   catch (error: any) {
-    console.warn(`wpi.chooseLocation fail: ${JSON.stringify(error)}`)
     if (error?.errMsg !== 'chooseLocation:fail cancel') {
       showToast({
         context: nativeInstance as any,

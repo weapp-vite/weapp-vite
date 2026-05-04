@@ -30,6 +30,5 @@ export async function getPermission({ code, name }: PermissionOptions) {
     return
   }
 
-  console.warn('用户未打开权限', name, code)
   throw new Error(`用户未开启${name}权限`)
 }
