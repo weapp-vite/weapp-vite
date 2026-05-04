@@ -95,7 +95,8 @@ describe('plugin-demo build regression', () => {
     expect(pluginVendorCode).toContain('miniprogram_npm/dayjs/index')
     expect(pluginVendorCode).toContain('2026-03-19T12:34:00')
     expect(pluginVendorCode).toContain('npm(dayjs) 构建标记')
-    expect(pluginWevuRuntimeCode).toContain('Object.defineProperty(exports, "Ma"')
+    expect(pluginWevuRuntimeCode).toMatch(/Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/)
+    expect(pluginWevuRuntimeCode).toContain('__wevu_runtime')
     expect(pluginPageJson.usingComponents ?? {}).toEqual({})
     expect(nativePlaygroundJson.usingComponents).toMatchObject({
       'hello-showcase': '../../components/hello-component/index',

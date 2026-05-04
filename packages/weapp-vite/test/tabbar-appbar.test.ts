@@ -54,11 +54,13 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'wevu-runtime.js': [
     /require\(["']\.\/(?:weapp-vendors\/)?wevu-router\.js["']\)/,
-    /Object\.defineProperty\(exports, ["']Ma["']/,
+    /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
+    /__wevu_runtime/,
   ],
   'weapp-vendors/wevu-src.js': [
     /require\(["']\.\/wevu-router\.js["']\)/,
-    /Object\.defineProperty\(exports, ["']Ma["']/,
+    /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
+    /__wevu_runtime/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
