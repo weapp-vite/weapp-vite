@@ -1,16 +1,34 @@
 {
-  "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ESNext",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@/*": [
+        "./packages/weapp-vite/src/*"
+      ]
+    },
+    "resolveJsonModule": true,
     "types": [
-      "miniprogram-api-typings",
       "node",
       "vitest/globals",
       "vue/jsx"
-    ]
+    ],
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "**/*"
-  ],
+  "vueCompilerOptions": {
+    "plugins": [
+      "@weapp-vite/volar"
+    ],
+    "lib": "wevu"
+  },
   "exclude": [
     "node_modules",
     "**/node_modules",
@@ -50,6 +68,8 @@
     "**/.weapp-vite",
     "**/.weapp-vite/**",
     "**/.wevu-config",
-    "**/.wevu-config/**"
+    "**/.wevu-config/**",
+    "docs/reports",
+    "docs/reports/**"
   ]
 }

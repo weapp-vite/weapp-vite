@@ -1,90 +1,386 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "jsx": "preserve",
-    "jsxImportSource": "vue",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "paths": {
-      "@/*": [
-        "./packages/weapp-vite/src/*"
-      ]
+  "references": [
+    {
+      "path": "./@weapp-core/constants"
     },
-    "resolveJsonModule": true,
-    "types": [
-      "node",
-      "vitest/globals",
-      "vue/jsx"
-    ],
-    "allowJs": true,
-    "strict": true,
-    "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  },
-  "vueCompilerOptions": {
-    "plugins": [
-      "@weapp-vite/volar"
-    ],
-    "lib": "wevu"
-  },
-  "include": [
-    "*.ts",
-    "*.mts",
-    "*.cts",
-    "*.d.ts",
-    "apps",
-    "packages",
-    "templates",
-    "@weapp-core",
-    "website",
-    "scripts",
-    "e2e",
-    "docs",
-    "assets"
+    {
+      "path": "./@weapp-core/init/test/fixtures/cjs"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/fullInit"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/initConfig"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/no-pkg-json"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/vite-native-skyline"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/vite-native-ts-skyline"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/vite-native-ts"
+    },
+    {
+      "path": "./@weapp-core/init/test/fixtures/vite-native"
+    },
+    {
+      "path": "./@weapp-core/init"
+    },
+    {
+      "path": "./@weapp-core/logger"
+    },
+    {
+      "path": "./@weapp-core/schematics"
+    },
+    {
+      "path": "./@weapp-core/shared"
+    },
+    {
+      "path": "./apps/alipay-antd-mini-demo"
+    },
+    {
+      "path": "./apps/api-extractor-vue-types-demo"
+    },
+    {
+      "path": "./apps/dashboard-ui-lab"
+    },
+    {
+      "path": "./apps/hmr-lab"
+    },
+    {
+      "path": "./apps/mcp-demo"
+    },
+    {
+      "path": "./apps/multi-platform-demo"
+    },
+    {
+      "path": "./apps/multi-platform-wevu-tdesign-demo"
+    },
+    {
+      "path": "./apps/plugin-demo"
+    },
+    {
+      "path": "./apps/raw-ts"
+    },
+    {
+      "path": "./apps/runtime-bench-native"
+    },
+    {
+      "path": "./apps/runtime-bench-vue"
+    },
+    {
+      "path": "./apps/subpackage-shared-chunks"
+    },
+    {
+      "path": "./apps/tdesign-miniprogram-starter-retail"
+    },
+    {
+      "path": "./apps/vite-native-skyline"
+    },
+    {
+      "path": "./apps/vite-native-ts-skyline"
+    },
+    {
+      "path": "./apps/vite-native-ts"
+    },
+    {
+      "path": "./apps/vite-native"
+    },
+    {
+      "path": "./apps/weapp-vite-web-demo"
+    },
+    {
+      "path": "./apps/weapp-wechat-zhihu"
+    },
+    {
+      "path": "./apps/wevu-bug"
+    },
+    {
+      "path": "./apps/wevu-comprehensive-demo"
+    },
+    {
+      "path": "./apps/wevu-jsx-tsx-demo"
+    },
+    {
+      "path": "./apps/wevu-runtime-demo"
+    },
+    {
+      "path": "./apps/wevu-vue-demo"
+    },
+    {
+      "path": "./apps/wevu-vue-sfc-recording-demo"
+    },
+    {
+      "path": "./e2e-apps/app-lifecycle-native"
+    },
+    {
+      "path": "./e2e-apps/app-lifecycle-wevu-ts"
+    },
+    {
+      "path": "./e2e-apps/app-lifecycle-wevu-vue"
+    },
+    {
+      "path": "./e2e-apps/app-prelude-native"
+    },
+    {
+      "path": "./e2e-apps/auto-import-vue-sfc"
+    },
+    {
+      "path": "./e2e-apps/auto-routes-define-app-json"
+    },
+    {
+      "path": "./e2e-apps/base"
+    },
+    {
+      "path": "./e2e-apps/chunk-modes"
+    },
+    {
+      "path": "./e2e-apps/github-issues"
+    },
+    {
+      "path": "./e2e-apps/issue-340-hoist"
+    },
+    {
+      "path": "./e2e-apps/issue-814-tailwind3"
+    },
+    {
+      "path": "./e2e-apps/issue-814-tailwind4-broken"
+    },
+    {
+      "path": "./e2e-apps/issue-814-tailwind4"
+    },
+    {
+      "path": "./e2e-apps/lib-mode"
+    },
+    {
+      "path": "./e2e-apps/lifecycle-compare"
+    },
+    {
+      "path": "./e2e-apps/object-literal-bind-prop"
+    },
+    {
+      "path": "./e2e-apps/request-clients-real-native"
+    },
+    {
+      "path": "./e2e-apps/request-clients-real"
+    },
+    {
+      "path": "./e2e-apps/script-setup-macros-js-with-defaults-invalid"
+    },
+    {
+      "path": "./e2e-apps/script-setup-macros-mapping"
+    },
+    {
+      "path": "./e2e-apps/style-import-vue"
+    },
+    {
+      "path": "./e2e-apps/subpackage-shared-strategy-complex-a"
+    },
+    {
+      "path": "./e2e-apps/subpackage-shared-strategy-complex-b"
+    },
+    {
+      "path": "./e2e-apps/tdesign-dialog-import"
+    },
+    {
+      "path": "./e2e-apps/template-wevu-regression"
+    },
+    {
+      "path": "./e2e-apps/template-wevu-tdesign-regression"
+    },
+    {
+      "path": "./e2e-apps"
+    },
+    {
+      "path": "./e2e-apps/wevu-features"
+    },
+    {
+      "path": "./e2e-apps/wevu-runtime-e2e"
+    },
+    {
+      "path": "./e2e-apps/wevu-subpackage-placement"
+    },
+    {
+      "path": "./extensions/vscode/extension"
+    },
+    {
+      "path": "./extensions/vscode"
+    },
+    {
+      "path": "./mpcore/demos/web"
+    },
+    {
+      "path": "./mpcore/packages/core"
+    },
+    {
+      "path": "./mpcore/packages/simulator/test-d"
+    },
+    {
+      "path": "./mpcore/packages/simulator"
+    },
+    {
+      "path": "./packages-private/sfc-playground"
+    },
+    {
+      "path": "./packages-runtime/weapi"
+    },
+    {
+      "path": "./packages-runtime/web-apis"
+    },
+    {
+      "path": "./packages-runtime/web"
+    },
+    {
+      "path": "./packages-runtime/wevu-compiler"
+    },
+    {
+      "path": "./packages-runtime/wevu/test-d"
+    },
+    {
+      "path": "./packages-runtime/wevu"
+    },
+    {
+      "path": "./packages/ast"
+    },
+    {
+      "path": "./packages/create-weapp-vite"
+    },
+    {
+      "path": "./packages/dashboard"
+    },
+    {
+      "path": "./packages/devtools-runtime"
+    },
+    {
+      "path": "./packages/mcp"
+    },
+    {
+      "path": "./packages/miniprogram-automator"
+    },
+    {
+      "path": "./packages/qr"
+    },
+    {
+      "path": "./packages/rolldown-require/test/fixture/resolve-tsconfig-paths"
+    },
+    {
+      "path": "./packages/rolldown-require"
+    },
+    {
+      "path": "./packages/vite-plugin-performance"
+    },
+    {
+      "path": "./packages/volar"
+    },
+    {
+      "path": "./packages/weapp-ide-cli"
+    },
+    {
+      "path": "./packages/weapp-vite"
+    },
+    {
+      "path": "./templates/weapp-vite-lib-template"
+    },
+    {
+      "path": "./templates/weapp-vite-plugin-template"
+    },
+    {
+      "path": "./templates/weapp-vite-tailwindcss-tdesign-template"
+    },
+    {
+      "path": "./templates/weapp-vite-tailwindcss-template"
+    },
+    {
+      "path": "./templates/weapp-vite-tailwindcss-vant-template"
+    },
+    {
+      "path": "./templates/weapp-vite-template"
+    },
+    {
+      "path": "./templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template"
+    },
+    {
+      "path": "./templates/weapp-vite-wevu-tailwindcss-tdesign-template"
+    },
+    {
+      "path": "./templates/weapp-vite-wevu-template"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/asset"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/auto-import"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/auto.import"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/basic"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/import-umd"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/independent-subpackage"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/resolve-deps"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/shared-chunks"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/style"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subPackages-dependencies"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subPackages"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subpackage-dayjs"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subpackage-npm-no-main"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subpackage-npm-normal"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/subpackage-root-util"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/tabbar-appbar"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/tsconfig-paths/no-paths"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/tsconfig-paths/refs"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/watch-no-npm"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/watch-no-subpackage"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/watch"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/worker-shared"
+    },
+    {
+      "path": "./test/fixture-projects/weapp-vite/wxs-project"
+    },
+    {
+      "path": "./website"
+    }
   ],
-  "exclude": [
-    "node_modules",
-    "**/node_modules",
-    "dist",
-    "dist-*",
-    "dist-plugin",
-    "dist-web",
-    "coverage",
-    "**/dist",
-    "**/dist/**",
-    "**/dist-*",
-    "**/dist-*/**",
-    "**/dist-plugin",
-    "**/dist-plugin/**",
-    "**/dist-web",
-    "**/dist-web/**",
-    "**/build",
-    "**/build/**",
-    "**/miniprogram_dist",
-    "**/miniprogram_dist/**",
-    "**/miniprogram_npm",
-    "**/miniprogram_npm/**",
-    "**/.vite",
-    "**/.vite/**",
-    "**/.vite-inspect",
-    "**/.vite-inspect/**",
-    "**/.turbo",
-    "**/.turbo/**",
-    "**/.cache",
-    "**/.cache/**",
-    "**/coverage",
-    "**/coverage/**",
-    "**/__temp__",
-    "**/__temp__/**",
-    "**/.tmp",
-    "**/.tmp/**",
-    "**/.weapp-vite",
-    "**/.weapp-vite/**",
-    "**/.wevu-config",
-    "**/.wevu-config/**",
-    "docs/reports",
-    "docs/reports/**"
-  ]
+  "files": []
 }
