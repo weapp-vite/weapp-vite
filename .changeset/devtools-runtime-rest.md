@@ -1,6 +1,6 @@
 ---
-'@weapp-vite/mcp': minor
-'weapp-vite': minor
+'@weapp-vite/mcp': patch
+'weapp-vite': patch
 'create-weapp-vite': patch
 ---
 
