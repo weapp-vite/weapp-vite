@@ -415,6 +415,27 @@ dialog?.show?.({ title: '确认删除？' })
 
 > **提示**：如果你的项目已经封装了 `useToast()`、`useDialog()` 一类 hook，优先让这些 hook 内部对接 `layout-host`，而不是把 layout 结构细节散落到页面代码里。
 
+TDesign Toast/Dialog 可以按下面的形态封装为模板级 recipe。核心约束是：页面只调用业务 hook，hook 内部再解析 layout 暴露的宿主实例。
+
+```ts
+import { getCurrentInstance, resolveLayoutHost } from 'wevu'
+
+interface ToastHost {
+  show: (options: { message: string, theme?: string }) => void
+}
+
+export function showToast(message: string, theme = 'default') {
+  const context = getCurrentInstance()
+  const toast = resolveLayoutHost<ToastHost>('layout-toast', { context })
+  toast?.show({
+    message,
+    ...(theme === 'default' ? {} : { theme }),
+  })
+}
+```
+
+这种封装不属于 `wevu` core 的 UI 能力：`wevu` 只负责 `layout-host` 的注册与解析，具体的 Toast/Dialog 参数、按钮行为和关闭逻辑仍然由 TDesign 或业务 hook 维护。
+
 ### 7.5 不推荐直接把 layout 当成父组件做祖先注入
 
 很多人会先想到 Vue Web 里的 `provide()` / `inject()`。但在当前 `wevu` 运行时语义下，这不是 page/layout 主通信手段。

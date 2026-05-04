@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-04T08:57:11.764Z",
+  "generatedAt": "2026-05-04T13:50:14.081Z",
   "site": "https://vite.icebreaker.top",
   "count": 262,
   "items": [
@@ -2086,7 +2086,7 @@
         "5.1 优先级",
         "6. 运行时怎么切换 layout"
       ],
-      "updatedAt": "2026-05-03",
+      "updatedAt": "2026-05-04",
       "source": "guide/layouts.md"
     },
     {

@@ -1,42 +1,55 @@
 <script setup lang="ts">
-import { wpi } from 'wevu/api'
+import { onMounted, ref, useBoundingClientRect } from 'wevu'
+
+interface TabItem {
+  name?: string
+}
 
 defineOptions({
   externalClasses: ['custom-class'],
-  properties: {
-    tabList: Array,
-  },
-  data() {
-    return {
-      unfolded: false,
-      boardMaxHeight: null,
+})
+
+withDefaults(defineProps<{
+  tabList?: TabItem[]
+}>(), {
+  tabList: () => [],
+})
+
+const emit = defineEmits<{
+  change: [payload: { unfolded: boolean }]
+  select: [activeKey: number | string]
+}>()
+
+const unfolded = ref(false)
+const boardMaxHeight = ref<number | null>(null)
+const getBoundingClientRect = useBoundingClientRect()
+
+function changeFold() {
+  unfolded.value = !unfolded.value
+  emit('change', {
+    unfolded: unfolded.value,
+  })
+}
+
+function onSelect(event: any) {
+  const activeKey = event.currentTarget?.dataset?.index ?? 0
+  emit('select', activeKey)
+  changeFold()
+}
+
+onMounted(() => {
+  getBoundingClientRect('.c-tabbar-more').then((rect) => {
+    if (rect?.height !== undefined) {
+      boardMaxHeight.value = rect.height
     }
-  },
-  attached(this: any) {
-    wpi.createSelectorQuery().in(this).select('.c-tabbar-more').boundingClientRect((rect) => {
-      this.setData({
-        boardMaxHeight: rect.height,
-      })
-    }).exec()
-  },
-  methods: {
-    changeFold(this: any) {
-      this.setData({
-        unfolded: !this.data.unfolded,
-      })
-      const {
-        unfolded,
-      } = this.data
-      this.triggerEvent('change', {
-        unfolded,
-      })
-    },
-    onSelect(this: any, event: any) {
-      const activeKey = event.currentTarget.dataset.index
-      this.triggerEvent('select', activeKey)
-      this.changeFold()
-    },
-  },
+  })
+})
+
+defineExpose({
+  boardMaxHeight,
+  changeFold,
+  onSelect,
+  unfolded,
 })
 
 defineComponentJson({

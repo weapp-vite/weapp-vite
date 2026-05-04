@@ -24,6 +24,10 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - 可见性观察：`useElementIntersectionObserver`
   - 页面与导航栏：`usePageStack`、`getCurrentPageStackSnapshot`、`useNavigationBarMetrics`、`getNavigationBarMetrics`
   - 下拉刷新：`useAsyncPullDownRefresh`
+- Layout 与宿主桥接
+  - 运行时 layout：`setPageLayout`、`usePageLayout`
+  - Layout 宿主能力：`resolveLayoutBridge`、`resolveLayoutHost`、`waitForLayoutHost`
+  - 适合场景：把 TDesign Toast/Dialog、全局反馈层、抽屉等放在 layout 中，再通过 `layout-host` 暴露给页面或组件
 - 状态管理（Store 适配）
   - `createStore`、`defineStore`、`storeToRefs`（主入口导出）→ 参见 Store 章节
 
@@ -62,6 +66,8 @@ import {
   reactive,
   readonly, // 响应式与工具
   ref,
+  resolveLayoutBridge,
+  resolveLayoutHost,
   storeToRefs,
   useAsyncPullDownRefresh,
   useBindModel,
@@ -70,6 +76,7 @@ import {
   useElementIntersectionObserver,
   useNavigationBarMetrics,
   usePageStack,
+  waitForLayoutHost,
   watch,
   watchEffect,
   watchPostEffect,

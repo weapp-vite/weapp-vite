@@ -77,6 +77,37 @@ keywords:
 - 用途：读取当前 layout bridge 或 host 绑定。
 - 说明：用于 layout 组件、调试页和框架扩展，不建议普通页面直接依赖。
 
+### `resolveLayoutBridge()` {#resolvelayoutbridge}
+
+- 类型入口：`LayoutBridgeInstance`
+- 用途：解析当前页面已注册的 layout bridge。
+- 适合：需要在业务 hook 中统一访问 layout 内部宿主能力时，先定位承载宿主组件的 layout 上下文。
+- 说明：普通业务页面优先使用更直接的 `resolveLayoutHost()`；只有需要自己调用 `selectComponent()` 或做兼容兜底时再使用 bridge。
+
+### `resolveLayoutHost()` / `waitForLayoutHost()` {#resolvelayouthost}
+
+- 类型入口：`LayoutHostResolveOptions`
+- 用途：按 `layout-host` key 解析 layout 内暴露的宿主组件实例。
+- 适合：Toast、Dialog、全局反馈层、抽屉等天然属于 layout 的组件。
+- 说明：`resolveLayoutHost()` 同步返回当前可用实例；`waitForLayoutHost()` 会按短间隔重试，适合页面初次进入时等待 layout 宿主完成挂载。
+
+示例：
+
+```vue
+<script setup lang="ts">
+import { resolveLayoutHost } from 'wevu'
+
+interface ToastHost {
+  show: (options: { message: string }) => void
+}
+
+function showSuccess() {
+  const toast = resolveLayoutHost<ToastHost>('layout-toast')
+  toast?.show({ message: '操作成功' })
+}
+</script>
+```
+
 ## 子路径边界
 
 - `wevu/compiler` 不是 `wevu` 根入口的一部分，主要给编译工具使用。
