@@ -119,7 +119,7 @@ const goods = ref<GoodsCardData>({
   price: 0,
   lineClamp: 2,
   num: 0,
-  stockQuantity: 0,
+  stockQuantity: -1,
   quantity: 0,
 })
 const hiddenInData = ref(false)
@@ -157,7 +157,7 @@ function applyGoodsState(currentGoods: InputGoodsCardData | null | undefined) {
     price: currentGoods.price ?? 0,
     lineClamp: currentGoods.lineClamp ?? 0,
     num: currentGoods.num ?? 0,
-    stockQuantity: currentGoods.stockQuantity ?? 0,
+    stockQuantity: currentGoods.stockQuantity ?? -1,
     quantity: currentGoods.quantity ?? 0,
   }
   let validLinePrice = true
@@ -307,7 +307,7 @@ defineComponentJson({
               {{ goods.specs }}
             </view>
           </view>
-          <view v-if="goods.stockQuantity !== 0 && goods.quantity >= goods.stockQuantity" class="goods_tips">
+          <view v-if="goods.stockQuantity > 0 && goods.quantity >= goods.stockQuantity" class="goods_tips">
             库存不足
           </view>
         </view>

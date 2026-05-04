@@ -10,6 +10,9 @@ export default defineConfig({
   },
   weapp: {
     srcRoot: 'src',
+    chunks: {
+      sharedStrategy: 'hoist',
+    },
     json: {
       defaults: {
         page: {

@@ -56,6 +56,12 @@
           "scene": null
         },
         {
+          "name": "昵称编辑",
+          "pathName": "pages/user/name-edit/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "商品列表",
           "pathName": "pages/goods/list/index",
           "query": "",
@@ -95,6 +101,12 @@
           "name": "订单确认",
           "pathName": "pages/order/order-confirm/index",
           "query": "type=cart",
+          "scene": null
+        },
+        {
+          "name": "收货信息",
+          "pathName": "pages/order/receipt/index",
+          "query": "",
           "scene": null
         },
         {
@@ -201,7 +213,7 @@
     "tabIndent": "insertSpaces",
     "tabSize": 2
   },
-  "libVersion": "3.13.2",
+  "libVersion": "3.15.0",
   "packOptions": {
     "ignore": [],
     "include": []

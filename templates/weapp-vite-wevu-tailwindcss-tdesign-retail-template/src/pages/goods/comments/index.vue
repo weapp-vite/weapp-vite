@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { GoodsCommentItem, GoodsCommentsCount } from '../../../model/comments'
 import type { FetchCommentsParams } from '../../../services/comments/fetchComments'
-import dayjs from 'dayjs'
 import { onLoad, onReachBottom, ref } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchComments } from '../../../services/comments/fetchComments'
 import { fetchCommentsCount } from '../../../services/comments/fetchCommentsCount'
+import { formatTime } from '../../../utils/util'
 
 interface QueryOptions {
   spuId?: string
@@ -73,7 +73,7 @@ function normalizeCommentList(list: GoodsCommentItem[]): NormalizedCommentItem[]
     return {
       ...item,
       commentResources: resourceItem.commentResources || resourceItem.commentImageUrls || [],
-      commentTime: dayjs(Number(item.commentTime)).format('YYYY/MM/DD HH:mm'),
+      commentTime: formatTime(Number(item.commentTime), 'YYYY/MM/DD HH:mm'),
     }
   })
 }

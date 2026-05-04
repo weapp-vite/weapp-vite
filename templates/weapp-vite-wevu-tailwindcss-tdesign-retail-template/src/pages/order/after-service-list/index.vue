@@ -188,6 +188,10 @@ function onRefresh() {
   void refreshList(curTab.value)
 }
 
+function onTabChange(e: { detail?: { value?: number } }) {
+  void refreshList(e.detail?.value ?? -1)
+}
+
 async function onAfterServiceCardTap(e: { currentTarget?: { dataset?: { order?: AfterServiceListItem } } }) {
   const order = e.currentTarget?.dataset?.order
   if (!order) {
@@ -231,14 +235,35 @@ definePageJson({
     'wr-goods-card': '../components/goods-card/index',
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-empty': 'tdesign-miniprogram/empty/empty',
+    't-tabs': 'tdesign-miniprogram/tabs/tabs',
+    't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
     't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
   },
 })
 </script>
 
 <template>
-  <view class="page-container [&_.order-goods-card-footer]:flex [&_.order-goods-card-footer]:w-[calc(100%-190rpx)] [&_.order-goods-card-footer]:justify-between [&_.order-goods-card-footer]:absolute [&_.order-goods-card-footer]:bottom-[20rpx] [&_.order-goods-card-footer]:left-[190rpx] [&_.order-goods-card-footer_.order-goods-card-footer-num]:text-[#999] [&_.order-goods-card-footer_.order-goods-card-footer-num]:leading-[40rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[36rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[28rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[24rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:font-[DIN_Alternate] [&_.wr-goods-card__specs]:m-[14rpx_20rpx_0_0] [&_.order-card_.header_.store-name]:w-[80%] [&_.order-card_.header_.store-name]:[-webkit-line-clamp:1] [&_.status-desc]:box-border [&_.status-desc]:p-[22rpx_20rpx] [&_.status-desc]:text-[26rpx] [&_.status-desc]:leading-[1.3] [&_.status-desc]:text-left [&_.status-desc]:text-[#333333] [&_.status-desc]:bg-[#f5f5f5] [&_.status-desc]:rounded-[8rpx] [&_.status-desc]:[word-wrap:break-word] [&_.status-desc]:mt-[24rpx] [&_.status-desc]:mb-[20rpx] [&_.header__right]:text-[24rpx] [&_.header__right]:text-[#fa4126] [&_.header__right]:flex [&_.header__right]:items-center [&_.header__right__icon]:text-[#d05b27] [&_.header__right__icon]:text-[16px] [&_.header__right__icon]:mr-[10rpx] [&_.header-class]:mb-[5rpx]">
-    <t-pull-down-refresh id="t-pull-down-refresh" t-class-indicator="t-class-indicator" @refresh="onPullDownRefresh_">
+  <view class="page-container min-h-[100vh] bg-[#f5f5f5] [&_.after-service-tab-bar]:h-[88rpx] [&_.after-service-tab-bar]:leading-[88rpx] [&_.after-service-tab-bar]:bg-white [&_.after-service-tab-bar]:text-[26rpx] [&_.after-service-tab-bar]:text-[#333333] [&_.after-service-tab-active]:text-[28rpx] [&_.order-goods-card-footer]:flex [&_.order-goods-card-footer]:w-[calc(100%-190rpx)] [&_.order-goods-card-footer]:justify-between [&_.order-goods-card-footer]:absolute [&_.order-goods-card-footer]:bottom-[20rpx] [&_.order-goods-card-footer]:left-[190rpx] [&_.order-goods-card-footer_.order-goods-card-footer-num]:text-[#999] [&_.order-goods-card-footer_.order-goods-card-footer-num]:leading-[40rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[36rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[28rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[24rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:font-[DIN_Alternate] [&_.wr-goods-card__specs]:m-[14rpx_20rpx_0_0] [&_.order-card_.header_.store-name]:w-[80%] [&_.order-card_.header_.store-name]:[-webkit-line-clamp:1] [&_.status-desc]:box-border [&_.status-desc]:p-[22rpx_20rpx] [&_.status-desc]:text-[26rpx] [&_.status-desc]:leading-[1.3] [&_.status-desc]:text-left [&_.status-desc]:text-[#333333] [&_.status-desc]:bg-[#f5f5f5] [&_.status-desc]:rounded-[8rpx] [&_.status-desc]:[word-wrap:break-word] [&_.status-desc]:mt-[24rpx] [&_.status-desc]:mb-[20rpx] [&_.header__right]:text-[24rpx] [&_.header__right]:text-[#fa4126] [&_.header__right]:flex [&_.header__right]:items-center [&_.header__right__icon]:text-[#d05b27] [&_.header__right__icon]:text-[16px] [&_.header__right__icon]:mr-[10rpx] [&_.header-class]:mb-[5rpx]">
+    <t-tabs
+      t-class="after-service-tab-bar [&_.t-tabs-is-active]:[color:#fa4126] [&_.t-tabs-track]:[background:#fa4126]"
+      t-class-active="after-service-tab-active"
+      t-class-track="t-tabs-track"
+      :value="curTab"
+      @change="onTabChange"
+    >
+      <t-tab-panel
+        v-for="(item, index) in tabs"
+        :key="index"
+        :label="item.text || ''"
+        :value="item.key"
+      />
+    </t-tabs>
+    <t-pull-down-refresh
+      id="t-pull-down-refresh"
+      style="height: 100vh"
+      t-class-indicator="t-class-indicator"
+      @refresh="onPullDownRefresh_"
+    >
       <wr-order-card
         v-for="order in dataList"
         :key="order.id"
@@ -298,9 +323,12 @@ definePageJson({
         <!-- 空态 -->
         <template #empty>
           <view class="empty-wrapper h-[calc(100vh-88rpx)]">
-            <t-empty size="240rpx" textColor="#999999" textSize="28rpx" :src="emptyImg">
-              暂无退款或售后申请记录
-            </t-empty>
+            <t-empty
+              size="240rpx"
+              t-class-description="text-[#999999] text-[28rpx]"
+              :src="emptyImg"
+              description="暂无退款或售后申请记录"
+            />
           </view>
         </template>
       </wr-load-more>

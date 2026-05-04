@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { computed, ref, watch } from 'wevu'
+import { formatTime } from '../../../../utils/util'
 import { couponsData } from './mock'
 
 interface PromotionGoodsItem {
@@ -128,7 +128,7 @@ function initData(data: CouponResponse) {
       key: couponVO.couponId,
       title: couponVO.name || '',
       isSelected,
-      timeLimit: `${dayjs(Number(couponVO.startTime || 0)).format('YYYY-MM-DD')}-${dayjs(Number(couponVO.endTime || 0)).format('YYYY-MM-DD')}`,
+      timeLimit: `${formatTime(Number(couponVO.startTime || 0), 'YYYY-MM-DD')}-${formatTime(Number(couponVO.endTime || 0), 'YYYY-MM-DD')}`,
       value: couponVO.type === 2 ? Number(couponVO.value || 0) / 100 : Number(couponVO.value || 0) / 10,
       status: status === -1 ? 'useless' : 'default',
       desc: couponVO.condition || '',

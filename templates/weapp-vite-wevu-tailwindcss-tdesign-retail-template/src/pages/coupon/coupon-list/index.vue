@@ -83,54 +83,60 @@ definePageJson({
     't-tabs': 'tdesign-miniprogram/tabs/tabs',
     't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
     't-icon': 'tdesign-miniprogram/icon/icon',
+    't-empty': 'tdesign-miniprogram/empty/empty',
     'coupon-card': '../components/coupon-card/index',
   },
 })
 </script>
 
 <template>
-  <t-tabs
-    :defaultValue="status"
-    :tabList="list"
-    t-class="tabs-external__inner [height:88rpx] [width:100%] [line-height:88rpx] [z-index:100] [font-size:26rpx] [color:#333333] [position:fixed] [width:100vw] [top:0] [left:0] [&_.tabs-external__track]:[background:#fa4126] [&_.tabs-external__item]:[color:#666] [&_.tabs-external__active]:[font-size:28rpx] [&_.tabs-external__active]:[color:#fa4126] [&_.order-nav_.order-nav-item_.bottom-line]:[bottom:12rpx]"
-    t-class-item="tabs-external__item"
-    t-class-active="tabs-external__active"
-    t-class-track="tabs-external__track"
-    @change="tabChange"
-  >
-    <t-tab-panel
-      v-for="tab in list"
-      :key="tab.key"
-      :label="tab.text || ''"
-      :value="tab.key"
-    />
-  </t-tabs>
-  <view
-    class="coupon-list-wrap mt-[32rpx] mx-[32rpx] overflow-y-auto [-webkit-overflow-scrolling:touch] [&_.t-pull-down-refresh__bar]:[background:#fff]"
-    style="padding-bottom: 100rpx; padding-bottom: calc(constant(safe-area-inset-top) + 100rpx); padding-bottom: calc(env(safe-area-inset-bottom) + 100rpx);"
-  >
-    <t-pull-down-refresh
-      id="t-pull-down-refresh"
-      t-class-indicator="t-class-indicator"
-      background="#fff"
-      @refresh="onPullDownRefresh_"
+  <view class="coupon-page min-h-[100vh] bg-[#f5f5f5] pb-[calc(env(safe-area-inset-bottom)+120rpx)]">
+    <t-tabs
+      :value="status"
+      :tabList="list"
+      t-class="tabs-external__inner [height:88rpx] [width:100%] [line-height:88rpx] [z-index:10] [font-size:26rpx] [color:#333333] [background:#fff] [&_.tabs-external__track]:[background:#fa4126] [&_.tabs-external__item]:[color:#666] [&_.tabs-external__active]:[font-size:28rpx] [&_.tabs-external__active]:[color:#fa4126] [&_.order-nav_.order-nav-item_.bottom-line]:[bottom:12rpx]"
+      t-class-item="tabs-external__item"
+      t-class-active="tabs-external__active"
+      t-class-track="tabs-external__track"
+      @change="tabChange"
     >
-      <view v-for="item in couponList" :key="item.key" class="coupon-list-item">
-        <coupon-card :couponDTO="item" />
-      </view>
-    </t-pull-down-refresh>
+      <t-tab-panel
+        v-for="tab in list"
+        :key="tab.key"
+        :label="tab.text || ''"
+        :value="tab.key"
+      />
+    </t-tabs>
     <view
-      class="center-entry box-content [border-top:1rpx_solid_#dce0e4] bg-white fixed bottom-0 inset-x-0 h-[100rpx]"
-      style="padding-bottom: 0; padding-bottom: constant(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
+      class="coupon-list-wrap mt-[32rpx] mx-[32rpx] overflow-y-auto [-webkit-overflow-scrolling:touch] [&_.t-pull-down-refresh__bar]:[background:#fff]"
     >
-      <view class="center-entry-btn text-[#fa4126] text-[28rpx] text-center leading-[100rpx] flex items-center justify-center h-[100rpx]" @tap="goCouponCenterHandle">
-        <view>领券中心</view>
-        <t-icon
-          name="chevron-right"
-          color="#fa4126"
-          size="40rpx"
-          style="line-height: 28rpx;"
-        />
+      <t-pull-down-refresh
+        id="t-pull-down-refresh"
+        style="height: 100vh"
+        t-class-indicator="t-class-indicator"
+        background="#fff"
+        @refresh="onPullDownRefresh_"
+      >
+        <view v-for="item in couponList" :key="item.key" class="coupon-list-item">
+          <coupon-card :couponDTO="item" />
+        </view>
+        <view v-if="couponList.length === 0" class="empty-wrapper h-[calc(100vh-88rpx)]">
+          <t-empty description="暂无可用优惠券" />
+        </view>
+      </t-pull-down-refresh>
+      <view
+        class="center-entry box-content bg-white h-[100rpx]"
+        style="position: fixed; right: 0; bottom: 0; left: 0; z-index: 80; padding-bottom: 0; padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); border-top: 1rpx solid #dce0e4;"
+      >
+        <view class="center-entry-btn text-[#fa4126] text-[28rpx] text-center leading-[100rpx] flex items-center justify-center h-[100rpx]" @tap="goCouponCenterHandle">
+          <view>领券中心</view>
+          <t-icon
+            name="chevron-right"
+            color="#fa4126"
+            size="40rpx"
+            style="line-height: 28rpx;"
+          />
+        </view>
       </view>
     </view>
   </view>

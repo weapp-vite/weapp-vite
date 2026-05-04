@@ -1,11 +1,9 @@
 import type { RightsListResult } from '../after-service-list/api'
-import dayjs from 'dayjs'
 import { mockIp, mockReqId } from '../../../utils/mock'
+import { formatTime } from '../../../utils/util'
 import { resp } from '../after-service-list/api'
 
-export function formatTime(date: string | number | Date, template: string) {
-  return dayjs(date).format(template)
-}
+export { formatTime }
 
 export function getRightsDetail({ rightsNo }: { rightsNo?: string }) {
   const _resq = {

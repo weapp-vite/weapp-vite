@@ -437,7 +437,12 @@ definePageJson({
 </script>
 
 <template>
-  <t-pull-down-refresh id="t-pull-down-refresh" t-class-indicator="t-class-indicator" @refresh="onPullDownRefresh_">
+  <t-pull-down-refresh
+    id="t-pull-down-refresh"
+    style="height: 100vh"
+    t-class-indicator="t-class-indicator"
+    @refresh="onPullDownRefresh_"
+  >
     <!-- 页面内容 -->
     <view :class="orderDetailPageClass">
       <view class="header">

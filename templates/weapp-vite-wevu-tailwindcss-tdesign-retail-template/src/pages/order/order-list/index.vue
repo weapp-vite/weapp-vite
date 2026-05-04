@@ -240,15 +240,13 @@ definePageJson({
 </script>
 
 <template>
-  <view class="page-container [&_.tab-bar__placeholder]:h-[88rpx] [&_.tab-bar__placeholder]:leading-[88rpx] [&_.tab-bar__placeholder]:[background:#fff] [&_.tab-bar__inner]:h-[88rpx] [&_.tab-bar__inner]:leading-[88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:text-[26rpx] [&_.tab-bar__inner]:text-[#333333] [&_.tab-bar__inner]:fixed [&_.tab-bar__inner]:w-screen [&_.tab-bar__inner]:top-0 [&_.tab-bar__inner]:left-0 [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:bottom-[12rpx] [&_.tab-bar__active]:text-[28rpx] [&_.specs-popup_.bottom-btn]:text-(--color-primary,#fa4126) [&_.order-number]:text-[#666666] [&_.order-number]:text-[28rpx]">
+  <view class="page-container min-h-[100vh] bg-[#f5f5f5] [&_.tab-bar__inner]:h-[88rpx] [&_.tab-bar__inner]:leading-[88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:text-[26rpx] [&_.tab-bar__inner]:text-[#333333] [&_.tab-bar__inner]:w-screen [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:bottom-[12rpx] [&_.tab-bar__active]:text-[28rpx] [&_.specs-popup_.bottom-btn]:text-(--color-primary,#fa4126) [&_.order-number]:text-[#666666] [&_.order-number]:text-[28rpx]">
     <view class="tab-bar [&_.tab-bar__active]:text-[#333333] [&_.t-tabs-track]:[background:#333333]">
-      <view class="tab-bar__placeholder" />
       <t-tabs
         t-class="tab-bar__inner [&_.t-tabs-is-active]:[color:#fa4126] [&_.t-tabs-track]:[background:#fa4126]"
         t-class-active="tab-bar__active"
         t-class-track="t-tabs-track"
         :value="status"
-        style="position: fixed; top: 0; left: 0; z-index: 100"
         @change="onTabChange"
       >
         <t-tab-panel
@@ -267,6 +265,7 @@ definePageJson({
       background="#f5f5f5"
       use-loading-slot
       loading-size="60rpx"
+      style="height: 100vh"
       t-class-indicator="t-class-indicator"
       @refresh="onPullDownRefresh_"
     >
@@ -323,9 +322,7 @@ definePageJson({
         <!-- 空态 -->
         <template #empty>
           <view class="empty-wrapper h-[calc(100vh-88rpx)]">
-            <t-empty t-class="t-empty-text [font-size:28rpx] [color:#999]" :src="emptyImg">
-              暂无相关订单
-            </t-empty>
+            <t-empty t-class-description="t-empty-text [font-size:28rpx] [color:#999]" :src="emptyImg" description="暂无相关订单" />
           </view>
         </template>
       </load-more>

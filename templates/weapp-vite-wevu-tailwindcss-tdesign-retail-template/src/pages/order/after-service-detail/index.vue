@@ -291,7 +291,12 @@ definePageJson({
 <template>
   <wr-loading-content v-if="pageLoading" position="fixed" type="spinner" />
   <view :class="afterServicePageClass">
-    <t-pull-down-refresh id="t-pull-down-refresh" t-class-indicator="t-class-indicator" @refresh="onPullDownRefresh_">
+    <t-pull-down-refresh
+      id="t-pull-down-refresh"
+      style="height: 100vh"
+      t-class-indicator="t-class-indicator"
+      @refresh="onPullDownRefresh_"
+    >
       <!-- 页面内容 -->
       <view :class="serviceDetailClass">
         <!-- 状态及描述 -->

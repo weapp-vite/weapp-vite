@@ -7,11 +7,6 @@ export default () => {
 
   const updateManager = wpi.getUpdateManager()
 
-  updateManager.onCheckForUpdate((res) => {
-    // 请求完新版本信息的回调
-    console.log('版本信息', res)
-  })
-
   updateManager.onUpdateReady(async () => {
     const res = await wpi.showModal({
       title: '更新提示',
