@@ -2,6 +2,25 @@
 import { wpi } from 'wevu/api'
 import TabMenu from './data'
 
+interface TabChangeEvent {
+  detail?: {
+    value?: number | string
+  }
+  value?: number | string
+  currentTarget?: {
+    dataset?: {
+      index?: number | string
+      value?: number | string
+    }
+  }
+  target?: {
+    dataset?: {
+      index?: number | string
+      value?: number | string
+    }
+  }
+}
+
 defineOptions({
   data() {
     return {
@@ -10,12 +29,25 @@ defineOptions({
     }
   },
   methods: {
-    async onChange(event) {
+    async onChange(event: TabChangeEvent) {
+      const value = event.detail?.value
+        ?? event.value
+        ?? event.currentTarget?.dataset?.value
+        ?? event.currentTarget?.dataset?.index
+        ?? event.target?.dataset?.value
+        ?? event.target?.dataset?.index
+      const active = Number(value)
+      const item = this.data.list[active]
+
+      if (!Number.isInteger(active) || !item) {
+        return
+      }
+
       this.setData({
-        active: event.detail.value,
+        active,
       })
       await wpi.switchTab({
-        url: this.data.list[event.detail.value].url.startsWith('/') ? this.data.list[event.detail.value].url : `/${this.data.list[event.detail.value].url}`,
+        url: item.url.startsWith('/') ? item.url : `/${item.url}`,
       })
     },
     init() {
@@ -23,7 +55,7 @@ defineOptions({
       const route = page ? page.route.split('?')[0] : ''
       const active = this.data.list.findIndex(item => (item.url.startsWith('/') ? item.url.substr(1) : item.url) === `${route}`)
       this.setData({
-        active,
+        active: active === -1 ? 0 : active,
       })
     },
   },
@@ -48,6 +80,7 @@ defineComponentJson({
     <t-tab-bar-item
       v-for="(item, index) in list"
       :key="index"
+      :value="index"
     >
       <view class="custom-tab-bar-wrapper flex flex-col items-center [&_.text]:text-[20rpx]">
         <t-icon prefix="wr" :name="item.icon" size="48rpx" />
