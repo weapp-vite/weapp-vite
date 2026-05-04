@@ -191,6 +191,13 @@
           "pendingCount": 74,
           "emittedCount": 74,
           "impactFiles": 5
+        },
+        "vue-style": {
+          "totalMs": 3055,
+          "dirtyCount": 1,
+          "pendingCount": 74,
+          "emittedCount": 74,
+          "impactFiles": 5
         }
       }
     },

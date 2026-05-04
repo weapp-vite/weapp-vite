@@ -81,7 +81,7 @@
     "benchmark:hmr:lab": "tsx ./scripts/benchmark-hmr-lab.ts",
     "benchmark:hmr:single": "tsx ./scripts/benchmark-template-hmr.ts",
     "audit:hmr:smoke": "cross-env WORKSPACE_HMR_MODE=smoke WORKSPACE_HMR_FAIL_ON_ERROR=1 tsx ./scripts/audit-workspace-hmr.ts",
-    "audit:hmr:changed": "cross-env WORKSPACE_HMR_MODE=changed-project WORKSPACE_HMR_FAIL_ON_ERROR=1 tsx ./scripts/audit-workspace-hmr.ts",
+    "audit:hmr:changed": "cross-env WORKSPACE_HMR_MODE=changed-project WORKSPACE_HMR_FAIL_ON_ERROR=1 WORKSPACE_HMR_MAX_SCENARIO_MS=15000 WORKSPACE_HMR_MAX_REGRESSION_MS=12000 WORKSPACE_HMR_MAX_PENDING_COUNT=16 WORKSPACE_HMR_MAX_EMITTED_COUNT=16 WORKSPACE_HMR_MAX_PENDING_DELTA=8 WORKSPACE_HMR_MAX_EMITTED_DELTA=8 tsx ./scripts/audit-workspace-hmr.ts",
     "audit:hmr:nightly": "cross-env WORKSPACE_HMR_MODE=nightly-full WORKSPACE_HMR_FAIL_ON_ERROR=1 tsx ./scripts/audit-workspace-hmr.ts",
     "audit:hmr:baseline": "cross-env WORKSPACE_HMR_MODE=smoke WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT=99 WORKSPACE_HMR_WRITE_BASELINE=1 tsx ./scripts/audit-workspace-hmr.ts",
     "e2e:u": "cross-env E2E_FULL_MATRIX=1 vitest run -u -c ./e2e/vitest.e2e.config.ts",
