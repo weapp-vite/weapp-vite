@@ -126,6 +126,23 @@ const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }>
   alipay: { template: 'axml', style: 'acss' },
 }
 const SOURCE_DIRS = ['src', 'miniprogram', '.'] as const
+const WORKSPACE_HMR_IMPACT_PATH_PREFIXES = [
+  '@weapp-core/',
+  'packages/weapp-vite/src/',
+  'packages/rolldown-require/src/',
+  'packages-runtime/weapi/src/',
+  'packages-runtime/web/src/',
+  'packages-runtime/web-apis/src/',
+  'packages-runtime/wevu/src/',
+  'packages-runtime/wevu-compiler/src/',
+]
+const WORKSPACE_HMR_IMPACT_FILES = new Set([
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'turbo.json',
+  'scripts/workspace-hmr/templates-baseline.json',
+])
 const SKIPPED_PROJECT_IDS = new Set([
   'apps/api-extractor-vue-types-demo',
   'apps/playground',
@@ -209,10 +226,32 @@ async function selectProjectsForRunMode(projects: ProjectCase[]) {
       process.stdout.write(`[workspace-hmr] changed projects: ${selected.map(project => project.id).join(', ')}\n`)
       return selected
     }
-    process.stdout.write('[workspace-hmr] no changed runnable projects detected; falling back to smoke templates\n')
-    return selectSmokeProjects(projects)
+    if (shouldFallbackToSmokeForChangedFiles(changedFiles)) {
+      process.stdout.write('[workspace-hmr] no changed runnable projects detected; falling back to smoke templates\n')
+      return selectSmokeProjects(projects)
+    }
+    process.stdout.write('[workspace-hmr] no workspace HMR relevant changes detected; skipping audit\n')
+    return []
   }
   return projects
+}
+
+export function shouldFallbackToSmokeForChangedFiles(changedFiles: string[]) {
+  if (!changedFiles.length) {
+    return true
+  }
+  return changedFiles.some(file => !isWorkspaceHmrIgnoredChange(file) && (
+    WORKSPACE_HMR_IMPACT_FILES.has(file)
+    || WORKSPACE_HMR_IMPACT_PATH_PREFIXES.some(prefix => file.startsWith(prefix))
+  ))
+}
+
+function isWorkspaceHmrIgnoredChange(file: string) {
+  return (
+    /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
+    || file.startsWith('docs/')
+    || file.endsWith('.md')
+  )
 }
 
 function selectSmokeProjects(projects: ProjectCase[]) {
