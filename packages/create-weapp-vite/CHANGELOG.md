@@ -1,5 +1,27 @@
 # create-weapp-vite
 
+## 2.3.17
+
+### Patch Changes
+
+- 🐛 **为 streamable-http MCP 服务新增 DevTools runtime REST 接口，支持通过 HTTP 连续连接、跳转、截图、读取页面信息和日志，并让 `weapp-vite` 的 MCP 配置与 CLI 支持 `restEndpoint` 开关。** [`bc7e9e3`](https://github.com/weapp-vite/weapp-vite/commit/bc7e9e351d55811781a8aad71815f100cd71a59b) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 中组件节点 `@click` 被错误编译成原生 `tap` 的问题，保留组件自定义 `click` 事件，恢复零售模板中 TDesign 与业务组件的点击交互链路。** [`be38f06`](https://github.com/weapp-vite/weapp-vite/commit/be38f06e2e7d0997c25299ef96f6d52432a99ee8) by @sonofmagic
+
+- 🐛 **移除零售模板运行时的直接控制台 warning，并关闭模板构建中的插件耗时提示，减少生产模板在开发者工具控制台中的噪音。** [`a706af3`](https://github.com/weapp-vite/weapp-vite/commit/a706af391340b03b9913f69a731db5bb7009cca5) by @sonofmagic
+
+- 🐛 **将 TDesign 零售模板默认切换为 Skyline 渲染引擎，并同步启用 GlassEasel 组件框架、Skyline 渲染参数与 Skyline 下的关键组件样式兜底。** [`e8e4112`](https://github.com/weapp-vite/weapp-vite/commit/e8e411289940510fbdf720e4004756d7d93fc38b) by @sonofmagic
+
+- 🐛 **修复托管 TypeScript 与 Volar 配置：`.weapp-vite/tsconfig.shared.json` 现在固定作为只引用空占位声明的空 project 输出，避免被根 solution references 单独加载时隐式包含全仓库声明文件；模板 VS Code 设置同步启用 Vue Official hybrid mode，提升 `.vue` 文件的 project 归属和跳转稳定性。** [`2559227`](https://github.com/weapp-vite/weapp-vite/commit/2559227f502d4dec14c3857090f9ff5919b10682) by @sonofmagic
+
+- 🐛 **完善零售模板的微信开发者工具启动场景与生产化默认配置，补齐缺失页面入口，修复 Skyline 下订单、售后与优惠券页面内容展示，并移除未使用的旧地址工具与调试日志。** [`6c02e4b`](https://github.com/weapp-vite/weapp-vite/commit/6c02e4b78380e4fe6d42e348999e7e51d7d1bf73) by @sonofmagic
+
+- 🐛 **为 wevu 增加小程序宿主查询、元素可见性观察、页面栈和自定义导航栏尺寸的通用组合式 API，并让零售模板复用这些能力，减少模板内重复的宿主垫片代码。** [`8197dea`](https://github.com/weapp-vite/weapp-vite/commit/8197deab7658d747bfad197898122cd30cb8167c) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加通用的 `useAsyncPullDownRefresh()` 与 `useChangeModel()`，将模板和示例中重复的下拉刷新停止逻辑、TDesign `change` 表单绑定垫片收敛到运行时核心能力，减少业务模板需要维护的宿主胶水代码。同时为 `weapp-vite prepare` 增加平台参数，让多平台项目可以生成带平台上下文的 `.weapp-vite` 类型支持文件。** [`9337b2d`](https://github.com/weapp-vite/weapp-vite/commit/9337b2d99d815ac4f0190e7980520f73351343aa) by @sonofmagic
+
+- 🐛 **修复零售模板自定义 tabbar 在 TDesign 事件对象缺少 `detail.value` 时点击崩溃的问题，并为 tabbar item 固定稳定的索引值。** [`7d832aa`](https://github.com/weapp-vite/weapp-vite/commit/7d832aaaa0e67ce7298bde072e1d232d3b138f2a) by @sonofmagic
+
 ## 2.3.16
 
 ### Patch Changes

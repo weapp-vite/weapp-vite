@@ -1,5 +1,15 @@
 # @weapp-vite/mcp
 
+## 1.3.1
+
+### Patch Changes
+
+- 🐛 **修复 DevTools console 日志启用超时时可能导致常驻 MCP/REST 服务退出的问题，并让 streamable-http MCP 服务使用带会话的 transport，确保标准 MCP client 可以完成初始化和工具发现。** [`6e78d57`](https://github.com/weapp-vite/weapp-vite/commit/6e78d570d4dbf459397410e0c17f8ca2ebafe873) by @sonofmagic
+
+- 🐛 **为 streamable-http MCP 服务新增 DevTools runtime REST 接口，支持通过 HTTP 连续连接、跳转、截图、读取页面信息和日志，并让 `weapp-vite` 的 MCP 配置与 CLI 支持 `restEndpoint` 开关。** [`bc7e9e3`](https://github.com/weapp-vite/weapp-vite/commit/bc7e9e351d55811781a8aad71815f100cd71a59b) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/devtools-runtime@0.2.1`
+
 ## 1.3.0
 
 ### Minor Changes

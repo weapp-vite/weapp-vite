@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.16.3
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 中组件节点 `@click` 被错误编译成原生 `tap` 的问题，保留组件自定义 `click` 事件，恢复零售模板中 TDesign 与业务组件的点击交互链路。** [`be38f06`](https://github.com/weapp-vite/weapp-vite/commit/be38f06e2e7d0997c25299ef96f6d52432a99ee8) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.3`
+
 ## 6.16.2
 
 ### Patch Changes
