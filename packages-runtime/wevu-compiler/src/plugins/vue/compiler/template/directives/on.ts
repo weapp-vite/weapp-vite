@@ -83,7 +83,9 @@ export function transformOnDirective(
   const isInlineExpression = inlineSource && !isSimpleHandler(inlineSource)
   const inlineExpression = isInlineExpression ? registerInlineExpression(inlineSource, context) : null
 
-  const mappedEvent = context.platform.mapEventName(argValue)
+  const mappedEvent = options?.isComponent === true
+    ? argValue
+    : context.platform.mapEventName(argValue)
   const eventSuffix = normalizeEventDatasetSuffix(mappedEvent)
   const eventPrefix = resolveEventPrefix(node.modifiers)
   const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)

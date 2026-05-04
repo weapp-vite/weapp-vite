@@ -492,6 +492,23 @@ describe('compileVueTemplateToWxml', () => {
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
   })
 
+  it('preserves component click as a custom event while native nodes map click to tap', () => {
+    const template = `
+<view @click="onNativeClick" />
+<CompatAltPanel @click="onPanelClick" @tap="onPanelTap" />
+    `.trim()
+
+    const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<view bindtap="onNativeClick" />')
+    expect(code).toContain('bindclick="__weapp_vite_inline"')
+    expect(code).toContain('bindtap="__weapp_vite_inline"')
+    expect(code).toContain('data-wd-click="1"')
+    expect(code).toContain('data-wd-tap="1"')
+    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelClick($event)')
+    expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelTap($event)')
+  })
+
   it('marks component inline events to use detail payload semantics', () => {
     const template = `
 <CompatAltPanel @run="onPanelRun($event)" />

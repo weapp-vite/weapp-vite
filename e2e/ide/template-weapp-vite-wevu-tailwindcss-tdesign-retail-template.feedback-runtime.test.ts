@@ -11,6 +11,8 @@ const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
 const LAUNCH_WARMUP_ROUTE = '/pages/category/index'
 const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
+const HOME_ROUTE = '/pages/home/home'
+const GOODS_DETAIL_PATH = 'pages/goods/details/index'
 
 async function runBuild() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -104,6 +106,38 @@ function attachConsoleWarningCollector(miniProgram: any) {
   }
 }
 
+async function waitForHomeGoodsReady(page: any, timeoutMs = 10_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const goodsList = await page.data('goodsList').catch(() => [])
+    const goodsCard = await page.$('goods-card')
+    if (Array.isArray(goodsList) && goodsList.length > 0 && goodsCard) {
+      return goodsCard
+    }
+    await page.waitFor(200)
+  }
+  return null
+}
+
+async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 8_000) {
+  const normalizedExpectedPath = expectedPath.replace(/^\/+/, '')
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const currentPage = await miniProgram.currentPage()
+      const currentPath = String(currentPage?.path ?? '').replace(/^\/+/, '')
+      if (currentPath === normalizedExpectedPath) {
+        return currentPage
+      }
+    }
+    catch {
+      // 页面切换窗口期 currentPage 可能短暂不可读，继续轮询。
+    }
+    await sleep(200)
+  }
+  return null
+}
+
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -132,6 +166,33 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     }
     finally {
       warningCollector.dispose()
+      collector.dispose()
+    }
+  })
+
+  it('navigates from home goods card through component click event wiring', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+
+    try {
+      const page = await miniProgram.reLaunch(HOME_ROUTE)
+      if (!page) {
+        throw new Error(`Failed to launch route: ${HOME_ROUTE}`)
+      }
+
+      const goodsCard = await waitForHomeGoodsReady(page)
+      if (!goodsCard) {
+        throw new Error('Failed to find goods-card on home page')
+      }
+
+      const marker = collector.mark()
+      await goodsCard.tap()
+      const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH)
+
+      expect(detailPage?.path).toBe(GOODS_DETAIL_PATH)
+      expect(collector.getSince(marker)).toEqual([])
+    }
+    finally {
       collector.dispose()
     }
   })
