@@ -98,11 +98,91 @@ keywords:
 - 用途：创建绑定 payload（`value + onXxx`）辅助函数。
 - 源码：`runtime/vueCompat.ts`。
 
+### `useChangeModel()` {#usechangemodel}
+
+- 用途：创建默认使用 `change` 事件的 model 绑定辅助函数。
+- 适合：TDesign、Vant 等第三方小程序组件库中大量使用 `change` 事件的表单场景。
+- 行为：等价于 `useBindModel({ event: 'change' }).model(...)` 的收敛写法。
+- 源码：`runtime/vueCompat.ts`。
+
+示例：
+
+```vue
+<script setup lang="ts">
+import { reactive, useChangeModel } from 'wevu'
+
+const formState = reactive({
+  name: '',
+  budget: 0,
+})
+const changeModel = useChangeModel()
+
+const nameModel = changeModel<string>('formState.name')
+const budgetModel = changeModel<number>('formState.budget', {
+  parser: event => Number(event?.detail?.value ?? 0),
+})
+</script>
+
+<template>
+  <t-input v-bind="nameModel" />
+  <t-slider v-bind="budgetModel" />
+</template>
+```
+
 ### `useIntersectionObserver()` {#useintersectionobserver}
 
 - 用途：在 `setup()` 中创建 `IntersectionObserver`，并在卸载时自动 `disconnect()`。
 - 建议：优先用它替代 `onPageScroll + setData` 的可见性轮询逻辑。
 - 源码：`runtime/intersectionObserver.ts`。
+
+### `useElementIntersectionObserver()` {#useelementintersectionobserver}
+
+- 用途：声明式观察当前页面/组件内某个 selector 的可见性，并在卸载时自动断开。
+- 适合：商品卡片曝光、懒加载、可见区域统计。
+- 说明：`selector`、`enabled`、`observerOptions` 支持普通值、Ref 或 getter；当 selector 或 enabled 变化时会自动重新 observe。
+- 源码：`runtime/elementIntersectionObserver.ts`。
+
+示例：
+
+```vue
+<script setup lang="ts">
+import { ref, useElementIntersectionObserver } from 'wevu'
+
+const visible = ref(false)
+
+useElementIntersectionObserver({
+  selector: '#goods-card',
+  relativeToViewport: { bottom: 80 },
+  onObserve(result: any) {
+    visible.value = Number(result?.intersectionRatio ?? 0) > 0
+  },
+})
+</script>
+```
+
+### `useSelectorQuery()` {#useselectorquery}
+
+- 用途：创建绑定当前原生实例的 `SelectorQuery` 工厂。
+- 适合：需要直接调用小程序 `select()` / `selectAll()` / `exec()` 的高级节点查询。
+- 源码：`runtime/selectorQuery.ts`。
+
+### `useBoundingClientRect()` {#useboundingclientrect}
+
+- 用途：创建节点布局查询函数。
+- 说明：默认查询单个节点；传入 `{ all: true }` 时返回节点数组。
+- 源码：`runtime/selectorQuery.ts`。
+
+### `useSelectorFields()` {#useselectorfields}
+
+- 用途：按小程序 `fields()` 语义读取节点字段。
+- 说明：必须显式传入 `fields`，例如 `{ size: true, dataset: true }`。
+- 源码：`runtime/selectorQuery.ts`。
+
+### `useScrollOffset()` {#usescrolloffset}
+
+- 用途：读取 scroll-view 等可滚动节点的滚动位置。
+- 说明：默认查询单个节点；传入 `{ all: true }` 时返回节点数组。
+- 源码：`runtime/selectorQuery.ts`。
 
 ### `useDisposables()` {#usedisposables}
 
@@ -116,6 +196,22 @@ keywords:
 - 说明：这是 `wevu` 根入口的页面运行时辅助能力，常与 Weapp-vite 的 `routeRules.layout`、`definePageMeta({ layout })` 配合。
 - 源码：`runtime/pageLayout.ts`。
 
+### `usePageStack()` / `getCurrentPageStackSnapshot()` {#usepagestack}
+
+- 用途：读取当前小程序页面栈快照。
+- 返回：`currentRoute`、`stackLength`、`canGoBack` 与 `refresh()`。
+- 适合：自定义导航栏返回按钮、页面层级提示、页面栈相关 UI。
+- 说明：`getCurrentPageStackSnapshot()` 可在非响应式场景读取一次性快照；`usePageStack()` 必须在 `setup()` 同步阶段调用。
+- 源码：`runtime/pageEnvironment.ts`。
+
+### `useNavigationBarMetrics()` / `getNavigationBarMetrics()` {#usenavigationbarmetrics}
+
+- 用途：计算自定义导航栏需要的状态栏、导航栏和总高度。
+- 返回：`statusBarHeight`、`navigationBarHeight`、`navigationHeight` 与 `refresh()`。
+- 适合：自定义导航栏布局、沉浸式页面顶部安全区。
+- 说明：读取 `getSystemInfoSync()` 与 `getMenuButtonBoundingClientRect()`；不可用时使用默认高度兜底。
+- 源码：`runtime/pageEnvironment.ts`。
+
 ### `usePageScrollThrottle()` {#usepagescrollthrottle}
 
 - 用途：在 `onPageScroll()` 基础上提供节流包装，并在卸载时自动清理。
@@ -127,6 +223,39 @@ keywords:
 - 用途：注册原生 `setUpdatePerformanceListener` 监听，并在卸载时自动移除。
 - 适合：排查页面/组件更新耗时与更新结果。
 - 源码：`runtime/updatePerformance.ts`。
+
+### `useAsyncPullDownRefresh()` {#useasyncpulldownrefresh}
+
+- 用途：注册异步下拉刷新回调，并在回调结束后自动停止宿主下拉刷新状态。
+- 适合：页面刷新逻辑需要 `await` 请求、错误处理和统一 `stopPullDownRefresh()` 的场景。
+- 说明：默认调用 `wpi.stopPullDownRefresh()`；可通过 `stopPullDownRefresh` 注入自定义停止函数，便于测试或平台差异适配。
+- 源码：`runtime/pullDownRefresh.ts`。
+
+示例：
+
+```vue
+<script setup lang="ts">
+import { ref, useAsyncPullDownRefresh } from 'wevu'
+
+const loading = ref(false)
+
+async function reload() {
+  loading.value = true
+  try {
+    await fetchList()
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+useAsyncPullDownRefresh(reload, {
+  onError(error) {
+    console.warn('refresh failed:', error)
+  },
+})
+</script>
+```
 
 ## 示例
 

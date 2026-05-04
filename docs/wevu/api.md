@@ -9,15 +9,21 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - 应用：`onLaunch`、`onShow`、`onHide`、`onError`、`onPageNotFound`、`onUnhandledRejection`、`onThemeChange`
   - 页面/页面组件：`onLoad`、`onShow`、`onHide`、`onUnload`、`onReady`、`onPullDownRefresh`、`onReachBottom`、`onPageScroll`、`onRouteDone`、`onResize`、`onTabItemTap`、`onShareAppMessage`、`onShareTimeline`、`onAddToFavorites`、`onSaveExitState` 等
 - 响应式与工具
-  - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`readonly`、`getCurrentInstance` 等
+  - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`watchPostEffect`、`watchSyncEffect`、`readonly`、`shallowReadonly`、`getCurrentInstance` 等
 - 双向绑定
   - `bindModel`（setup ctx 上的绑定能力）
   - `useBindModel`（`<script setup>` 里获取 `bindModel` 的便捷方式）
+  - `useChangeModel`（默认使用 `change` 事件的表单绑定便捷方式）
   - 类型：`ModelBindingOptions`、`ModelBindingPayload`
 - Vue `<script setup>` 兼容（用于承接 Vue SFC 编译产物）
-  - `useAttrs`、`useSlots`、`useModel`、`mergeModels`
+  - `useAttrs`、`useSlots`、`useTemplateRef`、`useModel`、`mergeModels`
 - 依赖注入
   - `provide`、`inject` → 参见 wevu/provide-inject.md
+- 小程序宿主组合式 API
+  - 节点查询：`useSelectorQuery`、`useBoundingClientRect`、`useSelectorFields`、`useScrollOffset`
+  - 可见性观察：`useElementIntersectionObserver`
+  - 页面与导航栏：`usePageStack`、`getCurrentPageStackSnapshot`、`useNavigationBarMetrics`、`getNavigationBarMetrics`
+  - 下拉刷新：`useAsyncPullDownRefresh`
 - 状态管理（Store 适配）
   - `createStore`、`defineStore`、`storeToRefs`（主入口导出）→ 参见 Store 章节
 
@@ -57,9 +63,17 @@ import {
   readonly, // 响应式与工具
   ref,
   storeToRefs,
+  useAsyncPullDownRefresh,
   useBindModel,
+  useBoundingClientRect,
+  useChangeModel,
+  useElementIntersectionObserver,
+  useNavigationBarMetrics,
+  usePageStack,
   watch,
-  watchEffect
+  watchEffect,
+  watchPostEffect,
+  watchSyncEffect
 } from 'wevu'
 ```
 
@@ -94,3 +108,16 @@ import {
 
 - 返回一个绑定到当前运行时实例的 `bindModel` 方法（必须在 `setup()` 同步阶段调用）
 - 适用于 `<script setup>` 写法，避免直接访问内部的 `__wevu`
+
+### `useChangeModel()`
+
+- 返回一个默认使用 `change` 事件的绑定函数
+- 适合 TDesign、Vant 等第三方小程序组件库里的表单项
+
+```ts
+import { reactive, useChangeModel } from 'wevu'
+
+const form = reactive({ name: '' })
+const changeModel = useChangeModel()
+const nameModel = changeModel<string>('form.name')
+```

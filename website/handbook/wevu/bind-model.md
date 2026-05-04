@@ -158,6 +158,39 @@ const onAttachmentsChange = bindModel<UploadFile[]>('form.attachments').model({
 
 如果表单只有两三个简单字段，直接 `v-model` 更直观，不需要上 `bindModel`。
 
+## useChangeModel：第三方组件库的 change 事件快捷写法
+
+很多小程序组件库默认用 `change` 事件更新表单项。此时可以用 `useChangeModel()` 少写一层默认配置：
+
+```vue
+<script setup lang="ts">
+import { reactive, useChangeModel } from 'wevu'
+
+const form = reactive({
+  name: '',
+  budget: 0,
+})
+
+const changeModel = useChangeModel()
+const nameModel = changeModel<string>('form.name')
+const budgetModel = changeModel<number>('form.budget', {
+  parser: event => Number(event?.detail?.value ?? 0),
+})
+</script>
+
+<template>
+  <t-input v-bind="nameModel" />
+  <t-slider v-bind="budgetModel" />
+</template>
+```
+
+它等价于：
+
+```ts
+const bindModel = useBindModel({ event: 'change' })
+const nameModel = bindModel.model<string>('form.name')
+```
+
 ## 接下来
 
 写页面和理解运行时的基本功到这里差不多了。接下来开始做业务：

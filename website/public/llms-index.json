@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-03T07:54:06.743Z",
+  "generatedAt": "2026-05-04T08:57:11.764Z",
   "site": "https://vite.icebreaker.top",
   "count": 262,
   "items": [
@@ -797,7 +797,7 @@
         "weapp.mcp {#weapp-mcp}",
         "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-05-02",
+      "updatedAt": "2026-05-04",
       "source": "config/shared.md"
     },
     {
@@ -862,7 +862,7 @@
         "常见问题",
         "为什么改了配置后编辑器还没提示"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-05-04",
       "source": "config/typescript.md"
     },
     {
@@ -2086,7 +2086,7 @@
         "5.1 优先级",
         "6. 运行时怎么切换 layout"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-05-03",
       "source": "guide/layouts.md"
     },
     {
@@ -3294,9 +3294,10 @@
         "自定义组件支持 v-model",
         "表单校验怎么组织",
         "bindModel：表单字段多了以后怎么收口",
+        "useChangeModel：第三方组件库的 change 事件快捷写法",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-04",
       "source": "handbook/wevu/bind-model.md"
     },
     {
@@ -3362,8 +3363,9 @@
         "runtime",
         "响应式",
         "生命周期",
+        "微信小程序",
         "运行时",
-        "响应式和生命周期"
+        "api"
       ],
       "headings": [
         "响应式和生命周期",
@@ -3377,9 +3379,9 @@
         "App hooks",
         "hooks 必须同步注册",
         "一个完整的页面示例",
-        "接下来"
+        "小程序宿主组合式 API"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-04",
       "source": "handbook/wevu/runtime.md"
     },
     {
@@ -6009,7 +6011,7 @@
         "defineModel() {#definemodel}",
         "defineOptions() {#defineoptions}"
       ],
-      "updatedAt": "2026-04-08",
+      "updatedAt": "2026-05-04",
       "source": "wevu/api/core.md"
     },
     {
@@ -6080,12 +6082,12 @@
         "shallowRef() {#shallowref}",
         "shallowReactive() {#shallowreactive}",
         "readonly() {#readonly}",
+        "shallowReadonly() {#shallowreadonly}",
         "computed() {#computed}",
         "监听与副作用",
-        "watch() {#watch}",
-        "watchEffect() {#watcheffect}"
+        "watch() {#watch}"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-05-04",
       "source": "wevu/api/reactivity.md"
     },
     {
@@ -6115,10 +6117,10 @@
         "调试记录",
         "addMutationRecorder() {#addmutationrecorder}",
         "removeMutationRecorder() {#removemutationrecorder}",
-        "子路径边界",
-        "示例"
+        "页面布局桥接",
+        "setPageLayout() / usePageLayout() {#pagelayout}"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-05-04",
       "source": "wevu/api/runtime-bridge.md"
     },
     {
@@ -6148,7 +6150,7 @@
         "useNativeRouter() {#usenativerouter}",
         "useNativePageRouter() {#usenativepagerouter}"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-05-04",
       "source": "wevu/api/setup-context.md"
     },
     {
@@ -6190,6 +6192,7 @@
         "api",
         "reference",
         "types",
+        "微信小程序",
         "配置",
         "运行时",
         "type"
@@ -6202,13 +6205,13 @@
         "ComponentDefinition {#componentdefinition}",
         "SetupContext {#setupcontext}",
         "RuntimeInstance {#runtimeinstance}",
+        "MiniProgram* / HostMiniProgram* {#miniprogram-types}",
         "响应式与监听",
         "Ref {#ref-type}",
         "ShallowRef {#shallowref-type}",
-        "WatchOptions {#watchoptions}",
-        "WatchStopHandle {#watchstophandle}"
+        "WatchOptions {#watchoptions}"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-05-04",
       "source": "wevu/api/types.md"
     },
     {

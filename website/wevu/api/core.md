@@ -86,6 +86,34 @@ defineOptions({
 </script>
 ```
 
+### `definePageMeta()` {#definepagemeta}
+
+- 类型入口：`PageMeta` / `PageLayoutMeta`
+- 用途：在 `<script setup>` 中声明页面级元信息。
+- 说明：常用于声明页面 `layout`，与 Weapp-vite 的自动路由、`routeRules.layout` 和运行时 `setPageLayout()` 保持同一套页面壳心智。
+
+示例：
+
+```vue
+<script setup lang="ts">
+definePageMeta({
+  layout: 'default',
+})
+</script>
+```
+
+### `defineAppSetup()` {#defineappsetup}
+
+- 类型入口：`RuntimeApp`
+- 用途：声明 App 级 setup 初始化逻辑。
+- 说明：适合把插件安装、全局 provide、全局 router 初始化等 App 级逻辑收敛到一个同步入口。
+
+### `use()` {#use}
+
+- 类型入口：`WevuPlugin`
+- 用途：安装 Wevu 插件。
+- 说明：可在 App setup 或受控初始化逻辑中使用；插件如果需要注册 hook，仍必须保持同步注册。
+
 ### `mergeModels()` {#mergemodels}
 
 - 类型入口：`ModelBindingPayload`

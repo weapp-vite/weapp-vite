@@ -36,6 +36,12 @@ keywords:
 
 页面/组件运行时实例类型。
 
+### `MiniProgram*` / `HostMiniProgram*` {#miniprogram-types}
+
+小程序宿主中立类型与底层宿主类型别名，例如 `MiniProgramRouter`、`MiniProgramSelectorQuery`、`MiniProgramIntersectionObserver`、`MiniProgramBoundingClientRectResult`、`HostMiniProgramPageScrollOption`。
+
+推荐业务代码优先使用 `MiniProgram*` 命名；只有在明确需要表达底层宿主来源时再使用 `HostMiniProgram*`。
+
 ## 响应式与监听
 
 ### `Ref` {#ref-type}
@@ -86,9 +92,33 @@ store mutation 类型。
 
 `defineModel/useModel/useBindModel` 相关绑定类型。
 
+### `ModelBindingOptions` / `ModelBindingPayload` {#modelbindingpayload}
+
+`useBindModel()`、`useChangeModel()` 生成 value + handler payload 时使用的参数与返回类型。
+
 ### `TriggerEventOptions` {#triggereventoptions}
 
 事件触发选项类型。
+
+### `UseElementIntersectionObserverOptions` {#useelementintersectionobserveroptions}
+
+`useElementIntersectionObserver()` 的参数类型。
+
+### `UseBoundingClientRectOptions` / `UseSelectorFieldsOptions` / `UseScrollOffsetOptions` {#selector-query-options}
+
+节点查询相关组合式 API 的参数类型。
+
+### `PageStackSnapshot` / `UsePageStackOptions` {#pagestack-types}
+
+页面栈快照和 `usePageStack()` 配置类型。
+
+### `NavigationBarMetrics` / `UseNavigationBarMetricsOptions` {#navigationbar-types}
+
+自定义导航栏尺寸快照和 `useNavigationBarMetrics()` 配置类型。
+
+### `UseAsyncPullDownRefreshOptions` {#async-pulldown-types}
+
+`useAsyncPullDownRefresh()` 的错误处理和停止刷新函数配置类型。
 
 ## 说明
 

@@ -51,10 +51,37 @@ keywords:
 - 类型入口：`MutationRecord`
 - 用途：移除状态 mutation 记录器。
 
+## 页面布局桥接
+
+### `setPageLayout()` / `usePageLayout()` {#pagelayout}
+
+- 类型入口：`PageLayoutState` / `WevuPageLayoutMap`
+- 用途：在运行时读取或切换页面 layout。
+- 说明：通常由 Weapp-vite 的 `definePageMeta({ layout })`、`routeRules.layout` 先确定初始 layout；业务侧只在需要运行时切换页面壳时调用。
+
+### `registerPageLayoutBridge()` / `unregisterPageLayoutBridge()` {#pagelayoutbridge}
+
+- 类型入口：`LayoutBridgeInstance`
+- 用途：注册页面 layout 桥接实例。
+- 说明：主要给 Weapp-vite layout 运行时与框架集成使用，业务工程通常不需要直接调用。
+
+### `registerRuntimeLayoutHosts()` / `unregisterRuntimeLayoutHosts()` {#layouthosts}
+
+- 类型入口：`LayoutHostBinding`
+- 用途：注册 layout host 映射，供页面运行时定位当前页面壳。
+- 说明：属于框架集成层 API；业务侧优先使用 `setPageLayout()`。
+
+### `useLayoutBridge()` / `useLayoutHosts()` {#uselayoutbridge}
+
+- 类型入口：`LayoutBridgeInstance` / `LayoutHostBinding`
+- 用途：读取当前 layout bridge 或 host 绑定。
+- 说明：用于 layout 组件、调试页和框架扩展，不建议普通页面直接依赖。
+
 ## 子路径边界
 
 - `wevu/compiler` 不是 `wevu` 根入口的一部分，主要给编译工具使用。
 - `wevu/router` 也不是运行时桥接页的一部分；若你需要 `createRouter()` / `useRouter()`，请直接看 [/wevu/router](/wevu/router)。
+- `wevu/fetch` 与 `wevu/web-apis` 是网络/Web API 兼容入口；分别看 [/wevu/fetch](/wevu/fetch) 与 Web runtime 相关说明。
 
 ## 示例
 

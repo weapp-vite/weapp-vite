@@ -53,6 +53,12 @@ keywords:
 - 用途：创建只读代理，防止误修改。
 - 说明：常用于向下游暴露状态快照。
 
+### `shallowReadonly()` {#shallowreadonly}
+
+- 类型入口：`Readonly<T>`
+- 用途：创建浅层只读代理。
+- 说明：仅保护顶层字段；嵌套对象仍保持原始语义。
+
 ### `computed()` {#computed}
 
 - 类型入口：`ComputedRef<T>` / `WritableComputedRef<T>`
@@ -72,6 +78,18 @@ keywords:
 - 类型入口：`WatchStopHandle`
 - 用途：自动收集依赖并立即执行副作用。
 - 说明：适合快速联动逻辑与调试输出。
+
+### `watchPostEffect()` {#watchposteffect}
+
+- 类型入口：`WatchStopHandle`
+- 用途：以 post flush 语义注册自动依赖副作用。
+- 说明：用于希望等待当前更新批次之后再执行的副作用；业务侧仍要避免在高频页面滚动里写重逻辑。
+
+### `watchSyncEffect()` {#watchsynceffect}
+
+- 类型入口：`WatchStopHandle`
+- 用途：以 sync flush 语义注册自动依赖副作用。
+- 说明：适合极少数需要同步响应状态变化的组合式工具；普通业务优先使用 `watchEffect()`。
 
 ### `effect()` {#effect}
 
@@ -173,6 +191,16 @@ keywords:
 
 - 类型入口：`boolean`
 - 用途：判断对象是否被 `markRaw` 标记。
+
+### `isReadonly()` {#isreadonly}
+
+- 类型入口：`boolean`
+- 用途：判断值是否来自 `readonly()` 或 `shallowReadonly()`。
+
+### `isProxy()` {#isproxy}
+
+- 类型入口：`boolean`
+- 用途：判断值是否为 Wevu 响应式/只读代理。
 
 ## 批处理与调度
 

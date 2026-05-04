@@ -192,7 +192,7 @@ onLoad(() => {}) // 可能失效
 
 ```vue
 <script setup lang="ts">
-import { onHide, onLoad, onPullDownRefresh, onReachBottom, onShareAppMessage, onShow, ref } from 'wevu'
+import { onHide, onLoad, onReachBottom, onShareAppMessage, onShow, ref, useAsyncPullDownRefresh } from 'wevu'
 
 definePageJson(() => ({
   navigationBarTitleText: '商品列表',
@@ -234,10 +234,7 @@ onHide(() => {
   }
 })
 
-onPullDownRefresh(async () => {
-  await loadList(1)
-  wx.stopPullDownRefresh()
-})
+useAsyncPullDownRefresh(() => loadList(1))
 
 onReachBottom(() => {
   if (!loading.value && hasMore.value) {
@@ -249,6 +246,48 @@ onShareAppMessage(() => ({
   title: '好物推荐',
   path: '/pages/goods-list/index',
 }))
+</script>
+```
+
+## 小程序宿主组合式 API
+
+wevu 还提供了一组面向小程序宿主能力的组合式 API，用来替代项目里常见的零散 `wx.*` 胶水代码。
+
+| 场景             | 推荐 API                                                  | 说明                                 |
+| ---------------- | --------------------------------------------------------- | ------------------------------------ |
+| 异步下拉刷新     | `useAsyncPullDownRefresh()`                               | 自动在刷新结束后停止下拉刷新状态     |
+| 节点尺寸查询     | `useBoundingClientRect()` / `useSelectorFields()`         | 自动绑定当前页面/组件实例            |
+| 滚动位置查询     | `useScrollOffset()`                                       | 返回 Promise，适合业务逻辑里按需读取 |
+| 元素曝光/懒加载  | `useElementIntersectionObserver()`                        | selector 或 enabled 变化时自动重连   |
+| 页面栈状态       | `usePageStack()` / `getCurrentPageStackSnapshot()`        | 适合自定义返回按钮                   |
+| 自定义导航栏高度 | `useNavigationBarMetrics()` / `getNavigationBarMetrics()` | 自动读取状态栏和胶囊按钮尺寸         |
+
+示例：
+
+```vue
+<script setup lang="ts">
+import {
+  ref,
+  useAsyncPullDownRefresh,
+  useElementIntersectionObserver,
+  useNavigationBarMetrics,
+  usePageStack,
+} from 'wevu'
+
+const visible = ref(false)
+const { canGoBack } = usePageStack()
+const { navigationHeight } = useNavigationBarMetrics()
+
+useElementIntersectionObserver({
+  selector: '#banner',
+  onObserve(result: any) {
+    visible.value = Number(result?.intersectionRatio ?? 0) > 0
+  },
+})
+
+useAsyncPullDownRefresh(async () => {
+  await reload()
+})
 </script>
 ```
 

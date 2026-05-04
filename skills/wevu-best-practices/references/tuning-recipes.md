@@ -18,15 +18,17 @@ export default defineConfig({
 ## 收敛滚动链路更新
 
 ```ts
-import { defineComponent, ref, useIntersectionObserver } from 'wevu'
+import { defineComponent, ref, useElementIntersectionObserver } from 'wevu'
 
 defineComponent({
   setup() {
     const visible = ref(false)
-    const observer = useIntersectionObserver({ thresholds: [0, 0.5, 1] })
-
-    observer.relativeToViewport().observe('.target', (res) => {
-      visible.value = res.intersectionRatio > 0
+    useElementIntersectionObserver({
+      selector: '.target',
+      observerOptions: { thresholds: [0, 0.5, 1] },
+      onObserve(res: any) {
+        visible.value = res.intersectionRatio > 0
+      },
     })
 
     return { visible }
