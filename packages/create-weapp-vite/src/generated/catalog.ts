@@ -57,13 +57,13 @@ export const TEMPLATE_CATALOG = {
   postcss: '^8.5.13',
   rolldown: '1.0.0-rc.17',
   sass: '^1.99.0',
-  stylelint: '^17.9.1',
+  stylelint: '^17.10.0',
   tailwindcss: '^4.2.4',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.0.10',
   vue: '^3.5.33',
-  zod: '^4.4.2'
+  zod: '^4.4.3'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {

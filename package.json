@@ -174,7 +174,7 @@
     "@icebreakers/changelog-github": "^1.0.2",
     "@icebreakers/commitlint-config": "^2.0.0",
     "@icebreakers/eslint-config": "catalog:",
-    "@icebreakers/monorepo": "^3.2.18",
+    "@icebreakers/monorepo": "^4.0.0",
     "@icebreakers/stylelint-config": "catalog:",
     "@oxc-node/cli": "^0.1.0",
     "@oxc-node/core": "^0.1.0",
