@@ -59,6 +59,7 @@ async function createIsolatedPackageWorkspace(packageRoot: string) {
     },
   })
   await fs.copy(path.join(repoRoot, 'tsconfig.json'), path.join(tempRepoRoot, 'tsconfig.json'))
+  await fs.copy(path.join(repoRoot, 'tsconfig.base.json'), path.join(tempRepoRoot, 'tsconfig.base.json'))
   await fs.symlink(workspaceNodeModules, path.join(tempRepoRoot, 'node_modules'), 'junction')
 
   return {
