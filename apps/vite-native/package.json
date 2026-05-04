@@ -54,9 +54,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
-    "@vue/language-plugin-pug": "^3.2.7",
+    "@vue/language-plugin-pug": "^3.2.8",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "2.1.6",
+    "@weapp-tailwindcss/merge": "2.2.0",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",

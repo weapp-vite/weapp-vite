@@ -21,7 +21,7 @@ export const TEMPLATE_CATALOG = {
   '@vitejs/plugin-vue': '^6.0.6',
   '@vue/compiler-core': '^3.5.33',
   '@vue/compiler-dom': '^3.5.33',
-  '@vue/language-core': '^3.2.7',
+  '@vue/language-core': '^3.2.8',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
   'class-variance-authority': '^0.7.1',
@@ -40,8 +40,8 @@ export const TEMPLATE_CATALOG = {
   'tdesign-miniprogram': '^1.14.0',
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.3.3',
-  'vue-tsc': '^3.2.7',
-  'weapp-tailwindcss': '^4.11.2',
+  'vue-tsc': '^3.2.8',
+  'weapp-tailwindcss': '^4.12.0',
   autoprefixer: '^10.5.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.20',
@@ -71,7 +71,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.14.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '4.11.2'
+    'weapp-tailwindcss': '4.12.0'
   },
   latest: {
     'miniprogram-api-typings': '^5.1.3',

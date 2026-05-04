@@ -29,7 +29,7 @@
     "echarts": "catalog:",
     "element-plus": "^2.13.7",
     "gridstack": "^12.6.0",
-    "theme-transition": "^2.0.1",
+    "theme-transition": "^2.0.2",
     "vue": "catalog:",
     "vue-echarts": "^8.0.1"
   },
