@@ -64,9 +64,6 @@ wv prepare
   {
     shared?: {
       compilerOptions?: CompilerOptions
-      include?: string[]
-      exclude?: string[]
-      files?: string[]
     }
     app?: {
       compilerOptions?: CompilerOptions
@@ -128,6 +125,10 @@ export default defineConfig({
 
 ### 每个分组都支持什么
 
+`shared` 只支持 `compilerOptions`，用于给其他托管 tsconfig 通过 `extends` 继承公共编译器选项。
+
+`app` / `node` / `server` 支持：
+
 - `compilerOptions`
 - `include`
 - `exclude`
@@ -154,6 +155,27 @@ export default defineConfig({
   "files": []
 }
 ```
+
+根 `tsconfig.json` 是 TypeScript solution config，只负责把编辑器和 `tsc -b` 引到 `.weapp-vite/*` 子项目。业务 `.vue`、页面、组件和自动导入组件的类型检查入口是 `.weapp-vite/tsconfig.app.json`，它会包含：
+
+- `../src/**/*`
+- `./**/*.d.ts`
+- `types: ["miniprogram-api-typings", "weapp-vite/client"]`
+- `vueCompilerOptions.plugins: ["weapp-vite/volar"]`
+- 使用 `wevu` 时的 `vueCompilerOptions.lib: "wevu"`
+
+`.weapp-vite/tsconfig.shared.json` 只用于被 `app` / `node` / `server` 通过 `extends` 继承。即使根 solution config 保留对它的 `references`，它也必须保持为显式空 project。由于 `tsc -b` 不接受完全空的 `files: []` project，托管配置会只引用一个空占位声明文件：
+
+```jsonc
+{
+  "compilerOptions": {
+    // ...
+  },
+  "files": ["./tsconfig.shared.empty.d.ts"]
+}
+```
+
+这样可以避免 TypeScript 在单独加载 shared project 时按默认 `**/*` 隐式包含全仓库文件，重复解析 `.weapp-vite/*.d.ts`、小程序 typings、`wevu` 等声明，同时仍能通过 solution build，从而改善 Vue Official / Volar 对 `.vue` 文件的归属判断和跳转稳定性。
 
 ### 旧项目
 

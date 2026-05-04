@@ -82,5 +82,6 @@
     "css",
     "scss",
     "vue"
-  ]
+  ],
+  "vue.server.hybridMode": true
 }

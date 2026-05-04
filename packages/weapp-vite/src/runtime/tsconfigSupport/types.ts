@@ -8,9 +8,6 @@ export interface ManagedTsconfigFile {
 export interface ManagedTypeScriptConfig {
   shared?: {
     compilerOptions?: CompilerOptions
-    include?: string[]
-    exclude?: string[]
-    files?: string[]
   }
   app?: {
     compilerOptions?: CompilerOptions

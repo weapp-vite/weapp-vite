@@ -97,28 +97,9 @@ export function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?:
     ...(omitDeprecatedCompilerOptions(userConfig?.shared?.compilerOptions) ?? {}),
   }
 
-  const config = {
-    compilerOptions,
-  }
-
-  const exclude = unique([
-    ...(legacyConfig?.shared?.exclude ?? []),
-    ...(userConfig?.shared?.exclude ?? []),
-  ])
-  const files = unique([
-    ...(legacyConfig?.shared?.files ?? []),
-    ...(userConfig?.shared?.files ?? []),
-  ])
-  const include = unique([
-    ...(legacyConfig?.shared?.include ?? []),
-    ...(userConfig?.shared?.include ?? []),
-  ])
-
   return {
-    ...config,
-    ...(exclude.length ? { exclude } : {}),
-    ...(files.length ? { files } : {}),
-    ...(include.length ? { include } : {}),
+    compilerOptions,
+    files: ['./tsconfig.shared.empty.d.ts'],
   }
 }
 

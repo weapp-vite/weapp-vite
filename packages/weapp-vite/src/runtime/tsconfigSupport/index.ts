@@ -14,8 +14,13 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   const appPath = path.join(managedDir, 'tsconfig.app.json')
   const nodePath = path.join(managedDir, 'tsconfig.node.json')
   const serverPath = path.join(managedDir, 'tsconfig.server.json')
+  const sharedEmptyPath = path.join(managedDir, 'tsconfig.shared.empty.d.ts')
 
   return [
+    {
+      path: sharedEmptyPath,
+      content: 'export {}\n',
+    },
     {
       path: sharedPath,
       content: toJson(createSharedTsconfig(ctx, legacyConfig)),

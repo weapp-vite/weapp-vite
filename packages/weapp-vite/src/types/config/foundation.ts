@@ -188,9 +188,6 @@ export interface WeappWebConfig {
 
 export interface WeappManagedSharedTsconfigConfig {
   compilerOptions?: CompilerOptions
-  include?: string[]
-  exclude?: string[]
-  files?: string[]
 }
 
 export interface WeappManagedAppTsconfigConfig {

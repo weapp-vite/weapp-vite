@@ -24,8 +24,12 @@ describe('tsconfig support', () => {
     const node = JSON.parse(files.find(file => file.path.endsWith('tsconfig.node.json'))!.content)
     const server = JSON.parse(files.find(file => file.path.endsWith('tsconfig.server.json'))!.content)
     const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
+    const sharedEmpty = files.find(file => file.path.endsWith('tsconfig.shared.empty.d.ts'))!
 
     expect(shared.compilerOptions.target).toBe('ES2023')
+    expect(shared.files).toEqual(['./tsconfig.shared.empty.d.ts'])
+    expect(shared).not.toHaveProperty('include')
+    expect(sharedEmpty.content).toBe('export {}\n')
     expect(app.extends).toBe('./tsconfig.shared.json')
     expect(app.compilerOptions.lib).toEqual(['ES2023', 'DOM'])
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
@@ -138,6 +142,42 @@ describe('tsconfig support', () => {
     expect(server.files).toContain('../server/entry.ts')
   })
 
+  it('keeps shared tsconfig as an empty project when referenced directly', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-empty-shared-tsconfig-'))
+    await fs.writeFile(path.join(root, 'tsconfig.shared.json'), `{
+      "include": ["src/**/*.ts"],
+      "files": ["src/env.d.ts"],
+      "compilerOptions": {
+        "strict": false
+      }
+    }`)
+
+    const files = await createManagedTsconfigFiles(createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      weappViteConfig: {
+        typescript: {
+          shared: {
+            include: ['.weapp-vite/**/*.d.ts'],
+            files: ['.weapp-vite/components.d.ts'],
+          },
+          app: {
+            include: ['../custom/**/*.vue'],
+            files: ['../src/env.d.ts'],
+          },
+        },
+      },
+    }))
+    const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(shared.compilerOptions.strict).toBe(false)
+    expect(shared.files).toEqual(['./tsconfig.shared.empty.d.ts'])
+    expect(shared).not.toHaveProperty('include')
+    expect(app.include).toEqual(expect.arrayContaining(['../src/**/*', './**/*.d.ts', '../custom/**/*.vue']))
+    expect(app.files).toContain('../src/env.d.ts')
+  })
+
   it('ignores invalid legacy root tsconfig files', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-invalid-legacy-tsconfig-'))
     await fs.writeFile(path.join(root, 'tsconfig.app.json'), '{ invalid jsonc')
@@ -212,6 +252,7 @@ describe('tsconfig support', () => {
     await syncManagedTsconfigFiles(ctx)
 
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.shared.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.shared.empty.d.ts'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.node.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.server.json'))).toBe(true)
