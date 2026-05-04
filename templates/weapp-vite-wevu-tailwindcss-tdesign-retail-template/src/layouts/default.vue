@@ -1,53 +1,22 @@
 <script setup lang="ts">
-import { computed, onAttached, onShow, ref } from 'wevu'
+import { computed, useNavigationBarMetrics, usePageStack } from 'wevu'
 import { wpi } from 'wevu/api'
 import { navigationTitleMap, tabRoutes } from '@/config/navigation'
 
-interface MenuButtonRect {
-  top?: number
-  height?: number
-}
+const {
+  navigationBarHeight,
+  navigationHeight,
+  statusBarHeight,
+} = useNavigationBarMetrics()
+const {
+  canGoBack,
+  currentRoute,
+} = usePageStack()
 
-const statusBarHeight = ref(20)
-const navigationBarHeight = ref(44)
-const currentRoute = ref('')
-const pageStackLength = ref(1)
-
-const navigationHeight = computed(() => statusBarHeight.value + navigationBarHeight.value)
 const navigationTitle = computed(() => navigationTitleMap[currentRoute.value] || 'Weixin')
 const isTabRoute = computed(() => tabRoutes.has(currentRoute.value))
-const canGoBack = computed(() => pageStackLength.value > 1)
 const showLeftAction = computed(() => canGoBack.value || !isTabRoute.value)
 const leftIconName = computed(() => canGoBack.value ? 'chevron-left' : 'home')
-
-function normalizeRoute(route?: string) {
-  return route ? route.replace(/^\/+/, '') : ''
-}
-
-function resolveNavigationMetrics() {
-  const systemInfo = wpi.getSystemInfoSync() as { statusBarHeight?: number }
-  const nextStatusBarHeight = Number(systemInfo.statusBarHeight || 20)
-  let menuButtonRect: MenuButtonRect | undefined
-
-  try {
-    menuButtonRect = wpi.getMenuButtonBoundingClientRect() as MenuButtonRect
-  }
-  catch {}
-
-  const menuTop = Number(menuButtonRect?.top || 0)
-  const menuHeight = Number(menuButtonRect?.height || 0)
-  statusBarHeight.value = nextStatusBarHeight
-  navigationBarHeight.value = menuTop > nextStatusBarHeight && menuHeight > 0
-    ? (menuTop - nextStatusBarHeight) * 2 + menuHeight
-    : 44
-}
-
-function refreshNavigationState() {
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  currentRoute.value = normalizeRoute(currentPage?.route)
-  pageStackLength.value = pages.length || 1
-}
 
 async function handleLeftAction() {
   if (canGoBack.value) {
@@ -58,15 +27,6 @@ async function handleLeftAction() {
     url: '/pages/home/home',
   })
 }
-
-onAttached(() => {
-  resolveNavigationMetrics()
-  refreshNavigationState()
-})
-
-onShow(() => {
-  refreshNavigationState()
-})
 
 defineComponentJson({
   component: true,

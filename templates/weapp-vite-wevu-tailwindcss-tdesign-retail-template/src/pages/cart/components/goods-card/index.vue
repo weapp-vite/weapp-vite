@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs, useNativeInstance, watch } from 'wevu'
+import { ref, toRefs, useElementIntersectionObserver, watch } from 'wevu'
 
 interface InputGoodsCardData {
   id?: string
@@ -87,7 +87,6 @@ const emit = defineEmits<{
   'ob': [payload: { goods: GoodsCardData, context: WechatMiniprogram.IntersectionObserver | null, ob: IntersectionObserverObserveResult }]
 }>()
 
-const nativeInstance = useNativeInstance()
 const goods = ref<GoodsCardData>({
   id: '',
   title: '',
@@ -117,9 +116,14 @@ const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}
 const isValidityLinePrice = ref(false)
 
 const { layout, centered, thumbMode, lazyLoad, pricePrefix, currency, priceFill } = toRefs(props)
-
-let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
-let mounted = false
+const intersectionObserver = useElementIntersectionObserver<IntersectionObserverObserveResult>({
+  enabled: () => !!independentID.value && !!props.thresholds?.length,
+  observerOptions: () => ({
+    thresholds: props.thresholds,
+  }),
+  selector: () => `#${independentID.value}`,
+  onObserve: intersectionObserverCB,
+})
 
 function applyGoodsState(currentGoods: InputGoodsCardData | null | undefined) {
   if (!currentGoods) {
@@ -212,37 +216,8 @@ function setHidden(hidden: boolean) {
 function intersectionObserverCB(ob: IntersectionObserverObserveResult) {
   emit('ob', {
     goods: goods.value,
-    context: intersectionObserverContext,
+    context: intersectionObserver.observer,
     ob,
-  })
-}
-
-function clearIntersectionObserverHandle() {
-  if (!intersectionObserverContext) {
-    return
-  }
-  try {
-    intersectionObserverContext.disconnect()
-  }
-  catch {
-    // ignore disconnect error
-  }
-  intersectionObserverContext = null
-}
-
-function createIntersectionObserverHandle() {
-  if (intersectionObserverContext || !independentID.value || !props.thresholds?.length) {
-    return
-  }
-  const observer = nativeInstance.createIntersectionObserver?.({
-    thresholds: props.thresholds,
-  })?.relativeToViewport?.()
-  if (!observer) {
-    return
-  }
-  intersectionObserverContext = observer
-  intersectionObserverContext.observe(`#${independentID.value}`, (ob: IntersectionObserverObserveResult) => {
-    intersectionObserverCB(ob)
   })
 }
 
@@ -271,37 +246,8 @@ watch(
   () => props.id,
   (id) => {
     genIndependentID(id || '')
-    if (!mounted) {
-      return
-    }
-    clearIntersectionObserverHandle()
-    createIntersectionObserverHandle()
   },
 )
-
-watch(
-  () => props.thresholds,
-  () => {
-    if (!mounted) {
-      return
-    }
-    clearIntersectionObserverHandle()
-    createIntersectionObserverHandle()
-  },
-  {
-    deep: true,
-  },
-)
-
-onMounted(() => {
-  mounted = true
-  genIndependentID(props.id || '')
-  createIntersectionObserverHandle()
-})
-
-onUnmounted(() => {
-  clearIntersectionObserverHandle()
-})
 
 defineExpose({
   goods,

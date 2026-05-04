@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs, useNativeInstance, watch } from 'wevu'
+import { computed, ref, toRefs, useElementIntersectionObserver, watch } from 'wevu'
 
 interface GoodsCardData {
   id?: string
@@ -44,9 +44,14 @@ const isValidityLinePrice = computed(() => {
 })
 const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const { currency } = toRefs(props)
-const nativeInstance = useNativeInstance()
-
-let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
+const intersectionObserver = useElementIntersectionObserver({
+  enabled: () => !!independentID.value && !!props.thresholds?.length,
+  observerOptions: () => ({
+    thresholds: props.thresholds,
+  }),
+  selector: () => `#${independentID.value}`,
+  onObserve: intersectionObserverCB,
+})
 
 function clickHandle() {
   emit('click', {
@@ -84,36 +89,7 @@ function genIndependentID(id: string) {
 function intersectionObserverCB() {
   emit('ob', {
     goods: goods.value,
-    context: intersectionObserverContext,
-  })
-}
-
-function clearIntersectionObserverHandle() {
-  if (!intersectionObserverContext) {
-    return
-  }
-  try {
-    intersectionObserverContext.disconnect()
-  }
-  catch {
-    // ignore disconnect error
-  }
-  intersectionObserverContext = null
-}
-
-function createIntersectionObserverHandle() {
-  if (intersectionObserverContext || !independentID.value || !props.thresholds?.length) {
-    return
-  }
-  const observer = nativeInstance.createIntersectionObserver?.({
-    thresholds: props.thresholds,
-  })?.relativeToViewport?.()
-  if (!observer) {
-    return
-  }
-  intersectionObserverContext = observer
-  intersectionObserverContext.observe(`#${independentID.value}`, () => {
-    intersectionObserverCB()
+    context: intersectionObserver.observer,
   })
 }
 
@@ -121,30 +97,8 @@ watch(
   () => props.id,
   (id) => {
     genIndependentID(id || '')
-    clearIntersectionObserverHandle()
-    createIntersectionObserverHandle()
   },
 )
-
-watch(
-  () => props.thresholds,
-  () => {
-    clearIntersectionObserverHandle()
-    createIntersectionObserverHandle()
-  },
-  {
-    deep: true,
-  },
-)
-
-onMounted(() => {
-  genIndependentID(props.id || '')
-  createIntersectionObserverHandle()
-})
-
-onUnmounted(() => {
-  clearIntersectionObserverHandle()
-})
 
 defineExpose({
   currency,

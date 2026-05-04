@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, toRefs, useNativeInstance } from 'wevu'
+import { onMounted, ref, toRefs, useBoundingClientRect } from 'wevu'
 import { wpi } from 'wevu/api'
 import { getSrc } from './utils'
 
@@ -34,23 +34,13 @@ const emit = defineEmits<{
 const thumbHeight = ref(375)
 const thumbWidth = ref(375)
 const systemInfo = ref(wpi.getSystemInfoSync())
-const nativeInstance = useNativeInstance()
+const getBoundingClientRect = useBoundingClientRect()
 
 const { loadFailed, loading, src, mode, webp, lazyLoad, showMenuByLongpress } = toRefs(props)
 
 function px2rpx(px: number) {
   return 750 / ((systemInfo.value?.screenWidth) || 375) * px
 }
-
-const getRect = (() => {
-  let selectorQuery: WechatMiniprogram.SelectorQuery | null = null
-  return (selector: string) => new Promise<WechatMiniprogram.BoundingClientRectCallbackResult | null>((resolve) => {
-    if (!selectorQuery) {
-      selectorQuery = nativeInstance.createSelectorQuery?.() || null
-    }
-    selectorQuery?.select(selector).boundingClientRect(resolve).exec()
-  })
-})()
 
 function onLoad(e: any) {
   emit('load', e.detail)
@@ -61,7 +51,7 @@ function onError(e: any) {
 }
 
 onMounted(() => {
-  getRect('.J-image').then((res) => {
+  getBoundingClientRect('.J-image').then((res) => {
     if (!res) {
       return
     }

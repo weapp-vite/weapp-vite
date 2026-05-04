@@ -2,12 +2,14 @@ import type {
   ComponentOptionsMixin,
   DefineComponent,
   MiniProgramAddToFavoritesOption,
+  MiniProgramBoundingClientRectResult,
   MiniProgramIntersectionObserver,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
   MiniProgramPageNotFoundOptions,
   MiniProgramPageResizeOption,
   MiniProgramPageScrollOption,
+  MiniProgramScrollOffsetResult,
   MiniProgramShareAppMessageOption,
   MiniProgramTabItemTapOption,
   MiniProgramThemeChangeResult,
@@ -60,12 +62,19 @@ import {
   resetWevuDefaults,
   setWevuDefaults,
   shallowReadonly,
+  useBoundingClientRect,
   useDisposables,
+  useElementIntersectionObserver,
   useIntersectionObserver,
   useNativeInstance,
   useNativePageRouter,
   useNativeRouter,
+  useNavigationBarMetrics,
   usePageScrollThrottle,
+  usePageStack,
+  useScrollOffset,
+  useSelectorFields,
+  useSelectorQuery,
   useUpdatePerformanceListener,
   version,
 } from '@/index'
@@ -210,6 +219,33 @@ defineComponent({
     pageRouter.navigateBack({ delta: 1 })
     const io = useIntersectionObserver()
     expectType<MiniProgramIntersectionObserver>(io)
+    const createQuery = useSelectorQuery()
+    expectType<SetupContextSelectorQuery | null>(createQuery())
+    const getRect = useBoundingClientRect()
+    expectType<Promise<MiniProgramBoundingClientRectResult | null>>(getRect('.card'))
+    const getRects = useBoundingClientRect({ all: true })
+    expectType<Promise<MiniProgramBoundingClientRectResult[] | null>>(getRects('.card'))
+    const getFields = useSelectorFields({ fields: { size: true } })
+    expectType<Promise<Record<string, any> | null>>(getFields('.card'))
+    const getScrollOffset = useScrollOffset()
+    expectType<Promise<MiniProgramScrollOffsetResult | null>>(getScrollOffset('.scroll'))
+    const elementObserver = useElementIntersectionObserver({
+      selector: '.card',
+      onObserve(result) {
+        expectType<unknown>(result)
+      },
+    })
+    expectType<MiniProgramIntersectionObserver | null>(elementObserver.observer)
+    expectType<MiniProgramIntersectionObserver | null>(elementObserver.observe())
+    expectType<void>(elementObserver.disconnect())
+    const pageStack = usePageStack()
+    expectType<string>(pageStack.currentRoute.value)
+    expectType<number>(pageStack.stackLength.value)
+    expectType<boolean>(pageStack.canGoBack.value)
+    const navigationMetrics = useNavigationBarMetrics()
+    expectType<number>(navigationMetrics.statusBarHeight.value)
+    expectType<number>(navigationMetrics.navigationBarHeight.value)
+    expectType<number>(navigationMetrics.navigationHeight.value)
     const stopPerfListen = useUpdatePerformanceListener((_result) => {})
     expectType<() => void>(stopPerfListen)
     const bag = useDisposables()
