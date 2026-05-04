@@ -1,5 +1,11 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.0.5
+
+### Patch Changes
+
+- 🐛 **修复 DevTools console 日志启用超时时可能导致常驻 MCP/REST 服务退出的问题，并让 streamable-http MCP 服务使用带会话的 transport，确保标准 MCP client 可以完成初始化和工具发现。** [`6e78d57`](https://github.com/weapp-vite/weapp-vite/commit/6e78d570d4dbf459397410e0c17f8ca2ebafe873) by @sonofmagic
+
 ## 1.0.4
 
 ### Patch Changes

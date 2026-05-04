@@ -1,5 +1,13 @@
 # weapp-vite-wevu-tailwindcss-tdesign-retail-template
 
+## 1.0.71
+
+### Patch Changes
+
+- 🐛 **将 TDesign 零售模板默认切换为 Skyline 渲染引擎，并同步启用 GlassEasel 组件框架、Skyline 渲染参数与 Skyline 下的关键组件样式兜底。** [`e8e4112`](https://github.com/weapp-vite/weapp-vite/commit/e8e411289940510fbdf720e4004756d7d93fc38b) by @sonofmagic
+- 📦 **Dependencies** [`8197dea`](https://github.com/weapp-vite/weapp-vite/commit/8197deab7658d747bfad197898122cd30cb8167c)
+  → `wevu@6.16.3`
+
 ## 1.0.70
 
 ### Patch Changes

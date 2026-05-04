@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.16.3
+
+### Patch Changes
+
+- 🐛 **为 streamable-http MCP 服务新增 DevTools runtime REST 接口，支持通过 HTTP 连续连接、跳转、截图、读取页面信息和日志，并让 `weapp-vite` 的 MCP 配置与 CLI 支持 `restEndpoint` 开关。** [`bc7e9e3`](https://github.com/weapp-vite/weapp-vite/commit/bc7e9e351d55811781a8aad71815f100cd71a59b) by @sonofmagic
+
+- 🐛 **修复托管 TypeScript 与 Volar 配置：`.weapp-vite/tsconfig.shared.json` 现在固定作为只引用空占位声明的空 project 输出，避免被根 solution references 单独加载时隐式包含全仓库声明文件；模板 VS Code 设置同步启用 Vue Official hybrid mode，提升 `.vue` 文件的 project 归属和跳转稳定性。** [`2559227`](https://github.com/weapp-vite/weapp-vite/commit/2559227f502d4dec14c3857090f9ff5919b10682) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加通用的 `useAsyncPullDownRefresh()` 与 `useChangeModel()`，将模板和示例中重复的下拉刷新停止逻辑、TDesign `change` 表单绑定垫片收敛到运行时核心能力，减少业务模板需要维护的宿主胶水代码。同时为 `weapp-vite prepare` 增加平台参数，让多平台项目可以生成带平台上下文的 `.weapp-vite` 类型支持文件。** [`9337b2d`](https://github.com/weapp-vite/weapp-vite/commit/9337b2d99d815ac4f0190e7980520f73351343aa) by @sonofmagic
+- 📦 Updated 5 dependencies [`6e78d57`](https://github.com/weapp-vite/weapp-vite/commit/6e78d570d4dbf459397410e0c17f8ca2ebafe873)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/miniprogram-automator@1.0.5`, `@weapp-vite/mcp@1.3.1`, `weapp-ide-cli@5.2.8`, `wevu@6.16.3`, `@weapp-vite/ast@6.16.3`
+
+  </details>
+
 ## 6.16.2
 
 ### Patch Changes

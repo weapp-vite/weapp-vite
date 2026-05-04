@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 5.2.8
+
+### Patch Changes
+
+- 🐛 **让自动化 CLI 命令优先复用本地 DevTools runtime REST 服务，从而与 MCP、REST HTTP 共享同一个模拟器连接；服务不可用时仍回退到原有直连模式。** [`952e885`](https://github.com/weapp-vite/weapp-vite/commit/952e885042746bf1579eff111e651b68ea78a46f) by @sonofmagic
+- 📦 **Dependencies** [`6e78d57`](https://github.com/weapp-vite/weapp-vite/commit/6e78d570d4dbf459397410e0c17f8ca2ebafe873)
+  → `@weapp-vite/miniprogram-automator@1.0.5`, `@weapp-vite/devtools-runtime@0.2.1`
+
 ## 5.2.7
 
 ### Patch Changes

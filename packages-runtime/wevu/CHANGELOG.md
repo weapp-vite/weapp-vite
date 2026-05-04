@@ -1,5 +1,15 @@
 # wevu
 
+## 6.16.3
+
+### Patch Changes
+
+- 🐛 **为 wevu 增加小程序宿主查询、元素可见性观察、页面栈和自定义导航栏尺寸的通用组合式 API，并让零售模板复用这些能力，减少模板内重复的宿主垫片代码。** [`8197dea`](https://github.com/weapp-vite/weapp-vite/commit/8197deab7658d747bfad197898122cd30cb8167c) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加通用的 `useAsyncPullDownRefresh()` 与 `useChangeModel()`，将模板和示例中重复的下拉刷新停止逻辑、TDesign `change` 表单绑定垫片收敛到运行时核心能力，减少业务模板需要维护的宿主胶水代码。同时为 `weapp-vite prepare` 增加平台参数，让多平台项目可以生成带平台上下文的 `.weapp-vite` 类型支持文件。** [`9337b2d`](https://github.com/weapp-vite/weapp-vite/commit/9337b2d99d815ac4f0190e7980520f73351343aa) by @sonofmagic
+- 📦 **Dependencies** [`be38f06`](https://github.com/weapp-vite/weapp-vite/commit/be38f06e2e7d0997c25299ef96f6d52432a99ee8)
+  → `@wevu/compiler@6.16.3`
+
 ## 6.16.2
 
 ### Patch Changes
