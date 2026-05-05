@@ -182,12 +182,15 @@ text,
   max-width: 640rpx;
 }
 .flex-col {
+  -webkit-flex-direction: column;
   flex-direction: column;
 }
 .flex-wrap {
+  -webkit-flex-wrap: wrap;
   flex-wrap: wrap;
 }
 .items-center {
+  -webkit-align-items: center;
   align-items: center;
 }
 .gap-4 {
@@ -238,11 +241,6 @@ text,
 }
 .bg-linear-to-r {
   --tw-gradient-position: to right;
-}
-@supports (background-image: linear-gradient(in lab, red, red)) {
-  .bg-linear-to-r {
-    --tw-gradient-position: to right;
-  }
 }
 .bg-linear-to-r {
   background-image: linear-gradient(var(--tw-gradient-stops));
@@ -404,6 +402,7 @@ text,
   text-transform: uppercase;
 }
 .underline {
+  -webkit-text-decoration-line: underline;
   text-decoration-line: underline;
 }
 .shadow-sm {

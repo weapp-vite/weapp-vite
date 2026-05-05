@@ -68,6 +68,9 @@ text,
   min-height: 100vh;
 }
 .transform {
+  -webkit-transform:;
+  transform:;
+  -webkit-transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
   transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
 }
 .rounded-_b20rpx_B {

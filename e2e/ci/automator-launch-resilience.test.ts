@@ -792,6 +792,62 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock.mock.calls[0]?.[0]).not.toHaveProperty('projectConfig')
   })
 
+  it('honors per-launch skip warmup option and still wraps relaunch recovery', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const currentPage = createMockPage('/pages/index/index')
+    const relaunchedPage = createMockPage('/pages/index/index')
+    const miniProgram = createMockMiniProgram({
+      currentPage,
+    })
+    miniProgram.reLaunch = miniProgram.__rawReLaunch = vi.fn(async () => relaunchedPage)
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launchedMiniProgram = await launchAutomator({
+      projectPath: sandboxRoot,
+      skipWarmup: true,
+    })
+
+    expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+    expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+
+    await expect(launchedMiniProgram.reLaunch('/pages/index/index')).resolves.toBe(relaunchedPage)
+
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('can skip relaunch page root checks per launch', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const relaunchedPage = createMockPage('/pages/index/index')
+    relaunchedPage.$ = vi.fn(async () => null)
+    relaunchedPage.$$ = vi.fn(async () => [])
+    const miniProgram = createMockMiniProgram()
+    miniProgram.reLaunch = miniProgram.__rawReLaunch = vi.fn(async () => relaunchedPage)
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launchedMiniProgram = await launchAutomator({
+      projectPath: sandboxRoot,
+      skipRelaunchPageRootCheck: true,
+    })
+
+    await expect(launchedMiniProgram.reLaunch('/pages/index/index')).resolves.toBe(relaunchedPage)
+
+    expect(relaunchedPage.$).not.toHaveBeenCalledWith('page')
+    expect(relaunchedPage.$$).not.toHaveBeenCalledWith('page')
+  })
+
   it('uses cli bridge mode for ide launches and connects via websocket endpoint', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'

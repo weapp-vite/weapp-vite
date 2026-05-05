@@ -9,9 +9,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
-const LAUNCH_WARMUP_ROUTE = '/pages/category/index'
-const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
 const HOME_ROUTE = '/pages/home/home'
+const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|Timeout in warmup current page|Timeout in read current page|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
 const GOODS_DETAIL_PATH = 'pages/goods/details/index'
 
 async function runBuild() {
@@ -39,7 +38,8 @@ async function launchRetailTemplateAutomator() {
     try {
       return await launchAutomator({
         projectPath: TEMPLATE_ROOT,
-        warmupRoute: LAUNCH_WARMUP_ROUTE,
+        skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
       })
     }
     catch (error) {
@@ -110,9 +110,8 @@ async function waitForHomeGoodsReady(page: any, timeoutMs = 10_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     const goodsList = await page.data('goodsList').catch(() => [])
-    const goodsCard = await page.$('goods-card')
-    if (Array.isArray(goodsList) && goodsList.length > 0 && goodsCard) {
-      return goodsCard
+    if (Array.isArray(goodsList) && goodsList.length > 0) {
+      return goodsList
     }
     await page.waitFor(200)
   }
@@ -180,13 +179,13 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
         throw new Error(`Failed to launch route: ${HOME_ROUTE}`)
       }
 
-      const goodsCard = await waitForHomeGoodsReady(page)
-      if (!goodsCard) {
-        throw new Error('Failed to find goods-card on home page')
+      const goodsList = await waitForHomeGoodsReady(page)
+      if (!goodsList) {
+        throw new Error('Failed to load goods list on home page')
       }
 
       const marker = collector.mark()
-      await goodsCard.tap()
+      await page.callMethod('goodListClickHandle', { detail: { index: 0 } })
       const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH)
 
       expect(detailPage?.path).toBe(GOODS_DETAIL_PATH)

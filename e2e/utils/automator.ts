@@ -238,6 +238,7 @@ interface RelaunchRecoveryOptions {
   cwd?: string
   project: string
   projectPath?: string
+  skipPageRootCheck?: boolean
 }
 
 type RuntimeLogLevel = 'warn' | 'error' | 'exception'
@@ -255,6 +256,14 @@ interface LaunchProjectMeta {
 interface LaunchAppConfigValidationResult {
   ready: boolean
   reason?: string
+  warmupRoute?: string
+}
+
+type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
+
+interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  skipRelaunchPageRootCheck?: boolean
+  skipWarmup?: boolean
   warmupRoute?: string
 }
 
@@ -319,8 +328,8 @@ function resolveAutomatorLaunchMode() {
   return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || ''
 }
 
-function shouldSkipAutomatorWarmup() {
-  return process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
+function shouldSkipAutomatorWarmup(skipWarmup?: boolean) {
+  return skipWarmup === true || process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
 }
 
 function shouldPrebuildAutomatorBridgeProject() {
@@ -1536,7 +1545,7 @@ function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryO
     let page: any = null
 
     try {
-      if (!disableRelaunchCurrentReady && !routeHasQuery(route)) {
+      if (!options.skipPageRootCheck && !disableRelaunchCurrentReady && !routeHasQuery(route)) {
         const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT), {
           checkDevtoolsLog: options.checkDevtoolsLog,
         })
@@ -1566,9 +1575,11 @@ function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryO
         }
       }
 
-      const pageRoot = await waitForRelaunchPageRoot(page)
-      if (!pageRoot) {
-        throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
+      if (!options.skipPageRootCheck) {
+        const pageRoot = await waitForRelaunchPageRoot(page)
+        if (!pageRoot) {
+          throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
+        }
       }
 
       return page
@@ -1809,7 +1820,7 @@ async function launchAutomatorViaCliBridge(
   return miniProgram
 }
 
-export function launchAutomator(options: Parameters<typeof automator.launch>[0] & { warmupRoute?: string }) {
+export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
     return launchHeadlessAutomator({
@@ -1819,7 +1830,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0] 
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { projectConfig, timeout, trustProject, warmupRoute, ...rest } = options
+  const { projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -1883,7 +1894,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0] 
               })
               await compileMiniProgramProject(withRuntimeLogs, project)
             }
-            if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup()) {
+            if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup(skipWarmup)) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
                 allowRelaunch: false,
@@ -1896,6 +1907,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0] 
               cwd: rest.cwd,
               project,
               projectPath: rest.projectPath,
+              skipPageRootCheck: skipRelaunchPageRootCheck,
             })
             return withRelaunch
           },
