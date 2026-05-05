@@ -121,7 +121,7 @@ describe('analyze command web branch', () => {
     const output = String(stdout.mock.calls[0]?.[0] ?? '')
     const parsed = JSON.parse(output)
     expect(parsed.runtime).toBe('web')
-    expect(parsed.platform).toBe('h5')
+    expect(parsed.platform).toBe('web')
     expect(parsed.web.enabled).toBe(true)
     expect(parsed.web.executionMode).toBe('safe')
     expect(parsed.unsupportedScopes).toContain('分包产物体积分析（仅小程序）')

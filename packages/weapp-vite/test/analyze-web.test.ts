@@ -10,12 +10,12 @@ describe('analyze web static report', () => {
     })
 
     const result = createWebAnalyzeResult(ctx.configService, {
-      platform: 'h5',
+      platform: 'web',
       now: new Date('2026-02-13T00:00:00.000Z'),
     })
 
     expect(result.runtime).toBe('web')
-    expect(result.platform).toBe('h5')
+    expect(result.platform).toBe('web')
     expect(result.generatedAt).toBe('2026-02-13T00:00:00.000Z')
     expect(result.experimental).toBe(true)
     expect(result.web.enabled).toBe(true)
@@ -37,7 +37,7 @@ describe('analyze web static report', () => {
     })
 
     const result = createWebAnalyzeResult(ctx.configService, {
-      platform: 'h5',
+      platform: 'web',
       now: new Date('2026-02-13T00:00:00.000Z'),
     })
 
@@ -69,7 +69,7 @@ describe('analyze web static report', () => {
     })
 
     const result = createWebAnalyzeResult(ctx.configService, {
-      platform: 'h5',
+      platform: 'web',
       now: new Date('2026-02-13T00:00:00.000Z'),
     })
 
