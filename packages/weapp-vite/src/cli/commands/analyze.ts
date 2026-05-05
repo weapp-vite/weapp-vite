@@ -19,7 +19,7 @@ import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../
 
 export interface WebAnalyzeResult {
   runtime: 'web'
-  platform: 'h5' | 'web'
+  platform: 'web'
   mode: string
   generatedAt: string
   experimental: true
@@ -37,7 +37,7 @@ export interface WebAnalyzeResult {
 }
 
 interface CreateWebAnalyzeResultOptions {
-  platform: 'h5' | 'web'
+  platform: 'web'
   now?: Date
 }
 
@@ -288,7 +288,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--report <type>', `[string] 输出指定报告类型（pr）`)
     .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
@@ -302,7 +302,7 @@ export function registerAnalyzeCommand(cli: CAC) {
       }
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const targets = resolveRuntimeTargets(options)
-      const inlineConfig = createInlineConfig(targets.mpPlatform)
+      const inlineConfig = createInlineConfig(targets.platform)
       try {
         const ctx = await createCompilerContext({
           cwd: root,
@@ -345,7 +345,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         }
         if (targets.runWeb) {
           const webResult = createWebAnalyzeResult(ctx.configService, {
-            platform: targets.label === 'web' ? 'web' : 'h5',
+            platform: 'web',
           })
           const writtenPath = await writeAnalyzeResult(webResult, outputOption, ctx.configService)
           if (outputJson) {
@@ -360,7 +360,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         }
 
         if (!targets.runMini) {
-          logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform h5 指定目标。')
+          logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform web 指定目标。')
           return
         }
 

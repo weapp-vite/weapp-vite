@@ -158,8 +158,8 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   }
 
   function getImportMetaBaseEnv() {
-    const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
-    const resolvedPlatform = defineEnv.PLATFORM ?? mpPlatform
+    const miniPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
+    const resolvedPlatform = defineEnv.PLATFORM ?? miniPlatform
     return {
       PLATFORM: resolvedPlatform,
       MP_PLATFORM: resolvedPlatform,
@@ -180,8 +180,8 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
 
   function applyRuntimePlatform(runtime: 'miniprogram' | 'web') {
     const isWeb = runtime === 'web'
-    const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
-    const resolvedPlatform = isWeb ? 'web' : mpPlatform
+    const miniPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
+    const resolvedPlatform = isWeb ? 'web' : miniPlatform
     setDefineEnv('PLATFORM', resolvedPlatform)
     setDefineEnv('IS_WEB', isWeb)
     setDefineEnv('IS_MINIPROGRAM', !isWeb)

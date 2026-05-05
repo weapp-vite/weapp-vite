@@ -7,7 +7,7 @@ const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn())
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
 const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  mpPlatform: 'weapp',
+  platform: 'weapp',
   rawPlatform: 'weapp',
 })))
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())

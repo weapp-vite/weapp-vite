@@ -72,7 +72,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   const resolved = await resolveIdeCommandContext({
     configFile,
     mode: options.mode ?? 'development',
-    platform: targets.mpPlatform,
+    platform: targets.platform,
     projectPath: root,
     cliPlatform: targets.rawPlatform,
   })
@@ -183,7 +183,7 @@ export function registerIdeCommand(cli: CAC) {
   cli
     .command('ide [action] [root]', 'run Wechat DevTools utility actions and log bridge commands')
     .option('-o, --open', '[boolean] open ide before attaching log bridge')
-    .option('-p, --platform <platform>', '[string] target platform (weapp | h5)')
+    .option('-p, --platform <platform>', '[string] target platform (weapp | web)')
     .option('--project-config <path>', '[string] project config path (miniprogram only)')
     .option('--ticket <value>', '[string] ticket used by `ide ticket:set`')
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })

@@ -4,7 +4,8 @@ import type { MpPlatform } from '../../../../types'
 import type { LoadConfigResult } from '../../types'
 import logger from '../../../../logger'
 import { supportsMultiPlatformTarget } from '../../../../multiPlatform'
-import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../../platform'
+import { DEFAULT_MP_PLATFORM } from '../../../../platform'
+import { resolveWeappViteTarget } from '../../../../runtimeTarget'
 import { getProjectConfigFileName } from '../../../../utils'
 import { createLibEntryFileNameResolver } from '../../../lib'
 import { createLegacyEs5Plugin } from '../../legacyEs5'
@@ -12,12 +13,11 @@ import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } 
 import { formatProjectConfigPath, pluginMatchesName, resolveMultiPlatformConfig } from './shared'
 
 export function resolveCliPlatformRuntime(cliPlatform?: string) {
-  const normalizedCliPlatform = normalizeMiniPlatform(cliPlatform)
-  const isWebRuntime = normalizedCliPlatform === 'h5' || normalizedCliPlatform === 'web'
+  const target = resolveWeappViteTarget(cliPlatform)
 
   return {
-    normalizedCliPlatform,
-    isWebRuntime,
+    normalizedCliPlatform: target.platform ?? (target.runWeb ? target.label : undefined),
+    isWebRuntime: target.runWeb && !target.runMini,
   }
 }
 

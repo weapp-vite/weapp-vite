@@ -37,6 +37,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
     getDefineImportMetaEnv,
     applyRuntimePlatform,
   } = options
+  const platform = ctx.configService?.platform
 
   applyRuntimePlatform('miniprogram')
 
@@ -52,7 +53,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
         build: resolveWorkersBuildDefaults(true),
       },
     )
-    applyWeappViteHostMeta(inline, 'miniprogram')
+    applyWeappViteHostMeta(inline, 'miniprogram', platform)
     stripRollupOptions(inline)
     injectBuiltinAliases(inline)
     return inline
@@ -69,7 +70,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
       build: resolveWorkersBuildDefaults(false),
     },
   )
-  applyWeappViteHostMeta(inlineConfig, 'miniprogram')
+  applyWeappViteHostMeta(inlineConfig, 'miniprogram', platform)
   stripRollupOptions(inlineConfig)
   inlineConfig.logLevel = 'info'
   injectBuiltinAliases(inlineConfig)

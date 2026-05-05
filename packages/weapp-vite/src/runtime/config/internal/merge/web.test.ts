@@ -58,6 +58,7 @@ describe('runtime config merge web', () => {
     expect(result?.weappVite).toEqual({
       name: 'weapp-vite',
       runtime: 'web',
+      platform: 'web',
     })
     expect(result?.plugins?.map((plugin: any) => plugin.name)).toEqual([
       'weapp-web-plugin',

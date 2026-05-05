@@ -2,6 +2,8 @@
 
 `weapp-vite` + `wevu` 多平台示例
 
+当前示例启用 `weapp.multiPlatform: true`。每次开发或构建仍只选择一个目标平台，例如 `-p weapp`、`-p alipay` 或 `-p web`。
+
 ## 页面结构
 
 - TabBar：`首页` / `数据` / `表单` / `清单` / `能力`

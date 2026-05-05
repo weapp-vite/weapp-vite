@@ -23,7 +23,7 @@ describe('cli runtime target resolution', () => {
 
     expect(targets.runMini).toBe(true)
     expect(targets.runWeb).toBe(false)
-    expect(targets.mpPlatform).toBeUndefined()
+    expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('config')
   })
 
@@ -32,17 +32,17 @@ describe('cli runtime target resolution', () => {
 
     expect(targets.runMini).toBe(true)
     expect(targets.runWeb).toBe(false)
-    expect(targets.mpPlatform).toBe('alipay')
+    expect(targets.platform).toBe('alipay')
     expect(targets.label).toBe('alipay')
   })
 
-  it('resolves web runtime target from cli option', () => {
+  it('resolves h5 alias to web runtime target from cli option', () => {
     const targets = resolveRuntimeTargets({ platform: 'h5' })
 
     expect(targets.runMini).toBe(false)
     expect(targets.runWeb).toBe(true)
-    expect(targets.mpPlatform).toBeUndefined()
-    expect(targets.label).toBe('h5')
+    expect(targets.platform).toBeUndefined()
+    expect(targets.label).toBe('web')
   })
 
   it('resolves combined mini and web runtime target from cli option', () => {
@@ -50,7 +50,7 @@ describe('cli runtime target resolution', () => {
 
     expect(targets.runMini).toBe(true)
     expect(targets.runWeb).toBe(true)
-    expect(targets.mpPlatform).toBeUndefined()
+    expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('weapp + web')
   })
 

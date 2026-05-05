@@ -54,7 +54,11 @@ describe('runtime config merge miniprogram', () => {
 
     const result = mergeMiniprogram(
       {
-        ctx: {} as any,
+        ctx: {
+          configService: {
+            platform: 'alipay',
+          },
+        } as any,
         subPackageMeta: undefined,
         config: {
           weapp: {
@@ -94,6 +98,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.weappVite).toEqual({
       name: 'weapp-vite',
       runtime: 'miniprogram',
+      platform: 'alipay',
     })
     expect(result.define).toMatchObject({
       __DEV__: true,
@@ -110,14 +115,22 @@ describe('runtime config merge miniprogram', () => {
     ])
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
-    expect(arrangePluginsMock).toHaveBeenCalledWith(result, {}, undefined)
+    expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
+      configService: {
+        platform: 'alipay',
+      },
+    }), undefined)
     expect(setOptions).not.toHaveBeenCalled()
   })
 
   it('builds development watch with plugin root inside src and default dist exclusion', () => {
     const result = mergeMiniprogram(
       {
-        ctx: {} as any,
+        ctx: {
+          configService: {
+            platform: 'tt',
+          },
+        } as any,
         subPackageMeta: undefined,
         config: {
           weapp: {
@@ -152,7 +165,11 @@ describe('runtime config merge miniprogram', () => {
 
     const result = mergeMiniprogram(
       {
-        ctx: {} as any,
+        ctx: {
+          configService: {
+            platform: 'tt',
+          },
+        } as any,
         subPackageMeta: {
           subPackage: {
             root: 'packageA',
@@ -190,6 +207,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.weappVite).toEqual({
       name: 'weapp-vite',
       runtime: 'miniprogram',
+      platform: 'tt',
     })
     expect(result.logLevel).toBe('warn')
     expect(result.define).toMatchObject({

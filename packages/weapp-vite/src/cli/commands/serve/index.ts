@@ -22,7 +22,7 @@ export function registerServeCommand(cli: CAC) {
     .alias('dev') // 与脚本名对齐的别名
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5 | all)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--host [host]', `[string] web dev server host`)
@@ -32,7 +32,7 @@ export function registerServeCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      let inlineConfig = createInlineConfig(targets.mpPlatform)
+      let inlineConfig = createInlineConfig(targets.platform)
       if (targets.runWeb) {
         const host = resolveWebHost(options.host)
         if (host !== undefined) {

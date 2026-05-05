@@ -10,7 +10,7 @@ const isUiEnabledMock = vi.hoisted(() => vi.fn(() => true))
 const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
   runMini: true,
   runWeb: false,
-  mpPlatform: 'weapp',
+  platform: 'weapp',
   rawPlatform: 'weapp',
 })))
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))

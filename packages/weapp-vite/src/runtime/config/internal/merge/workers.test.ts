@@ -27,7 +27,11 @@ describe('runtime config merge workers', () => {
     const injectBuiltinAliases = vi.fn()
 
     const result = mergeWorkers({
-      ctx: {} as any,
+      ctx: {
+        configService: {
+          platform: 'swan',
+        },
+      } as any,
       isDev: true,
       config: {} as any,
       cwd: '/project',
@@ -42,6 +46,7 @@ describe('runtime config merge workers', () => {
     expect(result.weappVite).toEqual({
       name: 'weapp-vite',
       runtime: 'miniprogram',
+      platform: 'swan',
     })
     expect(result.plugins).toEqual([
       [{ name: 'weapp-worker-plugin' }],
@@ -51,7 +56,11 @@ describe('runtime config merge workers', () => {
 
   it('injects weapp-vite host metadata for production worker builds', () => {
     const result = mergeWorkers({
-      ctx: {} as any,
+      ctx: {
+        configService: {
+          platform: 'jd',
+        },
+      } as any,
       isDev: false,
       config: {} as any,
       cwd: '/project',
@@ -63,6 +72,7 @@ describe('runtime config merge workers', () => {
     expect(result.weappVite).toEqual({
       name: 'weapp-vite',
       runtime: 'miniprogram',
+      platform: 'jd',
     })
     expect(result.logLevel).toBe('info')
   })

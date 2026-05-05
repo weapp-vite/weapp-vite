@@ -31,7 +31,7 @@ function resolvePreparePlatform(options: GlobalCLIOptions) {
 export function registerPrepareCommand(cli: CAC) {
   cli
     .command('prepare [...input]', 'generate .weapp-vite support files')
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .action(async (input: string[] | undefined, options: GlobalCLIOptions) => {
       try {
         filterDuplicateOptions(options)

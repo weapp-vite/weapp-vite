@@ -1,26 +1,35 @@
 import type { InlineConfig } from 'vite'
+import type { WeappVitePlatform, WeappViteRuntime } from './runtimeTarget'
 
 export const WEAPP_VITE_HOST_NAME = 'weapp-vite'
-
-export type WeappViteRuntime = 'miniprogram' | 'web'
+export type { WeappViteRuntime }
 
 export interface WeappViteHostMeta {
   name: typeof WEAPP_VITE_HOST_NAME
   runtime: WeappViteRuntime
+  platform?: WeappVitePlatform
 }
 
-export function createWeappViteHostMeta(runtime: WeappViteRuntime): WeappViteHostMeta {
-  return {
+export function createWeappViteHostMeta(
+  runtime: WeappViteRuntime,
+  platform?: WeappVitePlatform,
+): WeappViteHostMeta {
+  const meta: WeappViteHostMeta = {
     name: WEAPP_VITE_HOST_NAME,
     runtime,
   }
+  if (platform) {
+    meta.platform = platform
+  }
+  return meta
 }
 
 export function applyWeappViteHostMeta(
   config: InlineConfig,
   runtime: WeappViteRuntime,
+  platform?: WeappVitePlatform,
 ): InlineConfig {
-  config.weappVite = createWeappViteHostMeta(runtime)
+  config.weappVite = createWeappViteHostMeta(runtime, platform)
   return config
 }
 
@@ -35,6 +44,9 @@ export function resolveWeappViteHostMeta(
     return undefined
   }
   if (meta.runtime !== 'miniprogram' && meta.runtime !== 'web') {
+    return undefined
+  }
+  if (meta.platform !== undefined && typeof meta.platform !== 'string') {
     return undefined
   }
   return meta

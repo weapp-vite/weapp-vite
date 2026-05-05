@@ -73,10 +73,11 @@ export function resolveMultiPlatformConfig(value: unknown): ResolvedMultiPlatfor
 
   if (typeof value === 'object' && value !== null) {
     const record = value as MultiPlatformConfig
+    const targets = resolveMultiPlatformTargets(record.targets)
     return {
       enabled: record.enabled !== false,
       projectConfigRoot: normalizeMultiPlatformProjectConfigRoot(record.projectConfigRoot),
-      targets: resolveMultiPlatformTargets(record.targets),
+      targets,
     }
   }
 

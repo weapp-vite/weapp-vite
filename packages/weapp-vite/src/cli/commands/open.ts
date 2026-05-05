@@ -10,7 +10,7 @@ import { resolveRuntimeTargets } from '../runtime'
 export function registerOpenCommand(cli: CAC) {
   cli
     .command('open [root]')
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .action(async (root: string | undefined, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
@@ -19,7 +19,7 @@ export function registerOpenCommand(cli: CAC) {
       const { cwd, platform, projectPath, mpDistRoot, weappViteConfig } = await resolveIdeCommandContext({
         configFile,
         mode: options.mode ?? 'development',
-        platform: targets.mpPlatform,
+        platform: targets.platform,
         projectPath: root,
         cliPlatform: targets.rawPlatform,
       })

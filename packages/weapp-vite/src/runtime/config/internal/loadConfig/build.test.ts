@@ -12,7 +12,12 @@ describe('loadConfig build helpers', () => {
     })
 
     expect(resolveCliPlatformRuntime('H5')).toEqual({
-      normalizedCliPlatform: 'h5',
+      normalizedCliPlatform: 'web',
+      isWebRuntime: true,
+    })
+
+    expect(resolveCliPlatformRuntime('web')).toEqual({
+      normalizedCliPlatform: 'web',
       isWebRuntime: true,
     })
 

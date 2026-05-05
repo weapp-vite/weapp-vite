@@ -92,7 +92,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.build.outDir = web.outDir
   inline.build.emptyOutDir ??= !isDev
 
-  applyWeappViteHostMeta(inline, 'web')
+  applyWeappViteHostMeta(inline, 'web', 'web')
   inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
   injectBuiltinAliases(inline)
 

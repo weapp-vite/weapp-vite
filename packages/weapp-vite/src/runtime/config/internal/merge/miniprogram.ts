@@ -84,6 +84,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     setOptions,
     oxcRolldownPlugin,
   } = options
+  const platform = ctx.configService?.platform
 
   applyRuntimePlatform('miniprogram')
 
@@ -162,7 +163,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       ...(inline.define ?? {}),
       __VITE_IS_MODERN__: 'false',
     }
-    applyWeappViteHostMeta(inline, 'miniprogram')
+    applyWeappViteHostMeta(inline, 'miniprogram', platform)
     stripRollupOptions(inline)
     arrangePlugins(inline, ctx, subPackageMeta)
     injectBuiltinAliases(inline)
@@ -191,7 +192,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     ...(inlineConfig.define ?? {}),
     __VITE_IS_MODERN__: 'false',
   }
-  applyWeappViteHostMeta(inlineConfig, 'miniprogram')
+  applyWeappViteHostMeta(inlineConfig, 'miniprogram', platform)
   stripRollupOptions(inlineConfig)
   arrangePlugins(inlineConfig, ctx, subPackageMeta)
   inlineConfig.logLevel = 'warn'

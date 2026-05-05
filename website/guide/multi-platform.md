@@ -24,6 +24,26 @@ keywords:
 > [!WARNING]
 > 多平台输出当前仍处于实验阶段（experimental）。执行命令前请先安装对应平台的 IDE；如果你需要用命令行唤起 IDE，请在 IDE 里开启“服务端口”，并务必在目标平台开发者工具里验证产物行为。
 
+## 目标声明 {#targets}
+
+多平台项目建议先启用多平台模式，再通过命令参数选择单个平台构建：
+
+```ts
+import { defineConfig } from 'weapp-vite'
+
+export default defineConfig({
+  weapp: {
+    multiPlatform: true,
+    web: {
+      enable: true,
+      outDir: 'dist/web',
+    },
+  },
+})
+```
+
+`multiPlatform: true` 不会一次构建所有平台。`wv build -p weapp`、`wv build -p alipay`、`wv build -p web` 都是独立的单目标构建。`multiPlatform.targets` 仍可作为小程序平台 allowlist 使用，但普通项目不需要显式列出所有平台。
+
 ## 支付宝小程序 {#platform-alipay}
 
 ```sh
@@ -89,5 +109,5 @@ pnpm exec wv build --platform xhs
 - 结合小红书开发者中心提供的工具进行预览 / 上传。
 
 > [!TIP]
-> 需要同时输出 Web 版本时，可以在另一个终端运行 `pnpm dev -- --platform h5` 或 `pnpm exec wv dev --platform h5`。
+> 需要同时输出 Web 版本时，可以在另一个终端运行 `pnpm dev -- --platform web` 或 `pnpm exec wv dev --platform web`。
 > 也可以在 `package.json` 里写专用脚本（例如 `"dev:alipay": "wv dev --platform alipay"`），之后直接运行 `pnpm dev:alipay`，避免每次手动输入 `-- --platform ...`。
