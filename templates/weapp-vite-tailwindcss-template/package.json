@@ -37,7 +37,6 @@
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
-    "autoprefixer": "catalog:",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",

@@ -2448,9 +2448,6 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      autoprefixer:
-        specifier: 'catalog:'
-        version: 10.5.0(postcss@8.5.14)
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
@@ -2505,9 +2502,6 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      autoprefixer:
-        specifier: 'catalog:'
-        version: 10.5.0(postcss@8.5.14)
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
@@ -2566,9 +2560,6 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      autoprefixer:
-        specifier: 'catalog:'
-        version: 10.5.0(postcss@8.5.14)
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
@@ -2666,9 +2657,6 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      autoprefixer:
-        specifier: 'catalog:'
-        version: 10.5.0(postcss@8.5.14)
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
@@ -2724,9 +2712,6 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      autoprefixer:
-        specifier: 'catalog:'
-        version: 10.5.0(postcss@8.5.14)
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
