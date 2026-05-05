@@ -1,5 +1,11 @@
 # weapp-vite-tailwindcss-vant-template
 
+## 1.0.8
+
+### Patch Changes
+
+- 🐛 **移除 Tailwind CSS 4 模板中重复声明的业务层 autoprefixer 配置与依赖，改由 weapp-tailwindcss 的 Tailwind 4 内置 autoprefixer 后处理统一补齐小程序 WebView 兼容前缀。** [`b0aba2f`](https://github.com/weapp-vite/weapp-vite/commit/b0aba2f6f3521391452af5a800acc93b3e3db29b) by @sonofmagic
+
 ## 1.0.7
 
 ### Patch Changes

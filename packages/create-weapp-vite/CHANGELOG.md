@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.18
+
+### Patch Changes
+
+- 🐛 **移除 Tailwind CSS 4 模板中重复声明的业务层 autoprefixer 配置与依赖，改由 weapp-tailwindcss 的 Tailwind 4 内置 autoprefixer 后处理统一补齐小程序 WebView 兼容前缀。** [`b0aba2f`](https://github.com/weapp-vite/weapp-vite/commit/b0aba2f6f3521391452af5a800acc93b3e3db29b) by @sonofmagic
+
+- 🐛 **更新 wevu TDesign 零售模板的节点查询写法，改用 `useBoundingClientRect()` 替代残留的原生 selector query，并补充 `layout-host` 承载 Toast/Dialog 反馈宿主的文档与 skill recipe，方便新项目沿用一致的模板约定。** [`ceac73f`](https://github.com/weapp-vite/weapp-vite/commit/ceac73fa6dd05cb7830c638cbc45433958e48ddd) by @sonofmagic
+
 ## 2.3.17
 
 ### Patch Changes

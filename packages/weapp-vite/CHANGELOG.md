@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.16.4
+
+### Patch Changes
+
+- 🐛 **新增统一的 weapp-vite 运行目标解析能力，集中识别小程序平台、`web` 与 `all` / `both` 目标，并让插件宿主元信息携带当前单次构建的平台。`h5` 仍作为兼容别名解析为 `web`，但命令输出、示例与文档统一推荐使用 `web`。** [`dcb8c94`](https://github.com/weapp-vite/weapp-vite/commit/dcb8c94736bd53a2247da583a49684809104482e) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.4`, `wevu@6.16.4`
+
 ## 6.16.3
 
 ### Patch Changes
