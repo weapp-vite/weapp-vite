@@ -21,6 +21,6 @@
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.13"
   }
 }
