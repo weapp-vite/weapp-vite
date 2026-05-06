@@ -109,4 +109,12 @@ describe('cli command routing', () => {
 
     expect(forwarded).toBe(false)
   })
+
+  it('treats alipay as a native command instead of forwarding to weapp-ide-cli fallback', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['alipay', 'preview'])
+
+    expect(forwarded).toBe(false)
+  })
 })

@@ -2,6 +2,7 @@ import type { GlobalCLIOptions } from './cli/types'
 import process from 'node:process'
 import { cac } from 'cac'
 import path from 'pathe'
+import { registerAlipayCommand } from './cli/commands/alipay'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerCloseCommand } from './cli/commands/close'
@@ -47,6 +48,7 @@ cli
   .option('-m, --mode <mode>', `[string] set env mode`)
 
 registerIdeCommand(cli)
+registerAlipayCommand(cli)
 registerBuildCommand(cli)
 registerCloseCommand(cli)
 registerAnalyzeCommand(cli)
@@ -68,6 +70,7 @@ const skipManagedTsconfigBootstrapCommands = new Set([
   'init',
   'mcp',
   'npm',
+  'alipay',
 ])
 
 function resolveManagedTsconfigBootstrapRoot(args: string[]) {

@@ -6,6 +6,7 @@ vi.mock('./cli/ide', () => ({
   tryRunIdeCommand: tryRunIdeCommandMock,
 }))
 
+vi.mock('./cli/commands/alipay', () => ({ registerAlipayCommand: vi.fn() }))
 vi.mock('./cli/commands/analyze', () => ({ registerAnalyzeCommand: vi.fn() }))
 vi.mock('./cli/commands/build', () => ({ registerBuildCommand: vi.fn() }))
 vi.mock('./cli/commands/close', () => ({ registerCloseCommand: vi.fn() }))
