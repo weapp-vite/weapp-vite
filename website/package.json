@@ -24,8 +24,8 @@
     "postinstall": "node ../scripts/print-rolldown-versions-at-install-tail.mjs"
   },
   "dependencies": {
-    "@iconify/vue": "^5.0.0",
-    "@vue/shared": "^3.5.33",
+    "@iconify/vue": "^5.0.1",
+    "@vue/shared": "^3.5.34",
     "echarts": "catalog:",
     "element-plus": "^2.13.7",
     "gridstack": "^12.6.0",
@@ -38,7 +38,7 @@
     "@iconify-json/bi": "^1.2.1",
     "@iconify-json/logos": "^1.2.11",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.48",
+    "@iconify-json/vscode-icons": "^1.2.49",
     "@shikijs/vitepress-twoslash": "^4.0.2",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
