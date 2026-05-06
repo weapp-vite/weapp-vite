@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.19
+
+### Patch Changes
+
+- 🐛 **修复无 tsconfig 项目中使用 TypeScript 配置文件时，Vite runner 加载器可能因 Oxc tsconfig 解析失败而中断配置加载的问题。** [`5de81e2`](https://github.com/weapp-vite/weapp-vite/commit/5de81e20a3e9417beef54fa1904e8235206e5a93) by @sonofmagic
+
 ## 2.3.18
 
 ### Patch Changes
