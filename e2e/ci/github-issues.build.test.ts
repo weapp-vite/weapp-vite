@@ -237,8 +237,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue530SlotFallbackProbe class="issue530-card-provided" vue-slots=')
-    expect(componentWxml).toContain('<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block><block wx:else><text class="issue530-fallback-default">issue-530 fallback default</text></block>')
+    const providedProbe = pageWxml
+      .match(/<Issue530SlotFallbackProbe[^>]*\/>/g)
+      ?.find(tag => tag.includes('class="issue530-card-provided"'))
+    expect(providedProbe).toBeDefined()
+    expect(providedProbe!).toContain('vue-slots=')
+    expect(providedProbe!).toContain('generic:scoped-slots-default=')
+    expect(componentWxml).toContain('<block wx:if="{{vueSlots&&vueSlots.default}}">')
+    expect(componentWxml).toContain('<slot />')
+    expect(componentWxml).toContain('<scoped-slots-default')
+    expect(componentWxml).toContain('<block wx:else><text class="issue530-fallback-default">issue-530 fallback default</text><text class="issue530-scoped-fallback-default">issue-530 scoped fallback default</text></block>')
     expect(componentWxml).not.toContain('vueSlots[')
   })
 
