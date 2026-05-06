@@ -19,6 +19,32 @@
     "maxEmittedDelta": 2
   },
   "projects": {
+    "e2e-apps/github-issues": {
+      "startupMs": 3014,
+      "scenarios": {
+        "vue-template": {
+          "totalMs": 1793,
+          "dirtyCount": 1,
+          "pendingCount": 81,
+          "emittedCount": 81,
+          "impactFiles": 3
+        },
+        "vue-script": {
+          "totalMs": 1704,
+          "dirtyCount": 1,
+          "pendingCount": 81,
+          "emittedCount": 81,
+          "impactFiles": 1
+        },
+        "vue-style": {
+          "totalMs": 1757,
+          "dirtyCount": 1,
+          "pendingCount": 81,
+          "emittedCount": 81,
+          "impactFiles": 1
+        }
+      }
+    },
     "templates/weapp-vite-lib-template": {
       "startupMs": 1256,
       "scenarios": {
