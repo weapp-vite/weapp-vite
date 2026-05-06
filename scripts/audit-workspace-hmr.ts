@@ -148,6 +148,7 @@ const SKIPPED_PROJECT_IDS = new Set([
   'apps/playground',
   'apps/raw-ts',
   'apps/rollup-watcher',
+  'e2e-apps/github-issues',
   'e2e-apps/script-setup-macros-js-with-defaults-invalid',
 ])
 
@@ -301,10 +302,17 @@ function resolveChangedProjectIds(changedFiles: string[]) {
   for (const file of changedFiles) {
     const [root, name] = file.split('/')
     if ((root === 'apps' || root === 'templates' || root === 'e2e-apps') && name) {
-      projectIds.add(`${root}/${name}`)
+      const projectId = `${root}/${name}`
+      if (!isWorkspaceHmrSkippedProject(projectId)) {
+        projectIds.add(projectId)
+      }
     }
   }
   return projectIds
+}
+
+function isWorkspaceHmrSkippedProject(projectId: string) {
+  return SKIPPED_PROJECT_IDS.has(projectId)
 }
 
 async function discoverProjects(): Promise<ProjectCase[]> {

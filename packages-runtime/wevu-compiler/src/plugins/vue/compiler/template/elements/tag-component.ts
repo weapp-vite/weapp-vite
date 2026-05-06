@@ -64,6 +64,16 @@ function hasDirectComponentSlotChild(children: any[], context: TransformContext)
   })
 }
 
+function shouldAugmentPlainDefaultSlot(decl: ScopedSlotDeclaration, context: TransformContext) {
+  if (context.scopedSlotsRequireProps || !decl.implicitDefault) {
+    return false
+  }
+  if (context.scopedSlotsCompiler === 'augmented') {
+    return true
+  }
+  return hasDirectComponentSlotChild(decl.children, context)
+}
+
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext) {
   const ifDirective = node.props.find(
     (prop): prop is DirectiveNode =>
@@ -216,7 +226,7 @@ export function transformComponentWithSlots(
   const plainSlotDeclarations: ScopedSlotDeclaration[] = []
   for (const decl of slotDeclarations) {
     const hasSlotProps = Object.keys(decl.props).length > 0
-    if (hasSlotProps || (!context.scopedSlotsRequireProps && decl.implicitDefault && hasDirectComponentSlotChild(decl.children, context))) {
+    if (hasSlotProps || shouldAugmentPlainDefaultSlot(decl, context)) {
       scopedSlotDeclarations.push(decl)
     }
     else {

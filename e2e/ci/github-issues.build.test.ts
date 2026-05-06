@@ -11,6 +11,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
+const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
 let standardBuildPromise: Promise<void> | null = null
 let distVariant: 'standard' | 'sourcemap' | null = null
 
@@ -124,6 +125,29 @@ async function runIssue393Build() {
   })
 
   standardBuildPromise = null
+  distVariant = null
+}
+
+async function runIssue510AugmentedBuild() {
+  await fs.remove(ISSUE_510_DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_510_AUGMENTED: 'true',
+    },
+  })
+
   distVariant = null
 }
 
@@ -517,6 +541,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(runtime.code).toContain('virtualHost')
     expect(runtime.code).toMatch(/options:\s*\{\s*virtualHost:\s*(?:true|!0)\s*\}/)
+  })
+
+  it('issue #510: augmented plain default slots preserve projected provide/inject scope', async () => {
+    await runIssue510AugmentedBuild()
+
+    const pageWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-510/index.wxml')
+    const pageJsonPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-510/index.json')
+    const scopedSlotWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-510/index.__scoped-slot-default-0.wxml')
+    const hostWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'components/issue-510/AugmentedSlotHost/index.wxml')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const hostWxml = await fs.readFile(hostWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-510 augmented slot provide inject')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageWxml).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(pageWxml).not.toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
+    expect(pageJson.usingComponents).toMatchObject({
+      AugmentedSlotHost: '/components/issue-510/AugmentedSlotHost/index',
+      AugmentedSlotLeaf: '/components/issue-510/AugmentedSlotLeaf/index',
+    })
+    expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-510/index.__scoped-slot-default-0')
+    expect(scopedSlotWxml).toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
+    expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
   })
 
   it('experiment: flex parent keeps projected multi-node slot groups visible via view wrappers', async () => {
