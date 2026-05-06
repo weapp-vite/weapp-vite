@@ -233,9 +233,52 @@ describe('runtime config internal loadConfig', () => {
       undefined,
       undefined,
       'runner',
+      undefined,
+      undefined,
     )
     expect(loggerWarnMock).toHaveBeenCalledWith(
       '[prepare] 原生配置加载失败，已回退到 runner：Cannot find module',
+    )
+  })
+
+  it('falls back to bundle when runner cannot resolve tsconfig for config transform', async () => {
+    loadViteConfigFileMock
+      .mockRejectedValueOnce(new Error('Transform failed with 1 error:\n\n[TSCONFIG_ERROR] Error: Failed to load tsconfig for \'vite.config.ts\': Tsconfig not found'))
+      .mockResolvedValueOnce({
+        config: {},
+        path: '/project/vite.config.ts',
+      })
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: undefined,
+      configFile: '/project/vite.config.ts',
+    } as any)).resolves.toBeTruthy()
+
+    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
+      1,
+      { command: 'build', mode: 'development' },
+      '/project/vite.config.ts',
+      '/project',
+      undefined,
+      undefined,
+      'runner',
+      undefined,
+      undefined,
+    )
+    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
+      2,
+      { command: 'build', mode: 'development' },
+      '/project/vite.config.ts',
+      '/project',
+      undefined,
+      undefined,
+      'bundle',
     )
   })
 
