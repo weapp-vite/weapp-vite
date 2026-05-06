@@ -151,13 +151,6 @@ function collectManagedTsconfigAliases(config: InlineConfig, cwd: string) {
   }))
 }
 
-function isRunnerTsconfigLoadError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('TSCONFIG_ERROR')
-    || message.includes('Failed to load tsconfig')
-    || message.includes('Tsconfig not found')
-}
-
 async function loadConfigFileWithFallback(
   configEnv: { command: 'serve' | 'build', mode: string },
   configFile: string | undefined,
@@ -181,17 +174,6 @@ async function loadConfigFileWithFallback(
     )
   }
   catch (error) {
-    if (configLoader === 'runner' && isRunnerTsconfigLoadError(error)) {
-      return loadViteConfigFile(
-        configEnv,
-        configFile,
-        cwd,
-        undefined,
-        undefined,
-        'bundle',
-      )
-    }
-
     if (configLoader !== 'native') {
       throw error
     }
@@ -426,7 +408,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       if (usesAdvancedTsconfigPathsOptions) {
         config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
       }
-      else {
+      else if (tsconfigPathsOptions === true || tsconfigPathsUsage.enabled) {
         config.resolve ??= {}
         config.resolve.tsconfigPaths ??= true
       }

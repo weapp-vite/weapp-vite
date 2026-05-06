@@ -241,47 +241,6 @@ describe('runtime config internal loadConfig', () => {
     )
   })
 
-  it('falls back to bundle when runner cannot resolve tsconfig for config transform', async () => {
-    loadViteConfigFileMock
-      .mockRejectedValueOnce(new Error('Transform failed with 1 error:\n\n[TSCONFIG_ERROR] Error: Failed to load tsconfig for \'vite.config.ts\': Tsconfig not found'))
-      .mockResolvedValueOnce({
-        config: {},
-        path: '/project/vite.config.ts',
-      })
-
-    const loadConfig = createFactory()
-
-    await expect(loadConfig({
-      cwd: '/project',
-      isDev: false,
-      mode: 'development',
-      inlineConfig: {},
-      cliPlatform: undefined,
-      configFile: '/project/vite.config.ts',
-    } as any)).resolves.toBeTruthy()
-
-    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
-      1,
-      { command: 'build', mode: 'development' },
-      '/project/vite.config.ts',
-      '/project',
-      undefined,
-      undefined,
-      'runner',
-      undefined,
-      undefined,
-    )
-    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
-      2,
-      { command: 'build', mode: 'development' },
-      '/project/vite.config.ts',
-      '/project',
-      undefined,
-      undefined,
-      'bundle',
-    )
-  })
-
   it('rethrows original error when cjs wrapper is unavailable', async () => {
     loadViteConfigFileMock.mockRejectedValueOnce(new Error('raw boom'))
     createCjsConfigLoadErrorMock.mockReturnValueOnce(null)
@@ -632,7 +591,46 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
-  it('enables native resolve.tsconfigPaths by default without advanced options', async () => {
+  it('does not enable native resolve.tsconfigPaths when the current project has no tsconfig paths', async () => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+    ]))
+    expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
+    expect(tsconfigPathsMock).not.toHaveBeenCalled()
+  })
+
+  it('enables native resolve.tsconfigPaths by default when the current project uses tsconfig paths', async () => {
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: true,
+      references: false,
+      referenceAliases: [],
+    })
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
@@ -655,12 +653,7 @@ describe('runtime config internal loadConfig', () => {
     } as any)
 
     expect(result.config.resolve?.tsconfigPaths).toBe(true)
-    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        find: '@',
-        replacement: '/project/src',
-      }),
-    ]))
+    expect(result.config.resolve?.alias).toBeUndefined()
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
     expect(tsconfigPathsMock).not.toHaveBeenCalled()
   })

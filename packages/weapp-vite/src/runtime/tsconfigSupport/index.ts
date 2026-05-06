@@ -40,6 +40,26 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   ]
 }
 
+function createManagedRootTsconfig() {
+  return toJson({
+    references: [
+      {
+        path: './.weapp-vite/tsconfig.app.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.server.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.node.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.shared.json',
+      },
+    ],
+    files: [],
+  })
+}
+
 async function hasManagedTsconfigChanges(ctx: MutableCompilerContext) {
   const files = await createManagedTsconfigFiles(ctx)
 
@@ -74,6 +94,14 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
   } as MutableCompilerContext
 
   let changed = false
+  const rootTsconfigPath = path.resolve(cwd, 'tsconfig.json')
+  const rootJsconfigPath = path.resolve(cwd, 'jsconfig.json')
+  const hasRootConfig = await fs.pathExists(rootTsconfigPath) || await fs.pathExists(rootJsconfigPath)
+  if (!hasRootConfig) {
+    await fs.outputFile(rootTsconfigPath, createManagedRootTsconfig(), 'utf8')
+    changed = true
+  }
+
   for (const file of await createManagedTsconfigFiles(bootstrapCtx)) {
     const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
     if (existing != null) {

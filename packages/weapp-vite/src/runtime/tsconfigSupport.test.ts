@@ -288,8 +288,42 @@ describe('tsconfig support', () => {
 
     await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(true)
 
+    const rootTsconfig = await fs.readJson(path.join(root, 'tsconfig.json'))
     const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
+    expect(rootTsconfig.references).toEqual([
+      {
+        path: './.weapp-vite/tsconfig.app.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.server.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.node.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.shared.json',
+      },
+    ])
+    expect(rootTsconfig.files).toEqual([])
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+  })
+
+  it('does not overwrite existing root tsconfig during bootstrap', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-root-preserve-'))
+    const rootTsconfigPath = path.join(root, 'tsconfig.json')
+    await fs.writeJson(rootTsconfigPath, {
+      compilerOptions: {
+        paths: {
+          '@/*': ['./src/*'],
+        },
+      },
+    })
+
+    await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(true)
+
+    const rootTsconfig = await fs.readJson(rootTsconfigPath)
+    expect(rootTsconfig.compilerOptions.paths['@/*']).toEqual(['./src/*'])
+    expect(rootTsconfig).not.toHaveProperty('references')
   })
 
   it('does not overwrite richer managed tsconfig files during bootstrap', async () => {
@@ -298,6 +332,14 @@ describe('tsconfig support', () => {
       devDependencies: {
         wevu: '^1.0.0',
       },
+    })
+    await fs.writeJson(path.join(root, 'tsconfig.json'), {
+      references: [
+        {
+          path: './.weapp-vite/tsconfig.app.json',
+        },
+      ],
+      files: [],
     })
 
     const ctx = createCtx({
