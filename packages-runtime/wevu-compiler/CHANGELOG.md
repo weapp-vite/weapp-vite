@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.4
+
+### Patch Changes
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 对普通默认插槽包裹内容不生效的问题。显式 augmented 模式现在会把普通默认插槽内容恢复为增强 scoped slot 输出，使插槽投影中的深层组件可以挂到 slot 宿主父链下并读取 `provide()` 上下文；默认 auto 模式仍保留较保守的隐式直连组件增强策略。** [#542](https://github.com/weapp-vite/weapp-vite/pull/542) by @sonofmagic
+
+- 🐛 **修复作用域插槽出口带默认兜底内容时会被编译器忽略的问题；现在 `<slot :foo="bar">fallback</slot>` 会根据父级插槽存在元数据正确切换作用域插槽投影与 fallback 渲染。** [#541](https://github.com/weapp-vite/weapp-vite/pull/541) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.4`
+
 ## 6.16.3
 
 ### Patch Changes

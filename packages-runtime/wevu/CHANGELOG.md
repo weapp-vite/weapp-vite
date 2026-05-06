@@ -1,5 +1,13 @@
 # wevu
 
+## 6.16.4
+
+### Patch Changes
+
+- 🐛 **修复作用域插槽出口带默认兜底内容时会被编译器忽略的问题；现在 `<slot :foo="bar">fallback</slot>` 会根据父级插槽存在元数据正确切换作用域插槽投影与 fallback 渲染。** [#541](https://github.com/weapp-vite/weapp-vite/pull/541) by @sonofmagic
+- 📦 **Dependencies** [`b348d92`](https://github.com/weapp-vite/weapp-vite/commit/b348d923aad03770743af05e4ec20c20ca60c0b0)
+  → `@wevu/compiler@6.16.4`
+
 ## 6.16.3
 
 ### Patch Changes

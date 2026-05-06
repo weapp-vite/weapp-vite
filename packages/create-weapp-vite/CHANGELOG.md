@@ -1,5 +1,21 @@
 # create-weapp-vite
 
+## 2.3.18
+
+### Patch Changes
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 对普通默认插槽包裹内容不生效的问题。显式 augmented 模式现在会把普通默认插槽内容恢复为增强 scoped slot 输出，使插槽投影中的深层组件可以挂到 slot 宿主父链下并读取 `provide()` 上下文；默认 auto 模式仍保留较保守的隐式直连组件增强策略。** [#542](https://github.com/weapp-vite/weapp-vite/pull/542) by @sonofmagic
+
+- 🐛 **在 `dev --ui` 的 dashboard 活动流中展示小程序 HMR 重建 profile，包含总耗时、阶段耗时、入口计数和脏标记原因，便于在开发态直接定位慢重建来源。** [`a9e21dc`](https://github.com/weapp-vite/weapp-vite/commit/a9e21dccc8938f2c3e0b0331423403ab9e4146c5) by @sonofmagic
+
+- 🐛 **修复布局入口共享 WXML/WXS 侧车文件在 HMR 更新时没有完整标记依赖页面与共享 chunk importer 的问题，避免局部重编后页面引用到未重新导出的共享模块。** [`6fff99e`](https://github.com/weapp-vite/weapp-vite/commit/6fff99eb5f83ff74243fb3afa23d1c3774a4e702) by @sonofmagic
+
+- 🐛 **修复作用域插槽出口带默认兜底内容时会被编译器忽略的问题；现在 `<slot :foo="bar">fallback</slot>` 会根据父级插槽存在元数据正确切换作用域插槽投影与 fallback 渲染。** [#541](https://github.com/weapp-vite/weapp-vite/pull/541) by @sonofmagic
+
+- 🐛 **移除 Tailwind CSS 4 模板中重复声明的业务层 autoprefixer 配置与依赖，改由 weapp-tailwindcss 的 Tailwind 4 内置 autoprefixer 后处理统一补齐小程序 WebView 兼容前缀。** [`b0aba2f`](https://github.com/weapp-vite/weapp-vite/commit/b0aba2f6f3521391452af5a800acc93b3e3db29b) by @sonofmagic
+
+- 🐛 **更新 wevu TDesign 零售模板的节点查询写法，改用 `useBoundingClientRect()` 替代残留的原生 selector query，并补充 `layout-host` 承载 Toast/Dialog 反馈宿主的文档与 skill recipe，方便新项目沿用一致的模板约定。** [`ceac73f`](https://github.com/weapp-vite/weapp-vite/commit/ceac73fa6dd05cb7830c638cbc45433958e48ddd) by @sonofmagic
+
 ## 2.3.17
 
 ### Patch Changes
