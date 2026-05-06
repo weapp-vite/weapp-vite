@@ -87,20 +87,39 @@ function shouldHandleSnapshotSidecarFile(filePath: string) {
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
 
+  function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
+    const profile = ctx.runtimeState.build.hmr.profile
+    const relativeFile = profile.file && ctx.configService
+      ? ctx.configService.relativeCwd(profile.file)
+      : undefined
+    const sourceRootFile = profile.file && ctx.configService
+      ? ctx.configService.relativeAbsoluteSrcRoot(profile.file)
+      : undefined
+    return {
+      timestamp: new Date().toISOString(),
+      totalMs,
+      eventId: profile.eventId,
+      event: profile.event,
+      file: profile.file,
+      relativeFile,
+      sourceRootFile,
+      buildCoreMs: profile.buildCoreMs,
+      transformMs: profile.transformMs,
+      writeMs: profile.writeMs,
+      watchToDirtyMs: profile.watchToDirtyMs,
+      emitMs: profile.emitMs,
+      sharedChunkResolveMs: profile.sharedChunkResolveMs,
+      dirtyCount: profile.dirtyCount,
+      pendingCount: profile.pendingCount,
+      emittedCount: profile.emittedCount,
+      dirtyReasonSummary: profile.dirtyReasonSummary,
+      pendingReasonSummary: profile.pendingReasonSummary,
+    }
+  }
+
   function recordHmrProfile(totalMs: number) {
     const hmrState = ctx.runtimeState.build.hmr
-    hmrState.recentProfiles.push({
-      totalMs,
-      buildCoreMs: hmrState.profile.buildCoreMs,
-      transformMs: hmrState.profile.transformMs,
-      writeMs: hmrState.profile.writeMs,
-      watchToDirtyMs: hmrState.profile.watchToDirtyMs,
-      emitMs: hmrState.profile.emitMs,
-      sharedChunkResolveMs: hmrState.profile.sharedChunkResolveMs,
-      dirtyCount: hmrState.profile.dirtyCount,
-      pendingCount: hmrState.profile.pendingCount,
-      emittedCount: hmrState.profile.emittedCount,
-    })
+    hmrState.recentProfiles.push(createHmrProfileJsonSample(totalMs))
     if (hmrState.recentProfiles.length > 5) {
       hmrState.recentProfiles.splice(0, hmrState.recentProfiles.length - 5)
     }
@@ -374,36 +393,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       `检测到 HMR 重建明显变慢：当前 ${currentProfile.totalMs.toFixed(2)} ms，近${previousProfiles.length}次均值 ${previousAverage.toFixed(2)} ms${formatHmrPhaseRegressionHint(currentProfile, previousProfiles)}；建议运行 weapp-vite analyze --hmr-profile 查看阶段统计。`,
     )
     return true
-  }
-
-  function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
-    const profile = ctx.runtimeState.build.hmr.profile
-    const relativeFile = profile.file && ctx.configService
-      ? ctx.configService.relativeCwd(profile.file)
-      : undefined
-    const sourceRootFile = profile.file && ctx.configService
-      ? ctx.configService.relativeAbsoluteSrcRoot(profile.file)
-      : undefined
-    return {
-      timestamp: new Date().toISOString(),
-      totalMs,
-      eventId: profile.eventId,
-      event: profile.event,
-      file: profile.file,
-      relativeFile,
-      sourceRootFile,
-      buildCoreMs: profile.buildCoreMs,
-      transformMs: profile.transformMs,
-      writeMs: profile.writeMs,
-      watchToDirtyMs: profile.watchToDirtyMs,
-      emitMs: profile.emitMs,
-      sharedChunkResolveMs: profile.sharedChunkResolveMs,
-      dirtyCount: profile.dirtyCount,
-      pendingCount: profile.pendingCount,
-      emittedCount: profile.emittedCount,
-      dirtyReasonSummary: profile.dirtyReasonSummary,
-      pendingReasonSummary: profile.pendingReasonSummary,
-    }
   }
 
   async function writeHmrProfileJsonSample(totalMs: number) {

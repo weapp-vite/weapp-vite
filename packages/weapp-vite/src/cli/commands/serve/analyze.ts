@@ -1,6 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
-import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput, startAnalyzeDashboard } from '../../analyze/dashboard'
+import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput, DashboardRuntimeEventProfile, startAnalyzeDashboard } from '../../analyze/dashboard'
 import type { RuntimeTargets } from '../../runtime'
 import type { GlobalCLIOptions } from '../../types'
 import fs from 'node:fs/promises'
@@ -19,6 +19,34 @@ const REG_DIST_POSIX_SEP = /\\/g
 
 function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
   handle?.emitRuntimeEvents(events)
+}
+
+function formatHmrProfileFile(profile: DashboardRuntimeEventProfile) {
+  return profile.sourceRootFile ?? profile.relativeFile ?? profile.file ?? '未知文件'
+}
+
+function createHmrProfileEvent(profile: DashboardRuntimeEventProfile | undefined): DashboardRuntimeEventInput | undefined {
+  if (!profile || typeof profile.totalMs !== 'number') {
+    return undefined
+  }
+  const file = formatHmrProfileFile(profile)
+  const counts = [
+    typeof profile.dirtyCount === 'number' ? `dirty ${profile.dirtyCount}` : undefined,
+    typeof profile.pendingCount === 'number' ? `pending ${profile.pendingCount}` : undefined,
+    typeof profile.emittedCount === 'number' ? `emitted ${profile.emittedCount}` : undefined,
+  ].filter(Boolean).join(' / ')
+
+  return {
+    kind: 'hmr',
+    level: profile.totalMs >= 1000 ? 'warning' : 'success',
+    title: 'mini hmr rebuild completed',
+    detail: counts
+      ? `${file} 已完成热更新重建（${counts}）。`
+      : `${file} 已完成热更新重建。`,
+    durationMs: profile.totalMs,
+    tags: ['hmr', 'rebuild'],
+    profile,
+  }
 }
 
 function hasAnalyzeData(result: AnalyzeSubpackagesResult) {
@@ -257,6 +285,10 @@ export function createAnalyzeController(options: {
       watcher.on('event', (event) => {
         if (event.code !== 'END' || updating) {
           return
+        }
+        const hmrEvent = createHmrProfileEvent(ctx.runtimeState.build.hmr.recentProfiles.at(-1))
+        if (hmrEvent) {
+          emitDashboardEvents(analyzeHandle, [hmrEvent])
         }
         updating = true
         triggerAnalyzeUpdate('watch').finally(() => {

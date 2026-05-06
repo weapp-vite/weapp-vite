@@ -2,6 +2,7 @@ import type {
   DashboardRuntimeEvent,
   DashboardRuntimeEventKind,
   DashboardRuntimeEventLevel,
+  DashboardRuntimeHmrProfile,
   DashboardRuntimeSourceCardItem,
   DashboardRuntimeSourceSummary,
 } from '../types'
@@ -58,6 +59,45 @@ function normalizeTags(value: unknown) {
   return tags.length > 0 ? tags : undefined
 }
 
+function normalizeStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+  const items = value
+    .filter(item => typeof item === 'string' && item.trim())
+    .map(item => String(item))
+  return items.length > 0 ? items : undefined
+}
+
+function normalizeProfile(input: unknown): DashboardRuntimeHmrProfile | undefined {
+  if (!isRecord(input)) {
+    return undefined
+  }
+
+  const profile: DashboardRuntimeHmrProfile = {
+    timestamp: typeof input.timestamp === 'string' ? input.timestamp : undefined,
+    totalMs: normalizeDuration(input.totalMs),
+    eventId: typeof input.eventId === 'string' ? input.eventId : undefined,
+    event: typeof input.event === 'string' ? input.event : undefined,
+    file: typeof input.file === 'string' ? input.file : undefined,
+    relativeFile: typeof input.relativeFile === 'string' ? input.relativeFile : undefined,
+    sourceRootFile: typeof input.sourceRootFile === 'string' ? input.sourceRootFile : undefined,
+    buildCoreMs: normalizeDuration(input.buildCoreMs),
+    transformMs: normalizeDuration(input.transformMs),
+    writeMs: normalizeDuration(input.writeMs),
+    watchToDirtyMs: normalizeDuration(input.watchToDirtyMs),
+    emitMs: normalizeDuration(input.emitMs),
+    sharedChunkResolveMs: normalizeDuration(input.sharedChunkResolveMs),
+    dirtyCount: normalizeDuration(input.dirtyCount),
+    pendingCount: normalizeDuration(input.pendingCount),
+    emittedCount: normalizeDuration(input.emittedCount),
+    dirtyReasonSummary: normalizeStringArray(input.dirtyReasonSummary),
+    pendingReasonSummary: normalizeStringArray(input.pendingReasonSummary),
+  }
+
+  return Object.values(profile).some(value => value !== undefined) ? profile : undefined
+}
+
 function createRuntimeEvent(input: Record<string, unknown>, index: number): DashboardRuntimeEvent {
   return {
     id: normalizeString(input.id, `dashboard-runtime-event-${index}`),
@@ -69,6 +109,7 @@ function createRuntimeEvent(input: Record<string, unknown>, index: number): Dash
     source: normalizeString(input.source, 'dashboard'),
     durationMs: normalizeDuration(input.durationMs),
     tags: normalizeTags(input.tags),
+    profile: normalizeProfile(input.profile),
   }
 }
 

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
@@ -54,6 +55,10 @@ const startDevHotkeysMock = vi.hoisted(() => vi.fn(() => ({
   close: devHotkeysCloseMock,
   restore: devHotkeysRestoreMock,
 })))
+
+class MockWatcher extends EventEmitter {
+  close = vi.fn()
+}
 
 vi.mock('node:process', () => ({
   default: fakeProcess,
@@ -248,6 +253,93 @@ describe('serve cli command', () => {
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
+  })
+
+  it('emits hmr profile events to dashboard after mini rebuilds', async () => {
+    const watcher = new MockWatcher()
+    const emitRuntimeEvents = vi.fn()
+    const waitForExit = vi.fn(async () => {
+      watcher.emit('event', { code: 'END' })
+    })
+    analyzeSubpackagesMock.mockReset()
+    analyzeSubpackagesMock.mockResolvedValue({
+      packages: [{ id: 'hmr', label: 'hmr', files: [] }],
+      modules: [],
+      subPackages: [],
+    })
+    buildServiceBuildMock.mockResolvedValue(watcher)
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock
+      .mockResolvedValueOnce({
+        buildService: {
+          build: buildServiceBuildMock,
+        },
+        configService: {
+          platform: 'weapp',
+          cwd: '/project',
+          mode: 'development',
+          outDir: '/project/dist',
+          mpDistRoot: '/project/dist',
+          packageManager: { agent: 'pnpm' },
+          weappViteConfig: {
+            analyze: {
+              history: false,
+            },
+          },
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              recentProfiles: [
+                {
+                  totalMs: 128,
+                  sourceRootFile: 'src/pages/index.vue',
+                  event: 'update',
+                  dirtyCount: 1,
+                  pendingCount: 2,
+                  emittedCount: 1,
+                },
+              ],
+            },
+          },
+        },
+        webService: undefined,
+        watcherService: {
+          closeAll: watcherCloseAllMock,
+        },
+      })
+      .mockResolvedValue({
+        configService: {
+          cwd: '/project',
+          mode: 'development',
+        },
+      })
+    startAnalyzeDashboardMock.mockResolvedValue({
+      emitRuntimeEvents,
+      update: vi.fn().mockResolvedValue(undefined),
+      waitForExit,
+      close: vi.fn().mockResolvedValue(undefined),
+      urls: ['http://127.0.0.1:4173/'],
+    })
+    const action = createServeActionHandler()
+
+    await action('/project', {
+      platform: 'weapp',
+      ui: true,
+    })
+
+    expect(emitRuntimeEvents).toHaveBeenCalledWith([
+      expect.objectContaining({
+        kind: 'hmr',
+        level: 'success',
+        title: 'mini hmr rebuild completed',
+        durationMs: 128,
+        profile: expect.objectContaining({
+          sourceRootFile: 'src/pages/index.vue',
+          totalMs: 128,
+        }),
+      }),
+    ])
   })
 
   it('forwards trust-project setting when opening ide in serve mode', async () => {

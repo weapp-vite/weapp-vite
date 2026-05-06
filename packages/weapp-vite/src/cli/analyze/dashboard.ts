@@ -34,6 +34,28 @@ interface DashboardRuntimeEvent {
   source: string
   durationMs?: number
   tags?: string[]
+  profile?: DashboardRuntimeEventProfile
+}
+
+export interface DashboardRuntimeEventProfile {
+  timestamp?: string
+  totalMs?: number
+  eventId?: string
+  event?: string
+  file?: string
+  relativeFile?: string
+  sourceRootFile?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
+  watchToDirtyMs?: number
+  emitMs?: number
+  sharedChunkResolveMs?: number
+  dirtyCount?: number
+  pendingCount?: number
+  emittedCount?: number
+  dirtyReasonSummary?: string[]
+  pendingReasonSummary?: string[]
 }
 
 export interface DashboardRuntimeEventInput {
@@ -44,6 +66,7 @@ export interface DashboardRuntimeEventInput {
   source?: string
   durationMs?: number
   tags?: string[]
+  profile?: DashboardRuntimeEventProfile
 }
 
 function createInstallCommand(agent: PackageManagerAgent | undefined) {
@@ -92,6 +115,7 @@ function createDashboardRuntimeEvent(input: DashboardRuntimeEventInput) {
     source: input.source ?? 'weapp-vite',
     durationMs: input.durationMs,
     tags: input.tags,
+    profile: input.profile,
   } satisfies DashboardRuntimeEvent
 }
 

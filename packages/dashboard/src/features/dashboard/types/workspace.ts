@@ -40,6 +40,27 @@ export type DashboardRuntimeEventKind = 'command' | 'build' | 'diagnostic' | 'hm
 export type DashboardRuntimeEventLevel = 'info' | 'success' | 'warning' | 'error'
 export type ActivityEventSortMode = 'time' | 'duration' | 'severity' | 'source'
 
+export interface DashboardRuntimeHmrProfile {
+  timestamp?: string
+  totalMs?: number
+  eventId?: string
+  event?: string
+  file?: string
+  relativeFile?: string
+  sourceRootFile?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
+  watchToDirtyMs?: number
+  emitMs?: number
+  sharedChunkResolveMs?: number
+  dirtyCount?: number
+  pendingCount?: number
+  emittedCount?: number
+  dirtyReasonSummary?: string[]
+  pendingReasonSummary?: string[]
+}
+
 export interface DashboardRuntimeEvent {
   id: string
   kind: DashboardRuntimeEventKind
@@ -50,6 +71,7 @@ export interface DashboardRuntimeEvent {
   source?: string
   durationMs?: number
   tags?: string[]
+  profile?: DashboardRuntimeHmrProfile
 }
 
 export interface DashboardRuntimeSourceSummary {

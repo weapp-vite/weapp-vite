@@ -18,6 +18,7 @@ describe('normalizeRuntimeEvents', () => {
         source: 'dashboard',
         durationMs: undefined,
         tags: undefined,
+        profile: undefined,
       },
     ])
   })
@@ -53,6 +54,56 @@ describe('normalizeRuntimeEvents', () => {
         source: 'dashboard',
         durationMs: undefined,
         tags: ['hmr'],
+        profile: undefined,
+      },
+    ])
+  })
+
+  it('normalizes hmr profile details on runtime events', () => {
+    expect(normalizeRuntimeEvents({
+      id: 'evt-hmr',
+      kind: 'hmr',
+      level: 'success',
+      title: 'hmr completed',
+      detail: 'updated src/pages/index.vue',
+      profile: {
+        totalMs: 128.5,
+        buildCoreMs: 80,
+        transformMs: -1,
+        dirtyCount: 2,
+        dirtyReasonSummary: ['entry-direct:1', '', 1],
+      },
+    })).toEqual([
+      {
+        id: 'evt-hmr',
+        kind: 'hmr',
+        level: 'success',
+        title: 'hmr completed',
+        detail: 'updated src/pages/index.vue',
+        timestamp: '—',
+        source: 'dashboard',
+        durationMs: undefined,
+        tags: undefined,
+        profile: {
+          timestamp: undefined,
+          totalMs: 128.5,
+          eventId: undefined,
+          event: undefined,
+          file: undefined,
+          relativeFile: undefined,
+          sourceRootFile: undefined,
+          buildCoreMs: 80,
+          transformMs: undefined,
+          writeMs: undefined,
+          watchToDirtyMs: undefined,
+          emitMs: undefined,
+          sharedChunkResolveMs: undefined,
+          dirtyCount: 2,
+          pendingCount: undefined,
+          emittedCount: undefined,
+          dirtyReasonSummary: ['entry-direct:1'],
+          pendingReasonSummary: undefined,
+        },
       },
     ])
   })

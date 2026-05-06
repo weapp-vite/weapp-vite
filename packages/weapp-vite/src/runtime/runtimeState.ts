@@ -115,7 +115,13 @@ export interface RuntimeState {
       didEmitAllEntries: boolean
       lastEmittedEntryIds: Set<string>
       recentProfiles: Array<{
+        timestamp?: string
         totalMs: number
+        eventId?: string
+        event?: string
+        file?: string
+        relativeFile?: string
+        sourceRootFile?: string
         buildCoreMs?: number
         transformMs?: number
         writeMs?: number
@@ -125,6 +131,8 @@ export interface RuntimeState {
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
+        dirtyReasonSummary?: string[]
+        pendingReasonSummary?: string[]
       }>
       profile: {
         eventId?: string
