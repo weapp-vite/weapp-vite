@@ -681,6 +681,51 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toBeUndefined()
   })
 
+  it('emits augmented scoped slot components for wrapped plain default children when explicitly augmented', () => {
+    const template = `
+<Provider>
+  <view>
+    <Leaf />
+  </view>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsCompiler: 'augmented' },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).not.toContain('<view><Leaf /></view>')
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
+  })
+
+  it('keeps wrapped plain default children native when explicit require props wins over augmented mode', () => {
+    const template = `
+<Provider>
+  <view>
+    <Leaf />
+  </view>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: true,
+      },
+    )
+
+    expect(code).toContain('<Provider vue-slots="{{__wv_bind_0}}"><view><Leaf /></view></Provider>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
   it('keeps implicit default native for kebab-case mini program components', () => {
     const template = `
 <t-cell-group>

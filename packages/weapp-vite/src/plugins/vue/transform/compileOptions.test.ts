@@ -303,6 +303,35 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.scopedSlotsRequireProps).toBe(true)
   })
 
+  it('passes explicit scopedSlotsCompiler mode through to template compiler', () => {
+    const augmented = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              scopedSlotsCompiler: 'augmented',
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(augmented.template.scopedSlotsCompiler).toBe('augmented')
+    expect(augmented.template.scopedSlotsRequireProps).toBe(false)
+  })
+
   it('preserves boolean htmlTagToWxml config when resolving compile options', () => {
     const options = createCompileVueFileOptions(
       {} as any,

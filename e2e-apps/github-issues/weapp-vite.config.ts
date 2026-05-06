@@ -2,6 +2,7 @@ import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
+const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
@@ -66,6 +67,14 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue510AugmentedEnabled) {
+    return {
+      include: [
+        'pages/issue-510/**',
+      ],
+    }
+  }
+
   const matchedRoutes = matchedGithubIssuesTestFile
     ? githubIssuesRouteGroups[matchedGithubIssuesTestFile]
     : undefined
@@ -186,6 +195,11 @@ export default defineConfig({
     vue: {
       template: {
         slotSingleRootNoWrapper: true,
+        ...(issue510AugmentedEnabled
+          ? {
+              scopedSlotsCompiler: 'augmented',
+            } as const
+          : {}),
       },
     },
     npm: resolveGithubIssuesNpm(),
@@ -213,5 +227,11 @@ export default defineConfig({
           minify: false,
         },
       }
-    : {}),
+    : issue510AugmentedEnabled
+      ? {
+          build: {
+            outDir: 'dist-issue-510',
+          },
+        }
+      : {}),
 })
