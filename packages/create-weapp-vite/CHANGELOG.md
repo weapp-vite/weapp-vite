@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.19
+
+### Patch Changes
+
+- 🐛 **新增 `wv alipay` 命令命名空间，支持通过本机 `minidev` 执行支付宝小程序 IDE 启动、登录、预览和上传自动化，并自动解析支付宝项目目录。** [`42aaaf8`](https://github.com/weapp-vite/weapp-vite/commit/42aaaf83b280a1b8eba4ee9eaa39b89343602d11) by @sonofmagic
+
+- 🐛 **修复支付宝小程序 worker 环境中 `window`、`self`、`global` 同时存在但缺少 `globalThis` 时，weapi 网络策略和 wpi 注入读取宿主配置或平台 API 可能命中错误全局根对象的问题。** [`1d4d1c0`](https://github.com/weapp-vite/weapp-vite/commit/1d4d1c01a4f3848e3087864613a6bf42d68f7803) by @sonofmagic
+
 ## 2.3.18
 
 ### Patch Changes
