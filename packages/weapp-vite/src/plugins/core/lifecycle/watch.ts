@@ -16,6 +16,7 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
+import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '../helpers'
 
@@ -119,6 +120,54 @@ async function processChangedFile(
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
+  const isTemplateSidecar = Boolean(path.extname(normalizedId) && watchedTemplateExts.has(path.extname(normalizedId)))
+  const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedId.endsWith(suffix))
+
+  const addWxmlImporterEntries = async (startId: string) => {
+    const wxmlService = ctx.wxmlService
+    if (!wxmlService) {
+      return
+    }
+
+    const visited = new Set<string>()
+    const queue = [startId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      if (visited.has(current)) {
+        continue
+      }
+      visited.add(current)
+
+      const importers = wxmlService.getImporters(current)
+      for (const importer of importers) {
+        const normalizedImporter = normalizeFsResolvedId(importer)
+        if (!visited.has(normalizedImporter)) {
+          queue.push(normalizedImporter)
+        }
+
+        const ext = path.extname(normalizedImporter)
+        if (!ext) {
+          continue
+        }
+        const basePath = normalizedImporter.slice(0, -ext.length)
+        const primaryScript = await findJsEntry(basePath)
+        if (!primaryScript.path) {
+          continue
+        }
+        const primaryScriptId = normalizeFsResolvedId(primaryScript.path)
+        const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(primaryScriptId))
+          ? 'dependency'
+          : 'direct'
+        if (reason === 'dependency') {
+          affectedLayoutEntryIds.add(primaryScriptId)
+        }
+        else {
+          markEntryDirtyWithCause(primaryScriptId, reason, 'wxml-importer')
+        }
+      }
+    }
+  }
 
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
@@ -142,6 +191,10 @@ async function processChangedFile(
       if (wxmlService) {
         await wxmlService.scan(normalizedId)
       }
+    }
+
+    if (isTemplateSidecar || isScriptModuleSidecar) {
+      await addWxmlImporterEntries(normalizedId)
     }
 
     const isHtmlTemplateFile = normalizedId.endsWith('.html')

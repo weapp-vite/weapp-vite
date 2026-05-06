@@ -84,6 +84,9 @@ extensions/vscode/.vscode-test/
 docs/reports/*-ide-warning-report/
 docs/reports/*-ide-type-uncompatible-warning-report.md
 docs/reports/*-ide-type-uncompatible-warning-report.json
+docs/reports/*-e2e-ci-suite-report/
+docs/reports/*-e2e-ide-full-suite-report/
+docs/reports/*-hmr-guard-*-suite-report/
 
 # simulator browser test artifacts
 mpcore/packages/simulator/.vitest-attachments/

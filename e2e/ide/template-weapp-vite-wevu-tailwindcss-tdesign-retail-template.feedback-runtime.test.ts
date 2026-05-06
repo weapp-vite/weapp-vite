@@ -11,7 +11,9 @@ const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
 const HOME_ROUTE = '/pages/home/home'
 const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|Timeout in warmup current page|Timeout in read current page|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
+const SESSION_RETRYABLE_PATTERN = /Timeout in raw reLaunch|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Target closed|not connected|Execution context was destroyed/i
 const GOODS_DETAIL_PATH = 'pages/goods/details/index'
+const SESSION_RETRY_COUNT = 2
 
 async function runBuild() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -74,7 +76,35 @@ async function closeSharedMiniProgram() {
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await miniProgram.close().catch(() => {})
+}
+
+async function runWithRetailSessionRetry<T>(label: string, factory: (miniProgram: any) => Promise<T>) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= SESSION_RETRY_COUNT; attempt += 1) {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      return await factory(miniProgram)
+    }
+    catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (attempt >= SESSION_RETRY_COUNT || !SESSION_RETRYABLE_PATTERN.test(message)) {
+        throw error
+      }
+
+      process.stdout.write(
+        `[retail-feedback-runtime] restart shared automator label=${label} attempt=${attempt + 1}/${SESSION_RETRY_COUNT} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`,
+      )
+      await closeSharedMiniProgram()
+      await sleep(1_500)
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`[retail-feedback-runtime] failed after ${SESSION_RETRY_COUNT} attempts: ${label}`)
 }
 
 function attachConsoleWarningCollector(miniProgram: any) {
@@ -143,80 +173,83 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
   })
 
   it('does not emit runtime warnings when layout toast is triggered from home page', async () => {
-    const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const warningCollector = attachConsoleWarningCollector(miniProgram)
+    await runWithRetailSessionRetry('home-toast', async (miniProgram) => {
+      const collector = attachRuntimeErrorCollector(miniProgram)
+      const warningCollector = attachConsoleWarningCollector(miniProgram)
 
-    try {
-      const page = await miniProgram.reLaunch('/pages/home/home')
-      if (!page) {
-        throw new Error('Failed to launch route: /pages/home/home')
+      try {
+        const page = await miniProgram.reLaunch('/pages/home/home')
+        if (!page) {
+          throw new Error('Failed to launch route: /pages/home/home')
+        }
+
+        await page.waitFor(400)
+
+        const marker = collector.mark()
+        const warningMarker = warningCollector.mark()
+        await page.callMethod('goodListAddCartHandle')
+        await page.waitFor(300)
+
+        expect(collector.getSince(marker)).toEqual([])
+        expect(warningCollector.getSince(warningMarker)).toEqual([])
       }
-
-      await page.waitFor(400)
-
-      const marker = collector.mark()
-      const warningMarker = warningCollector.mark()
-      await page.callMethod('goodListAddCartHandle')
-      await page.waitFor(300)
-
-      expect(collector.getSince(marker)).toEqual([])
-      expect(warningCollector.getSince(warningMarker)).toEqual([])
-    }
-    finally {
-      warningCollector.dispose()
-      collector.dispose()
-    }
+      finally {
+        warningCollector.dispose()
+        collector.dispose()
+      }
+    })
   })
 
   it('navigates from home goods card through component click event wiring', async () => {
-    const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
+    await runWithRetailSessionRetry('home-goods-navigation', async (miniProgram) => {
+      const collector = attachRuntimeErrorCollector(miniProgram)
 
-    try {
-      const page = await miniProgram.reLaunch(HOME_ROUTE)
-      if (!page) {
-        throw new Error(`Failed to launch route: ${HOME_ROUTE}`)
+      try {
+        const page = await miniProgram.reLaunch(HOME_ROUTE)
+        if (!page) {
+          throw new Error(`Failed to launch route: ${HOME_ROUTE}`)
+        }
+
+        const goodsList = await waitForHomeGoodsReady(page)
+        if (!goodsList) {
+          throw new Error('Failed to load goods list on home page')
+        }
+
+        const marker = collector.mark()
+        await page.callMethod('goodListClickHandle', { detail: { index: 0 } })
+        const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH)
+
+        expect(detailPage?.path).toBe(GOODS_DETAIL_PATH)
+        expect(collector.getSince(marker)).toEqual([])
       }
-
-      const goodsList = await waitForHomeGoodsReady(page)
-      if (!goodsList) {
-        throw new Error('Failed to load goods list on home page')
+      finally {
+        collector.dispose()
       }
-
-      const marker = collector.mark()
-      await page.callMethod('goodListClickHandle', { detail: { index: 0 } })
-      const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH)
-
-      expect(detailPage?.path).toBe(GOODS_DETAIL_PATH)
-      expect(collector.getSince(marker)).toEqual([])
-    }
-    finally {
-      collector.dispose()
-    }
+    })
   })
 
   it('does not emit runtime warnings when layout dialog is triggered on fill-tracking-no load', async () => {
-    const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const warningCollector = attachConsoleWarningCollector(miniProgram)
+    await runWithRetailSessionRetry('fill-tracking-no-dialog', async (miniProgram) => {
+      const collector = attachRuntimeErrorCollector(miniProgram)
+      const warningCollector = attachConsoleWarningCollector(miniProgram)
 
-    try {
-      const marker = collector.mark()
-      const warningMarker = warningCollector.mark()
-      const page = await miniProgram.reLaunch('/pages/order/fill-tracking-no/index')
-      if (!page) {
-        throw new Error('Failed to launch route: /pages/order/fill-tracking-no/index')
+      try {
+        const marker = collector.mark()
+        const warningMarker = warningCollector.mark()
+        const page = await miniProgram.reLaunch('/pages/order/fill-tracking-no/index')
+        if (!page) {
+          throw new Error('Failed to launch route: /pages/order/fill-tracking-no/index')
+        }
+
+        await page.waitFor(500)
+
+        expect(collector.getSince(marker)).toEqual([])
+        expect(warningCollector.getSince(warningMarker)).toEqual([])
       }
-
-      await page.waitFor(500)
-
-      expect(collector.getSince(marker)).toEqual([])
-      expect(warningCollector.getSince(warningMarker)).toEqual([])
-    }
-    finally {
-      warningCollector.dispose()
-      collector.dispose()
-    }
+      finally {
+        warningCollector.dispose()
+        collector.dispose()
+      }
+    })
   })
 })

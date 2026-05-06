@@ -63,6 +63,7 @@ function resolvePendingEntryIds(options: {
   dirtyReasonSummary?: string[]
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
+  sourceSharedChunks?: Set<string>
 }): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
   const pendingReasonSummary = resolveUpstreamPendingReasonSummary(options.dirtyReasonSummary)
@@ -90,6 +91,15 @@ function resolvePendingEntryIds(options: {
 
   const startedAt = performance.now()
   const relatedChunkIds = new Set<string>()
+  const shouldExpandLayoutSharedChunks = pendingReasonSummary.includes('layout-propagation')
+    || pendingReasonSummary.includes('layout-fallback-full')
+
+  if (shouldExpandLayoutSharedChunks) {
+    for (const chunkId of options.sharedChunkImporters.keys()) {
+      relatedChunkIds.add(chunkId)
+    }
+  }
+
   for (const entryId of options.dirtyEntrySet) {
     if (options.dirtyEntryReasons.get(entryId) === 'metadata') {
       continue
@@ -118,7 +128,7 @@ function resolvePendingEntryIds(options: {
     if (!importers) {
       continue
     }
-    if (importers.size <= 1) {
+    if (importers.size <= 1 && !shouldExpandLayoutSharedChunks) {
       continue
     }
     let hasDependencyDrivenImporter = false
@@ -132,10 +142,13 @@ function resolvePendingEntryIds(options: {
         hasDirectDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
+    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !shouldExpandLayoutSharedChunks) {
       continue
     }
-    if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
+    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
+      expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
+    }
+    else if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
       expansionMode = 'mixed'
     }
     else if (hasDirectDirtyImporter) {
@@ -289,6 +302,7 @@ export function useLoadEntry(
         dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
+        sourceSharedChunks: options?.hmr?.sourceSharedChunks,
       })
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []

@@ -65,6 +65,7 @@ function createState(overrides: Record<string, any> = {}) {
       },
       wxmlService: {
         scan: vi.fn(async () => null),
+        getImporters: vi.fn(() => new Set<string>()),
       },
       autoRoutesService: {
         isRouteFile: vi.fn(() => false),
@@ -377,6 +378,73 @@ const count = 1
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, layoutEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(unrelatedEntry, 'dependency')
+  })
+
+  it('marks shared layout template importers and dependent entries as dependency dirties', async () => {
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared-layout-hmr/layout-template.wxml'
+    const layoutTemplate = '/project/src/layouts/default/index.wxml'
+    const layoutEntry = '/project/src/layouts/default/index.ts'
+    const pageEntry = '/project/src/pages/layout-a/index.ts'
+    const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/layouts/default/index') {
+        return { path: layoutEntry }
+      }
+      return { path: null }
+    })
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [layoutEntry, { id: layoutEntry }],
+        [pageEntry, { id: pageEntry }],
+        [unrelatedEntry, { id: unrelatedEntry }],
+      ]),
+      layoutEntryDependents: new Map([
+        [layoutEntry, new Set([pageEntry])],
+      ]),
+    })
+    state.ctx.wxmlService.getImporters.mockReturnValue(new Set([layoutTemplate]))
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'update' })
+
+    expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(2)
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, layoutEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(unrelatedEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['layout-self:1', 'layout-dependent:1'])
+  })
+
+  it('marks shared layout wxs importers and dependent entries as dependency dirties', async () => {
+    const sharedWxs = '/project/src/shared-layout-hmr/layout-helper.wxs'
+    const layoutTemplate = '/project/src/layouts/default/index.wxml'
+    const layoutEntry = '/project/src/layouts/default/index.ts'
+    const pageEntry = '/project/src/pages/layout-a/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/layouts/default/index') {
+        return { path: layoutEntry }
+      }
+      return { path: null }
+    })
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [layoutEntry, { id: layoutEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+      layoutEntryDependents: new Map([
+        [layoutEntry, new Set([pageEntry])],
+      ]),
+    })
+    state.ctx.wxmlService.getImporters.mockReturnValue(new Set([layoutTemplate]))
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedWxs, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(2)
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, layoutEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['layout-self:1', 'layout-dependent:1'])
   })
 
   it('marks html layout template sidecar updates as dependency dirties', async () => {
