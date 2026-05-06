@@ -782,6 +782,27 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
   })
 
+  it('compiles scoped slot fallback content to presence-guarded branches', () => {
+    const template = `
+<slot :item="card.item" :index="card.index">
+  <view class="fallback">{{ fallbackDefault }}</view>
+</slot>
+    `.trim()
+
+    const { code, warnings, componentGenerics } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/provider/index.vue',
+    )
+
+    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
+    expect(code).toContain(`<slot />`)
+    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{['item',card.item,'index',card.index]}}" __wv-slot-scope="{{__wvSlotScope}}" />`)
+    expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
+    expect(code).not.toContain('不支持作用域插槽的兜底内容')
+    expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
+    expect(componentGenerics?.['scoped-slots-default']).toBe(true)
+  })
+
   it('keeps slot fallback branches nested inside v-if chains', () => {
     const template = `
 <slot v-if="a" name="header"><view>A fallback</view></slot>

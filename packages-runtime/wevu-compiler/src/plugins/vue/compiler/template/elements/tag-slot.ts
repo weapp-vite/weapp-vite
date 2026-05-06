@@ -271,10 +271,6 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
       .join('')
   }
 
-  if (slotPropsExp && fallbackContent) {
-    context.warnings.push('不支持作用域插槽的兜底内容，已忽略。')
-    fallbackContent = ''
-  }
   const slotAttrs: string[] = []
   const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
   if (nameAttr) {
@@ -283,13 +279,13 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
   let slotTag = `<slot${slotAttrString} />`
+  const slotPresentExp = fallbackContent ? createSlotPresenceExpression(slotNameInfo) : undefined
 
   if (fallbackContent) {
-    const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
     if (!slotPropsExp && slotPresentExp) {
       slotTag = `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
     }
-    else {
+    else if (!slotPropsExp) {
       slotTag = `<slot${slotAttrString}>${fallbackContent}</slot>`
     }
   }
@@ -313,8 +309,13 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`
+  const projectedContent = `${slotTag}${scopedTag}`
 
-  return `${slotTag}${scopedTag}`
+  if (fallbackContent && slotPresentExp) {
+    return `${context.platform.wrapIf(slotPresentExp, projectedContent, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
+  }
+
+  return projectedContent
 }
 
 export function transformSlotElementPlain(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
