@@ -1,5 +1,6 @@
 import type { WeapiAdapter } from './types'
 import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { resolveRuntimeGlobalValue, resolveRuntimeRoot } from './runtimeGlobal'
 
 export interface DetectAdapterResult {
   adapter?: WeapiAdapter
@@ -19,16 +20,6 @@ const GLOBAL_ADAPTER_KEYS: Array<{ platform: string, key: string }> = [
   { platform: 'uni', key: 'uni' },
 ]
 
-function resolveGlobalThis(): Record<string, any> | undefined {
-  if (typeof globalThis !== 'undefined') {
-    return globalThis as Record<string, any>
-  }
-  if (typeof window !== 'undefined') {
-    return window as Record<string, any>
-  }
-  return undefined
-}
-
 function isAdapterCandidate(value: unknown): value is WeapiAdapter {
   return typeof value === 'object' || typeof value === 'function'
 }
@@ -37,12 +28,9 @@ function isAdapterCandidate(value: unknown): value is WeapiAdapter {
  * @description 侦测当前运行环境的全局 API 对象
  */
 export function detectGlobalAdapter(): DetectAdapterResult {
-  const root = resolveGlobalThis()
-  if (!root) {
-    return {}
-  }
+  const root = resolveRuntimeRoot()
   for (const item of GLOBAL_ADAPTER_KEYS) {
-    const candidate = root[item.key]
+    const candidate = resolveRuntimeGlobalValue(item.key, root)
     if (isAdapterCandidate(candidate)) {
       return {
         adapter: candidate as WeapiAdapter,

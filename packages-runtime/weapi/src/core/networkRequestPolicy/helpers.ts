@@ -8,6 +8,7 @@ import {
   getMiniProgramRuntimeGlobalKeys,
   getMiniProgramRuntimeHostConfigKey,
 } from '@weapp-core/shared'
+import { resolveRuntimeGlobalValue, resolveRuntimeRoot } from '../runtimeGlobal'
 import { isPlainObject } from '../utils'
 import {
   DEFAULT_MAX_QUEUE_SIZE,
@@ -27,17 +28,17 @@ export function resolveQueueSize(value: number | undefined) {
 }
 
 function resolveCurrentMiniProgramHostConfig() {
-  const runtimeRoot = globalThis as Record<string, any>
+  const runtimeRoot = resolveRuntimeRoot()
   for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
-    if (!runtimeRoot[globalKey]) {
+    if (!resolveRuntimeGlobalValue(globalKey, runtimeRoot)) {
       continue
     }
     const platform = getMiniProgramPlatformByRuntimeGlobalKey(globalKey)
-    const hostConfig = runtimeRoot[getMiniProgramRuntimeHostConfigKey(platform)]
+    const hostConfig = resolveRuntimeGlobalValue(getMiniProgramRuntimeHostConfigKey(platform), runtimeRoot)
     return isPlainObject(hostConfig) ? hostConfig : undefined
   }
 
-  const defaultHostConfig = runtimeRoot[getMiniProgramRuntimeHostConfigKey(undefined)]
+  const defaultHostConfig = resolveRuntimeGlobalValue(getMiniProgramRuntimeHostConfigKey(undefined), runtimeRoot)
   return isPlainObject(defaultHostConfig) ? defaultHostConfig : undefined
 }
 

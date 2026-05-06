@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createGlobalHostCandidatesExpression,
   createGlobalHostExpression,
+  createGlobalRootCandidatesExpression,
   createNativeApiFallbackExpression,
   createWeapiAccessExpression,
+  createWeapiHostCandidatesExpression,
   createWeapiHostExpression,
   getNativeApiFallbackChecks,
+  getWeapiGlobalHostCandidateItems,
   getWeapiGlobalHostCandidates,
+  getWeapiGlobalRootCandidateItems,
 } from './weapi'
 
 describe('weapi utils', () => {
@@ -28,6 +33,16 @@ describe('weapi utils', () => {
   it('creates host and native fallback expressions from platform globals', () => {
     expect(createGlobalHostExpression()).toContain(`typeof globalThis !== 'undefined'`)
     expect(createWeapiHostExpression()).toBe(createGlobalHostExpression())
+    expect(getWeapiGlobalRootCandidateItems()).toEqual([
+      `(typeof globalThis !== 'undefined' && globalThis)`,
+      `(typeof self !== 'undefined' && self)`,
+      `(typeof window !== 'undefined' && window)`,
+      `(typeof global !== 'undefined' && global)`,
+    ])
+    expect(getWeapiGlobalHostCandidateItems()).toContain(`(typeof my !== 'undefined' && my)`)
+    expect(createWeapiHostCandidatesExpression()).toBe(createGlobalRootCandidatesExpression())
+    expect(createGlobalHostCandidatesExpression()).toContain(`typeof my !== 'undefined' && my`)
+    expect(createWeapiHostCandidatesExpression()).not.toContain(`typeof my !== 'undefined' && my`)
     expect(getNativeApiFallbackChecks()).toEqual([
       `((typeof my !== 'undefined' && my)`,
       ` || (typeof wx !== 'undefined' && wx)`,
@@ -49,6 +64,7 @@ describe('weapi utils', () => {
 
     expect(expression).toContain(`["weapi"]`)
     expect(expression).toContain(`typeof globalThis !== 'undefined'`)
+    expect(expression).toContain(`typeof window !== 'undefined'`)
     expect(expression).toContain(`typeof wx !== 'undefined' && wx`)
   })
 })

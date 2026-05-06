@@ -17,6 +17,26 @@ function setHostNetworkTimeout(
   }
 }
 
+function withMaskedGlobalThis<T>(callback: () => T): T {
+  const hostGlobal = globalThis as Record<string, unknown>
+  const descriptor = Object.getOwnPropertyDescriptor(hostGlobal, 'globalThis')
+  Object.defineProperty(hostGlobal, 'globalThis', {
+    configurable: true,
+    value: undefined,
+  })
+  try {
+    return callback()
+  }
+  finally {
+    if (descriptor) {
+      Object.defineProperty(hostGlobal, 'globalThis', descriptor)
+    }
+    else {
+      delete hostGlobal.globalThis
+    }
+  }
+}
+
 export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() {
   afterEach(() => {
     setHostNetworkTimeout(undefined, 'weapp')
@@ -55,6 +75,25 @@ export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() 
 
     expect(downloadFile).toHaveBeenCalledWith(expect.objectContaining({
       timeout: 15_000,
+    }))
+  })
+
+  it('reads host timeout through global fallback when globalThis is unavailable', async () => {
+    setHostNetworkTimeout({
+      downloadFile: 12_000,
+    })
+    const downloadFile = vi.fn((options: any) => {
+      options.success?.({ tempFilePath: '/tmp/demo.png' })
+    })
+    const api = withMaskedGlobalThis(() => createTestWeapi({
+      adapter: { downloadFile },
+      platform: 'wx',
+    }))
+
+    await api.downloadFile({ url: 'https://example.com/demo.png' })
+
+    expect(downloadFile).toHaveBeenCalledWith(expect.objectContaining({
+      timeout: 12_000,
     }))
   })
 

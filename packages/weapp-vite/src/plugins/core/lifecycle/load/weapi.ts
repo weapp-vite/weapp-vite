@@ -1,6 +1,6 @@
 import { getMiniProgramRuntimeGlobalKeys, removeExtensionDeep } from '@weapp-core/shared'
-import { createMiniProgramHostOrTopLevelResolveExpression } from '../../../../utils/miniProgramGlobals'
-import { createWeapiHostExpression } from '../../../../utils/weapi'
+import { createMiniProgramTopLevelResolveExpression, getMiniProgramGlobalKeys } from '../../../../utils/miniProgramGlobals'
+import { createWeapiHostCandidatesExpression } from '../../../../utils/weapi'
 import { rewriteMiniProgramPlatformApiAccess } from '../platformApiRewrite'
 
 export interface InjectWeapiOptions {
@@ -46,27 +46,39 @@ export function createWeapiInjectionCode(options: {
 }) {
   const globalKey = JSON.stringify(options.globalName)
   const platform = JSON.stringify(options.platform)
-  const hostExpression = createWeapiHostExpression()
-  const nativeApiFallbackExpression = createMiniProgramHostOrTopLevelResolveExpression({
-    hostExpression: '__weappGlobal',
-  })
+  const hostCandidatesExpression = createWeapiHostCandidatesExpression()
+  const nativeApiResolveExpression = [
+    `(${getMiniProgramGlobalKeys().map(globalKey => `__weappResolveRootGlobal(${JSON.stringify(globalKey)})`).join(' ?? ')}`,
+    ` ?? ${createMiniProgramTopLevelResolveExpression()})`,
+  ].join('')
+  const nativeApiFallbackExpression = [
+    `(${getMiniProgramGlobalKeys().map(globalKey => `__weappResolveGlobal(${JSON.stringify(globalKey)})`).join(' ?? ')}`,
+    ` ?? ${createMiniProgramTopLevelResolveExpression()})`,
+  ].join('')
   const replaceLines = options.replaceWx
     ? [
-        ...getMiniProgramRuntimeGlobalKeys().map(globalKey => `  __weappGlobal.${globalKey} = __weappInstance`),
-        `  if (__weappPlatformKey) {`,
-        `    __weappGlobal[__weappPlatformKey] = __weappInstance`,
-        `  }`,
+        `    for (const __weappGlobal of __weappGlobals) {`,
+        ...getMiniProgramRuntimeGlobalKeys().map(globalKey => `      __weappGlobal.${globalKey} = __weappInstance`),
+        `      if (__weappPlatformKey) {`,
+        `        __weappGlobal[__weappPlatformKey] = __weappInstance`,
+        `      }`,
+        `    }`,
       ]
     : []
   return [
     `import { wpi as __weappWpi } from '@wevu/api'`,
-    `const __weappGlobal = ${hostExpression}`,
+    `const __weappRootGlobals = ${hostCandidatesExpression}`,
+    `const __weappResolveRootGlobal = key => __weappRootGlobals.map(item => item && item[key]).find(Boolean)`,
+    `const __weappNativeApi = ${nativeApiResolveExpression}`,
+    `const __weappGlobals = __weappRootGlobals.length ? __weappRootGlobals : [__weappNativeApi].filter(Boolean)`,
+    `const __weappGlobal = __weappGlobals[0] || {}`,
+    `const __weappResolveGlobal = key => __weappGlobals.map(item => item && item[key]).find(Boolean)`,
     `const __weappPlatformKey = ${platform}`,
     `if (__weappGlobal) {`,
-    `  const __weappExistingWpi = __weappGlobal[${globalKey}]`,
+    `  const __weappExistingWpi = __weappResolveGlobal(${globalKey})`,
     `  const __weappInstance = __weappExistingWpi || __weappWpi`,
     `  if (!__weappExistingWpi) {`,
-    `    const __weappRawApi = (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) ?? ${nativeApiFallbackExpression}`,
+    `    const __weappRawApi = (__weappPlatformKey ? __weappResolveGlobal(__weappPlatformKey) : undefined) ?? ${nativeApiFallbackExpression}`,
     `    if (__weappRawApi && __weappRawApi !== __weappWpi) {`,
     `      __weappWpi.setAdapter(__weappRawApi, __weappPlatformKey)`,
     `    }`,

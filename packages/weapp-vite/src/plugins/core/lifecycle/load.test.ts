@@ -389,6 +389,9 @@ describe('core lifecycle load hook injectWeapi', () => {
     )
 
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+    expect(code).toContain('const __weappRootGlobals = ([(typeof globalThis !== \'undefined\' && globalThis),(typeof self !== \'undefined\' && self),(typeof window !== \'undefined\' && window),(typeof global !== \'undefined\' && global)]')
+    expect(code).toContain('const __weappNativeApi = (__weappResolveRootGlobal("my") ?? __weappResolveRootGlobal("wx")')
+    expect(code).toContain('const __weappGlobals = __weappRootGlobals.length ? __weappRootGlobals : [__weappNativeApi].filter(Boolean)')
     expect(code).toContain('__weappGlobal.wx = __weappInstance')
     expect(code).toContain('__weappGlobal.my = __weappInstance')
     expect(code).toContain('__weappGlobal.tt = __weappInstance')
@@ -396,7 +399,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('__weappGlobal.jd = __weappInstance')
     expect(code).toContain('__weappGlobal.xhs = __weappInstance')
     expect(code).toContain('__weappGlobal[__weappPlatformKey] = __weappInstance')
-    expect(code).toContain('const __weappRawApi = (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) ?? ((__weappGlobal.my ?? __weappGlobal.wx ?? __weappGlobal.tt ?? __weappGlobal.swan ?? __weappGlobal.jd ?? __weappGlobal.xhs)')
+    expect(code).toContain('const __weappRawApi = (__weappPlatformKey ? __weappResolveGlobal(__weappPlatformKey) : undefined) ?? (__weappResolveGlobal("my") ?? __weappResolveGlobal("wx")')
     expect(code).not.toContain('Function(')
   })
 
