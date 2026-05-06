@@ -1,5 +1,11 @@
 # @weapp-vite/dashboard
 
+## 6.16.4
+
+### Patch Changes
+
+- 🐛 **在 `dev --ui` 的 dashboard 活动流中展示小程序 HMR 重建 profile，包含总耗时、阶段耗时、入口计数和脏标记原因，便于在开发态直接定位慢重建来源。** [`a9e21dc`](https://github.com/weapp-vite/weapp-vite/commit/a9e21dccc8938f2c3e0b0331423403ab9e4146c5) by @sonofmagic
+
 ## 6.16.3
 
 ## 6.16.2

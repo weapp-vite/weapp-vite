@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.16.4
+
+### Patch Changes
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 对普通默认插槽包裹内容不生效的问题。显式 augmented 模式现在会把普通默认插槽内容恢复为增强 scoped slot 输出，使插槽投影中的深层组件可以挂到 slot 宿主父链下并读取 `provide()` 上下文；默认 auto 模式仍保留较保守的隐式直连组件增强策略。** [#542](https://github.com/weapp-vite/weapp-vite/pull/542) by @sonofmagic
+
+- 🐛 **在 `dev --ui` 的 dashboard 活动流中展示小程序 HMR 重建 profile，包含总耗时、阶段耗时、入口计数和脏标记原因，便于在开发态直接定位慢重建来源。** [`a9e21dc`](https://github.com/weapp-vite/weapp-vite/commit/a9e21dccc8938f2c3e0b0331423403ab9e4146c5) by @sonofmagic
+
+- 🐛 **修复布局入口共享 WXML/WXS 侧车文件在 HMR 更新时没有完整标记依赖页面与共享 chunk importer 的问题，避免局部重编后页面引用到未重新导出的共享模块。** [`6fff99e`](https://github.com/weapp-vite/weapp-vite/commit/6fff99eb5f83ff74243fb3afa23d1c3774a4e702) by @sonofmagic
+
+- 🐛 **新增统一的 weapp-vite 运行目标解析能力，集中识别小程序平台、`web` 与 `all` / `both` 目标，并让插件宿主元信息携带当前单次构建的平台。`h5` 仍作为兼容别名解析为 `web`，但命令输出、示例与文档统一推荐使用 `web`。** [`dcb8c94`](https://github.com/weapp-vite/weapp-vite/commit/dcb8c94736bd53a2247da583a49684809104482e) by @sonofmagic
+
+- 🐛 **修复作用域插槽出口带默认兜底内容时会被编译器忽略的问题；现在 `<slot :foo="bar">fallback</slot>` 会根据父级插槽存在元数据正确切换作用域插槽投影与 fallback 渲染。** [#541](https://github.com/weapp-vite/weapp-vite/pull/541) by @sonofmagic
+- 📦 **Dependencies** [`f498fdb`](https://github.com/weapp-vite/weapp-vite/commit/f498fdb8717361d44577267969f4742235b5c2b2)
+  → `wevu@6.16.4`, `@weapp-vite/ast@6.16.4`
+
 ## 6.16.3
 
 ### Patch Changes
