@@ -9,8 +9,8 @@ definePageJson({
 <template>
   <view class="issue530-page">
     <Issue530SlotFallbackProbe class="issue530-card-empty" />
-    <Issue530SlotFallbackProbe class="issue530-card-provided">
-      <text class="issue530-provided-default">issue-530 provided default</text>
+    <Issue530SlotFallbackProbe v-slot="{ label }" class="issue530-card-provided">
+      <text class="issue530-provided-default">issue-530 provided default: {{ label }}</text>
     </Issue530SlotFallbackProbe>
   </view>
 </template>

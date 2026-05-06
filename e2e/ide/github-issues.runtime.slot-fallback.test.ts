@@ -125,9 +125,16 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
 
       const renderedWxml = await readPageWxml(issuePage)
       expect(renderedWxml).toContain('issue530-fallback-default')
+      expect(renderedWxml).toContain('issue530-scoped-fallback-default')
       expect(renderedWxml).toContain('issue530-provided-default')
       expect(countToken(renderedWxml, 'issue530-fallback-default')).toBe(1)
-      expect(countToken(renderedWxml, 'issue530-provided-default')).toBe(1)
+      expect(countToken(renderedWxml, 'issue530-scoped-fallback-default')).toBe(1)
+
+      const provided = await issuePage.$('.issue530-provided-default')
+      if (!provided) {
+        throw new Error('Failed to query issue-530 scoped slot provided probe')
+      }
+      expect((await provided.text()).trim()).toBe('issue-530 provided default: issue-530 scoped slot prop')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
