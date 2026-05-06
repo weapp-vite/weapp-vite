@@ -1,5 +1,13 @@
 # @wevu/api
 
+## 0.2.7
+
+### Patch Changes
+
+- 🐛 **修复支付宝小程序 worker 环境中 `window`、`self`、`global` 同时存在但缺少 `globalThis` 时，weapi 网络策略和 wpi 注入读取宿主配置或平台 API 可能命中错误全局根对象的问题。** [`1d4d1c0`](https://github.com/weapp-vite/weapp-vite/commit/1d4d1c01a4f3848e3087864613a6bf42d68f7803) by @sonofmagic
+
+- 🐛 **同步微信小程序 typings 源版本元数据到 5.2.0，修复 API 清单校验在构建时失败的问题。** [`4821193`](https://github.com/weapp-vite/weapp-vite/commit/482119390185ab735d38b4a022b8e73f461e0fcc) by @sonofmagic
+
 ## 0.2.6
 
 ### Patch Changes
