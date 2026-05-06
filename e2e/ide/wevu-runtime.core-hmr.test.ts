@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -18,6 +18,7 @@ import {
 import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
 import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
 
+const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const HMR_PAGE_WXML = path.join(APP_ROOT, 'src/pages/hmr/index.wxml')
 const HMR_PAGE_SCRIPT = path.join(APP_ROOT, 'src/pages/hmr/index.ts')
 const HMR_PAGE_STYLE = path.join(APP_ROOT, 'src/pages/hmr/index.wxss')
@@ -37,6 +38,7 @@ const LAYOUT_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.js')
 const LAYOUT_PAGE_WXSS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.wxss')
 
 let sharedMiniProgram: any = null
+let previousBridgePostConnectRefresh: string | undefined
 
 async function readPageWxml(page: any) {
   return normalizeAutomatorWxml(await readAutomatorPageWxml(page))
@@ -148,9 +150,24 @@ async function updateSourceAndWait(options: {
 }
 
 describe.sequential('wevu runtime core hmr matrix (ide)', () => {
+  beforeAll(() => {
+    previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'
+  })
+
   afterAll(async () => {
-    await closeMiniProgram()
-    await cleanupResidualIdeProcesses()
+    try {
+      await closeMiniProgram()
+      await cleanupResidualIdeProcesses()
+    }
+    finally {
+      if (previousBridgePostConnectRefresh == null) {
+        delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+      }
+      else {
+        process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
+      }
+    }
   })
 
   it('keeps DevTools runtime aligned with core page, sfc and layout hmr updates', async (ctx) => {

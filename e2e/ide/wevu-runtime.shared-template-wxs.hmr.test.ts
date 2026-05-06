@@ -1,5 +1,5 @@
 import { fs } from '@weapp-core/shared/node'
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -25,11 +25,13 @@ import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-is
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
 const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
+const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const TEMPLATE_EXT = 'wxml'
 const SCRIPT_MODULE_EXT = 'wxs'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
+let previousBridgePostConnectRefresh: string | undefined
 
 async function readPageWxml(page: any) {
   return normalizeAutomatorWxml(await readAutomatorPageWxml(page))
@@ -111,6 +113,11 @@ async function relaunchIdeSession(route: string, readyText?: string) {
   throw new Error(`Failed to relaunch IDE session for route: ${route}`)
 }
 
+beforeAll(() => {
+  previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+  process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'
+})
+
 beforeEach(async () => {
   await cleanupResidualIdeProcesses()
   await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, buildOriginalHmrPageWxml(), 'utf8')
@@ -119,15 +126,25 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
-  if (sharedMiniProgram) {
-    await sharedMiniProgram.close()
-    sharedMiniProgram = null
+  try {
+    if (sharedMiniProgram) {
+      await sharedMiniProgram.close()
+      sharedMiniProgram = null
+    }
+    if (sharedDev) {
+      await sharedDev.stop(5_000)
+      sharedDev = null
+    }
+    await cleanupResidualIdeProcesses()
   }
-  if (sharedDev) {
-    await sharedDev.stop(5_000)
-    sharedDev = null
+  finally {
+    if (previousBridgePostConnectRefresh == null) {
+      delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    }
+    else {
+      process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
+    }
   }
-  await cleanupResidualIdeProcesses()
 })
 
 describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
