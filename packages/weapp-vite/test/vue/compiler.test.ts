@@ -317,6 +317,20 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('__wv-slot-props')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
+
+    it('should compile scoped slot fallback content', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot :data="slotProps"><view>Scoped fallback</view></slot>',
+        'test.vue',
+      )
+
+      expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
+      expect(result.code).toContain('<slot />')
+      expect(result.code).toContain('scoped-slots-default')
+      expect(result.code).toContain('__wv-slot-props="{{[\'data\',slotProps]}}"')
+      expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
+      expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)
+    })
   })
 
   describe('Template Slots', () => {
