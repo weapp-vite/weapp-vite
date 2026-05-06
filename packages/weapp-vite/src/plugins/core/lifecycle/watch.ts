@@ -125,7 +125,7 @@ async function processChangedFile(
 
   const addWxmlImporterEntries = async (startId: string) => {
     const wxmlService = ctx.wxmlService
-    if (!wxmlService) {
+    if (!wxmlService || typeof wxmlService.getImporters !== 'function') {
       return
     }
 
