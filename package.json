@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "pnpm@10.33.3",
   "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
@@ -164,7 +164,7 @@
   "devDependencies": {
     "@babel/core": "catalog:",
     "@babel/parser": "catalog:",
-    "@babel/preset-env": "^7.29.3",
+    "@babel/preset-env": "^7.29.5",
     "@babel/preset-typescript": "^7.28.5",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
@@ -227,7 +227,7 @@
     "husky": "^9.1.7",
     "importx": "^0.5.2",
     "is-reference": "^3.0.3",
-    "jiti": "^2.6.1",
+    "jiti": "^2.7.0",
     "json-schema-to-typescript": "^15.0.4",
     "just-diff": "^6.0.2",
     "less": "^4.6.4",
