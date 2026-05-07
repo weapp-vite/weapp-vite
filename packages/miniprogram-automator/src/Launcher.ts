@@ -1,3 +1,4 @@
+import type { MiniprogramAutomatorPlatform } from './platform'
 /**
  * @file 开发者工具启动与连接流程。
  */
@@ -9,6 +10,8 @@ import Connection from './Connection'
 import { launchHeadlessAutomator } from './headless'
 import { endWith, extendDeep, getPort, isEmpty, isRelative, isWindows, sleep, toStr, waitUntil } from './internal/compat'
 import MiniProgram from './MiniProgram'
+import { normalizePlatform } from './platform'
+import SwanLauncher from './SwanLauncher'
 
 const DEFAULT_PORT = 9420
 const DEFAULT_TIMEOUT = 30000
@@ -71,20 +74,36 @@ function resolveWindowsBatchSpawn(cliPath: string, args: string[]) {
 
 export interface IConnectOptions {
   wsEndpoint: string
+  platform?: MiniprogramAutomatorPlatform
 }
 /** ILaunchOptions 的类型定义。 */
 export interface ILaunchOptions {
+  platform?: MiniprogramAutomatorPlatform
   cliPath?: string
+  connectType?: string
+  deviceId?: string
+  deviceType?: string
+  devtoolsPath?: string
   timeout?: number
   port?: number
   account?: string
   ticket?: string
   projectConfig?: any
-  projectPath: string
+  projectPath?: string
+  projectMinVersion?: string
+  swanCoreVersion?: string
   trustProject?: boolean
   args?: string[]
+  browserPath?: string
+  containerInfo?: unknown
+  cookies?: unknown
   cwd?: string
+  headless?: boolean
+  isRecord?: boolean
+  mtpaas?: Record<string, unknown>
   runtimeProvider?: 'devtools' | 'headless'
+  wdaProjPath?: string
+  webModel?: string
 }
 
 export interface ILauncherSessionMetadata {
@@ -101,8 +120,15 @@ function resolveRuntimeProvider(options: ILaunchOptions) {
 /** Launcher 的实现。 */
 export default class Launcher {
   async launch(options: ILaunchOptions): Promise<any> {
+    const platform = normalizePlatform(options.platform)
+    if (platform === 'swan') {
+      return await new SwanLauncher().launch(options)
+    }
     const provider = resolveRuntimeProvider(options)
     if (provider === 'headless') {
+      if (!options.projectPath) {
+        throw new Error('projectPath is not provided')
+      }
       return await launchHeadlessAutomator({
         projectPath: options.projectPath,
       })
@@ -234,6 +260,10 @@ export default class Launcher {
   }
 
   async connect(options: IConnectOptions) {
+    const platform = normalizePlatform(options.platform)
+    if (platform === 'swan') {
+      return await new SwanLauncher().connect(options)
+    }
     const miniProgram = await this.connectTool(options)
     await miniProgram.checkVersion()
     return miniProgram

@@ -25,6 +25,7 @@ export default icebreaker(
       '**/.vite-inspect/**',
       '**/.turbo/**',
       '**/.cache/**',
+      '**/.smartapp-automator/**',
       '**/__temp__/**',
       '**/.tmp/**',
       '**/.weapp-vite/**',

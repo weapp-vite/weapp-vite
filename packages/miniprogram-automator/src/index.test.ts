@@ -9,7 +9,9 @@ describe('miniprogram-automator', () => {
     expect(api.Automator).toBeTypeOf('function')
     expect(api.Element).toBeTypeOf('function')
     expect(api.Launcher).toBeTypeOf('function')
+    expect(api.SmartappAutomator).toBeTypeOf('object')
     expect(api.decodeQrCode).toBeTypeOf('function')
+    expect(api.normalizePlatform('baidu')).toBe('swan')
   })
   it('keeps plugin path helpers compatible', () => {
     expect(api.isPluginPath('plugin-private://abc/pages/index')).toBe(true)

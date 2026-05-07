@@ -52,6 +52,7 @@ dist-plugin
 .wevu-config
 **/.weapp-vite/auto-routes.cache.json
 **/.weapp-vite/
+**/.smartapp-automator/
 dist-web
 packages/wevu/.cache
 vite.config.ts.timestamp-*.mjs

@@ -23,6 +23,12 @@ const waitUntilMock = vi.hoisted(() => vi.fn(async (condition: () => unknown | P
 }))
 const sleepMock = vi.hoisted(() => vi.fn(async () => {}))
 const connectCreateMock = vi.hoisted(() => vi.fn())
+const swanLaunchMock = vi.hoisted(() => vi.fn(async (options: unknown) => ({ provider: 'swan', options })))
+const swanConnectMock = vi.hoisted(() => vi.fn(async (options: unknown) => ({ provider: 'swan', options })))
+const swanLauncherMock = vi.hoisted(() => vi.fn(function MockSwanLauncher(this: any) {
+  this.connect = swanConnectMock
+  this.launch = swanLaunchMock
+}))
 
 vi.mock('node:child_process', () => ({
   spawn: spawnMock,
@@ -38,6 +44,10 @@ vi.mock('./Connection', () => ({
   default: {
     create: connectCreateMock,
   },
+}))
+
+vi.mock('./SwanLauncher', () => ({
+  default: swanLauncherMock,
 }))
 
 async function loadLauncherModule(isWindows = false) {
@@ -130,6 +140,53 @@ describe('Launcher', () => {
         projectPath: '/tmp/project',
         wsEndpoint: 'ws://127.0.0.1:9420',
       },
+    })
+  })
+
+  it('delegates swan launch to the swan launcher', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const launcher = new Launcher()
+
+    await expect(launcher.launch({
+      platform: 'swan',
+      cliPath: '/Applications/swan-ide/cli',
+      projectPath: '/tmp/swan-project',
+    })).resolves.toEqual({
+      provider: 'swan',
+      options: {
+        platform: 'swan',
+        cliPath: '/Applications/swan-ide/cli',
+        projectPath: '/tmp/swan-project',
+      },
+    })
+
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(swanLaunchMock).toHaveBeenCalledWith({
+      platform: 'swan',
+      cliPath: '/Applications/swan-ide/cli',
+      projectPath: '/tmp/swan-project',
+    })
+  })
+
+  it('accepts baidu as an alias of swan platform', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const launcher = new Launcher()
+
+    await expect(launcher.connect({
+      platform: 'baidu',
+      wsEndpoint: 'ws://127.0.0.1:8888',
+    })).resolves.toEqual({
+      provider: 'swan',
+      options: {
+        platform: 'baidu',
+        wsEndpoint: 'ws://127.0.0.1:8888',
+      },
+    })
+
+    expect(connectCreateMock).not.toHaveBeenCalled()
+    expect(swanConnectMock).toHaveBeenCalledWith({
+      platform: 'baidu',
+      wsEndpoint: 'ws://127.0.0.1:8888',
     })
   })
 
