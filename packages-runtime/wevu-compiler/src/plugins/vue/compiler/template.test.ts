@@ -703,6 +703,31 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
   })
 
+  it('emits nested augmented scoped slot components for multi-level default component children', () => {
+    const template = `
+<MyCellGroup>
+  <MyCell>
+    <MyImage />
+  </MyCell>
+</MyCellGroup>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-547/index.vue',
+      { scopedSlotsCompiler: 'augmented' },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).not.toContain('<MyCell ')
+    expect(scopedSlotComponents).toHaveLength(2)
+    expect(scopedSlotComponents?.[0]?.template).toContain('<MyCell generic:scoped-slots-default="')
+    expect(scopedSlotComponents?.[0]?.template).not.toContain('<MyImage')
+    expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
+    expect(scopedSlotComponents?.[1]?.template).toContain('<MyImage />')
+    expect(scopedSlotComponents?.[1]?.componentGenerics).toBeUndefined()
+  })
+
   it('keeps wrapped plain default children native when explicit require props wins over augmented mode', () => {
     const template = `
 <Provider>

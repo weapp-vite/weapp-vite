@@ -97,6 +97,27 @@ function resolveScopedSlotAutoImports(
   return usingComponents
 }
 
+function resolveNestedScopedSlotUsingComponents(
+  scopedSlots: NonNullable<VueTransformResult['scopedSlotComponents']>,
+  currentComponentName: string,
+  relativeBase: string,
+  template: string,
+) {
+  const usingComponents: Record<string, string> = {}
+
+  for (const scopedSlot of scopedSlots) {
+    if (scopedSlot.componentName === currentComponentName) {
+      continue
+    }
+    if (!template.includes(scopedSlot.componentName)) {
+      continue
+    }
+    usingComponents[scopedSlot.componentName] = `/${toPosixPath(`${relativeBase}.__scoped-slot-${scopedSlot.id}`)}`
+  }
+
+  return usingComponents
+}
+
 export function emitScopedSlotAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -135,6 +156,10 @@ export function emitScopedSlotAssets(
       componentBase,
       scopedSlot.template,
     )
+    Object.assign(
+      scopedUsingComponents,
+      resolveNestedScopedSlotUsingComponents(scopedSlots, scopedSlot.componentName, relativeBase, scopedSlot.template),
+    )
 
     if (!bundle[wxmlFile]) {
       ctx.emitFile({ type: 'asset', fileName: wxmlFile, source: scopedSlot.template })
@@ -145,6 +170,9 @@ export function emitScopedSlotAssets(
         kind: 'component',
       })
       let json = mergeJson({}, { usingComponents: scopedUsingComponents }, 'auto-using-components')
+      if (scopedSlot.componentGenerics && Object.keys(scopedSlot.componentGenerics).length > 0) {
+        json = mergeJson(json, { componentGenerics: scopedSlot.componentGenerics }, 'component-generics')
+      }
       if (jsonOptions?.defaults && Object.keys(jsonOptions.defaults).length > 0) {
         json = mergeJson(json, jsonOptions.defaults, 'defaults')
       }

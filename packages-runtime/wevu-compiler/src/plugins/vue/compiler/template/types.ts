@@ -9,6 +9,7 @@ export interface ScopedSlotComponentAsset {
   componentName: string
   slotKey: string
   template: string
+  componentGenerics?: Record<string, true>
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
   inlineExpressions?: InlineExpressionAsset[]

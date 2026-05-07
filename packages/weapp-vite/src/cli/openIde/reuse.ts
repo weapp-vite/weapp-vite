@@ -1,17 +1,25 @@
 import { connectOpenedAutomator, launchAutomator, promptRetryKeypress } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
 
+interface DisconnectableMiniProgram {
+  disconnect: () => void
+}
+
 function formatReuseOpenedWechatIdePrompt() {
   const highlightedRetryKey = colors.bold(colors.green('r'))
   return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKey} 关闭当前窗口后重新打开。`
+}
+
+function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
+  miniProgram.disconnect()
 }
 
 async function openWechatIdeByAutomator(projectPath: string) {
   const miniProgram = await launchAutomator({
     projectPath,
     trustProject: true,
-  })
-  miniProgram.disconnect()
+  }) as DisconnectableMiniProgram
+  disconnectMiniProgram(miniProgram)
 }
 
 async function connectOpenedProject(projectPath: string) {
@@ -19,7 +27,7 @@ async function connectOpenedProject(projectPath: string) {
     return await connectOpenedAutomator({
       projectPath,
       timeout: 3_000,
-    })
+    }) as DisconnectableMiniProgram
   }
   catch {
     return null
@@ -38,7 +46,7 @@ export async function tryReuseOpenedWechatIde(
     return null
   }
 
-  miniProgram.disconnect()
+  disconnectMiniProgram(miniProgram)
   logger.info(formatReuseOpenedWechatIdePrompt())
 
   const action = await promptRetryKeypress({ logger })
@@ -74,7 +82,7 @@ export async function reopenOpenedWechatIde(
     return false
   }
 
-  miniProgram.disconnect()
+  disconnectMiniProgram(miniProgram)
   logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
   const closed = await closeIde()
   if (!closed) {

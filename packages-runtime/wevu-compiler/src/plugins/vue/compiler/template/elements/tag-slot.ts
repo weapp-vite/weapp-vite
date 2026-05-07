@@ -1,5 +1,5 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
-import type { TransformContext, TransformNode } from '../types'
+import type { ScopedSlotComponentAsset, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_SLOT_NAMES_PROP,
@@ -148,9 +148,16 @@ export function createScopedSlotComponent(
   const index = context.scopedSlotComponents.length
   const id = `${slotKey}-${index}`
   const componentName = `scoped-slot-${ownerHash}-${slotKey}-${index}`
+  const asset: ScopedSlotComponentAsset = {
+    id,
+    componentName,
+    slotKey,
+    template: '',
+  }
+  context.scopedSlotComponents.push(asset)
   const scopedContext: TransformContext = {
     ...context,
-    scopedSlotComponents: [],
+    scopedSlotComponents: context.scopedSlotComponents,
     componentGenerics: {},
     scopeStack: [],
     slotPropStack: [],
@@ -175,15 +182,11 @@ export function createScopedSlotComponent(
     const helperTag = buildClassStyleWxsTag(ext, scopedContext.classStyleWxsSrc)
     template = `${helperTag}\n${template}`
   }
-  context.scopedSlotComponents.push({
-    id,
-    componentName,
-    slotKey,
-    template,
-    classStyleBindings: scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined,
-    classStyleWxs: scopedContext.classStyleWxs || undefined,
-    inlineExpressions: scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined,
-  })
+  asset.template = template
+  asset.componentGenerics = Object.keys(scopedContext.componentGenerics).length ? scopedContext.componentGenerics : undefined
+  asset.classStyleBindings = scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined
+  asset.classStyleWxs = scopedContext.classStyleWxs || undefined
+  asset.inlineExpressions = scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined
   return { componentName, slotKey }
 }
 

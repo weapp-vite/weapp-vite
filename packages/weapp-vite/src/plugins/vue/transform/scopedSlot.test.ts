@@ -229,6 +229,52 @@ describe('scoped slot helpers', () => {
     })
   })
 
+  it('emits component generics for scoped slot assets that contain nested scoped slots', () => {
+    const emitFile = vi.fn()
+    const result: any = {
+      config: '{}',
+      scopedSlotComponents: [
+        {
+          id: 'default-0',
+          componentName: 'ScopedParent',
+          template: '<Child generic:scoped-slots-default="ScopedChild" />',
+          componentGenerics: {
+            'scoped-slots-default': true,
+          },
+        },
+        {
+          id: 'default-1',
+          componentName: 'ScopedChild',
+          template: '<Leaf />',
+        },
+      ],
+    }
+
+    emitScopedSlotAssets(
+      { emitFile },
+      {},
+      'pages/index/index',
+      result,
+      undefined,
+      undefined,
+      { wxml: 'wxml', json: 'json' } as any,
+    )
+
+    const emittedParentJson = emitFile.mock.calls
+      .map(call => call[0])
+      .find(asset => asset.fileName === 'pages/index/index.__scoped-slot-default-0.json')
+
+    expect(emittedParentJson).toBeTruthy()
+    expect(JSON.parse(emittedParentJson.source)).toMatchObject({
+      usingComponents: {
+        ScopedChild: '/pages/index/index.__scoped-slot-default-1',
+      },
+      componentGenerics: {
+        'scoped-slots-default': true,
+      },
+    })
+  })
+
   it('skips emitting scoped slot asset files when bundle already has targets', () => {
     const emitFile = vi.fn()
     const result: any = {
