@@ -1,6 +1,7 @@
 import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
+import { clearActiveRouter } from '@/router/instance'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { bindCurrentPageInstance } from '@/runtime/register/component/lifecycle/platform'
 
@@ -8,6 +9,7 @@ describe('router api', () => {
   afterEach(() => {
     setCurrentInstance(undefined)
     setCurrentSetupContext(undefined)
+    clearActiveRouter()
     bindCurrentPageInstance(undefined as any)
     delete (globalThis as any).getCurrentPages
   })
@@ -244,6 +246,66 @@ describe('router api', () => {
     expect(route.fullPath).toBe('/pages/profile/index?from=activity')
     expect(route.query).toEqual({
       from: 'activity',
+    })
+  })
+
+  it('useRoute infers name from an existing named router instance', () => {
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    let pages = [
+      {
+        route: 'pages/issue-550/index',
+        options: {
+          from: 'setup',
+        },
+      },
+    ]
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    createRouter({
+      routes: [
+        {
+          name: 'issue-550',
+          path: '/pages/issue-550/index',
+        },
+        {
+          name: 'issue-550-detail',
+          path: '/pages/issue-550/detail/:id',
+        },
+      ],
+    })
+    const route = useRoute()
+
+    expect(route.name).toBe('issue-550')
+    expect(route.matched).toEqual([
+      {
+        name: 'issue-550',
+        path: '/pages/issue-550/index',
+      },
+    ])
+
+    pages = [
+      {
+        route: 'pages/issue-550/detail/1',
+        options: {},
+      } as any,
+    ]
+    callHookList(instance, 'onShow')
+    expect(route.name).toBe('issue-550-detail')
+    expect(route.params).toEqual({
+      id: '1',
     })
   })
 

@@ -35,7 +35,6 @@ import { useNativeRouter, useRoute } from './useRoute'
  */
 export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const nativeRouter = useNativeRouter()
-  const route = useRoute()
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()
@@ -65,11 +64,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     rejectOnError,
   )
 
-  function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
-    const rawTo = typeof to === 'string'
-      ? to
-      : resolveNamedRouteLocation(to, namedRouteLookup, paramsMode)
-    const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
+  function enrichRouteRecordState(routeLocation: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
+    const resolved = { ...routeLocation }
     resolved.href = resolved.fullPath
     const matchedResult = resolveMatchedRouteRecord(resolved, namedRouteLookup)
     if (matchedResult) {
@@ -96,6 +92,17 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
     return resolved
   }
+
+  function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
+    const rawTo = typeof to === 'string'
+      ? to
+      : resolveNamedRouteLocation(to, namedRouteLookup, paramsMode)
+    return enrichRouteRecordState(resolveRouteLocation(rawTo, currentPath, routeResolveCodec))
+  }
+
+  const route = useRoute({
+    resolveRoute: enrichRouteRecordState,
+  })
 
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
     return resolveWithCodec(to, route.path)
