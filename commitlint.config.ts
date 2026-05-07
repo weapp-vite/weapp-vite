@@ -1,3 +1,3 @@
-import { icebreaker } from '@icebreakers/commitlint-config'
+import { defineCommitlintConfig } from 'repoctl/tooling'
 
-export default icebreaker()
+export default await defineCommitlintConfig()

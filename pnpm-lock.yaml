@@ -247,18 +247,6 @@ importers:
       '@icebreakers/changelog-github':
         specifier: ^1.0.2
         version: 1.0.2(encoding@0.1.13)
-      '@icebreakers/commitlint-config':
-        specifier: ^2.0.0
-        version: 2.0.0(conventional-changelog-conventionalcommits@9.3.1)
-      '@icebreakers/eslint-config':
-        specifier: 'catalog:'
-        version: 4.0.10(@typescript-eslint/rule-tester@8.56.1(eslint@10.3.0(jiti@2.7.0))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.59.1(typescript@6.0.3))(@vue/compiler-sfc@3.5.34)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(globals@17.5.0)(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typescript@6.0.3)(vitest@4.1.5)
-      '@icebreakers/monorepo':
-        specifier: ^4.0.3
-        version: 4.0.3(@types/node@25.6.0)(@typescript-eslint/rule-tester@8.56.1(eslint@10.3.0(jiti@2.7.0))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.59.1(typescript@6.0.3))(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(@vue/compiler-sfc@3.5.34)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(globals@17.5.0)(magicast@0.5.2)(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4))
-      '@icebreakers/stylelint-config':
-        specifier: 'catalog:'
-        version: 3.0.6(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)
       '@oxc-node/cli':
         specifier: ^0.1.0
         version: 0.1.0
@@ -481,6 +469,9 @@ importers:
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
+      repoctl:
+        specifier: ^4.0.5
+        version: 4.0.5(@types/node@25.6.0)(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(magicast@0.5.2)(postcss@8.5.14)(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4))
       rolldown:
         specifier: 1.0.0-rc.18
         version: 1.0.0-rc.18
@@ -5212,12 +5203,12 @@ packages:
       eslint-plugin-pnpm:
         optional: true
 
-  '@icebreakers/monorepo-templates@1.0.3':
-    resolution: {integrity: sha512-mIPl2cFybdwdgfjNwit9dYBart61y7f3LoAyzibTwGCdVSX70ja5RZNae0LbPsCROAMJiRH8DljIqzRPuAo03w==}
+  '@icebreakers/monorepo-templates@1.0.4':
+    resolution: {integrity: sha512-rggGGBCzO0Z/bYODJdGo8yCt+2qOw4wlYTJhyZE2GrCtIR4tELowY5+i1q40ucHzs2EetQIVrBeLoOpUytPZvg==}
     engines: {node: '>=18.0.0'}
 
-  '@icebreakers/monorepo@4.0.3':
-    resolution: {integrity: sha512-gIaHbYmRCSJ+zyrLijcC8/xz24BpCm6wX9Mhdji5ltnT8F8zKmJJ9XNlxe8NhLeqabEErbzJFAIorfhomJISHA==}
+  '@icebreakers/monorepo@4.0.5':
+    resolution: {integrity: sha512-3KSRXCVuleye3V5T0lRYU6HgA26aJ12sGcsXbGoyZZhSe3Mn3VVin6jTmFQUBm2q98NYH6jAN7sK1I8mb1GM6A==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
     hasBin: true
 
@@ -14224,6 +14215,11 @@ packages:
     resolution: {integrity: sha512-tYzdjRCtRMiBg0xLqFEZH11T8HvpvhtiWE2Q8TWOpq0HAL07YBJEzC4pgfSWqLYziHCtlS16yB8tV4hFJrXvtA==}
     engines: {node: '>=22.13'}
 
+  repoctl@4.0.5:
+    resolution: {integrity: sha512-4lYNsSO+cEVc1yv8+ex7BWlr0K0LquHV4s9SHX6u3n4RMh/SK1OHq9EOwf279oyQX0JzDHekyHFIy+XXzGL+XA==}
+    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
+    hasBin: true
+
   request-promise-core@1.1.4:
     resolution: {integrity: sha512-TTbAfBBRdWD7aNNOoVOBH4pN/KigV6LyapYNNlAPA8JwbovRti1E88m3sYAwsLi5ryhPKsE9APwnjFTgdUjTpw==}
     engines: {node: '>=0.10.0'}
@@ -18578,7 +18574,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@icebreakers/monorepo-templates@1.0.3(@types/node@25.6.0)':
+  '@icebreakers/monorepo-templates@1.0.4(@types/node@25.6.0)':
     dependencies:
       '@inquirer/checkbox': 5.1.4(@types/node@25.6.0)
       '@inquirer/input': 5.0.12(@types/node@25.6.0)
@@ -18588,11 +18584,11 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@4.0.3(@types/node@25.6.0)(@typescript-eslint/rule-tester@8.56.1(eslint@10.3.0(jiti@2.7.0))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.59.1(typescript@6.0.3))(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(@vue/compiler-sfc@3.5.34)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(globals@17.5.0)(magicast@0.5.2)(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4))':
+  '@icebreakers/monorepo@4.0.5(@types/node@25.6.0)(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(magicast@0.5.2)(postcss@8.5.14)(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@icebreakers/commitlint-config': 2.0.0(conventional-changelog-conventionalcommits@9.3.1)
       '@icebreakers/eslint-config': 4.0.10(@typescript-eslint/rule-tester@8.56.1(eslint@10.3.0(jiti@2.7.0))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.59.1(typescript@6.0.3))(@vue/compiler-sfc@3.5.34)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(globals@17.5.0)(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typescript@6.0.3)(vitest@4.1.5)
-      '@icebreakers/monorepo-templates': 1.0.3(@types/node@25.6.0)
+      '@icebreakers/monorepo-templates': 1.0.4(@types/node@25.6.0)
       '@icebreakers/stylelint-config': 3.0.6(postcss@8.5.14)(stylelint-order@6.0.4(stylelint@17.11.0(typescript@6.0.3)))(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)
       '@pnpm/find-workspace-dir': 1000.1.5
       '@pnpm/logger': 1100.0.0
@@ -29108,6 +29104,56 @@ snapshots:
     dependencies:
       '@zkochan/rimraf': 4.0.0
       fs-extra: 11.3.4
+
+  repoctl@4.0.5(@types/node@25.6.0)(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(magicast@0.5.2)(postcss@8.5.14)(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4)):
+    dependencies:
+      '@icebreakers/monorepo': 4.0.5(@types/node@25.6.0)(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(conventional-changelog-conventionalcommits@9.3.1)(eslint-plugin-pnpm@1.6.0(eslint@10.3.0(jiti@2.7.0)))(eslint@10.3.0(jiti@2.7.0))(magicast@0.5.2)(postcss@8.5.14)(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.2.4)(typanion@3.14.0)(typescript@6.0.3)(vite@8.0.11(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.4))
+    transitivePeerDependencies:
+      - '@angular-eslint/eslint-plugin'
+      - '@angular-eslint/eslint-plugin-template'
+      - '@angular-eslint/template-parser'
+      - '@edge-runtime/vm'
+      - '@eslint/css'
+      - '@eslint/json'
+      - '@opentelemetry/api'
+      - '@prettier/plugin-xml'
+      - '@types/node'
+      - '@typescript-eslint/rule-tester'
+      - '@typescript-eslint/typescript-estree'
+      - '@vitest/browser-playwright'
+      - '@vitest/browser-preview'
+      - '@vitest/browser-webdriverio'
+      - '@vitest/coverage-istanbul'
+      - '@vitest/coverage-v8'
+      - '@vitest/ui'
+      - '@vue/compiler-sfc'
+      - astro-eslint-parser
+      - bluebird
+      - conventional-changelog-conventionalcommits
+      - domexception
+      - eslint
+      - eslint-plugin-astro
+      - eslint-plugin-pnpm
+      - eslint-plugin-solid
+      - eslint-plugin-svelte
+      - globals
+      - happy-dom
+      - jsdom
+      - magicast
+      - msw
+      - oxlint
+      - postcss
+      - prettier-plugin-astro
+      - prettier-plugin-slidev
+      - remark-lint-file-extension
+      - stylelint
+      - stylelint-order
+      - supports-color
+      - svelte-eslint-parser
+      - tailwindcss
+      - typanion
+      - typescript
+      - vite
 
   request-promise-core@1.1.4(request@2.88.2):
     dependencies:
