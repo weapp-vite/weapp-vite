@@ -2,11 +2,13 @@ import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
+import { bindCurrentPageInstance } from '@/runtime/register/component/lifecycle/platform'
 
 describe('router api', () => {
   afterEach(() => {
     setCurrentInstance(undefined)
     setCurrentSetupContext(undefined)
+    bindCurrentPageInstance(undefined as any)
     delete (globalThis as any).getCurrentPages
   })
 
@@ -227,6 +229,40 @@ describe('router api', () => {
     expect(route.fullPath).toBe('/pages/profile/index?from=activity')
     expect(route.query).toEqual({
       from: 'activity',
+    })
+  })
+
+  it('useRoute falls back to current page instance before page stack is ready', () => {
+    const pageInstance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      route: 'pages/home/page',
+      options: {
+        tab: 'home',
+      },
+    } as any
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      is: 'custom-tab-bar/index',
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    bindCurrentPageInstance(pageInstance)
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [])
+
+    const route = useRoute()
+
+    expect(route).toEqual({
+      path: 'pages/home/page',
+      fullPath: '/pages/home/page?tab=home',
+      query: {
+        tab: 'home',
+      },
+      hash: '',
+      params: {},
+      name: undefined,
     })
   })
 })

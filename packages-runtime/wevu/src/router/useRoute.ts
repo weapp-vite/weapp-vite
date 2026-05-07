@@ -10,11 +10,13 @@ import {
 } from '../runtime/vueCompat'
 
 export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
-  if (!getCurrentSetupContext()) {
+  const setupContext = getCurrentSetupContext()
+  if (!setupContext) {
     throw new Error('useRoute() 必须在 setup() 的同步阶段调用')
   }
 
-  const currentRoute = resolveCurrentRoute()
+  const fallbackPage = setupContext.instance
+  const currentRoute = resolveCurrentRoute(undefined, fallbackPage)
   const routeState = reactive<RouteLocationNormalizedLoaded>({
     path: currentRoute.path,
     fullPath: currentRoute.fullPath,
@@ -28,7 +30,7 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
   }
 
   function syncRoute(queryOverride?: LocationQueryRaw) {
-    const nextRoute = resolveCurrentRoute(queryOverride)
+    const nextRoute = resolveCurrentRoute(queryOverride, fallbackPage)
     routeState.path = nextRoute.path
     routeState.fullPath = nextRoute.fullPath
     routeState.query = nextRoute.query
