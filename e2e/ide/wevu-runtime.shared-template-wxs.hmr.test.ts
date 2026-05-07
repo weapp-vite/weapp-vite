@@ -92,13 +92,16 @@ async function relaunchIdeSession(route: string, readyText?: string) {
     }
 
     await cleanupResidualDevtoolsProcesses()
-    await cleanDevtoolsCache(cleanType)
+    await cleanDevtoolsCache(cleanType, { cwd: APP_ROOT })
     await waitForIdeRecompileSettled(cleanType === 'compile' ? 1_200 : 1_600)
 
     try {
       const miniProgram = await getSharedMiniProgram()
       const page = await relaunchPage(miniProgram, route, readyText, 20_000)
       if (page) {
+        if (readyText) {
+          await waitForPageWxmlContains(page, readyText, 8_000)
+        }
         return page
       }
     }
