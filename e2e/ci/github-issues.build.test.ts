@@ -5,7 +5,7 @@ import { fdir } from 'fdir'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../utils/buildLog'
-import { findWevuVendorChunk, findWevuVendorChunkContaining } from '../utils/wevu-vendor'
+import { findWevuRuntimeChunk, findWevuVendorChunkContaining } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -537,7 +537,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const scopedSlotJsonPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.json')
     const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-521/index.__scoped-slot-default-0.wxml')
     const hostWxmlPath = path.join(DIST_ROOT, 'components/issue-521/ScopedFlexHost/index.wxml')
-    const runtime = await findWevuVendorChunk(
+    const runtime = await findWevuRuntimeChunk(
       DIST_ROOT,
       code => code.includes('virtualHost') && /options:\s*\{\s*virtualHost:\s*(?:true|!0)\s*\}/.test(code),
       'scoped slot virtualHost options',

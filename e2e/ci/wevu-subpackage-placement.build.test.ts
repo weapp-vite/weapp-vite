@@ -3,7 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { findWevuVendorChunk, toRelativeImport } from '../utils/wevu-vendor'
+import { findWevuRuntimeChunk, findWevuVendorChunk, toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
@@ -35,11 +35,11 @@ async function resolveWevuSharedChunk() {
 }
 
 async function resolveWevuComponentRuntimeChunk() {
-  return await findWevuVendorChunk(
+  return await findWevuRuntimeChunk(
     DIST_ROOT,
     code =>
-      code.includes('function Ma(')
-      || code.includes('Object.defineProperty(exports, "Ma"'),
+      code.includes('__wevu_runtime')
+      && code.includes('__wevu_options'),
     'wevu component runtime',
   )
 }
@@ -136,7 +136,8 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
 
       expect(mainSharedChunk.code).toContain('onLaunch')
       expect(mainSharedChunk.code).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
-      expect(mainRuntimeChunk.code).toMatch(/function Ma\(|Object\.defineProperty\(exports,\s*"Ma"/)
+      expect(mainRuntimeChunk.code).toContain('__wevu_runtime')
+      expect(mainRuntimeChunk.code).toContain('__wevu_options')
 
       expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
       expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
