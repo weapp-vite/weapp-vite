@@ -32,6 +32,44 @@ async function readVendorChunks(distRoot: string): Promise<WevuVendorChunk[]> {
   return chunks
 }
 
+async function readDistJsChunks(distRoot: string): Promise<WevuVendorChunk[]> {
+  const chunks: WevuVendorChunk[] = []
+  if (!(await fs.pathExists(distRoot))) {
+    return chunks
+  }
+
+  const files = await fs.readdir(distRoot, { recursive: true })
+  for (const file of files) {
+    if (typeof file !== 'string' || !file.endsWith('.js')) {
+      continue
+    }
+
+    const filePath = path.join(distRoot, file)
+    chunks.push({
+      path: filePath,
+      code: await fs.readFile(filePath, 'utf8'),
+    })
+  }
+
+  return chunks
+}
+
+function resolveChunk(
+  chunks: WevuVendorChunk[],
+  distRoot: string,
+  predicate: WevuVendorPredicate,
+  label: string,
+) {
+  for (const chunk of chunks) {
+    if (predicate(chunk.code, chunk.path)) {
+      return chunk
+    }
+  }
+
+  const files = chunks.map(chunk => path.relative(distRoot, chunk.path).replaceAll('\\', '/'))
+  throw new Error(`Failed to resolve wevu chunk for ${label}. files=${JSON.stringify(files)}`)
+}
+
 /**
  * 在 wevu vendor 目录中查找匹配语义内容的 chunk。
  *
@@ -47,14 +85,25 @@ export async function findWevuVendorChunk(
 ): Promise<WevuVendorChunk> {
   const chunks = await readVendorChunks(distRoot)
 
-  for (const chunk of chunks) {
-    if (predicate(chunk.code, chunk.path)) {
-      return chunk
-    }
-  }
+  return resolveChunk(chunks, distRoot, predicate, label)
+}
 
-  const files = chunks.map(chunk => path.relative(distRoot, chunk.path).replaceAll('\\', '/'))
-  throw new Error(`Failed to resolve wevu vendor chunk for ${label}. files=${JSON.stringify(files)}`)
+/**
+ * 在完整小程序产物中查找匹配语义内容的 JS chunk。
+ *
+ * @param distRoot - 小程序产物目录
+ * @param predicate - chunk 内容判断函数
+ * @param label - 错误信息中的语义标签
+ * @returns 匹配到的 chunk 路径和源码
+ */
+export async function findWevuRuntimeChunk(
+  distRoot: string,
+  predicate: WevuVendorPredicate,
+  label: string,
+): Promise<WevuVendorChunk> {
+  const chunks = await readDistJsChunks(distRoot)
+
+  return resolveChunk(chunks, distRoot, predicate, label)
 }
 
 /**
