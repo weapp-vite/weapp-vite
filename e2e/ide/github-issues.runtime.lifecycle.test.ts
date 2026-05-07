@@ -506,6 +506,12 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.hasTabBar).toBe(true)
       expect(runtimeResult?.tabBarRuntime?.ready).toBe(true)
       expect(runtimeResult?.tabBarRuntime?.layoutWrapperDetected).toBe(false)
+      expect(runtimeResult?.tabBarRuntime?.route).toMatchObject({
+        path: 'pages/issue-380/index',
+        fullPath: '/pages/issue-380/index',
+        query: {},
+        hash: '',
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

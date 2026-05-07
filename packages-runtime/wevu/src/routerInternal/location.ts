@@ -7,6 +7,7 @@ import type {
 } from '../router'
 import type { MiniProgramPageLike, RouteResolveCodec } from './types'
 import { getCurrentMiniProgramPages } from '../runtime/platform'
+import { getCurrentPageInstance } from '../runtime/register/component/lifecycle/platform'
 import { createAbsoluteRoutePath, resolvePath } from './path'
 import { normalizeHash, normalizeQuery, parseQuery, stringifyQuery } from './query'
 
@@ -66,16 +67,19 @@ export function createRouteLocation(
   return location
 }
 
-function getCurrentMiniProgramPage(): MiniProgramPageLike | undefined {
+function getCurrentMiniProgramPage(fallbackPage?: MiniProgramPageLike): MiniProgramPageLike | undefined {
   const pages = getCurrentMiniProgramPages() as MiniProgramPageLike[]
-  if (!Array.isArray(pages) || pages.length === 0) {
-    return undefined
+  if (Array.isArray(pages) && pages.length > 0) {
+    return pages.at(-1)
   }
-  return pages.at(-1)
+  return getCurrentPageInstance() as MiniProgramPageLike | undefined ?? fallbackPage
 }
 
-export function resolveCurrentRoute(queryOverride?: LocationQueryRaw): RouteLocationNormalizedLoaded {
-  const currentPage = getCurrentMiniProgramPage()
+export function resolveCurrentRoute(
+  queryOverride?: LocationQueryRaw,
+  fallbackPage?: MiniProgramPageLike,
+): RouteLocationNormalizedLoaded {
+  const currentPage = getCurrentMiniProgramPage(fallbackPage)
   if (!currentPage) {
     return createRouteLocation('', {})
   }

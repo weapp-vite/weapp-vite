@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { getCurrentInstance, onReady, ref } from 'wevu'
+import { useRoute } from 'wevu/router'
 
 const ready = ref(false)
 const layoutWrapperDetected = ref(false)
 const instance = getCurrentInstance() as any
+const route = useRoute()
 
 async function inspectLayoutWrapper() {
   const query = instance?.createSelectorQuery?.()
@@ -29,6 +31,12 @@ function _runE2E() {
   return {
     ready: ready.value,
     layoutWrapperDetected: layoutWrapperDetected.value,
+    route: {
+      path: route.path,
+      fullPath: route.fullPath,
+      query: route.query,
+      hash: route.hash,
+    },
   }
 }
 
