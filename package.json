@@ -183,7 +183,7 @@
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.28.0",
     "@types/debug": "^4.1.13",
-    "@types/estree": "^1.0.8",
+    "@types/estree": "^1.0.9",
     "@types/express": "^5.0.6",
     "@types/lodash": "^4.17.24",
     "@types/lodash-es": "^4.17.12",
