@@ -6,12 +6,14 @@ import {
   isNavigationFailure,
   NavigationFailureType,
 } from '@/router'
+import { clearActiveRouter } from '@/router/instance'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('router navigation helpers', () => {
   afterEach(() => {
     setCurrentInstance(undefined)
     setCurrentSetupContext(undefined)
+    clearActiveRouter()
     delete (globalThis as any).getCurrentPages
   })
 
@@ -2656,7 +2658,7 @@ describe('router navigation helpers', () => {
     expect(navigateBack).not.toHaveBeenCalled()
   })
 
-  it('exposes currentRoute on router and keeps it reactive with route hooks', () => {
+  it('exposes currentRoute on router and keeps named route state reactive with route hooks', () => {
     const instance = {
       __wevu: {},
       [WEVU_HOOKS_KEY]: {},
@@ -2682,9 +2684,39 @@ describe('router navigation helpers', () => {
     ]
     ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
 
-    const router = createRouter()
+    const router = createRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+          meta: {
+            layout: 'tab',
+          },
+        },
+        {
+          name: 'profile',
+          path: '/pages/profile/index',
+          meta: {
+            requiresAuth: true,
+          },
+        },
+      ],
+    })
     expect(router.currentRoute.fullPath).toBe('/pages/home/index?tab=all')
     expect(router.currentRoute.path).toBe('pages/home/index')
+    expect(router.currentRoute.name).toBe('home')
+    expect(router.currentRoute.meta).toEqual({
+      layout: 'tab',
+    })
+    expect(router.currentRoute.matched).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+        meta: {
+          layout: 'tab',
+        },
+      },
+    ])
 
     pages = [
       {
@@ -2698,6 +2730,63 @@ describe('router navigation helpers', () => {
     callHookList(instance, 'onShow')
     expect(router.currentRoute.fullPath).toBe('/pages/profile/index?from=mine')
     expect(router.currentRoute.path).toBe('pages/profile/index')
+    expect(router.currentRoute.name).toBe('profile')
+    expect(router.currentRoute.meta).toEqual({
+      requiresAuth: true,
+    })
+    expect(router.currentRoute.matched).toEqual([
+      {
+        name: 'profile',
+        path: '/pages/profile/index',
+        meta: {
+          requiresAuth: true,
+        },
+      },
+    ])
+  })
+
+  it('infers currentRoute params from dynamic route records', () => {
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/post/550/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'post-detail',
+          path: '/pages/post/:id/index',
+        },
+      ],
+    })
+
+    expect(router.currentRoute.name).toBe('post-detail')
+    expect(router.currentRoute.params).toEqual({
+      id: '550',
+    })
+    expect(router.currentRoute.matched).toEqual([
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+      },
+    ])
   })
 
   it('isReady resolves immediately for mini-program router', async () => {

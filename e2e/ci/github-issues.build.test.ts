@@ -298,6 +298,20 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentWxml).not.toContain('vueSlots[')
   })
 
+  it('issue #550: exposes current route name through useRoute()', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-550/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-550/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('data-route-name="{{routeName}}"')
+    expect(pageWxml).toContain('data-matched-name="{{routeMatchedName}}"')
+    expect(pageJs).toContain('pages/issue-550/index')
+    expect(pageJs).toContain('route.name')
+  })
+
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
     await runBuild()
 

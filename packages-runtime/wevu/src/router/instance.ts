@@ -10,6 +10,11 @@ export function setActiveRouter(router: RouterNavigation) {
   provideGlobal(ROUTER_INSTANCE_KEY, router)
 }
 
+export function clearActiveRouter() {
+  activeRouter = undefined
+  provideGlobal(ROUTER_INSTANCE_KEY, undefined)
+}
+
 export function getActiveRouter() {
   return activeRouter ?? injectGlobal<RouterNavigation | undefined>(ROUTER_INSTANCE_KEY, undefined)
 }
