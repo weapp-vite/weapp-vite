@@ -67,12 +67,22 @@ export function createRouteLocation(
   return location
 }
 
+function hasPageRoute(page: MiniProgramPageLike | undefined): page is MiniProgramPageLike {
+  return (typeof page?.route === 'string' && page.route.length > 0)
+    || (typeof page?.__route__ === 'string' && page.__route__.length > 0)
+}
+
 function getCurrentMiniProgramPage(fallbackPage?: MiniProgramPageLike): MiniProgramPageLike | undefined {
   const pages = getCurrentMiniProgramPages() as MiniProgramPageLike[]
   if (Array.isArray(pages) && pages.length > 0) {
-    return pages.at(-1)
+    const currentPage = pages.at(-1)
+    if (hasPageRoute(currentPage)) {
+      return currentPage
+    }
   }
-  return getCurrentPageInstance() as MiniProgramPageLike | undefined ?? fallbackPage
+
+  const currentPageInstance = getCurrentPageInstance() as MiniProgramPageLike | undefined
+  return hasPageRoute(currentPageInstance) ? currentPageInstance : fallbackPage
 }
 
 export function resolveCurrentRoute(

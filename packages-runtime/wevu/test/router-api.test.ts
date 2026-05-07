@@ -161,7 +161,7 @@ describe('router api', () => {
     expect(app.config.globalProperties.$router).toBe(createdRouter)
   })
 
-  it('useRoute syncs with onLoad, onShow, and onRouteDone hooks', () => {
+  it('useRoute syncs with onLoad, onReady, onShow, and onRouteDone hooks', () => {
     const instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
     setCurrentInstance(instance)
     setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
@@ -193,6 +193,21 @@ describe('router api', () => {
     expect(route.query).toEqual({
       tab: 'new',
       scene: '1',
+    })
+
+    pages = [
+      {
+        route: 'pages/ready/index',
+        options: {
+          from: 'ready',
+        },
+      } as any,
+    ]
+
+    callHookList(instance, 'onReady')
+    expect(route.fullPath).toBe('/pages/ready/index?from=ready')
+    expect(route.query).toEqual({
+      from: 'ready',
     })
 
     pages = [
@@ -260,6 +275,41 @@ describe('router api', () => {
       query: {
         tab: 'home',
       },
+      hash: '',
+      params: {},
+      name: undefined,
+    })
+  })
+
+  it('useRoute falls back to current page instance when page stack route is empty', () => {
+    const pageInstance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      route: 'pages/issue-380/index',
+      options: {},
+    } as any
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      is: 'custom-tab-bar/index',
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    bindCurrentPageInstance(pageInstance)
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: '',
+        options: {},
+      },
+    ])
+
+    const route = useRoute()
+
+    expect(route).toEqual({
+      path: 'pages/issue-380/index',
+      fullPath: '/pages/issue-380/index',
+      query: {},
       hash: '',
       params: {},
       name: undefined,

@@ -3,7 +3,7 @@ import type { SetupContextRouter } from '../runtime/types/props'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
 import { resolveCurrentRoute } from '../routerInternal/shared'
-import { getCurrentSetupContext, onLoad, onRouteDone, onShow } from '../runtime/hooks'
+import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow } from '../runtime/hooks'
 import {
   useNativePageRouter as useNativePageRouterInternal,
   useNativeRouter as useNativeRouterInternal,
@@ -47,6 +47,9 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
 
   onLoad((query: Parameters<NonNullable<MiniProgramPageLifetime['onLoad']>>[0]) => {
     syncRoute(query as unknown as LocationQueryRaw)
+  })
+  onReady(() => {
+    syncRoute()
   })
   onShow(() => {
     syncRoute()
