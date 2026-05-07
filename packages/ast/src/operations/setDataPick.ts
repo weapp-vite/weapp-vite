@@ -243,7 +243,7 @@ export function collectIdentifiersFromExpressionWithOxc(expression: string): Set
       case 'VariableDeclarator': {
         const bindings = new Set<string>()
         collectPatternBindingNames(node.id, bindings)
-        const currentScope = scopes.at(-1)
+        const currentScope = scopes[scopes.length - 1]
         for (const binding of bindings) {
           currentScope?.add(binding)
         }

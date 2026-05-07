@@ -242,7 +242,7 @@ describe('analyze dashboard', () => {
     const updatePayload = createAnalyzeResult('next')
     await handle?.update(updatePayload)
     const sendCalls = server.ws?.send.mock.calls ?? []
-    expect(sendCalls.at(-2)?.[0]).toEqual({
+    expect(sendCalls[sendCalls.length - 2]?.[0]).toEqual({
       type: 'custom',
       event: 'weapp-dashboard:event',
       data: [

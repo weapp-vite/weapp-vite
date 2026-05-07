@@ -30,7 +30,8 @@ function resolveRuntimeParentInstance(target: InternalRuntimeState): InternalRun
     }
   }
 
-  const currentPage = getCurrentMiniProgramPages().at(-1) as InternalRuntimeState | undefined
+  const pages = getCurrentMiniProgramPages()
+  const currentPage = pages[pages.length - 1] as InternalRuntimeState | undefined
   if (
     currentPage
     && currentPage !== target
@@ -47,7 +48,8 @@ function attachRuntimeLayoutParentContext(target: InternalRuntimeState) {
   if (!isRuntimeLayoutComponentTarget(target)) {
     return
   }
-  const currentPage = getCurrentMiniProgramPages().at(-1) as InternalRuntimeState | undefined
+  const pages = getCurrentMiniProgramPages()
+  const currentPage = pages[pages.length - 1] as InternalRuntimeState | undefined
   if (
     currentPage
     && currentPage !== target

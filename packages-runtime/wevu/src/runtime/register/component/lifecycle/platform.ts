@@ -50,7 +50,8 @@ export function resolvePageOptions(target: InternalRuntimeState) {
   if (direct && typeof direct === 'object') {
     return direct
   }
-  const page = getCurrentMiniProgramPages().at(-1)
+  const pages = getCurrentMiniProgramPages()
+  const page = pages[pages.length - 1]
   const options = page && typeof page === 'object' ? (page as any).options : undefined
   if (options && typeof options === 'object') {
     return options

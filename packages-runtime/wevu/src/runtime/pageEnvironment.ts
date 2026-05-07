@@ -38,7 +38,7 @@ function normalizeRoute(route?: string) {
  */
 export function getCurrentPageStackSnapshot(): PageStackSnapshot {
   const pages = getCurrentMiniProgramPages()
-  const currentPage = pages.at(-1)
+  const currentPage = pages[pages.length - 1]
   const stackLength = pages.length || 1
   return {
     canGoBack: stackLength > 1,

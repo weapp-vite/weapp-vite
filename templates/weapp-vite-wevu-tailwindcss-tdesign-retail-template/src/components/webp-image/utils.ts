@@ -9,7 +9,7 @@ function isNumber(value: unknown): value is number {
 function getFileExt(src: string) {
   const fileUrl = src.split('?')[0]
   const splitUrl = fileUrl.split('/')
-  const filepath = splitUrl.at(-1) || ''
+  const filepath = splitUrl[splitUrl.length - 1] || ''
   return filepath.split('.')[1] || 'jpg'
 }
 

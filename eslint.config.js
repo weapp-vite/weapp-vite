@@ -63,6 +63,25 @@ export default icebreaker(
     },
   },
   {
+    files: [
+      'packages/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'packages-runtime/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      '@weapp-core/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'e2e-apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'templates/**/src/**/*.{js,ts,mjs,cjs,vue}',
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }],
+    },
+  },
+  {
     files: ['packages/**/src/**/*.{js,ts,mjs,cjs}', '@weapp-core/**/src/**/*.{js,ts,mjs,cjs}', 'scripts/**/*.{js,ts,mjs,cjs}'],
     rules: {
       'no-restricted-imports': ['error', {
@@ -117,6 +136,12 @@ export default icebreaker(
       }, {
         selector: 'TemplateElement[value.raw*="\\x1b["]',
         message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
       }],
     },
   },

@@ -89,7 +89,7 @@ function handleData(chunk: string | Uint8Array) {
 }
 
 function handleKeypress(str: string, key: { name?: string, ctrl?: boolean } | undefined) {
-  const activeExclusive = exclusiveKeypressStack.at(-1)
+  const activeExclusive = exclusiveKeypressStack[exclusiveKeypressStack.length - 1]
   if (activeExclusive) {
     const now = Date.now()
     const signature = `${key?.ctrl ? 'ctrl+' : ''}${key?.name ?? str}`

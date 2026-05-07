@@ -149,7 +149,7 @@ async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredL
 
         const relativePath = path.relative(comparableRoot, normalizeComparablePath(base))
         const parts = relativePath.split(PATH_SEGMENT_RE).filter(Boolean)
-        if (parts.at(-1) === 'index') {
+        if (parts[parts.length - 1] === 'index') {
           parts.pop()
         }
         const layoutName = normalizeLayoutName(parts.join('/'))
@@ -173,7 +173,7 @@ async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredL
       const ext = path.extname(relativePath)
       const withoutExt = relativePath.slice(0, -ext.length)
       const parts = withoutExt.split(PATH_SEGMENT_RE).filter(Boolean)
-      if (parts.at(-1) === 'index') {
+      if (parts[parts.length - 1] === 'index') {
         parts.pop()
       }
       const layoutName = normalizeLayoutName(parts.join('/'))

@@ -44,7 +44,7 @@ export const TDesignResolver: CreateResolver = (opts) => {
       const relative = from.slice('tdesign-miniprogram/'.length)
       const segments = relative.split('/').filter(Boolean)
       const componentDir = segments[0]
-      const fileBase = segments.at(-1)
+      const fileBase = segments[segments.length - 1]
       if (!componentDir || !fileBase) {
         return undefined
       }

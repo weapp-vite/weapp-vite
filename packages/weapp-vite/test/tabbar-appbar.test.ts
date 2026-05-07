@@ -27,14 +27,14 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'custom-tab-bar/index.js': [
     /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/weapp-vendors\/wevu-router\.js["']\)\.require_other\(\)/,
+    /require\(["']\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)\.require_other\(\)/,
     /\bComponent\(/,
     /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
   ],
   'pages/index/async.js': [/exports\.async/, /exports\.default/],
   'pages/index/index.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-router\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)/,
     /\.require_other\(\)/,
     /\bPage\(/,
     /require\.async\(["']\.\/async["']\)/,
@@ -47,18 +47,18 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
   ],
-  'weapp-vendors/wevu-router.js': [
+  'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,
     /require_other/,
     /Object\.defineProperty\(exports, ["']require_other["']/,
   ],
   'wevu-runtime.js': [
-    /require\(["']\.\/(?:weapp-vendors\/)?wevu-router\.js["']\)/,
+    /require\(["']\.\/(?:weapp-vendors\/)?wevu-[\w-]+\.js["']\)/,
     /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
     /__wevu_runtime/,
   ],
   'weapp-vendors/wevu-src.js': [
-    /require\(["']\.\/wevu-router\.js["']\)/,
+    /require\(["']\.\/wevu-[\w-]+\.js["']\)/,
     /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
     /__wevu_runtime/,
   ],
@@ -68,6 +68,9 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
 function normalizeDistFile(file: string) {
   if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
     return 'wevu-runtime.js'
+  }
+  if (/^weapp-vendors\/wevu-[\w-]+\.js$/.test(file)) {
+    return 'weapp-vendors/wevu-shared.js'
   }
   if (/^src-[\w-]+\.js$/.test(file)) {
     return 'wevu-runtime.js'

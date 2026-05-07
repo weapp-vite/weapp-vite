@@ -31,7 +31,7 @@ function getInstance(context?: ReasonSheetContext | null, selector = '#wr-reason
   let nextContext = context
   if (!nextContext) {
     const pages = getCurrentPages()
-    nextContext = (pages.at(-1) ?? null) as ReasonSheetContext | null
+    nextContext = (pages[pages.length - 1] ?? null) as ReasonSheetContext | null
   }
   const instance = nextContext?.selectComponent?.(selector) ?? null
   return instance

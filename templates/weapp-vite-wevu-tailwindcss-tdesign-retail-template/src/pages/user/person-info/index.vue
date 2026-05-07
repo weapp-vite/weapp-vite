@@ -75,7 +75,7 @@ async function toModifyAvatar() {
     const tempFilePath = file.path
 
     const tempUrlArr = tempFilePath.split('/')
-    const tempFileName = tempUrlArr.at(-1) || tempFilePath
+    const tempFileName = tempUrlArr[tempUrlArr.length - 1] || tempFilePath
     showPersonToast(`已选择图片-${tempFileName}`)
   }
   catch (error: any) {

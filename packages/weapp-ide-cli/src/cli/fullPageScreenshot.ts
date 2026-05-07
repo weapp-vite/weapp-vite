@@ -39,7 +39,7 @@ function createScrollPositions(totalHeight: number, viewportHeight: number) {
     positions.push(scrollTop)
   }
 
-  if (positions.at(-1) !== lastStart) {
+  if (positions[positions.length - 1] !== lastStart) {
     positions.push(lastStart)
   }
 

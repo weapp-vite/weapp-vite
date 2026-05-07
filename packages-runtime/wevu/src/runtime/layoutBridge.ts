@@ -32,7 +32,8 @@ interface LayoutHostResolveOptions<T = any> {
 const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
 
 function resolveCurrentPageInstance() {
-  return getCurrentMiniProgramPages().at(-1)
+  const pages = getCurrentMiniProgramPages()
+  return pages[pages.length - 1]
 }
 
 function normalizeSelectors(selectors: string | string[]) {

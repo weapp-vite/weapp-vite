@@ -8,7 +8,8 @@ defineComponentJson({
 const issue398NavbarLabel = 'issue-398 navbar'
 
 onMounted(() => {
-  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  const currentPages = getCurrentPages() as Array<Record<string, any>>
+  const currentPage = currentPages[currentPages.length - 1]
   if (!currentPage) {
     return
   }

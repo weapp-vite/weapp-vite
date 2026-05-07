@@ -52,7 +52,7 @@ export function mapRewardedAdInstance(result: any, args: unknown[] = []) {
   if (typeof result !== 'object' || result === null) {
     return result
   }
-  const adUnitIdArg = args.length > 0 ? args.at(-1) : undefined
+  const adUnitIdArg = args.length > 0 ? args[args.length - 1] : undefined
   const adUnitId = typeof adUnitIdArg === 'string' ? adUnitIdArg : undefined
   if (!adUnitId) {
     return result

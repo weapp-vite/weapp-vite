@@ -188,7 +188,7 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
     }
     finally {
       effectStack.pop()
-      activeEffect = effectStack.at(-1) ?? null
+      activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
     }
   } as ReactiveEffect<T>

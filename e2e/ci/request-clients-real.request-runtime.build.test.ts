@@ -1,6 +1,8 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import {
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
@@ -13,6 +15,12 @@ import { toRelativeImport } from '../utils/wevu-vendor'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
 const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
+
+function hasRequestGlobalsRuntimeMarker(code: string) {
+  return code.includes('installWebRuntimeGlobals')
+    || code.includes(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)
+    || code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+}
 
 const CASES = [
   {
@@ -109,7 +117,7 @@ async function resolveRuntimeChunkPath(distRoot: string) {
       const candidateCode = await fs.readFile(candidatePath, 'utf8')
       if (
         candidateCode.includes('Object.defineProperty(exports,')
-        && (candidateCode.includes('installWebRuntimeGlobals') || candidateCode.includes('__wvRGI__'))
+        && hasRequestGlobalsRuntimeMarker(candidateCode)
       ) {
         return candidatePath
       }
@@ -129,7 +137,7 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         const appJs = await fs.readFile(path.join(distRoot, 'app.js'), 'utf8')
 
         expect(runtimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
-        expect(runtimeJs).toMatch(/installWebRuntimeGlobals|__wvRGI__/)
+        expect(hasRequestGlobalsRuntimeMarker(runtimeJs)).toBe(true)
         expect(appJs).toContain('networkDefaults')
         expect(appJs).toContain(`"timeout": ${REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS.request.timeout}`)
         expect(appJs).toContain('"perMessageDeflate": false')

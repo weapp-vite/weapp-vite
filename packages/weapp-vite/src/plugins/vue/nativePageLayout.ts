@@ -31,7 +31,7 @@ function resolveCurrentPageInstance() {
 
   try {
     const pages = getCurrentPagesFn() as Array<Record<string, any>>
-    return pages.at(-1)
+    return pages[pages.length - 1]
   }
   catch {
     return undefined

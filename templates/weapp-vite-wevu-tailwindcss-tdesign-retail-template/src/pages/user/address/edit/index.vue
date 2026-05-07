@@ -194,7 +194,7 @@ function confirmHandle() {
   labels.value = [
     ...labels.value,
     {
-      id: (labels.value.at(-1)?.id ?? 0) + 1,
+      id: (labels.value[labels.value.length - 1]?.id ?? 0) + 1,
       name: nextLabel,
     },
   ]

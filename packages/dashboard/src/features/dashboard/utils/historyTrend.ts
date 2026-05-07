@@ -63,7 +63,7 @@ function createHeadline(status: HistoryTrendStatus) {
 export function createHistoryTrendSummary(snapshots: AnalyzeHistorySnapshot[]): HistoryTrendSummary {
   const orderedSnapshots = [...snapshots].sort((a, b) => Date.parse(a.capturedAt) - Date.parse(b.capturedAt))
   const first = orderedSnapshots[0]
-  const latest = orderedSnapshots.at(-1)
+  const latest = orderedSnapshots[orderedSnapshots.length - 1]
 
   if (!first || !latest || orderedSnapshots.length < 2) {
     return {

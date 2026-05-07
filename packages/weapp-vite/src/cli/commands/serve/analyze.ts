@@ -286,7 +286,8 @@ export function createAnalyzeController(options: {
         if (event.code !== 'END' || updating) {
           return
         }
-        const hmrEvent = createHmrProfileEvent(ctx.runtimeState.build.hmr.recentProfiles.at(-1))
+        const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
+        const hmrEvent = createHmrProfileEvent(recentProfiles[recentProfiles.length - 1])
         if (hmrEvent) {
           emitDashboardEvents(analyzeHandle, [hmrEvent])
         }

@@ -365,7 +365,7 @@ export default class MiniProgram extends EventEmitter {
 
       try {
         const stack = await this.pageStack()
-        const stackTop = stack.at(-1)
+        const stackTop = stack[stack.length - 1]
         if (stackTop) {
           lastPage = stackTop
           logChangeRouteDebug(`stack method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)

@@ -56,7 +56,7 @@ describe('styleEntries entries', () => {
       filename: 'index.wxss',
       absolutePath: '/project/src/packages/order/index.wxss',
     })
-    expect(candidates.at(-1)).toEqual({
+    expect(candidates[candidates.length - 1]).toEqual({
       base: 'components',
       scope: 'components',
       filename: 'components.sss',

@@ -373,7 +373,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return false
     }
 
-    const currentProfile = recentProfiles.at(-1)
+    const currentProfile = recentProfiles[recentProfiles.length - 1]
     if (!currentProfile) {
       return false
     }

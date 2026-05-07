@@ -114,7 +114,7 @@ function mergeGitignoreSource(existing: string, template: string) {
     seen.add(line)
   }
 
-  while (merged.length > 0 && merged.at(-1) === '') {
+  while (merged.length > 0 && merged[merged.length - 1] === '') {
     merged.pop()
   }
 

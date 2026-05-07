@@ -10,7 +10,8 @@ const hasInstanceOnPageScroll = ref(false)
 const fillerItems = Array.from({ length: 48 }, (_, index) => `issue404 filler ${index + 1}`)
 
 function syncPageHookState() {
-  const page = getCurrentPages().at(-1) as { onPageScroll?: unknown } | undefined
+  const pages = getCurrentPages()
+  const page = pages[pages.length - 1] as { onPageScroll?: unknown } | undefined
   hasInstanceOnPageScroll.value = typeof page?.onPageScroll === 'function'
 }
 
@@ -23,7 +24,7 @@ onPageScroll((event) => {
   scrollLogs.value = [...scrollLogs.value.slice(-5), Number(event?.scrollTop ?? -1)]
 })
 
-const latestScrollTop = computed(() => scrollLogs.value.at(-1) ?? -1)
+const latestScrollTop = computed(() => scrollLogs.value[scrollLogs.value.length - 1] ?? -1)
 
 function _runE2E() {
   syncPageHookState()

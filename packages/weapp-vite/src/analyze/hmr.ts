@@ -180,7 +180,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     sampleCount: samples.length,
     skippedLineCount,
     firstTimestamp: orderedByTime[0]?.timestamp,
-    lastTimestamp: orderedByTime.at(-1)?.timestamp,
+    lastTimestamp: orderedByTime[orderedByTime.length - 1]?.timestamp,
     metrics: {
       totalMs: createMetricSummary(totalValues),
       buildCoreMs: createMetricSummary(buildCoreValues),

@@ -166,7 +166,10 @@ function resolvePendingEntryIds(options: {
   }
 
   if (expandedImporters.size > 0) {
-    const chunkPreview = [...relatedChunkIds].slice(0, 2).map(chunkId => chunkId.split('/').at(-1)).join(',')
+    const chunkPreview = [...relatedChunkIds].slice(0, 2).map((chunkId) => {
+      const segments = chunkId.split('/')
+      return segments[segments.length - 1]
+    }).join(',')
     const overflow = relatedChunkIds.size > 2 ? '+' : ''
     const mode = expansionMode ? `:${expansionMode}` : ''
     pendingReasonSummary.push(`shared-chunk(${chunkPreview}${overflow})+${expandedImporters.size}${mode}`)

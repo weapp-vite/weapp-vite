@@ -49,7 +49,8 @@ function resolveCurrentPageInstance() {
   if (runtimeCurrentPage) {
     return runtimeCurrentPage
   }
-  return getCurrentMiniProgramPages().at(-1)
+  const pages = getCurrentMiniProgramPages()
+  return pages[pages.length - 1]
 }
 
 function normalizeRuntimePageLayoutName(layout: string | undefined) {

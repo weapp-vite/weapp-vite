@@ -92,7 +92,7 @@ function stripQuotes(value: string) {
     return value
   }
   const first = value[0]
-  const last = value.at(-1)
+  const last = value[value.length - 1]
   if ((first === last && (first === '"' || first === '\'')) || (first === '`' && last === '`')) {
     return value.slice(1, -1)
   }

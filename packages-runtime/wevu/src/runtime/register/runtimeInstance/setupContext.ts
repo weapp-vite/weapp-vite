@@ -133,7 +133,7 @@ export function normalizeEmitPayload(args: any[]): { detail: any, options: Trigg
     }
   }
 
-  const maybeOptions = args.at(-1)
+  const maybeOptions = args[args.length - 1]
   if (isTriggerEventOptions(maybeOptions)) {
     const detailArgs = args.slice(0, -1)
     return {

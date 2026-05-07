@@ -21,7 +21,8 @@ const nativeButtonLabel = computed(() => {
 })
 
 function inspectNativeRef() {
-  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  const currentPages = getCurrentPages() as Array<Record<string, any>>
+  const currentPage = currentPages[currentPages.length - 1]
 
   try {
     const target = nativeButtonRef.value
@@ -66,7 +67,8 @@ onMounted(() => {
 })
 
 function _runE2E() {
-  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  const currentPages = getCurrentPages() as Array<Record<string, any>>
+  const currentPage = currentPages[currentPages.length - 1]
   const inspection = inspectNativeRef()
 
   return {

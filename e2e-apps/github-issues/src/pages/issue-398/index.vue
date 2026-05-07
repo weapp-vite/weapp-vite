@@ -16,7 +16,8 @@ const issue398PageMarker = 'issue-398-page-initial'
 function noopTap() {}
 
 function _runE2E() {
-  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  const currentPages = getCurrentPages() as Array<Record<string, any>>
+  const currentPage = currentPages[currentPages.length - 1]
 
   return {
     ok: true,

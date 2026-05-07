@@ -46,7 +46,7 @@ async function runE2E() {
   namedRouteSummary.value = `${namedResolved.fullPath}|${namedResolved.matched?.length ?? 0}`
 
   const aliasResolved = router.resolve('/router-profile/9/detail-alias/trace')
-  const aliasLeaf = aliasResolved.matched.at(-1)
+  const aliasLeaf = aliasResolved.matched[aliasResolved.matched.length - 1]
   aliasSummary.value = `${aliasResolved.fullPath}|${aliasLeaf?.aliasPath ?? 'none'}`
 
   const relativeResolved = resolveRouteLocation('./profile/3/detail/metrics?from=relative', 'pages/router-showcase/index')

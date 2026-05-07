@@ -70,7 +70,7 @@ export function mergeGitignore(existing?: string | null) {
   const existingLines = normalizedExisting.length ? normalizedExisting.split('\n') : []
   const merged = [...existingLines]
 
-  while (merged.length > 0 && merged.at(-1) === '') {
+  while (merged.length > 0 && merged[merged.length - 1] === '') {
     merged.pop()
   }
 
@@ -81,7 +81,7 @@ export function mergeGitignore(existing?: string | null) {
     const isBlank = line.length === 0
 
     if (isBlank) {
-      if (merged.length === 0 || merged.at(-1) === '') {
+      if (merged.length === 0 || merged[merged.length - 1] === '') {
         continue
       }
       merged.push('')
@@ -92,7 +92,7 @@ export function mergeGitignore(existing?: string | null) {
       continue
     }
 
-    if (!appendedNonBlank && merged.length > 0 && merged.at(-1) !== '') {
+    if (!appendedNonBlank && merged.length > 0 && merged[merged.length - 1] !== '') {
       merged.push('')
     }
 
