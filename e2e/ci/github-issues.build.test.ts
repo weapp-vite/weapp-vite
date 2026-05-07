@@ -151,6 +151,30 @@ async function runIssue510AugmentedBuild() {
   distVariant = null
 }
 
+async function runIssue547AugmentedBuild() {
+  await fs.remove(DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_547_AUGMENTED: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 describe.sequential('e2e app: github-issues (build)', () => {
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
     await runBuild()
@@ -567,6 +591,37 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-510/index.__scoped-slot-default-0')
     expect(scopedSlotWxml).toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+  })
+
+  it('issue #547: augmented nested default slots emit every scoped slot asset', async () => {
+    await runIssue547AugmentedBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-547/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-547/index.json')
+    const parentScopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-547/index.__scoped-slot-default-0.wxml')
+    const parentScopedSlotJsonPath = path.join(DIST_ROOT, 'pages/issue-547/index.__scoped-slot-default-0.json')
+    const childScopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-547/index.__scoped-slot-default-1.wxml')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
+    const parentScopedSlotWxml = await fs.readFile(parentScopedSlotWxmlPath, 'utf-8')
+    const parentScopedSlotJson = await fs.readJson(parentScopedSlotJsonPath) as { componentGenerics?: Record<string, true>, usingComponents?: Record<string, string> }
+    const childScopedSlotWxml = await fs.readFile(childScopedSlotWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-547 nested augmented slot')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageWxml).not.toContain('<NestedSlotCell')
+    expect(pageJson.usingComponents).toMatchObject({
+      NestedSlotGroup: '/components/issue-547/NestedSlotGroup/index',
+      NestedSlotCell: '/components/issue-547/NestedSlotCell/index',
+      NestedSlotImage: '/components/issue-547/NestedSlotImage/index',
+    })
+    expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-0')
+    expect(parentScopedSlotWxml).toContain('<NestedSlotCell generic:scoped-slots-default=')
+    expect(parentScopedSlotWxml).not.toContain('<NestedSlotImage')
+    expect(parentScopedSlotJson.componentGenerics).toBeUndefined()
+    expect(Object.values(parentScopedSlotJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-1')
+    expect(childScopedSlotWxml).toContain('<NestedSlotImage />')
   })
 
   it('experiment: flex parent keeps projected multi-node slot groups visible via view wrappers', async () => {
