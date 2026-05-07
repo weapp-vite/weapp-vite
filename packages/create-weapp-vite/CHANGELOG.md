@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.21
+
+### Patch Changes
+
+- 🐛 **同步 `wevu` 路由修复后的模板初始化版本，确保模板侧依赖的创建器发布链路保持一致。** [#551](https://github.com/weapp-vite/weapp-vite/pull/551) by @sonofmagic
+
 ## 2.3.20
 
 ### Patch Changes
