@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.3.20
+
+### Patch Changes
+
+- 🐛 **移除会进入小程序运行时、编译输出和模板示例链路的 `Array.prototype.at()` 依赖，改用更基础的索引访问方式，避免低版本或受限小程序宿主缺少 `.at()` 时出现兼容性问题。** [`6703f0b`](https://github.com/weapp-vite/weapp-vite/commit/6703f0b283cf956b6f61d6eed8e3530f5c5de5eb) by @sonofmagic
+
+- 🐛 **修复 `useRoute()` 在 `custom-tab-bar` 等页面栈尚未就绪的 setup 场景中返回根路径的问题。现在页面栈为空时会回退到当前 setup 实例上的页面路径，确保自定义 tab bar 内也能拿到当前页面路由。** [#548](https://github.com/weapp-vite/weapp-vite/pull/548) by @sonofmagic
+
+- 🐛 **修复 augmented 作用域插槽在多层默认插槽组件嵌套时只生成第一层 scoped slot 资源的问题，并补齐嵌套 scoped slot 组件 JSON 的泛型与依赖声明，避免内层插槽内容在小程序运行时丢失。** [#549](https://github.com/weapp-vite/weapp-vite/pull/549) by @sonofmagic
+
 ## 2.3.19
 
 ### Patch Changes

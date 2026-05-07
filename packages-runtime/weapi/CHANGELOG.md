@@ -1,5 +1,13 @@
 # @wevu/api
 
+## 0.2.8
+
+### Patch Changes
+
+- 🐛 **移除会进入小程序运行时、编译输出和模板示例链路的 `Array.prototype.at()` 依赖，改用更基础的索引访问方式，避免低版本或受限小程序宿主缺少 `.at()` 时出现兼容性问题。** [`6703f0b`](https://github.com/weapp-vite/weapp-vite/commit/6703f0b283cf956b6f61d6eed8e3530f5c5de5eb) by @sonofmagic
+
+- 🐛 **将会进入小程序运行时、编译链路和回归示例的 `Object.hasOwn()` 调用改为兼容的 `Object.prototype.hasOwnProperty.call(...)` 封装，并补充 ESLint 限制，避免 Rolldown 无法降级的运行时内建 API 进入小程序产物。** [`43bcefc`](https://github.com/weapp-vite/weapp-vite/commit/43bcefc22656df15897ff5cb960cdbe3f106d04b) by @sonofmagic
+
 ## 0.2.7
 
 ### Patch Changes
