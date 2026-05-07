@@ -174,6 +174,11 @@ export default await defineEslintConfig({
         'no-console': 'off',
       },
     }, {
+      files: ['package.json'],
+      rules: {
+        'e18e/ban-dependencies': 'off',
+      },
+    }, {
       files: ['packages/weapp-ide-cli/package.json'],
       rules: {
         'e18e/ban-dependencies': 'off',
