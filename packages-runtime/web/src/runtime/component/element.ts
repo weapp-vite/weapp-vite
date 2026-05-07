@@ -10,6 +10,7 @@ import type {
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createRenderContext } from '../renderContext'
+import { hasOwn } from '../utils/object'
 import { supportsLit } from './constants'
 import {
   createScopedSelectorQuery,
@@ -143,7 +144,7 @@ export function createComponentElementClass({
         superAttributeChanged.call(this, attrName, oldValue, newValue)
       }
       const propName = toCamelCase(attrName)
-      if (!Object.hasOwn(this.#properties, propName)) {
+      if (!hasOwn(this.#properties, propName)) {
         return
       }
       const propOption = runtimeState.componentRef.properties?.[propName]
@@ -208,7 +209,7 @@ export function createComponentElementClass({
         }
         const oldValue = this.#state[key]
         this.#state[key] = value
-        if (Object.hasOwn(this.#properties, key)) {
+        if (hasOwn(this.#properties, key)) {
           this.#properties[key] = value
           const propOption = runtimeState.componentRef.properties?.[key]
           if (propOption?.observer) {

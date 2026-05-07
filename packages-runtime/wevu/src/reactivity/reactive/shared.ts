@@ -14,6 +14,10 @@ export function isObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
 
+export function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 export function toRawType(value: unknown) {
   return Object.prototype.toString.call(value).slice(8, -1)
 }

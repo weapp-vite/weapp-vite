@@ -1,5 +1,6 @@
 import type { EnhanceOptions, WeappViteConfig } from '../../types'
 import logger from '../../logger'
+import { hasOwn } from '../utils/object'
 
 const enhanceKeys: (keyof EnhanceOptions)[] = ['wxml', 'wxs', 'autoImportComponents']
 
@@ -9,7 +10,7 @@ export function hasDeprecatedEnhanceUsage(enhance?: EnhanceOptions) {
   if (!enhance || typeof enhance !== 'object') {
     return false
   }
-  return enhanceKeys.some(key => Object.hasOwn(enhance, key))
+  return enhanceKeys.some(key => hasOwn(enhance, key))
 }
 
 export interface MigrateEnhanceOptionsConfig {

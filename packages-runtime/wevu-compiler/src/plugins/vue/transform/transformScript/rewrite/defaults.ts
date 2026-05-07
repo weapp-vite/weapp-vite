@@ -2,6 +2,7 @@ import type { WevuDefaults } from '../../../../../types/wevu'
 import type { TransformScriptOptions } from '../utils'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_RUNTIME_APIS } from '../../../../../constants'
+import { hasOwn } from '../../../../../utils/object'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { ensureRuntimeImport } from '../../scriptRuntimeImport'
 import { createStaticObjectKey, getObjectPropertyByKey, isPlainRecord } from '../utils'
@@ -153,7 +154,7 @@ export function stripVirtualHostFromDefaults(defaults: Record<string, any>): Rec
   if (!isPlainRecord(options)) {
     return next
   }
-  if (!Object.hasOwn(options, 'virtualHost')) {
+  if (!hasOwn(options, 'virtualHost')) {
     return next
   }
   const copiedOptions = { ...options }

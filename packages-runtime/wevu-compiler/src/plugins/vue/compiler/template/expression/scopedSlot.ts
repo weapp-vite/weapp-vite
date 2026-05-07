@@ -7,6 +7,7 @@ import {
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
+import { hasOwn } from '../../../../../utils/object'
 import { generateExpression, parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
 
@@ -116,7 +117,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (Object.hasOwn(forAliases, name)) {
+      if (hasOwn(forAliases, name)) {
         const aliasExp = parseBabelExpression(forAliases[name])
         if (aliasExp) {
           replaceIdentifierWithExpression(path, t.cloneNode(aliasExp, true))
@@ -126,7 +127,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
       if (locals.has(name)) {
         return
       }
-      if (Object.hasOwn(slotProps, name)) {
+      if (hasOwn(slotProps, name)) {
         const member = createMemberAccess(WEVU_SLOT_PROPS_DATA_KEY, slotProps[name])
         replaceIdentifierWithExpression(path, member)
         return
@@ -162,7 +163,7 @@ function rewriteForAliasExpression(exp: string, context: TransformContext): stri
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (!Object.hasOwn(forAliases, name)) {
+      if (!hasOwn(forAliases, name)) {
         return
       }
       const aliasExp = parseBabelExpression(forAliases[name])

@@ -7,6 +7,7 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
 import { inlineAutoRoutesImports, parseCommentJson, resolveJson } from '../utils'
+import { hasOwn } from './utils/object'
 import { requireConfigService } from './utils/requireConfigService'
 
 const APP_CONFIG_RE = /app\.json(?:\.[jt]s)?$/
@@ -92,7 +93,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
               },
             },
           })
-          const exportedConfig = Object.hasOwn(mod, 'default')
+          const exportedConfig = hasOwn(mod, 'default')
             ? mod.default
             : mod
           resultJson = typeof exportedConfig === 'function'

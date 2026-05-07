@@ -14,6 +14,10 @@ interface ClassStyleWxsAsset {
   source: string
 }
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 function parseJsonSafely(source: string | undefined): Record<string, any> | undefined {
   if (!source) {
     return undefined
@@ -74,7 +78,7 @@ function resolveScopedSlotAutoImports(
     const token = wxmlService.analyze(template)
     const depComponentNames = Object.keys(token.components ?? {})
     for (const depComponentName of depComponentNames) {
-      if (Object.hasOwn(baseUsingComponents, depComponentName)) {
+      if (hasOwn(baseUsingComponents, depComponentName)) {
         usingComponents[depComponentName] = baseUsingComponents[depComponentName]
         continue
       }
@@ -84,7 +88,7 @@ function resolveScopedSlotAutoImports(
         continue
       }
       const { value } = match
-      if (Object.hasOwn(usingComponents, value.name)) {
+      if (hasOwn(usingComponents, value.name)) {
         continue
       }
       usingComponents[value.name] = value.from
@@ -178,7 +182,7 @@ export function emitScopedSlotAssets(
       }
       const defaultConfig = { component: true, styleIsolation: 'apply-shared' }
       json = mergeJson(defaultConfig, json, 'emit')
-      if (Object.hasOwn(defaultConfig, 'component')) {
+      if (hasOwn(defaultConfig, 'component')) {
         json.component = true
       }
       const normalizedJson = normalizeJsonConfigForPlatform(json, compilerCtx)

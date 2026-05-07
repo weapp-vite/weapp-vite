@@ -1,4 +1,5 @@
 import { isReactive, toRaw } from '../../../reactivity'
+import { hasOwn } from '../../../utils'
 import { toPlain } from '../../diff'
 
 export function isPlainObjectLike(value: any) {
@@ -53,7 +54,7 @@ export function isShallowEqualValue(a: any, b: any): boolean {
     return false
   }
   for (const k of aKeys) {
-    if (!Object.hasOwn(b, k)) {
+    if (!hasOwn(b, k)) {
       return false
     }
     if (!Object.is(a[k], b[k])) {
@@ -99,7 +100,7 @@ export function isDeepEqualValue(
     if (budget.keys <= 0) {
       return false
     }
-    if (!Object.hasOwn(b, k)) {
+    if (!hasOwn(b, k)) {
       return false
     }
     if (!isDeepEqualValue(a[k], b[k], depth - 1, budget)) {
@@ -124,7 +125,7 @@ export function applySnapshotUpdate(
   let current: any = snapshot
   for (let i = 0; i < segments.length - 1; i++) {
     const key = segments[i]
-    if (!Object.hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
+    if (!hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
       // 中间节点同样会被同步到最新快照并可能参与视图层更新，必须保持普通对象原型。
       current[key] = {}
     }

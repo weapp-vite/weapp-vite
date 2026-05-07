@@ -3,6 +3,7 @@ import {
   WEVU_PROPS_KEY,
 } from '@weapp-core/constants'
 import { isReactive, isRef, toRaw } from '../../reactivity'
+import { hasOwn } from '../../utils'
 import { hasTrackableSetupBinding } from '../setupTracking'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -71,7 +72,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
             enumerable: false,
             get() {
               const propsSource = (rawState as any)[WEVU_PROPS_KEY]
-              if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
+              if (propsSource && typeof propsSource === 'object' && hasOwn(propsSource, key)) {
                 return (propsSource as any)[key]
               }
               return fallbackValue

@@ -46,7 +46,7 @@ export interface MiniProgramNetworkDefaults {
 let miniProgramNetworkDefaults: MiniProgramNetworkDefaults = {}
 
 function hasOwnProperty(source: object, key: string) {
-  return Object.hasOwn(source, key)
+  return Object.prototype.hasOwnProperty.call(source, key)
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

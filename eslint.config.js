@@ -72,12 +72,20 @@ export default icebreaker(
       'templates/**/src/**/*.{js,ts,mjs,cjs,vue}',
     ],
     rules: {
+      'e18e/prefer-object-has-own': 'off',
+      'prefer-object-has-own': 'off',
       'no-restricted-syntax': ['error', {
         selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
         message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
       }, {
         selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
         message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
       }],
     },
   },
@@ -142,6 +150,12 @@ export default icebreaker(
       }, {
         selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
         message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
       }],
     },
   },

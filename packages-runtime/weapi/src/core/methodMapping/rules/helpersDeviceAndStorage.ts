@@ -1,5 +1,5 @@
 import { getMiniProgramRuntimeGlobalKey, normalizeMiniProgramPlatform, resolveMiniProgramPlatform } from '@weapp-core/shared'
-import { createNotSupportedError, isPlainObject } from '../../utils'
+import { createNotSupportedError, hasOwn, isPlainObject } from '../../utils'
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   kuaishou: 'ks',
@@ -18,7 +18,7 @@ export function mapSaveFileArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.hasOwn(nextOptions, 'apFilePath') && Object.hasOwn(nextOptions, 'tempFilePath')) {
+  if (!hasOwn(nextOptions, 'apFilePath') && hasOwn(nextOptions, 'tempFilePath')) {
     nextOptions.apFilePath = nextOptions.tempFilePath
   }
   nextArgs[lastIndex] = nextOptions
@@ -35,10 +35,10 @@ export function mapCreateRewardedVideoAdArgs(args: unknown[]) {
   if (!isPlainObject(lastArg)) {
     return nextArgs
   }
-  if (Object.hasOwn(lastArg, 'multiton') && lastArg.multiton === true) {
+  if (hasOwn(lastArg, 'multiton') && lastArg.multiton === true) {
     throw createNotSupportedError('createRewardedVideoAd', 'my')
   }
-  if (Object.hasOwn(lastArg, 'disableFallbackSharePage') && lastArg.disableFallbackSharePage === true) {
+  if (hasOwn(lastArg, 'disableFallbackSharePage') && lastArg.disableFallbackSharePage === true) {
     throw createNotSupportedError('createRewardedVideoAd', 'my')
   }
   const adUnitId = lastArg.adUnitId
@@ -105,7 +105,7 @@ export function mapSoterCheckResult(methodName: string, result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (Object.hasOwn(result, 'errMsg')) {
+  if (hasOwn(result, 'errMsg')) {
     return result
   }
   return {
@@ -134,13 +134,13 @@ function mapBleConnectionResult(methodName: 'createBLEConnection' | 'closeBLECon
   const nextResult = {
     ...result,
   } as Record<string, any>
-  if (!Object.hasOwn(nextResult, 'errCode')) {
+  if (!hasOwn(nextResult, 'errCode')) {
     const code = toNumberCode(nextResult[codeKey])
     if (typeof code === 'number') {
       nextResult.errCode = code
     }
   }
-  if (!Object.hasOwn(nextResult, 'errMsg')) {
+  if (!hasOwn(nextResult, 'errMsg')) {
     if (typeof nextResult.errorMessage === 'string' && nextResult.errorMessage.length > 0) {
       nextResult.errMsg = nextResult.errorMessage
     }
@@ -163,7 +163,7 @@ export function mapSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.hasOwn(result, 'savedFilePath') && Object.hasOwn(result, 'apFilePath')) {
+  if (!hasOwn(result, 'savedFilePath') && hasOwn(result, 'apFilePath')) {
     return {
       ...result,
       savedFilePath: result.apFilePath,
@@ -176,7 +176,7 @@ export function mapDouyinSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.hasOwn(result, 'savedFilePath') && Object.hasOwn(result, 'filePath')) {
+  if (!hasOwn(result, 'savedFilePath') && hasOwn(result, 'filePath')) {
     return {
       ...result,
       savedFilePath: result.filePath,

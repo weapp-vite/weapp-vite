@@ -4,6 +4,10 @@ import logger from '../logger'
 
 const debug = createDebugger('weapp-vite:context')
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 let once = false
 function logBuildIndependentSubPackageFinish(root: string) {
   if (!once) {
@@ -37,7 +41,7 @@ function resolvedComponentName(entry: string): { componentName?: string, base: s
 
 function isEmptyObject(obj: any) {
   for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
+    if (hasOwn(obj, key)) {
       return false
     }
   }

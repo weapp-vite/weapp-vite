@@ -1,3 +1,5 @@
+import { hasOwn } from '../../../utils'
+
 export function collapsePayload(input: Record<string, any>) {
   const keys = Object.keys(input).sort()
   if (keys.length <= 1) {
@@ -196,10 +198,10 @@ export function mergeSiblingPayload(options: {
   }
 
   for (const [parent, list] of parents) {
-    if (Object.hasOwn(out, parent)) {
+    if (hasOwn(out, parent)) {
       continue
     }
-    const existingChildren = list.filter(k => Object.hasOwn(out, k))
+    const existingChildren = list.filter(k => hasOwn(out, k))
     if (existingChildren.length < mergeSiblingThreshold) {
       continue
     }

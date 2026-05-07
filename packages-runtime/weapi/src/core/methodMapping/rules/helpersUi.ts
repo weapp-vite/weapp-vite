@@ -1,4 +1,4 @@
-import { createNotSupportedError, isPlainObject } from '../../utils'
+import { createNotSupportedError, hasOwn, isPlainObject } from '../../utils'
 
 function mapToastType(type: unknown) {
   if (type === 'error') {
@@ -23,10 +23,10 @@ export function mapToastArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.hasOwn(nextOptions, 'content') && Object.hasOwn(nextOptions, 'title')) {
+  if (!hasOwn(nextOptions, 'content') && hasOwn(nextOptions, 'title')) {
     nextOptions.content = nextOptions.title
   }
-  if (Object.hasOwn(nextOptions, 'icon')) {
+  if (hasOwn(nextOptions, 'icon')) {
     nextOptions.type = mapToastType(nextOptions.icon)
   }
   nextArgs[lastIndex] = nextOptions
@@ -66,7 +66,7 @@ export function mapLoadingArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.hasOwn(nextOptions, 'content') && Object.hasOwn(nextOptions, 'title')) {
+  if (!hasOwn(nextOptions, 'content') && hasOwn(nextOptions, 'title')) {
     nextOptions.content = nextOptions.title
   }
   nextArgs[lastIndex] = nextOptions
@@ -86,7 +86,7 @@ export function mapActionSheetArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.hasOwn(nextOptions, 'items') && Array.isArray(nextOptions.itemList)) {
+  if (!hasOwn(nextOptions, 'items') && Array.isArray(nextOptions.itemList)) {
     nextOptions.items = nextOptions.itemList
   }
   nextArgs[lastIndex] = nextOptions
@@ -97,7 +97,7 @@ export function mapActionSheetResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.hasOwn(result, 'tapIndex') && Object.hasOwn(result, 'index')) {
+  if (!hasOwn(result, 'tapIndex') && hasOwn(result, 'index')) {
     return {
       ...result,
       tapIndex: result.index,
@@ -119,19 +119,19 @@ export function mapModalArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (Object.hasOwn(nextOptions, 'showCancel') && nextOptions.showCancel === false) {
+  if (hasOwn(nextOptions, 'showCancel') && nextOptions.showCancel === false) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (Object.hasOwn(nextOptions, 'editable') && nextOptions.editable === true) {
+  if (hasOwn(nextOptions, 'editable') && nextOptions.editable === true) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (Object.hasOwn(nextOptions, 'placeholderText')) {
+  if (hasOwn(nextOptions, 'placeholderText')) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (!Object.hasOwn(nextOptions, 'confirmButtonText') && Object.hasOwn(nextOptions, 'confirmText')) {
+  if (!hasOwn(nextOptions, 'confirmButtonText') && hasOwn(nextOptions, 'confirmText')) {
     nextOptions.confirmButtonText = nextOptions.confirmText
   }
-  if (!Object.hasOwn(nextOptions, 'cancelButtonText') && Object.hasOwn(nextOptions, 'cancelText')) {
+  if (!hasOwn(nextOptions, 'cancelButtonText') && hasOwn(nextOptions, 'cancelText')) {
     nextOptions.cancelButtonText = nextOptions.cancelText
   }
   nextArgs[lastIndex] = nextOptions
@@ -146,11 +146,11 @@ export function mapModalResult(result: any) {
   const nextResult = {
     ...result,
   } as Record<string, any>
-  if (!Object.hasOwn(nextResult, 'cancel') && Object.hasOwn(nextResult, 'confirm')) {
+  if (!hasOwn(nextResult, 'cancel') && hasOwn(nextResult, 'confirm')) {
     nextResult.cancel = !nextResult.confirm
     changed = true
   }
-  if (!Object.hasOwn(nextResult, 'content')) {
+  if (!hasOwn(nextResult, 'content')) {
     nextResult.content = ''
     changed = true
   }
@@ -161,7 +161,7 @@ export function mapChooseImageResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.hasOwn(result, 'tempFilePaths') && Array.isArray(result.apFilePaths)) {
+  if (!hasOwn(result, 'tempFilePaths') && Array.isArray(result.apFilePaths)) {
     return {
       ...result,
       tempFilePaths: result.apFilePaths,

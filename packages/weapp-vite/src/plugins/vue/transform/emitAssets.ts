@@ -8,6 +8,10 @@ interface Emitter {
 
 const emittedAssetSourceCache = new Map<string, string>()
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 export function resetEmittedAssetSourceCacheForTest() {
   emittedAssetSourceCache.clear()
 }
@@ -119,8 +123,8 @@ export function emitSfcJsonAsset(
 
   if (defaultConfig && nextConfig) {
     if (
-      Object.hasOwn(defaultConfig, 'component')
-      && !Object.hasOwn(nextConfig, 'component')
+      hasOwn(defaultConfig, 'component')
+      && !hasOwn(nextConfig, 'component')
     ) {
       nextConfig.component = true
     }

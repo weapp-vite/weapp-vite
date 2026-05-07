@@ -4,6 +4,7 @@ import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import * as fs from '../../../../utils/fs'
+import { hasOwn } from '../../../../utils/object'
 import { withTempDirLock } from '../tempDirLock'
 import { rewriteRelativeImportSource } from '../tempImportRewrite'
 import { resolveWevuConfigTempDir } from '../wevuTempDir'
@@ -155,7 +156,7 @@ const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(conf
         if (!next || typeof next !== 'object' || Array.isArray(next)) {
           throw new Error('宏的返回值必须解析为对象。')
         }
-        if (Object.hasOwn(next, '$schema')) {
+        if (hasOwn(next, '$schema')) {
           delete next.$schema
         }
         if (options?.merge) {

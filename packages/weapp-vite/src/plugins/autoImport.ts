@@ -33,6 +33,10 @@ const AUTO_IMPORT_JS_SUFFIXES = new Set(jsExtensions.map(ext => `.${ext}`))
 const AUTO_IMPORT_TEMPLATE_SUFFIXES = new Set(templateExtensions.map(ext => `.${ext}`))
 const AUTO_IMPORT_VUE_SUFFIXES = new Set(vueExtensions.map(ext => `.${ext}`))
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 function isEnabledOutputOption(option: unknown) {
   if (option === true) {
     return true
@@ -271,7 +275,7 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
   const touchedImporters = new Set<string>()
   const entries = Array.from(wxmlService.wxmlComponentsMap.entries()) as Array<[string, ComponentsMap]>
   for (const [baseName, components] of entries) {
-    if (!Object.hasOwn(components, componentName)) {
+    if (!hasOwn(components, componentName)) {
       continue
     }
 

@@ -1,6 +1,7 @@
 import type { LayoutHostBinding } from '../../layoutBridge'
 import type { TemplateRefBinding } from '../../templateRefs'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
+import { hasOwn } from '../../../utils'
 
 interface PreparedComponentOptions {
   userMethods: Record<string, (...args: any[]) => any>
@@ -151,7 +152,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
       return
     }
     for (const [key, value] of extraInstanceFieldEntries) {
-      if (Object.hasOwn(instance, key)) {
+      if (hasOwn(instance, key)) {
         continue
       }
       try {

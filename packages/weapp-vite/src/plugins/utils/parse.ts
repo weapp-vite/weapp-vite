@@ -1,5 +1,9 @@
 import { changeFileExtension } from '../../utils'
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 export interface ParseRequestResponse {
   filename: string
   query: Record<string, string | boolean> & { wxss?: boolean }
@@ -20,7 +24,7 @@ export function parseRequest(id: string): ParseRequestResponse {
     for (const [key, value] of params.entries()) {
       query[key] = value
     }
-    if (Object.hasOwn(query, 'wxss')) {
+    if (hasOwn(query, 'wxss')) {
       query.wxss = true
     }
   }

@@ -6,6 +6,7 @@ import type {
   PageLifeTimeHooks,
   PropertyOption,
 } from './types'
+import { hasOwn } from '../utils/object'
 import { normalizeBehaviors } from './behavior'
 import { cloneValue, hyphenate } from './utils'
 
@@ -33,7 +34,7 @@ function resolveNormalizedComponent(component: ComponentOptions | undefined) {
 
 function createDefaultPropertyValues(propertyEntries: PropertyEntry[]) {
   return propertyEntries.reduce<DataRecord>((acc, [name, prop]) => {
-    if (Object.prototype.hasOwnProperty.call(prop, 'value')) {
+    if (hasOwn(prop, 'value')) {
       acc[name] = cloneValue(prop.value)
     }
     else {

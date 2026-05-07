@@ -1,4 +1,4 @@
-import { isPlainObject } from '../../utils'
+import { hasOwn, isPlainObject } from '../../utils'
 import { mapChooseImageResult } from './helpersUi'
 
 export function mapSetClipboardArgs(args: unknown[]) {
@@ -14,7 +14,7 @@ export function mapSetClipboardArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.hasOwn(nextOptions, 'text') && Object.hasOwn(nextOptions, 'data')) {
+  if (!hasOwn(nextOptions, 'text') && hasOwn(nextOptions, 'data')) {
     nextOptions.text = nextOptions.data
   }
   nextArgs[lastIndex] = nextOptions
@@ -25,7 +25,7 @@ export function mapClipboardResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.hasOwn(result, 'data') && Object.hasOwn(result, 'text')) {
+  if (!hasOwn(result, 'data') && hasOwn(result, 'text')) {
     return {
       ...result,
       data: result.text,

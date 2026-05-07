@@ -8,6 +8,7 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { hasOwn } from '../../utils'
 
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
@@ -122,7 +123,7 @@ function normalizeExplicitPropertyDefinition(
     if (allowNullPropInput && propOptions.type !== null) {
       appendOptionalType(propOptions, null)
     }
-    if (!Object.hasOwn(propOptions, 'type')) {
+    if (!hasOwn(propOptions, 'type')) {
       propOptions.type = null
     }
     return propOptions
@@ -152,7 +153,7 @@ function normalizeExplicitPropertyDefinition(
     }
   }
 
-  if (!Object.hasOwn(propOptions, 'type')) {
+  if (!hasOwn(propOptions, 'type')) {
     propOptions.type = null
   }
 
@@ -196,13 +197,13 @@ export function normalizeProps(
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
-    if (!Object.hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
+    if (!hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
       next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
     }
-    if (!Object.hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
+    if (!hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
       next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
     }
-    if (!Object.hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
+    if (!hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
       next[WEVU_SLOT_NAMES_PROP] = { type: null, value: null }
     }
     return next
@@ -239,7 +240,7 @@ export function normalizeProps(
       if (allowNullPropInput && propOptions.type !== null) {
         appendOptionalType(propOptions, null)
       }
-      if (!Object.hasOwn(propOptions, 'type')) {
+      if (!hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
       properties[key] = propOptions
@@ -284,7 +285,7 @@ export function normalizeProps(
       if (allowNullPropInput && propOptions.type !== null) {
         appendOptionalType(propOptions, null)
       }
-      if (!Object.hasOwn(propOptions, 'type')) {
+      if (!hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
       properties[key] = propOptions

@@ -1,6 +1,7 @@
 import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
+import { hasOwn } from '../../../utils'
 import { diffSnapshots, toPlain } from '../../diff'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runPatchUpdate } from './patchScheduler'
@@ -92,7 +93,7 @@ export function createSetDataScheduler(options: {
       if (leftKeys.length !== rightKeys.length) {
         return false
       }
-      return leftKeys.every(key => Object.hasOwn(right, key) && isDeepEqual(left[key], right[key]))
+      return leftKeys.every(key => hasOwn(right, key) && isDeepEqual(left[key], right[key]))
     }
     return false
   }
@@ -126,16 +127,16 @@ export function createSetDataScheduler(options: {
       || !right
       || typeof left !== 'object'
       || typeof right !== 'object'
-      || !Object.hasOwn(left as object, 'raw')
-      || !Object.hasOwn(right as object, 'raw')
+      || !hasOwn(left as object, 'raw')
+      || !hasOwn(right as object, 'raw')
     ) {
       if (
         left
         && right
         && typeof left === 'object'
         && typeof right === 'object'
-        && Object.hasOwn(left as object, 'snapshot')
-        && Object.hasOwn(right as object, 'snapshot')
+        && hasOwn(left as object, 'snapshot')
+        && hasOwn(right as object, 'snapshot')
       ) {
         return isDeepEqual((left as any).snapshot, (right as any).snapshot)
       }
@@ -211,15 +212,15 @@ export function createSetDataScheduler(options: {
         && token
         && typeof previousToken === 'object'
         && typeof token === 'object'
-        && Object.hasOwn(previousToken as object, 'raw')
-        && Object.hasOwn(token as object, 'raw')
+        && hasOwn(previousToken as object, 'raw')
+        && hasOwn(token as object, 'raw')
         && Array.isArray((previousToken as any).raw)
         && Array.isArray((token as any).raw)
         && (previousToken as any).raw !== (token as any).raw
       ) {
         replacedTopLevelKeys.add(key)
       }
-      if (!isSameToken(previousToken, token) || !Object.hasOwn(latestSnapshot, key)) {
+      if (!isSameToken(previousToken, token) || !hasOwn(latestSnapshot, key)) {
         nextSnapshot[key] = toPlain(rawState[key], seen, {
           cache: plainCache,
           maxDepth: toPlainMaxDepth,
@@ -232,7 +233,7 @@ export function createSetDataScheduler(options: {
     for (const key of Object.keys(latestStateTokens)) {
       if (!includedStateKeys.has(key)) {
         delete latestStateTokens[key]
-        if (!includeComputed || !Object.hasOwn(computedRefs, key)) {
+        if (!includeComputed || !hasOwn(computedRefs, key)) {
           delete nextSnapshot[key]
         }
       }
@@ -255,7 +256,7 @@ export function createSetDataScheduler(options: {
       includedComputedKeys.add(key)
       const value = computedRefs[key].value
       const token = createValueToken(value)
-      if (!isSameToken(latestComputedTokens[key], token) || !Object.hasOwn(latestSnapshot, key)) {
+      if (!isSameToken(latestComputedTokens[key], token) || !hasOwn(latestSnapshot, key)) {
         nextSnapshot[key] = toPlain(value, seen, {
           cache: plainCache,
           maxDepth: toPlainMaxDepth,
@@ -268,7 +269,7 @@ export function createSetDataScheduler(options: {
     for (const key of Object.keys(latestComputedTokens)) {
       if (!includedComputedKeys.has(key)) {
         delete latestComputedTokens[key]
-        if (!Object.hasOwn(rawState, key) || !shouldIncludeKey(key)) {
+        if (!hasOwn(rawState, key) || !shouldIncludeKey(key)) {
           delete nextSnapshot[key]
         }
       }

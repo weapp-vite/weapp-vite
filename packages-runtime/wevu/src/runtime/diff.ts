@@ -1,4 +1,5 @@
 import { getReactiveVersion, isReactive, toRaw, unref } from '../reactivity'
+import { hasOwn } from '../utils'
 import { isNoSetData } from './noSetData'
 import { hasTrackableSetupBinding } from './setupTracking'
 
@@ -168,7 +169,7 @@ function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>, comp
     return false
   }
   for (const key of aKeys) {
-    if (!Object.hasOwn(b, key)) {
+    if (!hasOwn(b, key)) {
       return false
     }
     if (!compare(a[key], b[key])) {
@@ -207,14 +208,14 @@ function assignNestedDiff(
 
   if (isPlainObject(prev) && isPlainObject(next)) {
     for (const key of Object.keys(next)) {
-      if (!Object.hasOwn(prev, key)) {
+      if (!hasOwn(prev, key)) {
         output[`${path}.${key}`] = normalizeSetDataValue(next[key])
         continue
       }
       assignNestedDiff(prev[key], next[key], `${path}.${key}`, output)
     }
     for (const key of Object.keys(prev)) {
-      if (!Object.hasOwn(next, key)) {
+      if (!hasOwn(next, key)) {
         output[`${path}.${key}`] = null
       }
     }
@@ -248,7 +249,7 @@ export function diffSnapshots(
     if (skipKeys?.has(key)) {
       continue
     }
-    if (!Object.hasOwn(next, key)) {
+    if (!hasOwn(next, key)) {
       diff[key] = null
     }
   }

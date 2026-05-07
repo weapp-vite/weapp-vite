@@ -1,5 +1,6 @@
 import type { SubPackageStyleConfigEntry, SubPackageStyleScope } from '../../../types'
 import logger from '../../../logger'
+import { hasOwn } from '../../utils/object'
 
 export const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
@@ -70,7 +71,7 @@ export function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedSt
     return undefined
   }
 
-  const hasExplicitScope = Object.hasOwn(entry, 'scope') && entry.scope != null
+  const hasExplicitScope = hasOwn(entry, 'scope') && entry.scope != null
   const scope = hasExplicitScope ? coerceScope(entry.scope) : 'all'
   return {
     source,

@@ -12,6 +12,7 @@ import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../../../inlineDataset'
 import { traverse } from '../../../../../utils/babel'
+import { hasOwn } from '../../../../../utils/object'
 import { generateExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 
@@ -72,7 +73,7 @@ function createMemberAccess(target: string, prop: string) {
 }
 
 function resolveSlotPropBinding(slotProps: Record<string, string>, name: string): string | null {
-  if (!Object.hasOwn(slotProps, name)) {
+  if (!hasOwn(slotProps, name)) {
     return null
   }
   const prop = slotProps[name]

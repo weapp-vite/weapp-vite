@@ -15,6 +15,7 @@ import {
   WEVU_PROPS_KEY,
 } from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
+import { hasOwn } from '../../../utils'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
@@ -89,7 +90,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   const hasRuntimeStateKey = (key: string) => {
     return runtimeState != null
       && typeof runtimeState === 'object'
-      && Object.hasOwn(runtimeState as Record<string, unknown>, key)
+      && hasOwn(runtimeState as Record<string, unknown>, key)
   }
   const syncAttrsFromProperties = () => {
     const next = ((target as any).properties && typeof (target as any).properties === 'object')
@@ -99,7 +100,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     for (const existingKey of Object.keys(attrs)) {
       if (
         !next
-        || !Object.hasOwn(next, existingKey)
+        || !hasOwn(next, existingKey)
         || declaredPropKeys.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -206,7 +207,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
                 enumerable: false,
                 get() {
                   const propsSource = (runtimeRawState as any)[WEVU_PROPS_KEY]
-                  if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
+                  if (propsSource && typeof propsSource === 'object' && hasOwn(propsSource, key)) {
                     return (propsSource as any)[key]
                   }
                   return fallbackValue

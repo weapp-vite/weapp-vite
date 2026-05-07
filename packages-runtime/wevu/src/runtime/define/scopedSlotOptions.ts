@@ -9,6 +9,7 @@ import {
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { hasOwn } from '../../utils'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
 
@@ -78,10 +79,10 @@ function mergeSlotProps(
   instance: any,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
-  const scopeSource = Object.hasOwn(override ?? {}, WEVU_SLOT_SCOPE_KEY)
+  const scopeSource = hasOwn(override ?? {}, WEVU_SLOT_SCOPE_KEY)
     ? (override as any)[WEVU_SLOT_SCOPE_KEY]
     : instance?.properties?.[WEVU_SLOT_SCOPE_KEY]
-  const propsSource = Object.hasOwn(override ?? {}, WEVU_SLOT_PROPS_KEY)
+  const propsSource = hasOwn(override ?? {}, WEVU_SLOT_PROPS_KEY)
     ? (override as any)[WEVU_SLOT_PROPS_KEY]
     : instance?.properties?.[WEVU_SLOT_PROPS_KEY]
   const scope = normalizeSlotBindings(scopeSource)

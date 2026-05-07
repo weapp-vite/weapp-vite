@@ -10,6 +10,10 @@ export function isPlainObject(value: unknown): value is Record<string, any> {
   return Object.prototype.toString.call(value) === '[object Object]'
 }
 
+export function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 export function hasCallbacks(value: unknown): value is CallbackOptions {
   if (!isPlainObject(value)) {
     return false

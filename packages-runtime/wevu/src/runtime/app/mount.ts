@@ -16,6 +16,7 @@ import {
 import { addMutationRecorder, effect, isReactive, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
 import { clearPatchIndices } from '../../reactivity/reactive'
 import { queueJob } from '../../scheduler'
+import { hasOwn } from '../../utils'
 import { createBindModel } from '../bindModel'
 import { hasTrackableSetupBinding, touchSetupBinding } from '../setupTracking'
 import { createRuntimeContext } from './context'
@@ -74,7 +75,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const rawState = resolveDataOption(data)
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
     // 在 computed 首次求值阶段即可建立响应式依赖。
-    if (rawState && typeof rawState === 'object' && !Object.hasOwn(rawState as object, WEVU_PROPS_KEY)) {
+    if (rawState && typeof rawState === 'object' && !hasOwn(rawState as object, WEVU_PROPS_KEY)) {
       try {
         Object.defineProperty(rawState as object, WEVU_PROPS_KEY, {
           value: shallowReactive(Object.create(null)),

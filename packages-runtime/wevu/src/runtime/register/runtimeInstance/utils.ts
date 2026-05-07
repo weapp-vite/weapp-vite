@@ -10,6 +10,7 @@ import {
   WEVU_RUNTIME_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
 } from '@weapp-core/constants'
+import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod } from '../../nativeBridge'
 
 export type AdapterWithSetData = Required<MiniProgramAdapter> & {
@@ -128,7 +129,7 @@ export function callNativeSetData(
 export function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
   const currentKeys = Object.keys(props)
   for (const key of currentKeys) {
-    if (!Object.hasOwn(mpProperties, key)) {
+    if (!hasOwn(mpProperties, key)) {
       try {
         delete props[key]
       }

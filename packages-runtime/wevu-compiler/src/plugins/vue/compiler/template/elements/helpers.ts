@@ -1,6 +1,7 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { hasOwn } from '../../../../../utils/object'
 import { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression } from './forExpression'
 
 export { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression }
@@ -135,7 +136,7 @@ export function collectScopePropMapping(context: TransformContext): Record<strin
       if (!IDENTIFIER_RE.test(name)) {
         continue
       }
-      if (!Object.hasOwn(mapping, name)) {
+      if (!hasOwn(mapping, name)) {
         mapping[name] = name
       }
     }

@@ -1,5 +1,6 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
+import { hasOwn } from '../../../../utils/object'
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -145,7 +146,7 @@ function rewriteFunctionSourceWithScopeValues(source: string, scopeValues: Recor
       if (path.scope.hasBinding(path.node.name)) {
         return
       }
-      if (!Object.hasOwn(scopeValues, path.node.name)) {
+      if (!hasOwn(scopeValues, path.node.name)) {
         return
       }
 

@@ -9,6 +9,7 @@ import {
 import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { hasOwn } from '../../../../../utils/object'
 import { parseBabelExpression } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 import { normalizeWxmlExpression } from './wxml'
@@ -184,7 +185,7 @@ export function normalizeJsExpressionWithContext(
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (Object.hasOwn(forAliases, name)) {
+      if (hasOwn(forAliases, name)) {
         const aliasExp = parseBabelExpression(forAliases[name])
         if (aliasExp) {
           const replacement = t.cloneNode(aliasExp, true)
@@ -204,7 +205,7 @@ export function normalizeJsExpressionWithContext(
 
       let replacement: t.Expression
       if (context.rewriteScopedSlot) {
-        if (Object.hasOwn(slotProps, name)) {
+        if (hasOwn(slotProps, name)) {
           const prop = slotProps[name]
           const base = createThisMemberAccess(WEVU_SLOT_PROPS_DATA_KEY)
           replacement = createUnrefCall(prop ? createMemberAccess(base, prop) : base)

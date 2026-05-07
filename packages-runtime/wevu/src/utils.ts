@@ -14,3 +14,7 @@ export function toPathSegments(path: string): string[] {
     .map(segment => segment.trim())
     .filter(Boolean)
 }
+
+export function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}

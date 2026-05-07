@@ -14,7 +14,7 @@ import {
   removeParentLink,
   resolvePathToTarget,
 } from './reactive/patchState'
-import { getTargetType, isArrayIndexKey, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './reactive/shared'
+import { getTargetType, hasOwn, isArrayIndexKey, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './reactive/shared'
 import { rawMap, reactiveMap } from './reactive/state'
 
 export { addMutationRecorder, removeMutationRecorder } from './reactive/mutation'
@@ -174,7 +174,7 @@ const mutableHandlers: ProxyHandler<any> = {
     return result
   },
   deleteProperty(target, key) {
-    const hadKey = Object.hasOwn(target, key)
+    const hadKey = hasOwn(target, key)
     const oldValue = hadKey ? (target as any)[key] : undefined
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {

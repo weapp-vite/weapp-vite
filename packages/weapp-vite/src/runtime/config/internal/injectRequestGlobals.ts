@@ -22,6 +22,7 @@ import {
 } from '@weapp-core/constants'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../utils/babel'
+import { hasOwn } from '../../utils/object'
 
 export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
   'fetch',
@@ -208,7 +209,7 @@ function hasConfiguredNetworkDefaults(config?: boolean | WeappInjectRequestGloba
   return Boolean(
     config
     && typeof config === 'object'
-    && Object.hasOwn(config, 'networkDefaults'),
+    && hasOwn(config, 'networkDefaults'),
   )
 }
 

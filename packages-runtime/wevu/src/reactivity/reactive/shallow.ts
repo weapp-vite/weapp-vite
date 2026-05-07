@@ -1,6 +1,6 @@
 import { track, trigger } from '../core'
 import { bumpRawVersion, rawVersionMap } from './patchState'
-import { getTargetType, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './shared'
+import { getTargetType, hasOwn, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './shared'
 import { rawMap, shallowReactiveMap } from './state'
 
 const shallowHandlers: ProxyHandler<any> = {
@@ -28,7 +28,7 @@ const shallowHandlers: ProxyHandler<any> = {
     return result
   },
   deleteProperty(target, key) {
-    const hadKey = Object.hasOwn(target, key)
+    const hadKey = hasOwn(target, key)
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
       trigger(target, key)

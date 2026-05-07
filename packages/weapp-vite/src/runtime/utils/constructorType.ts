@@ -1,3 +1,5 @@
+import { hasOwn } from './object'
+
 const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   String: 'string',
   StringConstructor: 'string',
@@ -15,7 +17,7 @@ const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
 }
 
 export function mapConstructorName(name: string) {
-  if (Object.hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
+  if (hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
     return CONSTRUCTOR_TYPE_MAP[name]
   }
   const normalized = name.endsWith('Constructor')

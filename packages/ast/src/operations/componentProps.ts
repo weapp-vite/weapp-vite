@@ -29,8 +29,12 @@ const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   NullConstructor: 'any',
 }
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 export function mapConstructorName(name: string) {
-  if (Object.hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
+  if (hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
     return CONSTRUCTOR_TYPE_MAP[name]
   }
   const normalized = name.endsWith('Constructor')

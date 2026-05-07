@@ -13,6 +13,7 @@ import {
   WEVU_SLOT_NAMES_PROP,
 } from '@weapp-core/constants'
 import { toRaw } from '../../../reactivity'
+import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
@@ -51,7 +52,7 @@ function normalizeSlotNames(value: unknown): string[] {
 }
 
 export function createSetupSlotsProxy(props: Record<string, any>) {
-  if (!Object.hasOwn(props, WEVU_SLOT_NAMES_PROP)) {
+  if (!hasOwn(props, WEVU_SLOT_NAMES_PROP)) {
     return createSetupSlotsFallback()
   }
 
@@ -112,9 +113,9 @@ function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
     return false
   }
   return (
-    Object.hasOwn(value, 'bubbles')
-    || Object.hasOwn(value, 'composed')
-    || Object.hasOwn(value, 'capturePhase')
+    hasOwn(value, 'bubbles')
+    || hasOwn(value, 'composed')
+    || hasOwn(value, 'capturePhase')
   )
 }
 

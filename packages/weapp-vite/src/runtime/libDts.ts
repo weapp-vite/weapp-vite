@@ -8,6 +8,7 @@ import { resolveWeappLibEntries } from './lib'
 import { generateVueDtsWithInternal, generateVueDtsWithVueTsc } from './libDts/generateVueDts'
 import { getVueCompilerLibOrUndefined, rewriteVueComponentTypeToWevu, shouldRewriteWevuComponentType } from './libDts/rewriteWevuComponent'
 import { ensureStub, isBundledDtsEntry, normalizeRolldownDtsOutput, tsconfigHasProjectReferences } from './libDts/shared'
+import { hasOwn } from './utils/object'
 
 export async function generateLibDts(configService: ConfigService) {
   const libConfig = configService.weappLibConfig
@@ -41,8 +42,8 @@ export async function generateLibDts(configService: ConfigService) {
     const tsconfigPath = path.resolve(configService.cwd, 'tsconfig.json')
     const hasTsconfig = await fs.pathExists(tsconfigPath)
     const userRolldownOptions: RolldownDtsOptions = dtsOptions?.rolldown ?? {}
-    const hasUserTsconfig = Object.hasOwn(userRolldownOptions, 'tsconfig')
-    const hasUserBuild = Object.hasOwn(userRolldownOptions, 'build')
+    const hasUserTsconfig = hasOwn(userRolldownOptions, 'tsconfig')
+    const hasUserBuild = hasOwn(userRolldownOptions, 'build')
     const userTsconfig = userRolldownOptions.tsconfig
     const resolvedTsconfig = hasUserTsconfig
       ? (typeof userTsconfig === 'string' || userTsconfig === false

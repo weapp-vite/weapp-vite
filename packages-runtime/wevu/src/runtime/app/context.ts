@@ -6,6 +6,7 @@ import {
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
 import { ref, toRaw } from '../../reactivity'
+import { hasOwn } from '../../utils'
 import { setComputedValue } from '../internal'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
 import { createComputedAccessors } from './computed'
@@ -77,7 +78,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
   }
 
   const installNativeMethodBridge = (methodName: string) => {
-    if (Object.hasOwn(boundMethods, methodName)) {
+    if (hasOwn(boundMethods, methodName)) {
       return
     }
     const bridge = (...args: any[]) => {
@@ -109,13 +110,13 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         if (key === '$computed') {
           return computedProxy
         }
-        if (Object.hasOwn(boundMethods, key)) {
+        if (hasOwn(boundMethods, key)) {
           return boundMethods[key as keyof ExtractMethods<M>]
         }
         if ((computedRefs as any)[key]) {
           return (computedRefs as any)[key].value
         }
-        if (Object.hasOwn(appConfig.globalProperties, key)) {
+        if (hasOwn(appConfig.globalProperties, key)) {
           return (appConfig.globalProperties as any)[key]
         }
       }
@@ -149,7 +150,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (key === 'data') {
         return true
       }
-      if (typeof key === 'string' && ((computedRefs as any)[key] || Object.hasOwn(boundMethods, key))) {
+      if (typeof key === 'string' && ((computedRefs as any)[key] || hasOwn(boundMethods, key))) {
         return true
       }
       const nativeInstance = resolveNativeInstance(target as object, target as object)
@@ -193,7 +194,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
             },
           }
         }
-        if (Object.hasOwn(boundMethods, key)) {
+        if (hasOwn(boundMethods, key)) {
           return {
             configurable: true,
             enumerable: false,

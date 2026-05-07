@@ -5,6 +5,10 @@ import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { createStaticImportMetaValues, resolveImportMetaEnvExpression } from '../../../../utils/importMeta'
 
+function hasOwn(source: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(source, key)
+}
+
 function isImportMetaNode(node: any) {
   return node?.type === 'MetaProperty'
     && node.meta?.type === 'Identifier'
@@ -134,7 +138,7 @@ export function replaceImportMetaAccess(code: string, options: {
     MemberExpression(path: any) {
       const envPropertyName = getImportMetaEnvPropertyName(path.node)
       if (envPropertyName) {
-        const envValue = Object.hasOwn(values.envAccess, envPropertyName)
+        const envValue = hasOwn(values.envAccess, envPropertyName)
           ? values.envAccess[envPropertyName]
           : undefined
         addReplacement(path.node, toInlineLiteral(envValue))
@@ -163,7 +167,7 @@ export function replaceImportMetaAccess(code: string, options: {
     OptionalMemberExpression(path: any) {
       const envPropertyName = getImportMetaEnvPropertyName(path.node)
       if (envPropertyName) {
-        const envValue = Object.hasOwn(values.envAccess, envPropertyName)
+        const envValue = hasOwn(values.envAccess, envPropertyName)
           ? values.envAccess[envPropertyName]
           : undefined
         addReplacement(path.node, toInlineLiteral(envValue))
