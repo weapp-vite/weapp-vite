@@ -381,6 +381,18 @@ describe('Vue Template Compiler', () => {
       expect(result.code).not.toContain('<view slot="icon">')
     })
 
+    it('should lower plain template v-slot single v-if child without block slot when enabled', () => {
+      const result = compileVueTemplateToWxml(
+        '<my-comp><template #text><text v-if="value" v-text="value" /></template></my-comp>',
+        'test.vue',
+        { slotSingleRootNoWrapper: true },
+      )
+      expect(result.scopedSlotComponents).toBeUndefined()
+      expect(result.code).toContain('<block wx:if="{{value}}"><text slot="text">{{value}}</text></block>')
+      expect(result.code).not.toContain('<block slot="text"')
+      expect(result.code).not.toContain('<view slot="text">')
+    })
+
     it('should keep plain template v-slot multi child content wrapped when enabled', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #header><view>A</view><view>B</view></template></my-comp>',

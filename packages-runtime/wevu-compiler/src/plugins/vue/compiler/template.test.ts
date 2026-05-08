@@ -1040,6 +1040,26 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<view slot="icon">')
   })
 
+  it('projects plain named slot v-if single child without putting slot on block when enabled', () => {
+    const template = `
+<Child>
+  <template #text>
+    <text v-if="value" v-text="value" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{value}}"><text slot="text">{{value}}</text></block>`)
+    expect(code).not.toContain('<block slot="text"')
+    expect(code).not.toContain('<view slot="text">')
+  })
+
   it('keeps plain named slot multiple children wrapped when enabled', () => {
     const template = `
 <Child>
