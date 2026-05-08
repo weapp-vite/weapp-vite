@@ -3,7 +3,7 @@ import { nextTick, ref } from 'wevu'
 import UseModelFeature from '../../components/use-model-feature/index.vue'
 
 const modelValue = ref('seed-model')
-const childModelValue = ref('seed-model')
+const childTitle = ref('组件内 useModel()')
 const emitLogs = ref<string[]>([])
 
 function normalizeModelValue(value: unknown) {
@@ -16,17 +16,9 @@ function normalizeModelValue(value: unknown) {
   return String(value)
 }
 
-function onModelUpdate(event: any) {
-  const normalizedValue = normalizeModelValue(event?.detail)
-  modelValue.value = normalizedValue
-  childModelValue.value = normalizedValue
-  emitLogs.value.push(`update:modelValue:${modelValue.value}`)
-}
-
 function setByParent(value: unknown) {
   const normalizedValue = normalizeModelValue(value)
   modelValue.value = normalizedValue
-  childModelValue.value = normalizedValue
   emitLogs.value.push(`parent-set:${normalizedValue}`)
 }
 
@@ -42,7 +34,7 @@ async function runNullGuardE2E() {
   setByParent(null)
   await nextTick()
 
-  const safeValue = childModelValue.value
+  const safeValue = modelValue.value
   return {
     ok: safeValue === '',
     safeValue,
@@ -70,6 +62,7 @@ async function runE2E() {
     checks,
     state: {
       value: modelValue.value,
+      title: childTitle.value,
       logs: emitLogs.value.slice(),
     },
   }
@@ -100,14 +93,16 @@ const _runNullGuardE2E = runNullGuardE2E
     <view id="model-parent-value" class="use-model-page__value">
       parent modelValue = {{ modelValue }}
     </view>
+    <view id="model-parent-title" class="use-model-page__value">
+      parent title = {{ childTitle }}
+    </view>
     <view id="model-log-size" class="use-model-page__value">
       emit logs = {{ emitLogs.length }}
     </view>
 
     <UseModelFeature
-      title="组件内 useModel()"
-      :model-value="childModelValue"
-      @update:modelValue="onModelUpdate($event)"
+      v-model:title="childTitle"
+      v-model="modelValue"
     />
   </view>
 </template>
