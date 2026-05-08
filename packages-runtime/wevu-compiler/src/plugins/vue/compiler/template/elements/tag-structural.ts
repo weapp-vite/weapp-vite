@@ -7,7 +7,7 @@ import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
-import { transformComponentWithSlots } from './tag-component'
+import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
 
@@ -117,18 +117,15 @@ export function transformForElement(node: ElementNode, context: TransformContext
       ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
 
-    const slotDirective = findSlotDirective(elementWithoutFor)
-    const templateSlotChildren = elementWithoutFor.children.filter(
-      child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
-    )
-    if (slotDirective || templateSlotChildren.length > 0) {
+    const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
+    if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {
       return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
     }
 
     const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
       forInfo,
       extraAttrs,
-      resolvedTag: resolveTemplateTagName(elementWithoutFor.tag, context),
+      resolvedTag,
     })
 
     let children = ''
@@ -141,7 +138,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       children = renderMustache(vTextExp, context)
     }
 
-    const tag = resolveTemplateTagName(elementWithoutFor.tag, context)
+    const tag = resolvedTag
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
     return children
