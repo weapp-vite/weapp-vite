@@ -7,9 +7,14 @@ const props = defineProps<{
 }>()
 
 const model = useModel<string | null>(props, 'modelValue')
+const titleModel = useModel<string>(props, 'title')
 
 function applyValue(next: string) {
   model.value = next
+}
+
+function applyTitle(next: string) {
+  titleModel.value = next
 }
 </script>
 
@@ -17,6 +22,10 @@ function applyValue(next: string) {
   <view class="use-model-feature">
     <view class="use-model-feature__title">
       {{ props.title }}
+    </view>
+
+    <view id="model-inner-title" class="use-model-feature__value">
+      inner title = {{ titleModel }}
     </view>
 
     <view id="model-inner-value" class="use-model-feature__value">
@@ -29,6 +38,9 @@ function applyValue(next: string) {
       </view>
       <view id="model-inner-beta" class="use-model-feature__btn" @tap="applyValue('beta-from-child')">
         child -> beta
+      </view>
+      <view id="model-title-child" class="use-model-feature__btn" @tap="applyTitle('title-from-child')">
+        child -> title
       </view>
     </view>
   </view>
