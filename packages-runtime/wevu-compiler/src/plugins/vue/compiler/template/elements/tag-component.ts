@@ -135,6 +135,20 @@ function isWevuComponentTag(node: ElementNode, context: TransformContext) {
   return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
+export function shouldTransformAsComponentWithSlots(
+  node: ElementNode,
+  context: TransformContext,
+  resolvedTag = resolveTemplateTagName(node.tag, context),
+) {
+  const slotDirective = findSlotDirective(node)
+  const templateSlotChildren = node.children.filter(
+    child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
+  )
+  const shouldUseAugmentedDefaultSlot = node.children.length > 0 && !context.scopedSlotsRequireProps && !isBuiltinTag(resolvedTag)
+  const shouldUseSlotPresenceMetadata = node.children.length > 0 && isWevuComponentTag(node, context)
+  return slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot || shouldUseSlotPresenceMetadata
+}
+
 export function transformComponentWithSlots(
   node: ElementNode,
   context: TransformContext,
@@ -214,7 +228,8 @@ export function transformComponentWithSlots(
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
-    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+    const mergedAttrs = [...extraAttrs, ...attrs]
+    const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
     const { tag } = node
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
@@ -344,7 +359,8 @@ export function transformComponentWithSlotsFallback(
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
-    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+    const mergedAttrs = [...extraAttrs, ...attrs]
+    const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
     const { tag } = node
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
