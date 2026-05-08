@@ -967,6 +967,24 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
   })
 
+  it('emits slot presence metadata for implicit default slots inside v-for components', () => {
+    const template = `
+<MyCell v-for="{ key, src } in items" :key="key">
+  <image :src="src" />
+</MyCell>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<MyCell ')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{items}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="__wv_item_0"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="key"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0[__wv_index_1]}}"`)
+    expect(code).toContain('<image src="{{__wv_item_0.src}}" />')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
+  })
+
   it('guards plain slot metadata and fallback content with template v-if', () => {
     const template = `
 <Child>
