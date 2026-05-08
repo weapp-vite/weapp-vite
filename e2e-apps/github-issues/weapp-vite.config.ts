@@ -80,6 +80,7 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/issue-510/**',
+        'pages/issue-558/**',
       ],
     }
   }
