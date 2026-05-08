@@ -1,9 +1,23 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
-import { WEVU_MODEL_HANDLER } from '@weapp-core/constants'
-import { normalizeWxmlExpressionWithContext } from '../expression'
+import {
+  WEVU_INLINE_HANDLER,
+  WEVU_MODEL_HANDLER,
+} from '@weapp-core/constants'
+import {
+  INLINE_DATASET_KEY,
+  INLINE_EVENT_DETAIL_KEY,
+  normalizeEventDatasetSuffix,
+} from '../../../../../inlineDataset'
+import { getBindDirectiveExpression } from '../elements/helpers'
+import {
+  normalizeWxmlExpressionWithContext,
+  registerInlineExpression,
+  registerRuntimeBindingExpression,
+} from '../expression'
 import { renderMustache } from '../mustache'
+import { transformBindDirective } from './bind'
 
 function getElementType(element: ElementNode | undefined): string {
   if (!element) {
@@ -21,6 +35,27 @@ function getElementType(element: ElementNode | undefined): string {
 }
 
 const QUOTE_RE = /"/g
+const CAMELIZE_RE = /-([a-z0-9])/gi
+const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+const NATIVE_MODEL_TAGS = new Set(['input', 'textarea', 'select', 'switch', 'checkbox', 'slider', 'picker'])
+
+function camelize(value: string) {
+  return value.replace(CAMELIZE_RE, (_, char: string) => char.toUpperCase())
+}
+
+function buildModelAssignmentExpression(rawExpValue: string) {
+  if (IDENTIFIER_RE.test(rawExpValue)) {
+    return `ctx.${rawExpValue} = $event`
+  }
+  return `${rawExpValue} = $event`
+}
+
+function isNativeModelElement(element: ElementNode | undefined) {
+  if (!element || element.tag !== element.tag.toLowerCase()) {
+    return false
+  }
+  return NATIVE_MODEL_TAGS.has(element.tag)
+}
 
 function transformVModel(
   element: ElementNode | undefined,
@@ -85,15 +120,93 @@ function transformVModel(
   }
 }
 
+function transformComponentModelDirective(
+  node: DirectiveNode,
+  context: TransformContext,
+): string | null {
+  const rawExpValue = getBindDirectiveExpression(node).trim()
+  if (!rawExpValue) {
+    return null
+  }
+
+  const rawModelName = node.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+    ? node.arg.content.trim()
+    : ''
+  if (node.arg?.type === NodeTypes.SIMPLE_EXPRESSION && !node.arg.isStatic) {
+    context.warnings.push('暂不支持动态 v-model 参数，已忽略该 v-model。')
+    return null
+  }
+  const modelProp = rawModelName || 'modelValue'
+  if (!modelProp) {
+    return null
+  }
+
+  const updateEvent = `update:${camelize(modelProp)}`
+  const eventSuffix = normalizeEventDatasetSuffix(updateEvent)
+  const bindAttr = context.platform.eventBindingAttr(updateEvent)
+  const updateExpression = buildModelAssignmentExpression(rawExpValue)
+  const inlineExpression = registerInlineExpression(updateExpression, context)
+  if (!inlineExpression) {
+    context.warnings.push(`v-model="${rawExpValue}" 需要是可赋值的成员表达式。`)
+    return null
+  }
+
+  const modelAttr = modelProp === 'modelValue'
+    ? `modelValue="${renderMustache(normalizeWxmlExpressionWithContext(rawExpValue, context), context)}"`
+    : transformBindDirective(node, context)
+  const updateAttr = [
+    `data-${INLINE_EVENT_DETAIL_KEY}-${eventSuffix}="1"`,
+    `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
+    `${bindAttr}="${WEVU_INLINE_HANDLER}"`,
+  ].filter(Boolean).join(' ')
+
+  const modifierNames = node.modifiers
+    .map(modifier => modifier.content.trim())
+    .filter(Boolean)
+  const modifierProperties = modifierNames
+    .map(name => `${JSON.stringify(name)}:true`)
+    .join(',')
+  const modifiersProp = modelProp === 'modelValue' ? 'modelModifiers' : `${modelProp}Modifiers`
+  const modifiersRef = modifierNames.length
+    ? registerRuntimeBindingExpression(
+        `{${modifierProperties}}`,
+        context,
+        { hint: 'v-model modifiers' },
+      )
+    : null
+  const modifierAttr = modifiersRef
+    ? `${modifiersProp}="${renderMustache(modifiersRef, context)}"`
+    : null
+
+  return [
+    modelAttr,
+    updateAttr,
+    modifierAttr,
+  ].filter(Boolean).join(' ')
+}
+
 export function transformModelDirective(
   node: DirectiveNode,
   context: TransformContext,
   elementNode?: ElementNode,
+  options?: {
+    isComponent?: boolean
+  },
 ): string | null {
   const { exp } = node
   if (!exp) {
     return null
   }
+
+  if (options?.isComponent === true && !isNativeModelElement(elementNode)) {
+    return transformComponentModelDirective(node, context)
+  }
+
+  if (node.arg) {
+    context.warnings.push('原生小程序元素不支持 v-model 参数，已忽略该 v-model。')
+    return null
+  }
+
   const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
