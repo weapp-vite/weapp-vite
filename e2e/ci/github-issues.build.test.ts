@@ -652,6 +652,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
   })
 
+  it('issue #558: augmented scoped slot computed bindings call owner setup methods', async () => {
+    await runIssue510AugmentedBuild()
+
+    const pageWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.wxml')
+    const pageJsonPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.json')
+    const scopedSlotWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.wxml')
+    const scopedSlotJsPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.js')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const scopedSlotJs = await fs.readFile(scopedSlotJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-558 scoped slot computed function')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageJson.usingComponents).toMatchObject({
+      Cell: '/components/issue-558/Cell/index',
+    })
+    expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-558/index.__scoped-slot-default-0')
+    expect(scopedSlotWxml).toContain('<text class="issue558-result">{{__wv_bind_0}}</text>')
+    expect(scopedSlotJs).toContain('__wvOwnerProxy')
+    expect(scopedSlotJs).toContain('__wvOwner')
+    expect(scopedSlotJs).toMatch(/\.func\)\(/)
+    expect(scopedSlotJs).not.toMatch(/\.func\)\)\(/)
+  })
+
   it('issue #547: augmented nested default slots emit every scoped slot asset', async () => {
     await runIssue547AugmentedBuild()
 

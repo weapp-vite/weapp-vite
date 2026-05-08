@@ -5,6 +5,7 @@ import {
   WEVU_OWNER_HANDLER,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -129,7 +130,7 @@ export function createScopedSlotOptions(
           return
         }
         const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
-          this.__wvOwnerProxy = proxy
+          this[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
           if (typeof this.setData === 'function') {
             this.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
           }
@@ -145,12 +146,12 @@ export function createScopedSlotOptions(
           this.__wvOwnerUnsub()
         }
         this.__wvOwnerUnsub = undefined
-        this.__wvOwnerProxy = undefined
+        this[WEVU_SLOT_OWNER_PROXY_KEY] = undefined
       },
     },
     methods: {
       [WEVU_OWNER_HANDLER](this: any, event: any) {
-        const owner = this.__wvOwnerProxy
+        const owner = this[WEVU_SLOT_OWNER_PROXY_KEY]
         const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
         const result = runInlineExpression(owner, undefined, event, inlineMap)
         if (result !== undefined) {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
 
 const WHITESPACE_RE = /\s/g
@@ -767,6 +768,31 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<t-cell-group><t-cell title="Composition API" /></t-cell-group>')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('rewrites augmented scoped slot runtime bindings to read owner proxy first', () => {
+    const template = `
+<Cell>
+  <text>{{ func(text) }}</text>
+</Cell>
+    `.trim()
+
+    const { scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-558/index.vue',
+      { scopedSlotsCompiler: 'augmented' },
+    )
+
+    const computedCode = buildClassStyleComputedCode(scopedSlotComponents?.[0]?.classStyleBindings ?? [], {
+      normalizeClassName: '__wevuNormalizeClass',
+      normalizeStyleName: '__wevuNormalizeStyle',
+      unrefName: '__wevuUnref',
+    })
+
+    expect(computedCode).toContain('__wvOwnerProxy')
+    expect(computedCode).toContain('__wvOwner')
+    expect(computedCode).toContain('.func)')
+    expect(computedCode).toContain('.text)')
   })
 
   it('ignores comments when checking implicit default slot children', () => {

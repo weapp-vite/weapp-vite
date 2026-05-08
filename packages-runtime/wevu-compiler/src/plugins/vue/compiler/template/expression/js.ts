@@ -2,6 +2,7 @@ import type { TransformContext } from '../types'
 import {
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -80,6 +81,14 @@ function createMemberAccess(target: t.Expression, prop: string): t.Expression {
 
 function createThisMemberAccess(prop: string): t.Expression {
   return createMemberAccess(t.thisExpression(), prop)
+}
+
+function createScopedSlotOwnerRuntimeAccess(): t.Expression {
+  return t.logicalExpression(
+    '||',
+    createThisMemberAccess(WEVU_SLOT_OWNER_PROXY_KEY),
+    createThisMemberAccess(WEVU_SLOT_OWNER_KEY),
+  )
 }
 
 function createUnrefCall(exp: t.Expression): t.Expression {
@@ -219,7 +228,7 @@ export function normalizeJsExpressionWithContext(
           replacement = createUnrefCall(createThisMemberAccess(name))
         }
         else {
-          const base = createThisMemberAccess(WEVU_SLOT_OWNER_KEY)
+          const base = createScopedSlotOwnerRuntimeAccess()
           replacement = createUnrefCall(createMemberAccess(base, name))
         }
       }
