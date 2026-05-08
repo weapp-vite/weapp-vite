@@ -993,6 +993,24 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
   })
 
+  it('emits slot presence metadata for implicit default slots inside v-for components', () => {
+    const template = `
+<MyCell v-for="{ key, src } in items" :key="key">
+  <image :src="src" />
+</MyCell>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<MyCell ')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{items}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="__wv_item_0"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="key"`)
+    expect(code).toContain(`vue-slots="{{__wv_bind_0[__wv_index_1]}}"`)
+    expect(code).toContain('<image src="{{__wv_item_0.src}}" />')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
+  })
+
   it('guards plain slot metadata and fallback content with template v-if', () => {
     const template = `
 <Child>
@@ -1046,6 +1064,26 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('<image slot="icon" class="img probe" src="/cover.png" />')
     expect(code).not.toContain('<view slot="icon">')
+  })
+
+  it('projects plain named slot v-if single child without putting slot on block when enabled', () => {
+    const template = `
+<Child>
+  <template #text>
+    <text v-if="value" v-text="value" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{value}}"><text slot="text">{{value}}</text></block>`)
+    expect(code).not.toContain('<block slot="text"')
+    expect(code).not.toContain('<view slot="text">')
   })
 
   it('keeps plain named slot multiple children wrapped when enabled', () => {
@@ -1143,21 +1181,53 @@ describe('compileVueTemplateToWxml', () => {
   })
 
   it('transforms v-model for input-like elements', () => {
-    const template = `<input type="checkbox" v-model="checked" />`
+    const template = `
+      <input type="checkbox" v-model="checked" />
+      <select v-model="selected" />
+    `
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('checked="{{checked}}"')
+    expect(code).toContain('value="{{selected}}"')
     expect(code).toContain('bindchange="__weapp_vite_model"')
     expect(code).toContain('data-wv-model="checked"')
+    expect(code).toContain('data-wv-model="selected"')
+  })
+
+  it('transforms component v-model arguments to matching prop and update event', () => {
+    const template = `<UseModelFeature v-model:title="panelTitle" v-model="childModelValue" />`
+    const { code, inlineExpressions, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('title="{{panelTitle}}"')
+    expect(code).toContain('modelValue="{{childModelValue}}"')
+    expect(code).toContain('bind:update:title="__weapp_vite_inline"')
+    expect(code).toContain('bind:update:modelValue="__weapp_vite_inline"')
+    expect(code).toContain('data-wd-update-title="1"')
+    expect(code).toContain('data-wi-update-title="i0"')
+    expect(code).toContain('data-wd-update-modelvalue="1"')
+    expect(code).toContain('data-wi-update-modelvalue="i1"')
+    expect(inlineExpressions?.[0]?.expression).toContain('ctx.panelTitle=$event')
+    expect(inlineExpressions?.[1]?.expression).toContain('ctx.childModelValue=$event')
+    expect(warnings).toEqual([])
+  })
+
+  it('warns for v-model arguments on native mini-program elements', () => {
+    const template = `<input v-model:abc="xyz" />`
+    const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<input />')
+    expect(code).not.toContain('value="{{xyz}}"')
+    expect(code).not.toContain('data-wv-model="xyz"')
+    expect(warnings).toContain('原生小程序元素不支持 v-model 参数，已忽略该 v-model。')
   })
 
   it('warns for unsupported v-model host while keeping fallback binding', () => {
     const template = `<custom-input v-model="value" />`
     const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('value="{{value}}"')
-    expect(code).toContain('bindinput="__weapp_vite_model"')
-    expect(warnings.some(message => message.includes('v-model'))).toBe(true)
+    expect(code).toContain('modelValue="{{value}}"')
+    expect(code).toContain('bind:update:modelValue="__weapp_vite_inline"')
+    expect(warnings).toEqual([])
   })
 
   it('treats input as void tag even without explicit self-closing slash', () => {

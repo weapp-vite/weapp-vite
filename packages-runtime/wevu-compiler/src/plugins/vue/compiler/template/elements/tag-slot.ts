@@ -1,4 +1,4 @@
-import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
+import type { AttributeNode, DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ScopedSlotComponentAsset, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
@@ -17,6 +17,7 @@ import {
   getBindDirectiveExpression,
   hashString,
   isScopedSlotsDisabled,
+  isStructuralDirective,
   withSlotProps,
 } from './helpers'
 import { collectSlotBindingExpression, parseSlotPropsExpression } from './slotProps'
@@ -211,47 +212,103 @@ function injectAttributeIntoOpeningTag(source: string, attr: string): string | n
   return `${source.slice(0, tagNameEnd)} ${attr}${source.slice(tagNameEnd)}`
 }
 
+function createSlotAttributeNode(sourceNode: ElementNode, attr: string): AttributeNode | null {
+  const match = /^slot="([\s\S]*)"$/.exec(attr)
+  if (!match) {
+    return null
+  }
+  return {
+    type: NodeTypes.ATTRIBUTE,
+    name: 'slot',
+    nameLoc: sourceNode.loc,
+    value: {
+      type: NodeTypes.TEXT,
+      content: match[1]!,
+      loc: sourceNode.loc,
+    },
+    loc: sourceNode.loc,
+  }
+}
+
+function injectSlotAttributeIntoElementNode(
+  child: any,
+  slotAttr: string,
+  transformNode: TransformNode,
+  context: TransformContext,
+): string | null {
+  if (child.type !== NodeTypes.ELEMENT || child.tag === 'template') {
+    return null
+  }
+  const sourceNode = child as ElementNode
+  const slotAttribute = createSlotAttributeNode(sourceNode, slotAttr)
+  if (!slotAttribute) {
+    return null
+  }
+  const projectedNode: ElementNode = {
+    ...sourceNode,
+    props: [slotAttribute, ...sourceNode.props],
+  }
+  return transformNode(projectedNode, context)
+}
+
+function isRenderableFallbackChild(child: any): boolean {
+  if (child.type === NodeTypes.COMMENT) {
+    return false
+  }
+  if (child.type === NodeTypes.TEXT) {
+    return child.content.trim().length > 0
+  }
+  return true
+}
+
 export function renderSlotFallback(
   decl: ScopedSlotDeclaration,
   context: TransformContext,
   transformNode: TransformNode,
 ): string {
-  const rawRenderedChildren = decl.children
-    .map(child => ({
-      code: transformNode(child, context),
-    }))
-  const rawContent = rawRenderedChildren.map(item => item.code).join('')
-  if (!rawContent) {
-    return ''
-  }
-
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
   const wrapCondition = (content: string) => {
     return decl.condition ? context.platform.wrapIf(decl.condition, content, exp => renderMustache(exp, context)) : content
   }
 
   if (!slotAttr) {
+    const rawContent = decl.children
+      .map(child => transformNode(child, context))
+      .join('')
+    if (!rawContent) {
+      return ''
+    }
     return wrapCondition(rawContent)
   }
 
-  if (!context.slotSingleRootNoWrapper) {
-    return wrapCondition(`<view ${slotAttr}>${rawContent}</view>`)
-  }
-
-  const renderedChildren = rawRenderedChildren
-    .filter(item => item.code.trim().length > 0)
-  if (!renderedChildren.length) {
+  const renderableChildren = decl.children.filter(isRenderableFallbackChild)
+  if (!renderableChildren.length) {
     return ''
   }
 
-  const content = renderedChildren.map(item => item.code).join('')
+  if (!context.slotSingleRootNoWrapper) {
+    const rawContent = decl.children
+      .map(child => transformNode(child, context))
+      .join('')
+    if (!rawContent) {
+      return ''
+    }
+    return wrapCondition(`<view ${slotAttr}>${rawContent}</view>`)
+  }
 
-  if (renderedChildren.length === 1) {
-    const projected = injectAttributeIntoOpeningTag(renderedChildren[0]!.code, slotAttr)
+  if (renderableChildren.length === 1) {
+    const child = renderableChildren[0]!
+    const projected = child.type === NodeTypes.ELEMENT && isStructuralDirective(child as ElementNode).type
+      ? injectSlotAttributeIntoElementNode(child, slotAttr, transformNode, context)
+      : injectAttributeIntoOpeningTag(transformNode(child, context), slotAttr)
     if (projected) {
       return wrapCondition(projected)
     }
   }
+
+  const content = renderableChildren
+    .map(child => transformNode(child, context))
+    .join('')
 
   // 真机 / DevTools 运行时里，多节点 fallback 通过 `<block slot="...">` 投影并不稳定，
   // 某些布局场景（尤其父级是 flex）会直接丢失整组内容，因此这里只对“单根节点”做无包裹下推；
