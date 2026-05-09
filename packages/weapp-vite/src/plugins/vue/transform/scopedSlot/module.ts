@@ -27,8 +27,8 @@ function buildScopedSlotComponentModule(options?: { computedCode?: string, inlin
   const lines = [
     `import { ${importSpecifiers} } from '${WE_VU_MODULE_ID}';`,
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
-    `const createWevuScopedSlotComponent = globalObject?.${WEVU_SCOPED_SLOT_CREATOR_KEY}`,
-    '  ?? _createWevuScopedSlotComponent;',
+    `const createWevuScopedSlotComponent = _createWevuScopedSlotComponent`,
+    `  ?? globalObject?.${WEVU_SCOPED_SLOT_CREATOR_KEY};`,
   ]
 
   if (computedCode) {

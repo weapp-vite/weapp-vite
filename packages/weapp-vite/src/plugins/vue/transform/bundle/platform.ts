@@ -9,7 +9,7 @@ import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson, WEAPP_SCOPED_SLOT_GE
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
-import { ensureScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
+import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcTemplateIfMissing } from '../emitAssets'
 import { resolveVueTransformJsonPlatformOptions } from '../platform'
 import { registerVueTemplateToken } from '../shared'
@@ -17,6 +17,22 @@ import { registerVueTemplateToken } from '../shared'
 const LEADING_DOT_SLASH_RE = /^\.\//
 const SCOPED_SLOT_GENERIC_KEY_RE = /^scoped-slots-/
 const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE = '<view wx:if="{{false}}" />'
+const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_SCRIPT = `Component({
+  properties: {
+    __wvOwnerId: { type: String, value: '' },
+    __wvSlotOwnerId: { type: String, value: '' },
+    wvSlotOwnerId: { type: String, value: '' },
+    wvslotownerid: { type: String, value: '' },
+    __wvSlotProps: { type: null, value: null },
+    wvSlotProps: { type: null, value: null },
+    wvslotprops: { type: null, value: null },
+    wvslotownerprops: { type: null, value: null },
+    __wvSlotScope: { type: null, value: null },
+    wvSlotScope: { type: null, value: null },
+    wvslotscope: { type: null, value: null },
+  },
+})
+`
 
 export interface VueBundlePlatformOptions {
   normalizeUsingComponents: boolean
@@ -230,6 +246,33 @@ export function resolveWeappScopedSlotGenericPlaceholderBase(relativeBase: strin
   return resolveGenericPlaceholderBase(relativeBase, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER)
 }
 
+function emitGenericPlaceholderScriptAsset(
+  ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: Record<string, any>,
+  placeholderBase: string,
+  scriptExtension: string,
+  source: string,
+) {
+  const fileName = resolveScriptlessComponentFileName(placeholderBase, scriptExtension)
+  const existing = bundle[fileName]
+  if (existing) {
+    if (existing.type === 'asset') {
+      const current = existing.source?.toString?.() ?? ''
+      if (current !== source) {
+        existing.source = source
+      }
+    }
+    return fileName
+  }
+
+  ctx.emitFile({
+    type: 'asset',
+    fileName,
+    source,
+  })
+  return fileName
+}
+
 export function emitAlipayGenericPlaceholderAssetsByBase(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -237,6 +280,7 @@ export function emitAlipayGenericPlaceholderAssetsByBase(
   outputExtensions: OutputExtensions | undefined,
   options?: {
     jsonConfig?: Record<string, any>
+    scriptSource?: string
     templateSource?: string
   },
 ) {
@@ -250,7 +294,12 @@ export function emitAlipayGenericPlaceholderAssetsByBase(
     kind: 'component',
   })
 
-  ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
+  if (options?.scriptSource) {
+    emitGenericPlaceholderScriptAsset(ctx, bundle, placeholderBase, scriptExtension, options.scriptSource)
+  }
+  else {
+    ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
+  }
 }
 
 export function shouldEmitAlipayGenericPlaceholder(configSource: string | undefined) {
@@ -362,6 +411,7 @@ export function emitAlipayGenericPlaceholderAssets(
     platform === 'weapp'
       ? {
           jsonConfig: { component: true, options: { virtualHost: true } },
+          scriptSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_SCRIPT,
           templateSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE,
         }
       : undefined,
@@ -425,6 +475,7 @@ export function emitPlatformConfigSideEffects(
       options.platform === 'weapp'
         ? {
             jsonConfig: { component: true, options: { virtualHost: true } },
+            scriptSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_SCRIPT,
             templateSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE,
           }
         : undefined,

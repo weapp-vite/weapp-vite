@@ -4,6 +4,8 @@ import {
   WEVU_PENDING_PROP_VALUES_KEY,
   WEVU_PROP_KEYS_KEY,
   WEVU_PROPS_KEY,
+  WEVU_SLOT_OWNER_ATTR,
+  WEVU_SLOT_OWNER_ID_ATTR,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
@@ -17,6 +19,7 @@ export function createPropsSync(options: {
     ? Object.keys(restOptions.properties as any)
     : []
   const propKeySet = new Set(propKeys)
+  const isInternalDashedSlotKey = (key: string) => key === WEVU_SLOT_OWNER_ATTR || key === WEVU_SLOT_OWNER_ID_ATTR
 
   const attachWevuPropKeys = (instance: InternalRuntimeState) => {
     try {
@@ -54,6 +57,7 @@ export function createPropsSync(options: {
       if (
         !next
         || !hasOwn(next, existingKey)
+        || isInternalDashedSlotKey(existingKey)
         || propKeySet.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -72,7 +76,7 @@ export function createPropsSync(options: {
     }
 
     for (const [key, value] of Object.entries(next)) {
-      if (propKeySet.has(key) || hasRuntimeStateKey(key)) {
+      if (isInternalDashedSlotKey(key) || propKeySet.has(key) || hasRuntimeStateKey(key)) {
         continue
       }
       try {
@@ -95,7 +99,7 @@ export function createPropsSync(options: {
       const next = properties as any
       const currentKeys = Object.keys(propsProxy as any)
       for (const existingKey of currentKeys) {
-        if (!hasOwn(next, existingKey)) {
+        if (isInternalDashedSlotKey(existingKey) || !hasOwn(next, existingKey)) {
           try {
             delete (propsProxy as any)[existingKey]
           }
@@ -105,6 +109,9 @@ export function createPropsSync(options: {
         }
       }
       for (const [k, v] of Object.entries(next)) {
+        if (isInternalDashedSlotKey(k)) {
+          continue
+        }
         const nextValue = pendingPropValues && hasOwn(pendingPropValues, k)
           ? pendingPropValues[k]
           : v
@@ -117,7 +124,7 @@ export function createPropsSync(options: {
       }
       if (pendingPropValues) {
         for (const [k, v] of Object.entries(pendingPropValues)) {
-          if (!hasOwn(next, k)) {
+          if (!isInternalDashedSlotKey(k) && !hasOwn(next, k)) {
             try {
               ;(propsProxy as any)[k] = v
             }
@@ -138,7 +145,7 @@ export function createPropsSync(options: {
 
   const syncWevuPropValue = (instance: InternalRuntimeState, key: string, value: unknown) => {
     const propsProxy = (instance as any)[WEVU_PROPS_KEY]
-    if (!propsProxy || typeof propsProxy !== 'object') {
+    if (!propsProxy || typeof propsProxy !== 'object' || isInternalDashedSlotKey(key)) {
       return
     }
     try {

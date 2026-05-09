@@ -30,6 +30,7 @@ const handleWxmlMock = vi.hoisted(() => vi.fn((token: any) => ({ code: `normaliz
 
 vi.mock('../../../utils/scriptlessComponent', () => ({
   ensureScriptlessComponentAsset: ensureScriptlessComponentAssetMock,
+  resolveScriptlessComponentFileName: (relativeBase: string, scriptExtension: string) => `${relativeBase}.${scriptExtension}`,
 }))
 
 vi.mock('../../../../utils', async (importOriginal) => {
@@ -384,12 +385,17 @@ describe('bundle platform helpers', () => {
       '<view wx:if="{{false}}" />',
       'wxml',
     )
-    expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledWith(
-      pluginCtx,
-      bundle,
-      `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
-      'js',
-    )
+    expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}.js`,
+      source: expect.stringContaining('__wvSlotOwnerId'),
+    })
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}.js`,
+      source: expect.stringContaining('wvslotownerprops'),
+    })
     expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
       pluginCtx,
       bundle,
@@ -400,6 +406,57 @@ describe('bundle platform helpers', () => {
         kind: 'component',
       },
     )
+  })
+
+  it('emits declared script for weapp scoped slot generic placeholders', () => {
+    const emitFile = vi.fn()
+    emitAlipayGenericPlaceholderAssetsByBase(
+      { emitFile },
+      {},
+      'pages/demo/generic',
+      {
+        wxml: 'wxml',
+        json: 'json',
+        js: 'js',
+      } as any,
+      {
+        jsonConfig: { component: true, options: { virtualHost: true } },
+        scriptSource: `Component({
+  properties: {
+    __wvOwnerId: { type: String, value: '' },
+    __wvSlotOwnerId: { type: String, value: '' },
+    wvSlotOwnerId: { type: String, value: '' },
+    wvslotownerid: { type: String, value: '' },
+    __wvSlotProps: { type: null, value: null },
+    wvSlotProps: { type: null, value: null },
+    wvslotprops: { type: null, value: null },
+    wvslotownerprops: { type: null, value: null },
+    __wvSlotScope: { type: null, value: null },
+    wvSlotScope: { type: null, value: null },
+    wvslotscope: { type: null, value: null },
+  },
+})
+`,
+        templateSource: '<view wx:if="{{false}}" />',
+      },
+    )
+
+    expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.stringContaining('wvslotownerid'),
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.stringContaining('__wvSlotScope'),
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.stringContaining('wvslotownerprops'),
+    })
   })
 
   it('emits placeholder assets only when the current platform requires them', () => {

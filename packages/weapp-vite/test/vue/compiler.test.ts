@@ -273,7 +273,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).not.toContain('scoped-slots-default')
-      expect(result.code).not.toContain('__wv-slot-props')
+      expect(result.code).not.toContain('wvslotprops')
       expect(result.componentGenerics?.['scoped-slots-default']).toBeUndefined()
     })
 
@@ -284,8 +284,8 @@ describe('Vue Template Compiler', () => {
         { scopedSlotsRequireProps: false },
       )
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('wx:if="{{__wvSlotOwnerId}}"')
-      expect(result.code).toContain('__wv-slot-props')
+      expect(result.code).toContain('wx:if="{{wvslotownerid}}"')
+      expect(result.code).toContain('wvslotprops')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -314,7 +314,7 @@ describe('Vue Template Compiler', () => {
       )
       expect(result.code).toContain('<slot')
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('__wv-slot-props')
+      expect(result.code).toContain('wvslotprops')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -327,7 +327,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
       expect(result.code).toContain('<slot />')
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('__wv-slot-props="{{[\'data\',slotProps]}}"')
+      expect(result.code).toContain('wvslotprops="{{[\'data\',slotProps]}}"')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
       expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     })
@@ -352,11 +352,12 @@ describe('Vue Template Compiler', () => {
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp).toBeDefined()
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
-      expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
-      expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
-      expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
-      expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
-      expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
+      expect(result.code).toContain('vue-slots="{{__wv_bind_1}}"')
+      expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_1' && binding.exp === `{['default']:true}`)).toBe(true)
+      expect(slotComp?.template).toContain('{{wvslotpropsdata.item}}')
+      expect(slotComp?.template).toContain('{{wvslotpropsdata.foo}}')
+      expect(slotComp?.classStyleBindings?.some(binding => binding.name === 'wvslotbind0' && binding.exp === 'item') ?? false).toBe(false)
+      expect(slotComp?.classStyleBindings?.some(binding => binding.name === 'wvslotbind1' && binding.exp === 'foo') ?? false).toBe(false)
     })
 
     it('should keep plain template v-slot without props as native slot', () => {
@@ -373,7 +374,7 @@ describe('Vue Template Compiler', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #icon><img class="probe" src="/cover.png" /></template></my-comp>',
         'test.vue',
-        { slotSingleRootNoWrapper: true },
+        { slotSingleRootNoWrapper: true, scopedSlotsCompiler: 'augmented' },
       )
       expect(result.scopedSlotComponents).toBeUndefined()
       expect(result.code).toContain('slot="icon"')
@@ -385,12 +386,18 @@ describe('Vue Template Compiler', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #text><text v-if="value" v-text="value" /></template></my-comp>',
         'test.vue',
-        { slotSingleRootNoWrapper: true },
+        { slotSingleRootNoWrapper: true, scopedSlotsCompiler: 'augmented' },
       )
-      expect(result.scopedSlotComponents).toBeUndefined()
-      expect(result.code).toContain('<block wx:if="{{value}}"><text slot="text">{{value}}</text></block>')
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp).toBeDefined()
+      expect(result.code).toContain(`generic:scoped-slots-text="${slotComp?.componentName}"`)
+      expect(result.code).toContain('wvslotownerprops="{{wvslotownerprops0}}"')
+      expect(result.code).toContain('wvslotownerid="{{__wvOwnerId || \'\'}}"')
+      expect(slotComp?.template).toContain('<block wx:if="{{wvslotpropsdata.value}}"><text>{{wvslotpropsdata.value}}</text></block>')
       expect(result.code).not.toContain('<block slot="text"')
       expect(result.code).not.toContain('<view slot="text">')
+      expect(result.code).not.toContain('__wv-slot-owner-id')
+      expect(result.code).not.toContain('__wv-slot-props')
     })
 
     it('should keep plain template v-slot multi child content wrapped when enabled', () => {
@@ -430,7 +437,8 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`generic:scoped-slots-header="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
       expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
-      expect(slotComp?.template).toContain('{{__wvSlotPropsData.title}}')
+      expect(slotComp?.template).toContain('{{wvslotpropsdata.title}}')
+      expect(slotComp?.classStyleBindings?.some(binding => binding.name === 'wvslotbind0' && binding.exp === 'title') ?? false).toBe(false)
     })
 
     it('should compile component v-slot with dynamic slot name', () => {
@@ -453,10 +461,12 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       const normalized = result.code.replace(/\s/g, '')
-      expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item,\'__wv_index_0\',__wv_index_0]}}"')
+      expect(normalized).toContain('wvslotscope="{{[\'item\',item,\'__wv_index_0\',__wv_index_0]}}"')
       const slotComp = result.scopedSlotComponents?.[0]
-      expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
-      expect(slotComp?.template).toContain('{{__wvSlotPropsData.foo}}')
+      expect(slotComp?.template).toContain('{{wvslotpropsdata.item}}')
+      expect(slotComp?.template).toContain('{{wvslotpropsdata.foo}}')
+      expect(slotComp?.classStyleBindings?.some(binding => binding.name === 'wvslotbind0' && binding.exp === 'item') ?? false).toBe(false)
+      expect(slotComp?.classStyleBindings?.some(binding => binding.name === 'wvslotbind1' && binding.exp === 'foo') ?? false).toBe(false)
     })
 
     it('should drop plain template wrapper with no directives/attrs', () => {
