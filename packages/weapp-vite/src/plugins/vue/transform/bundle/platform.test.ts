@@ -389,7 +389,7 @@ describe('bundle platform helpers', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}.js`,
-      source: expect.stringContaining('__wvSlotOwnerId'),
+      source: expect.stringContaining('wvslotownerid'),
     })
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
@@ -423,16 +423,10 @@ describe('bundle platform helpers', () => {
         jsonConfig: { component: true, options: { virtualHost: true } },
         scriptSource: `Component({
   properties: {
-    __wvOwnerId: { type: String, value: '' },
-    __wvSlotOwnerId: { type: String, value: '' },
-    wvSlotOwnerId: { type: String, value: '' },
     wvslotownerid: { type: String, value: '' },
-    __wvSlotProps: { type: null, value: null },
-    wvSlotProps: { type: null, value: null },
     wvslotprops: { type: null, value: null },
+    wvslotpropssource: { type: null, value: null },
     wvslotownerprops: { type: null, value: null },
-    __wvSlotScope: { type: null, value: null },
-    wvSlotScope: { type: null, value: null },
     wvslotscope: { type: null, value: null },
   },
 })
@@ -450,12 +444,27 @@ describe('bundle platform helpers', () => {
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'pages/demo/generic.js',
-      source: expect.stringContaining('__wvSlotScope'),
+      source: expect.stringContaining('wvslotscope'),
     })
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'pages/demo/generic.js',
       source: expect.stringContaining('wvslotownerprops'),
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.stringContaining('wvslotpropssource'),
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.not.stringContaining('__wvSlotOwnerId'),
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/demo/generic.js',
+      source: expect.not.stringContaining('wvSlotProps'),
     })
   })
 

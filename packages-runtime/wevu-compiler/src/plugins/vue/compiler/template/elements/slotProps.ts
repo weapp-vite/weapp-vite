@@ -72,7 +72,16 @@ export function parseSlotPropsExpression(exp: string, context: TransformContext)
   return {}
 }
 
-export function collectSlotBindingExpression(node: ElementNode, context: TransformContext) {
+export interface SlotBindingExpressions {
+  props: string | null
+  data: string | null
+}
+
+function renderObjectBindingKey(key: string) {
+  return /^[A-Z_$][\w$]*$/i.test(key) ? key : toWxmlStringLiteral(key)
+}
+
+export function collectSlotBindingExpressions(node: ElementNode, context: TransformContext): SlotBindingExpressions {
   let bindObjectExp: string | null = null
   const namedBindings: Array<{ key: string, value: string }> = []
 
@@ -110,12 +119,25 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
   }
 
   if (bindObjectExp) {
-    return bindObjectExp
+    return {
+      data: bindObjectExp,
+      props: bindObjectExp,
+    }
   }
 
   if (!namedBindings.length) {
-    return null
+    return {
+      data: null,
+      props: null,
+    }
   }
 
-  return `[${namedBindings.map(entry => `${toWxmlStringLiteral(entry.key)},${entry.value}`).join(',')}]`
+  return {
+    data: `{${namedBindings.map(entry => `${renderObjectBindingKey(entry.key)}:${entry.value}`).join(',')}}`,
+    props: `[${namedBindings.map(entry => `${toWxmlStringLiteral(entry.key)},${entry.value}`).join(',')}]`,
+  }
+}
+
+export function collectSlotBindingExpression(node: ElementNode, context: TransformContext) {
+  return collectSlotBindingExpressions(node, context).props
 }

@@ -1,6 +1,13 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import {
+  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
+  WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR,
+  WEVU_GENERIC_SLOT_PROPS_ATTR,
+  WEVU_GENERIC_SLOT_PROPS_DATA_ATTR,
+  WEVU_GENERIC_SLOT_SCOPE_ATTR,
+} from '@weapp-core/constants'
+import {
   resolveMiniPlatformWithDefault,
   shouldEmitGenericPlaceholderAsset,
   shouldNormalizeVueTemplateForPlatform,
@@ -17,19 +24,16 @@ import { registerVueTemplateToken } from '../shared'
 const LEADING_DOT_SLASH_RE = /^\.\//
 const SCOPED_SLOT_GENERIC_KEY_RE = /^scoped-slots-/
 const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE = '<view wx:if="{{false}}" />'
+const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_PROPERTIES = [
+  [WEVU_GENERIC_SLOT_OWNER_ID_ATTR, `{ type: String, value: '' }`],
+  [WEVU_GENERIC_SLOT_PROPS_ATTR, '{ type: null, value: null }'],
+  [WEVU_GENERIC_SLOT_PROPS_DATA_ATTR, '{ type: null, value: null }'],
+  [WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR, '{ type: null, value: null }'],
+  [WEVU_GENERIC_SLOT_SCOPE_ATTR, '{ type: null, value: null }'],
+] as const
 const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_SCRIPT = `Component({
   properties: {
-    __wvOwnerId: { type: String, value: '' },
-    __wvSlotOwnerId: { type: String, value: '' },
-    wvSlotOwnerId: { type: String, value: '' },
-    wvslotownerid: { type: String, value: '' },
-    __wvSlotProps: { type: null, value: null },
-    wvSlotProps: { type: null, value: null },
-    wvslotprops: { type: null, value: null },
-    wvslotownerprops: { type: null, value: null },
-    __wvSlotScope: { type: null, value: null },
-    wvSlotScope: { type: null, value: null },
-    wvslotscope: { type: null, value: null },
+${WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_PROPERTIES.map(([name, value]) => `    ${name}: ${value},`).join('\n')}
   },
 })
 `

@@ -15,18 +15,16 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
       markers="{{markers}}"
       latitude="39.9100"
       longitude="116.4000"
-      scale="13"
-      wvslotscope="{{['wvslotbind0',wvslotbind0,'wvslotbind1[index]',wvslotbind1[index]]}}"
-      wx:if="{{wvslotbind0!==undefined&&wvslotbind1[index]!==undefined}}">
+      scale="13">
       <view slot="callout">
         <cover-view
           class="{{__wv_cls_1[index]}}"
-          wx:for="{{wvslotbind0}}"
+          wx:for="{{events}}"
           wx:for-item="event"
           wx:for-index="index"
           wx:key="id"
           marker-id="{{index}}">
-          callout-{{wvslotbind1[index]}}
+          callout-{{index}}
         </cover-view>
       </view>
     </map>

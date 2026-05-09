@@ -561,7 +561,27 @@ describe('compileVueTemplateToWxml', () => {
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
     expect(code).toContain(`wvslotprops="{{['item',card.item,'index',card.index]}}"`)
+    expect(code).toMatch(/wvslotpropssource="\{\{wvslotpropssource_\d+\}\}"/)
+    expect(code).not.toContain('<slot name="item"')
     expect(code).not.toContain(`wvslotprops="{{{`)
+    expect(code).not.toContain(`wvslotpropssource="{{{`)
+  })
+
+  it('uses scoped generic only for slot outlet with scoped props and fallback', () => {
+    const template = `
+<slot :label="scopedLabel">
+  <text>fallback</text>
+</slot>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/components/SlotFallbackProbe/index.vue')
+
+    expect(code).toContain(`<block wx:if="{{wvslotownerid}}"><scoped-slots-default`)
+    expect(code).toContain(`wvslotprops="{{['label',scopedLabel]}}"`)
+    expect(code).toMatch(/wvslotpropssource="\{\{wvslotpropssource_\d+\}\}"/)
+    expect(code).toContain('<block wx:else><text>fallback</text></block>')
+    expect(code).not.toContain('<slot')
+    expect(code).not.toContain(`wvslotpropssource="{{{`)
   })
 
   it('keeps structural directives on slot outlet elements', () => {
@@ -616,6 +636,45 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
     expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
+  })
+
+  it('guards scoped slot children until slot props data is ready', () => {
+    const template = `
+<Provider v-slot="io">
+  <Leaf :val="io.xyz" />
+</Provider>
+    `.trim()
+
+    const { scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-521/index.vue',
+    )
+
+    const slotComp = scopedSlotComponents?.[0]
+    expect(slotComp?.template).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{wvslotpropsdata.xyz!==undefined}}">`)
+    expect(slotComp?.template).toContain('<Leaf val="{{wvslotpropsdata.xyz}}" />')
+  })
+
+  it('keeps third-party component slots native when they are not wevu components', () => {
+    const template = `
+<t-radio-group :value="value" @change="onChange">
+  <t-radio v-for="item in items" :key="item.value" :value="item.value" :label="item.label" />
+</t-radio-group>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: [],
+      },
+    )
+
+    expect(code).toContain('<t-radio-group')
+    expect(code).toContain('<t-radio')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
   })
 
   it('keeps plain named template slots native when default component children are augmented', () => {
@@ -750,6 +809,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<MyCell ')
     expect(scopedSlotComponents).toHaveLength(2)
     expect(scopedSlotComponents?.[0]?.template).toContain('<MyCell generic:scoped-slots-default="')
+    expect(scopedSlotComponents?.[0]?.template).toContain('wvslotownerid="{{wvslotownerid || __wvOwnerId || \'\'}}"')
     expect(scopedSlotComponents?.[0]?.template).not.toContain('<MyImage')
     expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
     expect(scopedSlotComponents?.[1]?.template).toContain('<MyImage />')
@@ -870,15 +930,27 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('<scoped-slots-default')
-    expect(code).toContain('wx:if="{{wvslotownerid}}"')
+    expect(code).toContain('<block wx:if="{{wvslotownerid}}"><scoped-slots-default')
     expect(componentGenerics?.['scoped-slots-default']).toBe(true)
   })
 
-  it('keeps plain named slot outlet native when only default scoped slots are enabled', () => {
+  it('emits plain named slot outlet with a declared scoped generic fallback', () => {
     const { code, componentGenerics } = compileVueTemplateToWxml(
       '<slot name="action" />',
       '/project/src/components/provider/index.vue',
       { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<slot name="action" />')
+    expect(code).toContain('<block wx:if="{{wvslotownerid}}"><scoped-slots-action')
+    expect(componentGenerics?.['scoped-slots-action']).toBe(true)
+  })
+
+  it('keeps plain named slot outlet native when scoped slot props are explicitly required', () => {
+    const { code, componentGenerics } = compileVueTemplateToWxml(
+      '<slot name="action" />',
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsRequireProps: true },
     )
 
     expect(code).toBe('<slot name="action" />')
@@ -910,9 +982,11 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
-    expect(code).toContain(`<slot name="header" /></block><block wx:else><view>Fallback header</view></block>`)
+    expect(code).toContain(`<slot name="header" /><block wx:if="{{wvslotownerid}}"><scoped-slots-header`)
+    expect(code).toContain(`</block></block><block wx:else><view>Fallback header</view></block>`)
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-    expect(code).toContain(`<slot /></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
+    expect(code).toContain(`<slot /><block wx:if="{{wvslotownerid}}"><scoped-slots-default`)
+    expect(code).toContain(`</block></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
     expect(code).not.toContain('vueSlots[')
     expect(code).not.toContain('<slot name="header"><view>Fallback header</view></slot>')
     expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
@@ -931,9 +1005,11 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-    expect(code).toContain(`<slot />`)
-    expect(code).toContain(`<scoped-slots-default wx:if="{{wvslotownerid}}" wvslotownerid="{{wvslotownerid}}" wvslotprops="{{['item',card.item,'index',card.index]}}" wvslotscope="{{__wvSlotScope}}" wvslotownerprops="{{wvslotownerprops}}" />`)
+    expect(code).toContain(`wvslotprops="{{['item',card.item,'index',card.index]}}"`)
+    expect(code).toMatch(/wvslotpropssource="\{\{wvslotpropssource_\d+\}\}"/)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
+    expect(code).not.toContain(`<slot />`)
+    expect(code).not.toContain(`wvslotpropssource="{{{`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')
     expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     expect(componentGenerics?.['scoped-slots-default']).toBe(true)
@@ -953,11 +1029,12 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{a}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
-    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>A fallback</view></block></block>`)
+    expect(code).toContain(`<slot name="header" /><block ${DEFAULT_DIRECTIVES.ifAttr}="{{wvslotownerid}}"><scoped-slots-header`)
+    expect(code).toContain(`</block></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>A fallback</view></block></block>`)
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elifAttr}="{{b}}"><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
-    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>B fallback</view></block></block>`)
+    expect(code).toContain(`</block></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>B fallback</view></block></block>`)
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><block ${DEFAULT_DIRECTIVES.ifAttr}="{{vueSlots&&vueSlots.header}}">`)
-    expect(code).toContain(`<slot name="header" /></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>C fallback</view></block></block>`)
+    expect(code).toContain(`</block></block><block ${DEFAULT_DIRECTIVES.elseAttr}><view>C fallback</view></block></block>`)
     expect(code).not.toContain('vueSlots[')
   })
 

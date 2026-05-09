@@ -55,7 +55,7 @@ export function registerRuntimeBindingExpression(
     ? context.scopedSlotOwnerRuntimeBindingTarget
     : context
   const cacheKey = context.rewriteScopedSlot && !forIndexAccess
-    ? exp.trim()
+    ? `${options?.prefix ?? ''}:${exp.trim()}`
     : undefined
   if (cacheKey) {
     const cached = context.runtimeBindingCache?.get(cacheKey)
