@@ -95,6 +95,27 @@ function createUnrefCall(exp: t.Expression): t.Expression {
   return t.callExpression(t.identifier('__wevuUnref'), [exp])
 }
 
+function isCallCalleeIdentifier(path: import('@weapp-vite/ast/babelTraverse').NodePath<t.Identifier>) {
+  const parent = path.parentPath
+  if (parent.isCallExpression() && parent.node.callee === path.node) {
+    return true
+  }
+  if (parent.isOptionalCallExpression() && parent.node.callee === path.node) {
+    return true
+  }
+  if (!parent.isMemberExpression()) {
+    return false
+  }
+  const grandParent = parent.parentPath
+  if (grandParent.isCallExpression() && grandParent.node.callee === parent.node) {
+    return true
+  }
+  if (grandParent.isOptionalCallExpression() && grandParent.node.callee === parent.node) {
+    return true
+  }
+  return false
+}
+
 function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expression {
   return t.callExpression(
     t.memberExpression(
@@ -229,7 +250,10 @@ export function normalizeJsExpressionWithContext(
         }
         else {
           const base = createScopedSlotOwnerRuntimeAccess()
-          replacement = createUnrefCall(createMemberAccess(base, name))
+          const ownerAccess = createMemberAccess(base, name)
+          replacement = isCallCalleeIdentifier(path)
+            ? ownerAccess
+            : createUnrefCall(ownerAccess)
         }
       }
       else {

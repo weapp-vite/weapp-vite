@@ -25,7 +25,7 @@ function _runE2E() {
       issue-558 scoped slot computed function
     </view>
 
-    <Cell>
+    <Cell id="issue558-cell">
       <text class="issue558-result">
         {{ func(text) }}
       </text>

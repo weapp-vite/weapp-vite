@@ -1,4 +1,4 @@
-import { getReactiveVersion, isReactive, toRaw, unref } from '../reactivity'
+import { getReactiveVersion, isReactive, isRef, toRaw, unref } from '../reactivity'
 import { hasOwn } from '../utils'
 import { isNoSetData } from './noSetData'
 import { hasTrackableSetupBinding } from './setupTracking'
@@ -26,7 +26,9 @@ function toPlainInternal(
   depth: number,
   budget: { keys: number },
 ): any {
-  const unwrapped = unref(value)
+  const unwrapped = isRef(value) || (value && typeof value === 'object' && (value as any).__v_isRef === true && 'value' in value)
+    ? (value as any).value
+    : unref(value)
   if (typeof unwrapped === 'bigint') {
     const asNumber = Number(unwrapped)
     return Number.isSafeInteger(asNumber) ? asNumber : unwrapped.toString()
@@ -39,6 +41,9 @@ function toPlainInternal(
   }
   if (typeof unwrapped !== 'object' || unwrapped === null) {
     return unwrapped
+  }
+  if ((unwrapped as any).__v_isRef === true && 'value' in unwrapped) {
+    return toPlainInternal((unwrapped as any).value, seen, cache, depth, budget)
   }
   if (isNoSetData(unwrapped)) {
     return undefined

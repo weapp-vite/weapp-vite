@@ -25,7 +25,7 @@ function _runE2E() {
       issue-555 slot v-if projection
     </view>
 
-    <SlotCell>
+    <SlotCell id="issue555-slotcell">
       <template #text>
         <text
           v-if="value"
