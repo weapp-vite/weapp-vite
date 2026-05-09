@@ -284,7 +284,7 @@ describe('Vue Template Compiler', () => {
         { scopedSlotsRequireProps: false },
       )
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('wx:if="{{wvslotownerid}}"')
+      expect(result.code).toContain('<block wx:if="{{wvslotownerid}}"><scoped-slots-default')
       expect(result.code).toContain('wvslotprops')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
@@ -312,9 +312,11 @@ describe('Vue Template Compiler', () => {
         '<slot :data="slotProps"></slot>',
         'test.vue',
       )
-      expect(result.code).toContain('<slot')
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('wvslotprops')
+      expect(result.code).toContain('wvslotprops="{{[\'data\',slotProps]}}"')
+      expect(result.code).toMatch(/wvslotpropssource="\{\{wvslotpropssource_\d+\}\}"/)
+      expect(result.code).not.toContain('<slot')
+      expect(result.code).not.toContain('wvslotpropssource="{{{')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -325,9 +327,11 @@ describe('Vue Template Compiler', () => {
       )
 
       expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-      expect(result.code).toContain('<slot />')
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('wvslotprops="{{[\'data\',slotProps]}}"')
+      expect(result.code).toMatch(/wvslotpropssource="\{\{wvslotpropssource_\d+\}\}"/)
+      expect(result.code).not.toContain('<slot />')
+      expect(result.code).not.toContain('wvslotpropssource="{{{')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
       expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     })

@@ -204,6 +204,18 @@ function syncScopedSlotData(instance: any, payload: Record<string, any>) {
   }
 }
 
+function syncSlotPropsDataSource(instance: any, source: unknown) {
+  const slotProps = normalizeSlotBindings(source)
+  instance[SLOT_PROPS_OVERRIDE_KEY] = {
+    ...normalizeSlotBindings(instance?.[SLOT_PROPS_OVERRIDE_KEY]),
+    ...slotProps,
+  }
+  syncScopedSlotData(instance, {
+    [WEVU_SLOT_PROPS_DATA_KEY]: slotProps,
+    [WEVU_GENERIC_SLOT_PROPS_DATA_KEY]: slotProps,
+  })
+}
+
 function syncNativeData(instance: any, payload: Record<string, any>) {
   if (typeof instance?.setData === 'function') {
     instance.setData(payload)
@@ -247,6 +259,15 @@ function createScopedSlotOwnerSetDataPayload(ownerSnapshot: Record<string, any>)
   return payload
 }
 
+function resolveMergedSlotPropsData(instance: any, ownerSnapshot: Record<string, any>) {
+  const slotProps = {
+    ...ownerSnapshot,
+    ...normalizeSlotBindings(instance?.[SLOT_SCOPE_OVERRIDE_KEY]),
+    ...normalizeSlotBindings(instance?.[SLOT_PROPS_OVERRIDE_KEY]),
+  }
+  return slotProps
+}
+
 function collectScopedSlotOwnerComponentState(instance: any) {
   const owner = typeof instance?.selectOwnerComponent === 'function'
     ? instance.selectOwnerComponent()
@@ -270,6 +291,9 @@ function collectScopedSlotOwnerComponentState(instance: any) {
     for (const [key, value] of Object.entries(source)) {
       if (key.startsWith(WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX)) {
         assignDefinedBinding(ownerProps, key.slice(WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX.length), value)
+      }
+      else if (key.startsWith(`${WEVU_GENERIC_SLOT_PROPS_DATA_ATTR}_`)) {
+        mergeDefinedBindings(slotProps, value)
       }
     }
   }
@@ -428,6 +452,9 @@ function syncScopedSlotOwnerSnapshot(
     ...computedPayload,
     ...createScopedSlotOwnerSetDataPayload(mergedOwnerSnapshot),
   }
+  const slotPropsData = resolveMergedSlotPropsData(instance, mergedOwnerSnapshot)
+  payload[WEVU_SLOT_PROPS_DATA_KEY] = slotPropsData
+  payload[WEVU_GENERIC_SLOT_PROPS_DATA_KEY] = slotPropsData
   syncNativeData(instance, payload)
 }
 
@@ -734,10 +761,7 @@ export function createScopedSlotOptions(
         type: null,
         value: null,
         observer(this: any, next: unknown) {
-          syncScopedSlotData(this, {
-            [WEVU_SLOT_PROPS_DATA_KEY]: next,
-            [WEVU_GENERIC_SLOT_PROPS_DATA_KEY]: next,
-          })
+          syncSlotPropsDataSource(this, next)
         },
       },
       [WEVU_SLOT_SCOPE_KEY]: {
@@ -841,14 +865,14 @@ export function createScopedSlotOptions(
       [WEVU_OWNER_HANDLER](this: any, event: any) {
         const owner = this[WEVU_SLOT_OWNER_PROXY_KEY]
         const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
-        const result = runInlineExpression(owner, undefined, event, inlineMap)
-        if (result !== undefined) {
-          return result
+        const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
+        const inlineId = resolveDatasetEventValue(dataset, 'wvInlineId', event)
+        if (inlineId && inlineMap) {
+          return runInlineExpression(owner, undefined, event, inlineMap)
         }
         if (!owner) {
           return undefined
         }
-        const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
         const handlerName = resolveDatasetEventValue(dataset, 'wvHandler', event)
         if (typeof handlerName !== 'string' || !handlerName) {
           return undefined

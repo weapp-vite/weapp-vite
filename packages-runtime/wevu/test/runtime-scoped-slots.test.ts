@@ -378,6 +378,7 @@ describe('runtime: scoped slots', () => {
         wvslotownerpropvalue: 'ok',
         wvslotownerpropwvslotbind0: '987654321',
         wvslotownerpropempty: undefined,
+        wvslotpropssource_0: { sourceValue: 'source-ok' },
       },
       properties: {
         wvslotpropssource: { propValue: 'prop-ok' },
@@ -396,6 +397,7 @@ describe('runtime: scoped slots', () => {
         value: 'ok',
         fromArray: 'array-value',
         propValue: 'prop-ok',
+        sourceValue: 'source-ok',
         wvslotbind0: '987654321',
       }),
       wvslotownerpropvalue: 'ok',
@@ -817,6 +819,63 @@ describe('runtime: scoped slots', () => {
     }))
   })
 
+  it('keeps slot outlet props when owner snapshot sync runs later', async () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    updateOwnerSnapshot(ownerId, {}, {} as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId, wvslotprops: ['label', 'issue-530 scoped slot prop'] },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+    }
+    opts.properties.wvslotprops.observer.call(inst, ['label', 'issue-530 scoped slot prop'])
+    inst.setData.mockClear()
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    await flushScopedSlotTimers(2)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      wvslotpropsdata: expect.objectContaining({
+        label: 'issue-530 scoped slot prop',
+      }),
+    }))
+  })
+
+  it('keeps runtime slot props source when owner snapshot sync runs later', async () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    updateOwnerSnapshot(ownerId, {}, {} as any)
+
+    const inst: any = {
+      properties: {
+        __wvOwnerId: ownerId,
+        wvslotpropssource: { label: 'issue-530 scoped slot prop' },
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+    }
+    opts.properties.wvslotpropssource.observer.call(inst, { label: 'issue-530 scoped slot prop' })
+    inst.setData.mockClear()
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    await flushScopedSlotTimers(2)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      wvslotpropsdata: expect.objectContaining({
+        label: 'issue-530 scoped slot prop',
+      }),
+    }))
+  })
+
   it('merges slot scope into slot props', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!
@@ -1170,5 +1229,63 @@ describe('runtime: scoped slots', () => {
     })
     expect(Object.getPrototypeOf(snapshot)).toBe(Object.prototype)
     expect(Object.getPrototypeOf(snapshot?.nested)).toBe(Object.prototype)
+  })
+
+  it('dispatches owner dataset handlers once when no inline id is present', async () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const owner = { toggle: vi.fn() }
+    updateOwnerSnapshot(ownerId, {}, owner as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    await flushScopedSlotTimers(2)
+
+    opts.methods.__weapp_vite_owner.call(inst, {
+      currentTarget: { dataset: { wh: 'toggle' } },
+      type: 'tap',
+    })
+
+    expect(owner.toggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('dispatches owner inline handlers only when inline id is present', async () => {
+    const inlineHandler = vi.fn(() => 'inline-result')
+    createWevuScopedSlotComponent({
+      inlineMap: {
+        i0: {
+          keys: [],
+          fn: inlineHandler,
+        },
+      },
+    })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const owner = { toggle: vi.fn() }
+    updateOwnerSnapshot(ownerId, {}, owner as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    await flushScopedSlotTimers(2)
+
+    const result = opts.methods.__weapp_vite_owner.call(inst, {
+      currentTarget: { dataset: { wi: 'i0', wh: 'toggle' } },
+      type: 'tap',
+    })
+
+    expect(result).toBe('inline-result')
+    expect(inlineHandler).toHaveBeenCalledTimes(1)
+    expect(owner.toggle).not.toHaveBeenCalled()
   })
 })

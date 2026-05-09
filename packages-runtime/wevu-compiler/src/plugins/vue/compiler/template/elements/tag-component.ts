@@ -236,6 +236,12 @@ function isWevuComponentTag(node: ElementNode, context: TransformContext) {
   return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
+function buildScopedSlotOwnerIdExpression(context: TransformContext) {
+  return context.rewriteScopedSlot
+    ? `${WEVU_GENERIC_SLOT_OWNER_ID_ATTR} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
+    : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
+}
+
 export function shouldTransformAsComponentWithSlots(
   node: ElementNode,
   context: TransformContext,
@@ -257,6 +263,10 @@ export function transformComponentWithSlots(
   options?: { extraAttrs?: string[], forInfo?: ForParseResult },
 ): string {
   if (isScopedSlotsDisabled(context)) {
+    // eslint-disable-next-line ts/no-use-before-define
+    return transformComponentWithSlotsFallback(node, context, transformNode, options)
+  }
+  if (node.tag !== 'component' && context.wevuComponentTags && !isWevuComponentTag(node, context)) {
     // eslint-disable-next-line ts/no-use-before-define
     return transformComponentWithSlotsFallback(node, context, transformNode, options)
   }
@@ -382,7 +392,7 @@ export function transformComponentWithSlots(
     if (scopePropsExp) {
       mergedAttrs.push(`${WEVU_GENERIC_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
     }
-    const ownerIdExp = renderMustache(`${WEVU_SLOT_OWNER_ID_KEY} || ''`, context)
+    const ownerIdExp = renderMustache(buildScopedSlotOwnerIdExpression(context), context)
     mergedAttrs.push(`${WEVU_GENERIC_SLOT_OWNER_ID_ATTR}="${ownerIdExp}"`)
   }
 
