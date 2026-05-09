@@ -27,7 +27,7 @@
     "@iconify/vue": "^5.0.1",
     "@vue/shared": "^3.5.34",
     "echarts": "catalog:",
-    "element-plus": "^2.13.7",
+    "element-plus": "^2.14.0",
     "gridstack": "^12.6.0",
     "theme-transition": "^2.0.2",
     "vue": "catalog:",
