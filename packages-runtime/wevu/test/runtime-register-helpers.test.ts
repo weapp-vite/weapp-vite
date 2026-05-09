@@ -7,6 +7,7 @@ import { createPathGetter, normalizeWatchDescriptor, registerWatches } from '@/r
 import { updateOwnerSnapshot } from '@/runtime/scopedSlots'
 
 vi.mock('@/runtime/scopedSlots', () => ({
+  resolveOwnerSnapshot: vi.fn(() => ({ base: true })),
   updateOwnerSnapshot: vi.fn(),
 }))
 
