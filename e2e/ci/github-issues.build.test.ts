@@ -196,6 +196,34 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).not.toContain('<a ')
   })
 
+  it('issue #563: applies app.vue template as app shell without app.wxml', async () => {
+    await runBuild()
+
+    const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-338/index.wxml'), 'utf-8')
+    const pageJson = await fs.readJson(path.join(DIST_ROOT, 'pages/issue-338/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+    const appShellWxml = await fs.readFile(path.join(DIST_ROOT, '__weapp_vite_app_shell.wxml'), 'utf-8')
+    const appShellJson = await fs.readJson(path.join(DIST_ROOT, '__weapp_vite_app_shell.json')) as Record<string, unknown>
+
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'app.wxml'))).toBe(false)
+    expect(appShellWxml).toContain('issue-563-app-shell')
+    expect(appShellJson).toMatchObject({
+      component: true,
+      componentGenerics: {
+        'scoped-slots-default': {
+          default: './__weapp_vite_scoped_slot_generic_component',
+        },
+      },
+    })
+    expect(pageWxml).toContain('<weapp-app-shell><weapp-layout-default>')
+    expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
+    expect(pageJson.usingComponents).toMatchObject({
+      'weapp-app-shell': '/__weapp_vite_app_shell',
+      'weapp-layout-default': '/layouts/default',
+    })
+  })
+
   it('issue #431: replaces import.meta.env expressions inside native wxml files', async () => {
     await runBuild()
 

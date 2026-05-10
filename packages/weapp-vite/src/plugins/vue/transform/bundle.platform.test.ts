@@ -1206,6 +1206,121 @@ export default {
     })
   })
 
+  it('uses app.vue template as an app shell outside page layouts without emitting app.wxml', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    await fs.ensureDir(path.join(srcRoot, 'layouts'))
+    await fs.writeFile(path.join(srcRoot, 'layouts', 'default.vue'), '<template><slot /></template>', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p).replace(/\\/g, '/'),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const appFile = path.join(srcRoot, 'app.vue')
+    const pageFile = path.join(srcRoot, 'pages', 'app-shell', 'index.vue')
+    const noLayoutPageFile = path.join(srcRoot, 'pages', 'app-shell-no-layout', 'index.vue')
+
+    const compilationCache = new Map([
+      [
+        appFile,
+        {
+          source: '<template><view class="app-shell"><slot /></view></template><style>.app-shell{min-height:100vh}</style>',
+          result: {
+            template: '<view class="app-shell"><slot /></view>',
+            style: '.app-shell{min-height:100vh}',
+            config: JSON.stringify({ pages: ['pages/app-shell/index'] }),
+            script: 'createApp({})',
+          },
+          isPage: false,
+        },
+      ],
+      [
+        pageFile,
+        {
+          source: '<template><view>page content</view></template>',
+          result: {
+            template: '<view>page content</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'shell' }),
+            script: 'Page({})',
+          },
+          isPage: true,
+        },
+      ],
+      [
+        noLayoutPageFile,
+        {
+          source: '<script setup>definePageMeta({ layout: false })</script><template><view>plain content</view></template>',
+          result: {
+            template: '<view>plain content</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'plain' }),
+            script: 'Page({})',
+          },
+          isPage: true,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.has('app.wxml')).toBe(false)
+    expect(assets.get('__weapp_vite_app_shell.wxml')).toBe('<view class="app-shell"><slot /></view>')
+    expect(assets.get('__weapp_vite_app_shell.wxss')).toBeUndefined()
+    expect(JSON.parse(assets.get('__weapp_vite_app_shell.json')!)).toEqual({
+      component: true,
+    })
+    expect(assets.get('__weapp_vite_app_shell.js')).toBe('Component({})')
+    expect(assets.get('pages/app-shell/index.wxml')).toBe('<weapp-app-shell><weapp-layout-default><view>page content</view></weapp-layout-default></weapp-app-shell>')
+    expect(assets.get('pages/app-shell-no-layout/index.wxml')).toBe('<weapp-app-shell><view>plain content</view></weapp-app-shell>')
+    expect(JSON.parse(assets.get('pages/app-shell/index.json')!)).toEqual({
+      navigationBarTitleText: 'shell',
+      usingComponents: {
+        'weapp-layout-default': '/layouts/default',
+        'weapp-app-shell': '/__weapp_vite_app_shell',
+      },
+    })
+    expect(JSON.parse(assets.get('pages/app-shell-no-layout/index.json')!)).toEqual({
+      navigationBarTitleText: 'plain',
+      usingComponents: {
+        'weapp-app-shell': '/__weapp_vite_app_shell',
+      },
+    })
+  })
+
   it('emits a js stub for scriptless vue layouts required by page wrappers', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')

@@ -1,5 +1,7 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import {
+  emitAppShellAssetsIfNeeded,
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
@@ -33,6 +35,23 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     return
   }
 
+  if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
+    emitAppShellAssetsIfNeeded({
+      bundle,
+      pluginCtx,
+      ctx,
+      relativeBase: resolveAppShellRelativeBase(configService),
+      result,
+      configService,
+      templateExtension: options.templateExtension,
+      jsonExtension: options.jsonExtension,
+      scriptExtension: options.scriptExtension,
+      scriptModuleExtension: options.scriptModuleExtension,
+      outputExtensions: options.outputExtensions,
+      platformAssetOptions: options.platformAssetOptions,
+    })
+  }
+
   if (cached.isPage && cached.source) {
     await handleCompiledEntryPageLayouts({
       source: cached.source,
@@ -51,6 +70,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
         })
       },
     })
+    applyAppShell(result, filename, state.appShell)
   }
 
   const { shouldEmitComponentJson } = emitCompiledEntryBundleAssets({

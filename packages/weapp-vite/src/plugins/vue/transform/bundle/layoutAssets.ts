@@ -1,3 +1,4 @@
+import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { VueBundleCompileOptionsState } from './shared'
@@ -11,6 +12,7 @@ import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } fr
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
+import { emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared/assets'
 
 export interface ResolvedBundleLayout {
   kind: 'native' | 'vue'
@@ -316,5 +318,94 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
     layouts: options.layouts,
     emitNativeLayout: layoutEmitters.emitNativeLayout,
     emitVueLayout: layoutEmitters.emitVueLayout,
+  })
+}
+
+function resolveAppShellComponentConfig(config: string | undefined) {
+  if (!config) {
+    return undefined
+  }
+
+  try {
+    const parsed = JSON.parse(config)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return undefined
+    }
+
+    const shellConfig: Record<string, any> = {}
+    for (const key of ['usingComponents', 'componentGenerics']) {
+      const value = parsed[key]
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        shellConfig[key] = value
+      }
+    }
+
+    return Object.keys(shellConfig).length
+      ? JSON.stringify(shellConfig, null, 2)
+      : undefined
+  }
+  catch {
+    return undefined
+  }
+}
+
+export function emitAppShellAssetsIfNeeded(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: CompilerContext
+  relativeBase: string | undefined
+  result: Pick<VueTransformResult, 'template' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
+  configService: NonNullable<CompilerContext['configService']>
+  templateExtension: string
+  jsonExtension: string
+  scriptExtension: string
+  scriptModuleExtension?: string
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+}) {
+  const { relativeBase, result } = options
+  if (!relativeBase || !result.template?.trim()) {
+    return
+  }
+
+  emitBundleVueEntryAssets({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    ctx: options.ctx,
+    filename: relativeBase,
+    relativeBase,
+    result: result as VueTransformResult,
+    configService: options.configService,
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+  })
+
+  emitSharedVueEntryJsonAsset({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    relativeBase,
+    config: resolveAppShellComponentConfig(result.config),
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+    jsonOptions: {
+      defaultConfig: { component: true },
+      kind: 'component',
+      extension: options.jsonExtension,
+    },
+  })
+
+  emitScriptlessComponentJsFallbackIfMissing({
+    pluginCtx: options.pluginCtx,
+    bundle: options.bundle,
+    relativeBase,
+    scriptExtension: options.scriptExtension,
   })
 }

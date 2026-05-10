@@ -358,6 +358,49 @@ defineAppJson({
     })
   })
 
+  it('compiles app.vue template while keeping app config and runtime code', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+defineAppJson({
+  pages: ['pages/index/index'],
+  window: {
+    navigationBarTitleText: 'weapp-vite',
+  },
+})
+</script>
+<template>
+  <view class="app-shell">
+    <slot />
+  </view>
+</template>
+<style>
+.app-shell {
+  min-height: 100vh;
+}
+</style>
+      `.trim(),
+      '/project/src/app.vue',
+      {
+        isApp: true,
+        json: { kind: 'app' },
+      },
+    )
+
+    expect(result.config).toBeTruthy()
+    expect(JSON.parse(result.config!)).toEqual({
+      pages: ['pages/index/index'],
+      window: {
+        navigationBarTitleText: 'weapp-vite',
+      },
+    })
+    expect(result.template).toContain('class="app-shell"')
+    expect(result.template).toContain('<slot />')
+    expect(result.style).toContain('.app-shell')
+    expect(result.script).toContain('createApp')
+    expect(result.script).not.toContain('createWevuComponent')
+  })
+
   it('injects defineAppSetup runtime import for app.vue bare macro usage', async () => {
     const result = await compileVueFile(
       `

@@ -28,6 +28,8 @@ export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'
 export const WEVU_PAGE_LAYOUT_NAME_KEY = '__wv_page_layout_name'
 export const WEVU_PAGE_LAYOUT_PROPS_KEY = '__wv_page_layout_props'
+export const WEVU_APP_SHELL_COMPONENT_BASE = '__weapp_vite_app_shell'
+export const WEVU_APP_SHELL_TAG_NAME = 'weapp-app-shell'
 
 export const WEVU_INLINE_HANDLER = '__weapp_vite_inline'
 export const WEVU_MODEL_HANDLER = '__weapp_vite_model'

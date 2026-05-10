@@ -1,6 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { readFile as readFileCached } from '../../../utils/cache'
@@ -17,6 +18,7 @@ export async function transformVueLikeFile(options: {
   code: string
   id: string
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+  setAppShell: (shell: ResolvedAppShell | undefined) => void
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
   scanDirtySynced: boolean
@@ -36,6 +38,7 @@ export async function transformVueLikeFile(options: {
     code,
     id,
     compilationCache,
+    setAppShell,
     pageMatcher,
     setPageMatcher,
     scanDirtySynced,
@@ -135,6 +138,7 @@ export async function transformVueLikeFile(options: {
         source: transformedSource,
         result,
         compilationCache,
+        setAppShell,
         configService,
         isPage,
         isApp,
