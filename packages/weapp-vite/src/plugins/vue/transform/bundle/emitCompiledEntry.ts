@@ -1,5 +1,6 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
+import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
   emitAppShellAssetsIfNeeded,
   emitBundlePageLayoutsIfNeeded,
@@ -40,6 +41,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
       bundle,
       pluginCtx,
       ctx,
+      filename,
       relativeBase: resolveAppShellRelativeBase(configService),
       result,
       configService,
@@ -71,6 +73,14 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
       },
     })
     applyAppShell(result, filename, state.appShell)
+  }
+
+  if (isLayoutFile(filename, configService)) {
+    assertTemplateHasDefaultSlot({
+      filename,
+      kind: 'page-layout',
+      template: result.template,
+    })
   }
 
   const { shouldEmitComponentJson } = emitCompiledEntryBundleAssets({

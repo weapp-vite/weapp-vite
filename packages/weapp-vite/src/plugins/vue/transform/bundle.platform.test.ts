@@ -1321,6 +1321,107 @@ export default {
     })
   })
 
+  it('throws when app.vue template has no default slot', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p).replace(/\\/g, '/'),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const appFile = path.join(srcRoot, 'app.vue')
+    await expect(emitVueBundleAssets({}, {
+      ctx: {
+        configService,
+        scanService: {
+          independentSubPackageMap: new Map(),
+        },
+      } as CompilerContext,
+      pluginCtx: { emitFile: vi.fn(), addWatchFile: vi.fn() },
+      compilationCache: new Map([
+        [
+          appFile,
+          {
+            source: '<template><view class="app-shell" /></template>',
+            result: {
+              template: '<view class="app-shell" />',
+              config: JSON.stringify({ pages: [] }),
+              script: 'createApp({})',
+            },
+            isPage: false,
+          },
+        ],
+      ]),
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })).rejects.toThrow(`${appFile} 中 app.vue <template> 必须包含默认 <slot />`)
+  })
+
+  it('throws when a page layout template has no default slot', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
+    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.writeFile(layoutFile, '<template><view class="layout-only" /></template>', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p).replace(/\\/g, '/'),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const pageFile = path.join(srcRoot, 'pages', 'layout-no-slot', 'index.vue')
+    await expect(emitVueBundleAssets({}, {
+      ctx: {
+        configService,
+        scanService: {
+          independentSubPackageMap: new Map(),
+        },
+      } as CompilerContext,
+      pluginCtx: { emitFile: vi.fn(), addWatchFile: vi.fn() },
+      compilationCache: new Map([
+        [
+          pageFile,
+          {
+            source: '<template><view>page content</view></template>',
+            result: {
+              template: '<view>page content</view>',
+              config: JSON.stringify({ navigationBarTitleText: 'layout' }),
+              script: 'Page({})',
+            },
+            isPage: true,
+          },
+        ],
+      ]),
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })).rejects.toThrow(`${layoutFile} 对应的 layout template 必须包含默认 <slot />`)
+  })
+
   it('emits a js stub for scriptless vue layouts required by page wrappers', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
