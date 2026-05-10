@@ -3,6 +3,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { createPageEntryMatcher } from '../../../wevu'
+import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../../utils/hmrProfile'
@@ -20,6 +21,7 @@ import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
+  let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
@@ -85,6 +87,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           code,
           id,
           compilationCache,
+          setAppShell: shell => (appShell = shell),
           pageMatcher,
           setPageMatcher: matcher => (pageMatcher = matcher),
           scanDirtySynced,
@@ -109,6 +112,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         ctx,
         pluginCtx: this,
         compilationCache,
+        appShell,
         reExportResolutionCache,
         compileOptionsCache,
         classStyleRuntimeWarned,

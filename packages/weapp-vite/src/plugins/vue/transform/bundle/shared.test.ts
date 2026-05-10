@@ -428,6 +428,7 @@ describe('emitSharedVueEntryAssets', () => {
       },
     })
 
+    expect(emitPlatformTemplateAssetMock).not.toHaveBeenCalled()
     expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
       expect.anything(),
       {},
