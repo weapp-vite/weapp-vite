@@ -174,8 +174,9 @@ export function emitSharedVueEntryAssets(options: {
     scopedSlotDefaults,
     scopedSlotMergeStrategy,
   } = options
+  const isAppVue = APP_VUE_LIKE_FILE_RE.test(filename)
 
-  if (result.template) {
+  if (result.template && !isAppVue) {
     emitPlatformTemplateAsset(bundle, {
       ctx,
       pluginCtx,
