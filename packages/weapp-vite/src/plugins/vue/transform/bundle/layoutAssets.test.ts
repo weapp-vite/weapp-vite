@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createBundleLayoutEmitters, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view><slot /></view>'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -8,6 +8,8 @@ const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
 const emitSfcTemplateIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcStyleIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
+const emitBundleVueEntryAssetsMock = vi.hoisted(() => vi.fn())
+const emitSharedVueEntryJsonAssetMock = vi.hoisted(() => vi.fn())
 const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: '',
   template: '<view><slot /></view>',
@@ -48,6 +50,15 @@ vi.mock('./shared', async (importOriginal) => {
   }
 })
 
+vi.mock('./shared/assets', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./shared/assets')>()
+  return {
+    ...actual,
+    emitBundleVueEntryAssets: emitBundleVueEntryAssetsMock,
+    emitSharedVueEntryJsonAsset: emitSharedVueEntryJsonAssetMock,
+  }
+})
+
 vi.mock('../../../utils/scriptlessComponent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../utils/scriptlessComponent')>()
   return {
@@ -75,6 +86,8 @@ describe('resolveVueLayoutAssetOptions', () => {
     emitSfcTemplateIfMissingMock.mockReset()
     emitSfcStyleIfMissingMock.mockReset()
     emitSfcJsonAssetMock.mockReset()
+    emitBundleVueEntryAssetsMock.mockReset()
+    emitSharedVueEntryJsonAssetMock.mockReset()
     compileVueLikeFileMock.mockReset()
     compileVueLikeFileMock.mockResolvedValue({
       script: '',
@@ -545,6 +558,52 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(collectNativeLayoutAssetsMock).not.toHaveBeenCalled()
     expect(compileVueLikeFileMock).not.toHaveBeenCalled()
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+  })
+
+  it('emits app shell component style beside app shell assets', () => {
+    const bundle = {}
+
+    emitAppShellAssetsIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle,
+      ctx: {} as any,
+      filename: '/project/src/app.vue',
+      relativeBase: '__weapp_vite_app_shell',
+      result: {
+        template: '<view class="happy"><slot /></view>',
+        style: '.happy{padding:8px;}',
+        config: undefined,
+        classStyleWxs: undefined,
+        scopedSlotComponents: [],
+      },
+      configService: {} as any,
+      templateExtension: 'wxml',
+      styleExtension: 'wxss',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      outputExtensions: {
+        wxss: 'wxss',
+      } as any,
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+      },
+    })
+
+    expect(emitBundleVueEntryAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
+      filename: '__weapp_vite_app_shell',
+      relativeBase: '__weapp_vite_app_shell',
+    }))
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      bundle,
+      '__weapp_vite_app_shell',
+      '.happy{padding:8px;}',
+      'wxss',
+    )
+    expect(emitSharedVueEntryJsonAssetMock).toHaveBeenCalledWith(expect.objectContaining({
+      relativeBase: '__weapp_vite_app_shell',
+    }))
   })
 
   it('dispatches bundle page layouts through shared native and vue emit flows', async () => {

@@ -11,6 +11,13 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const APP_VUE_PATH = path.join(APP_ROOT, 'src/app.vue')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
+const TEMPLATE_DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
+const TEMPLATE_APP_VUE_PATH = path.join(TEMPLATE_ROOT, 'src/app.vue')
+const TEMPLATE_APP_SHELL_WXML_DIST = path.join(TEMPLATE_DIST_ROOT, '__weapp_vite_app_shell.wxml')
+const TEMPLATE_APP_SHELL_WXSS_DIST = path.join(TEMPLATE_DIST_ROOT, '__weapp_vite_app_shell.wxss')
+const TEMPLATE_PAGE_WXML_DIST = path.join(TEMPLATE_DIST_ROOT, 'pages/index/index.wxml')
+const TEMPLATE_PAGE_JSON_DIST = path.join(TEMPLATE_DIST_ROOT, 'pages/index/index.json')
 const APP_SHELL_WXML_DIST = path.join(DIST_ROOT, '__weapp_vite_app_shell.wxml')
 const APP_SHELL_JSON_DIST = path.join(DIST_ROOT, '__weapp_vite_app_shell.json')
 const APP_WXML_DIST = path.join(DIST_ROOT, 'app.wxml')
@@ -45,8 +52,42 @@ async function waitForPageUsingAppShell(timeoutMs = 90_000) {
   throw new Error(`Timed out waiting for ${PAGE_JSON_DIST} to reference app shell`)
 }
 
+async function waitForJsonUsingAppShell(filePath: string, timeoutMs = 90_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await fs.pathExists(filePath)) {
+      const pageJson = await fs.readJson(filePath) as {
+        usingComponents?: Record<string, string>
+      }
+      if (pageJson.usingComponents?.['weapp-app-shell'] === '/__weapp_vite_app_shell') {
+        return pageJson
+      }
+    }
+    await sleep(250)
+  }
+  throw new Error(`Timed out waiting for ${filePath} to reference app shell`)
+}
+
+async function waitForFileNotContains(filePath: string, marker: string, timeoutMs = 90_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await fs.pathExists(filePath)) {
+      const content = await fs.readFile(filePath, 'utf8')
+      if (!content.includes(marker)) {
+        return content
+      }
+    }
+    await sleep(250)
+  }
+  throw new Error(`Timed out waiting for ${filePath} to not contain marker: ${marker}`)
+}
+
 async function restoreAppVueSource(source: string) {
   await fs.writeFile(APP_VUE_PATH, source, 'utf8')
+}
+
+function removeAppVueTemplate(source: string) {
+  return source.replace(/\n?<template>[\s\S]*?<\/template>\n?/, '\n')
 }
 
 beforeEach(async () => {
@@ -93,6 +134,38 @@ describe.sequential('app shell HMR (dev watch)', () => {
     finally {
       await dev.stop(5_000)
       await restoreAppVueSource(originalAppSource)
+    }
+  })
+
+  it('adds template app.vue shell through dev watch after starting without a shell', async () => {
+    const originalAppSource = await fs.readFile(TEMPLATE_APP_VUE_PATH, 'utf8')
+    const appSourceWithoutShell = removeAppVueTemplate(originalAppSource)
+
+    await fs.writeFile(TEMPLATE_APP_VUE_PATH, appSourceWithoutShell, 'utf8')
+
+    // @ts-expect-error execa v9 overload resolution
+    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', TEMPLATE_ROOT, '--platform', 'weapp', '--skipNpm'], {
+      cwd: TEMPLATE_ROOT,
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
+    })
+
+    try {
+      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-layout-default>'), 'initial template page emitted without app shell')
+      await dev.waitFor(waitForFileNotExists(TEMPLATE_APP_SHELL_WXML_DIST), 'initial template app shell is absent')
+      await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell>'), 'initial template page is not wrapped with app shell')
+      await sleep(1_000)
+
+      await replaceFileByRename(TEMPLATE_APP_VUE_PATH, originalAppSource)
+
+      await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXML_DIST, 'class="happy"'), 'template app shell emitted after app.vue template add')
+      await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXSS_DIST, '.happy'), 'template app shell style emitted after app.vue template add')
+      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell><weapp-layout-default>'), 'template page wrapped with app shell after app.vue template add')
+      await dev.waitFor(waitForJsonUsingAppShell(TEMPLATE_PAGE_JSON_DIST), 'template page json references app shell after app.vue template add')
+    }
+    finally {
+      await dev.stop(5_000)
+      await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
     }
   })
 })
