@@ -14,6 +14,12 @@ defineAppJson({
 })
 </script>
 
+<template>
+  <view class="happy">
+    <slot />
+  </view>
+</template>
+
 <style>
 page {
   color: #0f172a;
