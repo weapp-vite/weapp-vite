@@ -86,8 +86,23 @@ async function restoreAppVueSource(source: string) {
   await fs.writeFile(APP_VUE_PATH, source, 'utf8')
 }
 
-function removeAppVueTemplate(source: string) {
-  return source.replace(/\n?<template>[\s\S]*?<\/template>\n?/, '\n')
+function addTemplateAppShell(source: string) {
+  const template = `<template>
+  <view class="happy">
+    <slot />
+  </view>
+</template>`
+  const shellStyle = `.happy {
+  min-height: 100vh;
+}
+
+`
+
+  if (source.includes('<style>')) {
+    return source.replace('<style>', `${template}\n\n<style>\n${shellStyle}`)
+  }
+
+  return `${source.trimEnd()}\n\n${template}\n\n<style>\n${shellStyle}</style>\n`
 }
 
 beforeEach(async () => {
@@ -139,9 +154,9 @@ describe.sequential('app shell HMR (dev watch)', () => {
 
   it('adds template app.vue shell through dev watch after starting without a shell', async () => {
     const originalAppSource = await fs.readFile(TEMPLATE_APP_VUE_PATH, 'utf8')
-    const appSourceWithoutShell = removeAppVueTemplate(originalAppSource)
+    const appSourceWithShell = addTemplateAppShell(originalAppSource)
 
-    await fs.writeFile(TEMPLATE_APP_VUE_PATH, appSourceWithoutShell, 'utf8')
+    await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', TEMPLATE_ROOT, '--platform', 'weapp', '--skipNpm'], {
@@ -156,7 +171,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
       await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell>'), 'initial template page is not wrapped with app shell')
       await sleep(1_000)
 
-      await replaceFileByRename(TEMPLATE_APP_VUE_PATH, originalAppSource)
+      await replaceFileByRename(TEMPLATE_APP_VUE_PATH, appSourceWithShell)
 
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXML_DIST, 'class="happy"'), 'template app shell emitted after app.vue template add')
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_WXSS_DIST, '.happy'), 'template app shell style stays in app wxss after app.vue template add')
