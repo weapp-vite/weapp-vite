@@ -977,7 +977,7 @@ onPageScroll(() => {
 
     compileVueFileMock.mockImplementation(async (_source, filename) => {
       if (filename.endsWith('app.vue')) {
-        return { script: 'export default {}', meta: {}, template: '<view />' }
+        return { script: 'export default {}', meta: {} }
       }
       return { script: 'export default {}', meta: {}, template: '<view />', style: '.x{}', config: '{"a":1}' }
     })
@@ -999,7 +999,7 @@ onPageScroll(() => {
     const plugin = createVueTransformPlugin(ctx as any)
 
     const appVue = path.join(tmpDir!, 'app.vue')
-    await fs.writeFile(appVue, '<template><view/></template>', 'utf8')
+    await fs.writeFile(appVue, '<script setup>const app = true</script>', 'utf8')
     await plugin.transform!.call({}, await fs.readFile(appVue, 'utf8'), appVue)
     await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
