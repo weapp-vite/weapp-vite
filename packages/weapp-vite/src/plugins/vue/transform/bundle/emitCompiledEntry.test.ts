@@ -186,6 +186,49 @@ describe('emitCompiledEntry helpers', () => {
     })
   })
 
+  it('keeps app.vue without template compatible with the normal app entry flow', async () => {
+    const result = {
+      config: JSON.stringify({ pages: ['pages/index/index'] }),
+      script: 'createApp({})',
+    } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle: {},
+      state: {
+        ctx: {
+          configService: { platform: DEFAULT_MP_PLATFORM },
+        },
+        pluginCtx: {},
+      } as any,
+      filename: '/project/src/app.vue',
+      cached: {
+        isPage: false,
+        source: '<script setup>defineAppJson({ pages: [\'pages/index/index\'] })</script>',
+      } as any,
+      result,
+      relativeBase: 'app',
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitAppShellAssetsIfNeededMock).not.toHaveBeenCalled()
+    expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
+    expect(emitCompiledEntryBundleAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
+      filename: '/project/src/app.vue',
+      relativeBase: 'app',
+      result,
+      isPage: false,
+    }))
+  })
+
   it('emits scriptless component fallbacks for component entries without script', async () => {
     emitCompiledEntryBundleAssetsMock.mockReturnValue({
       shouldEmitComponentJson: true,
