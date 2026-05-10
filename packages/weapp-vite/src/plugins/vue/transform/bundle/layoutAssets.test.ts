@@ -560,7 +560,7 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
   })
 
-  it('emits app shell component style beside app shell assets', () => {
+  it('emits app shell component assets that consume app-level styles', () => {
     const bundle = {}
 
     emitAppShellAssetsIfNeeded({
@@ -578,7 +578,6 @@ describe('resolveVueLayoutAssetOptions', () => {
       },
       configService: {} as any,
       templateExtension: 'wxml',
-      styleExtension: 'wxss',
       jsonExtension: 'json',
       scriptExtension: 'js',
       outputExtensions: {
@@ -594,15 +593,12 @@ describe('resolveVueLayoutAssetOptions', () => {
       filename: '__weapp_vite_app_shell',
       relativeBase: '__weapp_vite_app_shell',
     }))
-    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
-      expect.anything(),
-      bundle,
-      '__weapp_vite_app_shell',
-      '.happy{padding:8px;}',
-      'wxss',
-    )
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
     expect(emitSharedVueEntryJsonAssetMock).toHaveBeenCalledWith(expect.objectContaining({
       relativeBase: '__weapp_vite_app_shell',
+      config: JSON.stringify({
+        styleIsolation: 'apply-shared',
+      }, null, 2),
     }))
   })
 
