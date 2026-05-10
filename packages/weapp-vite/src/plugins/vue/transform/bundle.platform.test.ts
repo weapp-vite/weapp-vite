@@ -1299,7 +1299,7 @@ export default {
 
     expect(assets.has('app.wxml')).toBe(false)
     expect(assets.get('__weapp_vite_app_shell.wxml')).toBe('<view class="app-shell"><slot /></view>')
-    expect(assets.get('__weapp_vite_app_shell.wxss')).toBeUndefined()
+    expect(assets.get('__weapp_vite_app_shell.wxss')).toBe('.app-shell{min-height:100vh}')
     expect(JSON.parse(assets.get('__weapp_vite_app_shell.json')!)).toEqual({
       component: true,
     })

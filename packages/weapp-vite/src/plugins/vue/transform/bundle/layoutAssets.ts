@@ -366,9 +366,10 @@ export function emitAppShellAssetsIfNeeded(options: {
   ctx: CompilerContext
   filename: string
   relativeBase: string | undefined
-  result: Pick<VueTransformResult, 'template' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
+  result: Pick<VueTransformResult, 'template' | 'style' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
   configService: NonNullable<CompilerContext['configService']>
   templateExtension: string
+  styleExtension: string
   jsonExtension: string
   scriptExtension: string
   scriptModuleExtension?: string
@@ -405,6 +406,16 @@ export function emitAppShellAssetsIfNeeded(options: {
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
   })
+
+  if (result.style) {
+    emitSfcStyleIfMissing(
+      options.pluginCtx,
+      options.bundle,
+      relativeBase,
+      result.style,
+      options.styleExtension,
+    )
+  }
 
   emitSharedVueEntryJsonAsset({
     bundle: options.bundle,
