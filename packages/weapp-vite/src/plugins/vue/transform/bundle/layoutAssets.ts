@@ -10,7 +10,7 @@ import {
 } from '../../../utils/nativeLayout'
 import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
-import { collectNativeLayoutAssets } from '../pageLayout'
+import { assertTemplateHasDefaultSlot, collectNativeLayoutAssets } from '../pageLayout'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
 import { emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared/assets'
 
@@ -123,6 +123,11 @@ export async function emitResolvedNativeLayoutStaticAssets(options: {
   })
   for (const asset of staticAssetEntries) {
     if (asset.kind === 'template') {
+      assertTemplateHasDefaultSlot({
+        filename: options.assets.template!,
+        kind: 'page-layout',
+        template: asset.source,
+      })
       emitSfcTemplateIfMissing(
         options.pluginCtx,
         options.bundle,
@@ -256,6 +261,12 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     compileOptionsState,
   })
 
+  assertTemplateHasDefaultSlot({
+    filename: layoutFilePath,
+    kind: 'page-layout',
+    template: result.template,
+  })
+
   if (result.script?.trim()) {
     return
   }
@@ -353,6 +364,7 @@ export function emitAppShellAssetsIfNeeded(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
+  filename: string
   relativeBase: string | undefined
   result: Pick<VueTransformResult, 'template' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
   configService: NonNullable<CompilerContext['configService']>
@@ -373,6 +385,12 @@ export function emitAppShellAssetsIfNeeded(options: {
   if (!relativeBase || !result.template?.trim()) {
     return
   }
+
+  assertTemplateHasDefaultSlot({
+    filename: options.filename,
+    kind: 'app-shell',
+    template: result.template,
+  })
 
   emitBundleVueEntryAssets({
     bundle: options.bundle,
