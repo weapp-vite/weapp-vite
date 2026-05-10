@@ -20,6 +20,11 @@ export {
   resolvePageLayoutPlan,
 } from './resolve'
 
+export {
+  assertTemplateHasDefaultSlot,
+  hasDefaultSlotTemplate,
+} from './slot'
+
 export type {
   LayoutPropValue,
   LayoutTransformLikeResult,
