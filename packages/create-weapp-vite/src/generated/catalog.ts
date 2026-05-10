@@ -35,7 +35,7 @@ export const TEMPLATE_CATALOG = {
   'oxc-walker': '^1.0.0',
   'pkg-types': '^2.3.1',
   'sass-embedded': '^1.99.0',
-  'tailwind-merge': '^3.5.0',
+  'tailwind-merge': '^3.6.0',
   'tailwind-variants': '^3.2.2',
   'tdesign-miniprogram': '^1.14.0',
   'ts-morph': '^28.0.0',

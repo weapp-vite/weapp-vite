@@ -69,7 +69,7 @@ catalog:
   sass: ^1.99.0
   sass-embedded: ^1.99.0
   stylelint: ^17.11.0
-  tailwind-merge: ^3.5.0
+  tailwind-merge: ^3.6.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.3.0
   tdesign-miniprogram: ^1.14.0

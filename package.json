@@ -230,7 +230,7 @@
     "json-schema-to-typescript": "^15.0.4",
     "just-diff": "^6.0.2",
     "less": "^4.6.4",
-    "lint-staged": "^17.0.3",
+    "lint-staged": "^17.0.4",
     "lodash": "catalog:",
     "lodash-es": "^4.18.1",
     "magic-string": "catalog:",
