@@ -11,6 +11,7 @@ const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
