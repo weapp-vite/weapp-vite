@@ -15,7 +15,7 @@ const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-v
 const TEMPLATE_DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const TEMPLATE_APP_VUE_PATH = path.join(TEMPLATE_ROOT, 'src/app.vue')
 const TEMPLATE_APP_SHELL_WXML_DIST = path.join(TEMPLATE_DIST_ROOT, '__weapp_vite_app_shell.wxml')
-const TEMPLATE_APP_SHELL_WXSS_DIST = path.join(TEMPLATE_DIST_ROOT, '__weapp_vite_app_shell.wxss')
+const TEMPLATE_APP_WXSS_DIST = path.join(TEMPLATE_DIST_ROOT, 'app.wxss')
 const TEMPLATE_PAGE_WXML_DIST = path.join(TEMPLATE_DIST_ROOT, 'pages/index/index.wxml')
 const TEMPLATE_PAGE_JSON_DIST = path.join(TEMPLATE_DIST_ROOT, 'pages/index/index.json')
 const APP_SHELL_WXML_DIST = path.join(DIST_ROOT, '__weapp_vite_app_shell.wxml')
@@ -159,7 +159,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
       await replaceFileByRename(TEMPLATE_APP_VUE_PATH, originalAppSource)
 
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXML_DIST, 'class="happy"'), 'template app shell emitted after app.vue template add')
-      await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXSS_DIST, '.happy'), 'template app shell style emitted after app.vue template add')
+      await dev.waitFor(waitForFileContains(TEMPLATE_APP_WXSS_DIST, '.happy'), 'template app shell style stays in app wxss after app.vue template add')
       await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell><weapp-layout-default>'), 'template page wrapped with app shell after app.vue template add')
       await dev.waitFor(waitForJsonUsingAppShell(TEMPLATE_PAGE_JSON_DIST), 'template page json references app shell after app.vue template add')
     }

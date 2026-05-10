@@ -1299,9 +1299,10 @@ export default {
 
     expect(assets.has('app.wxml')).toBe(false)
     expect(assets.get('__weapp_vite_app_shell.wxml')).toBe('<view class="app-shell"><slot /></view>')
-    expect(assets.get('__weapp_vite_app_shell.wxss')).toBe('.app-shell{min-height:100vh}')
+    expect(assets.has('__weapp_vite_app_shell.wxss')).toBe(false)
     expect(JSON.parse(assets.get('__weapp_vite_app_shell.json')!)).toEqual({
       component: true,
+      styleIsolation: 'apply-shared',
     })
     expect(assets.get('__weapp_vite_app_shell.js')).toBe('Component({})')
     expect(assets.get('pages/app-shell/index.wxml')).toBe('<weapp-app-shell><weapp-layout-default><view>page content</view></weapp-layout-default></weapp-app-shell>')
