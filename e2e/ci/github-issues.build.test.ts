@@ -212,6 +212,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appShellWxml).not.toContain('scoped-slots-default')
     expect(appShellJson).toEqual({
       component: true,
+      styleIsolation: 'apply-shared',
     })
     expect(pageWxml).toContain('<weapp-app-shell><weapp-layout-default>')
     expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')

@@ -333,17 +333,20 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
 }
 
 function resolveAppShellComponentConfig(config: string | undefined) {
+  const shellConfig: Record<string, any> = {
+    styleIsolation: 'apply-shared',
+  }
+
   if (!config) {
-    return undefined
+    return JSON.stringify(shellConfig, null, 2)
   }
 
   try {
     const parsed = JSON.parse(config)
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return undefined
+      return JSON.stringify(shellConfig, null, 2)
     }
 
-    const shellConfig: Record<string, any> = {}
     for (const key of ['usingComponents', 'componentGenerics']) {
       const value = parsed[key]
       if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -369,7 +372,6 @@ export function emitAppShellAssetsIfNeeded(options: {
   result: Pick<VueTransformResult, 'template' | 'style' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
   configService: NonNullable<CompilerContext['configService']>
   templateExtension: string
-  styleExtension: string
   jsonExtension: string
   scriptExtension: string
   scriptModuleExtension?: string
@@ -406,16 +408,6 @@ export function emitAppShellAssetsIfNeeded(options: {
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
   })
-
-  if (result.style) {
-    emitSfcStyleIfMissing(
-      options.pluginCtx,
-      options.bundle,
-      relativeBase,
-      result.style,
-      options.styleExtension,
-    )
-  }
 
   emitSharedVueEntryJsonAsset({
     bundle: options.bundle,

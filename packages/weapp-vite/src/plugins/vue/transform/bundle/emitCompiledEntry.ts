@@ -46,7 +46,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
       result,
       configService,
       templateExtension: options.templateExtension,
-      styleExtension: options.outputExtensions.wxss ?? 'wxss',
       jsonExtension: options.jsonExtension,
       scriptExtension: options.scriptExtension,
       scriptModuleExtension: options.scriptModuleExtension,
