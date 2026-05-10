@@ -117,7 +117,7 @@ const projects = resolveProjects()
 export default defineConfig(() => {
   return {
     test: {
-      globalSetup: ['./vitest.globalSetup.ts'],
+      globalSetup: ['./vitest.globalSetup.mjs'],
       maxWorkers: workspaceMaxWorkers,
       projects,
       coverage: {

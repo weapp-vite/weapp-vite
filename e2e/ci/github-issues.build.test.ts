@@ -208,13 +208,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.wxml'))).toBe(false)
     expect(appShellWxml).toContain('issue-563-app-shell')
-    expect(appShellJson).toMatchObject({
+    expect(appShellWxml).toContain('<slot />')
+    expect(appShellWxml).not.toContain('scoped-slots-default')
+    expect(appShellJson).toEqual({
       component: true,
-      componentGenerics: {
-        'scoped-slots-default': {
-          default: './__weapp_vite_scoped_slot_generic_component',
-        },
-      },
     })
     expect(pageWxml).toContain('<weapp-app-shell><weapp-layout-default>')
     expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
