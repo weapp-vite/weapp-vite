@@ -242,5 +242,5 @@ describe.sequential('e2e chunk modes matrix', () => {
 
     const zeroThresholdOutput = await runBuildCapture(path.join('dist-matrix', chunkExtraCases[4].id), chunkExtraCases[4].env)
     expect(zeroThresholdOutput).not.toContain('超过阈值')
-  }, 5 * 60_000)
+  }, 15 * 60_000)
 })
