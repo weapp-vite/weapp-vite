@@ -1,5 +1,7 @@
 # @weapp-vite/ast
 
+## 6.16.10
+
 ## 6.16.9
 
 ### Patch Changes
