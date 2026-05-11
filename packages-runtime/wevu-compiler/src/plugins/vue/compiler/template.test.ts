@@ -728,6 +728,38 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents?.[1]?.componentGenerics).toBeUndefined()
   })
 
+  it('keeps native component plain default slots inline inside augmented scoped slot components', () => {
+    const template = `
+<native-tabbar>
+  <native-tabbar-item
+    v-for="{ label, icon, to } in tabItems"
+    :key="label"
+    :icon="icon"
+    :name="to.name"
+  >
+    {{ label }}
+  </native-tabbar-item>
+</native-tabbar>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/custom-tab-bar/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: [],
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.id).toBe('default-0')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<native-tabbar-item wx:for="{{__wvOwner.tabItems}}"')
+    expect(scopedSlotComponents?.[0]?.template).toContain('>{{__wv_item_0.label}}</native-tabbar-item>')
+    expect(scopedSlotComponents?.[0]?.template).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
+  })
+
   it('keeps wrapped plain default children native when explicit require props wins over augmented mode', () => {
     const template = `
 <Provider>

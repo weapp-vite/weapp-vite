@@ -1,0 +1,3 @@
+<view class="issue564-native-tabbar">
+  <slot />
+</view>
