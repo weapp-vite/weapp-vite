@@ -9,13 +9,13 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^7.29.0',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^4.0.11',
-  '@icebreakers/stylelint-config': '^3.0.7',
+  '@icebreakers/eslint-config': '^4.0.10',
+  '@icebreakers/stylelint-config': '^3.0.6',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/postcss': '^4.3.0',
-  '@tailwindcss/vite': '^4.3.0',
-  '@types/node': '^25.6.2',
+  '@tailwindcss/postcss': '^4.2.4',
+  '@tailwindcss/vite': '^4.2.4',
+  '@types/node': '^25.6.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.6',
@@ -32,10 +32,10 @@ export const TEMPLATE_CATALOG = {
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.2.0',
   'oxc-parser': '^0.129.0',
-  'oxc-walker': '^1.0.0',
+  'oxc-walker': '^0.7.0',
   'pkg-types': '^2.3.1',
   'sass-embedded': '^1.99.0',
-  'tailwind-merge': '^3.6.0',
+  'tailwind-merge': '^3.5.0',
   'tailwind-variants': '^3.2.2',
   'tdesign-miniprogram': '^1.14.0',
   'ts-morph': '^28.0.0',
@@ -55,10 +55,10 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.14',
-  rolldown: '1.0.0',
+  rolldown: '1.0.0-rc.18',
   sass: '^1.99.0',
   stylelint: '^17.11.0',
-  tailwindcss: '^4.3.0',
+  tailwindcss: '^4.2.4',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.0.11',
@@ -78,9 +78,9 @@ export const TEMPLATE_NAMED_CATALOG = {
     typescript: '^6.0.3'
   },
   tailwind3: {
-    tailwindcss: '^4.3.0'
+    tailwindcss: '^4.2.4'
   },
   tailwind4: {
-    tailwindcss: '^4.3.0'
+    tailwindcss: '^4.2.4'
   }
 } as const

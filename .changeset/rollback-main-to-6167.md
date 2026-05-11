@@ -1,5 +1,6 @@
 ---
 "@weapp-core/constants": patch
+"@weapp-vite/ast": patch
 "@wevu/compiler": patch
 "wevu": patch
 "weapp-vite": patch
