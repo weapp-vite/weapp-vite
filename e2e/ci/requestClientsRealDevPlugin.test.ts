@@ -1,9 +1,32 @@
+import { createServer } from 'node:net'
 import { describe, expect, it } from 'vitest'
 import {
   injectBaseUrlIntoProjectPrivateConfig,
   mergeRequestClientsRealQuery,
 } from '../utils/requestClientsRealDevPlugin'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
+
+async function getAvailableLoopbackPort() {
+  const probe = createServer()
+
+  return await new Promise<number>((resolve, reject) => {
+    probe.once('error', reject)
+    probe.listen(0, '127.0.0.1', () => {
+      const address = probe.address()
+      probe.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        if (!address || typeof address === 'string') {
+          reject(new Error('Failed to resolve available loopback port'))
+          return
+        }
+        resolve(address.port)
+      })
+    })
+  })
+}
 
 describe('requestClientsRealDevPlugin helpers', () => {
   it('injects baseUrl into empty query strings', () => {
@@ -53,13 +76,15 @@ describe('requestClientsRealDevPlugin helpers', () => {
   })
 
   it('supports binding the real request server to a fixed local port', async () => {
+    const port = await getAvailableLoopbackPort()
+
     try {
       const handle = await startRequestClientsRealServer({
-        port: 60324,
+        port,
       })
 
       try {
-        expect(handle.baseUrl).toBe('http://127.0.0.1:60324')
+        expect(handle.baseUrl).toBe(`http://127.0.0.1:${port}`)
       }
       finally {
         await handle.stop()
@@ -68,7 +93,7 @@ describe('requestClientsRealDevPlugin helpers', () => {
     catch (error) {
       const networkError = error as NodeJS.ErrnoException
       if (networkError.code === 'EPERM' || networkError.code === 'EACCES') {
-        expect(networkError.message).toContain('127.0.0.1:60324')
+        expect(networkError.message).toContain(`127.0.0.1:${port}`)
         return
       }
 

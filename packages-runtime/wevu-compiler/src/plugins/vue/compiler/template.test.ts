@@ -1206,8 +1206,8 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('title="{{panelTitle}}"')
     expect(code).toContain('modelValue="{{childModelValue}}"')
-    expect(code).toContain('bind:update:title="__weapp_vite_inline"')
-    expect(code).toContain('bind:update:modelValue="__weapp_vite_inline"')
+    expect(code).toContain('bind:update-title="__weapp_vite_inline"')
+    expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
     expect(code).toContain('data-wd-update-title="1"')
     expect(code).toContain('data-wi-update-title="i0"')
     expect(code).toContain('data-wd-update-modelvalue="1"')
@@ -1232,7 +1232,7 @@ describe('compileVueTemplateToWxml', () => {
     const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('modelValue="{{value}}"')
-    expect(code).toContain('bind:update:modelValue="__weapp_vite_inline"')
+    expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
     expect(warnings).toEqual([])
   })
 

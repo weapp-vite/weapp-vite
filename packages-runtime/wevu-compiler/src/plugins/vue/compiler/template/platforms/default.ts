@@ -45,6 +45,10 @@ function shouldUseColonEventBinding(name: string) {
   return name.includes(':') || name.includes('-')
 }
 
+function normalizeMiniProgramEventName(name: string) {
+  return name.includes(':') ? name.replaceAll(':', '-').toLowerCase() : name
+}
+
 const directives = createMiniProgramDirectiveAttrs('wx')
 
 /**
@@ -78,17 +82,18 @@ export const defaultMiniProgramPlatform: MiniProgramPlatform = {
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
+    const normalizedName = normalizeMiniProgramEventName(name)
     switch (prefix) {
       case 'catch':
-        return shouldUseColonEventBinding(name) ? `catch:${name}` : `catch${name}`
+        return shouldUseColonEventBinding(normalizedName) ? `catch:${normalizedName}` : `catch${normalizedName}`
       case 'capture-bind':
-        return `capture-bind:${name}`
+        return `capture-bind:${normalizedName}`
       case 'capture-catch':
-        return `capture-catch:${name}`
+        return `capture-catch:${normalizedName}`
       case 'mut-bind':
-        return `mut-bind:${name}`
+        return `mut-bind:${normalizedName}`
       default:
-        return shouldUseColonEventBinding(name) ? `bind:${name}` : `bind${name}`
+        return shouldUseColonEventBinding(normalizedName) ? `bind:${normalizedName}` : `bind${normalizedName}`
     }
   },
 }

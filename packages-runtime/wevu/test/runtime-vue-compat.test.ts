@@ -62,7 +62,7 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next', undefined)
+    expect(triggerEvent).toHaveBeenCalledWith('update-modelvalue', 'next', undefined)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'alpha' })
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs?.modelValue).toBeUndefined()
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots).toEqual({})
@@ -120,7 +120,7 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next value', undefined)
+    expect(triggerEvent).toHaveBeenCalledWith('update-modelvalue', 'next value', undefined)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.modifiers?.trim).toBe(true)
   })
 
@@ -173,6 +173,7 @@ describe('runtime: vue compat helpers', () => {
       setup(_props, ctx) {
         ctx.emit('single', 1)
         ctx.emit('single-with-options', 1, { bubbles: true })
+        ctx.emit('update:abc', 'abc')
         ctx.emit('multi', 1, 2)
         ctx.emit('multi-with-options', 1, 2, { composed: true })
         return {}
@@ -190,8 +191,47 @@ describe('runtime: vue compat helpers', () => {
 
     expect(triggerEvent).toHaveBeenNthCalledWith(1, 'single', 1, undefined)
     expect(triggerEvent).toHaveBeenNthCalledWith(2, 'single-with-options', 1, { bubbles: true })
-    expect(triggerEvent).toHaveBeenNthCalledWith(3, 'multi', [1, 2], undefined)
-    expect(triggerEvent).toHaveBeenNthCalledWith(4, 'multi-with-options', [1, 2], { composed: true })
+    expect(triggerEvent).toHaveBeenNthCalledWith(3, 'update-abc', 'abc', undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(4, 'multi', [1, 2], undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(5, 'multi-with-options', [1, 2], { composed: true })
+  })
+
+  it('useModel emits through the native invocation instance for setup returned methods', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      props: {
+        abc: { type: String },
+      } as any,
+      setup(props) {
+        const abcModel = useModel<string>(props as any, 'abc')
+        function updateAbc() {
+          abcModel.value = 'abc-from-child'
+        }
+        return {
+          updateAbc,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const mountedInst: any = {
+      setData() {},
+      properties: {
+        abc: 'abc-seed',
+      },
+    }
+
+    opts.lifetimes.created.call(mountedInst)
+    opts.lifetimes.attached.call(mountedInst)
+
+    const callInst: any = {
+      ...mountedInst,
+      triggerEvent,
+    }
+
+    mountedInst.updateAbc.call(callInst)
+
+    expect(triggerEvent).toHaveBeenCalledWith('update-abc', 'abc-from-child', undefined)
   })
 
   it('ctx.instance and useNativeInstance expose native methods in setup', () => {

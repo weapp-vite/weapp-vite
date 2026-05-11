@@ -68,6 +68,10 @@ function toAlipayDirectiveEvent(prefix: string, eventName: string) {
   }
 }
 
+function normalizeMiniProgramEventName(name: string) {
+  return name.includes(':') ? name.replaceAll(':', '-').toLowerCase() : name
+}
+
 /**
  * 支付宝小程序平台适配器。
  */
@@ -98,9 +102,6 @@ export const alipayPlatform: MiniProgramPlatform = {
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
-    if (name.includes(':')) {
-      return `on:${name}`
-    }
-    return toAlipayDirectiveEvent(prefix, name)
+    return toAlipayDirectiveEvent(prefix, normalizeMiniProgramEventName(name))
   },
 }

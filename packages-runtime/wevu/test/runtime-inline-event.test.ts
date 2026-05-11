@@ -414,6 +414,59 @@ describe('runtime: inline event handler', () => {
     expect(runeventResult).toBe('tap')
   })
 
+  it('writes inline v-model assignments into setup refs through the public proxy', () => {
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: [],
+        fn: (ctx: any, _scope: Record<string, any>, payload: any) => {
+          ctx.abc = payload
+        },
+      },
+    }
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        __weapp_vite_inline_map: inlineMap,
+      } as any,
+      setup() {
+        const abc = ref('abc-seed')
+        function readAbc() {
+          return abc.value
+        }
+        return {
+          abc,
+          readAbc,
+        }
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const event = {
+      type: 'update-abc',
+      detail: 'abc-from-child',
+      currentTarget: {
+        dataset: {
+          wvInlineIdUpdateAbc: '__wv_inline_0',
+          wvEventDetailUpdateAbc: '1',
+        },
+      },
+    }
+
+    opts.methods.__weapp_vite_inline.call(inst, event)
+
+    expect(inst.readAbc()).toBe('abc-from-child')
+    expect(inst.__wevu?.proxy?.abc.value).toBe('abc-from-child')
+  })
+
   it('executes function result from inline map', () => {
     const handle = vi.fn((value: number) => value)
     const inlineMap = {

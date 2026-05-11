@@ -362,6 +362,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('route.name')
   })
 
+  it('issue #553: maps component v-model arguments to the matching prop and update event', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-553/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-553/index.js')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-553/ModelArgumentProbe/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('<ModelArgumentProbe')
+    expect(pageWxml).toContain('abc="{{abc}}"')
+    expect(pageWxml).toContain('modelValue="{{modelValue}}"')
+    expect(pageWxml).toContain('bind:update-abc="__weapp_vite_inline"')
+    expect(pageWxml).toContain('bind:update-modelvalue="__weapp_vite_inline"')
+    expect(pageWxml).not.toContain('abc="{{modelValue}}"')
+    expect(pageWxml).not.toContain('modelValue="{{abc}}"')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('abc-seed')
+    expect(pageJs).toContain('model-seed')
+    expect(componentWxml).toContain('child abc = {{abcModel}}')
+    expect(componentWxml).toContain('child model = {{defaultModel}}')
+    expect(componentWxml).toContain('bindtap="updateAbc"')
+    expect(componentWxml).toContain('bindtap="updateModelValue"')
+  })
+
   it('issue #554: injects slot metadata for v-for component default slots', async () => {
     await runBuild()
 

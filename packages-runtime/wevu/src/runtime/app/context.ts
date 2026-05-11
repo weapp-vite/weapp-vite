@@ -5,7 +5,7 @@ import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
-import { ref, toRaw } from '../../reactivity'
+import { isRef, ref, toRaw } from '../../reactivity'
 import { hasOwn } from '../../utils'
 import { setComputedValue } from '../internal'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
@@ -138,6 +138,11 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         return true
       }
       if (Reflect.has(target, key)) {
+        const existingValue = Reflect.get(target, key, receiver)
+        if (isRef(existingValue) && !isRef(value)) {
+          existingValue.value = value
+          return true
+        }
         return Reflect.set(target, key, value, receiver)
       }
       const nativeInstance = resolveNativeInstance(target as object, receiver as object)

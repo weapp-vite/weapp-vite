@@ -33,6 +33,10 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
+function normalizeEmitEventName(eventName: string) {
+  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
+}
+
 export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   target: InternalRuntimeState
   runtime: RuntimeInstance<D, C, M>
@@ -162,7 +166,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     // 通过小程序 triggerEvent 派发事件，并兼容 Vue 3 的 emit(event, ...args) 形式。
     emit: (event: string, ...args: any[]) => {
       const { detail, options } = normalizeEmitPayload(args)
-      setupInstance.triggerEvent(event, detail, options)
+      const eventName = normalizeEmitEventName(event)
+      setupInstance.triggerEvent(eventName, detail, options)
     },
 
     // 与 Vue 3 对齐的 expose

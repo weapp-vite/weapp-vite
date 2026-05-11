@@ -88,11 +88,11 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
   "component": true,
   "styleIsolation": "apply-shared",
   "usingComponents": {
-    "native-tabbar-item": "/components/native-tabbar-item/index"
+    "van-tabbar-item": "/components/native-tabbar-item/index"
   }
 }
 ",
-  "pages/index/index.__scoped-slot-default-0.wxml": "<native-tabbar-item wx:for="{{__wvOwner.tabItems}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" label="{{__wv_item_0.label}}" name="{{__wv_item_0.to.name}}">{{__wv_item_0.label}}</native-tabbar-item>",
+  "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wvOwner.tabItems}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
   "pages/index/index.js": "//#region <fixture>/src/pages/index/index.vue
 require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
 	computed: { __wv_bind_0: function() {
@@ -133,13 +133,13 @@ require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
 ",
   "pages/index/index.json": "{
   "usingComponents": {
-    "native-tabbar": "/components/native-tabbar/index",
-    "native-tabbar-item": "/components/native-tabbar-item/index",
+    "van-tabbar": "/components/native-tabbar/index",
+    "van-tabbar-item": "/components/native-tabbar-item/index",
     "scoped-slot-hash-default-0": "/pages/index/index.__scoped-slot-default-0"
   }
 }
 ",
-  "pages/index/index.wxml": "<native-tabbar generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{__wv_bind_0}}" __wv-slot-owner-id="{{__wvOwnerId || ''}}" />",
+  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{__wv_bind_0}}" __wv-slot-owner-id="{{__wvOwnerId || ''}}" />",
   "sitemap.json": "{
   "rules": []
 }
