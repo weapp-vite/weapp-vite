@@ -210,16 +210,9 @@ export function collectSetDataPickKeysFromTemplate(
   template: string,
   options?: {
     astEngine?: AstEngineName
-    extraKeys?: string[]
   },
 ): string[] {
-  const keys = new Set(collectSetDataPickKeysFromTemplateCode(template, options))
-  for (const key of options?.extraKeys ?? []) {
-    if (key) {
-      keys.add(key)
-    }
-  }
-  return [...keys].sort((a, b) => a.localeCompare(b))
+  return collectSetDataPickKeysFromTemplateCode(template, options)
 }
 
 /**

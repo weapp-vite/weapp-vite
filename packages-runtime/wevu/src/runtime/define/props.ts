@@ -4,24 +4,11 @@ import type {
   MiniProgramComponentShortProperty,
 } from '../types'
 import {
-  WEVU_GENERIC_SLOT_OWNER_DATA_KEY,
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_ID_PROP,
-  WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX,
-  WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR,
-  WEVU_GENERIC_SLOT_PROPS_DATA_KEY,
-  WEVU_GENERIC_SLOT_SCOPE_ATTR,
-  WEVU_GENERIC_SLOT_SCOPE_PROP,
-  WEVU_NATIVE_SLOT_SCOPE_DATA_KEY,
   WEVU_SLOT_NAMES_PROP,
-  WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
-  WEVU_SLOT_OWNER_KEY,
-  WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
-import { rememberSlotOwnerId } from '../scopedSlots'
 
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
@@ -191,72 +178,6 @@ function normalizeExplicitProperties(
   return normalizedProperties
 }
 
-function syncSlotOwnerId(this: any, next: unknown) {
-  rememberSlotOwnerId(next)
-  if (typeof next !== 'string') {
-    return
-  }
-  this?.setData?.({
-    [WEVU_SLOT_OWNER_ID_KEY]: next,
-    [WEVU_SLOT_OWNER_ID_PROP]: next,
-    [WEVU_GENERIC_SLOT_OWNER_ID_PROP]: next,
-    [WEVU_GENERIC_SLOT_OWNER_ID_ATTR]: next,
-  })
-}
-
-function normalizeSlotScopeValue(value: unknown) {
-  if (!value || typeof value !== 'object') {
-    return {}
-  }
-  if (!Array.isArray(value)) {
-    return value
-  }
-  const result: Record<string, unknown> = {}
-  for (let i = 0; i < value.length; i += 2) {
-    const key = value[i]
-    if (typeof key === 'string' && key) {
-      result[key] = value[i + 1]
-    }
-  }
-  return result
-}
-
-function syncNativeSlotScope(this: any, next: unknown) {
-  const slotScope = normalizeSlotScopeValue(next)
-  const payload: Record<string, unknown> = {
-    [WEVU_NATIVE_SLOT_SCOPE_DATA_KEY]: slotScope,
-  }
-  for (const [key, value] of Object.entries(slotScope)) {
-    if (value !== undefined) {
-      payload[key] = value
-    }
-  }
-  this?.setData?.(payload)
-}
-
-function syncSlotOwnerProps(this: any, next: unknown) {
-  const payload: Record<string, unknown> = {
-    [WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR]: next,
-  }
-  const ownerProps = normalizeSlotScopeValue(next)
-  payload[WEVU_SLOT_OWNER_KEY] = {
-    ...(this?.data?.[WEVU_SLOT_OWNER_KEY] ?? {}),
-    ...ownerProps,
-  }
-  payload[WEVU_GENERIC_SLOT_OWNER_DATA_KEY] = {
-    ...(this?.data?.[WEVU_GENERIC_SLOT_OWNER_DATA_KEY] ?? {}),
-    ...ownerProps,
-  }
-  payload[WEVU_SLOT_PROPS_DATA_KEY] = ownerProps
-  payload[WEVU_GENERIC_SLOT_PROPS_DATA_KEY] = ownerProps
-  for (const [key, value] of Object.entries(ownerProps)) {
-    if (value !== undefined) {
-      payload[`${WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX}${key}`] = value
-    }
-  }
-  this?.setData?.(payload)
-}
-
 export function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
@@ -277,25 +198,10 @@ export function normalizeProps(
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
     if (!hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
-      next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '', observer: syncSlotOwnerId }
-    }
-    if (!hasOwn(next, WEVU_GENERIC_SLOT_OWNER_ID_PROP)) {
-      next[WEVU_GENERIC_SLOT_OWNER_ID_PROP] = { type: String, value: '', observer: syncSlotOwnerId }
-    }
-    if (!hasOwn(next, WEVU_GENERIC_SLOT_OWNER_ID_ATTR)) {
-      next[WEVU_GENERIC_SLOT_OWNER_ID_ATTR] = { type: String, value: '', observer: syncSlotOwnerId }
-    }
-    if (!hasOwn(next, WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR)) {
-      next[WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR] = { type: null, value: null, observer: syncSlotOwnerProps }
+      next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
     }
     if (!hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
-      next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null, observer: syncNativeSlotScope }
-    }
-    if (!hasOwn(next, WEVU_GENERIC_SLOT_SCOPE_PROP)) {
-      next[WEVU_GENERIC_SLOT_SCOPE_PROP] = { type: null, value: null, observer: syncNativeSlotScope }
-    }
-    if (!hasOwn(next, WEVU_GENERIC_SLOT_SCOPE_ATTR)) {
-      next[WEVU_GENERIC_SLOT_SCOPE_ATTR] = { type: null, value: null, observer: syncNativeSlotScope }
+      next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
     }
     if (!hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
       next[WEVU_SLOT_NAMES_PROP] = { type: null, value: null }

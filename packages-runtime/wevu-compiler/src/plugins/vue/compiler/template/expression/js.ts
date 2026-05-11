@@ -2,7 +2,6 @@ import type { TransformContext } from '../types'
 import {
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_KEY,
-  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -83,37 +82,8 @@ function createThisMemberAccess(prop: string): t.Expression {
   return createMemberAccess(t.thisExpression(), prop)
 }
 
-function createScopedSlotOwnerRuntimeAccess(): t.Expression {
-  return t.logicalExpression(
-    '||',
-    createThisMemberAccess(WEVU_SLOT_OWNER_PROXY_KEY),
-    createThisMemberAccess(WEVU_SLOT_OWNER_KEY),
-  )
-}
-
 function createUnrefCall(exp: t.Expression): t.Expression {
   return t.callExpression(t.identifier('__wevuUnref'), [exp])
-}
-
-function isCallCalleeIdentifier(path: import('@weapp-vite/ast/babelTraverse').NodePath<t.Identifier>) {
-  const parent = path.parentPath
-  if (parent.isCallExpression() && parent.node.callee === path.node) {
-    return true
-  }
-  if (parent.isOptionalCallExpression() && parent.node.callee === path.node) {
-    return true
-  }
-  if (!parent.isMemberExpression()) {
-    return false
-  }
-  const grandParent = parent.parentPath
-  if (grandParent.isCallExpression() && grandParent.node.callee === parent.node) {
-    return true
-  }
-  if (grandParent.isOptionalCallExpression() && grandParent.node.callee === parent.node) {
-    return true
-  }
-  return false
 }
 
 function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expression {
@@ -249,11 +219,8 @@ export function normalizeJsExpressionWithContext(
           replacement = createUnrefCall(createThisMemberAccess(name))
         }
         else {
-          const base = createScopedSlotOwnerRuntimeAccess()
-          const ownerAccess = createMemberAccess(base, name)
-          replacement = isCallCalleeIdentifier(path)
-            ? ownerAccess
-            : createUnrefCall(ownerAccess)
+          const base = createThisMemberAccess(WEVU_SLOT_OWNER_KEY)
+          replacement = createUnrefCall(createMemberAccess(base, name))
         }
       }
       else {

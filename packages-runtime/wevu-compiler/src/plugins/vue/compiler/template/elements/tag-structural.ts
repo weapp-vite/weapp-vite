@@ -7,23 +7,13 @@ import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
-import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
+import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
 
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  if (context.nativeSlotScopeRuntime) {
-    const runtimeExp = registerRuntimeBindingExpression(rawExpValue, context.nativeSlotScopeRuntime.owner, {
-      hint,
-      prefix: context.nativeSlotScopeRuntime.runtimeBindingPrefix,
-    })
-    if (runtimeExp) {
-      context.nativeSlotScopeRuntime.bindings.set(runtimeExp, runtimeExp)
-      return runtimeExp
-    }
-  }
   const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
@@ -127,15 +117,18 @@ export function transformForElement(node: ElementNode, context: TransformContext
       ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
 
-    const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
-    if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {
+    const slotDirective = findSlotDirective(elementWithoutFor)
+    const templateSlotChildren = elementWithoutFor.children.filter(
+      child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
+    )
+    if (slotDirective || templateSlotChildren.length > 0) {
       return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
     }
 
     const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
       forInfo,
       extraAttrs,
-      resolvedTag,
+      resolvedTag: resolveTemplateTagName(elementWithoutFor.tag, context),
     })
 
     let children = ''
@@ -148,7 +141,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       children = renderMustache(vTextExp, context)
     }
 
-    const tag = resolvedTag
+    const tag = resolveTemplateTagName(elementWithoutFor.tag, context)
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
     return children

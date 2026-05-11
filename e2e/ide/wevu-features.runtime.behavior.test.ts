@@ -132,8 +132,6 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
 
       const parentValueBefore = await readPageWxml(modelPage)
       expect(parentValueBefore).toContain('parent modelValue = alpha-from-parent')
-      expect(parentValueBefore).toContain('parent title = 组件内 useModel()')
-      expect(parentValueBefore).toContain('inner title = 组件内 useModel()')
 
       const parentSetOk = await tapControlUntil(modelPage, '#model-parent-beta', async () => {
         const wxml = await readPageWxml(modelPage)
@@ -150,22 +148,6 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
       const nullGuardWxml = await readPageWxml(modelPage)
       expect(nullGuardWxml).not.toContain('parent modelValue = null')
       expect(nullGuardWxml).not.toContain('inner model = null')
-
-      const valueModelSelector = await resolveSelectorById(modelPage, 'model-inner-alpha')
-      const valueModelOk = await tapControlUntil(modelPage, valueModelSelector, async () => {
-        const wxml = await readPageWxml(modelPage)
-        return wxml.includes('parent modelValue = alpha-from-child')
-          && wxml.includes('inner model = alpha-from-child')
-      })
-      expect(valueModelOk).toBe(true)
-
-      const titleModelSelector = await resolveSelectorById(modelPage, 'model-title-child')
-      const titleModelOk = await tapControlUntil(modelPage, titleModelSelector, async () => {
-        const wxml = await readPageWxml(modelPage)
-        return wxml.includes('parent title = title-from-child')
-          && wxml.includes('inner title = title-from-child')
-      })
-      expect(titleModelOk).toBe(true)
 
       const provideInjectPage = await relaunchPage(miniProgram, '/pages/use-provide-inject/index', 'wevu provide / inject 特性展示')
       if (!provideInjectPage) {

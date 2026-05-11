@@ -3,20 +3,19 @@ import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import type { ScopedSlotDeclaration } from './tag-slot'
 import { NodeTypes } from '@vue/compiler-core'
 import {
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR,
-  WEVU_GENERIC_SLOT_SCOPE_ATTR,
   WEVU_SLOT_NAMES_ATTR,
+  WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
-import { buildScopePropsExpression, findSlotDirective, getBindDirectiveExpression, isScopedSlotsDisabled, isStructuralDirective } from './helpers'
+import { buildScopePropsExpression, findSlotDirective, getBindDirectiveExpression, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import {
   buildSlotDeclaration,
@@ -26,19 +25,6 @@ import {
   resolveSlotNameFromDirective,
   stringifySlotName,
 } from './tag-slot'
-
-function createNativeSlotContext(context: TransformContext): TransformContext {
-  return {
-    ...context,
-    classStyleBindings: context.classStyleBindings,
-    runtimeBindingCache: context.runtimeBindingCache,
-    nativeSlotScopeRuntime: {
-      owner: context,
-      bindings: new Map(),
-      runtimeBindingPrefix: 'wvslotbind',
-    },
-  }
-}
 
 function hasLegacySlotAttribute(children: any[]): boolean {
   return children.some((child) => {
@@ -77,101 +63,14 @@ function hasDirectComponentSlotChild(children: any[], context: TransformContext)
   })
 }
 
-function hasComponentSlotDescendant(children: any[], context: TransformContext): boolean {
-  return children.some((child) => {
-    if (child.type !== NodeTypes.ELEMENT) {
-      return false
-    }
-    if (child.tag === 'template') {
-      return false
-    }
-    if (child.tag === 'component') {
-      return true
-    }
-    const isComponent = !isBuiltinTag(resolveTemplateTagName(child.tag, context)) || /^[A-Z]/.test(child.tag)
-    return isComponent || hasComponentSlotDescendant((child as ElementNode).children, context)
-  })
-}
-
-function hasStructuralSlotRoot(children: any[]) {
-  return children.some((child) => {
-    if (child.type !== NodeTypes.ELEMENT) {
-      return false
-    }
-    return Boolean(isStructuralDirective(child as ElementNode).type)
-  })
-}
-
-function hasParentExpressionSlotContent(children: any[]): boolean {
-  return children.some((child) => {
-    if (child.type === NodeTypes.INTERPOLATION) {
-      return true
-    }
-    if (child.type !== NodeTypes.ELEMENT) {
-      return false
-    }
-    const element = child as ElementNode
-    if (element.props.some(prop => prop.type === NodeTypes.DIRECTIVE && prop.name !== 'slot')) {
-      return true
-    }
-    return hasParentExpressionSlotContent(element.children)
-  })
-}
-
-function hasRuntimeOnlySlotExpression(children: any[]): boolean {
-  return children.some((child) => {
-    if (child.type === NodeTypes.INTERPOLATION) {
-      const content = (child as any).content
-      const exp = content?.type === NodeTypes.SIMPLE_EXPRESSION ? content.content : ''
-      return shouldFallbackToRuntimeBinding(exp)
-    }
-    if (child.type !== NodeTypes.ELEMENT) {
-      return false
-    }
-    const element = child as ElementNode
-    if (element.props.some((prop) => {
-      if (prop.type !== NodeTypes.DIRECTIVE || prop.name === 'slot') {
-        return false
-      }
-      const rawExp = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
-      return shouldFallbackToRuntimeBinding(rawExp)
-    })) {
-      return true
-    }
-    return hasRuntimeOnlySlotExpression(element.children)
-  })
-}
-
-function shouldAugmentPlainSlot(decl: ScopedSlotDeclaration, context: TransformContext) {
-  if (context.scopedSlotsRequireProps) {
+function shouldAugmentPlainDefaultSlot(decl: ScopedSlotDeclaration, context: TransformContext) {
+  if (context.scopedSlotsRequireProps || !decl.implicitDefault) {
     return false
   }
-  if (hasParentExpressionSlotContent(decl.children)) {
-    return hasComponentSlotDescendant(decl.children, context)
-      || (context.scopedSlotsCompiler === 'augmented' && (hasStructuralSlotRoot(decl.children) || hasRuntimeOnlySlotExpression(decl.children)))
-  }
-  if (
-    context.scopedSlotsCompiler === 'augmented'
-    && !decl.implicitDefault
-    && (!context.slotSingleRootNoWrapper || hasStructuralSlotRoot(decl.children))
-  ) {
+  if (context.scopedSlotsCompiler === 'augmented') {
     return true
   }
-  if (
-    context.scopedSlotsCompiler === 'augmented'
-    && decl.implicitDefault
-    && hasComponentSlotDescendant(decl.children, context)
-  ) {
-    return true
-  }
-  if (hasDirectComponentSlotChild(decl.children, context)) {
-    return true
-  }
-  if (!decl.implicitDefault) {
-    return false
-  }
-  return context.scopedSlotsCompiler === 'augmented'
-    && (hasStructuralSlotRoot(decl.children) || hasRuntimeOnlySlotExpression(decl.children))
+  return hasDirectComponentSlotChild(decl.children, context)
 }
 
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext) {
@@ -236,26 +135,6 @@ function isWevuComponentTag(node: ElementNode, context: TransformContext) {
   return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
-function buildScopedSlotOwnerIdExpression(context: TransformContext) {
-  return context.rewriteScopedSlot
-    ? `${WEVU_GENERIC_SLOT_OWNER_ID_ATTR} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
-    : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
-}
-
-export function shouldTransformAsComponentWithSlots(
-  node: ElementNode,
-  context: TransformContext,
-  resolvedTag = resolveTemplateTagName(node.tag, context),
-) {
-  const slotDirective = findSlotDirective(node)
-  const templateSlotChildren = node.children.filter(
-    child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
-  )
-  const shouldUseAugmentedDefaultSlot = node.children.length > 0 && !context.scopedSlotsRequireProps && !isBuiltinTag(resolvedTag)
-  const shouldUseSlotPresenceMetadata = node.children.length > 0 && isWevuComponentTag(node, context)
-  return slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot || shouldUseSlotPresenceMetadata
-}
-
 export function transformComponentWithSlots(
   node: ElementNode,
   context: TransformContext,
@@ -263,10 +142,6 @@ export function transformComponentWithSlots(
   options?: { extraAttrs?: string[], forInfo?: ForParseResult },
 ): string {
   if (isScopedSlotsDisabled(context)) {
-    // eslint-disable-next-line ts/no-use-before-define
-    return transformComponentWithSlotsFallback(node, context, transformNode, options)
-  }
-  if (node.tag !== 'component' && context.wevuComponentTags && !isWevuComponentTag(node, context)) {
     // eslint-disable-next-line ts/no-use-before-define
     return transformComponentWithSlotsFallback(node, context, transformNode, options)
   }
@@ -339,8 +214,7 @@ export function transformComponentWithSlots(
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
-    const mergedAttrs = [...extraAttrs, ...attrs]
-    const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
+    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
@@ -351,7 +225,7 @@ export function transformComponentWithSlots(
   const plainSlotDeclarations: ScopedSlotDeclaration[] = []
   for (const decl of slotDeclarations) {
     const hasSlotProps = Object.keys(decl.props).length > 0
-    if (hasSlotProps || shouldAugmentPlainSlot(decl, context)) {
+    if (hasSlotProps || shouldAugmentPlainDefaultSlot(decl, context)) {
       scopedSlotDeclarations.push(decl)
     }
     else {
@@ -363,16 +237,9 @@ export function transformComponentWithSlots(
   const slotGenericAttrs: string[] = []
   for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
-    const { componentName, asset } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode)
+    const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode)
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
-    if (asset.ownerPropsExpression) {
-      const ownerPropsRef = registerRuntimeBindingExpression(asset.ownerPropsExpression, context, {
-        hint: 'scoped slot owner props',
-        prefix: 'wvslotownerprops',
-      })
-      slotGenericAttrs.push(`${WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR}="${renderMustache(ownerPropsRef ?? asset.ownerPropsExpression, context)}"`)
-    }
   }
   if (shouldExposePlainSlotPresence(node) || isWevuComponentTag(node, context)) {
     for (const decl of plainSlotDeclarations) {
@@ -390,28 +257,16 @@ export function transformComponentWithSlots(
   if (scopedSlotDeclarations.length) {
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
-      mergedAttrs.push(`${WEVU_GENERIC_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
+      mergedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
     }
-    const ownerIdExp = renderMustache(buildScopedSlotOwnerIdExpression(context), context)
-    mergedAttrs.push(`${WEVU_GENERIC_SLOT_OWNER_ID_ATTR}="${ownerIdExp}"`)
+    mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(`${WEVU_SLOT_OWNER_ID_KEY} || ''`, context)}"`)
   }
 
-  const { tag } = node
-  const nativeSlotContext = plainSlotDeclarations.length ? createNativeSlotContext(context) : context
-  const plainSlotContent = plainSlotDeclarations
-    .map(decl => renderSlotFallback(decl, nativeSlotContext, transformNode))
-    .join('')
-  const nativeSlotBindings = nativeSlotContext.nativeSlotScopeRuntime?.bindings
-  if (nativeSlotBindings?.size) {
-    const bindingEntries = Array.from(nativeSlotBindings)
-    const scopeExp = `[${bindingEntries.map(([key, value]) => `'${key}',${value}`).join(',')}]`
-    mergedAttrs.push(`${WEVU_GENERIC_SLOT_SCOPE_ATTR}="${renderMustache(scopeExp, context)}"`)
-    const readyExp = bindingEntries.map(([key]) => `${key}!==undefined`).join('&&')
-    if (readyExp) {
-      mergedAttrs.push(`${context.platform.directives.ifAttr}="${renderMustache(readyExp, context)}"`)
-    }
-  }
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
+  const { tag } = node
+  const plainSlotContent = plainSlotDeclarations
+    .map(decl => renderSlotFallback(decl, context, transformNode))
+    .join('')
   return plainSlotContent
     ? `<${tag}${attrString}>${plainSlotContent}</${tag}>`
     : `<${tag}${attrString} />`
@@ -489,8 +344,7 @@ export function transformComponentWithSlotsFallback(
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
-    const mergedAttrs = [...extraAttrs, ...attrs]
-    const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
+    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`

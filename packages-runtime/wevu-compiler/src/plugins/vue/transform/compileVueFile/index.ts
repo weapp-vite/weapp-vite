@@ -55,20 +55,13 @@ export async function compileVueFile(
     autoImportTags,
   })
 
-  const baseTemplateOptions = parsed.isAppFile
-    ? {
-        ...options?.template,
-        scopedSlotsRequireProps: true,
-      }
-    : options?.template
-
   const templateOptions = componentSourceInfo.wevuComponentTags.size
     ? {
-        ...baseTemplateOptions,
+        ...options?.template,
         wevuComponentTags: componentSourceInfo.wevuComponentTags,
       }
     : {
-        ...baseTemplateOptions,
+        ...options?.template,
         wevuComponentTags: [],
       }
 

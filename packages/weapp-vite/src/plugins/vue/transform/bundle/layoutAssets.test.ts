@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { createBundleLayoutEmitters, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
-const readFileMock = vi.hoisted(() => vi.fn(async () => '<view><slot /></view>'))
+const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
   template: '/project/layouts/default/index.wxml',
 })))
 const emitSfcTemplateIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcStyleIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
-const emitBundleVueEntryAssetsMock = vi.hoisted(() => vi.fn())
-const emitSharedVueEntryJsonAssetMock = vi.hoisted(() => vi.fn())
 const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: '',
-  template: '<view><slot /></view>',
 })))
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
 const emitNativeLayoutScriptChunkIfNeededSharedMock = vi.hoisted(() => vi.fn())
@@ -28,13 +25,9 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   }
 })
 
-vi.mock('../pageLayout', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../pageLayout')>()
-  return {
-    ...actual,
-    collectNativeLayoutAssets: collectNativeLayoutAssetsMock,
-  }
-})
+vi.mock('../pageLayout', () => ({
+  collectNativeLayoutAssets: collectNativeLayoutAssetsMock,
+}))
 
 vi.mock('../emitAssets', () => ({
   emitSfcJsonAsset: emitSfcJsonAssetMock,
@@ -47,15 +40,6 @@ vi.mock('./shared', async (importOriginal) => {
   return {
     ...actual,
     compileVueLikeFile: compileVueLikeFileMock,
-  }
-})
-
-vi.mock('./shared/assets', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./shared/assets')>()
-  return {
-    ...actual,
-    emitBundleVueEntryAssets: emitBundleVueEntryAssetsMock,
-    emitSharedVueEntryJsonAsset: emitSharedVueEntryJsonAssetMock,
   }
 })
 
@@ -78,7 +62,7 @@ vi.mock('../../../utils/nativeLayout', async (importOriginal) => {
 describe('resolveVueLayoutAssetOptions', () => {
   beforeEach(() => {
     readFileMock.mockReset()
-    readFileMock.mockResolvedValue('<view><slot /></view>')
+    readFileMock.mockResolvedValue('<view />')
     collectNativeLayoutAssetsMock.mockReset()
     collectNativeLayoutAssetsMock.mockResolvedValue({
       template: '/project/layouts/default/index.wxml',
@@ -86,12 +70,9 @@ describe('resolveVueLayoutAssetOptions', () => {
     emitSfcTemplateIfMissingMock.mockReset()
     emitSfcStyleIfMissingMock.mockReset()
     emitSfcJsonAssetMock.mockReset()
-    emitBundleVueEntryAssetsMock.mockReset()
-    emitSharedVueEntryJsonAssetMock.mockReset()
     compileVueLikeFileMock.mockReset()
     compileVueLikeFileMock.mockResolvedValue({
       script: '',
-      template: '<view><slot /></view>',
     })
     ensureScriptlessComponentAssetMock.mockReset()
     emitNativeLayoutScriptChunkIfNeededSharedMock.mockReset()
@@ -293,7 +274,7 @@ describe('resolveVueLayoutAssetOptions', () => {
   it('emits resolved native layout static assets by asset kind', async () => {
     readFileMock.mockImplementation(async (file: string) => {
       if (file.endsWith('.wxml')) {
-        return '<view><slot /></view>'
+        return '<view />'
       }
       return '.layout{}'
     })
@@ -319,7 +300,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       expect.anything(),
       {},
       'dist/layouts/default/index',
-      '<view><slot /></view>',
+      '<view />',
       'wxml',
     )
     expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
@@ -384,7 +365,6 @@ describe('resolveVueLayoutAssetOptions', () => {
   it('returns early for vue layout fallback when compiled script already exists', async () => {
     compileVueLikeFileMock.mockResolvedValue({
       script: 'Component({})',
-      template: '<view><slot /></view>',
     })
 
     await emitVueLayoutScriptFallbackIfNeeded({
@@ -408,30 +388,6 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
   })
 
-  it('throws for vue layout fallback without default slot', async () => {
-    compileVueLikeFileMock.mockResolvedValue({
-      script: '',
-      template: '<view />',
-    })
-
-    await expect(emitVueLayoutScriptFallbackIfNeeded({
-      pluginCtx: { emitFile: vi.fn() },
-      bundle: {},
-      layoutFilePath: '/project/layouts/vue-default/index.vue',
-      ctx: {} as any,
-      configService: {
-        relativeOutputPath: (value: string) => `dist/${value}`,
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })).rejects.toThrow('/project/layouts/vue-default/index.vue 对应的 layout template 必须包含默认 <slot />')
-  })
-
   it('emits native layout assets including json when present', async () => {
     collectNativeLayoutAssetsMock.mockResolvedValue({
       json: '/project/layouts/default/index.json',
@@ -441,7 +397,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       if (file.endsWith('.json')) {
         return '{"component":true}'
       }
-      return '<view><slot /></view>'
+      return '<view />'
     })
 
     await emitNativeLayoutAssetsIfNeeded({
@@ -560,48 +516,6 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
   })
 
-  it('emits app shell component assets that consume app-level styles', () => {
-    const bundle = {}
-
-    emitAppShellAssetsIfNeeded({
-      pluginCtx: { emitFile: vi.fn() },
-      bundle,
-      ctx: {} as any,
-      filename: '/project/src/app.vue',
-      relativeBase: '__weapp_vite_app_shell',
-      result: {
-        template: '<view class="happy"><slot /></view>',
-        style: '.happy{padding:8px;}',
-        config: undefined,
-        classStyleWxs: undefined,
-        scopedSlotComponents: [],
-      },
-      configService: {} as any,
-      templateExtension: 'wxml',
-      jsonExtension: 'json',
-      scriptExtension: 'js',
-      outputExtensions: {
-        wxss: 'wxss',
-      } as any,
-      platformAssetOptions: {
-        platform: 'weapp',
-        templateExtension: 'wxml',
-      },
-    })
-
-    expect(emitBundleVueEntryAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
-      filename: '__weapp_vite_app_shell',
-      relativeBase: '__weapp_vite_app_shell',
-    }))
-    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
-    expect(emitSharedVueEntryJsonAssetMock).toHaveBeenCalledWith(expect.objectContaining({
-      relativeBase: '__weapp_vite_app_shell',
-      config: JSON.stringify({
-        styleIsolation: 'apply-shared',
-      }, null, 2),
-    }))
-  })
-
   it('dispatches bundle page layouts through shared native and vue emit flows', async () => {
     await emitBundlePageLayoutsIfNeeded({
       layouts: [
@@ -631,7 +545,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       expect.anything(),
       {},
       'dist/layouts/native-default/index',
-      '<view><slot /></view>',
+      '<view />',
       'wxml',
     )
     expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')

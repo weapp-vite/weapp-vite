@@ -18,7 +18,6 @@ import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
-import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '../helpers'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
@@ -178,19 +177,6 @@ async function processChangedFile(
     const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
     if (didChangeRoutes) {
       dirtyReasonStats.set('auto-routes-topology', 1)
-    }
-  }
-
-  if (
-    event === 'update'
-    && isAppVueFile(normalizedId)
-    && resolvedEntryMap.size
-  ) {
-    for (const entryId of resolvedEntryMap.keys()) {
-      if (entryId === normalizedId) {
-        continue
-      }
-      markEntryDirtyWithCause(entryId, 'dependency', 'app-shell-dependent')
     }
   }
 

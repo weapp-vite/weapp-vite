@@ -2,13 +2,11 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
-import type { ResolvedAppShell } from '../../appShell'
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
-import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
@@ -75,7 +73,6 @@ export async function finalizeTransformEntryScript(options: {
   ) {
     const keys = collectSetDataPickKeysFromTemplate(result.template, {
       astEngine: resolveAstEngine(configService.weappViteConfig),
-      extraKeys: result.scopedSlotComponents?.flatMap(slot => slot.ownerKeys ?? []),
     })
     const injectedPick = injectSetDataPickInJs(result.script, keys)
     if (injectedPick.transformed) {
@@ -160,7 +157,6 @@ export async function finalizeTransformCompiledResult(options: {
   source: string
   result: VueTransformResult
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
-  setAppShell?: (shell: ResolvedAppShell | undefined) => void
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
   isApp: boolean
@@ -183,7 +179,6 @@ export async function finalizeTransformCompiledResult(options: {
     source,
     result,
     compilationCache,
-    setAppShell,
     configService,
     isPage,
     isApp,
@@ -204,17 +199,7 @@ export async function finalizeTransformCompiledResult(options: {
     })
   }
 
-  if (isApp) {
-    setAppShell?.(
-      hasAppShellTemplate(result)
-        ? resolveAppShellLayout(configService)
-        : undefined,
-    )
-  }
-
-  if (!isApp) {
-    registerVueTemplateToken(ctx, filename, result.template)
-  }
+  registerVueTemplateToken(ctx, filename, result.template)
 
   if (Array.isArray(result.meta?.sfcSrcDeps) && typeof pluginCtx.addWatchFile === 'function') {
     for (const dep of result.meta.sfcSrcDeps) {

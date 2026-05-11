@@ -31,15 +31,3 @@ ensureGithubIssuesRouter()
 
 onLaunch(() => {})
 </script>
-
-<template>
-  <view class="issue-563-app-shell">
-    <slot />
-  </view>
-</template>
-
-<style>
-.issue-563-app-shell {
-  min-height: 100vh;
-}
-</style>

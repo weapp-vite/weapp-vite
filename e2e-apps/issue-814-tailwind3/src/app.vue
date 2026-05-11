@@ -4,6 +4,10 @@ import { onLaunch } from 'wevu'
 onLaunch(() => {})
 </script>
 
+<template>
+  <view class="app" />
+</template>
+
 <style>
 @tailwind base;
 @tailwind components;

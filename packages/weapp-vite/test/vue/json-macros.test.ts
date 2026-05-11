@@ -227,6 +227,7 @@ const foo = 1
 
       await plugin.transform!(
         `
+<template><view>app</view></template>
 <script setup lang="ts">
 defineAppJson({
   style: 'v3'

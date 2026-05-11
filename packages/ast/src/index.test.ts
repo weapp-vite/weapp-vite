@@ -1278,17 +1278,6 @@ const page = {
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['count', 'extra', 'list'])
   })
 
-  it('includes native slot scope data when slot scope props are rendered', () => {
-    const template = `
-<SlotCell wvslotscope="{{['wvslotbind1',wvslotbind1]}}">
-  <text>{{ wvslotbind1 }}</text>
-</SlotCell>
-    `.trim()
-
-    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual(['wvnativeslotscope', 'wvslotbind1'])
-    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['wvnativeslotscope', 'wvslotbind1'])
-  })
-
   it('fast rejects setData pick analysis without mustache expressions', () => {
     const babelParseSpy = vi.spyOn(babelModule, 'parse')
     const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')

@@ -1,4 +1,4 @@
-import { defineMonorepoConfig } from 'repoctl'
+import { defineMonorepoConfig } from '@icebreakers/monorepo'
 
 export default defineMonorepoConfig({
   commands: {

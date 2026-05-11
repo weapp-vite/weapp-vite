@@ -18,14 +18,6 @@ describe('inject setData.pick', () => {
     expect(keys).toEqual(['__wv_bind_0', 'count', 'list'])
   })
 
-  it('merges extra owner keys into collected setData.pick keys', () => {
-    const keys = collectSetDataPickKeysFromTemplate('<view>{{ __wv_bind_0 }}</view>', {
-      extraKeys: ['value', '__wv_bind_0'],
-    })
-
-    expect(keys).toEqual(['__wv_bind_0', 'value'])
-  })
-
   it('injects setData.pick into wevu component options', () => {
     const source = `
 import { createWevuComponent } from 'wevu'

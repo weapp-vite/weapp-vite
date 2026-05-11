@@ -30,16 +30,6 @@ function transformInterpolation(node: any, context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
     const rawExpValue = content.content
-    if (context.nativeSlotScopeRuntime) {
-      const runtimeExp = registerRuntimeBindingExpression(rawExpValue, context.nativeSlotScopeRuntime.owner, {
-        hint: '插值表达式',
-        prefix: context.nativeSlotScopeRuntime.runtimeBindingPrefix,
-      })
-      if (runtimeExp) {
-        context.nativeSlotScopeRuntime.bindings.set(runtimeExp, runtimeExp)
-        return renderMustache(runtimeExp, context)
-      }
-    }
     const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
       ? registerRuntimeBindingExpression(rawExpValue, context, { hint: '插值表达式' })
       : null

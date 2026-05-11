@@ -25,11 +25,9 @@ const resolveVueBundleAssetContextMock = vi.hoisted(() => vi.fn(() => ({
   platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
 })))
 const emitBundlePageLayoutsIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
-const emitAppShellAssetsIfNeededMock = vi.hoisted(() => vi.fn())
 const emitScriptlessComponentJsFallbackIfMissingMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./layoutAssets', () => ({
-  emitAppShellAssetsIfNeeded: emitAppShellAssetsIfNeededMock,
   emitBundlePageLayoutsIfNeeded: emitBundlePageLayoutsIfNeededMock,
   emitScriptlessComponentJsFallbackIfMissing: emitScriptlessComponentJsFallbackIfMissingMock,
 }))
@@ -66,7 +64,6 @@ describe('emitCompiledEntry helpers', () => {
     })
     emitBundlePageLayoutsIfNeededMock.mockReset()
     emitBundlePageLayoutsIfNeededMock.mockResolvedValue(undefined)
-    emitAppShellAssetsIfNeededMock.mockReset()
     emitScriptlessComponentJsFallbackIfMissingMock.mockReset()
   })
 
@@ -105,7 +102,6 @@ describe('emitCompiledEntry helpers', () => {
     })
 
     expect(handleCompiledEntryPageLayoutsMock).toHaveBeenCalledTimes(1)
-    expect(result.template).toBe('<view />')
     expect(emitBundlePageLayoutsIfNeededMock).toHaveBeenCalledWith({
       layouts: [{ kind: 'native', file: '/project/src/layouts/default' }],
       pluginCtx: {},
@@ -131,102 +127,6 @@ describe('emitCompiledEntry helpers', () => {
       platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
     expect(emitScriptlessComponentJsFallbackIfMissingMock).not.toHaveBeenCalled()
-  })
-
-  it('wraps compiled page templates with the app shell after page layouts', async () => {
-    handleCompiledEntryPageLayoutsMock.mockImplementation(async ({ result, emitLayouts }: any) => {
-      result.template = '<weapp-layout-default><view /></weapp-layout-default>'
-      result.config = JSON.stringify({
-        usingComponents: {
-          'weapp-layout-default': '/layouts/default',
-        },
-      })
-      await emitLayouts([{ kind: 'native', file: '/project/src/layouts/default' }])
-    })
-
-    const result = { template: '<view />', script: 'Page({})' } as any
-    await emitResolvedCompiledVueEntryAssets({
-      bundle: {},
-      state: {
-        ctx: {
-          configService: { platform: DEFAULT_MP_PLATFORM },
-        },
-        pluginCtx: {},
-        appShell: {
-          file: '/project/src/__weapp_vite_app_shell',
-          importPath: '/__weapp_vite_app_shell',
-          tagName: 'weapp-app-shell',
-        },
-      } as any,
-      filename: '/project/src/pages/index/index.vue',
-      cached: {
-        isPage: true,
-        source: '<template><view /></template>',
-      } as any,
-      result,
-      relativeBase: 'pages/index/index',
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-      outputExtensions: { wxml: 'wxml' } as any,
-      templateExtension: 'wxml',
-      jsonExtension: 'json',
-      scriptExtension: 'js',
-      scriptModuleExtension: 'wxs',
-      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
-    })
-
-    expect(result.template).toBe('<weapp-app-shell><weapp-layout-default><view /></weapp-layout-default></weapp-app-shell>')
-    expect(JSON.parse(result.config)).toEqual({
-      usingComponents: {
-        'weapp-layout-default': '/layouts/default',
-        'weapp-app-shell': '/__weapp_vite_app_shell',
-      },
-    })
-  })
-
-  it('keeps app.vue without template compatible with the normal app entry flow', async () => {
-    const result = {
-      config: JSON.stringify({ pages: ['pages/index/index'] }),
-      script: 'createApp({})',
-    } as any
-
-    await emitResolvedCompiledVueEntryAssets({
-      bundle: {},
-      state: {
-        ctx: {
-          configService: { platform: DEFAULT_MP_PLATFORM },
-        },
-        pluginCtx: {},
-      } as any,
-      filename: '/project/src/app.vue',
-      cached: {
-        isPage: false,
-        source: '<script setup>defineAppJson({ pages: [\'pages/index/index\'] })</script>',
-      } as any,
-      result,
-      relativeBase: 'app',
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-      outputExtensions: { wxml: 'wxml' } as any,
-      templateExtension: 'wxml',
-      jsonExtension: 'json',
-      scriptExtension: 'js',
-      scriptModuleExtension: 'wxs',
-      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
-    })
-
-    expect(emitAppShellAssetsIfNeededMock).not.toHaveBeenCalled()
-    expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
-    expect(emitCompiledEntryBundleAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
-      filename: '/project/src/app.vue',
-      relativeBase: 'app',
-      result,
-      isPage: false,
-    }))
   })
 
   it('emits scriptless component fallbacks for component entries without script', async () => {

@@ -1,7 +1,7 @@
-import { defineEslintConfig } from 'repoctl/tooling'
+import { icebreaker } from '@icebreakers/eslint-config'
 
-export default await defineEslintConfig({
-  options: {
+export default icebreaker(
+  {
     miniProgram: true,
     vue: true,
     // tailwindcss: true,
@@ -55,198 +55,207 @@ export default await defineEslintConfig({
       '.qoder/**',
       '.changeset/**',
     ],
-    configs: [{
-      files: ['**/*.vue'],
-      rules: {
-        'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],
-      },
-    }, {
-      files: [
-        'packages/**/src/**/*.{js,ts,mjs,cjs,vue}',
-        'packages-runtime/**/src/**/*.{js,ts,mjs,cjs,vue}',
-        '@weapp-core/**/src/**/*.{js,ts,mjs,cjs,vue}',
-        'apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
-        'e2e-apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
-        'templates/**/src/**/*.{js,ts,mjs,cjs,vue}',
-      ],
-      rules: {
-        'e18e/prefer-object-has-own': 'off',
-        'prefer-object-has-own': 'off',
-        'no-restricted-syntax': ['error', {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }],
-      },
-    }, {
-      files: ['packages/**/src/**/*.{js,ts,mjs,cjs}', '@weapp-core/**/src/**/*.{js,ts,mjs,cjs}', 'scripts/**/*.{js,ts,mjs,cjs}'],
-      rules: {
-        'no-restricted-imports': ['error', {
-          paths: [
-            {
-              name: 'chalk',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-            {
-              name: 'picocolors',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-            {
-              name: 'colorette',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-            {
-              name: 'kleur',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-            {
-              name: 'ansi-colors',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-            {
-              name: 'yoctocolors',
-              message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
-            },
-          ],
-        }],
-        'no-restricted-syntax': ['error', {
-          selector: 'Literal[raw*="\\u001B["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'Literal[raw*="\\u001b["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'Literal[raw*="\\x1B["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'Literal[raw*="\\x1b["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'TemplateElement[value.raw*="\\u001B["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'TemplateElement[value.raw*="\\u001b["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'TemplateElement[value.raw*="\\x1B["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'TemplateElement[value.raw*="\\x1b["]',
-          message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }],
-      },
-    }, {
-      files: ['@weapp-core/logger/src/index.ts'],
-      rules: {
-        'no-restricted-imports': 'off',
-      },
-    }, {
-      files: ['./packages/rolldown-require/**/*.ts'],
-      rules: {
-        'style/max-statements-per-line': 'off',
-        'ts/no-use-before-define': 'off',
-        'no-cond-assign': 'off',
-        'ts/no-unsafe-function-type': 'off',
-      },
-    }, {
-      files: ['apps/weapp-vite-web-demo/src/**/*.ts'],
-      rules: {
-        'no-console': 'off',
-      },
-    }, {
-      files: ['package.json'],
-      rules: {
-        'e18e/ban-dependencies': 'off',
-      },
-    }, {
-      files: ['packages/weapp-ide-cli/package.json'],
-      rules: {
-        'e18e/ban-dependencies': 'off',
-      },
-    }, {
-      files: ['e2e-apps/request-clients-real/package.json'],
-      rules: {
-        'e18e/ban-dependencies': 'off',
-      },
-    }, {
-      files: ['packages/miniprogram-automator/src/Element.ts'],
-      rules: {
-        'ts/no-use-before-define': 'off',
-      },
-    }, {
-      files: ['apps/wevu-vue-demo/src/**/*.vue'],
-      rules: {
-        'no-console': 'off',
-        'ts/no-unused-vars': 'off',
-      },
-    }, {
-      files: ['templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/**/*.{ts,vue,md}'],
-      rules: {
-        'no-console': 'off',
-        'ts/no-use-before-define': 'off',
-        'ts/no-unused-vars': 'off',
-        'ts/no-redeclare': 'off',
-        'ts/no-require-imports': 'off',
-        'eqeqeq': 'off',
-        'vue/eqeqeq': 'off',
-        'vue/valid-v-for': 'off',
-        'vue/no-unused-vars': 'off',
-        'vue/no-use-v-if-with-v-for': 'off',
-        'vue/no-parsing-error': 'off',
-        'vue/no-template-shadow': 'off',
-        'vue/valid-define-options': 'off',
-        'style/max-statements-per-line': 'off',
-        'style/no-mixed-operators': 'off',
-        'prefer-promise-reject-errors': 'off',
-        'regexp/no-useless-quantifier': 'off',
-        'unicorn/no-new-array': 'off',
-        'unicorn/prefer-number-properties': 'off',
-        'jsdoc/check-param-names': 'off',
-        'jsdoc/require-returns-description': 'off',
-        'eslint-comments/no-unlimited-disable': 'off',
-        'markdown/heading-increment': 'off',
-        'no-self-assign': 'off',
-      },
-    }, {
-      files: ['**/*.json'],
-      rules: {
-        'style/eol-last': 'off',
-      },
-    }, {
-      files: ['**/*.test.{ts,js,mjs,cjs}', '**/*.spec.{ts,js,mjs,cjs}'],
-      rules: {
-        'e18e/prefer-static-regex': 'off',
-      },
-    }, {
-      files: ['packages/miniprogram-automator/src/internal/compat.ts'],
-      rules: {
-        'e18e/prefer-static-regex': 'off',
-      },
-    }, {
-      files: ['packages/miniprogram-automator/src/internal/compat/strings.ts'],
-      rules: {
-        'e18e/prefer-static-regex': 'off',
-      },
-    }],
   },
-})
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],
+    },
+  },
+  {
+    files: [
+      'packages/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'packages-runtime/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      '@weapp-core/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'e2e-apps/**/src/**/*.{js,ts,mjs,cjs,vue}',
+      'templates/**/src/**/*.{js,ts,mjs,cjs,vue}',
+    ],
+    rules: {
+      'e18e/prefer-object-has-own': 'off',
+      'prefer-object-has-own': 'off',
+      'no-restricted-syntax': ['error', {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }],
+    },
+  },
+  {
+    files: ['packages/**/src/**/*.{js,ts,mjs,cjs}', '@weapp-core/**/src/**/*.{js,ts,mjs,cjs}', 'scripts/**/*.{js,ts,mjs,cjs}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          {
+            name: 'chalk',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'picocolors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'colorette',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'kleur',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'ansi-colors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'yoctocolors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+        ],
+      }],
+      'no-restricted-syntax': ['error', {
+        selector: 'Literal[raw*="\\u001B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\u001b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\x1B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\x1b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\u001B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\u001b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\x1B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\x1b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
+        message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }, {
+        selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
+        message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
+      }],
+    },
+  },
+  {
+    files: ['@weapp-core/logger/src/index.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['./packages/rolldown-require/**/*.ts'],
+    rules: {
+      'style/max-statements-per-line': 'off',
+      'ts/no-use-before-define': 'off',
+      'no-cond-assign': 'off',
+      'ts/no-unsafe-function-type': 'off',
+    },
+  },
+  {
+    files: ['apps/weapp-vite-web-demo/src/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    files: ['packages/weapp-ide-cli/package.json'],
+    rules: {
+      'e18e/ban-dependencies': 'off',
+    },
+  },
+  {
+    files: ['e2e-apps/request-clients-real/package.json'],
+    rules: {
+      'e18e/ban-dependencies': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/Element.ts'],
+    rules: {
+      'ts/no-use-before-define': 'off',
+    },
+  },
+  {
+    files: ['apps/wevu-vue-demo/src/**/*.vue'],
+    rules: {
+      'no-console': 'off',
+      'ts/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/**/*.{ts,vue,md}'],
+    rules: {
+      'no-console': 'off',
+      'ts/no-use-before-define': 'off',
+      'ts/no-unused-vars': 'off',
+      'ts/no-redeclare': 'off',
+      'ts/no-require-imports': 'off',
+      'eqeqeq': 'off',
+      'vue/eqeqeq': 'off',
+      'vue/valid-v-for': 'off',
+      'vue/no-unused-vars': 'off',
+      'vue/no-use-v-if-with-v-for': 'off',
+      'vue/no-parsing-error': 'off',
+      'vue/no-template-shadow': 'off',
+      'vue/valid-define-options': 'off',
+      'style/max-statements-per-line': 'off',
+      'style/no-mixed-operators': 'off',
+      'prefer-promise-reject-errors': 'off',
+      'regexp/no-useless-quantifier': 'off',
+      'unicorn/no-new-array': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'jsdoc/check-param-names': 'off',
+      'jsdoc/require-returns-description': 'off',
+      'eslint-comments/no-unlimited-disable': 'off',
+      'markdown/heading-increment': 'off',
+      'no-self-assign': 'off',
+    },
+  },
+  {
+    files: ['**/*.json'],
+    rules: {
+      'style/eol-last': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.{ts,js,mjs,cjs}', '**/*.spec.{ts,js,mjs,cjs}'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/internal/compat.ts'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/internal/compat/strings.ts'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
+)

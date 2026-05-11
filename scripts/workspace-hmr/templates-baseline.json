@@ -45,32 +45,6 @@
         }
       }
     },
-    "e2e-apps/wevu-features": {
-      "startupMs": 1756,
-      "scenarios": {
-        "vue-template": {
-          "totalMs": 480,
-          "dirtyCount": 1,
-          "pendingCount": 41,
-          "emittedCount": 41,
-          "impactFiles": 1
-        },
-        "vue-script": {
-          "totalMs": 536,
-          "dirtyCount": 1,
-          "pendingCount": 41,
-          "emittedCount": 41,
-          "impactFiles": 1
-        },
-        "vue-style": {
-          "totalMs": 453,
-          "dirtyCount": 1,
-          "pendingCount": 41,
-          "emittedCount": 41,
-          "impactFiles": 1
-        }
-      }
-    },
     "templates/weapp-vite-lib-template": {
       "startupMs": 1256,
       "scenarios": {

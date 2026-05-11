@@ -1,8 +1,6 @@
 import type { TransformContext } from '../types'
 import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
-  WEVU_GENERIC_SLOT_OWNER_DATA_KEY,
-  WEVU_GENERIC_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_OWNER_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
@@ -41,10 +39,8 @@ const SCOPED_SLOT_GLOBALS = new Set([
   'require',
   'arguments',
   WEVU_SLOT_OWNER_KEY,
-  WEVU_GENERIC_SLOT_OWNER_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
-  WEVU_GENERIC_SLOT_PROPS_DATA_KEY,
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
 ])
 
@@ -89,13 +85,6 @@ function replaceIdentifierWithExpression(path: import('@weapp-vite/ast/babelTrav
 
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
-function unwrapTsExpression(node: t.Expression): t.Expression {
-  if (t.isTSAsExpression(node) || t.isTSNonNullExpression(node) || t.isTSTypeAssertion(node) || t.isTSSatisfiesExpression(node)) {
-    return unwrapTsExpression(node.expression)
-  }
-  return node
-}
-
 function rewriteScopedSlotExpression(exp: string, context: TransformContext): string {
   const normalized = normalizeWxmlExpression(exp)
   const parsed = parseBabelExpressionFile(normalized)
@@ -115,19 +104,8 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
     }
     return t.memberExpression(t.identifier(target), t.stringLiteral(prop), true)
   }
+
   traverse(ast, {
-    TSAsExpression(path) {
-      path.replaceWith(unwrapTsExpression(path.node))
-    },
-    TSSatisfiesExpression(path) {
-      path.replaceWith(unwrapTsExpression(path.node))
-    },
-    TSTypeAssertion(path) {
-      path.replaceWith(unwrapTsExpression(path.node))
-    },
-    TSNonNullExpression(path) {
-      path.replaceWith(unwrapTsExpression(path.node))
-    },
     Identifier(path) {
       if (!path.isReferencedIdentifier()) {
         return
@@ -150,12 +128,11 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
         return
       }
       if (hasOwn(slotProps, name)) {
-        const prop = slotProps[name]
-        const member = createMemberAccess(WEVU_GENERIC_SLOT_PROPS_DATA_KEY, prop)
+        const member = createMemberAccess(WEVU_SLOT_PROPS_DATA_KEY, slotProps[name])
         replaceIdentifierWithExpression(path, member)
         return
       }
-      const member = createMemberAccess(WEVU_GENERIC_SLOT_PROPS_DATA_KEY, name)
+      const member = createMemberAccess(WEVU_SLOT_OWNER_KEY, name)
       replaceIdentifierWithExpression(path, member)
     },
   })

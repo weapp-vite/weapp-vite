@@ -1,8 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
-import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
-import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
-  emitAppShellAssetsIfNeeded,
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
@@ -36,24 +33,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     return
   }
 
-  if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
-    emitAppShellAssetsIfNeeded({
-      bundle,
-      pluginCtx,
-      ctx,
-      filename,
-      relativeBase: resolveAppShellRelativeBase(configService),
-      result,
-      configService,
-      templateExtension: options.templateExtension,
-      jsonExtension: options.jsonExtension,
-      scriptExtension: options.scriptExtension,
-      scriptModuleExtension: options.scriptModuleExtension,
-      outputExtensions: options.outputExtensions,
-      platformAssetOptions: options.platformAssetOptions,
-    })
-  }
-
   if (cached.isPage && cached.source) {
     await handleCompiledEntryPageLayouts({
       source: cached.source,
@@ -71,15 +50,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
           outputExtensions: options.outputExtensions,
         })
       },
-    })
-    applyAppShell(result, filename, state.appShell)
-  }
-
-  if (isLayoutFile(filename, configService)) {
-    assertTemplateHasDefaultSlot({
-      filename,
-      kind: 'page-layout',
-      template: result.template,
     })
   }
 

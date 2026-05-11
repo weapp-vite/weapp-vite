@@ -2,7 +2,6 @@ import type { VueBundleCompileOptionsState, VueBundleState } from './shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { applyAppShell } from '../appShell'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
@@ -27,7 +26,6 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
     dependencies?: Record<string, string>
     alipayNpmMode?: string
   }
-  appShell?: VueBundleState['appShell']
 }) {
   const { source, result } = await loadFallbackPageEntryCompilation({
     entryFilePath: options.entryFilePath,
@@ -53,8 +51,6 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
       })
     },
   })
-
-  applyAppShell(result, options.entryFilePath, options.appShell)
 
   emitFallbackPageBundleAssets({
     bundle: options.bundle,
@@ -127,7 +123,6 @@ export async function emitFallbackPageAssets(
         scriptModuleExtension,
         outputExtensions,
         platformAssetOptions,
-        appShell: state.appShell,
       })
     }
     catch (error) {

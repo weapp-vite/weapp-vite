@@ -54,19 +54,6 @@ async function getFormState(page: any) {
   }
 }
 
-async function waitForFormState(page: any, expected: Partial<Awaited<ReturnType<typeof getFormState>>>) {
-  await expect.poll(
-    () => getFormState(page),
-    { interval: 80, timeout: 2000 },
-  ).toMatchObject(expected)
-}
-
-async function getUrgentRow(page: any) {
-  const row = await page.$('.urgent-row-toggle')
-  expect(row).toBeTruthy()
-  return row!
-}
-
 describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -79,20 +66,28 @@ describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
       throw new Error(`Failed to launch route: ${ROUTE}`)
     }
 
-    await waitForFormState(page, {
+    await page.waitFor(200)
+
+    expect(await getFormState(page)).toMatchObject({
       currentStep: 0,
       urgent: false,
       pace: 'balanced',
     })
 
-    await (await getUrgentRow(page)).tap()
-    await waitForFormState(page, {
+    const row = await page.$('.urgent-row-toggle')
+    expect(row).toBeTruthy()
+    await row!.tap()
+    await page.waitFor(160)
+
+    expect(await getFormState(page)).toMatchObject({
       urgent: true,
       pace: 'fast',
     })
 
-    await (await getUrgentRow(page)).tap()
-    await waitForFormState(page, {
+    await row!.tap()
+    await page.waitFor(160)
+
+    expect(await getFormState(page)).toMatchObject({
       urgent: false,
       pace: 'fast',
     })
@@ -100,7 +95,9 @@ describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
     const switchControl = await page.$('.t-switch')
     expect(switchControl).toBeTruthy()
     await switchControl!.tap()
-    await waitForFormState(page, {
+    await page.waitFor(160)
+
+    expect(await getFormState(page)).toMatchObject({
       urgent: true,
       pace: 'fast',
     })

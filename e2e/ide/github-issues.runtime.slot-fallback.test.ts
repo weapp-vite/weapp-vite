@@ -25,7 +25,7 @@ function readOffsetNumber(offset: Record<string, unknown>, keys: string[]) {
 describe.sequential('e2e app: github-issues / slot fallback', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  }, 60_000)
+  })
 
   afterAll(async () => {
     await closeSharedMiniProgram()

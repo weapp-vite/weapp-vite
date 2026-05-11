@@ -6,7 +6,6 @@ import {
   getPlatformLayoutConditionalDirective,
   getPlatformLayoutElseDirective,
 } from './shared'
-import { assertTemplateHasDefaultSlot, hasDefaultSlotTemplate } from './slot'
 
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
@@ -25,25 +24,5 @@ describe('page layout shared helpers', () => {
     expect(getPlatformLayoutConditionalDirective(0, 'weapp')).toBe(`${DEFAULT_WXML_DIRECTIVE_PREFIX}:if`)
     expect(getPlatformLayoutConditionalDirective(1, 'alipay')).toBe('a:elif')
     expect(getPlatformLayoutElseDirective('alipay')).toBe('a:else')
-  })
-
-  it('detects default slots in layout templates', () => {
-    expect(hasDefaultSlotTemplate('<view><slot /></view>')).toBe(true)
-    expect(hasDefaultSlotTemplate('<view><slot name="header" /></view>')).toBe(false)
-    expect(hasDefaultSlotTemplate('<view />')).toBe(false)
-  })
-
-  it('throws user-facing errors for layout templates without default slot', () => {
-    expect(() => assertTemplateHasDefaultSlot({
-      filename: '/project/src/app.vue',
-      kind: 'app-shell',
-      template: '<view />',
-    })).toThrow('/project/src/app.vue 中 app.vue <template> 必须包含默认 <slot />')
-
-    expect(() => assertTemplateHasDefaultSlot({
-      filename: '/project/src/layouts/default.vue',
-      kind: 'page-layout',
-      template: '<view />',
-    })).toThrow('/project/src/layouts/default.vue 对应的 layout template 必须包含默认 <slot />')
   })
 })

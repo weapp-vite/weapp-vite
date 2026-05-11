@@ -1,10 +1,5 @@
 import type * as t from '@babel/types'
 import type { AstEngineName } from '../types'
-import {
-  WEVU_GENERIC_SLOT_SCOPE_ATTR,
-  WEVU_NATIVE_SLOT_SCOPE_DATA_KEY,
-  WEVU_SLOT_SCOPE_KEY,
-} from '@weapp-core/constants'
 import { getMiniProgramDirectivePrefix, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '../babel'
 import { parseJsLikeWithEngine } from '../engine'
@@ -28,9 +23,7 @@ const FOR_ITEM_RE = new RegExp(
 const FOR_INDEX_RE = new RegExp(
   `\\b(?:${FOR_DIRECTIVE_PREFIX_PATTERN})${FOR_DIRECTIVE_SEPARATOR_PATTERN}for-index\\s*=\\s*(?:\"([^\"]+)\"|'([^']+)')`,
 )
-const WEVU_SLOT_SCOPE_ATTR_RE = new RegExp(
-  `\\b(?:${WEVU_SLOT_SCOPE_KEY}|${WEVU_GENERIC_SLOT_SCOPE_ATTR})\\s*=`,
-)
+
 const JS_GLOBAL_IDENTIFIERS = new Set([
   'undefined',
   'NaN',
@@ -432,12 +425,7 @@ export function collectSetDataPickKeysFromTemplateCode(
   const engine = options?.astEngine ?? 'babel'
 
   try {
-    const keys = engine === 'oxc' ? collectSetDataPickKeysWithOxc(template) : collectSetDataPickKeysWithBabel(template)
-    if (WEVU_SLOT_SCOPE_ATTR_RE.test(template) && !keys.includes(WEVU_NATIVE_SLOT_SCOPE_DATA_KEY)) {
-      keys.push(WEVU_NATIVE_SLOT_SCOPE_DATA_KEY)
-      keys.sort((a, b) => a.localeCompare(b))
-    }
-    return keys
+    return engine === 'oxc' ? collectSetDataPickKeysWithOxc(template) : collectSetDataPickKeysWithBabel(template)
   }
   catch {
     return []

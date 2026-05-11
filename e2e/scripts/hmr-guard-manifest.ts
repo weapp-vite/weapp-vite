@@ -10,7 +10,6 @@ function resolveCiTests(testPaths: string[]) {
 
 export const HMR_GUARD_TEST_GROUPS = {
   directEntryUpdates: resolveCiTests([
-    'hmr-app-shell.test.ts',
     'hmr-modify.test.ts',
     'hmr-html-template.test.ts',
     'hmr-layouts.test.ts',

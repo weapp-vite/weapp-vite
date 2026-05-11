@@ -26,7 +26,7 @@ export function transformDirective(
   }
 
   if (name === 'model') {
-    return transformModelDirective(node, context, elementNode, options)
+    return transformModelDirective(node, context, elementNode)
   }
 
   if (name === 'show') {

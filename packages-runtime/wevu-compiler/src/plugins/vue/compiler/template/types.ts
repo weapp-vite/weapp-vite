@@ -13,8 +13,6 @@ export interface ScopedSlotComponentAsset {
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
   inlineExpressions?: InlineExpressionAsset[]
-  ownerKeys?: string[]
-  ownerPropsExpression?: string
 }
 
 /**
@@ -83,9 +81,6 @@ export interface TransformContext {
   objectLiteralBindMode: ObjectLiteralBindMode
   mustacheInterpolation: MustacheInterpolationMode
   classStyleBindings: ClassStyleBinding[]
-  runtimeBindingCache?: Map<string, string>
-  runtimeBindingPrefix?: string
-  nativeSlotScopeRuntime?: NativeSlotScopeRuntime
   classStyleWxs: boolean
   classStyleWxsExtension?: string
   classStyleWxsSrc?: string
@@ -98,7 +93,6 @@ export interface TransformContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   wevuComponentTags?: Set<string>
-  scopedSlotOwnerRuntimeBindingTarget?: TransformContext
 }
 
 /**
@@ -117,15 +111,6 @@ export interface ForParseResult {
  * 节点转换函数。
  */
 export type TransformNode = (node: any, context: TransformContext) => string
-
-/**
- * 原生 slot 投影表达式桥接上下文。
- */
-export interface NativeSlotScopeRuntime {
-  owner: TransformContext
-  bindings: Map<string, string>
-  runtimeBindingPrefix?: string
-}
 
 /**
  * 模板编译选项。

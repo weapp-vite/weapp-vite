@@ -158,13 +158,17 @@ describe('headless testing bridge', () => {
     expect(await button?.text()).toBe('Hello')
 
     await page.callMethod('showAsyncText')
-    expect(await page.waitForText('async ready')).toBe('async ready')
+    expect(await page.waitForText('async ready', {
+      timeout: 200,
+    })).toBe('async ready')
 
     const asyncNode = await page.waitForSelector('#async-text')
     expect(await asyncNode?.text()).toBe('async ready')
 
     await page.callMethod('clearAsyncText')
-    await page.waitForTextGone('async ready')
+    await page.waitForTextGone('async ready', {
+      timeout: 200,
+    })
     expect(await page.waitForSelector('#missing-node', {
       state: 'detached',
       timeout: 30,
@@ -196,7 +200,9 @@ describe('headless testing bridge', () => {
 
     await page.callMethod('bumpAsyncCount')
 
-    expect(await page.waitForData('__e2eAsyncCount', 2)).toBe(2)
+    expect(await page.waitForData('__e2eAsyncCount', 2, {
+      timeout: 200,
+    })).toBe(2)
     expect(await page.waitForData('__e2eAsyncCount', (value: unknown) => Number(value) >= 2, {
       timeout: 30,
     })).toBe(2)
@@ -238,7 +244,9 @@ describe('headless testing bridge', () => {
     const homePage = await miniProgram.reLaunch('/pages/home/index')
     await homePage.callMethod('goDetailLater')
 
-    const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index')
+    const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index', {
+      timeout: 200,
+    })
 
     expect(detailPage).not.toBeNull()
     expect(await detailPage?.data('logs')).toEqual([

@@ -263,7 +263,7 @@ export function createWevuScopedSlotComponent(
   overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)
-  defineComponent(baseOptions as any)
+  createWevuComponent(baseOptions as any)
 }
 
 scopedSlotCreator = createWevuScopedSlotComponent

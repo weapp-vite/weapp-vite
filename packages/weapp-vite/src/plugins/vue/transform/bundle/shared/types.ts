@@ -1,6 +1,5 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
-import type { ResolvedAppShell } from '../../appShell'
 import type { CompileVueFileResolvedOptions } from '../../compileOptions'
 import type { ResolvedPageLayoutPlan } from '../../pageLayout'
 
@@ -34,7 +33,6 @@ export interface VueBundleState {
   ctx: CompilerContext
   pluginCtx: any
   compilationCache: Map<string, CompilationCacheEntry>
-  appShell?: ResolvedAppShell
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>

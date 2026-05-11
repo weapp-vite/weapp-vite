@@ -234,31 +234,6 @@ const count = 1
     expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.ts')
   })
 
-  it('marks page entries dirty when app.vue shell template changes', async () => {
-    const appEntry = '/project/src/app.vue'
-    const pageEntry = '/project/src/pages/hmr/index.vue'
-    const componentEntry = '/project/src/components/card.vue'
-    const state = createState({
-      loadedEntrySet: new Set([appEntry]),
-      resolvedEntryMap: new Map([
-        [appEntry, { id: appEntry }],
-        [pageEntry, { id: pageEntry }],
-        [componentEntry, { id: componentEntry }],
-      ]),
-    })
-    const hook = createWatchChangeHook(state)
-
-    await hook(appEntry, { event: 'update' })
-
-    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
-    expect(state.markEntryDirty).toHaveBeenCalledWith(componentEntry, 'dependency')
-    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
-      'app-shell-dependent:2',
-      'entry-direct:1',
-    ])
-  })
-
   it('does not mark deleted declared page entries as direct dirties after a real delete', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     const entryId = '/project/src/pages/logs/hmr-added.vue'

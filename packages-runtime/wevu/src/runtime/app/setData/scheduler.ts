@@ -191,15 +191,6 @@ export function createSetDataScheduler(options: {
     toPlainMaxDepth,
     toPlainMaxKeys,
   })
-  const collectOwnerSnapshot = () => collectSnapshot({
-    state,
-    computedRefs,
-    includeComputed: true,
-    shouldIncludeKey: () => true,
-    plainCache,
-    toPlainMaxDepth,
-    toPlainMaxKeys,
-  })
 
   const collectDiffSnapshot = () => {
     const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
@@ -426,7 +417,6 @@ export function createSetDataScheduler(options: {
     job,
     mutationRecorder,
     snapshot,
-    collectOwnerSnapshot,
     cloneLatestSnapshot,
     getLatestSnapshot: () => latestSnapshot,
   }
