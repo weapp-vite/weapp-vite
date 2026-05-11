@@ -7,6 +7,9 @@ exports[`scoped slot native output snapshots > locks the emitted file tree and a
   "components/native-tabbar-item/index.js",
   "components/native-tabbar-item/index.json",
   "components/native-tabbar-item/index.wxml",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.js",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.json",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml",
   "components/native-tabbar/index.js",
   "components/native-tabbar/index.json",
   "components/native-tabbar/index.wxml",
@@ -66,16 +69,30 @@ Component({
   <slot />
 </view>
 ",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.js": "Component({})",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.json": "{
+  "component": true,
+  "options": {
+    "virtualHost": true
+  }
+}
+",
+  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml": "<view wx:if="{{false}}" />",
   "components/native-tabbar/index.js": "//#region <fixture>/src/components/native-tabbar/index.ts
-Component({ options: { virtualHost: true } });
+Component({ properties: { __wvSlotOwnerId: { type: String, value: "" }, __wvSlotScope: { type: null, value: null } }, options: { virtualHost: true } });
 //#endregion
 ",
   "components/native-tabbar/index.json": "{
-  "component": true
+  "component": true,
+  "componentGenerics": {
+    "scoped-slots-default": {
+      "default": "./__weapp_vite_scoped_slot_generic_component"
+    }
+  }
 }
 ",
   "components/native-tabbar/index.wxml": "<view class="native-tabbar">
-  <slot />
+  <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{[]}}" __wv-slot-scope="{{__wvSlotScope}}" />
 </view>
 ",
   "pages/index/index.__scoped-slot-default-0.js": "const require_src = require("../../weapp-vendors/wevu-src.js");

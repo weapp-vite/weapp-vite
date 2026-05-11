@@ -802,6 +802,31 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toBeUndefined()
   })
 
+  it('keeps third-party kebab-case component slots native even when slot content uses Vue components', () => {
+    const template = `
+<t-button>
+  <MyIcon />
+  保存
+</t-button>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsRequireProps: false,
+        wevuComponentTags: ['MyIcon', 'my-icon'],
+      },
+    )
+
+    expect(code).toContain('<t-button>')
+    expect(code).toContain('<MyIcon />')
+    expect(code).toContain('保存')
+    expect(code).toContain('</t-button>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
   it('ignores comments when checking implicit default slot children', () => {
     const template = `
 <map>

@@ -71,6 +71,9 @@ function shouldAugmentPlainDefaultSlot(decl: ScopedSlotDeclaration, context: Tra
   if (context.scopedSlotsRequireProps || !decl.implicitDefault) {
     return false
   }
+  if (context.scopedSlotsCompiler !== 'augmented' && !isWevuComponentTag(ownerNode, context)) {
+    return false
+  }
   if (context.rewriteScopedSlot && !isWevuComponentTag(ownerNode, context)) {
     return false
   }
