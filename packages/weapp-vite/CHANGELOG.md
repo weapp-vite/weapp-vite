@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.16.8
+
+### Patch Changes
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 下插槽内容中的 `__wv_bind_*` 计算属性无法调用宿主 `setup` 方法的问题。增强 scoped slot 运行时现在会保留宿主 proxy 引用，编译出的 JS 计算表达式优先读取该 proxy，从而让 `func(text)` 这类插槽表达式可以正常得到 `987654321`，同时仍保留序列化快照用于 WXML 数据渲染。** [#560](https://github.com/weapp-vite/weapp-vite/pull/560) by @sonofmagic
+
+- 🐛 **修复增强 scoped slot 在微信开发者工具真实运行时下的属性同步问题，避免生成非法 WXML 表达式、非法 data path descriptor、属性覆盖以及向顶层 data 写入 undefined 的 warning。scoped slot 运行时现在会从宿主组件同步安全的小写 slot owner / props 数据，并保留 IDE e2e 覆盖。** [#562](https://github.com/weapp-vite/weapp-vite/pull/562) by @sonofmagic
+
+- 🐛 **修复普通具名插槽在增强 scoped slot 父级传入时，宿主组件未声明对应 generic 导致微信开发者工具提示 `generic "wx-scoped-slots-*" is not defined` 的问题。编译器现在会为可增强的具名 slot outlet 同步声明受 owner id 保护的 generic fallback，同时保留原生 slot 投影兼容性。** [#562](https://github.com/weapp-vite/weapp-vite/pull/562) by @sonofmagic
+
+- 🐛 **修复组件模板中 `v-model:xxx` 会被错误转换为默认 `modelValue` 绑定的问题，现在会按 Vue 语义生成对应的 prop 与 `update:xxx` 事件绑定。** [#557](https://github.com/weapp-vite/weapp-vite/pull/557) by @sonofmagic
+
+- 🐛 **修复 `slotSingleRootNoWrapper` 遇到带 `v-if` 的单根具名插槽内容时，会把 `slot` 属性错误下推到生成的 `<block>` 上的问题。现在结构指令保留在外层 `<block>`，具名 `slot` 会继续下推到实际的单根元素，避免小程序运行时丢失投影内容。** [#559](https://github.com/weapp-vite/weapp-vite/pull/559) by @sonofmagic
+- 📦 **Dependencies** [`a24f77a`](https://github.com/weapp-vite/weapp-vite/commit/a24f77a442675d757358443eeadb1af7e06a810d)
+  → `@weapp-core/constants@0.1.5`, `wevu@6.16.8`, `@weapp-vite/ast@6.16.8`
+
 ## 6.16.7
 
 ### Patch Changes
