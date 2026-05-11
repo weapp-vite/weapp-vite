@@ -5,6 +5,7 @@ import {
   getScopedSlotClassStyleWxs,
   isScopedSlotVirtualId,
   loadScopedSlotModule,
+  registerScopedSlotHostGenerics,
   resolveScopedSlotVirtualId,
   shouldResetScopedSlotCache,
 } from './scopedSlot'
@@ -273,6 +274,43 @@ describe('scoped slot helpers', () => {
         'scoped-slots-default': true,
       },
     })
+  })
+
+  it('registers host component generics for native absolute usingComponents', () => {
+    const runtimeState = {
+      asset: {
+        scopedSlotGenerics: new Map<string, Set<string>>(),
+      },
+    }
+
+    registerScopedSlotHostGenerics(
+      { runtimeState } as any,
+      [
+        {
+          id: 'default-0',
+          componentName: 'ScopedDefault',
+          hostComponentName: 'native-tabbar',
+          slotKey: 'default',
+          template: '<view />',
+        },
+        {
+          id: 'header-1',
+          componentName: 'ScopedHeader',
+          hostComponentName: 'external-card',
+          slotKey: 'header',
+          template: '<view />',
+        },
+      ],
+      {
+        'native-tabbar': '/components/native-tabbar/index',
+        'external-card': 'npm-package/card',
+      },
+    )
+
+    expect(runtimeState.asset.scopedSlotGenerics.get('/components/native-tabbar/index')).toEqual(new Set([
+      'scoped-slots-default',
+    ]))
+    expect(runtimeState.asset.scopedSlotGenerics.has('npm-package/card')).toBe(false)
   })
 
   it('skips emitting scoped slot asset files when bundle already has targets', () => {

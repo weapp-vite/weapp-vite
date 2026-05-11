@@ -144,6 +144,9 @@ export function createScopedSlotComponent(
   props: Record<string, string>,
   children: any[],
   transformNode: TransformNode,
+  options?: {
+    hostComponentName?: string
+  },
 ): { componentName: string, slotKey: string } {
   const ownerHash = hashString(context.filename)
   const index = context.scopedSlotComponents.length
@@ -152,6 +155,7 @@ export function createScopedSlotComponent(
   const asset: ScopedSlotComponentAsset = {
     id,
     componentName,
+    hostComponentName: options?.hostComponentName,
     slotKey,
     template: '',
   }

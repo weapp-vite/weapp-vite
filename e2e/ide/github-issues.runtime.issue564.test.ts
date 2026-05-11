@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
@@ -11,7 +12,7 @@ import {
 describe.sequential('e2e app: github-issues / issue #564', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  }, 60_000)
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -20,7 +21,7 @@ describe.sequential('e2e app: github-issues / issue #564', () => {
   it('renders native component default content without nested scoped slot components in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-564/index', 'issue-564 native nested scoped slot')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-564/index', 'issue-564-home')
       if (!issuePage) {
         throw new Error('Failed to launch issue-564 page')
       }

@@ -19,20 +19,36 @@ function getPreviousPage() {
 
 function callPrevWxFromIndex() {
   const previousPage = getPreviousPage()
-  previousPage?.triggerWxRelativeFromIndex?.()
+  if (typeof previousPage?.triggerWxRelativeFromIndex !== 'function') {
+    return false
+  }
+  previousPage.triggerWxRelativeFromIndex()
+  return true
 }
 
 function callPrevPageRouterFromIndex() {
   const previousPage = getPreviousPage()
-  previousPage?.triggerPageRouterRelativeFromIndex?.()
+  if (typeof previousPage?.triggerPageRouterRelativeFromIndex !== 'function') {
+    return false
+  }
+  previousPage.triggerPageRouterRelativeFromIndex()
+  return true
 }
 
 function runComponentRouterFromProbe() {
-  probeRef.value?.navByRouter?.()
+  if (typeof probeRef.value?.navByRouter !== 'function') {
+    return false
+  }
+  probeRef.value.navByRouter()
+  return true
 }
 
 function runComponentPageRouterFromProbe() {
-  probeRef.value?.navByPageRouter?.()
+  if (typeof probeRef.value?.navByPageRouter !== 'function') {
+    return false
+  }
+  probeRef.value.navByPageRouter()
+  return true
 }
 
 const _callPrevWxFromIndex = callPrevWxFromIndex

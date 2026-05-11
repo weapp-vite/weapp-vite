@@ -1,16 +1,13 @@
-import { createWevuComponent } from 'wevu'
-
-createWevuComponent({
-  data: () => ({
+Component({
+  data: {
     label: 'compat',
     count: 0,
-  }),
+  },
   methods: {
     bump(this: any) {
-      const runtime = (this as any).__wevu?.proxy ?? this
-      const next = (runtime.count ?? 0) + 1
-      runtime.count = next
-      return runtime.count
+      const next = ((this as any).data?.count ?? 0) + 1
+      this.setData?.({ count: next })
+      return next
     },
   },
 })

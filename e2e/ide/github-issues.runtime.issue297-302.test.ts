@@ -5,6 +5,7 @@ import {
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readClassName,
   readPageWxml,
@@ -15,7 +16,7 @@ import {
 describe.sequential('e2e app: github-issues / issue-297-302', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  })
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()

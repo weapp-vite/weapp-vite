@@ -754,6 +754,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('generic:scoped-slots-default="')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.id).toBe('default-0')
+    expect(scopedSlotComponents?.[0]?.hostComponentName).toBe('native-tabbar')
     expect(scopedSlotComponents?.[0]?.template).toContain('<native-tabbar-item wx:for="{{__wvOwner.tabItems}}"')
     expect(scopedSlotComponents?.[0]?.template).toContain('>{{__wv_item_0.label}}</native-tabbar-item>')
     expect(scopedSlotComponents?.[0]?.template).not.toContain('generic:scoped-slots-default')

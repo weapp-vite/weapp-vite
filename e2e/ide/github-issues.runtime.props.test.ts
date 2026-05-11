@@ -6,6 +6,7 @@ import {
   DIST_ROOT,
   expectPropsProbeCase,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readClassName,
   readPageWxml,
@@ -17,7 +18,7 @@ import {
 describe.sequential('e2e app: github-issues / props', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  })
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()

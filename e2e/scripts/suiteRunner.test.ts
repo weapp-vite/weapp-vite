@@ -235,11 +235,16 @@ describe('suiteRunner', () => {
       'ide/chunk-modes.runtime.hoist.test.ts',
     ])
     expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
+    expect(ideFullTasks.find(task => task.label === 'ide/app-lifecycle.test.ts')).toMatchObject({
+      env: {
+        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      },
+    })
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(7)
+    expect(ideGithubIssuesTasks.length).toBe(8)
     expect(ideGithubIssuesTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBe(true)
   })
 

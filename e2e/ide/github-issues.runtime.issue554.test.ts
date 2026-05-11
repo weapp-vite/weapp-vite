@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
@@ -11,7 +12,7 @@ import {
 describe.sequential('e2e app: github-issues / issue #554', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  }, 60_000)
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()

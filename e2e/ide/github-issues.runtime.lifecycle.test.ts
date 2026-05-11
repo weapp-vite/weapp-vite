@@ -5,6 +5,7 @@ import {
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
@@ -330,7 +331,7 @@ async function waitForIssue479Ready(page: any, timeoutMs = 20_000) {
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  })
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()

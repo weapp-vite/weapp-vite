@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   readPageWxml,
   relaunchPage,
@@ -105,7 +106,7 @@ function expectRandomBytesPayload(randomBytes: string) {
 describe.sequential.skip('github-issues runtime web runtime globals', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-  })
+  }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
     await closeSharedMiniProgram()

@@ -122,12 +122,53 @@ function resolveNestedScopedSlotUsingComponents(
   return usingComponents
 }
 
+export function collectScopedSlotHostGenerics(
+  scopedSlots: NonNullable<VueTransformResult['scopedSlotComponents']>,
+  baseUsingComponents: Record<string, string>,
+) {
+  const result = new Map<string, Set<string>>()
+  for (const scopedSlot of scopedSlots) {
+    const hostComponentName = scopedSlot.hostComponentName
+    if (!hostComponentName) {
+      continue
+    }
+    const componentPath = baseUsingComponents[hostComponentName]
+    if (!componentPath || !componentPath.startsWith('/')) {
+      continue
+    }
+    const key = `scoped-slots-${scopedSlot.slotKey}`
+    const keys = result.get(componentPath) ?? new Set<string>()
+    keys.add(key)
+    result.set(componentPath, keys)
+  }
+  return result
+}
+
+export function registerScopedSlotHostGenerics(
+  ctx: Pick<CompilerContext, 'runtimeState'> | undefined,
+  scopedSlots: NonNullable<VueTransformResult['scopedSlotComponents']> | undefined,
+  baseUsingComponents: Record<string, string>,
+) {
+  if (!ctx || !scopedSlots?.length) {
+    return
+  }
+
+  const hostGenerics = collectScopedSlotHostGenerics(scopedSlots, baseUsingComponents)
+  for (const [componentPath, keys] of hostGenerics) {
+    const registered = ctx.runtimeState.asset.scopedSlotGenerics.get(componentPath) ?? new Set<string>()
+    for (const key of keys) {
+      registered.add(key)
+    }
+    ctx.runtimeState.asset.scopedSlotGenerics.set(componentPath, registered)
+  }
+}
+
 export function emitScopedSlotAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
   relativeBase: string,
   result: VueTransformResult,
-  compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService' | 'configService'>,
+  compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService' | 'configService' | 'runtimeState'>,
   classStyleWxs?: ClassStyleWxsAsset,
   outputExtensions?: OutputExtensions,
   jsonOptions?: {
@@ -146,6 +187,7 @@ export function emitScopedSlotAssets(
     ? { ...configObj.usingComponents }
     : {}
   const usingComponents: Record<string, string> = { ...baseUsingComponents }
+  registerScopedSlotHostGenerics(compilerCtx, scopedSlots, baseUsingComponents)
 
   for (const scopedSlot of scopedSlots) {
     const componentBase = `${relativeBase}.__scoped-slot-${scopedSlot.id}`

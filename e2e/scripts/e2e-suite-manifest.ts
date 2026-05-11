@@ -47,6 +47,9 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ]
+const IDE_DIRECT_LAUNCH_PATTERNS = new Set([
+  'ide/app-lifecycle.test.ts',
+])
 const IDE_SMOKE_TESTS = [
   'ide/index.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -105,9 +108,13 @@ function isGithubIssuesIdeTask(label: string) {
   return label.startsWith('ide/github-issues.runtime.')
 }
 
+function shouldUseDirectIdeLaunch(label: string) {
+  return isGithubIssuesIdeTask(label) || IDE_DIRECT_LAUNCH_PATTERNS.has(label)
+}
+
 function createIdeVitestTask(filePath: string) {
   const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
-  if (isGithubIssuesIdeTask(task.label)) {
+  if (shouldUseDirectIdeLaunch(task.label)) {
     task.env = {
       ...task.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: 'direct',

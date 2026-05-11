@@ -9,8 +9,24 @@ import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
-import { emitScopedSlotChunks } from '../scopedSlot'
+import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
 import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+
+function parseUsingComponents(config: string | undefined) {
+  if (!config) {
+    return {}
+  }
+  try {
+    const parsed = JSON.parse(config)
+    const usingComponents = parsed?.usingComponents
+    return usingComponents && typeof usingComponents === 'object' && !Array.isArray(usingComponents)
+      ? usingComponents as Record<string, string>
+      : {}
+  }
+  catch {
+    return {}
+  }
+}
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -129,6 +145,7 @@ export async function transformVueLikeFile(options: {
     if (Array.isArray(result.meta?.styleBlocks)) {
       styleBlocksCache.set(filename, result.meta.styleBlocks as SFCStyleBlock[])
     }
+    registerScopedSlotHostGenerics(ctx, result.scopedSlotComponents, parseUsingComponents(result.config))
 
     await measureStage('finalizeCompiledResult', async () => {
       await finalizeTransformCompiledResult({

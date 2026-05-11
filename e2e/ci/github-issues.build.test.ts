@@ -767,11 +767,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-564/index.__scoped-slot-default-0.wxml')
     const scopedSlotJsonPath = path.join(DIST_ROOT, 'pages/issue-564/index.__scoped-slot-default-0.json')
     const nestedScopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-564/index.__scoped-slot-default-1.wxml')
+    const nativeTabbarWxmlPath = path.join(DIST_ROOT, 'components/issue-564/native-tabbar/index.wxml')
+    const nativeTabbarJsPath = path.join(DIST_ROOT, 'components/issue-564/native-tabbar/index.js')
+    const nativeTabbarJsonPath = path.join(DIST_ROOT, 'components/issue-564/native-tabbar/index.json')
+    const nativeTabbarGenericJsonPath = path.join(DIST_ROOT, 'components/issue-564/native-tabbar/__weapp_vite_scoped_slot_generic_component.json')
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
     const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
     const scopedSlotJson = await fs.readJson(scopedSlotJsonPath) as { usingComponents?: Record<string, string> }
+    const nativeTabbarWxml = await fs.readFile(nativeTabbarWxmlPath, 'utf-8')
+    const nativeTabbarJs = await fs.readFile(nativeTabbarJsPath, 'utf-8')
+    const nativeTabbarJson = await fs.readJson(nativeTabbarJsonPath) as { componentGenerics?: Record<string, { default?: string }> }
+    const nativeTabbarGenericJson = await fs.readJson(nativeTabbarGenericJsonPath) as { component?: boolean, options?: { virtualHost?: boolean } }
 
     expect(pageWxml).toContain('issue-564 native nested scoped slot')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
@@ -786,6 +794,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(scopedSlotWxml).not.toContain('generic:scoped-slots-default')
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).toContain('/components/issue-564/native-tabbar-item/index')
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).not.toContain('/pages/issue-564/index.__scoped-slot-default-1')
+    expect(nativeTabbarJson.componentGenerics?.['scoped-slots-default']?.default).toBe('./__weapp_vite_scoped_slot_generic_component')
+    expect(nativeTabbarWxml).toContain('<slot /><scoped-slots-default')
+    expect(nativeTabbarWxml).toContain('__wv-owner-id="{{__wvSlotOwnerId}}"')
+    expect(nativeTabbarJs).toContain('__wvSlotOwnerId')
+    expect(nativeTabbarGenericJson).toMatchObject({
+      component: true,
+      options: {
+        virtualHost: true,
+      },
+    })
     expect(await fs.pathExists(nestedScopedSlotWxmlPath)).toBe(false)
   })
 

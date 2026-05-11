@@ -168,6 +168,7 @@ describe('buildPlugin outputs', () => {
       },
       asset: {
         emittedBuffer: new Map([['images/logo.png', Buffer.from('logo')]]),
+        scopedSlotGenerics: new Map([['/components/native/index', new Set(['scoped-slots-default'])]]),
       },
       css: {
         emittedSource: new Map([['app.wxss', '.page {}']]),
@@ -181,6 +182,7 @@ describe('buildPlugin outputs', () => {
 
     expect(runtimeState.json.emittedSource.size).toBe(0)
     expect(runtimeState.asset.emittedBuffer.size).toBe(0)
+    expect(runtimeState.asset.scopedSlotGenerics.size).toBe(0)
     expect(runtimeState.css.emittedSource.size).toBe(0)
     expect(runtimeState.wxml.emittedCode.size).toBe(0)
   })

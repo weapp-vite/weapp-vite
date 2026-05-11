@@ -40,6 +40,7 @@ async function enterRouterSubPage(miniProgram: any) {
 async function assertRouterActionRoute(
   miniProgram: any,
   actionId: string,
+  methodName: string,
   expectedPath: string,
   markerText: string,
 ) {
@@ -54,15 +55,19 @@ async function assertRouterActionRoute(
   }
 
   const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
-  const selector = await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
-  await runStep('tap-action', () => tapControlUntil(subPage, selector, async () => {
-    const currentPage = await waitForCurrentPagePath(
-      miniProgram,
-      expectedPath,
-      ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-    )
-    return Boolean(currentPage)
-  }))
+  await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
+  const invoked = await runStep('call-action', () => subPage.callMethod(methodName))
+  if (invoked !== true) {
+    throw new Error(`[router-assert:${actionId}:call-failed] method=${methodName} result=${JSON.stringify(invoked)}`)
+  }
+  const navigatedPage = await runStep('wait-action-route', () => waitForCurrentPagePath(
+    miniProgram,
+    expectedPath,
+    ROUTER_NAVIGATION_SETTLE_TIMEOUT,
+  ))
+  if (!navigatedPage) {
+    throw new Error(`[router-assert:${actionId}:navigation-timeout] expected=${expectedPath.replace(/^\/+/, '')}`)
+  }
 
   const targetPage = await runStep('wait-target-page', () => waitForRouteWithMarker(miniProgram, expectedPath, markerText))
   if (!targetPage) {
@@ -173,6 +178,7 @@ describe.sequential('e2e app: wevu-features / router', () => {
     await assertRouterActionRoute(
       miniProgram,
       'router-sub-call-prev-page-router',
+      'callPrevPageRouterFromIndex',
       '/pages/router-stability/target/index',
       'route=pages/router-stability/target/index source=page-router-from-index',
     )
@@ -182,7 +188,8 @@ describe.sequential('e2e app: wevu-features / router', () => {
     const miniProgram = await getRouterMiniProgram()
     await assertRouterActionRoute(
       miniProgram,
-      'router-sub-call-component-router',
+      'cmp-router-nav',
+      'runComponentRouterFromProbe',
       '/components/router-origin-probe/target/index',
       'route=components/router-origin-probe/target/index source=component-router',
     )

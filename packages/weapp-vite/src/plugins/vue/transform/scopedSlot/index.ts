@@ -1,5 +1,7 @@
 export {
+  collectScopedSlotHostGenerics,
   emitScopedSlotAssets,
+  registerScopedSlotHostGenerics,
 } from './assets'
 
 export {

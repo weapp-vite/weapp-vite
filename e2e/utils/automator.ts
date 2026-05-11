@@ -2021,3 +2021,8 @@ export function isDevtoolsHttpPortError(error: unknown) {
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
     || LAUNCH_TIMEOUT_PATTERN.test(message)
 }
+
+export function isDevtoolsSimulatorBootError(error: unknown) {
+  const message = extractExecutionErrorText(error) || String(error)
+  return isLikelySimulatorBootErrorMessage(message)
+}

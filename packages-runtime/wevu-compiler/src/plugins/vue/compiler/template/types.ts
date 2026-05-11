@@ -7,6 +7,7 @@ import type { MiniProgramPlatform } from './platform'
 export interface ScopedSlotComponentAsset {
   id: string
   componentName: string
+  hostComponentName?: string
   slotKey: string
   template: string
   componentGenerics?: Record<string, true>

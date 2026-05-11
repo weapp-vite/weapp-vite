@@ -158,6 +158,7 @@ export interface RuntimeState {
   }
   asset: {
     emittedBuffer: Map<string, Buffer>
+    scopedSlotGenerics: Map<string, Set<string>>
   }
   css: {
     importerToDependencies: Map<string, Set<string>>
@@ -252,6 +253,7 @@ export function createRuntimeState(): RuntimeState {
     },
     asset: {
       emittedBuffer: new Map<string, Buffer>(),
+      scopedSlotGenerics: new Map<string, Set<string>>(),
     },
     css: {
       importerToDependencies: new Map<string, Set<string>>(),

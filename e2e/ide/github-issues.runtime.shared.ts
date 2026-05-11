@@ -2,7 +2,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect } from 'vitest'
-import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
@@ -42,6 +42,7 @@ const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 
 async function prepareIsolatedProjectRoot() {
   await fs.remove(APP_ROOT)
@@ -349,6 +350,7 @@ function isGithubIssuesLaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Timeout in warmup reLaunch')
     || message.includes('Timed out waiting page root after warmup reLaunch')
+    || isDevtoolsSimulatorBootError(error)
 }
 
 async function launchGithubIssuesMiniProgramOnce() {
