@@ -136,6 +136,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Update snapshots/assertions together with behavior changes.
 - Global E2E serialization is mandatory:
   - Treat every repository-level E2E entry command as mutually exclusive, including `pnpm e2e:ci`, `pnpm e2e`, `pnpm e2e:ide`, `pnpm e2e:ide:full`, other `pnpm e2e:*` variants, and direct `vitest` invocations that target `e2e/**`.
+  - Run every repository-level E2E entry command outside the sandbox by default, including `pnpm e2e:ci`, `pnpm e2e`, `pnpm e2e:ide`, `pnpm e2e:ide:full`, other `pnpm e2e:*` variants, and direct `vitest` invocations that target `e2e/**`; request escalation before launching these commands instead of trying the sandbox first.
   - Never run more than one of the above commands at the same time in the same workspace or on the same machine/user session.
   - `pnpm e2e:ci` must not overlap with any `pnpm e2e:ide*`, `pnpm e2e`, other `pnpm e2e:*`, or other long-lived E2E/dev-watch commands.
   - `pnpm e2e:ide` / `pnpm e2e:ide:full` must not overlap with `pnpm e2e:ci`, other DevTools E2E commands, or any other command that may start DevTools, automator bridges, dev servers, file watchers, or local verification servers for E2E.
@@ -181,7 +182,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
     - `pnpm test:all`
 - For WeChat DevTools runtime e2e environment selection:
   - Treat `pnpm e2e:ide*`, `pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts ...`, and any validation that depends on WeChat DevTools, automator bridge, or local port listeners as sandbox-sensitive by default.
-  - Prefer running these validations outside the sandbox first when possible.
+  - Run these validations outside the sandbox by default; request escalation before launching them instead of treating sandbox failure as the first signal.
   - If sandbox execution fails with signals such as `listen EPERM`, `operation not permitted`, local HTTP server bind failures on `127.0.0.1`, or DevTools bridge connection failures, classify that as an environment limitation first rather than a product regression first.
 - For WeChat DevTools runtime e2e in `e2e/ide/**`:
   - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
