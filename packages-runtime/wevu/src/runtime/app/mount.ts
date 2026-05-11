@@ -45,7 +45,6 @@ type RuntimeInstanceWithSetupMethodsVersion<
 > = RuntimeInstance<D, C, M> & {
   __wevu_touchSetupMethodsVersion?: () => void
   __wevu_flushSetupSnapshotSync?: () => void
-  __wevu_collectOwnerSnapshot?: () => Record<string, any>
   __wevu_cloneLatestSnapshot?: () => Record<string, any>
   __wevu_trackSetupReactiveKey?: (key: string) => void
 }
@@ -310,18 +309,6 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
     catch {
       ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_flushSetupSnapshotSync = job
-    }
-
-    try {
-      Object.defineProperty(runtimeInstance, '__wevu_collectOwnerSnapshot', {
-        value: scheduler.collectOwnerSnapshot,
-        configurable: true,
-        enumerable: false,
-        writable: false,
-      })
-    }
-    catch {
-      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_collectOwnerSnapshot = scheduler.collectOwnerSnapshot
     }
 
     try {

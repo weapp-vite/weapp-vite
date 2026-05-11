@@ -153,17 +153,6 @@ export function collectElementAttributes(
       }
       if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
         const rawExp = prop.exp.content
-        if (context.nativeSlotScopeRuntime) {
-          const runtimeExp = registerRuntimeBindingExpression(rawExp, context.nativeSlotScopeRuntime.owner, {
-            hint: 'v-text',
-            prefix: context.nativeSlotScopeRuntime.runtimeBindingPrefix,
-          })
-          if (runtimeExp) {
-            context.nativeSlotScopeRuntime.bindings.set(runtimeExp, runtimeExp)
-            vTextExp = runtimeExp
-            continue
-          }
-        }
         const runtimeExp = shouldFallbackToRuntimeBinding(rawExp)
           ? registerRuntimeBindingExpression(rawExp, context, { hint: 'v-text' })
           : null

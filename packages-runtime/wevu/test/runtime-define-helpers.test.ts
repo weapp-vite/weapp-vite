@@ -1,17 +1,3 @@
-import {
-  WEVU_GENERIC_SLOT_OWNER_DATA_KEY,
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_ID_PROP,
-  WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX,
-  WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR,
-  WEVU_GENERIC_SLOT_PROPS_DATA_KEY,
-  WEVU_NATIVE_SLOT_SCOPE_DATA_KEY,
-  WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_SLOT_OWNER_ID_PROP,
-  WEVU_SLOT_OWNER_KEY,
-  WEVU_SLOT_OWNER_PROXY_KEY,
-  WEVU_SLOT_PROPS_DATA_KEY,
-} from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from '@/reactivity'
 import { normalizeProps } from '@/runtime/define/props'
@@ -129,75 +115,6 @@ describe('runtime: define helpers', () => {
     expect(result.properties.__wvSlotScope).toBeTruthy()
   })
 
-  it('keeps scoped slot owner id as a native camelCase property', () => {
-    const result = normalizeProps({ data: () => ({}) })
-    expect(result.properties[WEVU_SLOT_OWNER_ID_PROP]).toBeTruthy()
-  })
-
-  it('mirrors generic owner id props into data for nested generic slot outlets', () => {
-    const result = normalizeProps({ data: () => ({}) })
-    const observer = result.properties[WEVU_GENERIC_SLOT_OWNER_ID_ATTR].observer
-    const setData = vi.fn()
-
-    observer.call({ setData }, 'owner-1')
-
-    expect(setData).toHaveBeenCalledWith({
-      [WEVU_SLOT_OWNER_ID_KEY]: 'owner-1',
-      [WEVU_SLOT_OWNER_ID_PROP]: 'owner-1',
-      [WEVU_GENERIC_SLOT_OWNER_ID_PROP]: 'owner-1',
-      [WEVU_GENERIC_SLOT_OWNER_ID_ATTR]: 'owner-1',
-    })
-  })
-
-  it('mirrors generic owner props into data for nested generic slot outlets', () => {
-    const result = normalizeProps({ data: () => ({}) })
-    const observer = result.properties[WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR].observer
-    const setData = vi.fn()
-    const ownerProps = ['value', 'ok']
-
-    observer.call({ setData }, ownerProps)
-
-    expect(setData).toHaveBeenCalledWith({
-      [WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR]: ownerProps,
-      [WEVU_SLOT_OWNER_KEY]: { value: 'ok' },
-      [WEVU_GENERIC_SLOT_OWNER_DATA_KEY]: { value: 'ok' },
-      [WEVU_SLOT_PROPS_DATA_KEY]: { value: 'ok' },
-      [WEVU_GENERIC_SLOT_PROPS_DATA_KEY]: { value: 'ok' },
-      [`${WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX}value`]: 'ok',
-    })
-  })
-
-  it('normalizes native slot scope pairs for projected slot wxml', () => {
-    const result = normalizeProps({ data: () => ({}) })
-    const observer = result.properties.wvslotscope.observer
-    const setData = vi.fn()
-
-    observer.call({ setData }, ['wvslotbind0', 'ok'])
-
-    expect(setData).toHaveBeenCalledWith({
-      [WEVU_NATIVE_SLOT_SCOPE_DATA_KEY]: {
-        wvslotbind0: 'ok',
-      },
-      wvslotbind0: 'ok',
-    })
-  })
-
-  it('does not write undefined native slot bindings to top-level data', () => {
-    const result = normalizeProps({ data: () => ({}) })
-    const observer = result.properties.wvslotscope.observer
-    const setData = vi.fn()
-
-    observer.call({ setData }, ['wvslotbind0', undefined, 'wvslotbind1', 'ready'])
-
-    expect(setData).toHaveBeenCalledWith({
-      [WEVU_NATIVE_SLOT_SCOPE_DATA_KEY]: {
-        wvslotbind0: undefined,
-        wvslotbind1: 'ready',
-      },
-      wvslotbind1: 'ready',
-    })
-  })
-
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
     const result = normalizeProps({ data: () => ({}) }, {
       mixed: { type: [Number, String] },
@@ -248,7 +165,7 @@ describe('runtime: define helpers', () => {
     expect((options as any).options?.virtualHost).toBe(true)
 
     const handler = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
-    const ctx = { [WEVU_SLOT_OWNER_PROXY_KEY]: { onTap: handler } }
+    const ctx = { __wvOwnerProxy: { onTap: handler } }
     const event = {
       marker: 9,
       currentTarget: { dataset: { wvHandler: 'onTap', wvArgs: '["ok","$event"]' } },

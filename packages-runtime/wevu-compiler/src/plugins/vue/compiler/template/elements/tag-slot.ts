@@ -1,35 +1,26 @@
 import type { AttributeNode, DirectiveNode, ElementNode } from '@vue/compiler-core'
-import type * as t from '@weapp-vite/ast/babelTypes'
 import type { ScopedSlotComponentAsset, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR,
-  WEVU_GENERIC_SLOT_PROPS_ATTR,
-  WEVU_GENERIC_SLOT_PROPS_DATA_ATTR,
-  WEVU_GENERIC_SLOT_PROPS_DATA_KEY,
-  WEVU_GENERIC_SLOT_SCOPE_ATTR,
   WEVU_SLOT_NAMES_PROP,
-  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ATTR,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_PROPS_ATTR,
+  WEVU_SLOT_SCOPE_ATTR,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
-import { traverse } from '../../../../../utils/babel'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { parseBabelExpressionFile } from '../expression/parse'
-import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
-import { collectElementAttributes } from './attrs'
 import {
   collectScopePropMapping,
   getBindDirectiveExpression,
   hashString,
   isScopedSlotsDisabled,
   isStructuralDirective,
-  toWxmlStringLiteral,
   withSlotProps,
 } from './helpers'
-import { collectSlotBindingExpressions, parseSlotPropsExpression } from './slotProps'
+import { collectSlotBindingExpression, parseSlotPropsExpression } from './slotProps'
 
 export type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
 
@@ -121,15 +112,6 @@ function resolveSlotStaticName(info: SlotNameInfo): string | undefined {
 }
 
 const SLOT_PRESENCE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
-const SLOT_OWNER_KEY_RE = /\bwvslotowner(?:\.([A-Z_$][\w$]*)|\[['"]([^'"]+)['"]\])/gi
-const SLOT_OWNER_PROP_PREFIX_RE = /\bwvslotownerprop([A-Z_$][\w$]*)\b/gi
-const SLOT_PROPS_DATA_KEY_RE = /\bwvslotpropsdata(?:\.([A-Z_$][\w$]*)|\[['"]([^'"]+)['"]\])/gi
-
-function renderOwnerPropSourceExpression(key: string) {
-  return SLOT_PRESENCE_IDENTIFIER_RE.test(key)
-    ? key
-    : `${WEVU_SLOT_OWNER_ID_KEY}['${key.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}']`
-}
 
 function createSlotPresenceExpression(info: SlotNameInfo) {
   const slotName = resolveSlotStaticName(info)
@@ -156,100 +138,13 @@ export function buildSlotDeclaration(
   return { name, props, children, implicitDefault: options?.implicitDefault, condition: options?.condition }
 }
 
-function collectOwnerMemberKey(node: t.MemberExpression | t.OptionalMemberExpression, ownerKeys: Set<string>, slotPropKeys: Set<string>) {
-  const object = node.object
-  if (object.type !== 'Identifier' || (object.name !== 'wvslotowner' && object.name !== 'wvslotpropsdata')) {
-    return
-  }
-  const property = node.property
-  if (!node.computed && property.type === 'Identifier') {
-    if (object.name === 'wvslotpropsdata' && slotPropKeys.has(property.name)) {
-      return
-    }
-    ownerKeys.add(property.name)
-  }
-  else if (node.computed && property.type === 'StringLiteral') {
-    if (object.name === 'wvslotpropsdata' && slotPropKeys.has(property.value)) {
-      return
-    }
-    ownerKeys.add(property.value)
-  }
-}
-
-function collectScopedSlotOwnerKeys(template: string, slotPropKeys: Set<string>): string[] | undefined {
-  const ownerKeys = new Set<string>()
-  let match = SLOT_OWNER_KEY_RE.exec(template)
-  while (match) {
-    const key = match[1] ?? match[2]
-    if (key) {
-      ownerKeys.add(key)
-    }
-    match = SLOT_OWNER_KEY_RE.exec(template)
-  }
-  SLOT_OWNER_KEY_RE.lastIndex = 0
-  match = SLOT_OWNER_PROP_PREFIX_RE.exec(template)
-  while (match) {
-    const key = match[1]
-    if (key) {
-      ownerKeys.add(key)
-    }
-    match = SLOT_OWNER_PROP_PREFIX_RE.exec(template)
-  }
-  SLOT_OWNER_PROP_PREFIX_RE.lastIndex = 0
-  const computedExpressions = template.match(/\{\{([\s\S]*?)\}\}/g) ?? []
-  for (const raw of computedExpressions) {
-    const expression = raw.slice(2, -2).trim()
-    const parsed = parseBabelExpressionFile(expression)
-    if (!parsed) {
-      continue
-    }
-    traverse(parsed.ast, {
-      MemberExpression(path) {
-        collectOwnerMemberKey(path.node, ownerKeys, slotPropKeys)
-      },
-      OptionalMemberExpression(path) {
-        collectOwnerMemberKey(path.node as any, ownerKeys, slotPropKeys)
-      },
-    })
-  }
-  return ownerKeys.size ? [...ownerKeys].sort((a, b) => a.localeCompare(b)) : undefined
-}
-
-function collectScopedSlotPropsDataKeys(template: string): string[] {
-  const keys = new Set<string>()
-  let match = SLOT_PROPS_DATA_KEY_RE.exec(template)
-  while (match) {
-    const key = match[1] ?? match[2]
-    if (key) {
-      keys.add(key)
-    }
-    match = SLOT_PROPS_DATA_KEY_RE.exec(template)
-  }
-  SLOT_PROPS_DATA_KEY_RE.lastIndex = 0
-  return [...keys].sort((a, b) => a.localeCompare(b))
-}
-
-function renderScopedSlotPropsDataReadyGuard(keys: string[]) {
-  if (!keys.length) {
-    return undefined
-  }
-  return keys
-    .map((key) => {
-      const access = SLOT_PRESENCE_IDENTIFIER_RE.test(key)
-        ? `${WEVU_GENERIC_SLOT_PROPS_DATA_KEY}.${key}`
-        : `${WEVU_GENERIC_SLOT_PROPS_DATA_KEY}[${toWxmlStringLiteral(key)}]`
-      return `${access}!==undefined`
-    })
-    .join('&&')
-}
-
 export function createScopedSlotComponent(
   context: TransformContext,
   slotKey: string,
   props: Record<string, string>,
   children: any[],
   transformNode: TransformNode,
-): { componentName: string, slotKey: string, asset: ScopedSlotComponentAsset } {
+): { componentName: string, slotKey: string } {
   const ownerHash = hashString(context.filename)
   const index = context.scopedSlotComponents.length
   const id = `${slotKey}-${index}`
@@ -269,14 +164,11 @@ export function createScopedSlotComponent(
     slotPropStack: [],
     rewriteScopedSlot: true,
     classStyleBindings: [],
-    runtimeBindingCache: new Map(),
-    runtimeBindingPrefix: 'wvslotbind',
     classStyleWxs: false,
     forStack: [],
     forIndexSeed: 0,
     inlineExpressions: [],
     inlineExpressionSeed: 0,
-    scopedSlotOwnerRuntimeBindingTarget: context,
   }
   const scopeMapping = collectScopePropMapping(context)
   const slotMapping = {
@@ -286,10 +178,6 @@ export function createScopedSlotComponent(
   let template = withSlotProps(scopedContext, slotMapping, () => {
     return children.map(child => transformNode(child, scopedContext)).join('')
   })
-  const slotPropsDataReadyGuard = renderScopedSlotPropsDataReadyGuard(collectScopedSlotPropsDataKeys(template))
-  if (slotPropsDataReadyGuard) {
-    template = scopedContext.platform.wrapIf(slotPropsDataReadyGuard, template, exp => renderMustache(exp, scopedContext))
-  }
   if (scopedContext.classStyleWxs) {
     const ext = scopedContext.classStyleWxsExtension || 'wxs'
     const helperTag = buildClassStyleWxsTag(ext, scopedContext.classStyleWxsSrc)
@@ -300,11 +188,7 @@ export function createScopedSlotComponent(
   asset.classStyleBindings = scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined
   asset.classStyleWxs = scopedContext.classStyleWxs || undefined
   asset.inlineExpressions = scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined
-  asset.ownerKeys = collectScopedSlotOwnerKeys(template, new Set(Object.values(slotMapping)))
-  if (asset.ownerKeys?.length) {
-    asset.ownerPropsExpression = `[${asset.ownerKeys.map(key => `'${key}',${renderOwnerPropSourceExpression(key)}`).join(',')}]`
-  }
-  return { componentName, slotKey, asset }
+  return { componentName, slotKey }
 }
 
 function injectAttributeIntoOpeningTag(source: string, attr: string): string | null {
@@ -346,7 +230,7 @@ function createSlotAttributeNode(sourceNode: ElementNode, attr: string): Attribu
   }
 }
 
-function injectSlotAttributeIntoStructuralElementNode(
+function injectSlotAttributeIntoElementNode(
   child: any,
   slotAttr: string,
   transformNode: TransformNode,
@@ -356,40 +240,15 @@ function injectSlotAttributeIntoStructuralElementNode(
     return null
   }
   const sourceNode = child as ElementNode
-  const structural = isStructuralDirective(sourceNode)
-  if (structural.type !== 'if' || structural.directive?.name !== 'if' || !structural.directive.exp) {
-    return null
-  }
   const slotAttribute = createSlotAttributeNode(sourceNode, slotAttr)
   if (!slotAttribute) {
     return null
   }
-  const elementWithoutIf: ElementNode = {
+  const projectedNode: ElementNode = {
     ...sourceNode,
-    props: [slotAttribute, ...sourceNode.props.filter(prop => prop !== structural.directive)],
+    props: [slotAttribute, ...sourceNode.props],
   }
-  const rawExpValue = structural.directive.exp.type === NodeTypes.SIMPLE_EXPRESSION
-    ? structural.directive.exp.content
-    : ''
-  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-  const tag = sourceNode.tag
-  const { attrs, vTextExp } = collectElementAttributes(elementWithoutIf, context, {
-    skipSlotDirective: true,
-  })
-  let children = ''
-  if (sourceNode.children.length > 0) {
-    children = sourceNode.children
-      .map(childNode => transformNode(childNode, context))
-      .join('')
-  }
-  if (vTextExp !== undefined) {
-    children = renderMustache(vTextExp, context)
-  }
-  const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
-  const element = children
-    ? `<${tag}${attrString}>${children}</${tag}>`
-    : `<${tag}${attrString} />`
-  return element.replace(/^<([^\s>/]+)/, `<$1 ${context.platform.directives.ifAttr}="${renderMustache(expValue, context)}"`)
+  return transformNode(projectedNode, context)
 }
 
 function isRenderableFallbackChild(child: any): boolean {
@@ -439,13 +298,9 @@ export function renderSlotFallback(
 
   if (renderableChildren.length === 1) {
     const child = renderableChildren[0]!
-    if (child.type === NodeTypes.ELEMENT && isStructuralDirective(child as ElementNode).type) {
-      const projected = injectSlotAttributeIntoStructuralElementNode(child, slotAttr, transformNode, context)
-      if (projected) {
-        return wrapCondition(projected)
-      }
-    }
-    const projected = injectAttributeIntoOpeningTag(transformNode(child, context), slotAttr)
+    const projected = child.type === NodeTypes.ELEMENT && isStructuralDirective(child as ElementNode).type
+      ? injectSlotAttributeIntoElementNode(child, slotAttr, transformNode, context)
+      : injectAttributeIntoOpeningTag(transformNode(child, context), slotAttr)
     if (projected) {
       return wrapCondition(projected)
     }
@@ -467,8 +322,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     return transformSlotElementPlain(node, context, transformNode)
   }
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
-  const slotBindingExps = collectSlotBindingExpressions(node, context)
-  const slotPropsExp = slotBindingExps.props
+  let slotPropsExp = collectSlotBindingExpression(node, context)
 
   let fallbackContent = ''
   if (node.children.length > 0) {
@@ -487,15 +341,16 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   let slotTag = `<slot${slotAttrString} />`
   const slotPresentExp = fallbackContent ? createSlotPresenceExpression(slotNameInfo) : undefined
 
-  if (fallbackContent && !slotPropsExp && !slotPresentExp) {
-    slotTag = `<slot${slotAttrString}>${fallbackContent}</slot>`
+  if (fallbackContent) {
+    if (!slotPropsExp && slotPresentExp) {
+      slotTag = `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
+    }
+    else if (!slotPropsExp) {
+      slotTag = `<slot${slotAttrString}>${fallbackContent}</slot>`
+    }
   }
 
-  const shouldUseNativeSlotOutlet = !slotPropsExp && context.scopedSlotsRequireProps
-  if (shouldUseNativeSlotOutlet) {
-    if (fallbackContent && slotPresentExp) {
-      return `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
-    }
+  if (!slotPropsExp && (context.scopedSlotsRequireProps || slotNameInfo.type !== 'default')) {
     return slotTag
   }
 
@@ -503,29 +358,18 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   const genericKey = `scoped-slots-${slotKey}`
   context.componentGenerics[genericKey] = true
 
-  const slotPropsFallbackExp = slotPropsExp ?? WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR
-  const slotPropsDataExp = slotPropsExp && slotBindingExps.data
-    ? registerRuntimeBindingExpression(slotBindingExps.data, context, {
-      hint: 'scoped slot props data',
-      prefix: `${WEVU_GENERIC_SLOT_PROPS_DATA_ATTR}_`,
-    }) ?? slotPropsFallbackExp
-    : WEVU_GENERIC_SLOT_PROPS_DATA_KEY
+  slotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
-    `${WEVU_GENERIC_SLOT_OWNER_ID_ATTR}="${renderMustache(WEVU_GENERIC_SLOT_OWNER_ID_ATTR, context)}"`,
-    `${WEVU_GENERIC_SLOT_PROPS_ATTR}="${renderMustache(slotPropsFallbackExp, context)}"`,
-    `${WEVU_GENERIC_SLOT_PROPS_DATA_ATTR}="${renderMustache(slotPropsDataExp, context)}"`,
+    `${context.platform.directives.ifAttr}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
+    `${WEVU_SLOT_OWNER_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
+    `${WEVU_SLOT_PROPS_ATTR}="${renderMustache(slotPropsExp, context)}"`,
   ]
   if (context.slotMultipleInstance) {
-    scopedAttrs.push(`${WEVU_GENERIC_SLOT_SCOPE_ATTR}="${renderMustache(WEVU_SLOT_SCOPE_KEY, context)}"`)
+    scopedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(WEVU_SLOT_SCOPE_KEY, context)}"`)
   }
-  scopedAttrs.push(`${WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR}="${renderMustache(WEVU_GENERIC_SLOT_OWNER_PROPS_ATTR, context)}"`)
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
-  const scopedTag = context.platform.wrapIf(
-    WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-    `<${genericKey}${scopedAttrString} />`,
-    exp => renderMustache(exp, context),
-  )
-  const projectedContent = slotPropsExp ? scopedTag : `${slotTag}${scopedTag}`
+  const scopedTag = `<${genericKey}${scopedAttrString} />`
+  const projectedContent = `${slotTag}${scopedTag}`
 
   if (fallbackContent && slotPresentExp) {
     return `${context.platform.wrapIf(slotPresentExp, projectedContent, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`

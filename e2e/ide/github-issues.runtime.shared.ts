@@ -2,7 +2,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect } from 'vitest'
-import { isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
@@ -349,7 +349,6 @@ function isGithubIssuesLaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Timeout in warmup reLaunch')
     || message.includes('Timed out waiting page root after warmup reLaunch')
-    || isLikelyRelaunchRetryableError(error)
 }
 
 async function launchGithubIssuesMiniProgramOnce() {

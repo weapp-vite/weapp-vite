@@ -93,8 +93,6 @@ export function compileVueTemplateToWxml(
       objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       mustacheInterpolation: options?.mustacheInterpolation ?? 'compact',
       classStyleBindings: [],
-      runtimeBindingCache: new Map(),
-      runtimeBindingPrefix: '__wv_bind_',
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,
       classStyleWxsSrc: options?.classStyleWxsSrc,

@@ -1,5 +1,4 @@
 import type { SetDataSnapshotOptions } from '../types'
-import { WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX } from '@weapp-core/constants'
 
 export interface ResolvedSetDataOptions {
   includeComputed: boolean
@@ -81,7 +80,7 @@ export function resolveSetDataOptions(
     ? new Set(setDataOptions!.omit)
     : undefined
   const shouldIncludeKey = (key: string) => {
-    if (pickSet && !pickSet.has(key) && !key.startsWith(WEVU_GENERIC_SLOT_OWNER_PROP_PREFIX)) {
+    if (pickSet && !pickSet.has(key)) {
       return false
     }
     if (omitSet && omitSet.has(key)) {

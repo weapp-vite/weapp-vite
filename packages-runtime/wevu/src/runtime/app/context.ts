@@ -5,7 +5,7 @@ import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
-import { ref, toRaw, unref } from '../../reactivity'
+import { ref, toRaw } from '../../reactivity'
 import { hasOwn } from '../../utils'
 import { setComputedValue } from '../internal'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
@@ -130,7 +130,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
           return nativeValue
         }
       }
-      return unref(Reflect.get(target, key, receiver))
+      return Reflect.get(target, key, receiver)
     },
     set(target, key, value, receiver) {
       if (typeof key === 'string' && (computedRefs as any)[key]) {

@@ -87,9 +87,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     && isAutoSetDataPickEnabled(configService.weappViteConfig)
     && mayNeedInjectSetDataPickInJs(result.script)
   ) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template, {
-      extraKeys: result.scopedSlotComponents?.flatMap(slot => slot.ownerKeys ?? []),
-    })
+    const keys = collectSetDataPickKeysFromTemplate(result.template)
     const injectedPick = injectSetDataPickInJs(result.script, keys)
     if (injectedPick.transformed) {
       result.script = injectedPick.code

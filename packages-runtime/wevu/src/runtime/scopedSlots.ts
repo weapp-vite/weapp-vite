@@ -1,12 +1,8 @@
 import type { ComponentPublicInstance, InternalRuntimeState, RuntimeInstance } from './types'
 import {
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_ID_PROP,
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_SLOT_OWNER_ID_PROP,
 } from '@weapp-core/constants'
-import { toPlain } from './diff'
 
 type OwnerSubscriber = (snapshot: Record<string, any>, proxy: ComponentPublicInstance<any, any, any> | undefined) => void
 
@@ -17,13 +13,11 @@ interface OwnerRecord {
 }
 
 type RuntimeInstanceWithOwnerSnapshot = RuntimeInstance<any, any, any> & {
-  __wevu_collectOwnerSnapshot?: () => Record<string, any>
   __wevu_cloneLatestSnapshot?: () => Record<string, any>
 }
 
 const ownerStore = new Map<string, OwnerRecord>()
 let ownerSeed = 0
-let fallbackSlotOwnerId = ''
 
 export function allocateOwnerId() {
   ownerSeed += 1
@@ -76,54 +70,12 @@ export function getOwnerSnapshot(ownerId: string) {
   return ownerStore.get(ownerId)?.snapshot
 }
 
-export function rememberSlotOwnerId(ownerId: unknown) {
-  if (typeof ownerId === 'string' && ownerId) {
-    fallbackSlotOwnerId = ownerId
+export function resolveOwnerSnapshot(runtime: RuntimeInstance<any, any, any>) {
+  const fastSnapshot = (runtime as RuntimeInstanceWithOwnerSnapshot).__wevu_cloneLatestSnapshot
+  if (typeof fastSnapshot === 'function') {
+    return fastSnapshot()
   }
-}
-
-export function clearFallbackSlotOwnerId() {
-  fallbackSlotOwnerId = ''
-}
-
-export function getFallbackSlotOwnerId() {
-  return fallbackSlotOwnerId
-}
-
-export function resolveOwnerSnapshot(runtime: RuntimeInstance<any, any, any>, options: { full?: boolean } = {}) {
-  const runtimeWithOwnerSnapshot = runtime as RuntimeInstanceWithOwnerSnapshot
-  const snapshot = options.full && typeof runtimeWithOwnerSnapshot.__wevu_collectOwnerSnapshot === 'function'
-    ? runtimeWithOwnerSnapshot.__wevu_collectOwnerSnapshot()
-    : typeof runtimeWithOwnerSnapshot.__wevu_cloneLatestSnapshot === 'function'
-      ? runtimeWithOwnerSnapshot.__wevu_cloneLatestSnapshot()
-      : typeof runtime.snapshot === 'function'
-        ? runtime.snapshot()
-        : {}
-  const proxy = runtime.proxy
-  if (!proxy || typeof proxy !== 'object') {
-    return snapshot
-  }
-  const seen = new WeakMap<object, any>()
-  for (const key of Reflect.ownKeys(proxy)) {
-    if (typeof key !== 'string') {
-      continue
-    }
-    let value: unknown
-    try {
-      value = (proxy as any)[key]
-    }
-    catch {
-      continue
-    }
-    if (typeof value === 'function') {
-      continue
-    }
-    const plain = toPlain(value, seen)
-    if (plain !== undefined) {
-      snapshot[key] = plain
-    }
-  }
-  return snapshot
+  return typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
 }
 
 export function attachOwnerSnapshot(
@@ -143,17 +95,12 @@ export function attachOwnerSnapshot(
   catch {
     // 忽略写入异常
   }
-  const snapshot = resolveOwnerSnapshot(runtime, { full: true })
+  const snapshot = resolveOwnerSnapshot(runtime)
   const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
   if (propsSource && typeof propsSource === 'object') {
     for (const [key, value] of Object.entries(propsSource)) {
       snapshot[key] = value
     }
-    rememberSlotOwnerId(
-      (propsSource as any)[WEVU_SLOT_OWNER_ID_PROP]
-      || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_PROP]
-      || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_ATTR],
-    )
   }
   updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
 }

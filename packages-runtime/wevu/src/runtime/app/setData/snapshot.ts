@@ -1,4 +1,4 @@
-import { isReactive, isRef, toRaw } from '../../../reactivity'
+import { isReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { toPlain } from '../../diff'
 
@@ -15,9 +15,6 @@ export function normalizeSetDataValue<T>(value: T): T | null {
 }
 
 export function cloneSnapshotValue<T>(value: T): T {
-  if (isRef(value) || (value && typeof value === 'object' && (value as any).__v_isRef === true && 'value' in value)) {
-    return cloneSnapshotValue(value.value) as T
-  }
   if (Array.isArray(value)) {
     return value.map(item => cloneSnapshotValue(item)) as T
   }

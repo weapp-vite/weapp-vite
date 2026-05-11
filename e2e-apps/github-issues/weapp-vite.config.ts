@@ -2,13 +2,9 @@ import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
-const issue510AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
+const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
 const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
-const issue553RuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue553-555-558.test.ts')
-const issue510AugmentedEnabled = issue510AugmentedEnvEnabled
-  || e2eTargetFile.endsWith('github-issues.runtime.issue510.test.ts')
-  || issue553RuntimeEnabled
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
@@ -30,16 +26,6 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue466.test.ts': [
     'pages/issue-466/**',
     'subpackages/issue-466/**',
-  ],
-  'github-issues.runtime.issue510.test.ts': [
-    'pages/issue-510/**',
-    'pages/issue-555/**',
-    'pages/issue-558/**',
-  ],
-  'github-issues.runtime.issue553-555-558.test.ts': [
-    'pages/issue-553/**',
-    'pages/issue-555/**',
-    'pages/issue-558/**',
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
@@ -97,14 +83,6 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/issue-510/**',
-        'pages/issue-555/**',
-        'pages/issue-558/**',
-        ...(issue553RuntimeEnabled
-          ? [
-              ...githubIssuesWarmupRoutes,
-              ...githubIssuesRouteGroups['github-issues.runtime.issue553-555-558.test.ts'],
-            ]
-          : []),
       ],
     }
   }
@@ -268,7 +246,7 @@ export default defineConfig({
           minify: false,
         },
       }
-    : issue510AugmentedEnvEnabled
+    : issue510AugmentedEnabled
       ? {
           build: {
             outDir: 'dist-issue-510',

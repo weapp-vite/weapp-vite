@@ -476,9 +476,7 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>', {
-      extraKeys: undefined,
-    })
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
     expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
   })

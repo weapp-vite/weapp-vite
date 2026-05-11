@@ -75,7 +75,6 @@ export async function finalizeTransformEntryScript(options: {
   ) {
     const keys = collectSetDataPickKeysFromTemplate(result.template, {
       astEngine: resolveAstEngine(configService.weappViteConfig),
-      extraKeys: result.scopedSlotComponents?.flatMap(slot => slot.ownerKeys ?? []),
     })
     const injectedPick = injectSetDataPickInJs(result.script, keys)
     if (injectedPick.transformed) {

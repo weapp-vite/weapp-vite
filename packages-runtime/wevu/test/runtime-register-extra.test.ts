@@ -3,7 +3,6 @@ import {
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
-  WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -219,69 +218,6 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
-  it('refreshes computed native slot bindings after setup state is applied', async () => {
-    const app = createApp({
-      setData: {
-        pick: ['value', 'wvslotbind0'],
-      },
-      computed: {
-        wvslotbind0(this: any) {
-          return this.value
-        },
-      },
-    })
-    const target: any = {
-      route: 'pages/issue-555/index',
-      setData: vi.fn(),
-    }
-
-    mountRuntimeInstance(target, app as any, undefined, () => {
-      const value = ref('issue-555 conditional slot text')
-      return { value }
-    })
-
-    expect(target.setData).toHaveBeenLastCalledWith(expect.objectContaining({
-      value: 'issue-555 conditional slot text',
-      wvslotbind0: 'issue-555 conditional slot text',
-    }))
-
-    await nextTick()
-
-    expect(target.setData).toHaveBeenLastCalledWith(expect.objectContaining({
-      wvslotbind0: 'issue-555 conditional slot text',
-    }))
-
-    teardownRuntimeInstance(target)
-  })
-
-  it('refreshes owner snapshot with setup bindings after mount', () => {
-    const app = createApp({})
-    const target: any = {
-      route: 'pages/scoped-slot-owner/index',
-      setData: vi.fn(),
-    }
-
-    mountRuntimeInstance(target, app as any, undefined, () => {
-      const value = ref('slot text')
-      function format(text = '') {
-        return text.toUpperCase()
-      }
-      return {
-        value,
-        format,
-      }
-    })
-
-    const snapshot = getOwnerSnapshot(target[WEVU_SLOT_OWNER_ID_KEY])
-    expect(snapshot).toMatchObject({
-      value: 'slot text',
-      [WEVU_SLOT_OWNER_ID_KEY]: target[WEVU_SLOT_OWNER_ID_KEY],
-    })
-    expect(target.__wevu.proxy.format('ok')).toBe('OK')
-
-    teardownRuntimeInstance(target)
-  })
-
   it('avoids full owner snapshot collection after patch updates', async () => {
     let getterCalls = 0
     const big = {}
@@ -384,45 +320,6 @@ describe('mountRuntimeInstance and teardown', () => {
 
     expect(getterCalls).toBe(0)
     expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
-
-    teardownRuntimeInstance(target)
-  })
-
-  it('refreshes owner snapshot from latest setup ref snapshot without full collection', async () => {
-    let getterCalls = 0
-    const big = {}
-    Object.defineProperty(big, 'hidden', {
-      enumerable: true,
-      configurable: true,
-      get() {
-        getterCalls += 1
-        return 1
-      },
-    })
-    const app = createApp({
-      data: () => ({ big }),
-      setData: { strategy: 'patch' },
-    })
-    const target: any = {
-      route: 'pages/scoped-slot-ref/index',
-      setData: vi.fn(),
-    }
-
-    mountRuntimeInstance(target, app as any, undefined, () => {
-      const value = ref('before')
-      return { value }
-    })
-    getterCalls = 0
-    target.setData.mockClear()
-
-    target[WEVU_PUBLIC_RUNTIME_KEY].state.value.value = 'after'
-    await nextTick()
-
-    expect(getterCalls).toBe(0)
-    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ value: 'after' }))
-    expect(getOwnerSnapshot(target.__wvOwnerId)).toMatchObject({
-      value: 'after',
-    })
 
     teardownRuntimeInstance(target)
   })

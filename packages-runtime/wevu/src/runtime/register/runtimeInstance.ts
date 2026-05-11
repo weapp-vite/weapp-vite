@@ -12,8 +12,6 @@ import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
   WEVU_EFFECT_SCOPE_KEY,
-  WEVU_GENERIC_SLOT_OWNER_ID_ATTR,
-  WEVU_GENERIC_SLOT_OWNER_ID_PROP,
   WEVU_HOOKS_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
@@ -22,13 +20,11 @@ import {
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_SLOT_OWNER_ID_PROP,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
-import { hasOwn } from '../../utils'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
-import { allocateOwnerId, attachOwnerSnapshot, rememberSlotOwnerId, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
+import { allocateOwnerId, attachOwnerSnapshot, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
@@ -64,8 +60,6 @@ type RuntimeInstanceWithSyncFlush<
 > = RuntimeInstance<D, C, M> & {
   __wevu_flushSetupSnapshotSync?: () => void
   __wevu_touchSetupMethodsVersion?: () => void
-  __wevu_collectOwnerSnapshot?: () => Record<string, any>
-  __wevu_cloneLatestSnapshot?: () => Record<string, any>
   __wevu_trackSetupReactiveKey?: (key: string) => void
 }
 
@@ -169,36 +163,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     if (!runtimeRef) {
       return
     }
-    const snapshot = (runtimeRef as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_cloneLatestSnapshot?.()
-      ?? resolveOwnerSnapshot(runtimeRef)
+    const snapshot = resolveOwnerSnapshot(runtimeRef)
     const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
     if (propsSource && typeof propsSource === 'object') {
       for (const [key, value] of Object.entries(propsSource)) {
         snapshot[key] = value
       }
-      rememberSlotOwnerId(
-        (propsSource as any)[WEVU_SLOT_OWNER_ID_PROP]
-        || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_PROP]
-        || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_ATTR],
-      )
-    }
-    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
-  }
-  const refreshFullOwnerSnapshot = () => {
-    if (!runtimeRef) {
-      return
-    }
-    const snapshot = resolveOwnerSnapshot(runtimeRef, { full: true })
-    const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    if (propsSource && typeof propsSource === 'object') {
-      for (const [key, value] of Object.entries(propsSource)) {
-        snapshot[key] = value
-      }
-      rememberSlotOwnerId(
-        (propsSource as any)[WEVU_SLOT_OWNER_ID_PROP]
-        || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_PROP]
-        || (propsSource as any)[WEVU_GENERIC_SLOT_OWNER_ID_ATTR],
-      )
     }
     updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
   }
@@ -270,8 +240,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const internalRuntimeFields = {
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
     __wevu_touchSetupMethodsVersion: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_touchSetupMethodsVersion,
-    __wevu_collectOwnerSnapshot: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_collectOwnerSnapshot,
-    __wevu_cloneLatestSnapshot: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_cloneLatestSnapshot,
     __wevu_trackSetupReactiveKey: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_trackSetupReactiveKey,
   }
   for (const [key, value] of Object.entries(internalRuntimeFields)) {
@@ -315,11 +283,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       syncRuntimeProps,
       attachRuntimeProxyProps,
     })
-    if (!hasOwn(runtimeState as Record<string, any>, WEVU_SLOT_OWNER_ID_KEY)) {
-      ;(runtimeState as any)[WEVU_SLOT_OWNER_ID_KEY] = ownerId
-    }
     runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
-    refreshFullOwnerSnapshot()
   }
 
   // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用

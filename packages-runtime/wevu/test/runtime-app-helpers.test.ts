@@ -21,15 +21,6 @@ describe('runtime: app helpers', () => {
     expect(resolved.shouldIncludeKey('b')).toBe(false)
   })
 
-  it('keeps scoped slot owner prop mirror keys when setData.pick is enabled', () => {
-    const resolved = resolveSetDataOptions({
-      pick: ['wvslotownerid', 'wvslotownerprops'],
-    })
-
-    expect(resolved.shouldIncludeKey('wvslotownerpropvalue')).toBe(true)
-    expect(resolved.shouldIncludeKey('other')).toBe(false)
-  })
-
   it('tracks computed values and marks dirty keys', () => {
     const state = reactive({ count: 0 })
     const { computedRefs, computedProxy, dirtyComputedKeys, createTrackedComputed } = createComputedAccessors({

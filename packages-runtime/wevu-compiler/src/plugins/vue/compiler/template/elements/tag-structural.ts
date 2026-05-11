@@ -14,16 +14,6 @@ import { transformSlotElement } from './tag-slot'
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  if (context.nativeSlotScopeRuntime) {
-    const runtimeExp = registerRuntimeBindingExpression(rawExpValue, context.nativeSlotScopeRuntime.owner, {
-      hint,
-      prefix: context.nativeSlotScopeRuntime.runtimeBindingPrefix,
-    })
-    if (runtimeExp) {
-      context.nativeSlotScopeRuntime.bindings.set(runtimeExp, runtimeExp)
-      return runtimeExp
-    }
-  }
   const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
