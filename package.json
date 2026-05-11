@@ -213,7 +213,7 @@
     "es-toolkit": "^1.46.1",
     "esbuild": "catalog:",
     "eslint": "catalog:",
-    "esrap": "^2.2.6",
+    "esrap": "^2.2.7",
     "estree-walker": "catalog:",
     "execa": "^9.6.1",
     "express": "^5.2.1",
@@ -249,7 +249,7 @@
     "postcss": "catalog:",
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.8.3",
-    "repoctl": "^4.0.6",
+    "repoctl": "^4.0.7",
     "rolldown": "1.0.0",
     "rollup": "^4.60.3",
     "rollup-plugin-dts": "^6.4.1",
@@ -276,7 +276,7 @@
     "vue": "catalog:",
     "vue-tsc": "catalog:",
     "why-is-node-running": "^3.2.2",
-    "yaml": "^2.8.4",
+    "yaml": "^2.9.0",
     "zod": "catalog:"
   },
   "publishConfig": {
