@@ -25,10 +25,10 @@ catalogs:
       specifier: ^1.9.2
       version: 1.9.2
     '@icebreakers/eslint-config':
-      specifier: ^4.0.10
+      specifier: ^4.0.11
       version: 4.0.11
     '@icebreakers/stylelint-config':
-      specifier: ^3.0.6
+      specifier: ^3.0.7
       version: 3.0.7
     '@iconify-json/mdi':
       specifier: ^1.2.3
@@ -37,13 +37,13 @@ catalogs:
       specifier: ^3.0.14
       version: 3.0.14
     '@tailwindcss/postcss':
-      specifier: ^4.2.4
+      specifier: ^4.3.0
       version: 4.3.0
     '@tailwindcss/vite':
-      specifier: ^4.2.4
+      specifier: ^4.3.0
       version: 4.3.0
     '@types/node':
-      specifier: ^25.6.0
+      specifier: ^25.6.2
       version: 25.6.2
     '@types/semver':
       specifier: ^7.7.1
@@ -127,8 +127,8 @@ catalogs:
       specifier: ^0.129.0
       version: 0.129.0
     oxc-walker:
-      specifier: ^0.7.0
-      version: 0.7.0
+      specifier: ^1.0.0
+      version: 1.0.0
     pathe:
       specifier: ^2.0.3
       version: 2.0.3
@@ -148,13 +148,13 @@ catalogs:
       specifier: ^17.11.0
       version: 17.11.0
     tailwind-merge:
-      specifier: ^3.5.0
+      specifier: ^3.6.0
       version: 3.6.0
     tailwind-variants:
       specifier: ^3.2.2
       version: 3.2.2
     tailwindcss:
-      specifier: ^4.2.4
+      specifier: ^4.3.0
       version: 4.3.0
     tdesign-miniprogram:
       specifier: ^1.14.0
@@ -195,11 +195,11 @@ catalogs:
       version: 6.0.3
   tailwind3:
     tailwindcss:
-      specifier: ^4.2.4
+      specifier: ^4.3.0
       version: 4.3.0
   tailwind4:
     tailwindcss:
-      specifier: ^4.2.4
+      specifier: ^4.3.0
       version: 4.3.0
   tdesign-miniprogram-fixed:
     tdesign-miniprogram:
@@ -450,7 +450,7 @@ importers:
         version: 0.129.0
       oxc-walker:
         specifier: 'catalog:'
-        version: 0.7.0(oxc-parser@0.129.0)
+        version: 1.0.0(oxc-parser@0.129.0)(rolldown@1.0.0)
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -2028,7 +2028,7 @@ importers:
         version: 0.129.0
       oxc-walker:
         specifier: 'catalog:'
-        version: 0.7.0(oxc-parser@0.129.0)
+        version: 1.0.0(oxc-parser@0.129.0)(rolldown@1.0.0)
 
   packages/create-weapp-vite:
     dependencies:
@@ -2328,7 +2328,7 @@ importers:
         version: 0.129.0
       oxc-walker:
         specifier: 'catalog:'
-        version: 0.7.0(oxc-parser@0.129.0)
+        version: 1.0.0(oxc-parser@0.129.0)(rolldown@1.0.0)
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.0
@@ -12129,8 +12129,8 @@ packages:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
 
-  magic-regexp@0.10.0:
-    resolution: {integrity: sha512-Uly1Bu4lO1hwHUW0CQeSWuRtzCMNO00CmXtS8N6fyvB3B979GOEEeAkiTUDsmbYLAbvpUS/Kt5c4ibosAzVyVg==}
+  magic-regexp@0.11.0:
+    resolution: {integrity: sha512-LG77Z/gVnwz7oaDpD4heX6ryl+lcr4l1B2gnP4MMvt2pGhGC1Dfj7dl1pXpP4ih+VQFLuAadeKVa+lARAzfW+Q==}
 
   magic-string-ast@1.0.3:
     resolution: {integrity: sha512-CvkkH1i81zl7mmb94DsRiFeG9V2fR2JeuK8yDgS8oiZSFa++wWLEgZ5ufEOyLHbvSbD1gTRKv9NdX69Rnvr9JA==}
@@ -12906,10 +12906,16 @@ packages:
   oxc-resolver@11.6.1:
     resolution: {integrity: sha512-WQgmxevT4cM5MZ9ioQnEwJiHpPzbvntV5nInGAKo9NQZzegcOonHvcVcnkYqld7bTG35UFHEKeF7VwwsmA3cZg==}
 
-  oxc-walker@0.7.0:
-    resolution: {integrity: sha512-54B4KUhrzbzc4sKvKwVYm7E2PgeROpGba0/2nlNZMqfDyca+yOor5IMb4WLGBatGDT0nkzYdYuzylg7n3YfB7A==}
+  oxc-walker@1.0.0:
+    resolution: {integrity: sha512-eMsHflAGfOskpWxtp9xP/f5b96XLEU8ifTd2gOOCkdux9HMxKGy5S1ru0Gh1B3aPu+YbfmWUUVkcb7MrZz3XyQ==}
     peerDependencies:
       oxc-parser: '>=0.98.0'
+      rolldown: 1.0.0
+    peerDependenciesMeta:
+      oxc-parser:
+        optional: true
+      rolldown:
+        optional: true
 
   oxfmt@0.35.0:
     resolution: {integrity: sha512-QYeXWkP+aLt7utt5SLivNIk09glWx9QE235ODjgcEZ3sd1VMaUBSpLymh6ZRCA76gD2rMP4bXanUz/fx+nLM9Q==}
@@ -26165,15 +26171,12 @@ snapshots:
 
   lz-string@1.5.0: {}
 
-  magic-regexp@0.10.0:
+  magic-regexp@0.11.0:
     dependencies:
-      estree-walker: 3.0.3
       magic-string: 0.30.21
-      mlly: 1.8.2
       regexp-tree: 0.1.27
       type-level-regexp: 0.1.17
-      ufo: 1.6.3
-      unplugin: 2.3.11
+      unplugin: 3.0.0
 
   magic-string-ast@1.0.3:
     dependencies:
@@ -27268,10 +27271,12 @@ snapshots:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  oxc-walker@0.7.0(oxc-parser@0.129.0):
+  oxc-walker@1.0.0(oxc-parser@0.129.0)(rolldown@1.0.0):
     dependencies:
-      magic-regexp: 0.10.0
+      magic-regexp: 0.11.0
+    optionalDependencies:
       oxc-parser: 0.129.0
+      rolldown: 1.0.0
 
   oxfmt@0.35.0:
     dependencies:
