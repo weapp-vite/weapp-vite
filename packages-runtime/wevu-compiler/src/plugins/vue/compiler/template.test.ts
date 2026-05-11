@@ -10,6 +10,28 @@ const DEFAULT_DIRECTIVES = DEFAULT_TEMPLATE_PLATFORM.directives
 const IF_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
 const FOR_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
 
+function expectNativeThirdPartySlotOutput(
+  template: string,
+  expected: string[],
+  options?: Parameters<typeof compileVueTemplateToWxml>[2],
+) {
+  const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+    template.trim(),
+    '/project/src/pages/third-party-native-slots/index.vue',
+    {
+      scopedSlotsRequireProps: false,
+      ...options,
+    },
+  )
+  const normalizedCode = code.replace(WHITESPACE_RE, '')
+
+  for (const item of expected) {
+    expect(normalizedCode).toContain(item.replace(WHITESPACE_RE, ''))
+  }
+  expect(code).not.toContain('generic:scoped-slots-')
+  expect(scopedSlotComponents).toBeUndefined()
+}
+
 describe('compileVueTemplateToWxml', () => {
   it('rewrites nullish coalescing in bindings', () => {
     const template = `
@@ -825,6 +847,65 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('</t-button>')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('keeps common third-party mini program slot patterns native', () => {
+    expectNativeThirdPartySlotOutput(
+      `
+<t-button>保存</t-button>
+      `,
+      ['<t-button>保存</t-button>'],
+    )
+
+    expectNativeThirdPartySlotOutput(
+      `
+<t-cell-group>
+  <t-cell title="Composition API" />
+</t-cell-group>
+      `,
+      ['<t-cell-group><t-cell title="Composition API" /></t-cell-group>'],
+    )
+
+    expectNativeThirdPartySlotOutput(
+      `
+<van-cell>
+  <template #title>
+    <MyTitle />
+  </template>
+  <template #label>
+    说明
+  </template>
+</van-cell>
+      `,
+      [
+        '<van-cell>',
+        '<view slot="title"><MyTitle /></view>',
+        '<view slot="label">说明</view>',
+        '</van-cell>',
+      ],
+      { wevuComponentTags: ['MyTitle', 'my-title'] },
+    )
+
+    expectNativeThirdPartySlotOutput(
+      `
+<van-tabbar>
+  <van-tabbar-item
+    v-for="{ label, icon, to } in tabItems"
+    :key="label"
+    :icon="icon"
+    :name="to.name"
+  >
+    {{ label }}
+  </van-tabbar-item>
+</van-tabbar>
+      `,
+      [
+        '<van-tabbar>',
+        '<van-tabbar-item wx:for="{{tabItems}}"',
+        '>{{__wv_item_0.label}}</van-tabbar-item>',
+        '</van-tabbar>',
+      ],
+    )
   })
 
   it('ignores comments when checking implicit default slot children', () => {
