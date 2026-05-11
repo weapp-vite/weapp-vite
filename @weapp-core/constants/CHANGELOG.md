@@ -1,5 +1,13 @@
 # @weapp-core/constants
 
+## 0.1.6
+
+### Patch Changes
+
+- 🐛 **支持在 `src/app.vue` 中编写应用级 `<template>`，并在微信小程序下将其作为内部 app shell 组件包裹页面输出，避免生成无效的 `app.wxml`。同时在 app shell 或页面 layout 缺少默认 `<slot />` 时抛出明确错误，避免页面内容被静默丢弃。** [#564](https://github.com/weapp-vite/weapp-vite/pull/564) by @sonofmagic
+
+- 🐛 **将当前发布分支的运行时代码回滚到 6.16.7 稳定基线，仅保留 issue #553、#554、#555 与 #563 的修复，避免 6.16.8 中 scoped slot 运行时同步改动继续影响页面运行。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
 ## 0.1.5
 
 ### Patch Changes

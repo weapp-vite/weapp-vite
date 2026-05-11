@@ -1,5 +1,21 @@
 # @wevu/compiler
 
+## 6.16.9
+
+### Patch Changes
+
+- 🐛 **修复 `src/app.vue` 应用外壳模板中的普通默认 `<slot />` 被编译为增强 scoped slot generic 的问题，避免微信开发者工具真实运行时加载模板外壳时出现 `WAServiceMainContext.js` timeout。** [`d4d0332`](https://github.com/weapp-vite/weapp-vite/commit/d4d0332866bd281ee3b491fd5843de07f26e1bd5) by @sonofmagic
+
+- 🐛 **修复组件模板中 `v-model:xxx` 会被错误转换为默认 `modelValue` 绑定的问题，现在会按 Vue 语义生成对应的 prop 与 `update:xxx` 事件绑定。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
+- 🐛 **修复组件节点直接使用 `v-for` 时，隐式默认插槽的 `vue-slots` 元数据没有注入的问题。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
+- 🐛 **修复 `slotSingleRootNoWrapper` 遇到带 `v-if` 的单根具名插槽内容时，会把 `slot` 属性错误下推到生成的 `<block>` 上的问题。现在结构指令保留在外层 `<block>`，具名 `slot` 会继续下推到实际的单根元素，避免小程序运行时丢失投影内容。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
+- 🐛 **将当前发布分支的运行时代码回滚到 6.16.7 稳定基线，仅保留 issue #553、#554、#555 与 #563 的修复，避免 6.16.8 中 scoped slot 运行时同步改动继续影响页面运行。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+- 📦 **Dependencies** [`9819abe`](https://github.com/weapp-vite/weapp-vite/commit/9819abe0df6e7871f868345192e76b770c0dd394)
+  → `@weapp-core/constants@0.1.6`, `@weapp-vite/ast@6.16.9`
+
 ## 6.16.8
 
 ### Patch Changes

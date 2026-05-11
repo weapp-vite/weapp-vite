@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.16.9
+
+### Patch Changes
+
+- 🐛 **将当前发布分支的运行时代码回滚到 6.16.7 稳定基线，仅保留 issue #553、#554、#555 与 #563 的修复，避免 6.16.8 中 scoped slot 运行时同步改动继续影响页面运行。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
 ## 6.16.8
 
 ## 6.16.7
