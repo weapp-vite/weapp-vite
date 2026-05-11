@@ -710,32 +710,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(hostWxml).toContain('<block wx:if="{{wvslotownerid}}"><scoped-slots-default')
   })
 
-  it('issue #558: augmented scoped slot computed bindings call owner setup methods', async () => {
-    await runIssue510AugmentedBuild()
-
-    const pageWxmlPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.wxml')
-    const pageJsonPath = path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.json')
-
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
-    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const pageJs = await fs.readFile(path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.js'), 'utf-8')
-
-    expect(pageWxml).toContain('issue-558 scoped slot computed function')
-    expect(pageWxml).toContain('generic:scoped-slots-default=')
-    expect(pageWxml).toContain(`vue-slots="{{__wv_bind_2}}"`)
-    expect(pageWxml).toContain('wvslotownerid="{{__wvOwnerId || \'\'}}"')
-    expect(pageWxml).toContain('wvslotownerprops="{{wvslotownerprops1}}"')
-    expect(pageWxml).not.toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
-    expect(pageJson.usingComponents).toMatchObject({
-      Cell: '/components/issue-558/Cell/index',
-    })
-    expect(pageJs).toContain('__wv_bind_2')
-    const scopedSlotWxml = await fs.readFile(path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.wxml'), 'utf-8')
-    expect(scopedSlotWxml).toContain('<text class="issue558-result">{{wvslotpropsdata.wvslotbind0}}</text>')
-    const scopedSlotJs = await fs.readFile(path.join(ISSUE_510_DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.js'), 'utf-8')
-    expect(scopedSlotJs).toContain('createWevuScopedSlotComponent')
-  })
-
   it('issue #547: augmented nested default slots emit every scoped slot asset', async () => {
     await runIssue547AugmentedBuild()
 

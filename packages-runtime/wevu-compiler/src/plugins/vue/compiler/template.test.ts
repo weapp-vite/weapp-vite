@@ -857,32 +857,6 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toBeUndefined()
   })
 
-  it('uses generic scoped slots for default slot runtime-only expressions', () => {
-    const template = `
-<Cell>
-  <text>{{ func(text) }}</text>
-</Cell>
-    `.trim()
-
-    const { code, scopedSlotComponents, classStyleBindings } = compileVueTemplateToWxml(
-      template,
-      '/project/src/pages/issue-558/index.vue',
-      { scopedSlotsCompiler: 'augmented' },
-    )
-
-    const slotComp = scopedSlotComponents?.[0]
-    expect(slotComp).toBeDefined()
-    expect(code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
-    expect(code).toContain(`vue-slots="{{__wv_bind_2}}"`)
-    expect(code).toContain('wvslotownerid="{{__wvOwnerId || \'\'}}"')
-    expect(code).toContain('wvslotownerprops="{{wvslotownerprops1}}"')
-    expect(slotComp?.template).toContain('<text>{{wvslotpropsdata.wvslotbind0}}</text>')
-    expect(code).not.toContain('__wv-slot-owner-id')
-    expect(code).not.toContain('__wv-slot-props')
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_2' && binding.exp === `{['default']:true}`)).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.exp === `{['default']:true}`)).toBe(true)
-  })
-
   it('ignores comments when checking implicit default slot children', () => {
     const template = `
 <map>

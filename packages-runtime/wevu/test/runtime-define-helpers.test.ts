@@ -9,7 +9,6 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_OWNER_KEY,
-  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
 } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
@@ -248,7 +247,7 @@ describe('runtime: define helpers', () => {
     expect((options as any).options?.virtualHost).toBe(true)
 
     const handler = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
-    const ctx = { [WEVU_SLOT_OWNER_PROXY_KEY]: { onTap: handler } }
+    const ctx = { __wvOwnerProxy: { onTap: handler } }
     const event = {
       marker: 9,
       currentTarget: { dataset: { wvHandler: 'onTap', wvArgs: '["ok","$event"]' } },

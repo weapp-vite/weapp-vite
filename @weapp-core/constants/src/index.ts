@@ -55,7 +55,6 @@ export const WEVU_GENERIC_SLOT_PROPS_DATA_ATTR = 'wvslotpropssource'
 export const WEVU_GENERIC_SLOT_PROPS_DATA_KEY = 'wvslotpropsdata'
 export const WEVU_NATIVE_SLOT_SCOPE_DATA_KEY = 'wvnativeslotscope'
 export const WEVU_SLOT_OWNER_KEY = '__wvOwner'
-export const WEVU_SLOT_OWNER_PROXY_KEY = '__wvOwnerProxy'
 export const WEVU_SLOT_PROPS_DATA_KEY = '__wvSlotPropsData'
 export const WEVU_SLOT_NAMES_PROP = 'vueSlots'
 

@@ -18,7 +18,6 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_OWNER_KEY,
-  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -37,6 +36,7 @@ const NUM_APOS_RE = /&#39;/g
 const LT_RE = /&lt;/g
 const GT_RE = /&gt;/g
 const OWNER_PROPS_OVERRIDE_KEY = '__wvOwnerPropsOverride'
+const SLOT_OWNER_PROXY_KEY = '__wvOwnerProxy'
 const SLOT_PROPS_OVERRIDE_KEY = '__wvSlotPropsOverride'
 const SLOT_SCOPE_OVERRIDE_KEY = '__wvSlotScopeOverride'
 
@@ -342,7 +342,7 @@ function createScopedSlotComputedContext(instance: any, ownerSnapshot: Record<st
   const state = instance?.__wevu?.state
   return new Proxy(Object.create(null), {
     get(_target, key) {
-      if (key === WEVU_SLOT_OWNER_PROXY_KEY) {
+      if (key === SLOT_OWNER_PROXY_KEY) {
         return ownerProxy
       }
       if (key === WEVU_SLOT_OWNER_KEY || key === WEVU_GENERIC_SLOT_OWNER_DATA_KEY) {
@@ -354,7 +354,7 @@ function createScopedSlotComputedContext(instance: any, ownerSnapshot: Record<st
       return instance?.[key as keyof typeof instance]
     },
     has(_target, key) {
-      return key === WEVU_SLOT_OWNER_PROXY_KEY
+      return key === SLOT_OWNER_PROXY_KEY
         || key === WEVU_SLOT_OWNER_KEY
         || key === WEVU_GENERIC_SLOT_OWNER_DATA_KEY
         || Boolean(state && typeof state === 'object' && key in state)
@@ -428,10 +428,10 @@ function syncScopedSlotOwnerSnapshot(
     ...resolveOwnerPropsOverride(instance),
   }
   const ownerProxy = proxy && typeof proxy === 'object' ? markRaw(proxy) : proxy
-  instance[WEVU_SLOT_OWNER_PROXY_KEY] = ownerProxy
+  instance[SLOT_OWNER_PROXY_KEY] = ownerProxy
   syncRuntimeState(instance, {
     [WEVU_SLOT_OWNER_KEY]: ownerSnapshot,
-    [WEVU_SLOT_OWNER_PROXY_KEY]: ownerProxy,
+    [SLOT_OWNER_PROXY_KEY]: ownerProxy,
   })
   const flushSetupSnapshot = instance.__wevu?.__wevu_flushSetupSnapshotSync
   if (typeof flushSetupSnapshot === 'function') {
@@ -855,7 +855,7 @@ export function createScopedSlotOptions(
         this.__wvOwnerPendingSnapshot = undefined
         this.__wvOwnerPendingProxy = undefined
         this.__wvOwnerRetryTimer = undefined
-        this[WEVU_SLOT_OWNER_PROXY_KEY] = undefined
+        this[SLOT_OWNER_PROXY_KEY] = undefined
         this[OWNER_PROPS_OVERRIDE_KEY] = undefined
         this[SLOT_PROPS_OVERRIDE_KEY] = undefined
         this[SLOT_SCOPE_OVERRIDE_KEY] = undefined
@@ -863,7 +863,7 @@ export function createScopedSlotOptions(
     },
     methods: {
       [WEVU_OWNER_HANDLER](this: any, event: any) {
-        const owner = this[WEVU_SLOT_OWNER_PROXY_KEY]
+        const owner = this[SLOT_OWNER_PROXY_KEY]
         const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
         const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
         const inlineId = resolveDatasetEventValue(dataset, 'wvInlineId', event)

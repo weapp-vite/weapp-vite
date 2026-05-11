@@ -34,12 +34,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue510.test.ts': [
     'pages/issue-510/**',
     'pages/issue-555/**',
-    'pages/issue-558/**',
   ],
   'github-issues.runtime.issue553-555-558.test.ts': [
     'pages/issue-553/**',
     'pages/issue-555/**',
-    'pages/issue-558/**',
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
@@ -98,7 +96,6 @@ function resolveGithubIssuesAutoRoutes() {
       include: [
         'pages/issue-510/**',
         'pages/issue-555/**',
-        'pages/issue-558/**',
         ...(issue553RuntimeEnabled
           ? [
               ...githubIssuesWarmupRoutes,

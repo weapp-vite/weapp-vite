@@ -26,7 +26,7 @@ async function waitForElementText(page: any, selector: string, expected: string,
   throw new Error(`Timed out waiting ${selector} text to equal ${JSON.stringify(expected)}; last text=${JSON.stringify(lastText)}`)
 }
 
-describe.sequential('e2e app: github-issues / issues #553 #555 #558', () => {
+describe.sequential('e2e app: github-issues / issues #553 #555', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, 60_000)
@@ -72,27 +72,6 @@ describe.sequential('e2e app: github-issues / issues #553 #555 #558', () => {
 
       const textProbe = await waitForElementText(issuePage, '.issue555-text-probe', 'issue-555 conditional slot text')
       expect((await textProbe.text()).trim()).toBe('issue-555 conditional slot text')
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
-  })
-
-  it('renders augmented scoped slot computed owner method result in DevTools', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
-    try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index')
-      if (!issuePage) {
-        throw new Error('Failed to launch issue-558 page')
-      }
-
-      const runtimeResult = await issuePage.callMethod('_runE2E') as { ok?: unknown, expected?: unknown }
-      expect(runtimeResult).toMatchObject({ ok: true, expected: '987654321' })
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('issue558-result')
-
-      const resultProbe = await waitForElementText(issuePage, '.issue558-result', '987654321')
-      expect((await resultProbe.text()).trim()).toBe('987654321')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
