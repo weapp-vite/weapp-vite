@@ -1,0 +1,148 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scoped slot native output snapshots > locks the emitted file tree and app text outputs > file-tree 1`] = `
+[
+  "app.js",
+  "app.json",
+  "components/native-tabbar-item/index.js",
+  "components/native-tabbar-item/index.json",
+  "components/native-tabbar-item/index.wxml",
+  "components/native-tabbar/index.js",
+  "components/native-tabbar/index.json",
+  "components/native-tabbar/index.wxml",
+  "pages/index/index.__scoped-slot-default-0.js",
+  "pages/index/index.__scoped-slot-default-0.json",
+  "pages/index/index.__scoped-slot-default-0.wxml",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "sitemap.json",
+  "weapp-vendors/wevu-ref.js",
+  "weapp-vendors/wevu-src.js",
+]
+`;
+
+exports[`scoped slot native output snapshots > locks the emitted file tree and app text outputs > text-outputs 1`] = `
+{
+  "app.js": "//#region <fixture>/src/app.ts
+App({});
+//#endregion
+",
+  "app.json": "{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {},
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "subPackages": []
+}
+",
+  "components/native-tabbar-item/index.js": "//#region <fixture>/src/components/native-tabbar-item/index.ts
+Component({
+	options: { virtualHost: true },
+	properties: {
+		icon: {
+			type: String,
+			value: ""
+		},
+		label: {
+			type: String,
+			value: ""
+		},
+		name: {
+			type: String,
+			value: ""
+		}
+	}
+});
+//#endregion
+",
+  "components/native-tabbar-item/index.json": "{
+  "component": true
+}
+",
+  "components/native-tabbar-item/index.wxml": "<view class="native-tabbar-item" data-label="{{label}}">
+  <slot />
+</view>
+",
+  "components/native-tabbar/index.js": "//#region <fixture>/src/components/native-tabbar/index.ts
+Component({ options: { virtualHost: true } });
+//#endregion
+",
+  "components/native-tabbar/index.json": "{
+  "component": true
+}
+",
+  "components/native-tabbar/index.wxml": "<view class="native-tabbar">
+  <slot />
+</view>
+",
+  "pages/index/index.__scoped-slot-default-0.js": "const require_src = require("../../weapp-vendors/wevu-src.js");
+//#region \\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-default-0
+var createWevuScopedSlotComponent = (typeof globalThis !== "undefined" ? globalThis : void 0)?.__weapp_vite_createScopedSlotComponent ?? require_src.__wevuScopedSlotCreator;
+if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent();
+//#endregion
+",
+  "pages/index/index.__scoped-slot-default-0.json": "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "native-tabbar-item": "/components/native-tabbar-item/index"
+  }
+}
+",
+  "pages/index/index.__scoped-slot-default-0.wxml": "<native-tabbar-item wx:for="{{__wvOwner.tabItems}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" label="{{__wv_item_0.label}}" name="{{__wv_item_0.to.name}}">{{__wv_item_0.label}}</native-tabbar-item>",
+  "pages/index/index.js": "//#region <fixture>/src/pages/index/index.vue
+require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
+	computed: { __wv_bind_0: function() {
+		return (() => {
+			try {
+				return { ["default"]: true };
+			} catch (__wv_expr_err) {
+				return;
+			}
+		})();
+	} },
+	data() {
+		return { tabItems: [{
+			label: "home",
+			icon: "home",
+			to: { name: "home" }
+		}, {
+			label: "user",
+			icon: "user",
+			to: { name: "user" }
+		}] };
+	},
+	allowNullPropInput: true,
+	__wevu_isPage: true,
+	setup(__props, { expose }) {
+		return { tabItems: [{
+			label: "home",
+			icon: "home",
+			to: { name: "home" }
+		}, {
+			label: "user",
+			icon: "user",
+			to: { name: "user" }
+		}] };
+	}
+});
+//#endregion
+",
+  "pages/index/index.json": "{
+  "usingComponents": {
+    "native-tabbar": "/components/native-tabbar/index",
+    "native-tabbar-item": "/components/native-tabbar-item/index",
+    "scoped-slot-hash-default-0": "/pages/index/index.__scoped-slot-default-0"
+  }
+}
+",
+  "pages/index/index.wxml": "<native-tabbar generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{__wv_bind_0}}" __wv-slot-owner-id="{{__wvOwnerId || ''}}" />",
+  "sitemap.json": "{
+  "rules": []
+}
+",
+}
+`;
