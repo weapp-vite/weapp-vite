@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.16.11
+
+### Patch Changes
+
+- 🐛 **修复原生小程序组件作用域插槽产物、GitHub issue 运行时用例启动恢复、以及 IDE HMR 场景中的 DevTools 缓存恢复稳定性，确保 `pnpm e2e:ide:full` 全量验证可以稳定通过。** [`388359e`](https://github.com/weapp-vite/weapp-vite/commit/388359e1a21ae24dc1da2331750d8e49a0b571bb) by @sonofmagic
+
+- 🐛 **修复组件 `v-model:xxx` 在小程序模板与运行时中的事件名归一化和 setup ref 写入行为，确保带参数的双向绑定能按 Vue 语义更新对应父级状态。** [`f6ad6c4`](https://github.com/weapp-vite/weapp-vite/commit/f6ad6c468298c4531c7b30c4eaf6b2225753978e) by @sonofmagic
+
+- 🐛 **修复 auto 模式下第三方小程序原生组件默认插槽被误判为增强作用域插槽的问题，避免 TDesign/Vant 等 kebab-case 原生组件在普通插槽内容中生成 `generic:scoped-slots-*`。** [`3d4f20d`](https://github.com/weapp-vite/weapp-vite/commit/3d4f20d220d8b065179828d9a1333d83d0adf099) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.11`
+
 ## 6.16.10
 
 ### Patch Changes

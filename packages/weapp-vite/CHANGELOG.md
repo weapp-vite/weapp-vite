@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.16.11
+
+### Patch Changes
+
+- 🐛 **修复原生小程序组件作用域插槽产物、GitHub issue 运行时用例启动恢复、以及 IDE HMR 场景中的 DevTools 缓存恢复稳定性，确保 `pnpm e2e:ide:full` 全量验证可以稳定通过。** [`388359e`](https://github.com/weapp-vite/weapp-vite/commit/388359e1a21ae24dc1da2331750d8e49a0b571bb) by @sonofmagic
+- 📦 **Dependencies** [`f6ad6c4`](https://github.com/weapp-vite/weapp-vite/commit/f6ad6c468298c4531c7b30c4eaf6b2225753978e)
+  → `wevu@6.16.11`, `@weapp-vite/ast@6.16.11`
+
 ## 6.16.10
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # wevu
 
+## 6.16.11
+
+### Patch Changes
+
+- 🐛 **修复组件 `v-model:xxx` 在小程序模板与运行时中的事件名归一化和 setup ref 写入行为，确保带参数的双向绑定能按 Vue 语义更新对应父级状态。** [`f6ad6c4`](https://github.com/weapp-vite/weapp-vite/commit/f6ad6c468298c4531c7b30c4eaf6b2225753978e) by @sonofmagic
+- 📦 **Dependencies** [`388359e`](https://github.com/weapp-vite/weapp-vite/commit/388359e1a21ae24dc1da2331750d8e49a0b571bb)
+  → `@wevu/compiler@6.16.11`
+
 ## 6.16.10
 
 ### Patch Changes
