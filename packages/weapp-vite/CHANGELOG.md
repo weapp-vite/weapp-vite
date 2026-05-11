@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.16.9
+
+### Patch Changes
+
+- 🐛 **支持在 `src/app.vue` 中编写应用级 `<template>`，并在微信小程序下将其作为内部 app shell 组件包裹页面输出，避免生成无效的 `app.wxml`。同时在 app shell 或页面 layout 缺少默认 `<slot />` 时抛出明确错误，避免页面内容被静默丢弃。** [#564](https://github.com/weapp-vite/weapp-vite/pull/564) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 应用外壳模板作为内部组件输出时无法继承 `app.wxss` 全局样式的问题，并补齐模板项目在新增应用外壳模板后的构建与热更新覆盖。** [#566](https://github.com/weapp-vite/weapp-vite/pull/566) by @sonofmagic
+
+- 🐛 **修复组件模板中 `v-model:xxx` 会被错误转换为默认 `modelValue` 绑定的问题，现在会按 Vue 语义生成对应的 prop 与 `update:xxx` 事件绑定。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
+- 🐛 **修复 `slotSingleRootNoWrapper` 遇到带 `v-if` 的单根具名插槽内容时，会把 `slot` 属性错误下推到生成的 `<block>` 上的问题。现在结构指令保留在外层 `<block>`，具名 `slot` 会继续下推到实际的单根元素，避免小程序运行时丢失投影内容。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+
+- 🐛 **将当前发布分支的运行时代码回滚到 6.16.7 稳定基线，仅保留 issue #553、#554、#555 与 #563 的修复，避免 6.16.8 中 scoped slot 运行时同步改动继续影响页面运行。** [#568](https://github.com/weapp-vite/weapp-vite/pull/568) by @sonofmagic
+- 📦 **Dependencies** [`9819abe`](https://github.com/weapp-vite/weapp-vite/commit/9819abe0df6e7871f868345192e76b770c0dd394)
+  → `@weapp-core/constants@0.1.6`, `wevu@6.16.9`, `@weapp-vite/ast@6.16.9`
+
 ## 6.16.8
 
 ### Patch Changes
