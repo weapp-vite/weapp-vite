@@ -218,6 +218,30 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
+  it('refreshes owner snapshot after setup methods are injected', () => {
+    const app = createApp({})
+    const target: any = {
+      route: 'pages/issue-558/index',
+      setData: vi.fn(),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, () => {
+      const text = '123456789'
+      const func = (value = '') => value.split('').reverse().join('')
+      return {
+        func,
+        text,
+      }
+    })
+
+    const ownerSnapshot = getOwnerSnapshot(target.__wvOwnerId)
+    expect(ownerSnapshot?.text).toBe('123456789')
+    expect(typeof target[WEVU_PUBLIC_RUNTIME_KEY].proxy.func).toBe('function')
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY].proxy.func(ownerSnapshot?.text)).toBe('987654321')
+
+    teardownRuntimeInstance(target)
+  })
+
   it('avoids full owner snapshot collection after patch updates', async () => {
     let getterCalls = 0
     const big = {}

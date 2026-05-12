@@ -96,9 +96,62 @@ function mergeSlotProps(
 
 function setOwnerProxy(instance: any, proxy: any) {
   instance[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+  const data = instance?.data
+  if (data && typeof data === 'object') {
+    try {
+      Object.defineProperty(data, WEVU_SLOT_OWNER_PROXY_KEY, {
+        value: proxy,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+    }
+    catch {
+      data[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+    }
+  }
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+  }
+}
+
+function flushOwnerProxyBindings(instance: any) {
+  instance?.__wevu?.__wevu_flushSetupSnapshotSync?.()
+}
+
+function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any) {
+  setOwnerProxy(instance, proxy)
+  if (typeof instance?.setData === 'function') {
+    instance.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
+  }
+  flushOwnerProxyBindings(instance)
+}
+
+function bindOwner(instance: any, ownerId: string) {
+  if (!ownerId) {
+    if (typeof instance?.__wvOwnerUnsub === 'function') {
+      instance.__wvOwnerUnsub()
+    }
+    instance.__wvOwnerUnsub = undefined
+    instance.__wvOwnerBoundId = ''
+    setOwnerProxy(instance, undefined)
+    return
+  }
+
+  const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
+    updateOwnerBindings(instance, snapshot, proxy)
+  }
+  if (instance.__wvOwnerBoundId !== ownerId) {
+    if (typeof instance.__wvOwnerUnsub === 'function') {
+      instance.__wvOwnerUnsub()
+    }
+    instance.__wvOwnerBoundId = ownerId
+    instance.__wvOwnerUnsub = subscribeOwner(ownerId, updateOwner)
+  }
+  const snapshot = getOwnerSnapshot(ownerId)
+  if (snapshot) {
+    updateOwner(snapshot, getOwnerProxy(ownerId))
   }
 }
 
@@ -123,8 +176,17 @@ export function createScopedSlotOptions(
     options: {
       virtualHost: true,
     },
+    setData: {
+      omit: [WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_PROXY_KEY],
+    },
     properties: {
-      [WEVU_SLOT_OWNER_ID_KEY]: { type: String, value: '' },
+      [WEVU_SLOT_OWNER_ID_KEY]: {
+        type: String,
+        value: '',
+        observer(this: any, next: string) {
+          bindOwner(this, next || '')
+        },
+      },
       [WEVU_SLOT_PROPS_KEY]: {
         type: null,
         value: null,
@@ -148,23 +210,14 @@ export function createScopedSlotOptions(
         if (!ownerId) {
           return
         }
-        const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
-          setOwnerProxy(this, proxy)
-          if (typeof this.setData === 'function') {
-            this.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
-          }
-        }
-        this.__wvOwnerUnsub = subscribeOwner(ownerId, updateOwner)
-        const snapshot = getOwnerSnapshot(ownerId)
-        if (snapshot) {
-          updateOwner(snapshot, getOwnerProxy(ownerId))
-        }
+        bindOwner(this, ownerId)
       },
       detached(this: any) {
         if (typeof this.__wvOwnerUnsub === 'function') {
           this.__wvOwnerUnsub()
         }
         this.__wvOwnerUnsub = undefined
+        this.__wvOwnerBoundId = ''
         setOwnerProxy(this, undefined)
       },
     },

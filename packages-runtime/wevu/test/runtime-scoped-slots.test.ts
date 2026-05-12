@@ -1,4 +1,4 @@
-import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
+import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWevuScopedSlotComponent, defineComponent } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
@@ -71,6 +71,115 @@ describe('runtime: scoped slots', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_bind_0).toBe('987654321')
     expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
+  })
+
+  it('flushes owner-proxy computed bindings after owner snapshot is attached', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_ID_KEY]: ownerId,
+    }))
+  })
+
+  it('binds owner-proxy computed bindings when owner id arrives after attach', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { __wvOwnerId: '' },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    inst.setData.mockClear()
+
+    inst.properties.__wvOwnerId = ownerId
+    opts.properties.__wvOwnerId.observer.call(inst, ownerId)
+
+    expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
+  })
+
+  it('stores owner proxy on scoped slot data without exposing it to snapshots', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const data = typeof opts.data === 'function' ? opts.data() : {}
+    const inst: any = {
+      data,
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.data[WEVU_SLOT_OWNER_PROXY_KEY]).toBe(proxy)
+    expect(Object.keys(inst.data)).not.toContain(WEVU_SLOT_OWNER_PROXY_KEY)
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
   })
 
   it('merges slot scope into slot props', () => {

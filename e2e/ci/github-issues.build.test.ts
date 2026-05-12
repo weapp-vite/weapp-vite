@@ -828,11 +828,21 @@ describe.sequential('e2e app: github-issues (build)', () => {
   it('issue #558: augmented scoped slot runtime bindings read owner proxy', async () => {
     await runIssue558AugmentedBuild()
 
+    const files = await scanFiles(DIST_ROOT)
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-558/index.wxml')
     const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-558/index.json')
-    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.wxml')
-    const scopedSlotJsPath = path.join(DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.js')
     const cellWxmlPath = path.join(DIST_ROOT, 'components/issue-558/Cell/index.wxml')
+    const defaultScopedCellWxmlPath = path.join(DIST_ROOT, 'components/issue-558/DefaultScopedCell/index.wxml')
+    const listScopedCellWxmlPath = path.join(DIST_ROOT, 'components/issue-558/ListScopedCell/index.wxml')
+    const namedSlotCardWxmlPath = path.join(DIST_ROOT, 'components/issue-558/NamedSlotCard/index.wxml')
+    const nestedSlotCellWxmlPath = path.join(DIST_ROOT, 'components/issue-558/Issue558NestedSlotCell/index.wxml')
+    const nestedSlotGroupWxmlPath = path.join(DIST_ROOT, 'components/issue-558/Issue558NestedSlotGroup/index.wxml')
+    const scopedSlotFiles = files
+      .filter(file => file.startsWith('pages/issue-558/index.__scoped-slot-') && file.endsWith('.wxml'))
+      .sort()
+    const scopedSlotJsFiles = files
+      .filter(file => file.startsWith('pages/issue-558/index.__scoped-slot-') && file.endsWith('.js'))
+      .sort()
     const runtime = await findWevuRuntimeChunk(
       DIST_ROOT,
       code => code.includes('__wvOwnerProxy'),
@@ -841,22 +851,60 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
-    const scopedSlotJs = await fs.readFile(scopedSlotJsPath, 'utf-8')
+    const scopedSlotWxml = (await Promise.all(scopedSlotFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
+    const scopedSlotJs = (await Promise.all(scopedSlotJsFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
     const cellWxml = await fs.readFile(cellWxmlPath, 'utf-8')
+    const defaultScopedCellWxml = await fs.readFile(defaultScopedCellWxmlPath, 'utf-8')
+    const listScopedCellWxml = await fs.readFile(listScopedCellWxmlPath, 'utf-8')
+    const namedSlotCardWxml = await fs.readFile(namedSlotCardWxmlPath, 'utf-8')
+    const nestedSlotCellWxml = await fs.readFile(nestedSlotCellWxmlPath, 'utf-8')
+    const nestedSlotGroupWxml = await fs.readFile(nestedSlotGroupWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-558 augmented slot computed binding')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageWxml).toContain('generic:scoped-slots-header=')
+    expect(pageWxml).toContain('generic:scoped-slots-footer=')
     expect(pageJson.usingComponents).toMatchObject({
       Cell: '/components/issue-558/Cell/index',
+      DefaultScopedCell: '/components/issue-558/DefaultScopedCell/index',
+      Issue558NestedSlotCell: '/components/issue-558/Issue558NestedSlotCell/index',
+      Issue558NestedSlotGroup: '/components/issue-558/Issue558NestedSlotGroup/index',
+      ListScopedCell: '/components/issue-558/ListScopedCell/index',
+      NamedSlotCard: '/components/issue-558/NamedSlotCard/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-558/index.__scoped-slot-default-0')
-    expect(scopedSlotWxml).toContain('<text class="issue558-result">{{__wv_bind_0}}</text>')
+    expect(scopedSlotFiles).toHaveLength(8)
+    expect(scopedSlotJsFiles).toHaveLength(8)
+    expect(scopedSlotWxml).toContain('data-issue558-case="plain-default"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="named-header"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="explicit-default"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="named-scoped-footer"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="default-scoped"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="{{\'list-scoped-\'+__wvSlotPropsData.index}}"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="nested-default"')
+    expect(scopedSlotWxml).toContain('<Issue558NestedSlotCell generic:scoped-slots-default=')
     expect(scopedSlotJs).toContain('__wvOwnerProxy')
     expect(scopedSlotJs).toContain('.func')
     expect(scopedSlotJs).toContain('.text')
+    expect(scopedSlotJs).toContain('.headerText')
+    expect(scopedSlotJs).toContain('.defaultText')
+    expect(scopedSlotJs).toContain('.nestedText')
+    expect(scopedSlotJs).toContain('__wvSlotPropsData')
+    expect(scopedSlotJs).toContain('.suffix')
+    expect(scopedSlotJs).toContain('.label')
+    expect(scopedSlotJs).toContain('.index')
     expect(scopedSlotJs).not.toContain('__wvOwner.func')
     expect(cellWxml).toContain('<slot />')
+    expect(cellWxml).toContain('<scoped-slots-default')
+    expect(defaultScopedCellWxml).toContain('__wv-slot-props="{{[\'label\',label,\'count\',count]}}"')
+    expect(listScopedCellWxml).toContain('wx:for="{{rows}}"')
+    expect(listScopedCellWxml).toContain('__wv-slot-scope="{{__wvSlotScope}}"')
+    expect(namedSlotCardWxml).toContain('<slot name="header" />')
+    expect(namedSlotCardWxml).toContain('<scoped-slots-header')
+    expect(namedSlotCardWxml).toContain('<scoped-slots-default')
+    expect(namedSlotCardWxml).toContain('<scoped-slots-footer')
+    expect(nestedSlotCellWxml).toContain('<scoped-slots-default')
+    expect(nestedSlotGroupWxml).toContain('<scoped-slots-default')
     expect(runtime.code).toContain('__wvOwnerProxy')
   })
 

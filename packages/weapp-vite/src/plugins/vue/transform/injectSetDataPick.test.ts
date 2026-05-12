@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getWxmlDirectivePrefix } from '../../../platform'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs } from './injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs } from './injectSetDataPick'
 
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
@@ -81,6 +81,41 @@ defineComponent({
     expect(injected.code).toContain('setData: {')
     expect(injected.code).toContain('pick: ["count"]')
     expect(injected.code).toContain('...setDataOption')
+  })
+
+  it('injects scoped slot host properties into wevu component options', () => {
+    const source = `
+import { createWevuComponent } from 'wevu'
+createWevuComponent({
+  setData: { pick: ['__wvSlotOwnerId'] },
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
+  })
+
+  it('merges scoped slot host properties with existing properties object', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+defineComponent({
+  properties: {
+    title: String,
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('title: String')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
   })
 
   it('returns original js when no wevu component call hint exists', () => {

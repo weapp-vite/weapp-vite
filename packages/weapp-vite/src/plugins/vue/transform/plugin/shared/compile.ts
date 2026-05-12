@@ -3,6 +3,7 @@ import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
+import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
@@ -10,7 +11,7 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../..
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
 import { handleTransformEntryPageLayoutFlow } from './layout'
@@ -80,6 +81,14 @@ export async function finalizeTransformEntryScript(options: {
     if (injectedPick.transformed) {
       result.script = injectedPick.code
       result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
+    }
+  }
+
+  if (!isApp && result.script && result.template?.includes(WEVU_SLOT_OWNER_ID_PROP)) {
+    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
+    if (injectedProps.transformed) {
+      result.script = injectedProps.code
+      result.scriptMap = composeSourceMaps(injectedProps.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
     }
   }
 

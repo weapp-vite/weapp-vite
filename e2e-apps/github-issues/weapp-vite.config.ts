@@ -10,7 +10,7 @@ const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
-const issue558AugmentedEnabled = issue558AugmentedEnvEnabled
+const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
@@ -35,6 +35,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
+  ],
+  'github-issues.runtime.issue558.test.ts': [
+    'pages/issue-558/**',
+    'components/issue-558/**',
   ],
   'github-issues.runtime.issue554.test.ts': [
     'pages/issue-554/**',
@@ -257,6 +261,7 @@ export default defineConfig({
           : issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
             ? {
                 scopedSlotsCompiler: 'augmented',
+                scopedSlotsRequireProps: false,
               } as const
             : {}),
       },

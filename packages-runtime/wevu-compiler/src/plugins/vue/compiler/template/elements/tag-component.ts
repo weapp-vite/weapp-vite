@@ -67,11 +67,8 @@ function isWevuComponentTag(node: ElementNode, context: TransformContext) {
   return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
-function shouldAugmentPlainDefaultSlot(decl: ScopedSlotDeclaration, context: TransformContext, ownerNode: ElementNode) {
-  if (context.scopedSlotsRequireProps || !decl.implicitDefault) {
-    return false
-  }
-  if (context.scopedSlotsCompiler !== 'augmented' && !isWevuComponentTag(ownerNode, context)) {
+function shouldAugmentPlainSlot(decl: ScopedSlotDeclaration, context: TransformContext, ownerNode: ElementNode) {
+  if (context.scopedSlotsRequireProps) {
     return false
   }
   if (context.rewriteScopedSlot && !isWevuComponentTag(ownerNode, context)) {
@@ -79,6 +76,12 @@ function shouldAugmentPlainDefaultSlot(decl: ScopedSlotDeclaration, context: Tra
   }
   if (context.scopedSlotsCompiler === 'augmented') {
     return true
+  }
+  if (!decl.implicitDefault) {
+    return false
+  }
+  if (!isWevuComponentTag(ownerNode, context)) {
+    return false
   }
   return hasDirectComponentSlotChild(decl.children, context)
 }
@@ -246,7 +249,7 @@ export function transformComponentWithSlots(
   const plainSlotDeclarations: ScopedSlotDeclaration[] = []
   for (const decl of slotDeclarations) {
     const hasSlotProps = Object.keys(decl.props).length > 0
-    if (hasSlotProps || shouldAugmentPlainDefaultSlot(decl, context, node)) {
+    if (hasSlotProps || shouldAugmentPlainSlot(decl, context, node)) {
       scopedSlotDeclarations.push(decl)
     }
     else {

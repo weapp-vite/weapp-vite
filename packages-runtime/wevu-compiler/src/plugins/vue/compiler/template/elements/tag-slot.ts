@@ -354,7 +354,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     }
   }
 
-  if (!slotPropsExp && (context.scopedSlotsRequireProps || slotNameInfo.type !== 'default')) {
+  if (!slotPropsExp && (context.scopedSlotsRequireProps || (slotNameInfo.type !== 'default' && context.scopedSlotsCompiler !== 'augmented'))) {
     return slotTag
   }
 

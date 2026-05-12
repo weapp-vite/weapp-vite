@@ -117,6 +117,23 @@ export function transformForElement(node: ElementNode, context: TransformContext
       ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
 
+    if (elementWithoutFor.tag === 'slot') {
+      const slotElementWithoutForKey: ElementNode = {
+        ...elementWithoutFor,
+        props: elementWithoutFor.props.filter((prop) => {
+          return !(
+            prop.type === NodeTypes.DIRECTIVE
+            && prop.name === 'bind'
+            && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+            && prop.arg.content === 'key'
+          )
+        }),
+      }
+      const content = transformSlotElement(slotElementWithoutForKey, context, transformNode)
+      const attrString = extraAttrs.length ? ` ${extraAttrs.join(' ')}` : ''
+      return attrString ? `<block${attrString}>${content}</block>` : content
+    }
+
     const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
     if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {
       return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
