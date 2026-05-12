@@ -404,6 +404,13 @@ export function transformSlotElementPlain(node: ElementNode, context: TransformC
     slotAttrs.push(nameAttr)
   }
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
+  if (!hasScopeBindings && fallbackContent) {
+    const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
+    if (slotPresentExp) {
+      const slotTag = `<slot${slotAttrString} />`
+      return `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
+    }
+  }
   return fallbackContent
     ? `<slot${slotAttrString}>${fallbackContent}</slot>`
     : `<slot${slotAttrString} />`

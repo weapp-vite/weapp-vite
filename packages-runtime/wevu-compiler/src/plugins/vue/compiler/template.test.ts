@@ -1077,6 +1077,26 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('__wv-slot-props=')
   })
 
+  it('keeps plain slot fallback presence-guarded when scoped slot compiler is disabled', () => {
+    const template = `
+<slot name="header"><view>Fallback header</view></slot>
+<slot><text>{{ fallbackDefault }}</text></slot>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsCompiler: 'off' },
+    )
+
+    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
+    expect(code).toContain(`<slot name="header" /></block><block wx:else><view>Fallback header</view></block>`)
+    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
+    expect(code).toContain(`<slot /></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
+    expect(code).not.toContain('<slot name="header"><view>Fallback header</view></slot>')
+    expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
+  })
+
   it('keeps plain named slot single child wrapped by default', () => {
     const template = `
 <Child>
