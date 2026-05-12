@@ -12,6 +12,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
+const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 let standardBuildPromise: Promise<void> | null = null
 let distVariant: 'standard' | 'sourcemap' | null = null
 
@@ -223,6 +224,29 @@ async function runIssue564AugmentedBuild() {
   distVariant = null
 }
 
+async function runSlotFallbackCompilerOffBuild() {
+  await fs.remove(SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF: 'true',
+    },
+  })
+
+  distVariant = null
+}
+
 describe.sequential('e2e app: github-issues (build)', () => {
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
     await runBuild()
@@ -370,6 +394,24 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentWxml).toContain('<scoped-slots-default')
     expect(componentWxml).toContain('<block wx:else><text class="issue530-fallback-default">issue-530 fallback default</text><text class="issue530-scoped-fallback-default">issue-530 scoped fallback default</text></block>')
     expect(componentWxml).not.toContain('vueSlots[')
+  })
+
+  it('slot fallback compiler off: keeps plain fallback guards independent from scoped slot compiler', async () => {
+    await runSlotFallbackCompilerOffBuild()
+
+    const pageWxmlPath = path.join(SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT, 'pages/slot-fallback-compiler-off/index.wxml')
+    const componentWxmlPath = path.join(SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT, 'components/slot-fallback-compiler-off/PlainSlotFallbackCard/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('PlainSlotFallbackCard class="slot-fallback-off-card-provided" vue-slots="{{__wv_bind_0}}"')
+    expect(pageWxml).not.toContain('generic:scoped-slots-')
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
+    expect(componentWxml).toContain('<slot name="header" /></block><block wx:else><text class="slot-fallback-off-fallback-header">slot-fallback-compiler-off fallback header</text></block>')
+    expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
+    expect(componentWxml).toContain('<slot /></block><block wx:else><text class="slot-fallback-off-fallback-default">{{fallbackDefault}}</text></block>')
+    expect(componentWxml).not.toContain('<slot name="header"><text class="slot-fallback-off-fallback-header">')
+    expect(componentWxml).not.toContain('<slot><text class="slot-fallback-off-fallback-default">')
   })
 
   it('issue #550: exposes current route name through useRoute()', async () => {

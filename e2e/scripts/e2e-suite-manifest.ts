@@ -18,6 +18,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.props.test.ts',
+  'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
   'ide/github-issues.runtime.slot-fallback.test.ts',
 ]
 const IDE_CHUNK_MODES_PATTERNS = [

@@ -7,6 +7,8 @@ const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED
 const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
+const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
+  || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
@@ -78,6 +80,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-528/**',
     'pages/issue-530/**',
   ],
+  'github-issues.runtime.slot-fallback-compiler-off.test.ts': [
+    'pages/slot-fallback-compiler-off/**',
+  ],
   'github-issues.runtime.web-runtime.test.ts': [
     'pages/issue-448/**',
     'pages/issue-459/**',
@@ -114,6 +119,13 @@ function resolveGithubIssuesAutoRoutes() {
       include: [
         'pages/issue-564/**',
         'components/issue-564/**',
+      ],
+    }
+  }
+  if (slotFallbackCompilerOffEnabled) {
+    return {
+      include: [
+        'pages/slot-fallback-compiler-off/**',
       ],
     }
   }
@@ -238,11 +250,15 @@ export default defineConfig({
     vue: {
       template: {
         slotSingleRootNoWrapper: true,
-        ...(issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
+        ...(slotFallbackCompilerOffEnabled
           ? {
-              scopedSlotsCompiler: 'augmented',
+              scopedSlotsCompiler: 'off',
             } as const
-          : {}),
+          : issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
+            ? {
+                scopedSlotsCompiler: 'augmented',
+              } as const
+            : {}),
       },
     },
     npm: resolveGithubIssuesNpm(),
@@ -276,5 +292,11 @@ export default defineConfig({
             outDir: 'dist-issue-510',
           },
         }
-      : {}),
+      : slotFallbackCompilerOffEnabled
+        ? {
+            build: {
+              outDir: 'dist-slot-fallback-compiler-off',
+            },
+          }
+        : {}),
 })
