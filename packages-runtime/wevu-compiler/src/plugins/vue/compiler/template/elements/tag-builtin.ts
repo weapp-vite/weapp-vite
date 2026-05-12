@@ -11,7 +11,7 @@ const TEMPLATE_OPEN_RE = /<template/g
 const TEMPLATE_CLOSE_RE = /<\/template>/g
 
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
+  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue))
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
   return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)

@@ -3,7 +3,9 @@ import type { ComputedDefinitions } from '../types'
 import {
   WEVU_INLINE_MAP_KEY,
   WEVU_OWNER_HANDLER,
+  WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_OWNER_KEY,
   WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
@@ -76,8 +78,53 @@ function normalizeSlotBindings(value: unknown): Record<string, any> {
   return value as Record<string, any>
 }
 
+function resolveComputedContext(instance: any) {
+  return instance?.__wevu?.proxy
+    ?? instance?.[WEVU_PUBLIC_RUNTIME_KEY]?.proxy
+    ?? instance
+}
+
+function collectComputedPayload(instance: any, computed?: ComputedDefinitions) {
+  if (!computed || Object.keys(computed).length === 0) {
+    return undefined
+  }
+
+  const context = resolveComputedContext(instance)
+  const payload: Record<string, any> = {}
+  for (const [key, definition] of Object.entries(computed)) {
+    try {
+      let value: any
+      if (typeof definition === 'function') {
+        value = definition.call(context)
+      }
+      else if (typeof (definition as any)?.get === 'function') {
+        value = (definition as any).get.call(context)
+      }
+      if (value !== undefined) {
+        payload[key] = value
+      }
+    }
+    catch {
+    }
+  }
+  return payload
+}
+
+function flushOwnerProxyBindings(instance: any) {
+  instance?.__wevu?.__wevu_flushSetupSnapshotSync?.()
+}
+
+function flushScopedSlotComputedBindings(instance: any, computed?: ComputedDefinitions) {
+  flushOwnerProxyBindings(instance)
+  const payload = collectComputedPayload(instance, computed)
+  if (payload && Object.keys(payload).length > 0 && typeof instance?.setData === 'function') {
+    instance.setData(payload)
+  }
+}
+
 function mergeSlotProps(
   instance: any,
+  computed?: ComputedDefinitions,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
   const scopeSource = hasOwn(override ?? {}, WEVU_SLOT_SCOPE_KEY)
@@ -89,9 +136,14 @@ function mergeSlotProps(
   const scope = normalizeSlotBindings(scopeSource)
   const slotProps = normalizeSlotBindings(propsSource)
   const merged = { ...scope, ...slotProps }
+  const runtimeState = instance?.__wevu?.state
+  if (runtimeState && typeof runtimeState === 'object') {
+    runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
+  }
   if (typeof instance?.setData === 'function') {
     instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: merged })
   }
+  flushScopedSlotComputedBindings(instance, computed)
 }
 
 function setOwnerProxy(instance: any, proxy: any) {
@@ -116,19 +168,19 @@ function setOwnerProxy(instance: any, proxy: any) {
   }
 }
 
-function flushOwnerProxyBindings(instance: any) {
-  instance?.__wevu?.__wevu_flushSetupSnapshotSync?.()
-}
-
-function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any) {
+function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
   setOwnerProxy(instance, proxy)
+  const runtimeState = instance?.__wevu?.state
+  if (runtimeState && typeof runtimeState === 'object') {
+    runtimeState[WEVU_SLOT_OWNER_KEY] = snapshot || {}
+  }
   if (typeof instance?.setData === 'function') {
     instance.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
   }
-  flushOwnerProxyBindings(instance)
+  flushScopedSlotComputedBindings(instance, computed)
 }
 
-function bindOwner(instance: any, ownerId: string) {
+function bindOwner(instance: any, ownerId: string, computed?: ComputedDefinitions) {
   if (!ownerId) {
     if (typeof instance?.__wvOwnerUnsub === 'function') {
       instance.__wvOwnerUnsub()
@@ -140,7 +192,7 @@ function bindOwner(instance: any, ownerId: string) {
   }
 
   const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
-    updateOwnerBindings(instance, snapshot, proxy)
+    updateOwnerBindings(instance, snapshot, proxy, computed)
   }
   if (instance.__wvOwnerBoundId !== ownerId) {
     if (typeof instance.__wvOwnerUnsub === 'function') {
@@ -153,6 +205,21 @@ function bindOwner(instance: any, ownerId: string) {
   if (snapshot) {
     updateOwner(snapshot, getOwnerProxy(ownerId))
   }
+}
+
+function resolveBoundOwnerId(instance: any) {
+  return instance?.properties?.[WEVU_SLOT_OWNER_ID_PROP]
+    ?? instance?.properties?.[WEVU_SLOT_OWNER_ID_KEY]
+    ?? ''
+}
+
+function syncScopedSlotBindings(instance: any, computed?: ComputedDefinitions) {
+  mergeSlotProps(instance, computed)
+  const ownerId = resolveBoundOwnerId(instance)
+  if (!ownerId) {
+    return
+  }
+  bindOwner(instance, ownerId, computed)
 }
 
 function createScopedSlotData() {
@@ -172,45 +239,51 @@ function createScopedSlotData() {
 export function createScopedSlotOptions(
   overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ) {
+  const scopedSlotComputed = overrides?.computed
   const baseOptions = {
     options: {
       virtualHost: true,
     },
     setData: {
-      omit: [WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_PROXY_KEY],
+      omit: [WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_OWNER_PROXY_KEY],
     },
     properties: {
+      [WEVU_SLOT_OWNER_ID_PROP]: {
+        type: String,
+        value: '',
+        observer(this: any, next: string) {
+          bindOwner(this, next || '', scopedSlotComputed)
+        },
+      },
       [WEVU_SLOT_OWNER_ID_KEY]: {
         type: String,
         value: '',
         observer(this: any, next: string) {
-          bindOwner(this, next || '')
+          bindOwner(this, next || '', scopedSlotComputed)
         },
       },
       [WEVU_SLOT_PROPS_KEY]: {
         type: null,
         value: null,
         observer(this: any, next: unknown) {
-          mergeSlotProps(this, { [WEVU_SLOT_PROPS_KEY]: next })
+          mergeSlotProps(this, scopedSlotComputed, { [WEVU_SLOT_PROPS_KEY]: next })
         },
       },
       [WEVU_SLOT_SCOPE_KEY]: {
         type: null,
         value: null,
         observer(this: any, next: unknown) {
-          mergeSlotProps(this, { [WEVU_SLOT_SCOPE_KEY]: next })
+          mergeSlotProps(this, scopedSlotComputed, { [WEVU_SLOT_SCOPE_KEY]: next })
         },
       },
     },
     data: createScopedSlotData,
     lifetimes: {
       attached(this: any) {
-        const ownerId = this.properties?.[WEVU_SLOT_OWNER_ID_KEY] ?? ''
-        mergeSlotProps(this)
-        if (!ownerId) {
-          return
-        }
-        bindOwner(this, ownerId)
+        syncScopedSlotBindings(this, scopedSlotComputed)
+      },
+      ready(this: any) {
+        syncScopedSlotBindings(this, scopedSlotComputed)
       },
       detached(this: any) {
         if (typeof this.__wvOwnerUnsub === 'function') {

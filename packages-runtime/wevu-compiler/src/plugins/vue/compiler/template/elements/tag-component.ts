@@ -6,6 +6,7 @@ import {
   WEVU_SLOT_NAMES_ATTR,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
 import { transformAttribute } from '../attributes'
@@ -285,7 +286,10 @@ export function transformComponentWithSlots(
     if (scopePropsExp) {
       mergedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
     }
-    mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(`${WEVU_SLOT_OWNER_ID_KEY} || ''`, context)}"`)
+    const ownerIdExp = context.rewriteScopedSlot
+      ? `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
+      : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
+    mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(ownerIdExp, context)}"`)
   }
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''

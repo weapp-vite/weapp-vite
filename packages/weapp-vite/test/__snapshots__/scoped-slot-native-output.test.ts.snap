@@ -92,7 +92,7 @@ Component({ properties: { __wvSlotOwnerId: { type: String, value: "" }, __wvSlot
 }
 ",
   "components/native-tabbar/index.wxml": "<view class="native-tabbar">
-  <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{[]}}" __wv-slot-scope="{{__wvSlotScope}}" />
+  <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-slot-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{[]}}" __wv-slot-scope="{{__wvSlotScope}}" />
 </view>
 ",
   "pages/index/index.__scoped-slot-default-0.js": "const require_src = require("../../weapp-vendors/wevu-src.js");

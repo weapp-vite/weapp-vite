@@ -863,9 +863,10 @@ describe('compileVueTemplateToWxml', () => {
     expect(headerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(explicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(footerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
-    expect(defaultScoped?.template).toContain('<block wx:if="{{__wvOwner.visible}}"><text>{{__wv_bind_0}}</text></block>')
+    expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
     expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(nestedOuter?.template).toContain('<Issue558NestedSlotCell generic:scoped-slots-default=')
+    expect(nestedOuter?.template).toContain('__wv-slot-owner-id="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
     expect(nestedInner?.template).toContain('<text>{{__wv_bind_0}}</text>')
 
     expectScopedSlotComputed(implicitDefault?.classStyleBindings, 'func(text)', [
@@ -890,6 +891,9 @@ describe('compileVueTemplateToWxml', () => {
       'this.__wvOwnerProxy.text',
       'this.__wvSlotPropsData.label',
       'this.__wvSlotPropsData.count',
+    ])
+    expectScopedSlotComputed(defaultScoped?.classStyleBindings, 'visible', [
+      'this.__wvOwnerProxy.visible',
     ])
     expectScopedSlotComputed(listScoped?.classStyleBindings, 'func(item.label + \'-\' + index + \'-\' + text)', [
       'this.__wvOwnerProxy.func',
@@ -1183,7 +1187,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(code).toContain(`<slot />`)
-    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{['item',card.item,'index',card.index]}}" __wv-slot-scope="{{__wvSlotScope}}" />`)
+    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-slot-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{['item',card.item,'index',card.index]}}" __wv-slot-scope="{{__wvSlotScope}}" />`)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')
     expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)

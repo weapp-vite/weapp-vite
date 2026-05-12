@@ -28,7 +28,7 @@ function ensureScopedSlotComponentGlobal() {
     return
   }
   const globalRecord = globalObject as Record<string, any>
-  if (!globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] && scopedSlotCreator) {
+  if (scopedSlotCreator && globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] !== scopedSlotCreator) {
     globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] = scopedSlotCreator
   }
 }

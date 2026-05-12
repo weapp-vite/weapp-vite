@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
+  delay,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
@@ -11,6 +12,44 @@ import {
 
 function countToken(wxml: string, token: string) {
   return wxml.split(token).length - 1
+}
+
+const SLOT_FALLBACK_RENDER_TIMEOUT = 8_000
+const slotFallbackExpectedCases = [
+  ['fallback-header', 'slot-fallback-compiler-off fallback header'],
+  ['fallback-default', 'slot-fallback-compiler-off fallback default'],
+  ['provided-header', 'slot-fallback-compiler-off provided header'],
+  ['provided-default', 'slot-fallback-compiler-off provided default'],
+] as const
+
+async function readSlotFallbackTexts(page: any) {
+  const result: Record<string, string | undefined> = {}
+  for (const [caseName] of slotFallbackExpectedCases) {
+    const element = await page.$(`[data-slot-fallback-off-case="${caseName}"]`)
+    result[caseName] = element ? (await element.text()).trim() : undefined
+  }
+  return result
+}
+
+async function waitForSlotFallbackTexts(page: any) {
+  const start = Date.now()
+  let latestTexts: Record<string, string | undefined> = {}
+
+  while (Date.now() - start <= SLOT_FALLBACK_RENDER_TIMEOUT) {
+    latestTexts = await readSlotFallbackTexts(page)
+    if (slotFallbackExpectedCases.every(([caseName, expected]) => latestTexts[caseName] === expected)) {
+      return latestTexts
+    }
+
+    if (typeof page?.waitFor === 'function') {
+      await page.waitFor(220)
+    }
+    else {
+      await delay(220)
+    }
+  }
+
+  return latestTexts
 }
 
 describe.sequential('e2e app: github-issues / slot fallback compiler off', () => {
@@ -28,21 +67,18 @@ describe.sequential('e2e app: github-issues / slot fallback compiler off', () =>
       const issuePage = await relaunchPage(
         miniProgram,
         '/pages/slot-fallback-compiler-off/index',
-        'slot-fallback-compiler-off fallback default',
       )
       if (!issuePage) {
         throw new Error('Failed to launch slot-fallback-compiler-off page')
       }
 
+      const probeTexts = await waitForSlotFallbackTexts(issuePage)
       const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('slot-fallback-compiler-off fallback header')
-      expect(renderedWxml).toContain('slot-fallback-compiler-off fallback default')
-      expect(renderedWxml).toContain('slot-fallback-compiler-off provided header')
-      expect(renderedWxml).toContain('slot-fallback-compiler-off provided default')
-      expect(countToken(renderedWxml, 'slot-fallback-compiler-off fallback header')).toBe(1)
-      expect(countToken(renderedWxml, 'slot-fallback-compiler-off fallback default')).toBe(1)
-      expect(countToken(renderedWxml, 'slot-fallback-compiler-off provided header')).toBe(1)
-      expect(countToken(renderedWxml, 'slot-fallback-compiler-off provided default')).toBe(1)
+      for (const [caseName, expected] of slotFallbackExpectedCases) {
+        expect(probeTexts[caseName]).toBe(expected)
+        expect(renderedWxml).toContain(`data-slot-fallback-off-case="${caseName}"`)
+        expect(countToken(renderedWxml, `data-slot-fallback-off-case="${caseName}"`)).toBe(1)
+      }
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
