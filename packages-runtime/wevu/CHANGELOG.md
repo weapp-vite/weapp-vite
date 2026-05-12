@@ -1,5 +1,12 @@
 # wevu
 
+## 6.16.12
+
+### Patch Changes
+
+- 📦 **Dependencies** [`3eb4156`](https://github.com/weapp-vite/weapp-vite/commit/3eb4156d61c4ef3b8ad8d1fbb9a596e00c39c33d)
+  → `@wevu/compiler@6.16.12`
+
 ## 6.16.11
 
 ### Patch Changes
