@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.16.12
+
+### Patch Changes
+
+- 🐛 **修复关闭 `scopedSlotsCompiler` 时，非作用域 `<slot>` 兜底内容重新退回原生 fallback 输出的问题。现在该场景也会继续基于 `vue-slots` 元信息生成显式条件分支，避免不同 compiler 配置下的普通 slot fallback 行为不一致。** [`3eb4156`](https://github.com/weapp-vite/weapp-vite/commit/3eb4156d61c4ef3b8ad8d1fbb9a596e00c39c33d) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.12`
+
 ## 6.16.11
 
 ### Patch Changes
