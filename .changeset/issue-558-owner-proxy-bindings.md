@@ -2,6 +2,7 @@
 "weapp-vite": patch
 "wevu": patch
 "@wevu/compiler": patch
+"@weapp-core/constants": patch
 "create-weapp-vite": patch
 ---
 
