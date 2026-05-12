@@ -175,6 +175,30 @@ async function runIssue547AugmentedBuild() {
   distVariant = null
 }
 
+async function runIssue558AugmentedBuild() {
+  await fs.remove(DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_558_AUGMENTED: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 async function runIssue564AugmentedBuild() {
   await fs.remove(DIST_ROOT)
 
@@ -757,6 +781,41 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(parentScopedSlotJson.componentGenerics).toBeUndefined()
     expect(Object.values(parentScopedSlotJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-1')
     expect(childScopedSlotWxml).toContain('<NestedSlotImage />')
+  })
+
+  it('issue #558: augmented scoped slot runtime bindings read owner proxy', async () => {
+    await runIssue558AugmentedBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-558/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-558/index.json')
+    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.wxml')
+    const scopedSlotJsPath = path.join(DIST_ROOT, 'pages/issue-558/index.__scoped-slot-default-0.js')
+    const cellWxmlPath = path.join(DIST_ROOT, 'components/issue-558/Cell/index.wxml')
+    const runtime = await findWevuRuntimeChunk(
+      DIST_ROOT,
+      code => code.includes('__wvOwnerProxy'),
+      'issue #558 owner proxy runtime',
+    )
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const scopedSlotJs = await fs.readFile(scopedSlotJsPath, 'utf-8')
+    const cellWxml = await fs.readFile(cellWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-558 augmented slot computed binding')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(pageJson.usingComponents).toMatchObject({
+      Cell: '/components/issue-558/Cell/index',
+    })
+    expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-558/index.__scoped-slot-default-0')
+    expect(scopedSlotWxml).toContain('<text class="issue558-result">{{__wv_bind_0}}</text>')
+    expect(scopedSlotJs).toContain('__wvOwnerProxy')
+    expect(scopedSlotJs).toContain('.func')
+    expect(scopedSlotJs).toContain('.text')
+    expect(scopedSlotJs).not.toContain('__wvOwner.func')
+    expect(cellWxml).toContain('<slot />')
+    expect(runtime.code).toContain('__wvOwnerProxy')
   })
 
   it('issue #564: native component default content stays inline inside augmented scoped slot assets', async () => {

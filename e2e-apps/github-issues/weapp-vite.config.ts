@@ -4,9 +4,11 @@ import { defineConfig } from 'weapp-vite'
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
 const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED === 'true'
+const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
+const issue558AugmentedEnabled = issue558AugmentedEnvEnabled
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
@@ -96,6 +98,14 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/issue-547/**',
+      ],
+    }
+  }
+  if (issue558AugmentedEnvEnabled) {
+    return {
+      include: [
+        'pages/issue-558/**',
+        'components/issue-558/**',
       ],
     }
   }
@@ -228,7 +238,7 @@ export default defineConfig({
     vue: {
       template: {
         slotSingleRootNoWrapper: true,
-        ...(issue510AugmentedEnabled || issue547AugmentedEnabled || issue564AugmentedEnabled
+        ...(issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
           ? {
               scopedSlotsCompiler: 'augmented',
             } as const

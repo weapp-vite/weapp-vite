@@ -5,6 +5,7 @@ import {
   WEVU_OWNER_HANDLER,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -93,6 +94,28 @@ function mergeSlotProps(
   }
 }
 
+function setOwnerProxy(instance: any, proxy: any) {
+  instance[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+  const runtimeState = instance?.__wevu?.state
+  if (runtimeState && typeof runtimeState === 'object') {
+    runtimeState[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+  }
+}
+
+function createScopedSlotData() {
+  const data = {
+    [WEVU_SLOT_OWNER_KEY]: {},
+    [WEVU_SLOT_PROPS_DATA_KEY]: {},
+  }
+  Object.defineProperty(data, WEVU_SLOT_OWNER_PROXY_KEY, {
+    value: undefined,
+    configurable: true,
+    enumerable: false,
+    writable: true,
+  })
+  return data
+}
+
 export function createScopedSlotOptions(
   overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ) {
@@ -117,10 +140,7 @@ export function createScopedSlotOptions(
         },
       },
     },
-    data: () => ({
-      [WEVU_SLOT_OWNER_KEY]: {},
-      [WEVU_SLOT_PROPS_DATA_KEY]: {},
-    }),
+    data: createScopedSlotData,
     lifetimes: {
       attached(this: any) {
         const ownerId = this.properties?.[WEVU_SLOT_OWNER_ID_KEY] ?? ''
@@ -129,7 +149,7 @@ export function createScopedSlotOptions(
           return
         }
         const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
-          this.__wvOwnerProxy = proxy
+          setOwnerProxy(this, proxy)
           if (typeof this.setData === 'function') {
             this.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
           }
@@ -145,12 +165,12 @@ export function createScopedSlotOptions(
           this.__wvOwnerUnsub()
         }
         this.__wvOwnerUnsub = undefined
-        this.__wvOwnerProxy = undefined
+        setOwnerProxy(this, undefined)
       },
     },
     methods: {
       [WEVU_OWNER_HANDLER](this: any, event: any) {
-        const owner = this.__wvOwnerProxy
+        const owner = this[WEVU_SLOT_OWNER_PROXY_KEY]
         const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
         const result = runInlineExpression(owner, undefined, event, inlineMap)
         if (result !== undefined) {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
 
 const WHITESPACE_RE = /\s/g
@@ -723,6 +724,37 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<view><Leaf /></view>')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
+  })
+
+  it('uses owner proxy for augmented scoped slot runtime call bindings', () => {
+    const template = `
+<Cell>
+  <text>{{ func(text) }}</text>
+</Cell>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-558/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(scopedSlotComponents).toHaveLength(1)
+    const slot = scopedSlotComponents?.[0]
+    expect(slot?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(slot?.classStyleBindings?.[0]?.exp).toBe('func(text)')
+    const computedCode = buildClassStyleComputedCode(slot?.classStyleBindings ?? [], {
+      normalizeClassName: '__wevuNormalizeClass',
+      normalizeStyleName: '__wevuNormalizeStyle',
+      unrefName: '__wevuUnref',
+    })
+    expect(computedCode).toContain('this.__wvOwnerProxy.func')
+    expect(computedCode).toContain('this.__wvOwnerProxy.text')
+    expect(computedCode).not.toContain('this.__wvOwner.func')
   })
 
   it('emits nested augmented scoped slot components for multi-level default component children', () => {

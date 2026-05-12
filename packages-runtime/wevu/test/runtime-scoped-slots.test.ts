@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWevuScopedSlotComponent, defineComponent } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
@@ -38,6 +39,38 @@ describe('runtime: scoped slots', () => {
     inst.setData.mockClear()
     updateOwnerSnapshot(ownerId, { msg: 'after' }, proxy as any)
     expect(inst.setData).not.toHaveBeenCalled()
+  })
+
+  it('keeps owner proxy available for computed bindings', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_bind_0).toBe('987654321')
+    expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
   })
 
   it('merges slot scope into slot props', () => {
