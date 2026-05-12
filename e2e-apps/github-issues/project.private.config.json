@@ -435,6 +435,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/slot-fallback-compiler-off/index",
+          "pathName": "pages/slot-fallback-compiler-off/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/index",
           "pathName": "subpackages/item/index",
           "query": "",
