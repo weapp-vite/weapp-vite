@@ -86,6 +86,7 @@ vi.mock('./injectPageFeatures', () => ({
 vi.mock('./scopedSlot', () => ({
   emitScopedSlotChunks: vi.fn(),
   loadScopedSlotModule: vi.fn(() => null),
+  registerScopedSlotHostGenerics: vi.fn(),
   resolveScopedSlotVirtualId: vi.fn(() => null),
 }))
 
