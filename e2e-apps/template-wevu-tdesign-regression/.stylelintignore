@@ -1,0 +1,14 @@
+node_modules/**
+dist/**
+dist-*/**
+build/**
+coverage/**
+miniprogram_npm/**
+.cache/**
+.tmp/**
+.turbo/**
+.vite/**
+.vite-inspect/**
+.weapp-vite/**
+.wevu-config/**
+__temp__/**

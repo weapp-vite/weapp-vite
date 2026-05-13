@@ -201,6 +201,20 @@ function appendSharedChunkImporters(
       state.hmrSharedChunksByModule.set(moduleId, new Set([chunkId]))
     }
   }
+  const pruneSharedChunkModules = (chunkId: string, nextModuleIds: Set<string>) => {
+    if (!nextModuleIds.size) {
+      return
+    }
+    for (const [moduleId, chunkIds] of state.hmrSharedChunksByModule) {
+      if (nextModuleIds.has(moduleId)) {
+        continue
+      }
+      chunkIds.delete(chunkId)
+      if (chunkIds.size === 0) {
+        state.hmrSharedChunksByModule.delete(moduleId)
+      }
+    }
+  }
 
   for (const [bundleKey, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
@@ -212,6 +226,7 @@ function appendSharedChunkImporters(
     }
     const projectSourceModules = collectProjectSourceModules(chunk)
     bundleChunks.set(chunk.fileName, chunk)
+    pruneSharedChunkModules(chunk.fileName, projectSourceModules)
     if (projectSourceModules.size > 0) {
       state.hmrSourceSharedChunks.add(chunk.fileName)
     }

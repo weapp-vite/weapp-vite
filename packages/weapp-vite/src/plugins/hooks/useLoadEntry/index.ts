@@ -101,7 +101,8 @@ function resolvePendingEntryIds(options: {
   }
 
   for (const entryId of options.dirtyEntrySet) {
-    if (options.dirtyEntryReasons.get(entryId) === 'metadata') {
+    const dirtyReason = options.dirtyEntryReasons.get(entryId)
+    if (dirtyReason !== 'dependency') {
       continue
     }
     const chunkIds = options.sharedChunksByEntry.get(entryId)

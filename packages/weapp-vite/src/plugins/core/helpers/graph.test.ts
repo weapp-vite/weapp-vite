@@ -314,7 +314,7 @@ describe('core helpers graph', () => {
     )
   })
 
-  it('preserves and augments module index for chunks included in partial refreshes', () => {
+  it('refreshes module index for chunks included in partial refreshes', () => {
     const state = createState()
     const entry = '/project/src/pages/hmr/index.ts'
     const previousModule = '/project/src/shared/previous.ts'
@@ -336,8 +336,37 @@ describe('core helpers graph', () => {
 
     refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
 
-    expect(state.hmrSharedChunksByModule.get(previousModule)).toEqual(new Set(['common.js']))
+    expect(state.hmrSharedChunksByModule.has(previousModule)).toBe(false)
     expect(state.hmrSharedChunksByModule.get(nextModule)).toEqual(new Set(['common.js']))
+  })
+
+  it('replaces stale module ownership when partial refresh includes shared chunk metadata', () => {
+    const state = createState()
+    const entry = '/project/src/pages/hmr/index.ts'
+    const previousModule = '/project/src/shared/previous.ts'
+    const nextModule = '/project/src/shared/next.ts'
+    state.resolvedEntryMap.set(entry, { value: true })
+    state.hmrSharedChunkImporters.set('common.js', new Set([entry]))
+    state.hmrSharedChunksByModule.set(previousModule, new Set(['common.js']))
+    state.hmrSharedChunksByModule.set(nextModule, new Set(['legacy-common.js']))
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: entry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        moduleIds: [nextModule],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
+
+    expect(state.hmrSharedChunksByModule.has(previousModule)).toBe(false)
+    expect(state.hmrSharedChunksByModule.get(nextModule)).toEqual(
+      new Set(['legacy-common.js', 'common.js']),
+    )
   })
 
   it('preserves module index when partial refresh includes shared chunk shell without module metadata', () => {
