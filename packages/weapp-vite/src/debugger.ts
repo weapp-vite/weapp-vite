@@ -1,4 +1,4 @@
-import createDebug from 'debug'
+import { createDebug } from 'obug'
 
 /**
  * 创建一个调试器实例，用于输出带有命名空间的调试信息。

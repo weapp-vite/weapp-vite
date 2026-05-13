@@ -42,7 +42,7 @@ export default defineConfig({
       'cac',
       'chokidar',
       'comment-json',
-      'debug',
+      'obug',
       'fdir',
       'htmlparser2',
       'local-pkg',

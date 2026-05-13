@@ -51,8 +51,8 @@
   },
   "dependencies": {
     "@weapp-vite/qr": "workspace:*",
-    "debug": "catalog:",
-    "ws": "^8.18.3"
+    "obug": "catalog:",
+    "ws": "^8.20.1"
   },
   "publishConfig": {
     "access": "public",

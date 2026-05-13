@@ -2,12 +2,12 @@
  * @file 自动化协议连接实现。
  */
 import { EventEmitter } from 'node:events'
-import debug from 'debug'
+import { createDebug } from 'obug'
 import WebSocket from 'ws'
 import { dateFormat, stringify, uuid } from './internal/compat'
 import Transport from './Transport'
 
-const debugProtocol = debug('automator:protocol')
+const debugProtocol = createDebug('automator:protocol')
 const closeErrTip = 'Connection closed, check if wechat web devTools is still running'
 const REQUEST_TIMEOUT = 30_000
 interface PendingCallback {

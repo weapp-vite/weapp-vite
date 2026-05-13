@@ -1,8 +1,8 @@
-import createDebug from 'debug'
+import { createDebug } from 'obug'
 import { createDebugger } from '@/debugger'
 
-vi.mock('debug', () => ({
-  default: vi.fn().mockImplementation((namespace) => {
+vi.mock('obug', () => ({
+  createDebug: vi.fn().mockImplementation((namespace) => {
     const mockDebug = Object.assign(
       vi.fn((..._args: any[]) => {
         void namespace
