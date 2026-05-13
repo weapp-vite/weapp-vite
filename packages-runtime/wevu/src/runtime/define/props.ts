@@ -273,8 +273,12 @@ export function normalizeProps(
   const baseProperties = (baseOptions as any).properties
   const resolvedExplicit = explicitProperties
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
+  const shouldAttachInternalProps = Boolean(props || resolvedExplicit)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
+    if (!shouldAttachInternalProps) {
+      return next
+    }
     if (!hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
       next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
     }

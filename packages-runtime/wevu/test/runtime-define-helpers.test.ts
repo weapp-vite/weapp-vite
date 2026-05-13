@@ -126,15 +126,14 @@ describe('runtime: define helpers', () => {
     expect(result.properties.vueSlots.type).toBeNull()
   })
 
-  it('keeps page-style options without explicit props stable when allowNullPropInput is enabled', () => {
+  it('keeps page-style options without explicit props free from component-only internal props', () => {
     const result = normalizeProps({
       data: () => ({}),
       allowNullPropInput: true,
       __wevu_isPage: true,
     })
 
-    expect(result.properties.__wvSlotOwnerId).toBeTruthy()
-    expect(result.properties.__wvSlotScope).toBeTruthy()
+    expect(result.properties).toEqual({})
   })
 
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {

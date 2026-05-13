@@ -95,7 +95,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     }
   }
 
-  if (!isApp && result.script && result.template?.includes(WEVU_SLOT_OWNER_ID_PROP)) {
+  if (!isPage && !isApp && result.script && result.template?.includes(WEVU_SLOT_OWNER_ID_PROP)) {
     const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
     if (injectedProps.transformed) {
       result.script = injectedProps.code

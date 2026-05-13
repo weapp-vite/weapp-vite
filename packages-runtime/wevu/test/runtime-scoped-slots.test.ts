@@ -492,13 +492,13 @@ describe('runtime: scoped slots', () => {
     const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
-    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
+    const inst: any = { data: {}, setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
     const ownerId = inst.__wvOwnerId
     expect(ownerId).toBeTruthy()
-    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
+    expect(inst.data[WEVU_SLOT_OWNER_ID_KEY]).toBe(ownerId)
     expect(getOwnerSnapshot(ownerId)?.title).toBe('')
 
     inst.properties.title = 'Next'

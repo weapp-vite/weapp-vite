@@ -41,11 +41,11 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\w$]*\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\w$]*\(\{/,
   ],
   'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,
