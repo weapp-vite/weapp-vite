@@ -704,6 +704,39 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toBeUndefined()
   })
 
+  it('keeps plain template slot content in source order with implicit default children', () => {
+    const template = `
+<van-cell>
+  <div />
+  <template #footer1>
+    <view />
+  </template>
+  <template #footer2>
+    <text />
+  </template>
+</van-cell>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-574/index.vue',
+      {
+        scopedSlotsRequireProps: false,
+        slotSingleRootNoWrapper: true,
+        wevuComponentTags: ['van-cell'],
+      },
+    )
+
+    const defaultContentIndex = code.indexOf('<view class="div" />')
+    const footer1Index = code.indexOf('<view slot="footer1" />')
+    const footer2Index = code.indexOf('<text slot="footer2" />')
+
+    expect(code).toContain(`van-cell vue-slots="{{__wv_bind_0}}"`)
+    expect(defaultContentIndex).toBeGreaterThan(-1)
+    expect(footer1Index).toBeGreaterThan(defaultContentIndex)
+    expect(footer2Index).toBeGreaterThan(footer1Index)
+  })
+
   it('keeps explicit default template slots native when default component children are augmented', () => {
     const template = `
 <Provider>

@@ -27,6 +27,10 @@ import {
   stringifySlotName,
 } from './tag-slot'
 
+type SlotContentRenderItem
+  = | { type: 'declaration', declaration: ScopedSlotDeclaration }
+    | { type: 'default-child', child: any }
+
 function hasLegacySlotAttribute(children: any[]): boolean {
   return children.some((child) => {
     if (child.type !== NodeTypes.ELEMENT) {
@@ -145,6 +149,32 @@ function shouldExposePlainSlotPresence(node: ElementNode) {
   return node.tag === 'component'
 }
 
+function renderPlainSlotContentInSourceOrder(
+  renderItems: SlotContentRenderItem[],
+  plainSlotDeclarations: ScopedSlotDeclaration[],
+  implicitDefaultDeclaration: ScopedSlotDeclaration | undefined,
+  context: TransformContext,
+  transformNode: TransformNode,
+) {
+  const plainSlots = new Set(plainSlotDeclarations)
+  const shouldRenderImplicitDefault = implicitDefaultDeclaration
+    ? plainSlots.has(implicitDefaultDeclaration)
+    : false
+
+  return renderItems
+    .map((item) => {
+      if (item.type === 'declaration') {
+        return plainSlots.has(item.declaration)
+          ? renderSlotFallback(item.declaration, context, transformNode)
+          : ''
+      }
+      return shouldRenderImplicitDefault
+        ? transformNode(item.child, context)
+        : ''
+    })
+    .join('')
+}
+
 export function shouldTransformAsComponentWithSlots(
   node: ElementNode,
   context: TransformContext,
@@ -174,27 +204,32 @@ export function transformComponentWithSlots(
   const slotDirective = findSlotDirective(node)
 
   const nonTemplateChildren: any[] = []
+  const renderItems: SlotContentRenderItem[] = []
   for (const child of node.children) {
     if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
       const templateSlot = findSlotDirective(child as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        slotDeclarations.push(
-          buildSlotDeclaration(
-            slotName,
-            templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-            (child as ElementNode).children,
-            context,
-            { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
-          ),
+        const declaration = buildSlotDeclaration(
+          slotName,
+          templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
+          (child as ElementNode).children,
+          context,
+          { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
         )
+        slotDeclarations.push(declaration)
+        renderItems.push({ type: 'declaration', declaration })
         continue
       }
     }
     nonTemplateChildren.push(child)
+    if (isRenderableSlotChild(child)) {
+      renderItems.push({ type: 'default-child', child })
+    }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
     if (slotDeclarations.length) {
@@ -216,11 +251,13 @@ export function transformComponentWithSlots(
       context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
-      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true }))
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+      slotDeclarations.push(implicitDefaultDeclaration)
     }
   }
   else if (!slotDeclarations.length && defaultSlotChildren.length && !context.scopedSlotsRequireProps && !hasLegacySlotAttribute(defaultSlotChildren)) {
-    slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true }))
+    implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+    slotDeclarations.push(implicitDefaultDeclaration)
   }
 
   if (!slotDeclarations.length) {
@@ -294,9 +331,17 @@ export function transformComponentWithSlots(
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const { tag } = node
-  const plainSlotContent = plainSlotDeclarations
-    .map(decl => renderSlotFallback(decl, context, transformNode))
-    .join('')
+  const plainSlotContent = slotDirective
+    ? plainSlotDeclarations
+        .map(decl => renderSlotFallback(decl, context, transformNode))
+        .join('')
+    : renderPlainSlotContentInSourceOrder(
+        renderItems,
+        plainSlotDeclarations,
+        implicitDefaultDeclaration,
+        context,
+        transformNode,
+      )
   return plainSlotContent
     ? `<${tag}${attrString}>${plainSlotContent}</${tag}>`
     : `<${tag}${attrString} />`
@@ -312,28 +357,33 @@ export function transformComponentWithSlotsFallback(
   const slotDeclarations: ScopedSlotDeclaration[] = []
   const slotDirective = findSlotDirective(node)
   const nonTemplateChildren: any[] = []
+  const renderItems: SlotContentRenderItem[] = []
 
   for (const child of node.children) {
     if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
       const templateSlot = findSlotDirective(child as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        slotDeclarations.push(
-          buildSlotDeclaration(
-            slotName,
-            templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-            (child as ElementNode).children,
-            context,
-            { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
-          ),
+        const declaration = buildSlotDeclaration(
+          slotName,
+          templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
+          (child as ElementNode).children,
+          context,
+          { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
         )
+        slotDeclarations.push(declaration)
+        renderItems.push({ type: 'declaration', declaration })
         continue
       }
     }
     nonTemplateChildren.push(child)
+    if (isRenderableSlotChild(child)) {
+      renderItems.push({ type: 'default-child', child })
+    }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
     if (slotDeclarations.length) {
@@ -355,7 +405,8 @@ export function transformComponentWithSlotsFallback(
       context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
-      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context))
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context)
+      slotDeclarations.push(implicitDefaultDeclaration)
     }
   }
 
@@ -386,9 +437,17 @@ export function transformComponentWithSlotsFallback(
     context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
   }
 
-  const renderedSlots = slotDeclarations
-    .map(decl => renderSlotFallback(decl, context, transformNode))
-    .join('')
+  const renderedSlots = slotDirective
+    ? slotDeclarations
+        .map(decl => renderSlotFallback(decl, context, transformNode))
+        .join('')
+    : renderPlainSlotContentInSourceOrder(
+        renderItems,
+        slotDeclarations,
+        implicitDefaultDeclaration,
+        context,
+        transformNode,
+      )
 
   const { attrs } = collectElementAttributes(node, context, {
     skipSlotDirective: true,
