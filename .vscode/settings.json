@@ -81,6 +81,11 @@
     "pcss",
     "postcss"
   ],
+  "eslint.options": {
+    "ignorePatterns": [
+      "e2e-apps/**"
+    ]
+  },
   "css.validate": false,
   "less.validate": false,
   "scss.validate": false,
@@ -222,6 +227,7 @@
     "css",
     "scss"
   ],
+  "stylelint.ignorePath": ".vscode/stylelintignore",
   "terminal.integrated.env.linux": {
     "COREPACK_NPM_REGISTRY": "https://registry.npmmirror.com",
     "EDGEDRIVER_CDNURL": "https://npmmirror.com/mirrors/edgedriver",
