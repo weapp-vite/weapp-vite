@@ -19,6 +19,9 @@ export function transformElement(node: ElementNode, context: TransformContext, t
     if (type === 'if') {
       return transformIfElement(node, context, transformNode)
     }
+    if (type === 'for') {
+      return transformForElement(node, context, transformNode)
+    }
     return transformSlotElement(node, context, transformNode)
   }
 

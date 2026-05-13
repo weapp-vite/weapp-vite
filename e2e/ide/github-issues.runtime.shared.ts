@@ -5,6 +5,7 @@ import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const WHITESPACE_RE = /\s+/g
@@ -15,6 +16,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
 const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
+const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
+const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
 const SOURCE_PROJECT_COPY_ENTRIES = [
   '.env',
   'auto-import-components.json',
@@ -29,20 +32,63 @@ const SOURCE_PROJECT_COPY_ENTRIES = [
 ] as const
 
 function resolveGithubIssuesProjectId() {
-  const targetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? 'all'
+  const targetFile = process.env[E2E_TARGET_FILE_ENV]?.replaceAll('\\', '/') ?? 'all'
   return targetFile
     .replace(PROJECT_ID_SAFE_RE, '-')
     .replace(/^-+|-+$/g, '')
     || 'all'
 }
 
+function resolveGithubIssuesDistDir() {
+  const targetFile = process.env[E2E_TARGET_FILE_ENV]?.replaceAll('\\', '/') ?? ''
+  if (
+    process.env[SLOT_FALLBACK_COMPILER_OFF_ENV] === 'true'
+    || targetFile.endsWith(SLOT_FALLBACK_COMPILER_OFF_TARGET)
+  ) {
+    return 'dist-slot-fallback-compiler-off'
+  }
+  return 'dist'
+}
+
 const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
-export const DIST_ROOT = path.join(APP_ROOT, 'dist')
+export const DIST_ROOT = path.join(APP_ROOT, resolveGithubIssuesDistDir())
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value) && typeof value === 'object'
+}
+
+async function syncProjectConfigDistRoot() {
+  const relativeDistRoot = path.relative(APP_ROOT, DIST_ROOT).replaceAll('\\', '/')
+  if (!relativeDistRoot || relativeDistRoot === 'dist') {
+    return
+  }
+
+  const projectConfigPath = path.join(APP_ROOT, 'project.config.json')
+  const config = await fs.readJSON(projectConfigPath).catch(() => undefined) as unknown
+  if (!isRecord(config)) {
+    return
+  }
+
+  config.miniprogramRoot = `${relativeDistRoot}/`
+
+  const setting = config.setting
+  if (isRecord(setting) && Array.isArray(setting.packNpmRelationList)) {
+    for (const item of setting.packNpmRelationList) {
+      if (isRecord(item)) {
+        item.miniprogramNpmDistDir = `./${relativeDistRoot}`
+      }
+    }
+  }
+
+  await fs.writeJSON(projectConfigPath, config, {
+    spaces: 2,
+  })
+}
 
 async function prepareIsolatedProjectRoot() {
   await fs.remove(APP_ROOT)
@@ -61,6 +107,8 @@ async function prepareIsolatedProjectRoot() {
   if (await fs.pathExists(SOURCE_NODE_MODULES)) {
     await fs.symlink(SOURCE_NODE_MODULES, path.join(APP_ROOT, 'node_modules'), 'junction')
   }
+
+  await syncProjectConfigDistRoot()
 }
 
 async function runBuild() {

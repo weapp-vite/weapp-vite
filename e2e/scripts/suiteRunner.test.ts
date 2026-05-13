@@ -240,12 +240,18 @@ describe('suiteRunner', () => {
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
       },
     })
+    expect(ideFullTasks.find(task => task.label === 'ide/template-wevu-features-app.test.ts')).toMatchObject({
+      env: {
+        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      },
+    })
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue558.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(9)
+    expect(ideGithubIssuesTasks.length).toBe(10)
     expect(ideGithubIssuesTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBe(true)
   })
 

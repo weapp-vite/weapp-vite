@@ -3,6 +3,10 @@ import type * as t from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
+import {
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { collectSetDataPickKeysFromTemplateCode } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
@@ -203,26 +207,105 @@ function injectPickIntoOptionsObject(optionsObject: t.ObjectExpression, keys: st
   return false
 }
 
-/**
- * 从编译后的 WXML 模板提取渲染相关的顶层 key。
- */
-export function collectSetDataPickKeysFromTemplate(
-  template: string,
-  options?: {
-    astEngine?: AstEngineName
-  },
-): string[] {
-  return collectSetDataPickKeysFromTemplateCode(template, options)
+function createScopedSlotHostPropertyDefinition(typeName: 'String' | 'null', value: string | null): t.ObjectExpression {
+  return {
+    type: 'ObjectExpression',
+    properties: [
+      {
+        type: 'ObjectProperty',
+        key: { type: 'Identifier', name: 'type' },
+        computed: false,
+        shorthand: false,
+        value: typeName === 'String' ? { type: 'Identifier', name: 'String' } : { type: 'NullLiteral' },
+      },
+      {
+        type: 'ObjectProperty',
+        key: { type: 'Identifier', name: 'value' },
+        computed: false,
+        shorthand: false,
+        value: value === null ? { type: 'NullLiteral' } : { type: 'StringLiteral', value },
+      },
+    ],
+  }
 }
 
-/**
- * 在 wevu 组件脚本中注入 setData.pick。
- */
-export function injectSetDataPickInJs(
+function createScopedSlotHostProperties(): t.ObjectProperty[] {
+  return [
+    {
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_OWNER_ID_PROP },
+      computed: false,
+      shorthand: false,
+      value: createScopedSlotHostPropertyDefinition('String', ''),
+    },
+    {
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_SCOPE_KEY },
+      computed: false,
+      shorthand: false,
+      value: createScopedSlotHostPropertyDefinition('null', null),
+    },
+  ]
+}
+
+function injectScopedSlotHostPropertiesIntoObject(propertiesObject: t.ObjectExpression): boolean {
+  let changed = false
+  for (const prop of createScopedSlotHostProperties().reverse()) {
+    const key = prop.key.type === 'Identifier' ? prop.key.name : undefined
+    if (!key || getObjectPropertyByKey(propertiesObject, key)) {
+      continue
+    }
+    propertiesObject.properties.unshift(prop)
+    changed = true
+  }
+  return changed
+}
+
+function injectScopedSlotHostPropertiesIntoOptionsObject(optionsObject: t.ObjectExpression): boolean {
+  const propertiesProp = getObjectPropertyByKey(optionsObject, 'properties')
+  if (!propertiesProp) {
+    optionsObject.properties.unshift({
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: 'properties' },
+      computed: false,
+      shorthand: false,
+      value: {
+        type: 'ObjectExpression',
+        properties: createScopedSlotHostProperties(),
+      },
+    })
+    return true
+  }
+
+  const propertiesValue = unwrapExpression(propertiesProp.value as t.Expression)
+  if (propertiesValue.type === 'ObjectExpression') {
+    return injectScopedSlotHostPropertiesIntoObject(propertiesValue)
+  }
+  if (
+    propertiesValue.type === 'Identifier'
+    || propertiesValue.type === 'MemberExpression'
+    || propertiesValue.type === 'CallExpression'
+  ) {
+    propertiesProp.value = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'SpreadElement',
+          argument: propertiesValue,
+        },
+        ...createScopedSlotHostProperties(),
+      ],
+    }
+    return true
+  }
+  return false
+}
+
+function transformTargetWevuOptionsInJs(
   source: string,
-  pickKeys: string[],
+  transformOptions: (optionsObject: t.ObjectExpression) => boolean,
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
-  if (!pickKeys.length || !mayNeedInjectSetDataPickInJs(source)) {
+  if (!mayNeedInjectSetDataPickInJs(source)) {
     return { code: source, transformed: false }
   }
 
@@ -250,7 +333,7 @@ export function injectSetDataPickInJs(
 
   let changed = false
   for (const optionsObject of candidateOptions) {
-    changed = injectPickIntoOptionsObject(optionsObject, pickKeys) || changed
+    changed = transformOptions(optionsObject) || changed
   }
   if (!changed) {
     return { code: source, transformed: false }
@@ -262,4 +345,45 @@ export function injectSetDataPickInJs(
     sourceFileName: 'inline.js',
   }, source)
   return { code: generated.code, transformed: true, map: generated.map as EncodedSourceMapLike }
+}
+
+/**
+ * 从编译后的 WXML 模板提取渲染相关的顶层 key。
+ */
+export function collectSetDataPickKeysFromTemplate(
+  template: string,
+  options?: {
+    astEngine?: AstEngineName
+  },
+): string[] {
+  return collectSetDataPickKeysFromTemplateCode(template, options)
+}
+
+/**
+ * 在 wevu 组件脚本中注入 setData.pick。
+ */
+export function injectSetDataPickInJs(
+  source: string,
+  pickKeys: string[],
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
+  if (!pickKeys.length) {
+    return { code: source, transformed: false }
+  }
+
+  return transformTargetWevuOptionsInJs(
+    source,
+    optionsObject => injectPickIntoOptionsObject(optionsObject, pickKeys),
+  )
+}
+
+/**
+ * 在含有 scoped slot outlet 的 wevu 组件脚本中注入宿主内部属性。
+ */
+export function injectScopedSlotHostPropertiesInJs(
+  source: string,
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
+  return transformTargetWevuOptionsInJs(
+    source,
+    injectScopedSlotHostPropertiesIntoOptionsObject,
+  )
 }

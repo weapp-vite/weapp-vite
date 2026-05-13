@@ -96,6 +96,7 @@ interface ScenarioResult {
 
 interface ProjectResult {
   id: string
+  baselineId?: string
   kind: ProjectCase['kind']
   platform: RuntimePlatform
   source: string
@@ -150,6 +151,9 @@ const SKIPPED_PROJECT_IDS = new Set([
   'apps/rollup-watcher',
   'e2e-apps/github-issues',
   'e2e-apps/script-setup-macros-js-with-defaults-invalid',
+])
+const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
+  ['e2e-apps/template-wevu-tdesign-regression', 'templates/weapp-vite-wevu-tailwindcss-tdesign-template'],
 ])
 
 async function main() {
@@ -399,6 +403,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     : scenarios
   const result: ProjectResult = {
     id: project.id,
+    baselineId: WORKSPACE_HMR_BASELINE_PROJECT_ALIASES.get(project.id),
     kind: project.kind,
     platform: project.platform,
     source: formatProjectPath(project.root),
@@ -785,7 +790,7 @@ async function waitForHmrProfileSample(
       return withScenarioProfileFallback(project, unattributed, sourcePath)
     }
     if (candidates.length > 0 && candidates.every(isUnattributedProfileSample)) {
-      return withScenarioProfileFallback(project, candidates.at(-1)!, sourcePath)
+      return withScenarioProfileFallback(project, candidates[candidates.length - 1]!, sourcePath)
     }
     await sleep(100)
   }

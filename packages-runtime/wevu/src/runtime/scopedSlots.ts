@@ -1,6 +1,8 @@
 import type { ComponentPublicInstance, InternalRuntimeState, RuntimeInstance } from './types'
 import {
   WEVU_PROPS_KEY,
+  WEVU_SCOPED_SLOT_OWNER_SEED_KEY,
+  WEVU_SCOPED_SLOT_OWNER_STORE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
 } from '@weapp-core/constants'
 
@@ -16,12 +18,24 @@ type RuntimeInstanceWithOwnerSnapshot = RuntimeInstance<any, any, any> & {
   __wevu_cloneLatestSnapshot?: () => Record<string, any>
 }
 
-const ownerStore = new Map<string, OwnerRecord>()
-let ownerSeed = 0
+function getScopedSlotGlobalStore() {
+  const globalObject = globalThis as Record<string, any>
+  if (!(globalObject[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] instanceof Map)) {
+    globalObject[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] = new Map<string, OwnerRecord>()
+  }
+  if (typeof globalObject[WEVU_SCOPED_SLOT_OWNER_SEED_KEY] !== 'number') {
+    globalObject[WEVU_SCOPED_SLOT_OWNER_SEED_KEY] = 0
+  }
+  return {
+    globalObject,
+    ownerStore: globalObject[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] as Map<string, OwnerRecord>,
+  }
+}
 
 export function allocateOwnerId() {
-  ownerSeed += 1
-  return `wv${ownerSeed}`
+  const { globalObject } = getScopedSlotGlobalStore()
+  globalObject[WEVU_SCOPED_SLOT_OWNER_SEED_KEY] += 1
+  return `wv${globalObject[WEVU_SCOPED_SLOT_OWNER_SEED_KEY]}`
 }
 
 export function updateOwnerSnapshot(
@@ -29,6 +43,7 @@ export function updateOwnerSnapshot(
   snapshot: Record<string, any>,
   proxy: ComponentPublicInstance<any, any, any> | undefined,
 ) {
+  const { ownerStore } = getScopedSlotGlobalStore()
   const record = ownerStore.get(ownerId) ?? { snapshot: {}, proxy, subscribers: new Set() }
   record.snapshot = snapshot
   record.proxy = proxy
@@ -46,10 +61,12 @@ export function updateOwnerSnapshot(
 }
 
 export function removeOwner(ownerId: string) {
+  const { ownerStore } = getScopedSlotGlobalStore()
   ownerStore.delete(ownerId)
 }
 
 export function subscribeOwner(ownerId: string, subscriber: OwnerSubscriber) {
+  const { ownerStore } = getScopedSlotGlobalStore()
   const record = ownerStore.get(ownerId) ?? { snapshot: {}, proxy: undefined, subscribers: new Set() }
   record.subscribers.add(subscriber)
   ownerStore.set(ownerId, record)
@@ -63,10 +80,12 @@ export function subscribeOwner(ownerId: string, subscriber: OwnerSubscriber) {
 }
 
 export function getOwnerProxy(ownerId: string) {
+  const { ownerStore } = getScopedSlotGlobalStore()
   return ownerStore.get(ownerId)?.proxy
 }
 
 export function getOwnerSnapshot(ownerId: string) {
+  const { ownerStore } = getScopedSlotGlobalStore()
   return ownerStore.get(ownerId)?.snapshot
 }
 
@@ -94,6 +113,15 @@ export function attachOwnerSnapshot(
   }
   catch {
     // 忽略写入异常
+  }
+  try {
+    const data = (target as any).data
+    if (data && typeof data === 'object') {
+      data[WEVU_SLOT_OWNER_ID_KEY] = ownerId
+    }
+  }
+  catch {
+    // 忽略 owner id 同步异常
   }
   const snapshot = resolveOwnerSnapshot(runtime)
   const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties

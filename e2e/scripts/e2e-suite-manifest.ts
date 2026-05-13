@@ -15,6 +15,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
+  'ide/github-issues.runtime.issue558.test.ts',
   'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.props.test.ts',
@@ -50,6 +51,7 @@ const IDE_TEMPLATES_PATTERNS = [
 ]
 const IDE_DIRECT_LAUNCH_PATTERNS = new Set([
   'ide/app-lifecycle.test.ts',
+  'ide/template-wevu-features-app.test.ts',
 ])
 const IDE_SMOKE_TESTS = [
   'ide/index.test.ts',

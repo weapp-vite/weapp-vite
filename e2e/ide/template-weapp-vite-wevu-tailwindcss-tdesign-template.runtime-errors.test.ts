@@ -13,6 +13,7 @@ const ROUTES = [
   '/pages/layouts/index',
 ]
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
+const KPI_BOARD_RENDER_TIMEOUT = 8_000
 
 async function runBuild() {
   await fs.rm(DIST_ROOT, { recursive: true, force: true })
@@ -48,6 +49,24 @@ async function closeSharedMiniProgram() {
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
   await miniProgram.close()
+}
+
+async function waitForElementText(page: any, selector: string, expected: string) {
+  const start = Date.now()
+  let latestText: string | undefined
+
+  while (Date.now() - start <= KPI_BOARD_RENDER_TIMEOUT) {
+    const element = await page.$(selector)
+    if (element) {
+      latestText = (await element.text()).trim()
+      if (latestText === expected) {
+        return latestText
+      }
+    }
+    await page.waitFor(200)
+  }
+
+  return latestText
 }
 
 function attachConsoleWarningCollector(miniProgram: any) {
@@ -135,6 +154,35 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
       expect(nextRefreshSeed).toEqual(expect.any(Number))
       expect(nextRefreshSeed).not.toBe(initialRefreshSeed)
 
+      expect(collector.getSince(marker)).toEqual([])
+      expect(warningCollector.getSince(warningMarker)).toEqual([])
+    }
+    finally {
+      warningCollector.dispose()
+      collector.dispose()
+    }
+  })
+
+  it('renders homepage KpiBoard scoped slot items in DevTools', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const warningCollector = attachConsoleWarningCollector(miniProgram)
+
+    try {
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      if (!page) {
+        throw new Error('Failed to launch route: /pages/index/index')
+      }
+
+      const marker = collector.mark()
+      const warningMarker = warningCollector.mark()
+      const renderedText = await waitForElementText(
+        page,
+        '[data-kpi-board-scope-label="visits"]',
+        '今日访问',
+      )
+
+      expect(renderedText).toBe('今日访问')
       expect(collector.getSince(marker)).toEqual([])
       expect(warningCollector.getSince(warningMarker)).toEqual([])
     }

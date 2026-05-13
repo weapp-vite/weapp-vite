@@ -420,6 +420,26 @@ async function waitForPageRoot(page: any, timeoutMs = 12_000) {
   return null
 }
 
+async function resolveReadyCurrentPage(miniProgram: any, route: string) {
+  if (typeof miniProgram?.currentPage !== 'function') {
+    return null
+  }
+
+  try {
+    const page = await miniProgram.currentPage()
+    if (normalizeSegment(page?.path ?? '') !== normalizeSegment(route)) {
+      return null
+    }
+    if (await waitForPageRoot(page)) {
+      return page
+    }
+  }
+  catch {
+  }
+
+  return null
+}
+
 async function loadAppConfig(templateRoot: string) {
   const distAppJsonPath = path.resolve(templateRoot, DIST_APP_JSON_PATH)
   if (await pathExists(distAppJsonPath)) {
@@ -532,6 +552,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   if (pages.length === 0) {
     throw new Error(`[${templateName}] No pages found in app config`)
   }
+  const launchWarmupRoute = warmupRoute ?? `/${pages[0]}`
 
   const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
   if (!(await pathExists(appWxssPath))) {
@@ -544,17 +565,27 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   debugTemplateE2E(templateName, 'automator-launching')
   const miniProgram = await launchAutomator({
     projectPath: templateRoot,
-    warmupRoute,
+    warmupRoute: launchWarmupRoute,
   })
 
   try {
     debugTemplateE2E(templateName, 'automator-launched')
+    let canReuseWarmupPage = true
     for (const pagePath of pages) {
       const route = `/${pagePath}`
       debugTemplateE2E(templateName, 'page-relaunch', route)
-      let page = await miniProgram.reLaunch(route)
-      if (!page) {
+      let page = canReuseWarmupPage && normalizeSegment(route) === normalizeSegment(launchWarmupRoute)
+        ? await resolveReadyCurrentPage(miniProgram, route)
+        : null
+      canReuseWarmupPage = false
+      if (page) {
+        debugTemplateE2E(templateName, 'page-current-reused', route)
+      }
+      else {
         page = await miniProgram.reLaunch(route)
+        if (!page) {
+          page = await miniProgram.reLaunch(route)
+        }
       }
       if (!page) {
         throw new Error(`[${templateName}] Failed to launch page: ${route}`)

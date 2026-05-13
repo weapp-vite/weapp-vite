@@ -68,6 +68,7 @@ packages/weapp-vite/test/fixtures/lib-mode/.tmp-dist-lib
 e2e-apps/chunk-modes/dist-matrix
 e2e-apps/__temp__/
 e2e-apps/github-issues/dist-issue-*
+e2e-apps/github-issues/dist-slot-*
 e2e-apps/lib-mode/dist-lib
 e2e-apps/lib-mode/dist-lib-file
 e2e-apps/lib-mode/dist-matrix

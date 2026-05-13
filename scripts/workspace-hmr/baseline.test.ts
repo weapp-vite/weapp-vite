@@ -125,6 +125,72 @@ describe('workspace HMR baseline thresholds', () => {
     ], { baseline }).issues).toHaveLength(0)
   })
 
+  it('uses a template baseline alias for mirrored e2e apps', () => {
+    const baseline = createWorkspaceHmrBaseline([
+      {
+        ...templateResult,
+        id: 'templates/weapp-vite-wevu-tailwindcss-tdesign-template',
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'vue-template',
+            profile: {
+              dirtyCount: 1,
+              pendingCount: 27,
+              emittedCount: 27,
+            },
+          },
+        ],
+      },
+    ], {
+      generatedAt: '2026-04-29T00:00:00.000Z',
+      mode: 'templates-baseline',
+      thresholds: {
+        maxPendingCount: 16,
+        maxEmittedCount: 16,
+        maxPendingDelta: 8,
+        maxEmittedDelta: 8,
+      },
+    })
+
+    const current: ProjectResult = {
+      ...templateResult,
+      id: 'e2e-apps/template-wevu-tdesign-regression',
+      baselineId: 'templates/weapp-vite-wevu-tailwindcss-tdesign-template',
+      kind: 'e2e-apps',
+      scenarios: [
+        {
+          ...templateResult.scenarios[0]!,
+          id: 'vue-template',
+          profile: {
+            dirtyCount: 1,
+            pendingCount: 27,
+            emittedCount: 27,
+          },
+        },
+      ],
+    }
+
+    expect(evaluateWorkspaceHmrThresholds([current], { baseline }).issues).toHaveLength(0)
+
+    const regressed = {
+      ...current,
+      scenarios: [
+        {
+          ...current.scenarios[0]!,
+          profile: {
+            dirtyCount: 1,
+            pendingCount: 36,
+            emittedCount: 36,
+          },
+        },
+      ],
+    }
+
+    expect(evaluateWorkspaceHmrThresholds([regressed], { baseline }).issues.map(issue => issue.metric))
+      .toEqual(['pendingCount', 'emittedCount'])
+  })
+
   it('parses environment threshold overrides', () => {
     expect(parseThresholdOverrides({
       WORKSPACE_HMR_MAX_SCENARIO_MS: '1234',

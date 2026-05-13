@@ -284,6 +284,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       attachRuntimeProxyProps,
     })
     runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    refreshOwnerSnapshot()
   }
 
   // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用

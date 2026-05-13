@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWevuScopedSlotComponent, defineComponent } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
@@ -38,6 +39,232 @@ describe('runtime: scoped slots', () => {
     inst.setData.mockClear()
     updateOwnerSnapshot(ownerId, { msg: 'after' }, proxy as any)
     expect(inst.setData).not.toHaveBeenCalled()
+  })
+
+  it('keeps owner proxy available for computed bindings', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.__wevu.state.__wvOwner).toEqual({ text: '123456789' })
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_bind_0).toBe('987654321')
+    expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
+  })
+
+  it('flushes owner-proxy computed bindings after owner snapshot is attached', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_ID_KEY]: ownerId,
+    }))
+  })
+
+  it('binds owner-proxy computed bindings when owner id arrives after attach', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { __wvOwnerId: '' },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    inst.setData.mockClear()
+
+    inst.properties.__wvOwnerId = ownerId
+    opts.properties.__wvOwnerId.observer.call(inst, ownerId)
+
+    expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
+  })
+
+  it('binds owner-proxy computed bindings from dedicated owner id prop', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        [WEVU_SLOT_OWNER_ID_KEY]: 'local-scoped-slot-owner',
+        [WEVU_SLOT_OWNER_ID_PROP]: ownerId,
+      },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+  })
+
+  it('does not register the legacy raw owner id attribute as a property', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+
+    expect(opts.properties).toHaveProperty(WEVU_SLOT_OWNER_ID_PROP)
+    expect(opts.properties).toHaveProperty(WEVU_SLOT_OWNER_ID_KEY)
+    expect(opts.properties).not.toHaveProperty('__wv-owner-id')
+  })
+
+  it('resyncs owner-proxy computed bindings on ready', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        [WEVU_SLOT_OWNER_ID_PROP]: ownerId,
+      },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    inst.setData.mockClear()
+    opts.lifetimes.ready.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+  })
+
+  it('stores owner proxy on scoped slot data without exposing it to snapshots', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const data = typeof opts.data === 'function' ? opts.data() : {}
+    const inst: any = {
+      data,
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.data[WEVU_SLOT_OWNER_PROXY_KEY]).toBe(proxy)
+    expect(Object.keys(inst.data)).not.toContain(WEVU_SLOT_OWNER_PROXY_KEY)
+    expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
+    }))
   })
 
   it('merges slot scope into slot props', () => {
@@ -83,6 +310,41 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { scope: 3, value: 2 } })
   })
 
+  it('refreshes computed bindings after slot props change', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        return this.__wvSlotPropsData.label
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        __wvSlotScope: null,
+        __wvSlotProps: ['label', 'alpha'],
+      },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.__wevu.state.__wvSlotPropsData).toEqual({ label: 'alpha' })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: 'alpha',
+    }))
+
+    inst.setData.mockClear()
+    opts.properties.__wvSlotProps.observer.call(inst, ['label', 'beta'])
+
+    expect(inst.__wevu.state.__wvSlotPropsData).toEqual({ label: 'beta' })
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { label: 'beta' } })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: 'beta',
+    }))
+  })
+
   it('keeps slot prop observers on properties', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!
@@ -108,6 +370,19 @@ describe('runtime: scoped slots', () => {
   it('reinstates global scoped slot creator when missing', () => {
     const globalObject = globalThis as any
     delete globalObject.__weapp_vite_createScopedSlotComponent
+
+    defineComponent({
+      setup() {
+        return {}
+      },
+    })
+
+    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+  })
+
+  it('refreshes stale global scoped slot creator', () => {
+    const globalObject = globalThis as any
+    globalObject.__weapp_vite_createScopedSlotComponent = vi.fn()
 
     defineComponent({
       setup() {
@@ -217,12 +492,13 @@ describe('runtime: scoped slots', () => {
     const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
-    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
+    const inst: any = { data: {}, setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
     const ownerId = inst.__wvOwnerId
     expect(ownerId).toBeTruthy()
+    expect(inst.data[WEVU_SLOT_OWNER_ID_KEY]).toBe(ownerId)
     expect(getOwnerSnapshot(ownerId)?.title).toBe('')
 
     inst.properties.title = 'Next'

@@ -116,7 +116,7 @@ export function evaluateWorkspaceHmrThresholds(
   }
 
   for (const project of results) {
-    const baselineProject = options.baseline?.projects[project.id]
+    const baselineProject = options.baseline?.projects[project.baselineId ?? project.id]
     if (options.baseline?.scope === 'templates' && project.kind === 'templates' && !baselineProject) {
       issues.push(createMissingBaselineIssue(project.id, 'project'))
     }

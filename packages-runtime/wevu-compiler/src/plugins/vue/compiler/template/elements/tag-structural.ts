@@ -14,6 +14,13 @@ import { transformSlotElement } from './tag-slot'
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
+  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue))
+    ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
+    : null
+  return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
+}
+
+function resolveListExpression(rawExpValue: string, context: TransformContext, hint: string) {
   const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
@@ -94,7 +101,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const listExp = forInfo.listExp
-    ? resolveConditionExpression(forInfo.listExp, context, 'v-for 列表')
+    ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
     : undefined
   const listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
@@ -116,6 +123,23 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const extraAttrs: string[] = listExp
       ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
+
+    if (elementWithoutFor.tag === 'slot') {
+      const slotElementWithoutForKey: ElementNode = {
+        ...elementWithoutFor,
+        props: elementWithoutFor.props.filter((prop) => {
+          return !(
+            prop.type === NodeTypes.DIRECTIVE
+            && prop.name === 'bind'
+            && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+            && prop.arg.content === 'key'
+          )
+        }),
+      }
+      const content = transformSlotElement(slotElementWithoutForKey, context, transformNode)
+      const attrString = extraAttrs.length ? ` ${extraAttrs.join(' ')}` : ''
+      return attrString ? `<block${attrString}>${content}</block>` : content
+    }
 
     const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
     if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {

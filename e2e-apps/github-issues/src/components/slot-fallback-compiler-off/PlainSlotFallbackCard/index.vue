@@ -6,12 +6,22 @@ const fallbackDefault = 'slot-fallback-compiler-off fallback default'
   <view class="slot-fallback-off-card">
     <view class="slot-fallback-off-card__header">
       <slot name="header">
-        <text class="slot-fallback-off-fallback-header">slot-fallback-compiler-off fallback header</text>
+        <text
+          class="slot-fallback-off-fallback-header"
+          data-slot-fallback-off-case="fallback-header"
+        >
+          slot-fallback-compiler-off fallback header
+        </text>
       </slot>
     </view>
     <view class="slot-fallback-off-card__body">
       <slot>
-        <text class="slot-fallback-off-fallback-default">{{ fallbackDefault }}</text>
+        <text
+          class="slot-fallback-off-fallback-default"
+          data-slot-fallback-off-case="fallback-default"
+        >
+          {{ fallbackDefault }}
+        </text>
       </slot>
     </view>
   </view>

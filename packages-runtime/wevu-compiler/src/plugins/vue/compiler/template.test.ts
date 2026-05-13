@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
 
 const WHITESPACE_RE = /\s/g
@@ -30,6 +31,28 @@ function expectNativeThirdPartySlotOutput(
   }
   expect(code).not.toContain('generic:scoped-slots-')
   expect(scopedSlotComponents).toBeUndefined()
+}
+
+function buildComputedCode(bindings: NonNullable<ReturnType<typeof compileVueTemplateToWxml>['classStyleBindings']>) {
+  return buildClassStyleComputedCode(bindings, {
+    normalizeClassName: '__wevuNormalizeClass',
+    normalizeStyleName: '__wevuNormalizeStyle',
+    unrefName: '__wevuUnref',
+  })
+}
+
+function expectScopedSlotComputed(
+  bindings: NonNullable<ReturnType<typeof compileVueTemplateToWxml>['classStyleBindings']> | undefined,
+  expectedExp: string,
+  expectedFragments: string[],
+) {
+  expect(bindings?.some(binding => binding.exp === expectedExp)).toBe(true)
+  const computedCode = buildComputedCode(bindings ?? [])
+  expect(computedCode).toBeTruthy()
+  for (const fragment of expectedFragments) {
+    expect(computedCode).toContain(fragment)
+  }
+  expect(computedCode).not.toContain('this.__wvOwner.func')
 }
 
 describe('compileVueTemplateToWxml', () => {
@@ -582,8 +605,29 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
-    expect(code).toContain(`__wv-slot-props="{{['item',card.item,'index',card.index]}}"`)
-    expect(code).not.toContain(`__wv-slot-props="{{{`)
+    expect(code).toContain(`__wvSlotProps="{{['item',card.item,'index',card.index]}}"`)
+    expect(code).not.toContain(`__wvSlotProps="{{{`)
+  })
+
+  it('preserves v-for on scoped slot outlets', () => {
+    const template = `
+<slot
+  v-for="(item, index) in rows"
+  :key="item.id"
+  :item="item"
+  :index="index"
+/>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/ListScopedCell/index.vue',
+    )
+
+    expect(code).toContain('<block wx:for="{{rows}}" wx:for-item="item" wx:for-index="index">')
+    expect(code).toContain(`__wvSlotProps="{{['item',item,'index',index]}}"`)
+    expect(code).toContain('__wvSlotScope="{{__wvSlotScope}}"')
+    expect(code).not.toContain(`'key',item.id`)
   })
 
   it('keeps structural directives on slot outlet elements', () => {
@@ -613,8 +657,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`__wv-slot-scope="{{['item',item,'index',index]}}"`)
-    expect(code).not.toContain(`__wv-slot-scope="{{{`)
+    expect(code).toContain(`__wvSlotScope="{{['item',item,'index',index]}}"`)
+    expect(code).not.toContain(`__wvSlotScope="{{{`)
   })
 
   it('emits augmented scoped slot components for plain default component children when enabled', () => {
@@ -632,7 +676,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
-    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<Leaf')
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
     expect(scopedSlotComponents).toHaveLength(1)
@@ -719,10 +763,148 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('generic:scoped-slots-default="')
-    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<view><Leaf /></view>')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
+  })
+
+  it('uses owner proxy for augmented scoped slot runtime call bindings', () => {
+    const template = `
+<Cell>
+  <text>{{ func(text) }}</text>
+</Cell>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-558/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(scopedSlotComponents).toHaveLength(1)
+    const slot = scopedSlotComponents?.[0]
+    expect(slot?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(slot?.classStyleBindings?.[0]?.exp).toBe('func(text)')
+    const computedCode = buildClassStyleComputedCode(slot?.classStyleBindings ?? [], {
+      normalizeClassName: '__wevuNormalizeClass',
+      normalizeStyleName: '__wevuNormalizeStyle',
+      unrefName: '__wevuUnref',
+    })
+    expect(computedCode).toContain('this.__wvOwnerProxy.func')
+    expect(computedCode).toContain('this.__wvOwnerProxy.text')
+    expect(computedCode).not.toContain('this.__wvOwner.func')
+  })
+
+  it('uses owner proxy across augmented default, named, scoped and nested slots', () => {
+    const template = `
+<Cell>
+  <text>{{ func(text) }}</text>
+</Cell>
+<NamedSlotCard>
+  <template #header>
+    <text>{{ func(headerText) }}</text>
+  </template>
+  <template #default>
+    <text>{{ func(defaultText) }}</text>
+  </template>
+  <template #footer="{ suffix }">
+    <text>{{ func(text + suffix) }}</text>
+  </template>
+</NamedSlotCard>
+<DefaultScopedCell v-slot="{ label, count }">
+  <text v-if="visible">{{ func(label + '-' + count + '-' + text) }}</text>
+</DefaultScopedCell>
+<ListScopedCell v-slot="{ item, index }">
+  <text>{{ func(item.label + '-' + index + '-' + text) }}</text>
+</ListScopedCell>
+<Issue558NestedSlotGroup>
+  <Issue558NestedSlotCell>
+    <text>{{ func(nestedText) }}</text>
+  </Issue558NestedSlotCell>
+</Issue558NestedSlotGroup>
+    `.trim()
+
+    const { code, scopedSlotComponents, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-558/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).toContain('generic:scoped-slots-header="')
+    expect(code).toContain('generic:scoped-slots-footer="')
+    expect(code).not.toContain('<Issue558NestedSlotCell>')
+    expect(classStyleBindings?.some(binding => binding.exp === 'func(headerText)')).toBe(false)
+    expect(classStyleBindings?.some(binding => binding.exp === 'func(defaultText)')).toBe(false)
+    expect(scopedSlotComponents).toHaveLength(8)
+
+    const defaultSlots = scopedSlotComponents?.filter(slot => slot.slotKey === 'default') ?? []
+    const headerSlot = scopedSlotComponents?.find(slot => slot.slotKey === 'header')
+    const footerSlot = scopedSlotComponents?.find(slot => slot.slotKey === 'footer')
+    const findDefaultSlotByBinding = (exp: string) => {
+      return defaultSlots.find(slot => slot.classStyleBindings?.some(binding => binding.exp === exp))
+    }
+    const implicitDefault = findDefaultSlotByBinding('func(text)')
+    const explicitDefault = findDefaultSlotByBinding('func(defaultText)')
+    const defaultScoped = findDefaultSlotByBinding('func(label + \'-\' + count + \'-\' + text)')
+    const listScoped = findDefaultSlotByBinding('func(item.label + \'-\' + index + \'-\' + text)')
+    const nestedOuter = defaultSlots.find(slot => slot.template.includes('<Issue558NestedSlotCell generic:scoped-slots-default='))
+    const nestedInner = findDefaultSlotByBinding('func(nestedText)')
+
+    expect(implicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(headerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(explicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(footerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
+    expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(nestedOuter?.template).toContain('<Issue558NestedSlotCell generic:scoped-slots-default=')
+    expect(nestedOuter?.template).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+    expect(nestedInner?.template).toContain('<text>{{__wv_bind_0}}</text>')
+
+    expectScopedSlotComputed(implicitDefault?.classStyleBindings, 'func(text)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.text',
+    ])
+    expectScopedSlotComputed(headerSlot?.classStyleBindings, 'func(headerText)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.headerText',
+    ])
+    expectScopedSlotComputed(explicitDefault?.classStyleBindings, 'func(defaultText)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.defaultText',
+    ])
+    expectScopedSlotComputed(footerSlot?.classStyleBindings, 'func(text + suffix)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.text',
+      'this.__wvSlotPropsData.suffix',
+    ])
+    expectScopedSlotComputed(defaultScoped?.classStyleBindings, 'func(label + \'-\' + count + \'-\' + text)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.text',
+      'this.__wvSlotPropsData.label',
+      'this.__wvSlotPropsData.count',
+    ])
+    expectScopedSlotComputed(defaultScoped?.classStyleBindings, 'visible', [
+      'this.__wvOwnerProxy.visible',
+    ])
+    expectScopedSlotComputed(listScoped?.classStyleBindings, 'func(item.label + \'-\' + index + \'-\' + text)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.text',
+      'this.__wvSlotPropsData.item',
+      'this.__wvSlotPropsData.index',
+    ])
+    expectScopedSlotComputed(nestedInner?.classStyleBindings, 'func(nestedText)', [
+      'this.__wvOwnerProxy.func',
+      'this.__wvOwnerProxy.nestedText',
+    ])
   })
 
   it('emits nested augmented scoped slot components for multi-level default component children', () => {
@@ -1005,7 +1187,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(code).toContain(`<slot />`)
-    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{['item',card.item,'index',card.index]}}" __wv-slot-scope="{{__wvSlotScope}}" />`)
+    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{['item',card.item,'index',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />`)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')
     expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
@@ -1074,7 +1256,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<slot><view>fallback</view></slot>')
     expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
-    expect(code).not.toContain('__wv-slot-props=')
+    expect(code).not.toContain('__wvSlotProps=')
   })
 
   it('keeps plain slot fallback presence-guarded when scoped slot compiler is disabled', () => {

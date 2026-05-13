@@ -11,9 +11,19 @@ definePageJson({
     <PlainSlotFallbackCard class="slot-fallback-off-card-empty" />
     <PlainSlotFallbackCard class="slot-fallback-off-card-provided">
       <template #header>
-        <text class="slot-fallback-off-provided-header">slot-fallback-compiler-off provided header</text>
+        <text
+          class="slot-fallback-off-provided-header"
+          data-slot-fallback-off-case="provided-header"
+        >
+          slot-fallback-compiler-off provided header
+        </text>
       </template>
-      <text class="slot-fallback-off-provided-default">slot-fallback-compiler-off provided default</text>
+      <text
+        class="slot-fallback-off-provided-default"
+        data-slot-fallback-off-case="provided-default"
+      >
+        slot-fallback-compiler-off provided default
+      </text>
     </PlainSlotFallbackCard>
   </view>
 </template>

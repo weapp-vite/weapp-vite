@@ -110,7 +110,7 @@ describe('asset plugin bundled source collection', () => {
       },
     })
     expect(bundle['components/native-tabbar/index.wxml'].source).toContain('<slot /><scoped-slots-default')
-    expect(bundle['components/native-tabbar/index.wxml'].source).toContain('__wv-owner-id="{{__wvSlotOwnerId}}"')
+    expect(bundle['components/native-tabbar/index.wxml'].source).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId}}"')
     expect(bundle['components/native-tabbar/index.js'].code).toContain('properties: { __wvSlotOwnerId')
     expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
       fileName: 'components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml',

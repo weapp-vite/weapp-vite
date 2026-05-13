@@ -4,7 +4,7 @@ import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
 import { Buffer } from 'node:buffer'
 import {
-  WEVU_SLOT_OWNER_ATTR,
+  WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_PROPS_ATTR,
   WEVU_SLOT_SCOPE_ATTR,
@@ -122,7 +122,7 @@ function withScopedSlotComponentGenerics(
 }
 
 function createScopedSlotGenericTag(key: string) {
-  return `<${key} wx:if="{{${WEVU_SLOT_OWNER_ID_PROP}}}" ${WEVU_SLOT_OWNER_ATTR}="{{${WEVU_SLOT_OWNER_ID_PROP}}}" ${WEVU_SLOT_PROPS_ATTR}="{{[]}}" ${WEVU_SLOT_SCOPE_ATTR}="{{${WEVU_SLOT_SCOPE_KEY}}}" />`
+  return `<${key} wx:if="{{${WEVU_SLOT_OWNER_ID_PROP}}}" ${WEVU_SLOT_OWNER_ID_ATTR}="{{${WEVU_SLOT_OWNER_ID_PROP}}}" ${WEVU_SLOT_PROPS_ATTR}="{{[]}}" ${WEVU_SLOT_SCOPE_ATTR}="{{${WEVU_SLOT_SCOPE_KEY}}}" />`
 }
 
 function createSlotPatchPattern(key: string) {

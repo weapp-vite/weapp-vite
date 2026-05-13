@@ -273,9 +273,14 @@ async function onQuickAction(action: QuickActionItem) {
           </t-button>
         </template>
         <template #items="{ items }">
-          <view v-for="card in items" :key="card.key" class="rounded-[18rpx] bg-[#f4f6ff] p-[16rpx]">
+          <view
+            v-for="card in items"
+            :key="card.key"
+            class="rounded-[18rpx] bg-[#f4f6ff] p-[16rpx]"
+            :data-kpi-board-scope-card="card.key"
+          >
             <view class="flex items-center justify-between">
-              <text class="text-[22rpx] text-[#51517c]">
+              <text class="text-[22rpx] text-[#51517c]" :data-kpi-board-scope-label="card.key">
                 {{ card.item.label }}
               </text>
               <t-tag v-if="card.isLeading" size="small" theme="warning" variant="light">

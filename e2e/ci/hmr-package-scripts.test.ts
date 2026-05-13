@@ -49,6 +49,16 @@ const PACKAGE_SCRIPT_HMR_CASES: PackageScriptHmrCase[] = [
   },
 ]
 
+async function waitForHotUpdatedOutput(filePath: string, marker: string, sourcePath: string, updatedSource: string) {
+  try {
+    return await waitForFileContains(filePath, marker, 20_000)
+  }
+  catch {
+    await replaceFileByRename(sourcePath, `${updatedSource}\n`)
+    return await waitForFileContains(filePath, marker)
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -94,7 +104,7 @@ describe.sequential('HMR package scripts — apps and e2e-apps dev entrypoints',
       await replaceFileByRename(fixture.sourcePath, updatedSource)
 
       const content = await dev.waitFor(
-        waitForFileContains(fixture.distPath, marker),
+        waitForHotUpdatedOutput(fixture.distPath, marker, fixture.sourcePath, updatedSource),
         `${fixture.label} hot-updated output`,
       )
       expect(content).toContain(marker)

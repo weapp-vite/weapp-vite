@@ -25,6 +25,7 @@ export interface ScenarioResult {
 
 export interface ProjectResult {
   id: string
+  baselineId?: string
   kind: 'apps' | 'templates' | 'e2e-apps'
   platform: 'weapp' | 'alipay'
   source: string

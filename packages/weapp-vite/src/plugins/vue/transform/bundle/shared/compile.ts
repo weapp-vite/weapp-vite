@@ -1,12 +1,13 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './types'
+import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
@@ -91,6 +92,13 @@ export async function finalizeCompiledVueLikeResult(options: {
     const injectedPick = injectSetDataPickInJs(result.script, keys)
     if (injectedPick.transformed) {
       result.script = injectedPick.code
+    }
+  }
+
+  if (!isPage && !isApp && result.script && result.template?.includes(WEVU_SLOT_OWNER_ID_PROP)) {
+    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
+    if (injectedProps.transformed) {
+      result.script = injectedProps.code
     }
   }
 

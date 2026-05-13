@@ -178,54 +178,15 @@ function normalizeExplicitProperties(
   return normalizedProperties
 }
 
-export function normalizeProps(
-  baseOptions: Record<string, any>,
-  props?: ComponentPropsOptions,
-  explicitProperties?: MiniProgramComponentPropertyOption,
+function normalizeVueProps(
+  props: ComponentPropsOptions | undefined,
+  allowNullPropInput: boolean,
 ) {
-  const allowNullPropInput = Boolean(
-    (baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY]
-    ?? (baseOptions as any)[PUBLIC_ALLOW_NULL_PROP_INPUT_KEY],
-  )
-  const {
-    [ALLOW_NULL_PROP_INPUT_KEY]: _ignoredAllowNullPropInput,
-    [PUBLIC_ALLOW_NULL_PROP_INPUT_KEY]: _ignoredPublicAllowNullPropInput,
-    ...normalizedBaseOptions
-  } = baseOptions
-  const baseProperties = (baseOptions as any).properties
-  const resolvedExplicit = explicitProperties
-    ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
-  const attachInternalProps = (source?: Record<string, any>) => {
-    const next = { ...(source ?? {}) }
-    if (!hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
-      next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
-    }
-    if (!hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
-      next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
-    }
-    if (!hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
-      next[WEVU_SLOT_NAMES_PROP] = { type: null, value: null }
-    }
-    return next
-  }
-
-  if (resolvedExplicit || !props) {
-    const {
-      properties: _ignored,
-      ...rest
-    } = normalizedBaseOptions
-    const normalizedExplicitProperties = resolvedExplicit
-      ? allowNullPropInput
-        ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
-        : (resolvedExplicit as any)
-      : undefined
-    return {
-      ...rest,
-      properties: attachInternalProps(normalizedExplicitProperties),
-    }
-  }
-
   const properties: Record<string, any> = {}
+  if (!props) {
+    return properties
+  }
+
   Object.entries(props).forEach(([key, definition]) => {
     if (definition === undefined) {
       return
@@ -292,8 +253,66 @@ export function normalizeProps(
     }
   })
 
+  return properties
+}
+
+export function normalizeProps(
+  baseOptions: Record<string, any>,
+  props?: ComponentPropsOptions,
+  explicitProperties?: MiniProgramComponentPropertyOption,
+) {
+  const allowNullPropInput = Boolean(
+    (baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY]
+    ?? (baseOptions as any)[PUBLIC_ALLOW_NULL_PROP_INPUT_KEY],
+  )
+  const {
+    [ALLOW_NULL_PROP_INPUT_KEY]: _ignoredAllowNullPropInput,
+    [PUBLIC_ALLOW_NULL_PROP_INPUT_KEY]: _ignoredPublicAllowNullPropInput,
+    ...normalizedBaseOptions
+  } = baseOptions
+  const baseProperties = (baseOptions as any).properties
+  const resolvedExplicit = explicitProperties
+    ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
+  const shouldAttachInternalProps = Boolean(props || resolvedExplicit)
+  const attachInternalProps = (source?: Record<string, any>) => {
+    const next = { ...(source ?? {}) }
+    if (!shouldAttachInternalProps) {
+      return next
+    }
+    if (!hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
+      next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
+    }
+    if (!hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
+      next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
+    }
+    if (!hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
+      next[WEVU_SLOT_NAMES_PROP] = { type: null, value: null }
+    }
+    return next
+  }
+
+  if (resolvedExplicit) {
+    const {
+      properties: _ignored,
+      ...rest
+    } = normalizedBaseOptions
+    const normalizedExplicitProperties = resolvedExplicit
+      ? allowNullPropInput
+        ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
+        : (resolvedExplicit as any)
+      : undefined
+    const normalizedVueProps = normalizeVueProps(props, allowNullPropInput)
+    return {
+      ...rest,
+      properties: attachInternalProps({
+        ...normalizedVueProps,
+        ...normalizedExplicitProperties,
+      }),
+    }
+  }
+
   return {
     ...normalizedBaseOptions,
-    properties: attachInternalProps(properties),
+    properties: attachInternalProps(normalizeVueProps(props, allowNullPropInput)),
   }
 }

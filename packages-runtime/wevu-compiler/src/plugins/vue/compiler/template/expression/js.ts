@@ -2,6 +2,7 @@ import type { TransformContext } from '../types'
 import {
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
@@ -219,7 +220,7 @@ export function normalizeJsExpressionWithContext(
           replacement = createUnrefCall(createThisMemberAccess(name))
         }
         else {
-          const base = createThisMemberAccess(WEVU_SLOT_OWNER_KEY)
+          const base = createThisMemberAccess(WEVU_SLOT_OWNER_PROXY_KEY)
           replacement = createUnrefCall(createMemberAccess(base, name))
         }
       }

@@ -3,7 +3,7 @@ import type { ScopedSlotComponentAsset, TransformContext, TransformNode } from '
 import { NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_SLOT_NAMES_PROP,
-  WEVU_SLOT_OWNER_ATTR,
+  WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_PROPS_ATTR,
   WEVU_SLOT_SCOPE_ATTR,
@@ -354,7 +354,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     }
   }
 
-  if (!slotPropsExp && (context.scopedSlotsRequireProps || slotNameInfo.type !== 'default')) {
+  if (!slotPropsExp && (context.scopedSlotsRequireProps || (slotNameInfo.type !== 'default' && context.scopedSlotsCompiler !== 'augmented'))) {
     return slotTag
   }
 
@@ -365,7 +365,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   slotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
     `${context.platform.directives.ifAttr}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
-    `${WEVU_SLOT_OWNER_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
+    `${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
     `${WEVU_SLOT_PROPS_ATTR}="${renderMustache(slotPropsExp, context)}"`,
   ]
   if (context.slotMultipleInstance) {

@@ -75,6 +75,7 @@ export function parseSlotPropsExpression(exp: string, context: TransformContext)
 export function collectSlotBindingExpression(node: ElementNode, context: TransformContext) {
   let bindObjectExp: string | null = null
   const namedBindings: Array<{ key: string, value: string }> = []
+  const hasForDirective = node.props.some(prop => prop.type === NodeTypes.DIRECTIVE && prop.name === 'for')
 
   for (const prop of node.props) {
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
@@ -83,7 +84,7 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
       if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
         const rawExpValue = getBindDirectiveExpression(prop)
-        if (prop.arg.content === 'name') {
+        if (prop.arg.content === 'name' || (hasForDirective && prop.arg.content === 'key')) {
           continue
         }
         if (rawExpValue) {

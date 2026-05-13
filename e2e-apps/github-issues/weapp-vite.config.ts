@@ -4,11 +4,13 @@ import { defineConfig } from 'weapp-vite'
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
 const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED === 'true'
+const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
+const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
@@ -33,6 +35,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
+  ],
+  'github-issues.runtime.issue558.test.ts': [
+    'pages/issue-558/**',
+    'components/issue-558/**',
   ],
   'github-issues.runtime.issue554.test.ts': [
     'pages/issue-554/**',
@@ -101,6 +107,14 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/issue-547/**',
+      ],
+    }
+  }
+  if (issue558AugmentedEnvEnabled) {
+    return {
+      include: [
+        'pages/issue-558/**',
+        'components/issue-558/**',
       ],
     }
   }
@@ -244,9 +258,10 @@ export default defineConfig({
           ? {
               scopedSlotsCompiler: 'off',
             } as const
-          : issue510AugmentedEnabled || issue547AugmentedEnabled || issue564AugmentedEnabled
+          : issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
             ? {
                 scopedSlotsCompiler: 'augmented',
+                scopedSlotsRequireProps: false,
               } as const
             : {}),
       },
