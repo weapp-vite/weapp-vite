@@ -7,13 +7,12 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { findWevuSemanticChunk } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-runtime-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
-const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -22,8 +21,9 @@ function escapeRegex(value: string) {
 function expectOneModuleReference(code: string, specifiers: string[]) {
   expect(specifiers.some((specifier) => {
     const escapedSpecifier = escapeRegex(specifier)
-    return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`).test(code)
-  }) || code.includes(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)).toBe(true)
+    const escapedGlobalModuleKey = escapeRegex(specifier.replace(/^(?:\.\.\/)+/, ''))
+    return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2|globalThis\\[(['"\`])__weappViteRequestGlobalsModule:${escapedGlobalModuleKey}\\3\\])`).test(code)
+  })).toBe(true)
 }
 
 async function runBuild(jsFormat: TestJsFormat) {
@@ -36,26 +36,6 @@ async function runBuild(jsFormat: TestJsFormat) {
     label: `ci:wevu-runtime-demo:request-globals:${jsFormat}`,
     jsFormat,
   })
-}
-
-async function resolveRuntimeJsPath() {
-  const candidates = [
-    path.join(DIST_ROOT, 'app.js'),
-    path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
-    path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
-    path.join(DIST_ROOT, 'weapp-vendors/request-globals-web-apis-shared.js'),
-    path.join(DIST_ROOT, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
-    path.join(DIST_ROOT, 'weapp-vendors/request-globals-runtime.js'),
-    path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
-  ]
-
-  for (const candidate of candidates) {
-    if (await fs.pathExists(candidate)) {
-      return candidate
-    }
-  }
-
-  throw new Error(`failed to resolve request globals runtime under ${DIST_ROOT}`)
 }
 
 const PAGE_CASES = [
@@ -102,11 +82,19 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
     it(`keeps top-level request globals bindings and resolves wevu/web-apis usage for request-globals pages in ${jsFormat}`, async () => {
       await runBuild(jsFormat)
 
-      const runtimeJsPath = await resolveRuntimeJsPath()
-      const runtimeJs = await fs.readFile(runtimeJsPath, 'utf8')
+      const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
+      const { code: requestGlobalsRuntimeJs } = await findWevuSemanticChunk(
+        DIST_ROOT,
+        code =>
+          code.includes('installWebRuntimeGlobals')
+          && code.includes('__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js'),
+        'request globals runtime',
+      )
 
-      expect(runtimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
-      expect(runtimeJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
+      for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
+        expect(appJs).toContain(JSON.stringify(target))
+      }
+      expect(requestGlobalsRuntimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
 
       for (const testCase of PAGE_CASES) {
         const pageJs = await fs.readFile(path.join(DIST_ROOT, testCase.fileName), 'utf8')

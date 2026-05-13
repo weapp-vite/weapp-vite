@@ -304,11 +304,13 @@ function createSharedBuildResolver(
     if (isRequestGlobalsRuntimeModuleId(id)) {
       return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME.replace(/\.js$/, '')
     }
-    const stableHashedDistChunkName = resolveStableHashedDistChunkName({
-      facadeModuleId: id,
-    })
-    if (stableHashedDistChunkName) {
-      return stableHashedDistChunkName
+    if (configService.isDev) {
+      const stableHashedDistChunkName = resolveStableHashedDistChunkName({
+        facadeModuleId: id,
+      })
+      if (stableHashedDistChunkName) {
+        return stableHashedDistChunkName
+      }
     }
     return resolveAdvancedChunkName(id, ctx)
   }
@@ -328,15 +330,19 @@ export function createSharedBuildOutput(
   const output = {
     codeSplitting: {
       groups: [
-        {
-          test: isStableHashedDistChunkModule,
-          minShareCount: 1,
-          minSize: 0,
-          minModuleSize: 0,
-          name: (
-            id: string,
-          ) => resolveStableHashedDistChunkName({ facadeModuleId: id })!,
-        },
+        ...configService.isDev
+          ? [
+              {
+                test: isStableHashedDistChunkModule,
+                minShareCount: 1,
+                minSize: 0,
+                minModuleSize: 0,
+                name: (
+                  id: string,
+                ) => resolveStableHashedDistChunkName({ facadeModuleId: id })!,
+              },
+            ]
+          : [],
         {
           name: (
             id: string,

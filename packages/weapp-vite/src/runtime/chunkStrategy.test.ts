@@ -3,7 +3,7 @@ import type { SharedChunkDuplicatePayload } from './chunkStrategy'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { __clearSharedChunkDiagnosticsForTest, applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
+import { __clearSharedChunkDiagnosticsForTest, applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resetTakeImportRegistry, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
 const ROOT = '/project/src'
 
@@ -43,6 +43,37 @@ describe('resolveSharedChunkName', () => {
     })
 
     expect(result).toBe('common')
+  })
+
+  it('keeps cached shared chunk names across dev rebuild registry resets', () => {
+    const moduleId = `${ROOT}/utils.ts`
+    const fullGraph: ImportGraph = {
+      [moduleId]: [`${ROOT}/pages/foo.ts`, `${ROOT}/pages/bar.ts`],
+    }
+    const incrementalGraph: ImportGraph = {
+      [moduleId]: [`${ROOT}/pages/foo.ts`],
+    }
+
+    const initialResult = resolveSharedChunkName({
+      id: moduleId,
+      ctx: createCtx(fullGraph),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA', 'packageB'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })
+
+    resetTakeImportRegistry({ preserveSharedChunkNameCache: true })
+
+    const incrementalResult = resolveSharedChunkName({
+      id: moduleId,
+      ctx: createCtx(incrementalGraph),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA', 'packageB'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })
+
+    expect(initialResult).toBe('common')
+    expect(incrementalResult).toBe('common')
   })
 
   it('take directive forces shared chunk per requesting sub-package', () => {

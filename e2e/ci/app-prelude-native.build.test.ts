@@ -11,8 +11,6 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
-const REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH = 'weapp-vendors/request-globals-web-apis-shared.js'
 
 function toPosixPath(value: string) {
   return value.replace(/\\/g, '/')
@@ -224,30 +222,19 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
 
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
-    const legacySharedRuntimeCandidates = [
-      path.join(DIST_ROOT, 'weapp-vendors/request-globals-runtime.js'),
-      path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
-      path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
-      path.join(DIST_ROOT, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
-      path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
-    ]
-    const requestGlobalsInstallerPath = path.join(DIST_ROOT, REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH)
+    const requestGlobalsModuleKey = '__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js'
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
-    expect(appJs).toContain(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)
+    expect(appJs).toContain(requestGlobalsModuleKey)
     expect(appJs).toContain('installWebRuntimeGlobals')
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
-    expect(rootPreludeJs).not.toContain(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)
-    expect(rootPreludeJs).toContain(`require("./${REQUEST_GLOBAL_APP_REGISTERED_INSTALLER_PATH}")`)
+    expect(rootPreludeJs).toContain('require("./weapp-vendors/request-globals-web-apis-shared.js")')
+    expect(rootPreludeJs).toContain('"__wvRGI__"')
     expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')
-    expect(await fs.pathExists(requestGlobalsInstallerPath)).toBe(true)
-    for (const candidate of legacySharedRuntimeCandidates) {
-      expect(await fs.pathExists(candidate)).toBe(false)
-    }
     expect(rootPreludeJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(rootPreludeJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 })

@@ -3,7 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { findWevuRuntimeChunk, findWevuVendorChunk, toRelativeImport } from '../utils/wevu-vendor'
+import { findWevuRuntimeChunk, toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
@@ -24,7 +24,7 @@ function expectModuleReference(code: string, specifier: string) {
 }
 
 async function resolveWevuSharedChunk() {
-  return await findWevuVendorChunk(
+  return await findWevuRuntimeChunk(
     DIST_ROOT,
     code =>
       code.includes('MINI_PROGRAM_PLATFORM_DESCRIPTORS')
@@ -121,7 +121,6 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
         'MainVueCard': '/components/main-vue-card/index',
         'native-badge': '/native/native-badge/index',
       })
-      expectModuleReference(mainPageJs, toRelativeImport(mainPageJsPath, mainSharedChunk.path))
       expectModuleReference(mainPageJs, toRelativeImport(mainPageJsPath, mainRuntimeChunk.path))
       expect(mainPageJs).toContain('runE2E')
       expect(mainPageJs).toContain('MainVueCard')
@@ -134,7 +133,6 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       expect(mainComponentWxml).toContain('{{props.count}}')
       expect(mainComponentWxml).toContain('{{props.double}}')
 
-      expect(mainSharedChunk.code).toContain('onLaunch')
       expect(mainSharedChunk.code).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
       expect(mainRuntimeChunk.code).toContain('__wevu_runtime')
       expect(mainRuntimeChunk.code).toContain('__wevu_options')

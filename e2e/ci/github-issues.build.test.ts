@@ -2025,7 +2025,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('_runE2E')
 
     expect(wevuRuntime).toContain('issue-373-store')
-    expect(launchPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*require_common\.\w+\(store\)/)
-    expect(resultPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*require_common\.\w+\(store\)/)
+    expect(launchPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
+    expect(resultPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
   })
 })

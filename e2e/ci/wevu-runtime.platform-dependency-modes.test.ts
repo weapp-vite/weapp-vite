@@ -5,7 +5,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
-import { findWevuVendorChunk } from '../utils/wevu-vendor'
+import { findWevuSemanticChunk } from '../utils/wevu-vendor'
 import { CLI_PATH } from '../wevu-runtime.utils'
 
 type DependencyMode = 'dependencies' | 'devDependencies'
@@ -65,7 +65,7 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
   const output = result.all ?? `${result.stdout}\n${result.stderr}`
   expect(output).not.toContain('未安装 wevu')
 
-  const runtimeScript = await findWevuVendorChunk(
+  const runtimeScript = await findWevuSemanticChunk(
     distRoot,
     code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
     `${platform} platform runtime`,

@@ -41,12 +41,16 @@ function createConfigService(chunks: Record<string, unknown> = {}): ConfigServic
   } as unknown as ConfigService
 }
 
-function createChunkNameResolver(chunks: Record<string, unknown> = {}, config: Partial<ConfigService> = {}) {
-  const output = createSharedBuildOutput({
+function createTestConfigService(chunks: Record<string, unknown> = {}, config: Partial<ConfigService> = {}) {
+  return {
     ...createConfigService(chunks),
     ...config,
-  } as ConfigService, () => ['packageA', 'packageB'])
-  return output.codeSplitting.groups[1].name
+  } as ConfigService
+}
+
+function createChunkNameResolver(chunks: Record<string, unknown> = {}, config: Partial<ConfigService> = {}) {
+  const output = createSharedBuildOutput(createTestConfigService(chunks, config), () => ['packageA', 'packageB'])
+  return output.codeSplitting.groups[output.codeSplitting.groups.length - 1]!.name
 }
 
 afterEach(() => {
@@ -188,7 +192,7 @@ describe('sharedBuildConfig', () => {
       '/project/src/pages/index/index.ts',
     )).toBe(false)
 
-    const output = createSharedBuildOutput(createConfigService(), () => [])
+    const output = createSharedBuildOutput(createTestConfigService({}, { isDev: true }), () => [])
     expect(output.codeSplitting.groups[0]).toMatchObject({
       minShareCount: 1,
       minSize: 0,
@@ -213,7 +217,7 @@ describe('sharedBuildConfig', () => {
   })
 
   it('keeps hashed dist chunk groups stable across full and incremental rebuilds', () => {
-    const resolveName = createChunkNameResolver()
+    const resolveName = createChunkNameResolver({}, { isDev: true })
     const moduleId = '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs'
 
     expect(resolveName(moduleId, {
@@ -416,7 +420,8 @@ describe('sharedBuildConfig', () => {
       } as any,
     )
 
-    const resolveName = config.build!.rolldownOptions!.output!.codeSplitting.groups[1].name
+    const groups = config.build!.rolldownOptions!.output!.codeSplitting.groups
+    const resolveName = groups[groups.length - 1]!.name
     const result = resolveName('/project/src/shared/deep/feature.ts', {
       getModuleInfo: () => ({
         importers: [

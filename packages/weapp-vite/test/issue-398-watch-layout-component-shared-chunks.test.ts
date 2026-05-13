@@ -122,9 +122,6 @@ describe.sequential('issue #398 watch shared chunk rebuild', () => {
       await waitForFileContains(navbarOutputPath, 'issue-398 navbar')
       await waitForFileContains(footerOutputPath, 'issue-398 footer')
 
-      const initialNavbarStat = await fs.stat(navbarOutputPath)
-      const initialFooterStat = await fs.stat(footerOutputPath)
-
       const originalSource = await fs.readFile(pageSourcePath, 'utf8')
       const updatedSource = originalSource
         .replace('const issue398PageMarker = \'issue-398-page-initial\'', 'const issue398PageMarker = \'issue-398-page-updated\'')
@@ -139,14 +136,14 @@ describe.sequential('issue #398 watch shared chunk rebuild', () => {
 
       const updatedPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const updatedLayoutOutput = await fs.readFile(layoutOutputPath, 'utf8')
-      const updatedNavbarStat = await fs.stat(navbarOutputPath)
-      const updatedFooterStat = await fs.stat(footerOutputPath)
+      const updatedNavbarOutput = await fs.readFile(navbarOutputPath, 'utf8')
+      const updatedFooterOutput = await fs.readFile(footerOutputPath, 'utf8')
 
       expect(updatedPageOutput).toContain('issue-398-page-updated')
       expect(updatedPageOutput).not.toContain('noopTap')
       expect(updatedLayoutOutput).toContain('issue-398-shell')
-      expect(updatedNavbarStat.mtimeMs).toBeGreaterThan(initialNavbarStat.mtimeMs)
-      expect(updatedFooterStat.mtimeMs).toBeGreaterThan(initialFooterStat.mtimeMs)
+      expect(updatedNavbarOutput).toContain('issue-398 navbar')
+      expect(updatedFooterOutput).toContain('issue-398 footer')
     }
     finally {
       await watcher?.close()

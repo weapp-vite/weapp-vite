@@ -4,13 +4,14 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { waitForWevuVendorChunkContaining } from '../utils/wevu-vendor'
+import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT } from '../wevu-runtime.utils'
 
 interface HmrProfileSample {
   event?: string
   file?: string
   dirtyCount?: number
+  dirtyReasonSummary?: string[]
   emittedCount?: number
   pendingCount?: number
   pendingReasonSummary?: string[]
@@ -139,15 +140,15 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
           profile.file === PAGE_HMR_SOURCE_PATH
           && (profile.event === 'create' || profile.event === 'update')
           && typeof profile.pendingCount === 'number'
-          && profile.pendingCount > 1
+          && profile.pendingCount === 1
           && typeof profile.emittedCount === 'number'
           && profile.emittedCount === profile.pendingCount
-          && (profile.pendingReasonSummary ?? []).some(reason => reason.startsWith('shared-chunk(') && reason.endsWith(':direct')),
+          && (profile.dirtyReasonSummary ?? []).includes('entry-direct:1'),
         ),
         'direct page edit shared-chunk auto hmr profile',
       )
-      expect(sample.dirtyCount).toBeGreaterThan(0)
-      expect(sample.pendingCount).toBeGreaterThan(1)
+      expect(sample.dirtyCount).toBe(1)
+      expect(sample.pendingCount).toBe(1)
       expect(dev.getOutput()).toContain('小程序已重新构建（')
     }
     finally {
@@ -183,7 +184,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, updatedSource)
 
       const updatedOutput = await dev.waitFor(
-        waitForWevuVendorChunkContaining(DIST_ROOT, marker),
+        waitForWevuRuntimeChunkContaining(DIST_ROOT, marker),
         'shared dependency output updated',
       )
       expect(updatedOutput.code).toContain(marker)

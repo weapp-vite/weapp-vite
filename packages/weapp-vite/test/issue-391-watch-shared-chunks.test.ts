@@ -84,33 +84,43 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-async function waitForVendorFileContains(outDir: string, marker: string, timeoutMs = 45_000) {
-  const vendorRoot = path.resolve(outDir, 'weapp-vendors')
+async function scanJsFiles(root: string, dir = root): Promise<string[]> {
+  const entries = await fs.readdir(dir).catch(() => [])
+  const files: string[] = []
+  for (const entry of entries) {
+    const filePath = path.join(dir, entry)
+    const stat = await fs.stat(filePath)
+    if (stat.isDirectory()) {
+      files.push(...await scanJsFiles(root, filePath))
+      continue
+    }
+    if (entry.endsWith('.js')) {
+      files.push(filePath)
+    }
+  }
+  return files
+}
+
+async function waitForJsFileContains(outDir: string, marker: string, timeoutMs = 45_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    if (await fs.pathExists(vendorRoot)) {
-      const files = await fs.readdir(vendorRoot)
-      for (const file of files) {
-        if (!file.endsWith('.js')) {
-          continue
-        }
-
-        const filePath = path.join(vendorRoot, file)
-        const content = await fs.readFile(filePath, 'utf8')
-        if (content.includes(marker)) {
-          return filePath
-        }
+    const files = await scanJsFiles(outDir)
+    for (const filePath of files) {
+      const content = await fs.readFile(filePath, 'utf8')
+      if (content.includes(marker)) {
+        return filePath
       }
     }
     await new Promise(resolve => setTimeout(resolve, 200))
   }
 
-  throw new Error(`watch build timed out, vendor output missing marker: ${marker}`)
+  throw new Error(`watch build timed out, js output missing marker: ${marker}`)
 }
 
-function createRequirePattern(outDir: string, filePath: string) {
-  const relativePath = path.relative(outDir, filePath).replaceAll('\\', '/')
-  return new RegExp(`require\\((['"])\\.\\.\\/\\.\\.\\/${escapeRegExp(relativePath)}\\1\\)`)
+function createRequirePattern(importerPath: string, importedPath: string) {
+  const relativePath = path.relative(path.dirname(importerPath), importedPath).replaceAll('\\', '/')
+  const request = relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+  return new RegExp(`require\\((['"])${escapeRegExp(request)}\\1\\)`)
 }
 
 describe.sequential('issue #391 watch shared chunk rebuild', () => {
@@ -149,15 +159,16 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-391/index.ts')
 
       await waitForFileContains(pageOutputPath, 'issue-391-initial-marker')
-      const sharedRuntimeOutputPath = await waitForVendorFileContains(outDir, 'issue-391-shared-sentinel')
-      const sharedImportPattern = createRequirePattern(outDir, sharedRuntimeOutputPath)
+      const sharedRuntimeOutputPath = await waitForJsFileContains(outDir, 'issue-391-shared-sentinel')
+      const pageSharedImportPattern = createRequirePattern(pageOutputPath, sharedRuntimeOutputPath)
+      const peerSharedImportPattern = createRequirePattern(peerOutputPath, sharedRuntimeOutputPath)
 
       const initialPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const initialPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
       const initialSharedRuntimeOutput = await fs.readFile(sharedRuntimeOutputPath, 'utf8')
 
-      expect(initialPageOutput).toMatch(sharedImportPattern)
-      expect(initialPeerOutput).toMatch(sharedImportPattern)
+      expect(initialPageOutput).toMatch(pageSharedImportPattern)
+      expect(initialPeerOutput).toMatch(peerSharedImportPattern)
       expect(initialPageOutput).not.toContain('issue-391-shared-sentinel')
       expect(initialPeerOutput).not.toContain('issue-391-shared-sentinel')
       expect(initialSharedRuntimeOutput).toContain('issue-391-shared-sentinel')
@@ -170,15 +181,17 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await fs.writeFile(pageSourcePath, updatedSource, 'utf8')
       await buildPromise
       await waitForFileContains(pageOutputPath, 'issue-391-updated-marker')
-      const updatedSharedRuntimeOutputPath = await waitForVendorFileContains(outDir, 'issue-391-shared-sentinel')
+      const updatedSharedRuntimeOutputPath = await waitForJsFileContains(outDir, 'issue-391-shared-sentinel')
+      const updatedPageSharedImportPattern = createRequirePattern(pageOutputPath, updatedSharedRuntimeOutputPath)
+      const updatedPeerSharedImportPattern = createRequirePattern(peerOutputPath, updatedSharedRuntimeOutputPath)
 
       const updatedPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const updatedPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
       const updatedSharedRuntimeOutput = await fs.readFile(updatedSharedRuntimeOutputPath, 'utf8')
 
       expect(updatedPageOutput).toContain('issue-391-updated-marker')
-      expect(updatedPageOutput).toMatch(sharedImportPattern)
-      expect(updatedPeerOutput).toMatch(sharedImportPattern)
+      expect(updatedPageOutput).toMatch(updatedPageSharedImportPattern)
+      expect(updatedPeerOutput).toMatch(updatedPeerSharedImportPattern)
       expect(updatedPageOutput).not.toContain('issue-391-shared-sentinel')
       expect(updatedPeerOutput).not.toContain('issue-391-shared-sentinel')
       expect(updatedSharedRuntimeOutput).toContain('issue-391-shared-sentinel')

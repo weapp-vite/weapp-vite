@@ -81,7 +81,7 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
 }
 
 function resolveComputedExportName(pageOutput: string) {
-  const computedCall = pageOutput.match(/(?:^|\s)(?:computed|require_common\.([\w$]+))\(\(\) => nativeAnchorRef\.value != null\)/)
+  const computedCall = pageOutput.match(/(?:^|\s)(?:computed|require_[\w$]+\.([\w$]+))\(\(\) => nativeAnchorRef\.value != null\)/)
   if (!computedCall) {
     throw new Error('watch build output missing computed template-ref call')
   }
@@ -147,8 +147,8 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       const initialComputedExport = resolveComputedExportName(initialPageOutput)
       const initialRuntimeOutput = await readWevuComputedRuntime(outDir, initialComputedExport)
 
-      expect(initialPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
-      expect(initialPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
+      expect(initialPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
+      expect(initialPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
       expect(initialRuntimeOutput).toContain(`Object.defineProperty(exports, "${initialComputedExport}"`)
 
       const originalSource = await fs.readFile(pageSourcePath, 'utf8')
@@ -165,8 +165,8 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       const updatedRuntimeOutput = await readWevuComputedRuntime(outDir, updatedComputedExport)
 
       expect(updatedPageOutput).toContain('issue-446-short-bind-updated')
-      expect(updatedPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
-      expect(updatedPageOutput).toMatch(/(?:computed|require_common\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
+      expect(updatedPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
+      expect(updatedPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
       expect(updatedRuntimeOutput).toContain(`Object.defineProperty(exports, "${updatedComputedExport}"`)
     }
     finally {

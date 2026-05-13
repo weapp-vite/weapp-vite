@@ -20,11 +20,13 @@ export function markTakeModuleImporter(moduleId: string, importerId: string | un
   }
 }
 
-export function resetTakeImportRegistry() {
+export function resetTakeImportRegistry(options: { preserveSharedChunkNameCache?: boolean } = {}) {
   takeImportersMap.clear()
   forceDuplicateSharedChunks.clear()
   sharedChunkDiagnostics.clear()
-  sharedChunkNameCache.clear()
+  if (!options.preserveSharedChunkNameCache) {
+    sharedChunkNameCache.clear()
+  }
 }
 
 export function getTakeImporters(moduleId: string) {

@@ -175,7 +175,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       // modify existing route file
       const modifiedLogsSource = originalLogsSource.replace('logs', modifyMarker)
       const outputLengthBeforeModify = dev.getOutput().length
-      await fs.writeFile(LOGS_VUE_PATH, modifiedLogsSource, 'utf8')
+      await replaceFileByRename(LOGS_VUE_PATH, modifiedLogsSource)
       await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, modifyMarker), 'dist template updated after modify')
       const modifyOutput = await dev.waitFor(
         waitForOutputSince(
@@ -191,7 +191,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
 
       // add route — small delay lets the watcher settle after the previous modify event
       await sleep(1_000)
-      await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`, 'utf8')
+      await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
 
       // delete route
@@ -201,7 +201,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
 
       // recreate route
       await sleep(1_000)
-      await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${recreateMarker}</view></template>\n`, 'utf8')
+      await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${recreateMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router restores recreated route')
     }
     finally {
@@ -243,11 +243,11 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
 
       // small delay lets the watcher settle after initial build
       await sleep(1_000)
-      await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`, 'utf8')
+      await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
 
       const appAfterAddSource = originalAppSource.replace('auto-routes-define-app-json', appTitleAddMarker)
-      await fs.writeFile(APP_VUE_PATH, appAfterAddSource, 'utf8')
+      await replaceFileByRename(APP_VUE_PATH, appAfterAddSource)
       await dev.waitFor(waitForAppJsonWindowTitle(appTitleAddMarker), 'app.json title updates after app macro change (add stage)')
       await dev.waitFor(waitForAppJsonPagesToContain(ADDED_ROUTE), 'app.json includes added route after app macro change')
       await dev.waitFor(waitForFileContains(APP_JS_DIST, ADDED_ROUTE), 'app.js globalData includes added route after app macro change')

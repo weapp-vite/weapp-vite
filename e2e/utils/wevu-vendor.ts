@@ -89,6 +89,29 @@ export async function findWevuVendorChunk(
 }
 
 /**
+ * 在 wevu vendor 目录优先查找，找不到时回退到完整 JS 产物。
+ *
+ * @param distRoot - 小程序产物目录
+ * @param predicate - chunk 内容判断函数
+ * @param label - 错误信息中的语义标签
+ * @returns 匹配到的 chunk 路径和源码
+ */
+export async function findWevuSemanticChunk(
+  distRoot: string,
+  predicate: WevuVendorPredicate,
+  label: string,
+): Promise<WevuVendorChunk> {
+  const vendorChunks = await readVendorChunks(distRoot)
+  for (const chunk of vendorChunks) {
+    if (predicate(chunk.code, chunk.path)) {
+      return chunk
+    }
+  }
+
+  return resolveChunk(await readDistJsChunks(distRoot), distRoot, predicate, label)
+}
+
+/**
  * 在完整小程序产物中查找匹配语义内容的 JS chunk。
  *
  * @param distRoot - 小程序产物目录
@@ -117,7 +140,7 @@ export async function findWevuVendorChunkContaining(
   distRoot: string,
   snippets: string[],
 ): Promise<WevuVendorChunk> {
-  return findWevuVendorChunk(
+  return findWevuSemanticChunk(
     distRoot,
     code => snippets.every(snippet => code.includes(snippet)),
     snippets.join(' + '),
@@ -148,6 +171,32 @@ export async function waitForWevuVendorChunkContaining(
   }
 
   throw new Error(`Timed out waiting for wevu vendor chunk under ${distRoot} to contain marker: ${marker}`)
+}
+
+/**
+ * 轮询等待完整 JS 产物中出现指定标记。
+ *
+ * @param distRoot - 小程序产物目录
+ * @param marker - 期望包含的标记字符串
+ * @param timeoutMs - 超时时间
+ * @returns 匹配到的 chunk 路径和源码
+ */
+export async function waitForWevuRuntimeChunkContaining(
+  distRoot: string,
+  marker: string,
+  timeoutMs = 90_000,
+): Promise<WevuVendorChunk> {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await findWevuSemanticChunk(distRoot, code => code.includes(marker), marker)
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  throw new Error(`Timed out waiting for wevu runtime chunk under ${distRoot} to contain marker: ${marker}`)
 }
 
 export function toRelativeImport(fromFilePath: string, toFilePath: string) {

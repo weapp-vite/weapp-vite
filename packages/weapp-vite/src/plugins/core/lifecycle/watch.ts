@@ -55,7 +55,7 @@ export function createBuildStartHook(state: CorePluginState) {
   const isPluginBuild = buildTarget === 'plugin'
 
   return async function buildStart(this: any) {
-    resetTakeImportRegistry()
+    resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
     if (configService.isDev) {
       if (isPluginBuild) {
         if (configService.absolutePluginRoot) {

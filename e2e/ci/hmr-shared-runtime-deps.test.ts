@@ -4,7 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
-import { toRelativeImport, waitForWevuVendorChunkContaining } from '../utils/wevu-vendor'
+import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
@@ -25,11 +25,11 @@ async function waitForCommonMarkerWithRetry(
   retrySourceContent: string,
 ) {
   try {
-    return await waitForWevuVendorChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
   }
   catch {
     await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${retrySourceContent}\n`)
-    return await waitForWevuVendorChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
   }
 }
 
@@ -56,7 +56,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForWevuVendorChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForWevuRuntimeChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
       await dev.waitFor(waitForFile(STORE_PAGE_JS_PATH, 90_000), `${platform} initial store page js`)
       await dev.waitFor(waitForFile(STORE_SHARE_PAGE_JS_PATH, 90_000), `${platform} initial store-share page js`)
 
@@ -102,7 +102,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForWevuVendorChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForWevuRuntimeChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, firstUpdatedSource)
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, secondUpdatedSource)

@@ -5,6 +5,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
+import { findWevuSemanticChunk } from '../utils/wevu-vendor'
 import {
   DIST_ROOT,
   filterSnapshotPages,
@@ -149,19 +150,20 @@ describeRuntimePlatforms('wevu runtime platform outputs', () => {
       }
     }
 
-    const commonScriptPath = path.join(DIST_ROOT, 'common.js')
-    if (await fs.pathExists(commonScriptPath)) {
-      const commonScript = await fs.readFile(commonScriptPath, 'utf-8')
-      expect(commonScript).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
-      expect(commonScript).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
+    const platformRuntimeChunk = await findWevuSemanticChunk(
+      DIST_ROOT,
+      code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+      `${platform} platform runtime`,
+    )
+    expect(platformRuntimeChunk.code).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
+    expect(platformRuntimeChunk.code).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
 
-      if (platform === 'tt') {
-        expect(commonScript).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)
-      }
+    if (platform === 'tt') {
+      expect(platformRuntimeChunk.code).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)
+    }
 
-      if (platform === 'alipay') {
-        expect(commonScript).toMatch(/\?\.my\b|\.my\b|[`'"]my[`'"]/)
-      }
+    if (platform === 'alipay') {
+      expect(platformRuntimeChunk.code).toMatch(/\?\.my\b|\.my\b|[`'"]my[`'"]/)
     }
   })
 })
