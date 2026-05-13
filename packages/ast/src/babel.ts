@@ -21,6 +21,9 @@ const nodeRequire = createRequire(import.meta.url)
 type BabelTraverse = typeof import('@babel/traverse').default
 type BabelGenerate = typeof import('@babel/generator').default
 type BabelParse = typeof import('@babel/parser').parse
+type BabelGeneratorOptions = Parameters<BabelGenerate>[1]
+type BabelGeneratorInputCode = Parameters<BabelGenerate>[2]
+type BabelGeneratorResult = ReturnType<BabelGenerate>
 
 let cachedTraverse: BabelTraverse | undefined
 let cachedGenerate: BabelGenerate | undefined
@@ -68,14 +71,18 @@ function getParse(): BabelParse {
 }
 
 type TraverseFn = (...args: Parameters<BabelTraverse>) => ReturnType<BabelTraverse>
-type GenerateFn = (...args: Parameters<BabelGenerate>) => ReturnType<BabelGenerate>
+type GenerateFn = (
+  ast: t.Node,
+  opts?: BabelGeneratorOptions,
+  code?: BabelGeneratorInputCode,
+) => BabelGeneratorResult
 
 export const traverse: TraverseFn = (...args) => {
   return getTraverse()(...args)
 }
 
 export const generate: GenerateFn = (...args) => {
-  return getGenerate()(...args)
+  return getGenerate()(...args as Parameters<BabelGenerate>)
 }
 
 export const parse = ((...args: Parameters<BabelParse>) => {
