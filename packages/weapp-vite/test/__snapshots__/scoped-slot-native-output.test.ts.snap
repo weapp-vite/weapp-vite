@@ -92,7 +92,7 @@ Component({ properties: { __wvSlotOwnerId: { type: String, value: "" }, __wvSlot
 }
 ",
   "components/native-tabbar/index.wxml": "<view class="native-tabbar">
-  <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-slot-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{[]}}" __wv-slot-scope="{{__wvSlotScope}}" />
+  <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[]}}" __wvSlotScope="{{__wvSlotScope}}" />
 </view>
 ",
   "pages/index/index.__scoped-slot-default-0.js": "const require_src = require("../../weapp-vendors/wevu-src.js");
@@ -156,7 +156,7 @@ require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
   }
 }
 ",
-  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{__wv_bind_0}}" __wv-slot-owner-id="{{__wvOwnerId || ''}}" />",
+  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{__wv_bind_0}}" __wvSlotOwnerId="{{__wvOwnerId || ''}}" />",
   "sitemap.json": "{
   "rules": []
 }

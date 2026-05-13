@@ -605,8 +605,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
-    expect(code).toContain(`__wv-slot-props="{{['item',card.item,'index',card.index]}}"`)
-    expect(code).not.toContain(`__wv-slot-props="{{{`)
+    expect(code).toContain(`__wvSlotProps="{{['item',card.item,'index',card.index]}}"`)
+    expect(code).not.toContain(`__wvSlotProps="{{{`)
   })
 
   it('preserves v-for on scoped slot outlets', () => {
@@ -625,8 +625,8 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('<block wx:for="{{rows}}" wx:for-item="item" wx:for-index="index">')
-    expect(code).toContain(`__wv-slot-props="{{['item',item,'index',index]}}"`)
-    expect(code).toContain('__wv-slot-scope="{{__wvSlotScope}}"')
+    expect(code).toContain(`__wvSlotProps="{{['item',item,'index',index]}}"`)
+    expect(code).toContain('__wvSlotScope="{{__wvSlotScope}}"')
     expect(code).not.toContain(`'key',item.id`)
   })
 
@@ -657,8 +657,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`__wv-slot-scope="{{['item',item,'index',index]}}"`)
-    expect(code).not.toContain(`__wv-slot-scope="{{{`)
+    expect(code).toContain(`__wvSlotScope="{{['item',item,'index',index]}}"`)
+    expect(code).not.toContain(`__wvSlotScope="{{{`)
   })
 
   it('emits augmented scoped slot components for plain default component children when enabled', () => {
@@ -676,7 +676,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
-    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<Leaf')
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
     expect(scopedSlotComponents).toHaveLength(1)
@@ -763,7 +763,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('generic:scoped-slots-default="')
-    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<view><Leaf /></view>')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
@@ -866,7 +866,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
     expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(nestedOuter?.template).toContain('<Issue558NestedSlotCell generic:scoped-slots-default=')
-    expect(nestedOuter?.template).toContain('__wv-slot-owner-id="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+    expect(nestedOuter?.template).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
     expect(nestedInner?.template).toContain('<text>{{__wv_bind_0}}</text>')
 
     expectScopedSlotComputed(implicitDefault?.classStyleBindings, 'func(text)', [
@@ -1187,7 +1187,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(code).toContain(`<slot />`)
-    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wv-slot-owner-id="{{__wvSlotOwnerId}}" __wv-slot-props="{{['item',card.item,'index',card.index]}}" __wv-slot-scope="{{__wvSlotScope}}" />`)
+    expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{['item',card.item,'index',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />`)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')
     expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
@@ -1256,7 +1256,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<slot><view>fallback</view></slot>')
     expect(code).toContain(`vue-slots="{{__wv_bind_0}}"`)
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
-    expect(code).not.toContain('__wv-slot-props=')
+    expect(code).not.toContain('__wvSlotProps=')
   })
 
   it('keeps plain slot fallback presence-guarded when scoped slot compiler is disabled', () => {

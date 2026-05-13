@@ -756,7 +756,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('issue-521 scoped slot flex layout')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
-    expect(pageWxml).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(pageJson.usingComponents).toMatchObject({
       ScopedFlexHost: '/components/issue-521/ScopedFlexHost/index',
       FlexItem: '/components/issue-521/FlexItem/index',
@@ -787,7 +787,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('issue-510 augmented slot provide inject')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
-    expect(pageWxml).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(pageWxml).not.toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
     expect(pageJson.usingComponents).toMatchObject({
       AugmentedSlotHost: '/components/issue-510/AugmentedSlotHost/index',
@@ -900,9 +900,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(scopedSlotJs).not.toContain('__wvOwner.func')
     expect(cellWxml).toContain('<slot />')
     expect(cellWxml).toContain('<scoped-slots-default')
-    expect(defaultScopedCellWxml).toContain('__wv-slot-props="{{[\'label\',label,\'count\',count]}}"')
+    expect(defaultScopedCellWxml).toContain('__wvSlotProps="{{[\'label\',label,\'count\',count]}}"')
     expect(listScopedCellWxml).toContain('wx:for="{{rows}}"')
-    expect(listScopedCellWxml).toContain('__wv-slot-scope="{{__wvSlotScope}}"')
+    expect(listScopedCellWxml).toContain('__wvSlotScope="{{__wvSlotScope}}"')
     expect(namedSlotCardWxml).toContain('<slot name="header" />')
     expect(namedSlotCardWxml).toContain('<scoped-slots-header')
     expect(namedSlotCardWxml).toContain('<scoped-slots-default')
@@ -949,7 +949,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).not.toContain('/pages/issue-564/index.__scoped-slot-default-1')
     expect(nativeTabbarJson.componentGenerics?.['scoped-slots-default']?.default).toBe('./__weapp_vite_scoped_slot_generic_component')
     expect(nativeTabbarWxml).toContain('<slot /><scoped-slots-default')
-    expect(nativeTabbarWxml).toContain('__wv-slot-owner-id="{{__wvSlotOwnerId}}"')
+    expect(nativeTabbarWxml).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId}}"')
     expect(nativeTabbarJs).toContain('__wvSlotOwnerId')
     expect(nativeTabbarGenericJson).toMatchObject({
       component: true,

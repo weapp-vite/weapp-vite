@@ -104,6 +104,28 @@ describe('runtime: define helpers', () => {
     expect(result.properties.anyValue.optionalTypes).toBeUndefined()
   })
 
+  it('merges explicit internal properties with compiled Vue props', () => {
+    const ownerObserver = vi.fn()
+    const result = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: true,
+    }, {
+      title: { type: String, required: true },
+      items: { type: null, default: () => [] },
+    }, {
+      __wvSlotOwnerId: { type: String, value: '', observer: ownerObserver },
+      __wvSlotScope: { type: null, value: null },
+    })
+
+    expect(result.properties.title.type).toBe(String)
+    expect(result.properties.title.optionalTypes).toEqual([null])
+    expect(result.properties.items.type).toBeNull()
+    expect(result.properties.items.value).toEqual([])
+    expect(result.properties.__wvSlotOwnerId.observer).toBe(ownerObserver)
+    expect(result.properties.__wvSlotScope.type).toBeNull()
+    expect(result.properties.vueSlots.type).toBeNull()
+  })
+
   it('keeps page-style options without explicit props stable when allowNullPropInput is enabled', () => {
     const result = normalizeProps({
       data: () => ({}),

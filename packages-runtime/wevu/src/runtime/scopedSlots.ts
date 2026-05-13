@@ -114,6 +114,18 @@ export function attachOwnerSnapshot(
   catch {
     // 忽略写入异常
   }
+  try {
+    const data = (target as any).data
+    if (data && typeof data === 'object') {
+      data[WEVU_SLOT_OWNER_ID_KEY] = ownerId
+    }
+    if (typeof (target as any).setData === 'function') {
+      ;(target as any).setData({ [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
+    }
+  }
+  catch {
+    // 忽略 owner id 同步异常
+  }
   const snapshot = resolveOwnerSnapshot(runtime)
   const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
   if (propsSource && typeof propsSource === 'object') {

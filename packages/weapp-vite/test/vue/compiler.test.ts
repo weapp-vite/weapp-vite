@@ -273,7 +273,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).not.toContain('scoped-slots-default')
-      expect(result.code).not.toContain('__wv-slot-props')
+      expect(result.code).not.toContain('__wvSlotProps')
       expect(result.componentGenerics?.['scoped-slots-default']).toBeUndefined()
     })
 
@@ -285,7 +285,7 @@ describe('Vue Template Compiler', () => {
       )
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('wx:if="{{__wvSlotOwnerId}}"')
-      expect(result.code).toContain('__wv-slot-props')
+      expect(result.code).toContain('__wvSlotProps')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -314,7 +314,7 @@ describe('Vue Template Compiler', () => {
       )
       expect(result.code).toContain('<slot')
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('__wv-slot-props')
+      expect(result.code).toContain('__wvSlotProps')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -327,7 +327,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
       expect(result.code).toContain('<slot />')
       expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('__wv-slot-props="{{[\'data\',slotProps]}}"')
+      expect(result.code).toContain('__wvSlotProps="{{[\'data\',slotProps]}}"')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
       expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     })
@@ -354,7 +354,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
       expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['default']:true}`)).toBe(true)
-      expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+      expect(result.code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
     })
@@ -453,7 +453,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       const normalized = result.code.replace(/\s/g, '')
-      expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item,\'__wv_index_0\',__wv_index_0]}}"')
+      expect(normalized).toContain('__wvSlotScope="{{[\'item\',item,\'__wv_index_0\',__wv_index_0]}}"')
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.foo}}')

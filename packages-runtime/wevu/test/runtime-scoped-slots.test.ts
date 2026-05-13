@@ -498,6 +498,7 @@ describe('runtime: scoped slots', () => {
 
     const ownerId = inst.__wvOwnerId
     expect(ownerId).toBeTruthy()
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
     expect(getOwnerSnapshot(ownerId)?.title).toBe('')
 
     inst.properties.title = 'Next'
