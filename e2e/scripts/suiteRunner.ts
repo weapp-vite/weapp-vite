@@ -13,6 +13,7 @@ const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
 
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
+  devtoolsLaunchSkipped?: boolean
   env?: Record<string, string>
   label: string
   command: string
@@ -41,6 +42,7 @@ function formatDuration(durationMs: number) {
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
+const DEVTOOLS_LAUNCH_SKIP_PATTERN = /\[runtime:launch-skip\]/
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
 const TASK_HEARTBEAT_INTERVAL_MS = 30_000
@@ -61,10 +63,15 @@ function isDevtoolsVitestTask(task: SuiteTask) {
 function createTaskArtifactCollector() {
   const artifacts: SuiteTaskArtifact[] = []
   const seen = new Set<string>()
+  let devtoolsLaunchSkipped = false
 
   function collectFromText(text: string) {
     const lines = text.split(NEWLINE_SPLIT_PATTERN)
     for (const line of lines) {
+      if (DEVTOOLS_LAUNCH_SKIP_PATTERN.test(line)) {
+        devtoolsLaunchSkipped = true
+      }
+
       const matched = line.match(REPORT_LINE_PATTERN)
       if (!matched) {
         continue
@@ -89,6 +96,9 @@ function createTaskArtifactCollector() {
   return {
     artifacts,
     collectFromText,
+    get devtoolsLaunchSkipped() {
+      return devtoolsLaunchSkipped
+    },
   }
 }
 
@@ -228,6 +238,7 @@ async function defaultRunTask(task: SuiteTask) {
       stdoutForwarder.flush()
       stderrForwarder.flush()
       task.artifacts = collector.artifacts
+      task.devtoolsLaunchSkipped = collector.devtoolsLaunchSkipped
       child.stdout?.destroy()
       child.stderr?.destroy()
       resolve(code)
@@ -344,7 +355,7 @@ export async function runTaskSuite(
     const status = exitCode === 0 ? 'pass' : 'fail'
     console.log(`[${suiteName}] ${status} ${task.label} (${formatDuration(durationMs)})`)
 
-    if (exitCode === 0 && isDevtoolsVitestTask(task)) {
+    if (exitCode === 0 && isDevtoolsVitestTask(task) && !task.devtoolsLaunchSkipped) {
       devtoolsLoginPreflightPassed = true
     }
     if (exitCode !== 0 && options.stopOnTaskFailure) {

@@ -240,6 +240,11 @@ describe('suiteRunner', () => {
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
       },
     })
+    expect(ideFullTasks.find(task => task.label === 'ide/app-prelude-native.runtime.test.ts')).toMatchObject({
+      env: {
+        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      },
+    })
     expect(ideFullTasks.find(task => task.label === 'ide/template-wevu-features-app.test.ts')).toMatchObject({
       env: {
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
@@ -432,5 +437,40 @@ describe('suiteRunner', () => {
       },
       label: 'ide/second.test.ts',
     })
+  })
+
+  it('keeps devtools login checks when the previous task was skipped by login preflight', async () => {
+    const tasks: SuiteTask[] = [
+      {
+        label: 'ide/first.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts', '/repo/e2e/ide/first.test.ts'],
+      },
+      {
+        label: 'ide/second.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts', '/repo/e2e/ide/second.test.ts'],
+      },
+    ]
+    const observedEnv = vi.fn<(task: SuiteTask) => void>()
+
+    await runTaskSuite('e2e:ide-full', tasks, {
+      beforeEachTask: observedEnv,
+      runTask: vi
+        .fn<(task: SuiteTask) => Promise<number>>()
+        .mockImplementationOnce(async (task) => {
+          expect(task.devtoolsLaunchSkipped).toBeUndefined()
+          task.devtoolsLaunchSkipped = true
+          return 0
+        })
+        .mockResolvedValueOnce(0),
+      writeReport: false,
+    })
+
+    const [secondTask] = observedEnv.mock.calls[1] ?? []
+
+    expect(tasks[0]?.devtoolsLaunchSkipped).toBe(true)
+    expect(secondTask?.label).toBe('ide/second.test.ts')
+    expect(secondTask?.env).toBeUndefined()
   })
 })

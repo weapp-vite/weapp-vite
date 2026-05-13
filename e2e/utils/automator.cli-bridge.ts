@@ -45,6 +45,10 @@ const FATAL_CLI_EARLY_EXIT_PATTERNS = [
   /The ["']path["'] argument must be of type string/i,
   /Missing projectPath/i,
   /Failed to read project config/i,
+  /code\s*[:=]\s*10/i,
+  /需要重新登录/,
+  /need\s+re-?login/i,
+  /re-?login/i,
 ]
 const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
 

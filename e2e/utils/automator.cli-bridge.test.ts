@@ -84,6 +84,21 @@ describe('waitForSocketReady', () => {
     await expect(task).rejects.toThrow(/WeChat DevTools CLI exited before automator socket was ready[\s\S]*ERR_INVALID_ARG_TYPE/i)
   })
 
+  it('fails fast when devtools cli reports an expired login session', async () => {
+    const { child, stderr } = createMockChild()
+
+    const task = waitForSocketReady({
+      child: child as any,
+      port: 6554,
+      timeoutMs: 5_000,
+    })
+
+    stderr.write('[error] code: 10\n需要重新登录\n')
+    child.emit('exit', 0, null)
+
+    await expect(task).rejects.toThrow(/WeChat DevTools CLI exited before automator socket was ready[\s\S]*需要重新登录/i)
+  })
+
   it('resolves once the automator socket is available', async () => {
     const { child } = createMockChild()
     const reserved = await reservePort()
