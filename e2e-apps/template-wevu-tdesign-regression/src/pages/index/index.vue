@@ -269,7 +269,7 @@ async function onQuickAction(action: QuickActionItem) {
       <KpiBoard title="今日概览" subtitle="实时跟踪业务健康度" :items="kpiItems">
         <template #action>
           <t-button size="small" theme="primary" variant="outline" @tap="refreshDashboard">
-            重新计算
+            重新计算23213
           </t-button>
         </template>
         <template #items="{ items }">

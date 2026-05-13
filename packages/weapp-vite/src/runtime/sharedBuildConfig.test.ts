@@ -12,11 +12,13 @@ import {
   createStringOrRegExpMatcher,
   isRequestGlobalsRuntimeChunk,
   isRequestGlobalsRuntimeModuleId,
+  isStableHashedDistChunkModule,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
   resolveStableHashedDistChunkFileName,
+  resolveStableHashedDistChunkName,
 } from './sharedBuildConfig'
 
 function createConfigService(chunks: Record<string, unknown> = {}): ConfigService {
@@ -32,15 +34,19 @@ function createConfigService(chunks: Record<string, unknown> = {}): ConfigServic
       }
       return id
     },
+    isDev: false,
     weappViteConfig: {
       chunks,
     },
   } as unknown as ConfigService
 }
 
-function createChunkNameResolver(chunks: Record<string, unknown> = {}) {
-  const output = createSharedBuildOutput(createConfigService(chunks), () => ['packageA', 'packageB'])
-  return output.codeSplitting.groups[0].name
+function createChunkNameResolver(chunks: Record<string, unknown> = {}, config: Partial<ConfigService> = {}) {
+  const output = createSharedBuildOutput({
+    ...createConfigService(chunks),
+    ...config,
+  } as ConfigService, () => ['packageA', 'packageB'])
+  return output.codeSplitting.groups[1].name
 }
 
 afterEach(() => {
@@ -172,8 +178,22 @@ describe('sharedBuildConfig', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src.js')
+    expect(resolveStableHashedDistChunkName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+    })).toBe('weapp-vendors/wevu-src')
+    expect(isStableHashedDistChunkModule(
+      '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+    )).toBe(true)
+    expect(isStableHashedDistChunkModule(
+      '/project/src/pages/index/index.ts',
+    )).toBe(false)
 
     const output = createSharedBuildOutput(createConfigService(), () => [])
+    expect(output.codeSplitting.groups[0]).toMatchObject({
+      minShareCount: 1,
+      minSize: 0,
+      minModuleSize: 0,
+    })
     expect(output.chunkFileNames({
       name: 'src-BD3I133J',
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
@@ -190,6 +210,25 @@ describe('sharedBuildConfig', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/shared-BD3I133J.mjs',
     })).toBe('weapp-vendors/request-globals-wevu-web-apis-shared.js')
+  })
+
+  it('keeps hashed dist chunk groups stable across full and incremental rebuilds', () => {
+    const resolveName = createChunkNameResolver()
+    const moduleId = '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs'
+
+    expect(resolveName(moduleId, {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/app.ts',
+          '/project/src/pages/index/index.ts',
+        ],
+      }),
+    })).toBe('weapp-vendors/wevu-src')
+    expect(resolveName(moduleId, {
+      getModuleInfo: () => ({
+        importers: ['/project/src/pages/index/index.ts'],
+      }),
+    })).toBe('weapp-vendors/wevu-src')
   })
 
   it('returns undefined for path mode when there is only one importer', () => {
@@ -377,7 +416,7 @@ describe('sharedBuildConfig', () => {
       } as any,
     )
 
-    const resolveName = config.build!.rolldownOptions!.output!.codeSplitting.groups[0].name
+    const resolveName = config.build!.rolldownOptions!.output!.codeSplitting.groups[1].name
     const result = resolveName('/project/src/shared/deep/feature.ts', {
       getModuleInfo: () => ({
         importers: [

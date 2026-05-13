@@ -1,6 +1,7 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, Logger } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
+import type { WeappVitePlatform } from '../../../../runtimeTarget'
 import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
@@ -24,6 +25,36 @@ function createAbsolutePathPattern(value: string) {
     .split(PATH_SEPARATOR_SPLIT_REGEX)
     .map(segment => escapeRegex(segment))
     .join('[/\\\\]+')
+}
+
+function normalizeInlineConfigAfterDefu(
+  inline: InlineConfig,
+  options: {
+    ctx: MutableCompilerContext
+    platform: WeappVitePlatform | undefined
+    rolldownOptions: Record<string, unknown>
+    subPackageMeta: SubPackageMetaValue | undefined
+  },
+) {
+  const { ctx, platform, rolldownOptions, subPackageMeta } = options
+  const build = inline.build ?? (inline.build = {})
+  const userRolldownOptions = build.rolldownOptions as Record<string, any> | undefined
+  const mergedRolldownOptions = {
+    ...(userRolldownOptions ?? {}),
+    ...rolldownOptions,
+    output: {
+      ...(rolldownOptions.output as Record<string, unknown> | undefined),
+      ...(userRolldownOptions?.output ?? {}),
+    },
+  }
+  build.rolldownOptions = mergedRolldownOptions
+  inline.define = {
+    ...(inline.define ?? {}),
+    __VITE_IS_MODERN__: 'false',
+  }
+  applyWeappViteHostMeta(inline, 'miniprogram', platform)
+  stripRollupOptions(inline)
+  arrangePlugins(inline, ctx, subPackageMeta)
 }
 
 interface MergeMiniprogramOptions {
@@ -159,13 +190,12 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
         },
       },
     )
-    inline.define = {
-      ...(inline.define ?? {}),
-      __VITE_IS_MODERN__: 'false',
-    }
-    applyWeappViteHostMeta(inline, 'miniprogram', platform)
-    stripRollupOptions(inline)
-    arrangePlugins(inline, ctx, subPackageMeta)
+    normalizeInlineConfigAfterDefu(inline, {
+      ctx,
+      platform,
+      rolldownOptions,
+      subPackageMeta,
+    })
     injectBuiltinAliases(inline)
     return inline
   }
@@ -188,13 +218,12 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       },
     },
   )
-  inlineConfig.define = {
-    ...(inlineConfig.define ?? {}),
-    __VITE_IS_MODERN__: 'false',
-  }
-  applyWeappViteHostMeta(inlineConfig, 'miniprogram', platform)
-  stripRollupOptions(inlineConfig)
-  arrangePlugins(inlineConfig, ctx, subPackageMeta)
+  normalizeInlineConfigAfterDefu(inlineConfig, {
+    ctx,
+    platform,
+    rolldownOptions,
+    subPackageMeta,
+  })
   inlineConfig.logLevel = 'warn'
   injectBuiltinAliases(inlineConfig)
 

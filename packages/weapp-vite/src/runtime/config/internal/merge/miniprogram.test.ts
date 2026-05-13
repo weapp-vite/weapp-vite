@@ -123,6 +123,58 @@ describe('runtime config merge miniprogram', () => {
     expect(setOptions).not.toHaveBeenCalled()
   })
 
+  it('preserves shared output options when merging user rolldown options', () => {
+    const sharedOutput = {
+      codeSplitting: {
+        groups: [{ name: 'weapp-vendors/wevu-src' }],
+      },
+      chunkFileNames: '[name].js',
+      minifyInternalExports: false,
+    }
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            rolldownOptions: {
+              output: {
+                entryFileNames: '[name].js',
+              },
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: undefined,
+        isDev: true,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      {
+        build: {
+          rolldownOptions: {
+            output: sharedOutput,
+          },
+        },
+      },
+    )
+
+    expect((result.build as any)?.rolldownOptions?.output).toMatchObject({
+      codeSplitting: sharedOutput.codeSplitting,
+      chunkFileNames: '[name].js',
+      entryFileNames: '[name].js',
+      minifyInternalExports: false,
+    })
+  })
+
   it('builds development watch with plugin root inside src and default dist exclusion', () => {
     const result = mergeMiniprogram(
       {
