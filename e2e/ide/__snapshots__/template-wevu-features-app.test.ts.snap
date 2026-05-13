@@ -138,7 +138,9 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
         <view class="native-card index--native-card">
           <view class="native-card__head index--native-card__head">
             <text class="native-card__title index--native-card__title"></text>
+            <text class="native-card__badge index--native-card__badge"></text>
           </view>
+          <text class="native-card__subtitle index--native-card__subtitle"></text>
           <view class="native-card__body index--native-card__body">
             <text class="native-uses-vue__note vue-index--native-uses-vue__note"></text>
           </view>
@@ -685,12 +687,16 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view id="slots-open-state" class="use-slots-page__state state-open">open state: open</view>
   <useslotsfeature is="components/use-slots-feature/index">
     <view class="index--use-slots-feature">
-      <view class="index--use-slots-feature__title"></view>
-      <view id="slots-panel" class="index--use-slots-feature__panel index--slot-panel-closed">
-        panel: closed
+      <view class="index--use-slots-feature__title">组件内 useSlots()</view>
+      <view id="slots-panel" class="index--use-slots-feature__panel index--slot-panel-open">
+        panel: open
       </view>
       <view class="index--use-slots-feature__summary" id="slots-summary">
         slots: ["default","header"]
+      </view>
+      <view class="index--use-slots-feature__content">
+        <view><view class="use-slots-page__header">header slot content</view></view>
+        <view class="use-slots-page__body">default slot content 1</view>
       </view>
     </view>
   </useslotsfeature>
