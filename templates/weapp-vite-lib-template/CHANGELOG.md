@@ -1,5 +1,12 @@
 # weapp-vite-lib-template
 
+## 7.0.14
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.16.14`
+
 ## 7.0.13
 
 ### Patch Changes

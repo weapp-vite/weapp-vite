@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.3.26
+
+### Patch Changes
+
+- 🐛 **修复 VS Code 编辑模板项目时 TypeScript 项目图反复重载的问题。模板工作区现在默认排除依赖、构建产物和 `.weapp-vite` 生成目录，根 TypeScript solution 不再主动挂载全部模板项目，同时 `weapp-vite` 在托管 tsconfig 内容未变化时不再重复写盘，减少 TS Server 和 Vue 服务的无效重建。** [`9054e81`](https://github.com/weapp-vite/weapp-vite/commit/9054e81b14d90acbd60b62dbc4a3e465cec5d3b6) by @sonofmagic
+
+- 🐛 **修复 wevu + Tailwind CSS + TDesign 模板在微信开发者工具中默认启用 Skyline/GlassEasel 后可能触发 `Error: timeout` 的问题。模板现在默认使用稳定的 WebView 组件运行时，并在项目私有配置中同步关闭 Skyline，避免 DevTools 导入或启动时重新覆盖为不兼容组合。** [`792cc7f`](https://github.com/weapp-vite/weapp-vite/commit/792cc7f4554ed099c1537b4189f233c6ed280985) by @sonofmagic
+
+- 🐛 **修复 wevu 运行时 shared chunk 在开发增量构建中可能从 `wevu-src.js` 漂移到 `wevu-store-C.js`，导致微信开发者工具仍执行旧页面模块时找不到 `weapp-vendors/wevu-src.js` 的问题。现在包含 wevu 核心运行时的合并 chunk 会优先保持 `wevu-src.js` 稳定命名，降低热更新后旧模块引用悬空的风险。** [`ed89c87`](https://github.com/weapp-vite/weapp-vite/commit/ed89c87f391f3b153e798f1086a11ee848e83360) by @sonofmagic
+
 ## 2.3.25
 
 ### Patch Changes
