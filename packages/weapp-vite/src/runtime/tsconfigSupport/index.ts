@@ -73,10 +73,20 @@ async function hasManagedTsconfigChanges(ctx: MutableCompilerContext) {
   return false
 }
 
+async function outputFileIfChanged(file: ManagedTsconfigFile) {
+  const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
+  if (existing === file.content) {
+    return false
+  }
+
+  await fs.outputFile(file.path, file.content, 'utf8')
+  return true
+}
+
 export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext) {
   const changed = await hasManagedTsconfigChanges(ctx)
   for (const file of await createManagedTsconfigFiles(ctx)) {
-    await fs.outputFile(file.path, file.content, 'utf8')
+    await outputFileIfChanged(file)
   }
   return changed
 }

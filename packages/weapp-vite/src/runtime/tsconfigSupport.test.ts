@@ -258,6 +258,24 @@ describe('tsconfig support', () => {
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.server.json'))).toBe(true)
   })
 
+  it('does not rewrite unchanged managed tsconfig files', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-managed-tsconfig-stable-'))
+    const ctx = createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      weappViteConfig: {},
+    })
+    const appTsconfigPath = path.join(root, '.weapp-vite', 'tsconfig.app.json')
+
+    await expect(syncManagedTsconfigFiles(ctx)).resolves.toBe(true)
+    const before = await fs.stat(appTsconfigPath)
+
+    await expect(syncManagedTsconfigFiles(ctx)).resolves.toBe(false)
+    const after = await fs.stat(appTsconfigPath)
+
+    expect(after.mtimeMs).toBe(before.mtimeMs)
+  })
+
   it('bootstraps managed tsconfig files from cwd and package.json', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-'))
     await fs.writeJson(path.join(root, 'package.json'), {

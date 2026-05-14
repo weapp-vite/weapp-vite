@@ -2,6 +2,8 @@
   "vue.server.hybridMode": true,
   "vue.tsserver.useWorkspaceTsdk": true,
   "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.disableReferencedProjectLoad": true,
+  "typescript.disableSolutionSearching": true,
   "typescript.disableAutomaticTypeAcquisition": true,
   "typescript.preferences.includePackageJsonAutoImports": "off",
   "javascript.preferences.includePackageJsonAutoImports": "off",

@@ -284,33 +284,6 @@
       "path": "./packages/weapp-vite"
     },
     {
-      "path": "./templates/weapp-vite-lib-template"
-    },
-    {
-      "path": "./templates/weapp-vite-plugin-template"
-    },
-    {
-      "path": "./templates/weapp-vite-tailwindcss-tdesign-template"
-    },
-    {
-      "path": "./templates/weapp-vite-tailwindcss-template"
-    },
-    {
-      "path": "./templates/weapp-vite-tailwindcss-vant-template"
-    },
-    {
-      "path": "./templates/weapp-vite-template"
-    },
-    {
-      "path": "./templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template"
-    },
-    {
-      "path": "./templates/weapp-vite-wevu-tailwindcss-tdesign-template"
-    },
-    {
-      "path": "./templates/weapp-vite-wevu-template"
-    },
-    {
       "path": "./test/fixture-projects/weapp-vite/asset"
     },
     {
