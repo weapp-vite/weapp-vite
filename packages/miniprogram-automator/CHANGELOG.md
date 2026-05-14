@@ -1,5 +1,11 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.1.1
+
+### Patch Changes
+
+- 🐛 **将内部调试日志依赖从 `debug` 替换为更轻量的 `obug`，同步脚手架依赖 catalog，并升级 dashboard 路由相关依赖类型以保持当前依赖版本兼容。** [`4276782`](https://github.com/weapp-vite/weapp-vite/commit/4276782841181ef7b540be4eb5e722e979f4363f) by @sonofmagic
+
 ## 1.1.0
 
 ### Minor Changes

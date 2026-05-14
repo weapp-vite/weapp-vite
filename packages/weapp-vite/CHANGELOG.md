@@ -1,5 +1,32 @@
 # weapp-vite
 
+## 6.16.13
+
+### Patch Changes
+
+- 🐛 **修复 `@weapp-vite/ast` 的 Babel `generate` 包装函数类型边界，避免消费方在依赖树中同时存在 Babel 7 与 Babel 8 RC 类型时出现 AST 节点类型不兼容，恢复 `weapp-vite` 包级 typecheck。** [`36e8f68`](https://github.com/weapp-vite/weapp-vite/commit/36e8f687807f04e5a0fb64650477f1b5c72c6db2) by @sonofmagic
+
+- 🐛 **将内部调试日志依赖从 `debug` 替换为更轻量的 `obug`，同步脚手架依赖 catalog，并升级 dashboard 路由相关依赖类型以保持当前依赖版本兼容。** [`4276782`](https://github.com/weapp-vite/weapp-vite/commit/4276782841181ef7b540be4eb5e722e979f4363f) by @sonofmagic
+
+- 🐛 **修复开发模式下 Vue SFC 页面模板改动会沿共享 chunk 扩散到大量入口重新 emit 的问题。现在普通页面文本或作用域插槽内容更新会保持单入口增量重建，同时刷新带有模块元数据的共享 chunk 索引，避免后续 HMR 继续引用过期的共享模块归属。** [`9caf114`](https://github.com/weapp-vite/weapp-vite/commit/9caf1140b8fc946f4554d22bfa29c5d535be0e2c) by @sonofmagic
+
+- 🐛 **修复页面级 Vue SFC 作用域插槽渲染时的内部 owner 标记注入边界，避免页面被错误当作组件宿主注入内部 props，并让作用域插槽 owner 快照同步保持在运行时数据快照内。** [#573](https://github.com/weapp-vite/weapp-vite/pull/573) by @sonofmagic
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 下默认插槽中的运行时绑定表达式无法调用宿主 `setup` 方法的问题。增强 scoped slot 生成的 `__wv_bind_*` 现在会从宿主 proxy 读取函数和值，WXML 仍保留序列化快照用于模板渲染。** [#573](https://github.com/weapp-vite/weapp-vite/pull/573) by @sonofmagic
+  - 同时修复带有 scoped slot 内部 `properties` 的 Vue 组件会丢失业务 `props` 的问题，避免 `KpiBoard` 这类组件在微信开发者工具中拿不到 `items` 后渲染为空。
+
+- 🐛 **修复组件同时包含隐式默认子节点和 `<template #name>` 具名插槽时，生成的小程序模板会把默认子节点移动到具名插槽之后的问题。现在 plain template slot 会按源码中的子节点顺序输出，同时保留原有的 `vue-slots` 元数据和作用域插槽生成逻辑。** [#576](https://github.com/weapp-vite/weapp-vite/pull/576) by @sonofmagic
+
+- 🐛 **修复小程序 dev/HMR 场景下 runtime vendor chunk 在全量构建和增量构建之间拓扑漂移的问题，避免页面入口引用到缺少导出的旧 shared chunk。** [`068a860`](https://github.com/weapp-vite/weapp-vite/commit/068a860e63821f18dff4952586c48a6d5ccf766e) by @sonofmagic
+
+- 🐛 **修复小程序 dev/HMR 增量构建中共享 chunk 命名缓存被重置导致页面入口引用旧 runtime helper 的问题，避免热更新后出现压缩 helper 名漂移引发的运行时报错。** [`8fc1220`](https://github.com/weapp-vite/weapp-vite/commit/8fc1220177ef165e1cdc7fdc8fe84647312e0803) by @sonofmagic
+- 📦 Updated 6 dependencies [`36e8f68`](https://github.com/weapp-vite/weapp-vite/commit/36e8f687807f04e5a0fb64650477f1b5c72c6db2)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/ast@6.16.13`, `@weapp-vite/miniprogram-automator@1.1.1`, `wevu@6.16.13`, `@weapp-core/constants@0.1.7`, `weapp-ide-cli@5.2.10`, `@weapp-vite/mcp@1.3.3`
+
+  </details>
+
 ## 6.16.12
 
 ### Patch Changes

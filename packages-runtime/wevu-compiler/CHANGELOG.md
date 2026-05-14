@@ -1,5 +1,16 @@
 # @wevu/compiler
 
+## 6.16.13
+
+### Patch Changes
+
+- 🐛 **修复 `scopedSlotsCompiler: 'augmented'` 下默认插槽中的运行时绑定表达式无法调用宿主 `setup` 方法的问题。增强 scoped slot 生成的 `__wv_bind_*` 现在会从宿主 proxy 读取函数和值，WXML 仍保留序列化快照用于模板渲染。** [#573](https://github.com/weapp-vite/weapp-vite/pull/573) by @sonofmagic
+  - 同时修复带有 scoped slot 内部 `properties` 的 Vue 组件会丢失业务 `props` 的问题，避免 `KpiBoard` 这类组件在微信开发者工具中拿不到 `items` 后渲染为空。
+
+- 🐛 **修复组件同时包含隐式默认子节点和 `<template #name>` 具名插槽时，生成的小程序模板会把默认子节点移动到具名插槽之后的问题。现在 plain template slot 会按源码中的子节点顺序输出，同时保留原有的 `vue-slots` 元数据和作用域插槽生成逻辑。** [#576](https://github.com/weapp-vite/weapp-vite/pull/576) by @sonofmagic
+- 📦 **Dependencies** [`36e8f68`](https://github.com/weapp-vite/weapp-vite/commit/36e8f687807f04e5a0fb64650477f1b5c72c6db2)
+  → `@weapp-vite/ast@6.16.13`, `@weapp-core/constants@0.1.7`
+
 ## 6.16.12
 
 ### Patch Changes
