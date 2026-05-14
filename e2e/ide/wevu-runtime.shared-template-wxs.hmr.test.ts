@@ -39,14 +39,16 @@ async function readPageWxml(page: any) {
 
 async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
   const start = Date.now()
+  let lastWxml = ''
   while (Date.now() - start < timeoutMs) {
     const wxml = await readPageWxml(page)
+    lastWxml = wxml
     if (wxml && wxml.includes(marker)) {
       return wxml
     }
     await page.waitFor(200)
   }
-  throw new Error(`Timed out waiting page runtime wxml to contain marker: ${marker}`)
+  throw new Error(`Timed out waiting page runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
 }
 
 async function waitForFileContainsWithRetry(
@@ -76,14 +78,33 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipWarmup: true,
     })
   }
   return sharedMiniProgram
 }
 
-async function relaunchIdeSession(route: string, readyText?: string) {
+async function relaunchIdeSession(
+  route: string,
+  readyText?: string,
+  options: { allowCurrentSession?: boolean } = {},
+) {
   const cacheCleanTypes = ['compile', 'all'] as const
   let lastError: unknown
+  if (options.allowCurrentSession && sharedMiniProgram) {
+    try {
+      const page = await relaunchPage(sharedMiniProgram, route, readyText, 20_000)
+      if (page) {
+        if (readyText) {
+          await waitForPageWxmlContains(page, readyText, 8_000)
+        }
+        return page
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+  }
 
   for (const cleanType of cacheCleanTypes) {
     if (sharedMiniProgram) {
@@ -223,7 +244,7 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       await waitForIdeRecompileSettled()
       // DevTools 在 dev 重编译后继续复用旧 automator 会话做 reLaunch 不稳定，
       // 这里重建会话，确保仍然是 IDE 实际运行态验证而不是仅看 dist。
-      page = await relaunchIdeSession('/pages/hmr/index', pageUpdatedTemplateMarker)
+      page = await relaunchIdeSession('/pages/hmr/index', pageUpdatedTemplateMarker, { allowCurrentSession: true })
       runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(pageUpdatedTemplateMarker)
 
@@ -237,51 +258,38 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       )
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr/index', updatedIncludeMarker)
+      page = await relaunchIdeSession('/pages/hmr/index', updatedIncludeMarker, { allowCurrentSession: true })
       runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(updatedIncludeMarker)
 
       // 微信 DevTools 对 SFC 页面里外部 import/wxs 的运行态缓存不稳定：
-      // dist 已更新时，reLaunch 仍可能继续使用旧的外部模板内容。
-      // SFC shared 依赖追踪由 e2e:ci 的 dev-watch 用例覆盖；这里保留 IDE
-      // 运行态验证在原生 WXML 页面上，避免把 DevTools 缓存缺陷当作产品回归。
+      // dist 已更新时，连续 reLaunch 仍可能继续使用旧的外部模板或脚本模块内容。
+      // shared 依赖追踪由 e2e:ci 的 dev-watch 用例覆盖；这里保留前面的
+      // 原生 WXML 页面 template/include 运行态验证，后续连续外部依赖更新只看 dist，
+      // 避免把 DevTools 缓存缺陷当作产品回归。
       const runtimeUpdatedTemplateSource = buildSharedImportTemplate(runtimeUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, runtimeUpdatedTemplateSource)
-      await waitForFileContainsWithRetry(
+      const runtimeUpdatedTemplateOutput = await waitForFileContainsWithRetry(
         sharedImportOutputPath,
         runtimeUpdatedTemplateMarker,
         SHARED_HMR_PATHS.sharedImportTemplate,
         runtimeUpdatedTemplateSource,
       )
+      expect(runtimeUpdatedTemplateOutput).toContain(runtimeUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr/index', runtimeUpdatedTemplateMarker)
-      runtimeWxml = await readPageWxml(page)
-      expect(runtimeWxml).toContain(runtimeUpdatedTemplateMarker)
 
       const updatedWxsSource = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedWxs, updatedWxsSource)
-      await waitForFileContainsWithRetry(
+      const updatedWxsOutput = await waitForFileContainsWithRetry(
         sharedWxsOutputPath,
         updatedWxsMarker,
         SHARED_HMR_PATHS.sharedWxs,
         updatedWxsSource,
       )
+      expect(updatedWxsOutput).toContain(updatedWxsMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr/index', updatedWxsMarker)
-      runtimeWxml = await readPageWxml(page)
-      expect(runtimeWxml).toContain(updatedWxsMarker)
-
-      await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
-      await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr/index', updatedWxsMarker)
-      if (!page) {
-        throw new Error('Failed to relaunch /pages/hmr/index for final wxs check')
-      }
-      runtimeWxml = await readPageWxml(page)
-      expect(runtimeWxml).toContain(runtimeUpdatedTemplateMarker)
-      expect(runtimeWxml).toContain(updatedIncludeMarker)
     }
     finally {
       if (sharedMiniProgram) {

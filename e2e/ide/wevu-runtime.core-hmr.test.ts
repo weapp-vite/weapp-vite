@@ -36,6 +36,14 @@ const HMR_SFC_WXSS_DIST = path.join(DIST_ROOT, 'pages/hmr-sfc/index.wxss')
 const LAYOUT_PAGE_WXML_DIST = path.join(DIST_ROOT, 'pages/layouts/index.wxml')
 const LAYOUT_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.js')
 const LAYOUT_PAGE_WXSS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.wxss')
+const RUNTIME_PAGE_WXML_DIST = path.join(DIST_ROOT, 'pages/runtime/index.wxml')
+const RUNTIME_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/runtime/index.js')
+
+const HMR_PAGE_BASE_MARKER = '<view class="title">HMR</view>'
+const HMR_SFC_TEMPLATE_BASE_MARKER = 'HMR-SFC'
+const HMR_SFC_SCRIPT_BASE_MARKER = 'HMR-SFC-SCRIPT'
+const LAYOUT_PAGE_TEMPLATE_BASE_MARKER = 'LAYOUTS-PAGE-TEMPLATE-BASE'
+const LAYOUT_PAGE_SCRIPT_BASE_MARKER = 'LAYOUTS-PAGE-SCRIPT-BASE'
 
 let sharedMiniProgram: any = null
 let previousBridgePostConnectRefresh: string | undefined
@@ -46,14 +54,16 @@ async function readPageWxml(page: any) {
 
 async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
   const start = Date.now()
+  let lastWxml = ''
   while (Date.now() - start < timeoutMs) {
     const wxml = await readPageWxml(page)
+    lastWxml = wxml
     if (wxml.includes(marker)) {
       return wxml
     }
     await page.waitFor(200)
   }
-  throw new Error(`Timed out waiting runtime wxml to contain marker: ${marker}`)
+  throw new Error(`Timed out waiting runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
 }
 
 async function waitForIdeRecompileSettled(delayMs = 1_200) {
@@ -75,6 +85,7 @@ async function ensureMiniProgram(ctx: { skip: (message?: string) => void }) {
     }
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipWarmup: true,
     })
     return sharedMiniProgram
   }
@@ -86,14 +97,51 @@ async function ensureMiniProgram(ctx: { skip: (message?: string) => void }) {
   }
 }
 
+async function waitForInitialHmrDistReady(dev: ReturnType<typeof startDevProcess>) {
+  await dev.waitFor(
+    Promise.all([
+      waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+      waitForFileContains(HMR_PAGE_WXML_DIST, HMR_PAGE_BASE_MARKER, 90_000),
+      waitForFile(HMR_PAGE_JS_DIST, 90_000),
+      waitForFile(HMR_PAGE_WXSS_DIST, 90_000),
+      waitForFileContains(HMR_SFC_WXML_DIST, HMR_SFC_TEMPLATE_BASE_MARKER, 90_000),
+      waitForFileContains(HMR_SFC_JS_DIST, HMR_SFC_SCRIPT_BASE_MARKER, 90_000),
+      waitForFile(HMR_SFC_WXSS_DIST, 90_000),
+      waitForFileContains(LAYOUT_PAGE_WXML_DIST, LAYOUT_PAGE_TEMPLATE_BASE_MARKER, 90_000),
+      waitForFileContains(LAYOUT_PAGE_JS_DIST, LAYOUT_PAGE_SCRIPT_BASE_MARKER, 90_000),
+      waitForFile(LAYOUT_PAGE_WXSS_DIST, 90_000),
+      waitForFile(RUNTIME_PAGE_WXML_DIST, 90_000),
+      waitForFile(RUNTIME_PAGE_JS_DIST, 90_000),
+    ]),
+    'weapp core hmr baseline dist generated',
+  )
+  await waitForIdeRecompileSettled(1_500)
+}
+
 async function relaunchIdeRoute(
   route: string,
   readyText: string | undefined,
   ctx: { skip: (message?: string) => void },
+  options: { allowCurrentSession?: boolean } = {},
 ) {
   // 小程序 IDE 的文件型热更新在 compile 后会频繁残留陈旧的 automator 会话；
   // 这里统一重建连接，验证的是“IDE 已感知并重新运行最新产物”，而不是浏览器式模块常驻 HMR。
   let lastError: unknown = null
+  if (options.allowCurrentSession && sharedMiniProgram) {
+    try {
+      const page = await relaunchPage(sharedMiniProgram, route, readyText, 24_000)
+      if (page) {
+        if (readyText) {
+          await waitForPageWxmlContains(page, readyText, 8_000)
+        }
+        return page
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+  }
+
   const recoveryPasses = [
     { cleanType: 'compile', settleDelay: 1_200, readyTimeout: 8_000 },
     { cleanType: 'all', settleDelay: 1_800, readyTimeout: 10_000 },
@@ -199,7 +247,9 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), 'weapp app.json generated for core ide hmr')
+      await waitForInitialHmrDistReady(dev)
+      let page = await relaunchIdeRoute('/pages/hmr/index', 'HMR', ctx)
+      expect(await waitForPageWxmlContains(page, 'HMR')).toContain('HMR')
 
       const pageTemplateMarker = createHmrMarker('IDE-CORE-PAGE-TEMPLATE', 'weapp')
       const updatedPageWxml = originalSources
@@ -215,7 +265,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'page template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      let page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, pageTemplateMarker)).toContain(pageTemplateMarker)
 
       const pageScriptMarker = createHmrMarker('IDE-CORE-PAGE-SCRIPT', 'weapp')
@@ -232,7 +282,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
       const pageScriptResult = await page.callMethod('runE2E')
       expect(pageScriptResult?.name).toBe(pageScriptMarker)
       expect(pageScriptResult?.ok).toBe(true)
@@ -253,7 +303,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       )
       expect(pageStyleOutput).toContain(pageStyleMarker)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
       expect((await page.callMethod('runE2E'))?.ok).toBe(true)
 
       const sfcTemplateMarker = createHmrMarker('IDE-CORE-SFC-TEMPLATE', 'weapp')
@@ -271,7 +321,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, sfcTemplateMarker)).toContain(sfcTemplateMarker)
 
       const sfcScriptMarker = createHmrMarker('IDE-CORE-SFC-SCRIPT', 'weapp')
@@ -287,7 +337,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, sfcScriptMarker)).toContain(sfcScriptMarker)
       expect(await page.data('marker')).toBe(sfcScriptMarker)
 
@@ -305,7 +355,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       )
       expect(sfcStyleOutput).toContain(sfcStyleMarker)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await page.data('marker')).toBe(sfcScriptMarker)
 
       const layoutPageTemplateMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-TEMPLATE', 'weapp')
@@ -322,7 +372,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'layout page template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, layoutPageTemplateMarker)).toContain(layoutPageTemplateMarker)
 
       const layoutPageScriptMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-SCRIPT', 'weapp')
@@ -339,7 +389,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'layout page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
 
       const layoutPageStyleMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-STYLE', 'weapp')
@@ -357,7 +407,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       )
       expect(layoutPageStyleOutput).toContain(layoutPageStyleMarker)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx)
+      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
     }
     finally {
