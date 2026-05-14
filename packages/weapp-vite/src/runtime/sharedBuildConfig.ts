@@ -18,6 +18,7 @@ const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|web-apis[/\\]dist[/\\]index\.(?:m?js|cjs)|weapp-vite[/\\](?:dist[/\\]web-apis\.mjs|src[/\\](?:webApis\.ts|runtime[/\\]webApis[/\\]index\.ts)))(?:$|[?#])/
 const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\]([^/\\]+)-(\w{6,})\.(?:m?js|cjs)(?:$|[?#])/
+const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
 
 function resolveSharedPathRoot(
   configService: ConfigService,
@@ -233,6 +234,7 @@ function resolveStableHashedDistChunkFileName(
     chunk.facadeModuleId,
     ...(chunk.moduleIds ?? []),
   ].filter((id): id is string => typeof id === 'string')
+  const matchedChunks: Array<{ baseName: string, fileName: string }> = []
 
   for (const id of candidateIds) {
     const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
@@ -256,7 +258,21 @@ function resolveStableHashedDistChunkFileName(
       return `weapp-vendors/request-globals-${packageToken}-${baseName}.js`
     }
 
-    return `weapp-vendors/${packageToken}-${baseName}.js`
+    matchedChunks.push({
+      baseName,
+      fileName: `weapp-vendors/${packageToken}-${baseName}.js`,
+    })
+  }
+
+  for (const priorityBaseName of STABLE_HASHED_DIST_CHUNK_PRIORITY) {
+    const matched = matchedChunks.find(chunk => chunk.baseName === priorityBaseName)
+    if (matched) {
+      return matched.fileName
+    }
+  }
+
+  if (matchedChunks[0]) {
+    return matchedChunks[0].fileName
   }
 
   return undefined
