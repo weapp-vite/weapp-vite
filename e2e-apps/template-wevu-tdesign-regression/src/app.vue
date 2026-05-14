@@ -68,7 +68,6 @@ defineAppJson({
     },
   ],
   style: 'v2',
-  componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
 })
 
