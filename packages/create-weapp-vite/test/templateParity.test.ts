@@ -24,6 +24,12 @@ interface PackageJsonLike {
   optionalDependencies?: Record<string, string>
 }
 
+interface ProjectConfigLike {
+  setting?: {
+    skylineRenderEnable?: boolean
+  }
+}
+
 function normalizeRelativePath(value: string) {
   return value.split(path.sep).join('/')
 }
@@ -372,5 +378,16 @@ describe('template parity', () => {
       const content = await fs.readFile(sourceFile, 'utf8')
       expect(content).not.toContain(`from '@wevu/api'`)
     }
+  })
+
+  it('keeps the wevu tdesign template on the stable webview component framework', async () => {
+    const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(TemplateName.wevuTdesign)
+    const appVue = await fs.readFile(path.join(preferredTemplateDir, 'src/app.vue'), 'utf8')
+    const projectConfig = await readJsonAs<ProjectConfigLike>(path.join(preferredTemplateDir, 'project.config.json'))
+    const privateConfig = await readJsonAs<ProjectConfigLike>(path.join(preferredTemplateDir, 'project.private.config.json'))
+
+    expect(appVue).not.toContain('componentFramework')
+    expect(projectConfig.setting?.skylineRenderEnable).toBe(false)
+    expect(privateConfig.setting?.skylineRenderEnable).toBe(false)
   })
 })

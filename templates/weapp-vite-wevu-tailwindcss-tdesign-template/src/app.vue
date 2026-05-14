@@ -10,7 +10,6 @@ defineAppJson({
     backgroundTextStyle: 'dark',
   },
   style: 'v2',
-  componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
 })
 </script>
