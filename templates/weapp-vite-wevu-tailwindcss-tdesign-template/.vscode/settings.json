@@ -243,5 +243,7 @@
     "**/.wevu-config/**",
     "**/__temp__/**",
     "**/docs/reports/**"
-  ]
+  ],
+  "vue.tsserver.useWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

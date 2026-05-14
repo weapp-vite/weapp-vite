@@ -1,6 +1,7 @@
 {
   "vue.server.hybridMode": true,
   "vue.tsserver.useWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.tsserver.maxTsServerMemory": 4096,
   "typescript.disableReferencedProjectLoad": true,
   "typescript.disableSolutionSearching": true,
