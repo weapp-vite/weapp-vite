@@ -125,6 +125,7 @@
     "changeset:catalog:auto": "node --import tsx scripts/generate-catalog-changeset.ts",
     "check:catalog-changeset": "node --import tsx scripts/check-catalog-changeset.ts",
     "catalog:sync:rolldown": "node scripts/print-rolldown-versions.mjs --mode sync",
+    "catalog:sync:weapi": "pnpm --filter @wevu/api catalog:sync",
     "catalog:sync:create-weapp-vite": "node --import tsx packages/create-weapp-vite/scripts/generate-template-catalog.ts",
     "deps:up": "node --import tsx scripts/upgrade-workspace-deps.ts",
     "publish-packages": "pnpm run catalog:sync:create-weapp-vite && pnpm run changeset:catalog:auto && pnpm run check:catalog-changeset && pnpm run check:create-weapp-vite-changeset && pnpm run check:publishable-workspace-changeset && pnpm run check:weapp-core-constants-dependency-range && pnpm run check:rolldown:single-version && pnpm run ci:release && turbo run test && turbo run test:types && changeset version && changeset publish",

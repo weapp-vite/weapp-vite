@@ -112,7 +112,16 @@ function resolveProjects(): string[] {
   return projects
 }
 
-const projects = resolveProjects()
+const projects = [
+  {
+    test: {
+      name: 'repo-scripts',
+      include: ['scripts/**/*.test.ts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
+  ...resolveProjects(),
+]
 
 export default defineConfig(() => {
   return {
