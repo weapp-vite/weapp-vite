@@ -49,7 +49,7 @@ catalog:
   dayjs: ^1.11.20
   echarts: ^6.0.0
   esbuild: ^0.28.0
-  eslint: ^10.3.0
+  eslint: ^10.4.0
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
@@ -60,7 +60,7 @@ catalog:
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
   obug: ^2.1.1
-  oxc-parser: ^0.130.0
+  oxc-parser: ^0.131.0
   oxc-walker: ^1.0.0
   pathe: ^2.0.3
   pkg-types: ^2.3.1
