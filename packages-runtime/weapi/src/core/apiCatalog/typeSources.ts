@@ -5,11 +5,11 @@
 export const WEAPI_TYPE_SOURCES = {
   default: {
     package: 'miniprogram-api-typings',
-    version: '5.2.0',
+    version: '5.2.1',
   },
   wechat: {
     package: 'miniprogram-api-typings',
-    version: '5.2.0',
+    version: '5.2.1',
   },
   alipay: {
     package: '@mini-types/alipay',
@@ -21,7 +21,7 @@ export const WEAPI_TYPE_SOURCES = {
   },
   wx: {
     package: 'miniprogram-api-typings',
-    version: '5.2.0',
+    version: '5.2.1',
   },
   my: {
     package: '@mini-types/alipay',
