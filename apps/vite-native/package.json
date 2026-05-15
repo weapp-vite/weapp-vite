@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
-    "@vue/language-plugin-pug": "^3.2.8",
+    "@vue/language-plugin-pug": "^3.2.9",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.2.0",
     "@weapp-vite/dashboard": "workspace:*",
