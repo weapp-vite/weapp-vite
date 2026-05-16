@@ -76,6 +76,18 @@ describe('workspace HMR changed-file selection', () => {
     ])
   })
 
+  it('selects changed projects from apps, templates, and e2e-apps in workspace scope', () => {
+    expect([...resolveChangedProjectIds([
+      'apps/hmr-lab/src/pages/index/index.vue',
+      'e2e-apps/base/src/pages/index/index.vue',
+      'templates/weapp-vite-template/src/pages/index/index.ts',
+    ], 'workspace')]).toEqual([
+      'apps/hmr-lab',
+      'e2e-apps/base',
+      'templates/weapp-vite-template',
+    ])
+  })
+
   it('selects representative smoke projects from apps and e2e-apps scope', () => {
     expect([...selectWorkspaceHmrSmokeProjectIds([
       { id: 'apps/hmr-lab', kind: 'apps' },
@@ -85,6 +97,21 @@ describe('workspace HMR changed-file selection', () => {
       { id: 'e2e-apps/wevu-features', kind: 'e2e-apps' },
     ], 'apps,e2e-apps')]).toEqual([
       'apps/hmr-lab',
+      'e2e-apps/base',
+    ])
+  })
+
+  it('selects representative smoke projects from every workspace root', () => {
+    expect([...selectWorkspaceHmrSmokeProjectIds([
+      { id: 'apps/hmr-lab', kind: 'apps' },
+      { id: 'apps/runtime-bench-vue', kind: 'apps' },
+      { id: 'templates/weapp-vite-template', kind: 'templates' },
+      { id: 'templates/weapp-vite-wevu-template', kind: 'templates' },
+      { id: 'e2e-apps/base', kind: 'e2e-apps' },
+      { id: 'e2e-apps/wevu-features', kind: 'e2e-apps' },
+    ], 'workspace')]).toEqual([
+      'apps/hmr-lab',
+      'templates/weapp-vite-template',
       'e2e-apps/base',
     ])
   })
