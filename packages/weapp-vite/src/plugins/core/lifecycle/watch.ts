@@ -34,6 +34,11 @@ function isOutputFileChange(state: CorePluginState, normalizedId: string) {
   return normalizedId === normalizedOutDir || normalizedId.startsWith(`${normalizedOutDir}/`)
 }
 
+function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackageMetaValue | null | undefined) {
+  const root = subPackageMeta?.subPackage.root
+  return !root || relativeSrc === root || relativeSrc.startsWith(`${root}/`)
+}
+
 async function normalizeWatchEvent(id: string, event: ChangeEvent) {
   if (event !== 'delete') {
     return event
@@ -280,7 +285,11 @@ async function processChangedFile(
     return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
   }
 
-  if (!isDeletedMissingSelf && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')) {
+  if (
+    !isDeletedMissingSelf
+    && isCurrentSubPackageFile(relativeSrc, subPackageMeta)
+    && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')
+  ) {
     const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
     markEntryDirtyWithCause(
       normalizedId,
@@ -303,7 +312,10 @@ async function processChangedFile(
       }
     }
   }
-  const sharedChunkAffected = collectAffectedEntriesFromSharedChunks(state, normalizedId)
+  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct')
+  const sharedChunkAffected = shouldExpandSharedChunkAffected
+    ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
+    : new Set<string>()
   if (sharedChunkAffected.size) {
     for (const entryId of sharedChunkAffected) {
       if (importerGraphAffectedEntryIds.has(entryId)) {
@@ -352,13 +364,13 @@ async function processChangedFile(
     }
   }
 
-  if (subPackageMeta) {
+  if (subPackageMeta && dirtyReasonStats.size > 0) {
     if (subPackageMeta.watchSharedStyles !== false) {
       invalidateSharedStyleCache()
     }
     logger.success(`[${event}] ${configService.relativeCwd(normalizedId)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
   }
-  else if (!handledByIndependentWatcher) {
+  else if (!subPackageMeta && !handledByIndependentWatcher) {
     logger.success(`[${event}] ${configService.relativeCwd(normalizedId)}`)
   }
 

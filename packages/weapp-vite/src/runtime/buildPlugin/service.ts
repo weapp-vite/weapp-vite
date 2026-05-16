@@ -15,8 +15,10 @@ import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import {
   configSuffixes,
+  defaultIgnoredDirNames,
   isSidecarFile,
   watchedCssExts,
+  watchedScriptModuleExts,
   watchedTemplateExts,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
@@ -82,6 +84,43 @@ interface SnapshotBuildReason {
 
 function shouldHandleSnapshotSidecarFile(filePath: string) {
   return isSidecarFile(filePath)
+}
+
+function createSnapshotSidecarWatchPatterns(root: string) {
+  return [
+    ...configSuffixes.map(suffix => path.join(root, `**/*${suffix}`)),
+    ...Array.from(watchedCssExts).map(ext => path.join(root, `**/*${ext}`)),
+    ...Array.from(watchedTemplateExts).map(ext => path.join(root, `**/*${ext}`)),
+    ...Array.from(watchedScriptModuleExts).map(ext => path.join(root, `**/*${ext}`)),
+  ]
+}
+
+function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
+  const configService = ctx.configService
+  if (!configService) {
+    return undefined
+  }
+  const ignoredRoots = new Set<string>()
+  const watchRoot = normalizeFsResolvedId(configService.absoluteSrcRoot)
+  for (const dirName of defaultIgnoredDirNames) {
+    ignoredRoots.add(normalizeFsResolvedId(path.join(configService.absoluteSrcRoot, dirName)))
+  }
+  ignoredRoots.add(normalizeFsResolvedId(configService.outDir))
+  if (configService.mpDistRoot) {
+    ignoredRoots.add(normalizeFsResolvedId(path.resolve(configService.cwd, configService.mpDistRoot)))
+  }
+  return (candidate: string) => {
+    const normalized = normalizeFsResolvedId(candidate)
+    if (normalized === watchRoot) {
+      return false
+    }
+    for (const ignored of ignoredRoots) {
+      if (normalized === ignored || normalized.startsWith(`${ignored}/`)) {
+        return true
+      }
+    }
+    return false
+  }
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
@@ -681,10 +720,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        configService.absoluteSrcRoot,
+        createSnapshotSidecarWatchPatterns(configService.absoluteSrcRoot),
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
+          ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
       snapshotWatcher.on('all', (event, id) => {

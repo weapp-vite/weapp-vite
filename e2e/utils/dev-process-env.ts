@@ -2,14 +2,21 @@ import process from 'node:process'
 
 interface DevProcessEnvOptions {
   disableSidecarWatch?: boolean
+  usePolling?: boolean
 }
 
 export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: 'development',
-    CHOKIDAR_USEPOLLING: '1',
-    CHOKIDAR_INTERVAL: '120',
+  }
+  if (options.usePolling !== false) {
+    env.CHOKIDAR_USEPOLLING = '1'
+    env.CHOKIDAR_INTERVAL = '120'
+  }
+  else {
+    delete env.CHOKIDAR_USEPOLLING
+    delete env.CHOKIDAR_INTERVAL
   }
   if (options.disableSidecarWatch) {
     env.WEAPP_VITE_DISABLE_SIDECAR_WATCH = '1'

@@ -565,6 +565,39 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
   })
 
+  it('narrows snapshot sidecar watcher to sidecar globs and ignores generated roots', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    ctx.configService.absoluteSrcRoot = '/project'
+    ctx.configService.outDir = '/project/dist'
+    ctx.configService.mpDistRoot = 'dist'
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    const [patterns, options] = chokidarWatchMock.mock.calls[0]!
+    expect(patterns).toEqual(expect.arrayContaining([
+      '/project/**/*.json',
+      '/project/**/*.wxml',
+      '/project/**/*.wxss',
+      '/project/**/*.wxs',
+    ]))
+    expect(patterns).not.toContain('/project')
+    expect(options.ignored('/project/node_modules/tdesign-miniprogram/miniprogram_dist/button/button.wxml')).toBe(true)
+    expect(options.ignored('/project/dist/pages/index/index.wxml')).toBe(true)
+    expect(options.ignored('/project/.weapp-vite/components.d.ts')).toBe(true)
+    expect(options.ignored('/project/pages/index/index.wxml')).toBe(false)
+  })
+
   it('prints hmr phase timings on rebuild completion and resets the profile', async () => {
     const watcher = createManualWatcher()
     buildMock

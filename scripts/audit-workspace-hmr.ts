@@ -2,7 +2,7 @@
 import type { WorkspaceHmrBaseline } from './workspace-hmr/baseline'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { access, appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
@@ -40,6 +40,8 @@ type RuntimePlatform = 'weapp' | 'alipay'
 type WorkspaceHmrRunMode = 'full' | 'smoke' | 'changed-project' | 'nightly-full'
 type WorkspaceHmrProjectKind = 'apps' | 'templates' | 'e2e-apps'
 type WorkspaceHmrScope = 'apps,e2e-apps' | 'apps' | 'e2e-apps' | 'templates' | 'workspace'
+type WorkspaceHmrWriteMode = 'write' | 'rename'
+type WorkspaceHmrPollingMode = 'native' | 'polling'
 
 interface ScenarioCase {
   id: string
@@ -126,6 +128,8 @@ const settleMs = readPositiveIntegerEnv('WORKSPACE_HMR_SETTLE_MS', 250)
 const startupDistStableMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_DIST_STABLE_MS', 1_000)
 const scenarioRetries = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_SCENARIO_RETRIES') ?? 1
 const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT') ?? (runMode === 'smoke' ? 1 : undefined)
+const writeMode = readWorkspaceHmrWriteMode(process.env.WORKSPACE_HMR_WRITE_MODE)
+const pollingMode = readWorkspaceHmrPollingMode(process.env.WORKSPACE_HMR_USE_POLLING)
 const ROOTS: readonly WorkspaceHmrProjectKind[] = ['apps', 'templates', 'e2e-apps']
 const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }> = {
   weapp: { template: 'wxml', style: 'wxss' },
@@ -203,6 +207,8 @@ async function main() {
     settleMs,
     startupDistStableMs,
     scenarioRetries,
+    writeMode,
+    pollingMode,
     maxScenariosPerProject,
     summary,
     projects: results,
@@ -450,14 +456,15 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   const dev = startDevProcess(process.execPath, [
     cliPath,
     'dev',
-    formatProjectPath(project.root),
     '--platform',
     project.platform,
     '--skipNpm',
   ], {
-    cwd: repoRoot,
+    cwd: project.root,
     env: {
-      ...createDevProcessEnv(),
+      ...createDevProcessEnv({
+        usePolling: pollingMode === 'polling',
+      }),
       WEAPP_VITE_HMR_PROFILE_JSON: '1',
     },
     stdout: 'pipe',
@@ -517,10 +524,10 @@ async function warmupProjectHmr(
   }
 
   const profileLineCount = await countJsonlLines(profilePath)
-  await replaceFileByRename(scenario.sourcePath, updated)
+  await writeScenarioSource(scenario.sourcePath, updated)
   await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
   await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
-  await replaceFileByRename(scenario.sourcePath, original)
+  await writeScenarioSource(scenario.sourcePath, original)
   await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
@@ -570,7 +577,7 @@ async function auditScenario(
     const profileLineCount = await countJsonlLines(profilePath)
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
-    await replaceFileByRename(scenario.sourcePath, updated)
+    await writeScenarioSource(scenario.sourcePath, updated)
     await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
@@ -583,8 +590,11 @@ async function auditScenario(
     result.error = error instanceof Error ? error.message : String(error)
   }
   finally {
-    await replaceFileByRename(scenario.sourcePath, original).catch(() => {})
+    const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
+    await writeScenarioSource(scenario.sourcePath, original).catch(() => {})
     await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
+    await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+    await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs).catch(() => {})
     await sleep(settleMs)
   }
 
@@ -599,7 +609,7 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   const nativeTemplate = findPreferredSource(files, filePath => isNativeTemplate(filePath) && isEntryLikeSource(project.sourceRoot, filePath))
   const nativeStyle = findPreferredSource(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
   const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isScriptEntryFile(filePath))
-  const vueFile = findFirst(files, filePath => filePath.endsWith('.vue') && isPageLikeSource(project.sourceRoot, filePath))
+  const vueFile = findPreferredVueSource(files, project.sourceRoot)
 
   if (nativeTemplate) {
     scenarios.push(createNativeTemplateScenario(project, nativeTemplate))
@@ -789,13 +799,41 @@ function isScript(filePath: string) {
   return ['.ts', '.js', '.tsx', '.jsx'].some(ext => filePath.endsWith(ext))
 }
 
-function findFirst(files: string[], predicate: (filePath: string) => boolean) {
-  return files.find(predicate)
-}
-
 function findPreferredSource(files: string[], predicate: (filePath: string) => boolean) {
   return files.find(filePath => predicate(filePath) && !isLowSignalAuditSource(filePath))
     ?? files.find(predicate)
+}
+
+function findPreferredVueSource(files: string[], sourceRoot: string) {
+  const candidates = files.filter(filePath => filePath.endsWith('.vue') && isPageLikeSource(sourceRoot, filePath))
+  return candidates
+    .filter(filePath => !isLowSignalAuditSource(filePath))
+    .sort((left, right) => scoreVueAuditSource(sourceRoot, left) - scoreVueAuditSource(sourceRoot, right)
+      || left.localeCompare(right),
+    )[0]
+    ?? candidates[0]
+}
+
+function scoreVueAuditSource(sourceRoot: string, filePath: string) {
+  const relative = normalizePath(path.relative(sourceRoot, filePath))
+  const size = statSyncSize(filePath)
+  const segmentScore = relative.startsWith('pages/')
+    ? relative.startsWith('pages/index/')
+      ? 1
+      : 0
+    : relative.startsWith('subpackages/')
+      ? 2
+      : 3
+  return segmentScore * 1_000_000 + size
+}
+
+function statSyncSize(filePath: string) {
+  try {
+    return existsSync(filePath) ? statSync(filePath).size : Number.MAX_SAFE_INTEGER
+  }
+  catch {
+    return Number.MAX_SAFE_INTEGER
+  }
 }
 
 function isLowSignalAuditSource(filePath: string) {
@@ -1085,6 +1123,14 @@ function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
+async function writeScenarioSource(filePath: string, content: string) {
+  if (writeMode === 'rename') {
+    await replaceFileByRename(filePath, content)
+    return
+  }
+  await writeFile(filePath, content, 'utf8')
+}
+
 function readPositiveIntegerEnv(name: string, defaultValue: number) {
   const raw = process.env[name]
   if (!raw) {
@@ -1127,6 +1173,26 @@ export function readWorkspaceHmrScope(raw: string | undefined): WorkspaceHmrScop
     return raw
   }
   throw new Error(`Invalid WORKSPACE_HMR_SCOPE: ${raw}`)
+}
+
+export function readWorkspaceHmrWriteMode(raw: string | undefined): WorkspaceHmrWriteMode {
+  if (!raw) {
+    return 'write'
+  }
+  if (raw === 'write' || raw === 'rename') {
+    return raw
+  }
+  throw new Error(`Invalid WORKSPACE_HMR_WRITE_MODE: ${raw}`)
+}
+
+export function readWorkspaceHmrPollingMode(raw: string | undefined): WorkspaceHmrPollingMode {
+  if (!raw || raw === '0' || raw === 'false') {
+    return 'native'
+  }
+  if (raw === '1' || raw === 'true') {
+    return 'polling'
+  }
+  throw new Error(`Invalid WORKSPACE_HMR_USE_POLLING: ${raw}`)
 }
 
 function rootsForScope(scope: WorkspaceHmrScope): readonly WorkspaceHmrProjectKind[] {
@@ -1258,6 +1324,8 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     `- startup dist stable: ${startupDistStableMs}ms`,
     `- scenario timeout: ${scenarioTimeoutMs}ms`,
     `- scenario retries: ${scenarioRetries}`,
+    `- write mode: ${writeMode}`,
+    `- watch mode: ${pollingMode}`,
     `- max scenarios per project: ${maxScenariosPerProject ?? '-'}`,
     '',
     '| project | platform | startup(ms) | scenarios | failures |',

@@ -1,7 +1,9 @@
 import type { ProjectResult } from '../../../scripts/workspace-hmr/baseline'
 import { describe, expect, it } from 'vitest'
 import {
+  readWorkspaceHmrPollingMode,
   readWorkspaceHmrScope,
+  readWorkspaceHmrWriteMode,
   resolveChangedProjectIds,
   selectWorkspaceHmrSmokeProjectIds,
   shouldFallbackToSmokeForChangedFiles,
@@ -63,6 +65,22 @@ describe('workspace HMR changed-file selection', () => {
     expect(readWorkspaceHmrScope('templates')).toBe('templates')
     expect(readWorkspaceHmrScope('workspace')).toBe('workspace')
     expect(() => readWorkspaceHmrScope('apps,templates')).toThrow('Invalid WORKSPACE_HMR_SCOPE')
+  })
+
+  it('parses workspace HMR write mode values', () => {
+    expect(readWorkspaceHmrWriteMode(undefined)).toBe('write')
+    expect(readWorkspaceHmrWriteMode('write')).toBe('write')
+    expect(readWorkspaceHmrWriteMode('rename')).toBe('rename')
+    expect(() => readWorkspaceHmrWriteMode('atomic')).toThrow('Invalid WORKSPACE_HMR_WRITE_MODE')
+  })
+
+  it('parses workspace HMR polling mode values', () => {
+    expect(readWorkspaceHmrPollingMode(undefined)).toBe('native')
+    expect(readWorkspaceHmrPollingMode('0')).toBe('native')
+    expect(readWorkspaceHmrPollingMode('false')).toBe('native')
+    expect(readWorkspaceHmrPollingMode('1')).toBe('polling')
+    expect(readWorkspaceHmrPollingMode('true')).toBe('polling')
+    expect(() => readWorkspaceHmrPollingMode('yes')).toThrow('Invalid WORKSPACE_HMR_USE_POLLING')
   })
 
   it('selects changed projects only from the requested apps and e2e-apps scope', () => {

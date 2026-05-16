@@ -126,6 +126,25 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
   })
 
+  it('does not expand sidecar updates through stale shared chunk importers', async () => {
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/hmr/index.ts',
+    })
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([
+      '/project/src/pages/hmr/index.ts',
+      '/project/src/pages/other/index.ts',
+    ]))
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/pages/hmr/index.css', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
+    expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
+  })
+
   it('marks html template updates as direct entry dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
@@ -176,6 +195,25 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('ignores main package entry changes in independent subpackage builds', async () => {
+    const mainEntry = '/project/src/pages/index/index.vue'
+    const state = createState({
+      subPackageMeta: {
+        subPackage: {
+          root: 'subpackages/independent-a',
+        },
+      },
+      loadedEntrySet: new Set([mainEntry]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(mainEntry, { event: 'update' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([])
   })
 
   it('marks declared page source updates as direct entry dirties even before they enter loadedEntrySet', async () => {

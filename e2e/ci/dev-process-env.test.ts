@@ -72,7 +72,21 @@ describe('dev process env isolation', () => {
     expect(env.VITEST_WORKER_ID).toBeUndefined()
     expect(env.NODE_OPTIONS).toBeUndefined()
     expect(env.NODE_ENV).toBe('development')
+    expect(env.CHOKIDAR_USEPOLLING).toBe('1')
+    expect(env.CHOKIDAR_INTERVAL).toBe('120')
     expect(env.WEAPP_VITE_DISABLE_SIDECAR_WATCH).toBeUndefined()
+  })
+
+  it('allows opting out of chokidar polling for native watcher diagnostics', async () => {
+    vi.stubEnv('CHOKIDAR_USEPOLLING', '1')
+    vi.stubEnv('CHOKIDAR_INTERVAL', '120')
+
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv({ usePolling: false })
+
+    expect(env.CHOKIDAR_USEPOLLING).toBeUndefined()
+    expect(env.CHOKIDAR_INTERVAL).toBeUndefined()
   })
 
   it('allows opting out of sidecar watch for targeted diagnostics', async () => {
