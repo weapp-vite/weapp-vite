@@ -189,6 +189,42 @@ describe('emitFallbackPage helpers', () => {
     expect(emitFallbackPageBundleAssetsMock).toHaveBeenCalledTimes(1)
   })
 
+  it('filters fallback pages to the last emitted entries during partial dev HMR', async () => {
+    const state = {
+      ctx: {
+        configService: {
+          platform: DEFAULT_MP_PLATFORM,
+          relativeOutputPath(id: string) {
+            return id.replace('/project/src/', '').replace(/\.vue$/, '')
+          },
+        },
+        scanService: {},
+      },
+      pluginCtx: {},
+      compilationCache: new Map(),
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    } as any
+
+    collectFallbackPageEntryIdsMock.mockResolvedValue([
+      '/project/src/pages/index/index',
+      '/project/src/pages/about/index',
+    ])
+    resolveFallbackPageEmitStateMock.mockResolvedValue({
+      relativeBase: 'pages/index/index',
+      entryFilePath: '/project/src/pages/index/index.vue',
+    })
+
+    await emitFallbackPageAssets({}, state, {
+      emittedEntryIds: new Set(['/project/src/pages/index/index.vue']),
+    })
+
+    expect(resolveFallbackPageEmitStateMock).toHaveBeenCalledTimes(1)
+    expect(resolveFallbackPageEmitStateMock).toHaveBeenCalledWith(expect.objectContaining({
+      entryId: '/project/src/pages/index/index',
+    }))
+  })
+
   it('skips unresolved fallback page entries', async () => {
     const state = {
       ctx: {

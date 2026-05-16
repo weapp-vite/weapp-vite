@@ -22,7 +22,6 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     : undefined
   const shouldFilterHmrEntries = Boolean(
     configService.isDev
-    && ctx.runtimeState?.build?.hmr?.profile?.event === 'update'
     && !ctx.runtimeState.build.hmr.didEmitAllEntries
     && ctx.runtimeState.build.hmr.lastEmittedEntryIds.size > 0,
   )
@@ -34,6 +33,7 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     compilationEntries: Array.from(compilationCache.entries()).filter(([id]) => {
       return !emittedEntryIds || emittedEntryIds.has(normalizeFsResolvedId(id))
     }),
+    emittedEntryIds,
   }
 }
 
@@ -57,5 +57,7 @@ export async function emitVueBundleAssets(
   }
 
   await emitCompiledBundleEntries(bundle, state, emitState.compilationEntries)
-  await emitFallbackPageAssets(bundle, state)
+  await emitFallbackPageAssets(bundle, state, {
+    emittedEntryIds: emitState.emittedEntryIds,
+  })
 }

@@ -123,6 +123,7 @@ const workspaceHmrScope = readWorkspaceHmrScope(process.env.WORKSPACE_HMR_SCOPE 
 const startupTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_TIMEOUT_MS', 90_000)
 const scenarioTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_TIMEOUT_MS', 30_000)
 const settleMs = readPositiveIntegerEnv('WORKSPACE_HMR_SETTLE_MS', 250)
+const startupDistStableMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_DIST_STABLE_MS', 1_000)
 const scenarioRetries = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_SCENARIO_RETRIES') ?? 1
 const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT') ?? (runMode === 'smoke' ? 1 : undefined)
 const ROOTS: readonly WorkspaceHmrProjectKind[] = ['apps', 'templates', 'e2e-apps']
@@ -200,6 +201,7 @@ async function main() {
     startupTimeoutMs,
     scenarioTimeoutMs,
     settleMs,
+    startupDistStableMs,
     scenarioRetries,
     maxScenariosPerProject,
     summary,
@@ -466,6 +468,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   try {
     const startupStart = performance.now()
     await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), startupTimeoutMs), `${project.id} app.json`)
+    await waitForStableDistSnapshot(distRoot, startupDistStableMs, startupTimeoutMs)
     await sleep(settleMs)
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
@@ -477,6 +480,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       throw new Error('No discovered HMR scenario produced an initial output.')
     }
     result.startupMs = performance.now() - startupStart
+    await warmupProjectHmr(project, runnableScenarios[0]!, profilePath, distRoot)
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
@@ -496,6 +500,31 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   }
 
   return result
+}
+
+async function warmupProjectHmr(
+  project: ProjectCase,
+  scenario: ScenarioCase,
+  profilePath: string,
+  distRoot: string,
+) {
+  const original = await readFile(scenario.sourcePath, 'utf8')
+  const marker = createMarker(project.id, `${scenario.id}-warmup`)
+  const expectedMarker = scenario.expectedMarker?.(marker) ?? marker
+  const updated = scenario.mutate(original, marker)
+  if (updated === original) {
+    return
+  }
+
+  const profileLineCount = await countJsonlLines(profilePath)
+  await replaceFileByRename(scenario.sourcePath, updated)
+  await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
+  await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+  await replaceFileByRename(scenario.sourcePath, original)
+  await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
+  await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
+  await rm(profilePath, { force: true }).catch(() => {})
+  await sleep(settleMs)
 }
 
 async function auditScenarioWithRetries(
@@ -787,6 +816,41 @@ async function snapshotDist(distRoot: string) {
     })
   }
   return snapshot
+}
+
+async function waitForStableDistSnapshot(
+  distRoot: string,
+  stableMs: number,
+  timeoutMs: number,
+) {
+  const startedAt = Date.now()
+  let previousSignature: string | undefined
+  let stableStartedAt = Date.now()
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const snapshot = await snapshotDist(distRoot)
+    const signature = createDistSnapshotSignature(snapshot)
+
+    if (signature === previousSignature) {
+      if (Date.now() - stableStartedAt >= stableMs) {
+        return snapshot
+      }
+    }
+    else {
+      previousSignature = signature
+      stableStartedAt = Date.now()
+    }
+
+    await sleep(Math.min(250, stableMs))
+  }
+
+  throw new Error(`Timed out waiting for ${formatReportPath(distRoot)} to stabilize`)
+}
+
+function createDistSnapshotSignature(snapshot: Map<string, DistFileSnapshot>) {
+  return [...snapshot.entries()]
+    .map(([filePath, value]) => `${filePath}:${value.hash}:${value.size}`)
+    .join('\n')
 }
 
 function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<string, DistFileSnapshot>) {
@@ -1191,6 +1255,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     `- failed projects: ${summary.failedProjects.length ? summary.failedProjects.join(', ') : '-'}`,
     `- baseline: ${pathExistsSyncLike(baselinePath) ? formatReportPath(baselinePath) : '-'}`,
     `- startup timeout: ${startupTimeoutMs}ms`,
+    `- startup dist stable: ${startupDistStableMs}ms`,
     `- scenario timeout: ${scenarioTimeoutMs}ms`,
     `- scenario retries: ${scenarioRetries}`,
     `- max scenarios per project: ${maxScenariosPerProject ?? '-'}`,

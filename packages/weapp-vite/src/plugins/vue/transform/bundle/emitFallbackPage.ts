@@ -1,11 +1,32 @@
 import type { VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { applyAppShell } from '../appShell'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
+
+function isFallbackEntryPending(
+  entryId: string,
+  emittedEntryIds: Set<string>,
+  configService: NonNullable<VueBundleState['ctx']['configService']>,
+) {
+  const normalizedEntryId = removeExtensionDeep(configService.relativeOutputPath(entryId))
+  for (const emittedEntryId of emittedEntryIds) {
+    const normalizedEmitted = normalizeFsResolvedId(emittedEntryId)
+    if (!normalizedEmitted) {
+      continue
+    }
+    const emittedOutputPath = removeExtensionDeep(configService.relativeOutputPath(normalizedEmitted))
+    if (emittedOutputPath === normalizedEntryId) {
+      return true
+    }
+  }
+  return false
+}
 
 export async function emitResolvedFallbackPageEntryAssets(options: {
   bundle: Record<string, any>
@@ -76,6 +97,9 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
   state: VueBundleState,
+  options?: {
+    emittedEntryIds?: Set<string>
+  },
 ) {
   const { ctx, pluginCtx, compilationCache, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache } = state
   const { configService, scanService } = ctx
@@ -95,6 +119,9 @@ export async function emitFallbackPageAssets(
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectedEntries) {
+    if (options?.emittedEntryIds && !isFallbackEntryPending(entryId, options.emittedEntryIds, configService)) {
+      continue
+    }
     const emitState = await resolveFallbackPageEmitState({
       entryId,
       configService,

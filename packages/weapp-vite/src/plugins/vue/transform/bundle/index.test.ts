@@ -38,6 +38,7 @@ describe('bundle index helpers', () => {
       compilationEntries: [
         ['/project/src/pages/index.vue', { result: {}, isPage: true }],
       ],
+      emittedEntryIds: undefined,
     })
   })
 
@@ -68,6 +69,38 @@ describe('bundle index helpers', () => {
       compilationEntries: [
         ['/project/src/pages/index.vue', { result: {}, isPage: true }],
       ],
+      emittedEntryIds: new Set(['/project/src/pages/index.vue']),
+    })
+  })
+
+  it('filters compiled entries for partial dev HMR even when atomic saves are reported as create events', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        scanService: {},
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'create',
+              },
+              didEmitAllEntries: false,
+              lastEmittedEntryIds: new Set(['/project/src/pages/index.vue']),
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+      ],
+      emittedEntryIds: new Set(['/project/src/pages/index.vue']),
     })
   })
 
@@ -116,7 +149,9 @@ describe('bundle index helpers', () => {
 
     expect(emitCompiledVueEntryAssetsMock).toHaveBeenCalledTimes(1)
     expect(emitFallbackPageAssetsMock).toHaveBeenCalledTimes(1)
-    expect(emitFallbackPageAssetsMock).toHaveBeenCalledWith(bundle, state)
+    expect(emitFallbackPageAssetsMock).toHaveBeenCalledWith(bundle, state, {
+      emittedEntryIds: undefined,
+    })
   })
 
   it('returns early from bundle asset emission when required services are missing', async () => {
