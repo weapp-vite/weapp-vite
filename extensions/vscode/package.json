@@ -107,6 +107,15 @@
         "path": "./assets/weapp-vite-icon-theme.json"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "weapp-vite",
+          "title": "Weapp Vite",
+          "icon": "assets/logo.svg"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "weapp-vite.generate",
@@ -398,10 +407,15 @@
       }
     ],
     "views": {
-      "explorer": [
+      "weapp-vite": [
+        {
+          "id": "weapp-vite.project",
+          "name": "Project",
+          "when": "workspaceFolderCount > 0"
+        },
         {
           "id": "weapp-vite.pages",
-          "name": "weapp-vite Pages",
+          "name": "Pages",
           "when": "workspaceFolderCount > 0"
         }
       ]

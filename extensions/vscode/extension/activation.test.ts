@@ -499,8 +499,11 @@ it('activate registers commands, providers, status bar and diagnostics', async (
       state.registeredProviders.some(item => item.type === 'documentFormatting'
         && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),
     )
-    assert.equal(state.createdTreeViews.length, 1)
-    assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
+    assert.equal(state.createdTreeViews.length, 2)
+    assert.deepEqual(state.createdTreeViews.map(item => item.viewId), [
+      'weapp-vite.project',
+      'weapp-vite.pages',
+    ])
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

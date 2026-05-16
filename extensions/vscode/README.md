@@ -19,8 +19,8 @@
 ### 2.2 开始使用
 
 1. 用 VS Code 打开你的 `weapp-vite` 项目。
-2. 等扩展识别工作区后，状态栏会出现 `weapp-vite` 入口。
-3. 打开命令面板，执行 `weapp-vite: Run Action`。
+2. 等扩展识别工作区后，左侧 Activity Bar 会出现 `Weapp Vite` 专属入口，状态栏也会出现 `weapp-vite` 入口。
+3. 打开左侧 `Weapp Vite` 入口，或在命令面板执行 `weapp-vite: Run Action`。
 4. 按需选择 `Dev`、`Build`、`Generate`、`Open DevTools` 等动作。
 
 > **提示**：如果没有识别到项目，可以先确认工作区内的 `package.json`、`vite.config.*` / `weapp-vite.config.*`、`app.json` 是否已经建立基本 `weapp-vite` 结构。
@@ -29,6 +29,7 @@
 
 ### 3.1 项目命令入口
 
+- 提供独立 `Weapp Vite` Activity Bar 入口，集中放置项目概览、常用任务和页面维护视图
 - 在状态栏直接看到 `weapp-vite` 入口
 - 在命令面板里快速执行 `Dev`、`Build`、`Open DevTools`、`Doctor / Info`
 - 支持输出面板查看最近命令日志
@@ -41,7 +42,7 @@
 
 ### 3.3 页面结构维护
 
-- 提供 `weapp-vite Pages` 侧边栏，按顶层页面、分包页面、未声明页面分组查看
+- 在 `Weapp Vite` 专属侧栏中提供 `Pages` 视图，按顶层页面、分包页面、未声明页面分组查看
 - 支持从当前页面快速复制 route、定位到 `app.json`、补齐页面声明
 - 支持从 `app.json` 的 route 直接打开页面或创建缺失页面
 - 页面文件或目录重命名、移动、删除后，会尽量自动同步 `app.json` 中的 route
@@ -126,7 +127,7 @@
 
 1. 打开页面文件。
 2. 执行 `weapp-vite: Add Current Page To app.json`。
-3. 或者在 `weapp-vite Pages` 视图中直接对未声明页面执行修复动作。
+3. 或者在左侧 `Weapp Vite` 的 `Pages` 视图中直接对未声明页面执行修复动作。
 
 ### 7.3 从 route 跳回源码
 

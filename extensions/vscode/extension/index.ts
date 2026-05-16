@@ -105,6 +105,9 @@ import {
   enableWeappViteFileIcons,
 } from './ui/icons'
 import {
+  WeappViteProjectTreeProvider,
+} from './ui/projectTree'
+import {
   WeappVitePagesTreeProvider,
 } from './ui/tree'
 
@@ -412,6 +415,11 @@ export function activate(context: any) {
   const wxmlScriptReferenceProvider = new WeappTemplateScriptReferenceProvider()
   const wxmlScriptRenameProvider = new WeappTemplateScriptRenameProvider()
   const templateDecorationController = new TemplateDecorationController()
+  const projectTreeProvider = new WeappViteProjectTreeProvider()
+  const projectTreeView = vscode.window.createTreeView('weapp-vite.project', {
+    showCollapseAll: true,
+    treeDataProvider: projectTreeProvider,
+  })
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
     showCollapseAll: true,
@@ -601,12 +609,14 @@ export function activate(context: any) {
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       void refreshStatusBar()
+      projectTreeProvider.refresh()
       pagesTreeProvider.refresh()
       void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('weapp-vite')) {
         void refreshStatusBar()
+        projectTreeProvider.refresh()
         void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
         for (const document of vscode.workspace.textDocuments) {
@@ -631,6 +641,7 @@ export function activate(context: any) {
 
       if (document.fileName.endsWith('package.json') || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
         void refreshStatusBar()
+        projectTreeProvider.refresh()
       }
 
       pagesTreeProvider.refresh()
@@ -670,6 +681,7 @@ export function activate(context: any) {
         }
 
         pagesTreeProvider.refresh()
+        projectTreeProvider.refresh()
         void refreshStatusBar()
 
         for (const document of vscode.workspace.textDocuments) {
@@ -694,6 +706,7 @@ export function activate(context: any) {
         }
 
         pagesTreeProvider.refresh()
+        projectTreeProvider.refresh()
         void refreshStatusBar()
 
         for (const document of vscode.workspace.textDocuments) {
@@ -718,7 +731,7 @@ export function activate(context: any) {
     void refreshAppJsonDiagnostics(document)
   }
 
-  context.subscriptions.push(...disposables, pagesTreeView, getOutputChannel(), getDiagnostics(), {
+  context.subscriptions.push(...disposables, projectTreeView, pagesTreeView, getOutputChannel(), getDiagnostics(), {
     dispose() {
       templateDecorationController.dispose()
       state.terminalCache = undefined

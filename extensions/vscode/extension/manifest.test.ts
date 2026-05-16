@@ -182,11 +182,24 @@ it('wxml language word pattern keeps member expressions and kebab classes whole'
   assert.equal(words.includes('section-title'), true)
 })
 
-it('manifest contributes pages explorer view', () => {
-  assert.deepEqual(packageJson.contributes.views.explorer, [
+it('manifest contributes dedicated weapp-vite activity bar views', () => {
+  assert.deepEqual(packageJson.contributes.viewsContainers.activitybar, [
+    {
+      id: 'weapp-vite',
+      title: 'Weapp Vite',
+      icon: 'assets/logo.svg',
+    },
+  ])
+
+  assert.deepEqual(packageJson.contributes.views['weapp-vite'], [
+    {
+      id: 'weapp-vite.project',
+      name: 'Project',
+      when: 'workspaceFolderCount > 0',
+    },
     {
       id: 'weapp-vite.pages',
-      name: 'weapp-vite Pages',
+      name: 'Pages',
       when: 'workspaceFolderCount > 0',
     },
   ])
