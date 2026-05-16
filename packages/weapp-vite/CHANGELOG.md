@@ -1,5 +1,22 @@
 # weapp-vite
 
+## 6.16.15
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`74978d8`](https://github.com/weapp-vite/weapp-vite/commit/74978d89dfc25439803b7003119ee57b8fadc27f) by @sonofmagic
+  - 默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @types/node, @vitejs/plugin-vue, @vue/language-core, miniprogram-api-typings, rolldown, stylelint, vite, vue-tsc。命名 catalog 变更键：latest(miniprogram-api-typings)。
+
+- 🐛 **修复 workspace HMR 审计以仓库根目录启动项目导致监听和构建上下文过大的问题，并收窄独立分包 watcher 对主包页面更新的误处理，降低开发态 HMR 报告中的误触发和异常耗时。** [`26590c1`](https://github.com/weapp-vite/weapp-vite/commit/26590c1af06064a1364255d535419d9aeb0ac2d9) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 开发态局部 HMR 在原子保存或 create 事件下补发全量 fallback 页面资产的问题，并让 workspace HMR 审计在启动产物稳定后再进入正式测量，减少首次构建产物补齐对影响面报告的干扰。** [`3bf16c5`](https://github.com/weapp-vite/weapp-vite/commit/3bf16c52b2cbad57bf0bfd9ba020eb9e5f25b959) by @sonofmagic
+- 📦 Updated 6 dependencies [`74978d8`](https://github.com/weapp-vite/weapp-vite/commit/74978d89dfc25439803b7003119ee57b8fadc27f)
+  <details><summary>Details</summary>
+
+  `@wevu/api@0.2.9`, `rolldown-require@2.0.16`, `@wevu/web-apis@1.2.13`, `wevu@6.16.15`, `@weapp-vite/web@1.3.21`, `@weapp-vite/ast@6.16.15`
+
+  </details>
+
 ## 6.16.14
 
 ### Patch Changes

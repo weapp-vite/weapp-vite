@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.27
+
+### Patch Changes
+
+- 🐛 **修复 workspace HMR 审计以仓库根目录启动项目导致监听和构建上下文过大的问题，并收窄独立分包 watcher 对主包页面更新的误处理，降低开发态 HMR 报告中的误触发和异常耗时。** [`26590c1`](https://github.com/weapp-vite/weapp-vite/commit/26590c1af06064a1364255d535419d9aeb0ac2d9) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 开发态局部 HMR 在原子保存或 create 事件下补发全量 fallback 页面资产的问题，并让 workspace HMR 审计在启动产物稳定后再进入正式测量，减少首次构建产物补齐对影响面报告的干扰。** [`3bf16c5`](https://github.com/weapp-vite/weapp-vite/commit/3bf16c52b2cbad57bf0bfd9ba020eb9e5f25b959) by @sonofmagic
+
 ## 2.3.26
 
 ### Patch Changes

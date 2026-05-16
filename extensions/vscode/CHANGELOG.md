@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.3.0
+
+### Minor Changes
+
+- ✨ **新增独立 Weapp Vite Activity Bar 入口，将 Pages 视图迁移到专属侧栏，并加入项目概览与常用任务视图，方便在 VS Code 内集中处理项目操作。** [`5a918ef`](https://github.com/weapp-vite/weapp-vite/commit/5a918ef0fa5597dde33d41728d7ae9b64873d075) by @sonofmagic
+
 ## 0.2.5
 
 ### Patch Changes
