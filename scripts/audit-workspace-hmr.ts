@@ -123,6 +123,7 @@ const workspaceHmrScope = readWorkspaceHmrScope(process.env.WORKSPACE_HMR_SCOPE 
 const startupTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_TIMEOUT_MS', 90_000)
 const scenarioTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_TIMEOUT_MS', 30_000)
 const settleMs = readPositiveIntegerEnv('WORKSPACE_HMR_SETTLE_MS', 250)
+const scenarioRetries = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_SCENARIO_RETRIES') ?? 1
 const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX_SCENARIOS_PER_PROJECT') ?? (runMode === 'smoke' ? 1 : undefined)
 const ROOTS: readonly WorkspaceHmrProjectKind[] = ['apps', 'templates', 'e2e-apps']
 const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }> = {
@@ -199,6 +200,7 @@ async function main() {
     startupTimeoutMs,
     scenarioTimeoutMs,
     settleMs,
+    scenarioRetries,
     maxScenariosPerProject,
     summary,
     projects: results,
@@ -478,7 +480,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
-      scenarioResults.push(await auditScenario(project, scenario, profilePath, distRoot))
+      scenarioResults.push(await auditScenarioWithRetries(project, scenario, profilePath, distRoot))
     }
     result.scenarios = scenarioResults
   }
@@ -493,6 +495,20 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     await cleanupResidualDevProcesses()
   }
 
+  return result
+}
+
+async function auditScenarioWithRetries(
+  project: ProjectCase,
+  scenario: ScenarioCase,
+  profilePath: string,
+  distRoot: string,
+) {
+  let result = await auditScenario(project, scenario, profilePath, distRoot)
+  for (let attempt = 1; result.error && attempt <= scenarioRetries; attempt++) {
+    process.stdout.write(`[workspace-hmr] retry ${project.id} ${scenario.id}: ${result.error}\n`)
+    result = await auditScenario(project, scenario, profilePath, distRoot)
+  }
   return result
 }
 
@@ -1176,6 +1192,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     `- baseline: ${pathExistsSyncLike(baselinePath) ? formatReportPath(baselinePath) : '-'}`,
     `- startup timeout: ${startupTimeoutMs}ms`,
     `- scenario timeout: ${scenarioTimeoutMs}ms`,
+    `- scenario retries: ${scenarioRetries}`,
     `- max scenarios per project: ${maxScenariosPerProject ?? '-'}`,
     '',
     '| project | platform | startup(ms) | scenarios | failures |',
