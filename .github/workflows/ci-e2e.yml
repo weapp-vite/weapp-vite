@@ -117,6 +117,8 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: pnpm audit:hmr:changed
       increase_ulimit: true
+      artifact_name: workspace-hmr-pr
+      artifact_path: .tmp/workspace-hmr/**
     secrets: inherit
 
   workspace-hmr-nightly:
@@ -131,6 +133,8 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: pnpm audit:hmr:nightly
       increase_ulimit: true
+      artifact_name: workspace-hmr-nightly
+      artifact_path: .tmp/workspace-hmr/**
     secrets: inherit
 
   web-e2e-baseline-full:

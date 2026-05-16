@@ -39,6 +39,14 @@ on:
         required: false
         type: boolean
         default: false
+      artifact_name:
+        required: false
+        type: string
+        default: ''
+      artifact_path:
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -89,3 +97,11 @@ jobs:
         uses: codecov/codecov-action@v6
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload artifact
+        if: ${{ always() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+          if-no-files-found: warn

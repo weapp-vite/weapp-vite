@@ -200,4 +200,68 @@ describe('workspace HMR baseline thresholds', () => {
       maxPendingCount: 3,
     })
   })
+
+  it('fails scenarios above an absolute 1000ms total limit', () => {
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 1_001,
+          },
+        ],
+      },
+    ], {
+      overrides: {
+        maxScenarioMs: 1_000,
+      },
+    })
+
+    expect(evaluation.issues).toMatchObject([
+      {
+        project: 'templates/weapp-vite-template',
+        scenario: 'native-template',
+        metric: 'totalMs',
+        actual: 1_001,
+        limit: 1_000,
+      },
+    ])
+  })
+
+  it('fails when scenario P95 is above 1000ms', () => {
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-template',
+            totalMs: 900,
+          },
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-script',
+            totalMs: 1_001,
+          },
+        ],
+      },
+    ], {
+      overrides: {
+        maxScenarioMs: 2_000,
+        maxScenarioP95Ms: 1_000,
+      },
+    })
+
+    expect(evaluation.scenarioP95Ms).toBe(1_001)
+    expect(evaluation.issues).toMatchObject([
+      {
+        project: '<workspace>',
+        metric: 'scenarioP95Ms',
+        actual: 1_001,
+        limit: 1_000,
+      },
+    ])
+    expect(renderThresholdMarkdown(evaluation)).toContain('| <workspace> | - | scenarioP95Ms | 1001 | 1000 | - |')
+  })
 })

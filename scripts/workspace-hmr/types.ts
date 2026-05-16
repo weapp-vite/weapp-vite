@@ -1,7 +1,22 @@
 export interface HmrProfileSample {
+  timestamp?: string
+  totalMs?: number
+  eventId?: string
+  event?: string
+  file?: string
+  relativeFile?: string
+  sourceRootFile?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
+  watchToDirtyMs?: number
+  emitMs?: number
+  sharedChunkResolveMs?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
+  dirtyReasonSummary?: string[]
+  pendingReasonSummary?: string[]
 }
 
 export interface ImpactFile {
@@ -18,6 +33,7 @@ export interface ScenarioResult {
   output: string
   marker?: string
   totalMs?: number
+  observedMs?: number
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
@@ -67,7 +83,7 @@ export interface WorkspaceHmrBaselineProject {
 
 export interface WorkspaceHmrBaseline {
   version: 1
-  scope: 'templates' | 'workspace'
+  scope: 'apps,e2e-apps' | 'apps' | 'e2e-apps' | 'templates' | 'workspace'
   generatedAt: string
   mode: string
   thresholds: WorkspaceHmrThresholds

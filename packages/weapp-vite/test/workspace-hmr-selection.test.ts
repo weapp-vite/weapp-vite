@@ -1,6 +1,11 @@
 import type { ProjectResult } from '../../../scripts/workspace-hmr/baseline'
 import { describe, expect, it } from 'vitest'
-import { shouldFallbackToSmokeForChangedFiles } from '../../../scripts/audit-workspace-hmr'
+import {
+  readWorkspaceHmrScope,
+  resolveChangedProjectIds,
+  selectWorkspaceHmrSmokeProjectIds,
+  shouldFallbackToSmokeForChangedFiles,
+} from '../../../scripts/audit-workspace-hmr'
 import {
   createWorkspaceHmrBaseline,
   evaluateWorkspaceHmrThresholds,
@@ -50,6 +55,40 @@ const githubIssuesResult: ProjectResult = {
 }
 
 describe('workspace HMR changed-file selection', () => {
+  it('parses workspace HMR scope values', () => {
+    expect(readWorkspaceHmrScope(undefined)).toBe('workspace')
+    expect(readWorkspaceHmrScope('apps,e2e-apps')).toBe('apps,e2e-apps')
+    expect(readWorkspaceHmrScope('apps')).toBe('apps')
+    expect(readWorkspaceHmrScope('e2e-apps')).toBe('e2e-apps')
+    expect(readWorkspaceHmrScope('templates')).toBe('templates')
+    expect(readWorkspaceHmrScope('workspace')).toBe('workspace')
+    expect(() => readWorkspaceHmrScope('apps,templates')).toThrow('Invalid WORKSPACE_HMR_SCOPE')
+  })
+
+  it('selects changed projects only from the requested apps and e2e-apps scope', () => {
+    expect([...resolveChangedProjectIds([
+      'apps/hmr-lab/src/pages/index/index.vue',
+      'e2e-apps/base/src/pages/index/index.vue',
+      'templates/weapp-vite-template/src/pages/index/index.ts',
+    ], 'apps,e2e-apps')]).toEqual([
+      'apps/hmr-lab',
+      'e2e-apps/base',
+    ])
+  })
+
+  it('selects representative smoke projects from apps and e2e-apps scope', () => {
+    expect([...selectWorkspaceHmrSmokeProjectIds([
+      { id: 'apps/hmr-lab', kind: 'apps' },
+      { id: 'apps/runtime-bench-vue', kind: 'apps' },
+      { id: 'templates/weapp-vite-template', kind: 'templates' },
+      { id: 'e2e-apps/base', kind: 'e2e-apps' },
+      { id: 'e2e-apps/wevu-features', kind: 'e2e-apps' },
+    ], 'apps,e2e-apps')]).toEqual([
+      'apps/hmr-lab',
+      'e2e-apps/base',
+    ])
+  })
+
   it('skips smoke fallback for test-only changes without runnable project impact', () => {
     expect(shouldFallbackToSmokeForChangedFiles([
       'packages/weapp-vite/test/tabbar-appbar.test.ts',
