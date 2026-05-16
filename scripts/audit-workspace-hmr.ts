@@ -551,9 +551,9 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
     .sort((left, right) => scoreSourceFile(project.sourceRoot, left) - scoreSourceFile(project.sourceRoot, right)
       || left.localeCompare(right))
   const scenarios: ScenarioCase[] = []
-  const nativeTemplate = findFirst(files, filePath => isNativeTemplate(filePath) && isEntryLikeSource(project.sourceRoot, filePath))
-  const nativeStyle = findFirst(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
-  const nativeScript = findFirst(files, filePath => isScript(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isScriptEntryFile(filePath))
+  const nativeTemplate = findPreferredSource(files, filePath => isNativeTemplate(filePath) && isEntryLikeSource(project.sourceRoot, filePath))
+  const nativeStyle = findPreferredSource(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
+  const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isScriptEntryFile(filePath))
   const vueFile = findFirst(files, filePath => filePath.endsWith('.vue') && isPageLikeSource(project.sourceRoot, filePath))
 
   if (nativeTemplate) {
@@ -746,6 +746,15 @@ function isScript(filePath: string) {
 
 function findFirst(files: string[], predicate: (filePath: string) => boolean) {
   return files.find(predicate)
+}
+
+function findPreferredSource(files: string[], predicate: (filePath: string) => boolean) {
+  return files.find(filePath => predicate(filePath) && !isLowSignalAuditSource(filePath))
+    ?? files.find(predicate)
+}
+
+function isLowSignalAuditSource(filePath: string) {
+  return normalizePath(filePath).split('/').includes('blank')
 }
 
 async function snapshotDist(distRoot: string) {
