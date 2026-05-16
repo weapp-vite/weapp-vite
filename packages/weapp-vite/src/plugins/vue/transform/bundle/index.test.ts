@@ -73,6 +73,30 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it('keeps all compiled entries when dev runtime has no HMR emit state', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        scanService: {},
+        runtimeState: {
+          build: {},
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ],
+      emittedEntryIds: undefined,
+    })
+  })
+
   it('filters compiled entries for partial dev HMR even when atomic saves are reported as create events', () => {
     expect(resolveVueBundleEmitState({
       ctx: {

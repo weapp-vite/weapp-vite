@@ -1,7 +1,7 @@
 # weapi 三端 API 兼容报告（总览）
 
 - 类型来源：
-  - 微信：`miniprogram-api-typings@5.2.0`
+  - 微信：`miniprogram-api-typings@5.2.1`
   - 支付宝：`@mini-types/alipay@3.0.14`
   - 抖音：`@douyin-microapp/typings@1.3.1`
 

@@ -20,13 +20,15 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
   state.appShell = appShellEntry
     ? resolveAppShellLayout(configService)
     : undefined
+  const hmrState = ctx.runtimeState?.build?.hmr
   const shouldFilterHmrEntries = Boolean(
     configService.isDev
-    && !ctx.runtimeState.build.hmr.didEmitAllEntries
-    && ctx.runtimeState.build.hmr.lastEmittedEntryIds.size > 0,
+    && hmrState
+    && !hmrState.didEmitAllEntries
+    && hmrState.lastEmittedEntryIds.size > 0,
   )
-  const emittedEntryIds = shouldFilterHmrEntries
-    ? ctx.runtimeState.build.hmr.lastEmittedEntryIds
+  const emittedEntryIds = shouldFilterHmrEntries && hmrState
+    ? hmrState.lastEmittedEntryIds
     : undefined
 
   return {
