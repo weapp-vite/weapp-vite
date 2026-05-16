@@ -94,6 +94,7 @@ function createMockVscode() {
         get(_key: string, defaultValue: unknown) {
           return defaultValue
         },
+        update: async () => true,
       }),
       findFiles: async () => [],
       onDidChangeWorkspaceFolders() {
@@ -130,6 +131,9 @@ function createMockVscode() {
         registeredCommands.push({ command, handler })
         return { dispose() {} }
       },
+    },
+    ConfigurationTarget: {
+      Global: 1,
     },
     languages: {
       createDiagnosticCollection(name: string) {
@@ -243,6 +247,8 @@ function createMockVscode() {
       Property: 2,
       Function: 3,
       Value: 4,
+      File: 5,
+      Module: 6,
     },
     SnippetString: class {
       value: string
@@ -263,6 +269,15 @@ function createMockVscode() {
 
       constructor(contents: unknown) {
         this.contents = contents
+      }
+    },
+    DocumentLink: class {
+      range: unknown
+      target: unknown
+
+      constructor(range: unknown, target: unknown) {
+        this.range = range
+        this.target = target
       }
     },
     WorkspaceEdit: class {
@@ -408,8 +423,11 @@ async function main() {
       state.registeredProviders.some(item => item.type === 'documentFormatting'
         && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),
     )
-    assert.equal(state.createdTreeViews.length, 1)
-    assert.equal(state.createdTreeViews[0]?.viewId, 'weapp-vite.pages')
+    assert.equal(state.createdTreeViews.length, 2)
+    assert.deepEqual(state.createdTreeViews.map(item => item.viewId), [
+      'weapp-vite.project',
+      'weapp-vite.pages',
+    ])
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0]?.command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

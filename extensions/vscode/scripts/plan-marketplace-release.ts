@@ -55,6 +55,14 @@ function runGit(args: string[], allowFailure = false) {
 }
 
 /**
+ * 转换为 git 对象查询可用的仓库相对路径。
+ */
+function getRepoRelativeGitPath(filePath: string) {
+  const repoRoot = runGit(['rev-parse', '--show-toplevel'])
+  return path.relative(repoRoot, filePath).split(path.sep).join('/')
+}
+
+/**
  * 读取 package.json 对应的 Marketplace 扩展标识。
  */
 function readMarketplaceIdentity(content: string) {
@@ -290,13 +298,28 @@ export function createMarketplaceReleasePlan(
  * 从 git 历史中读取上一个提交里的扩展版本号。
  */
 function readPreviousVersion() {
-  const previousPackageJson = runGit(['show', 'HEAD^:extensions/vscode/package.json'], true)
+  const packageJsonGitPath = getRepoRelativeGitPath(packageJsonPath)
+  const previousPackageJson = runGit(['show', `HEAD^:${packageJsonGitPath}`], true)
 
   if (!previousPackageJson) {
     return null
   }
 
   return readVersionFromPackageJson(previousPackageJson)
+}
+
+/**
+ * 从当前提交读取扩展版本号，避免读取 changesets/action 生成 release PR 时留下的未提交工作区版本。
+ */
+function readCurrentVersion() {
+  const packageJsonGitPath = getRepoRelativeGitPath(packageJsonPath)
+  const currentPackageJson = runGit(['show', `HEAD:${packageJsonGitPath}`], true)
+
+  if (!currentPackageJson) {
+    return readVersionFromPackageJson(fs.readFileSync(packageJsonPath, 'utf8'))
+  }
+
+  return readVersionFromPackageJson(currentPackageJson)
 }
 
 /**
@@ -323,7 +346,7 @@ function resolveCurrentReleaseRef() {
 async function loadMarketplaceReleasePlan() {
   const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8')
   const changesetsPublished = readChangesetsPublishedFlag(process.env.CHANGESETS_PUBLISHED)
-  const currentVersion = readVersionFromPackageJson(packageJsonContent)
+  const currentVersion = readCurrentVersion()
   const currentRef = resolveCurrentReleaseRef()
   const previousVersion = readPreviousVersion()
   const { extensionName, publisher } = readMarketplaceIdentity(packageJsonContent)
