@@ -3,13 +3,13 @@ import type { CompilerContext } from '../../../context'
 import fs from 'node:fs'
 import path from 'pathe'
 import { findJsEntry } from '../../../utils/file'
-import { normalizePath } from './shared'
+import { normalizePath } from '../../../utils/path'
 
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
 const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
 
 function ensureCssGraph(ctx: CompilerContext) {
-  return ctx.runtimeState.css
+  return ctx.runtimeState?.css
 }
 
 function cleanupImporterGraph(
@@ -17,6 +17,9 @@ function cleanupImporterGraph(
   importer: string,
 ) {
   const graph = ensureCssGraph(ctx)
+  if (!graph) {
+    return
+  }
   const normalizedImporter = normalizePath(importer)
   const existingDeps = graph.importerToDependencies.get(normalizedImporter)
   if (!existingDeps) {
@@ -41,6 +44,9 @@ function registerCssImports(
   dependencies: Iterable<string>,
 ) {
   const graph = ensureCssGraph(ctx)
+  if (!graph) {
+    return
+  }
   const normalizedImporter = normalizePath(importer)
   const normalizedDeps = new Set<string>()
   for (const dependency of dependencies) {
@@ -200,6 +206,9 @@ function collectCssImporters(
   dependency: string,
 ) {
   const graph = ensureCssGraph(ctx)
+  if (!graph) {
+    return new Set<string>()
+  }
   const normalizedDependency = normalizePath(dependency)
   const matches = new Set<string>()
 

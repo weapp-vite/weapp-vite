@@ -193,4 +193,20 @@ describe('invalidateEntry cssGraph', () => {
     expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toBeUndefined()
     expect(ctx.runtimeState.css.dependencyToImporters.get(global)).toBeUndefined()
   })
+
+  it('skips css graph updates when runtime css state is unavailable', async () => {
+    const ctx = {
+      configService: {
+        absoluteSrcRoot: '/project/src',
+      },
+      runtimeState: {},
+    } as any
+
+    await expect(extractCssImportDependencies(ctx, '/project/src/styles/missing.wxss')).resolves.toBeUndefined()
+    expect(() => syncVueSfcStyleDependencies(ctx, '/project/src/pages/index/index.vue', [
+      {
+        content: '@import "./hello.css";',
+      },
+    ] as any)).not.toThrow()
+  })
 })
