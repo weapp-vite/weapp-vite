@@ -22,6 +22,7 @@ const requiredEntries = [
   'extension/LICENSE.txt',
   'extension/changelog.md',
   'extension/readme.md',
+  'extension/assets/activitybar.svg',
   'extension/assets/logo.png',
   'extension/assets/logo.svg',
   'extension/assets/wxml.svg',
@@ -59,6 +60,13 @@ assert.equal(packagedManifest.displayName, 'Weapp Vite')
 assert.equal('devDependencies' in packagedManifest, false)
 assert.equal('scripts' in packagedManifest, false)
 assert.equal('private' in packagedManifest, false)
+assert.deepEqual(packagedManifest.contributes.viewsContainers.activitybar, [
+  {
+    id: 'weapp-vite',
+    title: 'Weapp Vite',
+    icon: 'assets/activitybar.svg',
+  },
+])
 assert.deepEqual(packagedManifest.contributes.views['weapp-vite'], [
   {
     id: 'weapp-vite.project',

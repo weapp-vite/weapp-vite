@@ -187,7 +187,7 @@ it('manifest contributes dedicated weapp-vite activity bar views', () => {
     {
       id: 'weapp-vite',
       title: 'Weapp Vite',
-      icon: 'assets/logo.svg',
+      icon: 'assets/activitybar.svg',
     },
   ])
 

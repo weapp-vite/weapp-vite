@@ -28,6 +28,7 @@ const requiredFiles = [
   'README.md',
   'CHANGELOG.md',
   'LICENSE',
+  'assets/activitybar.svg',
   'assets/logo.svg',
   'assets/wxml.svg',
   'assets/weapp-vite-icon-theme.json',
