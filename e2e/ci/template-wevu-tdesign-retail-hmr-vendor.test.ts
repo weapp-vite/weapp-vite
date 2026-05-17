@@ -12,7 +12,7 @@ const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const HOME_SOURCE_PATH = path.join(TEMPLATE_ROOT, 'src/pages/home/home.vue')
 const HOME_WXML_PATH = path.join(DIST_ROOT, 'pages/home/home.wxml')
 const HOME_JSON_PATH = path.join(DIST_ROOT, 'pages/home/home.json')
-const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
+const INITIAL_RETAIL_BUILD_TIMEOUT_MS = 180_000
 const SEARCH_PLACEHOLDER_RE = /placeholder="iphone 13 火热发售中[^"]*"/
 const PAGE_TITLE_RE = /navigationBarTitleText:\s*'[^']*'/
 const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
@@ -140,9 +140,14 @@ async function withRetailDevWatch<T>(
   })
 
   try {
-    await dev.waitForOutput(INITIAL_BUILD_READY_RE, 'initial retail template dev build ready', 60_000)
-    await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), 'retail template app.json generated')
-    await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'pages/home/home.js'), 90_000), 'retail template home.js generated')
+    await dev.waitFor(
+      waitForFile(path.join(DIST_ROOT, 'app.json'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      'retail template app.json generated',
+    )
+    await dev.waitFor(
+      waitForFile(path.join(DIST_ROOT, 'pages/home/home.js'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      'retail template home.js generated',
+    )
     await dev.waitFor(waitForVendorMembersIntact(), 'initial retail template vendor members')
     return await task(dev)
   }

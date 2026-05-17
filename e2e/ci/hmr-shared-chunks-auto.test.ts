@@ -104,7 +104,7 @@ afterEach(async () => {
 })
 
 describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
-  it('keeps direct page edits incremental without emitAll', async () => {
+  it('expands direct page edits through non-source shared chunks without emitAll', async () => {
     await fs.remove(DIST_ROOT)
     const originalConfig = await fs.readFile(CONFIG_PATH, 'utf8')
     const originalSource = await fs.readFile(PAGE_HMR_SOURCE_PATH, 'utf8')
@@ -140,7 +140,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
           profile.file === PAGE_HMR_SOURCE_PATH
           && (profile.event === 'create' || profile.event === 'update')
           && typeof profile.pendingCount === 'number'
-          && profile.pendingCount === 1
+          && profile.pendingCount > 1
           && typeof profile.emittedCount === 'number'
           && profile.emittedCount === profile.pendingCount
           && (profile.dirtyReasonSummary ?? []).includes('entry-direct:1'),
@@ -148,7 +148,10 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
         'direct page edit shared-chunk auto hmr profile',
       )
       expect(sample.dirtyCount).toBe(1)
-      expect(sample.pendingCount).toBe(1)
+      expect(sample.pendingCount).toBeGreaterThan(1)
+      expect(sample.pendingReasonSummary?.some(reason =>
+        reason.startsWith('shared-chunk(') && reason.endsWith(':direct'),
+      )).toBe(true)
       expect(dev.getOutput()).toContain('小程序已重新构建（')
     }
     finally {
