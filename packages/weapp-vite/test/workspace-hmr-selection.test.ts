@@ -106,6 +106,16 @@ describe('workspace HMR changed-file selection', () => {
     ])
   })
 
+  it('ignores release-only project metadata changes for changed-project audits', () => {
+    expect([...resolveChangedProjectIds([
+      '.changeset/fair-wevu-vendors-hmr.md',
+      'apps/wevu-comprehensive-demo/CHANGELOG.md',
+      'apps/wevu-comprehensive-demo/package.json',
+      'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/CHANGELOG.md',
+      'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/package.json',
+    ], 'workspace')]).toEqual([])
+  })
+
   it('selects representative smoke projects from apps and e2e-apps scope', () => {
     expect([...selectWorkspaceHmrSmokeProjectIds([
       { id: 'apps/hmr-lab', kind: 'apps' },

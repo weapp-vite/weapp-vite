@@ -273,6 +273,16 @@ function isWorkspaceHmrIgnoredChange(file: string) {
     /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
     || file.startsWith('docs/')
     || file.endsWith('.md')
+    || isWorkspaceProjectPackageJson(file)
+  )
+}
+
+function isWorkspaceProjectPackageJson(file: string) {
+  const segments = file.split('/')
+  return (
+    segments.length === 3
+    && isWorkspaceHmrProjectKind(segments[0])
+    && segments[2] === 'package.json'
   )
 }
 
@@ -326,6 +336,9 @@ export function resolveChangedProjectIds(changedFiles: string[], scope: Workspac
   const scopedRoots = new Set(rootsForScope(scope))
   const projectIds = new Set<string>()
   for (const file of changedFiles) {
+    if (isWorkspaceHmrIgnoredChange(file)) {
+      continue
+    }
     const [root, name] = file.split('/')
     if (isWorkspaceHmrProjectKind(root) && scopedRoots.has(root) && name) {
       const projectId = `${root}/${name}`
