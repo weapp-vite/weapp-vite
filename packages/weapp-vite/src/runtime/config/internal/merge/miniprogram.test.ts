@@ -113,6 +113,12 @@ describe('runtime config merge miniprogram', () => {
       '/project/src/**',
       '/plugin-root/**',
     ])
+    expect(result.build?.watch?.buildDelay).toBe(120)
+    expect(result.build?.watch?.watcher).toEqual({
+      useDebounce: true,
+      debounceDelay: 120,
+      debounceTickRate: 20,
+    })
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
@@ -208,6 +214,44 @@ describe('runtime config merge miniprogram', () => {
     ])
     expect(result.build?.watch?.exclude).toContain('/project/dist/**')
     expect(result.build?.modulePreload).toBe(false)
+  })
+
+  it('preserves explicit dev watch debounce options', () => {
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            watch: {
+              buildDelay: 500,
+              watcher: {
+                useDebounce: false,
+              },
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: undefined,
+        isDev: true,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect(result.build?.watch?.buildDelay).toBe(500)
+    expect(result.build?.watch?.watcher?.useDebounce).toBe(false)
+    expect(result.build?.watch?.watcher?.debounceDelay).toBe(120)
+    expect(result.build?.watch?.include).toEqual(['/project/src/**'])
   })
 
   it('builds production inline config and sets current subpackage root', () => {
