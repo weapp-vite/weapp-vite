@@ -113,7 +113,7 @@ describe('runtime config merge miniprogram', () => {
       '/project/src/**',
       '/plugin-root/**',
     ])
-    expect(result.build?.watch?.buildDelay).toBe(120)
+    expect(result.build?.watch?.buildDelay).toBe(60)
     expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
