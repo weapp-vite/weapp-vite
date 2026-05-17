@@ -1,3 +1,4 @@
+import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../context'
 import fs from 'node:fs'
 import path from 'pathe'
@@ -78,6 +79,74 @@ function registerCssImports(
   }
 }
 
+function addResolvedCssSpecifier(
+  ctx: CompilerContext,
+  dependencies: Set<string>,
+  importer: string,
+  rawSpecifier: string,
+) {
+  if (!rawSpecifier) {
+    return
+  }
+
+  if (importProtocols.test(rawSpecifier)) {
+    if (rawSpecifier.startsWith('/')) {
+      const absolute = path.resolve(ctx.configService.absoluteSrcRoot, rawSpecifier.slice(1))
+      dependencies.add(absolute)
+      const ext = path.extname(absolute)
+      if (ext) {
+        dependencies.add(absolute.slice(0, -ext.length))
+      }
+    }
+    return
+  }
+
+  let specifier = rawSpecifier
+  if (specifier.startsWith('@/')) {
+    specifier = path.join(ctx.configService.absoluteSrcRoot, specifier.slice(2))
+  }
+  else if (specifier === '@') {
+    specifier = ctx.configService.absoluteSrcRoot
+  }
+
+  if (specifier.startsWith('~')) {
+    specifier = specifier.slice(1)
+  }
+
+  const cleaned = specifier.replace(/[?#].*$/, '')
+
+  const resolved = path.resolve(path.dirname(importer), cleaned)
+  dependencies.add(resolved)
+  const ext = path.extname(resolved)
+  if (!ext) {
+    dependencies.add(resolved)
+  }
+  else {
+    dependencies.add(resolved.slice(0, -ext.length))
+  }
+}
+
+function collectCssDependenciesFromContent(
+  ctx: CompilerContext,
+  importer: string,
+  cssContent: string,
+) {
+  cssImportRE.lastIndex = 0
+  const dependencies = new Set<string>()
+  while (true) {
+    const match = cssImportRE.exec(cssContent)
+    if (!match) {
+      break
+    }
+    const rawSpecifier = match[1]?.trim()
+    if (!rawSpecifier) {
+      continue
+    }
+    addResolvedCssSpecifier(ctx, dependencies, importer, rawSpecifier)
+  }
+  return dependencies
+}
+
 export async function extractCssImportDependencies(
   ctx: CompilerContext,
   importer: string,
@@ -103,57 +172,27 @@ export async function extractCssImportDependencies(
     return
   }
 
-  cssImportRE.lastIndex = 0
+  const dependencies = collectCssDependenciesFromContent(ctx, importer, cssContent)
+  registerCssImports(ctx, importer, dependencies)
+}
+
+export function syncVueSfcStyleDependencies(
+  ctx: CompilerContext,
+  filename: string,
+  styleBlocks: SFCStyleBlock[] | undefined,
+) {
   const dependencies = new Set<string>()
-  const dir = path.dirname(importer)
-  while (true) {
-    const match = cssImportRE.exec(cssContent)
-    if (!match) {
-      break
-    }
-    const rawSpecifier = match[1]?.trim()
-    if (!rawSpecifier) {
-      continue
-    }
-
-    if (importProtocols.test(rawSpecifier)) {
-      if (rawSpecifier.startsWith('/')) {
-        const absolute = path.resolve(ctx.configService.absoluteSrcRoot, rawSpecifier.slice(1))
-        dependencies.add(absolute)
-        const ext = path.extname(absolute)
-        if (ext) {
-          dependencies.add(absolute.slice(0, -ext.length))
-        }
+  for (const block of styleBlocks ?? []) {
+    if (block.content) {
+      for (const dependency of collectCssDependenciesFromContent(ctx, filename, block.content)) {
+        dependencies.add(dependency)
       }
-      continue
     }
-
-    let specifier = rawSpecifier
-    if (specifier.startsWith('@/')) {
-      specifier = path.join(ctx.configService.absoluteSrcRoot, specifier.slice(2))
-    }
-    else if (specifier === '@') {
-      specifier = ctx.configService.absoluteSrcRoot
-    }
-
-    if (specifier.startsWith('~')) {
-      specifier = specifier.slice(1)
-    }
-
-    const cleaned = specifier.replace(/[?#].*$/, '')
-
-    const resolved = path.resolve(dir, cleaned)
-    dependencies.add(resolved)
-    const ext = path.extname(resolved)
-    if (!ext) {
-      dependencies.add(resolved)
-    }
-    else {
-      dependencies.add(resolved.slice(0, -ext.length))
+    if (typeof block.src === 'string' && block.src.trim()) {
+      addResolvedCssSpecifier(ctx, dependencies, filename, block.src.trim())
     }
   }
-
-  registerCssImports(ctx, importer, dependencies)
+  registerCssImports(ctx, filename, dependencies)
 }
 
 function collectCssImporters(

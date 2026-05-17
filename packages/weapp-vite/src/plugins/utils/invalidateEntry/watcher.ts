@@ -58,7 +58,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const isDeleteEvent = event === 'delete'
     const shouldInvalidate = (event === 'create' && ready)
       || isDeleteEvent
-      || (event === 'update' && (hasReverseImporters || isTemplateFile))
+      || (event === 'update' && (isCssFile || hasReverseImporters || isTemplateFile))
     if (shouldInvalidate) {
       void (async () => {
         if (isTemplateFile && event !== 'delete') {

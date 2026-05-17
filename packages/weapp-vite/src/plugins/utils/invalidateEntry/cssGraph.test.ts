@@ -7,6 +7,7 @@ import {
   cleanupCssImporterGraph,
   collectAffectedScriptsAndImporters,
   extractCssImportDependencies,
+  syncVueSfcStyleDependencies,
 } from './cssGraph'
 
 vi.mock('../../../utils/file', () => ({
@@ -161,5 +162,35 @@ describe('invalidateEntry cssGraph', () => {
     expect(findJsEntryMock).toHaveBeenCalledTimes(3)
     expect(result.importers).toEqual(new Set([resetWxss, resetScss, appWxss]))
     expect(result.scripts).toEqual(new Set(['/project/src/styles/reset.ts', '/project/src/app.ts']))
+  })
+
+  it('tracks vue sfc style imports and src blocks as css importers', async () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const vueFile = '/project/src/pages/index/index.vue'
+    const hello = '/project/src/pages/index/hello.css'
+    const external = '/project/src/pages/index/external.css'
+    const global = '/project/src/styles/global.scss'
+
+    syncVueSfcStyleDependencies(ctx, vueFile, [
+      {
+        content: '@import "./hello.css";\n@import "@/styles/global.scss";',
+      },
+      {
+        content: '',
+        src: './external.css',
+      },
+    ] as any)
+
+    expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toEqual(new Set([vueFile]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(hello.slice(0, -'.css'.length))).toEqual(new Set([vueFile]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toEqual(new Set([vueFile]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(global)).toEqual(new Set([vueFile]))
+
+    syncVueSfcStyleDependencies(ctx, vueFile, [])
+
+    expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toBeUndefined()
+    expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toBeUndefined()
+    expect(ctx.runtimeState.css.dependencyToImporters.get(global)).toBeUndefined()
   })
 })

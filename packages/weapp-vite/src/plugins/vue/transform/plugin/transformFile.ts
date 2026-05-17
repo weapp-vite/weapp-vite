@@ -5,6 +5,7 @@ import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { syncVueSfcStyleDependencies } from '../../../utils/invalidateEntry'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
@@ -145,6 +146,11 @@ export async function transformVueLikeFile(options: {
     if (Array.isArray(result.meta?.styleBlocks)) {
       styleBlocksCache.set(filename, result.meta.styleBlocks as SFCStyleBlock[])
     }
+    syncVueSfcStyleDependencies(
+      ctx,
+      filename,
+      (result.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
+    )
     registerScopedSlotHostGenerics(ctx, result.scopedSlotComponents, parseUsingComponents(result.config))
 
     await measureStage('finalizeCompiledResult', async () => {

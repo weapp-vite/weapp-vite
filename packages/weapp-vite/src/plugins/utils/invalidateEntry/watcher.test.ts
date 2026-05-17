@@ -201,6 +201,31 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/shared/helper.wxs')
   })
 
+  it('forwards css change events so imported style dependencies can refresh entries', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const existsSpy = vi.spyOn(fs, 'existsSync')
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    existsSpy.mockImplementation((value) => {
+      const filePath = String(value)
+      return filePath === '/project/src' || filePath === '/project/src/pages/hmr/hello.css'
+    })
+
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('ready')
+    watcher.emit('change', '/project/src/pages/hmr/hello.css')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update')
+    expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/pages/hmr/hello.css')
+  })
+
   it('scans and invalidates direct template change events without reverse importers', async () => {
     vi.stubEnv('VITEST', '')
     vi.stubEnv('NODE_ENV', 'development')
