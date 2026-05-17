@@ -21,9 +21,15 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     ? resolveAppShellLayout(configService)
     : undefined
   const hmrState = ctx.runtimeState?.build?.hmr
+  const isAppVueHmrUpdate = Boolean(
+    configService.isDev
+    && hmrState?.profile?.file
+    && isAppVueFile(hmrState.profile.file),
+  )
   const shouldFilterHmrEntries = Boolean(
     configService.isDev
     && hmrState
+    && !isAppVueHmrUpdate
     && !hmrState.didEmitAllEntries
     && hmrState.lastEmittedEntryIds.size > 0,
   )

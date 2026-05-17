@@ -114,11 +114,7 @@ describe('runtime config merge miniprogram', () => {
       '/plugin-root/**',
     ])
     expect(result.build?.watch?.buildDelay).toBe(120)
-    expect(result.build?.watch?.watcher).toEqual({
-      useDebounce: true,
-      debounceDelay: 120,
-      debounceTickRate: 20,
-    })
+    expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
@@ -216,7 +212,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.modulePreload).toBe(false)
   })
 
-  it('preserves explicit dev watch debounce options', () => {
+  it('preserves explicit dev watch options', () => {
     const result = mergeMiniprogram(
       {
         ctx: {
@@ -250,7 +246,6 @@ describe('runtime config merge miniprogram', () => {
 
     expect(result.build?.watch?.buildDelay).toBe(500)
     expect(result.build?.watch?.watcher?.useDebounce).toBe(false)
-    expect(result.build?.watch?.watcher?.debounceDelay).toBe(120)
     expect(result.build?.watch?.include).toEqual(['/project/src/**'])
   })
 

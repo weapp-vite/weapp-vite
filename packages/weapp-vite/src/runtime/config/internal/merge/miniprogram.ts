@@ -156,7 +156,6 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   if (isDev) {
     const hmrWatchBuildDelay = 120
-    const hmrWatchDebounceDelay = 120
     const watchInclude = resolveMiniprogramWatchInclude({
       cwd,
       srcRoot,
@@ -182,11 +181,6 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
                 : path.join(cwd, 'dist', '**'),
             ],
             include: watchInclude,
-            watcher: {
-              useDebounce: true,
-              debounceDelay: hmrWatchDebounceDelay,
-              debounceTickRate: 20,
-            },
           },
           minify: false,
           emptyOutDir: false,

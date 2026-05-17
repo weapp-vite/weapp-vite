@@ -223,6 +223,7 @@ async function processChangedFile(
     && isAppVueFile(normalizedId)
     && resolvedEntryMap.size
   ) {
+    ;(loadEntry as any)?.invalidateResolveCache?.()
     for (const entryId of resolvedEntryMap.keys()) {
       if (entryId === normalizedId) {
         continue

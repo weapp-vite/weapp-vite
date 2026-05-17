@@ -448,10 +448,12 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
 
       if (change.event === 'delete') {
         autoImportService.removePotentialComponent(absolutePath)
+        await refreshAutoImportImporters(ctx, absolutePath)
         return
       }
 
       await autoImportService.registerPotentialComponent(absolutePath)
+      await refreshAutoImportImporters(ctx, absolutePath)
     },
   }
 }

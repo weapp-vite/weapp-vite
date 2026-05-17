@@ -327,6 +327,7 @@ const count = 1
 
     await hook(appEntry, { event: 'update' })
 
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenCalledWith(componentEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')

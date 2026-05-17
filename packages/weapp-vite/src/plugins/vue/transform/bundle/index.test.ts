@@ -73,6 +73,41 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it('keeps all compiled entries during app.vue HMR updates so app shell assets are emitted', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+          absoluteSrcRoot: '/project/src',
+          relativeOutputPath: (file: string) => file.replace('/project/src/', ''),
+        },
+        scanService: {},
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'update',
+                file: '/project/src/app.vue',
+              },
+              didEmitAllEntries: false,
+              lastEmittedEntryIds: new Set(['/project/src/pages/index.vue']),
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/app.vue', { result: { template: '<slot />' }, isPage: false }],
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/app.vue', { result: { template: '<slot />' }, isPage: false }],
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+      ],
+      emittedEntryIds: undefined,
+    })
+  })
+
   it('keeps all compiled entries when dev runtime has no HMR emit state', () => {
     expect(resolveVueBundleEmitState({
       ctx: {

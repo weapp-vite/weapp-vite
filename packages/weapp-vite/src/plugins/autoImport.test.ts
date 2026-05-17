@@ -619,6 +619,96 @@ describe('autoImport plugin', () => {
     }
   })
 
+  it('refreshes importers after watchChange registers a newly created component', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-watch-change-refresh-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const pageVueFile = path.join(srcRoot, 'pages/index/index.vue')
+    const hotCardFile = path.join(srcRoot, 'components/HotCard/index.vue')
+    await fs.ensureDir(path.dirname(pageVueFile))
+    await fs.ensureDir(path.dirname(hotCardFile))
+    await fs.writeFile(pageVueFile, '<template><HotCard /></template>', 'utf8')
+    await fs.writeFile(hotCardFile, '<template><view>hot</view></template>', 'utf8')
+
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      wxmlService: {
+        wxmlComponentsMap: new Map([
+          [pageVueFile.replace(/\.vue$/, ''), {
+            HotCard: [{ start: 0, end: 9 }],
+          }],
+        ]),
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p.replace(`${tempDir}/`, ''),
+        relativeAbsoluteSrcRoot: (p: string) => p.replace(`${srcRoot}/`, ''),
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: (target: string) => target.includes('components/'),
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(() => ({
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+          },
+        })),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      await plugin.buildStart?.()
+
+      registerPotentialComponent.mockClear()
+      const initialPageStat = await fs.stat(pageVueFile)
+      await new Promise(resolve => setTimeout(resolve, 20))
+
+      await plugin.watchChange?.('components/HotCard/index.vue', { event: 'create' } as any)
+
+      await vi.waitFor(async () => {
+        expect(registerPotentialComponent).toHaveBeenCalledWith(hotCardFile)
+        const nextPageStat = await fs.stat(pageVueFile)
+        expect(nextPageStat.mtimeMs).toBeGreaterThan(initialPageStat.mtimeMs)
+        expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.get(pageVueFile.replace(/\.vue$/, ''))).toEqual(
+          new Set(['/components/HotCard/index']),
+        )
+      })
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
   it('handles file rename through unlink and add watcher events', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
