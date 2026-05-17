@@ -16,6 +16,7 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
+import { collectAffectedScriptsAndImporters } from '../../utils/invalidateEntry/cssGraph'
 import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { isAppVueFile } from '../../vue/transform/appShell'
@@ -175,6 +176,37 @@ async function processChangedFile(
     }
   }
 
+  const markScriptDirty = (scriptId: string, cause: string) => {
+    const normalizedScriptId = normalizeFsResolvedId(scriptId)
+    const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(normalizedScriptId))
+      ? 'dependency'
+      : 'direct'
+    if (reason === 'dependency') {
+      affectedLayoutEntryIds.add(normalizedScriptId)
+    }
+    else {
+      markEntryDirtyWithCause(normalizedScriptId, reason, cause)
+    }
+  }
+
+  const addCssImporterEntries = async (startId: string) => {
+    const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
+
+    for (const importer of importers) {
+      const normalizedImporter = normalizeFsResolvedId(importer)
+      if (
+        isCurrentSubPackageFile(configService.relativeAbsoluteSrcRoot(normalizedImporter), subPackageMeta)
+        && (loadedEntrySet.has(normalizedImporter) || resolvedEntryMap.has(normalizedImporter))
+      ) {
+        markScriptDirty(normalizedImporter, 'css-importer')
+      }
+    }
+
+    for (const script of scripts) {
+      markScriptDirty(script, 'css-importer')
+    }
+  }
+
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
   }
@@ -227,16 +259,10 @@ async function processChangedFile(
           })()
       const primaryScript = await findJsEntry(basePath)
       if (primaryScript.path) {
-        const primaryScriptId = normalizeFsResolvedId(primaryScript.path)
-        const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(primaryScriptId))
-          ? 'dependency'
-          : 'direct'
-        if (reason === 'dependency') {
-          affectedLayoutEntryIds.add(primaryScriptId)
-        }
-        else {
-          markEntryDirtyWithCause(primaryScriptId, reason, 'sidecar-direct')
-        }
+        markScriptDirty(primaryScript.path, 'sidecar-direct')
+      }
+      else if (isStyleFile) {
+        await addCssImporterEntries(normalizedId)
       }
     }
   }
@@ -312,7 +338,7 @@ async function processChangedFile(
       }
     }
   }
-  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct')
+  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct') && !dirtyReasonStats.has('css-importer')
   const sharedChunkAffected = shouldExpandSharedChunkAffected
     ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
     : new Set<string>()

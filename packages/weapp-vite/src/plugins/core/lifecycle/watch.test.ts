@@ -4,6 +4,10 @@ import { createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
 const invalidateEntryForSidecarMock = vi.hoisted(() => vi.fn(async () => {}))
+const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () => ({
+  importers: new Set<string>(),
+  scripts: new Set<string>(),
+})))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
@@ -17,6 +21,10 @@ vi.mock('../../utils/cache', () => ({
 vi.mock('../../utils/invalidateEntry', () => ({
   ensureSidecarWatcher: vi.fn(),
   invalidateEntryForSidecar: invalidateEntryForSidecarMock,
+}))
+
+vi.mock('../../utils/invalidateEntry/cssGraph', () => ({
+  collectAffectedScriptsAndImporters: collectAffectedScriptsAndImportersMock,
 }))
 
 vi.mock('../../../utils/file', () => ({
@@ -103,6 +111,10 @@ describe('core lifecycle watch hook', () => {
     vi.clearAllMocks()
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     findJsEntryMock.mockResolvedValue({ path: null })
+    collectAffectedScriptsAndImportersMock.mockResolvedValue({
+      importers: new Set<string>(),
+      scripts: new Set<string>(),
+    })
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
@@ -143,6 +155,33 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
+  })
+
+  it('marks css importers dirty when imported style dependencies change', async () => {
+    const dependencyId = '/project/src/pages/index/hello.css'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    collectAffectedScriptsAndImportersMock.mockResolvedValue({
+      importers: new Set([vueEntry]),
+      scripts: new Set<string>(),
+    })
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([
+      '/project/src/pages/other/index.vue',
+    ]))
+    const state = createState({
+      loadedEntrySet: new Set([vueEntry]),
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'update' })
+
+    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })
 
   it('marks html template updates as direct entry dirties', async () => {
