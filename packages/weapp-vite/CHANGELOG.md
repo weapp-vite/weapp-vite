@@ -1,5 +1,32 @@
 # weapp-vite
 
+## 6.16.15
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`74978d8`](https://github.com/weapp-vite/weapp-vite/commit/74978d89dfc25439803b7003119ee57b8fadc27f) by @sonofmagic
+  - 默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @types/node, @vitejs/plugin-vue, @vue/language-core, miniprogram-api-typings, rolldown, stylelint, vite, vue-tsc。命名 catalog 变更键：latest(miniprogram-api-typings)。
+
+- 🐛 **修复 dev 模式下直接编辑页面模板或 `definePageJson` / `<json>` 等页面元数据时，增量构建可能用局部入口图重写 wevu vendor shared chunk，导致业务 chunk 继续访问 `computed` 等运行时短导出时出现缺失的问题。** [`e8d324e`](https://github.com/weapp-vite/weapp-vite/commit/e8d324e3f36232192d11df9d03afca728a1f6735) by @sonofmagic
+
+- 🐛 **修复 dev watch 下 `app.vue` app shell 更新时局部产物过滤导致 `__weapp_vite_app_shell` 资产未重新写入的问题，并让新增自动导入组件在 Vite `watchChange` 路径注册后同步刷新引用方，避免页面已注册组件但组件产物缺失。** [`a02091c`](https://github.com/weapp-vite/weapp-vite/commit/a02091c4db8a366c5c72ebdc9ee7cee0f06bd072) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 样式依赖同步在缺少 CSS 运行时图时的崩溃，并改用稳定的路径工具直引，避免 CI 和单测环境中的导出链差异导致构建失败。** [`897031b`](https://github.com/weapp-vite/weapp-vite/commit/897031bec1ab1923e675efdf9b82315f5f56a267) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 中 `<style>` 通过 `@import` 引入的样式依赖在 dev watch 下偶发不触发页面样式产物更新的问题，并让小程序 dev watch 在快速原子保存时先收敛文件事件再重建，避免 macOS 上连续写入偶发读到中间态。** [`a166459`](https://github.com/weapp-vite/weapp-vite/commit/a166459a97c2811f54dc92974f4c351c3e03a049) by @sonofmagic
+
+- 🐛 **修复 weapp 项目中 Vue SFC 内联样式依赖变更后未及时触发 HMR 刷新的问题，确保 `@import` 和 `src` 引入的样式修改能够正确更新对应页面产物。** [`97934f7`](https://github.com/weapp-vite/weapp-vite/commit/97934f7c9dcc6c7e3bffc0ecf4cb64dd325b0051) by @sonofmagic
+
+- 🐛 **修复 workspace HMR 审计以仓库根目录启动项目导致监听和构建上下文过大的问题，并收窄独立分包 watcher 对主包页面更新的误处理，降低开发态 HMR 报告中的误触发和异常耗时。** [`26590c1`](https://github.com/weapp-vite/weapp-vite/commit/26590c1af06064a1364255d535419d9aeb0ac2d9) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 开发态局部 HMR 在原子保存或 create 事件下补发全量 fallback 页面资产的问题，并让 workspace HMR 审计在启动产物稳定后再进入正式测量，减少首次构建产物补齐对影响面报告的干扰。** [`3bf16c5`](https://github.com/weapp-vite/weapp-vite/commit/3bf16c52b2cbad57bf0bfd9ba020eb9e5f25b959) by @sonofmagic
+- 📦 Updated 6 dependencies [`74978d8`](https://github.com/weapp-vite/weapp-vite/commit/74978d89dfc25439803b7003119ee57b8fadc27f)
+  <details><summary>Details</summary>
+
+  `@wevu/api@0.2.9`, `rolldown-require@2.0.16`, `@wevu/web-apis@1.2.13`, `wevu@6.16.15`, `@weapp-vite/web@1.3.21`, `@weapp-vite/ast@6.16.15`
+
+  </details>
+
 ## 6.16.14
 
 ### Patch Changes
