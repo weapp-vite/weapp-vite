@@ -4,9 +4,10 @@ import path from 'node:path'
 import process from 'node:process'
 /* eslint-disable e18e/ban-dependencies -- release automation scans workspace manifests with fast-glob, consistent with existing repository scripts. */
 import fg from 'fast-glob'
+import { extractChangesetPackages } from './changeset-utils'
 import {
   collectPublishableWorkspacePackages,
-  extractChangesetPackages,
+  isCurrentModuleEntry,
 } from './check-publishable-workspace-changeset'
 
 const CHANGESET_DIR = '.changeset'
@@ -257,4 +258,6 @@ async function main() {
   console.log(`Generated ${AUTO_CHANGESET_FILE} for packages: ${missingPackages.join(', ')}`)
 }
 
-await main()
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
+  await main()
+}
