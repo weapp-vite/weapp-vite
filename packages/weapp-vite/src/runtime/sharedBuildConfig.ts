@@ -235,6 +235,7 @@ function resolveStableHashedDistChunkFileName(
     ...(chunk.moduleIds ?? []),
   ].filter((id): id is string => typeof id === 'string')
   const matchedChunks: Array<{ baseName: string, fileName: string }> = []
+  let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
 
   for (const id of candidateIds) {
     const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
@@ -258,10 +259,18 @@ function resolveStableHashedDistChunkFileName(
       return `weapp-vendors/request-globals-${packageToken}-${baseName}.js`
     }
 
-    matchedChunks.push({
+    const matchedChunk = {
       baseName,
       fileName: `weapp-vendors/${packageToken}-${baseName}.js`,
-    })
+    }
+    matchedChunks.push(matchedChunk)
+    if (id === chunk.facadeModuleId) {
+      facadeMatchedChunk = matchedChunk
+    }
+  }
+
+  if (facadeMatchedChunk) {
+    return facadeMatchedChunk.fileName
   }
 
   for (const priorityBaseName of STABLE_HASHED_DIST_CHUNK_PRIORITY) {

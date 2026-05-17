@@ -102,7 +102,7 @@ function resolvePendingEntryIds(options: {
 
   for (const entryId of options.dirtyEntrySet) {
     const dirtyReason = options.dirtyEntryReasons.get(entryId)
-    if (dirtyReason !== 'dependency') {
+    if (dirtyReason !== 'dependency' && dirtyReason !== 'direct') {
       continue
     }
     const chunkIds = options.sharedChunksByEntry.get(entryId)
@@ -110,7 +110,9 @@ function resolvePendingEntryIds(options: {
       continue
     }
     for (const chunkId of chunkIds) {
-      relatedChunkIds.add(chunkId)
+      if (dirtyReason === 'dependency' || !options.sourceSharedChunks?.has(chunkId)) {
+        relatedChunkIds.add(chunkId)
+      }
     }
   }
 

@@ -115,11 +115,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
+        sourceSharedChunks,
       },
     })
 
@@ -141,11 +143,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
+        sourceSharedChunks,
       },
     })
 
@@ -269,7 +273,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(4)
   })
 
-  it('keeps direct entry updates incremental across shared chunk importers', async () => {
+  it('expands direct entry updates across non-source vendor shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -283,15 +287,15 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
-    sharedChunkImporters.set('common.js', new Set([ids[0], ids[1], ids[2]]))
-    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sharedChunkImporters.set('weapp-vendors/wevu-src.js', new Set([ids[0], ids[1], ids[2]]))
+    sharedChunksByEntry.set(ids[0], new Set(['weapp-vendors/wevu-src.js']))
     hook.markEntryDirty(ids[0], 'direct')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-src.js)+2:direct'])
   })
 
   it('keeps direct entry updates incremental across bounded source shared chunk importers', async () => {
@@ -463,11 +467,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
+        sourceSharedChunks,
       },
     })
 
@@ -478,6 +484,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     sharedChunkImporters.set('src/shared/common.js', new Set(ids))
     sharedChunksByEntry.set(ids[0], new Set(['src/shared/common.js']))
+    sourceSharedChunks.add('src/shared/common.js')
     hook.markEntryDirty(ids[0], 'direct')
 
     const pluginCtx = createPluginContext()

@@ -10,6 +10,8 @@ const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const REGRESSION_DIST_ROOT = path.join(REGRESSION_ROOT, 'dist')
 const WEVU_SRC_VENDOR_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
 const REQUIRE_VENDOR_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
+const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
+const VENDOR_MEMBER_RE = /const\s+([A-Za-z_$][\w$]*)\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
 
 interface MiniProgramProjectPrivateConfig {
   setting?: {
@@ -47,6 +49,63 @@ async function collectMissingVendorRequires(jsPath: string) {
   return missing
 }
 
+async function collectVendorExports(vendorPath: string) {
+  const source = await fs.readFile(vendorPath, 'utf8')
+  return new Set(
+    [...source.matchAll(/Object\.defineProperty\(exports,\s*"([^"]+)"/g)]
+      .map(match => match[1])
+      .filter((name): name is string => Boolean(name)),
+  )
+}
+
+async function collectMissingVendorMembers(jsPath: string) {
+  const source = await fs.readFile(jsPath, 'utf8')
+  const missing: string[] = []
+  const vendorVariables = new Map<string, string>()
+
+  for (const match of source.matchAll(VENDOR_MEMBER_RE)) {
+    const [, variableName, request] = match
+    if (variableName && request) {
+      vendorVariables.set(variableName, request)
+    }
+  }
+
+  const usedMembers: Array<{ request: string, member: string }> = []
+  for (const match of source.matchAll(REQUIRE_VENDOR_MEMBER_RE)) {
+    const [, request, member] = match
+    if (request && member) {
+      usedMembers.push({ request, member })
+    }
+  }
+  for (const [variableName, request] of vendorVariables) {
+    const memberRe = new RegExp(`\\b${variableName.replaceAll('$', '\\$')}\\.([A-Za-z_$][\\w$]*)`, 'g')
+    for (const match of source.matchAll(memberRe)) {
+      const member = match[1]
+      if (member) {
+        usedMembers.push({ request, member })
+      }
+    }
+  }
+
+  const exportCache = new Map<string, Set<string>>()
+  for (const { request, member } of usedMembers) {
+    const resolved = path.resolve(path.dirname(jsPath), request)
+    if (!(await fs.pathExists(resolved))) {
+      continue
+    }
+    let exports = exportCache.get(resolved)
+    if (!exports) {
+      exports = await collectVendorExports(resolved)
+      exportCache.set(resolved, exports)
+    }
+    if (!exports.has(member)) {
+      missing.push(`${path.relative(DIST_ROOT, resolved).replaceAll('\\', '/')}#${member}`)
+    }
+  }
+
+  return [...new Set(missing)].sort()
+}
+
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -69,6 +128,21 @@ describe.sequential('template build: wevu tdesign shared chunks', () => {
     const missingByFile: Record<string, string[]> = {}
     for (const jsPath of await collectDistJsFiles(DIST_ROOT)) {
       const missing = await collectMissingVendorRequires(jsPath)
+      if (missing.length) {
+        missingByFile[path.relative(DIST_ROOT, jsPath).replaceAll('\\', '/')] = missing
+      }
+    }
+
+    expect(missingByFile).toEqual({})
+  })
+
+  it('keeps runtime vendor member references exported', async () => {
+    const missingByFile: Record<string, string[]> = {}
+    for (const jsPath of await collectDistJsFiles(DIST_ROOT)) {
+      if (jsPath.includes('/weapp-vendors/')) {
+        continue
+      }
+      const missing = await collectMissingVendorMembers(jsPath)
       if (missing.length) {
         missingByFile[path.relative(DIST_ROOT, jsPath).replaceAll('\\', '/')] = missing
       }

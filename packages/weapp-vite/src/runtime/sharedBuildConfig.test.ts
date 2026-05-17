@@ -183,12 +183,19 @@ describe('sharedBuildConfig', () => {
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src.js')
     expect(resolveStableHashedDistChunkFileName({
-      facadeModuleId: '/project/packages-runtime/wevu/dist/store-C-7rPMM3.mjs',
+      facadeModuleId: '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
       moduleIds: [
-        '/project/packages-runtime/wevu/dist/store-C-7rPMM3.mjs',
+        '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
         '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
       ],
-    })).toBe('weapp-vendors/wevu-src.js')
+    })).toBe('weapp-vendors/wevu-store.js')
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/index-BD3I133J.mjs',
+      moduleIds: [
+        '/project/packages-runtime/wevu/dist/index-BD3I133J.mjs',
+        '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+      ],
+    })).toBe('weapp-vendors/wevu-index.js')
     expect(resolveStableHashedDistChunkName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src')
