@@ -22,6 +22,9 @@ const VUE_COMPONENTS_DTS = path.join(DIST_ROOT, 'components.d.ts')
 const PAGE_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const HOT_COMPONENT_DIR = path.join(APP_ROOT, 'src/components/HotCard')
 const HOT_COMPONENT_SOURCE_PATH = path.join(HOT_COMPONENT_DIR, 'index.vue')
+const HOT_COMPONENT_TEMPLATE_TIMEOUT_MS = process.platform === 'win32'
+  ? 120_000
+  : 60_000
 const SUPPORTED_PLATFORMS = [
   'weapp',
   // 'alipay',
@@ -779,6 +782,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
                 touchContent: hotCardSource,
               },
             ],
+            HOT_COMPONENT_TEMPLATE_TIMEOUT_MS,
           ),
           `${platform} hotCard template output`,
         )
