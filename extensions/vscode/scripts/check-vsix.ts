@@ -59,5 +59,15 @@ assert.equal(packagedManifest.displayName, 'Weapp Vite')
 assert.equal('devDependencies' in packagedManifest, false)
 assert.equal('scripts' in packagedManifest, false)
 assert.equal('private' in packagedManifest, false)
+assert.deepEqual(packagedManifest.contributes.views['weapp-vite'], [
+  {
+    id: 'weapp-vite.project',
+    name: 'Project',
+  },
+  {
+    id: 'weapp-vite.pages',
+    name: 'Pages',
+  },
+])
 
 console.log('extensions/vscode vsix check ok')

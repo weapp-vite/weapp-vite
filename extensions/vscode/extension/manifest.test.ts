@@ -195,12 +195,10 @@ it('manifest contributes dedicated weapp-vite activity bar views', () => {
     {
       id: 'weapp-vite.project',
       name: 'Project',
-      when: 'workspaceFolderCount > 0',
     },
     {
       id: 'weapp-vite.pages',
       name: 'Pages',
-      when: 'workspaceFolderCount > 0',
     },
   ])
 })

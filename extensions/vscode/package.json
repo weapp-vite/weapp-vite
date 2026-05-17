@@ -410,13 +410,11 @@
       "weapp-vite": [
         {
           "id": "weapp-vite.project",
-          "name": "Project",
-          "when": "workspaceFolderCount > 0"
+          "name": "Project"
         },
         {
           "id": "weapp-vite.pages",
-          "name": "Pages",
-          "when": "workspaceFolderCount > 0"
+          "name": "Pages"
         }
       ]
     },
