@@ -134,7 +134,7 @@
     "magic-string": "catalog:",
     "merge": "catalog:",
     "obug": "catalog:",
-    "p-queue": "^9.2.0",
+    "p-queue": "^9.3.0",
     "package-manager-detector": "^1.6.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.4",
