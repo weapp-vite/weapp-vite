@@ -102,7 +102,7 @@ function resolvePendingEntryIds(options: {
 
   for (const entryId of options.dirtyEntrySet) {
     const dirtyReason = options.dirtyEntryReasons.get(entryId)
-    if (dirtyReason !== 'dependency' && dirtyReason !== 'direct') {
+    if (dirtyReason !== 'dependency' && dirtyReason !== 'direct' && dirtyReason !== 'metadata') {
       continue
     }
     const chunkIds = options.sharedChunksByEntry.get(entryId)
@@ -136,6 +136,7 @@ function resolvePendingEntryIds(options: {
     }
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
+    let hasMetadataDirtyImporter = false
     for (const importer of importers) {
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
         hasDependencyDrivenImporter = true
@@ -143,19 +144,30 @@ function resolvePendingEntryIds(options: {
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
         hasDirectDirtyImporter = true
+        continue
+      }
+      if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'metadata') {
+        hasMetadataDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !shouldExpandLayoutSharedChunks) {
+    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter && !shouldExpandLayoutSharedChunks) {
       continue
     }
-    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
+    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
     }
-    else if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
+    else if (
+      [hasDependencyDrivenImporter, hasDirectDirtyImporter, hasMetadataDirtyImporter]
+        .filter(Boolean)
+        .length > 1
+    ) {
       expansionMode = 'mixed'
     }
     else if (hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
+    }
+    else if (hasMetadataDirtyImporter) {
+      expansionMode = expansionMode && expansionMode !== 'metadata' ? 'mixed' : 'metadata'
     }
     else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'

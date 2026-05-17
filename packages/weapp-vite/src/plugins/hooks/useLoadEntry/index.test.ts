@@ -440,6 +440,34 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+      },
+    })
+
+    const ids = ['/project/src/a.vue', '/project/src/b.vue', '/project/src/c.vue']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[0], 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+  })
+
+  it('expands metadata entry updates across non-source vendor shared chunk importers', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
@@ -450,15 +478,15 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     const ids = ['/project/src/a.vue', '/project/src/b.vue', '/project/src/c.vue']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
-    sharedChunkImporters.set('common.js', new Set(ids))
-    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sharedChunkImporters.set('weapp-vendors/wevu-src.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['weapp-vendors/wevu-src.js']))
     hook.markEntryDirty(ids[0], 'metadata')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-src.js)+2:metadata'])
   })
 
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {
