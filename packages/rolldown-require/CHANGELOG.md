@@ -1,5 +1,12 @@
 # rolldown-require
 
+## 2.0.16
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`74978d8`](https://github.com/weapp-vite/weapp-vite/commit/74978d89dfc25439803b7003119ee57b8fadc27f) by @sonofmagic
+  - 默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @types/node, @vitejs/plugin-vue, @vue/language-core, miniprogram-api-typings, rolldown, stylelint, vite, vue-tsc。命名 catalog 变更键：latest(miniprogram-api-typings)。
+
 ## 2.0.15
 
 ### Patch Changes
