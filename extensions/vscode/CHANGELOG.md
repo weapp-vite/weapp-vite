@@ -1,5 +1,25 @@
 # 更新日志
 
+## 0.3.1
+
+### Patch Changes
+
+- 🐛 **优化 VS Code Activity Bar 图标，改用更清晰的 24x24 单色线条图标，避免原多色品牌 Logo 在侧栏小尺寸下糊成一团。** [`6c4fc92`](https://github.com/weapp-vite/weapp-vite/commit/6c4fc92681ebeb86f09dfef00c8e15f72484f415) by @sonofmagic
+
+- 🐛 **增强 VS Code Activity Bar 图标中间标识的可见度，提升侧边栏小尺寸下的辨识度。** [`6e33ea7`](https://github.com/weapp-vite/weapp-vite/commit/6e33ea7ec3f780ed229403b75d134fbc1b422dfb) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展在无工作区窗口激活时，项目视图因为未注册而报 `No view is registered with id: weapp-vite.project` 的问题。** [`fe6cdab`](https://github.com/weapp-vite/weapp-vite/commit/fe6cdab1bb599a6847819b98050422d2e1b8d95d) by @sonofmagic
+
+- 🐛 **Reduce VS Code extension scan pressure in non-weapp-vite monorepos by removing broad package.json/Vite config activation and excluding dependency, cache, and generated folders from workspace file scans.** [#583](https://github.com/weapp-vite/weapp-vite/pull/583) by @sonofmagic
+
+- 🐛 **优化 VS Code Activity Bar 图标，改为更稳定的圆角外框与简化 Vite 标识，提升侧边栏小尺寸显示清晰度。** [`b8ec132`](https://github.com/weapp-vite/weapp-vite/commit/b8ec132d3f2e7383c549baf3e2b34cf23d9b224b) by @sonofmagic
+
+- 🐛 **让 VS Code 扩展 Project 视图在 monorepo 根目录下展示所有 weapp-vite 子项目，并让每个项目下的任务命令使用对应项目目录和脚本执行。** [`b8ec132`](https://github.com/weapp-vite/weapp-vite/commit/b8ec132d3f2e7383c549baf3e2b34cf23d9b224b) by @sonofmagic
+
+- 🐛 **增强 VS Code 扩展在 monorepo 中的包管理器识别，支持通过根目录 `packageManager` 字段或 `pnpm-lock.yaml`、`yarn.lock`、`package-lock.json` 推断 npm、yarn 与 pnpm 的任务执行命令。** [`d465910`](https://github.com/weapp-vite/weapp-vite/commit/d4659109be0edd1fa58cf2475dbceb1ac8dcb16b) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展在 monorepo 根目录打开时无法把任务命令定位到实际 weapp-vite 子项目的问题，命令会优先使用当前文件所在项目，并在多个子项目可选时提示选择目标项目。** [`cd08709`](https://github.com/weapp-vite/weapp-vite/commit/cd087098a4c005c30491fb69b3228a53252bde6b) by @sonofmagic
+
 ## 0.3.0
 
 ### Minor Changes

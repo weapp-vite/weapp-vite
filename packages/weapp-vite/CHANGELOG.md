@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 6.16.16
+
+### Patch Changes
+
+- 🐛 **修复同一轮更新中 setup 返回对象内的 loading ref 先触发刷新时，后续 reactive 数组 push 可能被调度去重吞掉，导致列表首屏未渲染新增项的问题。** [#582](https://github.com/weapp-vite/weapp-vite/pull/582) by @sonofmagic
+  - 同时修复 `wevu` 产物 hash 中包含短横线时，`weapp-vite` 未能继续把运行时 shared chunk 稳定重命名到 `weapp-vendors/wevu-src.js` 的问题，避免开发者工具热重载时旧模块引用悬空。
+
+- 🐛 **新增 `weapp.vue.template.formatWxml` 配置项，支持在开发态默认格式化 Vue SFC / JSX 生成的 WXML，并在生产构建默认保持紧凑输出。该能力只做标签层级缩进，不重排文本内容，便于开发者在开发者工具中阅读和调试产物。** [`614b1f2`](https://github.com/weapp-vite/weapp-vite/commit/614b1f270d14d614afb19dccd818c84d078a217a) by @sonofmagic
+- 📦 **Dependencies** [`590ef4d`](https://github.com/weapp-vite/weapp-vite/commit/590ef4df528eff51726b0ad9292d5de6a7498d59)
+  → `wevu@6.16.16`, `@weapp-vite/ast@6.16.16`
+
 ## 6.16.15
 
 ### Patch Changes

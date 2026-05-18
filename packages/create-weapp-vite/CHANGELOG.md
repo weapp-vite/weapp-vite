@@ -1,5 +1,16 @@
 # create-weapp-vite
 
+## 2.3.28
+
+### Patch Changes
+
+- 🐛 **Wevu 组件现在默认支持 SFC 编译器可静态识别的函数 prop 绑定路径，可在迁移 Vue/原生小程序组件时直接使用 `:callback="fn"`；成员路径函数 prop 会被提升为稳定的运行时绑定后再传入小程序组件，避免 `:handler="handlers.save"` 在 DevTools 中退化为普通对象。动态绑定或手写组件仍可通过 `allowFunctionProps: true` 全量放行，`allowFunctionProps: false` 可显式关闭。** [`590ef4d`](https://github.com/weapp-vite/weapp-vite/commit/590ef4df528eff51726b0ad9292d5de6a7498d59) by @sonofmagic
+
+- 🐛 **修复同一轮更新中 setup 返回对象内的 loading ref 先触发刷新时，后续 reactive 数组 push 可能被调度去重吞掉，导致列表首屏未渲染新增项的问题。** [#582](https://github.com/weapp-vite/weapp-vite/pull/582) by @sonofmagic
+  - 同时修复 `wevu` 产物 hash 中包含短横线时，`weapp-vite` 未能继续把运行时 shared chunk 稳定重命名到 `weapp-vendors/wevu-src.js` 的问题，避免开发者工具热重载时旧模块引用悬空。
+
+- 🐛 **新增 `weapp.vue.template.formatWxml` 配置项，支持在开发态默认格式化 Vue SFC / JSX 生成的 WXML，并在生产构建默认保持紧凑输出。该能力只做标签层级缩进，不重排文本内容，便于开发者在开发者工具中阅读和调试产物。** [`614b1f2`](https://github.com/weapp-vite/weapp-vite/commit/614b1f270d14d614afb19dccd818c84d078a217a) by @sonofmagic
+
 ## 2.3.27
 
 ### Patch Changes
