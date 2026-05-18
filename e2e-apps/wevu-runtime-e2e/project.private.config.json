@@ -50,6 +50,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/function-props-auto/index",
+          "pathName": "pages/function-props-auto/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/function-props-disabled/index",
+          "pathName": "pages/function-props-disabled/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/root-guard/index",
           "pathName": "pages/root-guard/index",
           "query": "",

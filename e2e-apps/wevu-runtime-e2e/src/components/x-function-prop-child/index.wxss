@@ -1,0 +1,7 @@
+.function-prop-child {
+  padding: 12rpx;
+}
+
+.row {
+  margin-top: 4rpx;
+}

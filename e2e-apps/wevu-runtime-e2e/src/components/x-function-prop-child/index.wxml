@@ -1,0 +1,4 @@
+<view class="function-prop-child">
+  <view class="row">callback: {{callbackType}}</view>
+  <view class="row">handler: {{handlerType}}</view>
+</view>
