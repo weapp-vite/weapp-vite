@@ -19,6 +19,7 @@ import {
   getPrimaryWorkspaceFolder,
   getProjectAppJsonPath,
   getProjectContext,
+  getProjectContextCandidates,
   getProjectViteConfigPath,
 } from '../project/workspace'
 
@@ -38,6 +39,16 @@ interface ResolvedGenerateDefaults {
   filenames: Partial<Record<BuiltInGenerateType, string>>
   dirs: Partial<Record<BuiltInGenerateType, string>>
   srcRoot?: string
+}
+
+function getCommandTargetProjectPath(commandTarget: unknown) {
+  return typeof commandTarget === 'object'
+    && commandTarget != null
+    && 'projectPath' in commandTarget
+    && typeof commandTarget.projectPath === 'string'
+    && commandTarget.projectPath.trim()
+    ? commandTarget.projectPath
+    : null
 }
 
 function normalizeGenerateInput(input: string) {
@@ -148,6 +159,30 @@ async function resolveResourceDirectory(resourceUri?: any) {
 }
 
 async function ensureGenerateProjectContext(resourceUri?: any) {
+  const targetProjectPath = getCommandTargetProjectPath(resourceUri)
+
+  if (targetProjectPath) {
+    const workspaceFolder = getPrimaryWorkspaceFolder()
+
+    if (!workspaceFolder) {
+      void vscode.window.showWarningMessage('weapp-vite: 当前目录未识别为 weapp-vite 项目。')
+      return null
+    }
+
+    const context = (await getProjectContextCandidates(workspaceFolder))
+      .find(item => item.workspaceFolder.uri.fsPath === targetProjectPath)
+
+    if (!context) {
+      void vscode.window.showWarningMessage('weapp-vite: 当前目录未识别为 weapp-vite 项目。')
+      return null
+    }
+
+    return {
+      appJsonPath: await getProjectAppJsonPath(context.workspaceFolder),
+      context,
+    }
+  }
+
   const resourcePath = typeof resourceUri?.fsPath === 'string' ? resourceUri.fsPath : null
   const lookupPath = resourcePath
     ? await resolveResourceDirectory(resourceUri) ?? path.dirname(resourcePath)

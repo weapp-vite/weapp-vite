@@ -54,6 +54,20 @@ import {
 
 const TRAILING_FILE_SEGMENT_PATTERN = /\/[^/]+$/u
 
+interface WeappViteProjectCommandTarget {
+  projectPath?: string
+}
+
+function getCommandTargetProjectPath(commandTarget: unknown) {
+  return typeof commandTarget === 'object'
+    && commandTarget != null
+    && 'projectPath' in commandTarget
+    && typeof commandTarget.projectPath === 'string'
+    && commandTarget.projectPath.trim()
+    ? commandTarget.projectPath
+    : null
+}
+
 function getTreePageNodeRoute(item: any) {
   return typeof item?.route === 'string' && item.route.trim() ? item.route : null
 }
@@ -168,11 +182,25 @@ function getTerminal(context: any, state: any, terminalName = TERMINAL_NAME) {
   return terminal
 }
 
-async function ensureProjectContext(operationLabel: string) {
+async function ensureProjectContext(operationLabel: string, commandTarget?: WeappViteProjectCommandTarget) {
   const workspaceFolder = getPrimaryWorkspaceFolder()
 
   if (!workspaceFolder) {
     void vscode.window.showWarningMessage(`weapp-vite: 请先打开一个工作区后再${operationLabel}。`)
+    return null
+  }
+
+  const targetProjectPath = getCommandTargetProjectPath(commandTarget)
+  const contexts = await getProjectContextCandidates(workspaceFolder)
+
+  if (targetProjectPath) {
+    const context = contexts.find(item => item.workspaceFolder.uri.fsPath === targetProjectPath)
+
+    if (context) {
+      return context
+    }
+
+    void vscode.window.showWarningMessage(`weapp-vite: 未找到目标项目 ${getRelativeDisplayPath(workspaceFolder.uri.fsPath, targetProjectPath)}。`)
     return null
   }
 
@@ -184,8 +212,6 @@ async function ensureProjectContext(operationLabel: string) {
   if (activeWorkspaceFolder) {
     return activeWorkspaceFolder
   }
-
-  const contexts = await getProjectContextCandidates(workspaceFolder)
 
   if (contexts.length === 1) {
     return contexts[0]
@@ -214,14 +240,14 @@ async function ensureProjectContext(operationLabel: string) {
   return null
 }
 
-export async function runWorkspaceCommand(commandId: string, state: any) {
+export async function runWorkspaceCommand(commandId: string, state: any, commandTarget?: WeappViteProjectCommandTarget) {
   const commandDefinition = COMMAND_DEFINITIONS[commandId]
 
   if (!commandDefinition) {
     return
   }
 
-  const context = await ensureProjectContext(commandDefinition.label)
+  const context = await ensureProjectContext(commandDefinition.label, commandTarget)
 
   if (!context) {
     return
@@ -242,8 +268,8 @@ export async function runWorkspaceCommand(commandId: string, state: any) {
   void vscode.window.setStatusBarMessage(`weapp-vite: 已执行 ${commandDefinition.label}`, 3000)
 }
 
-export async function showProjectOverview(state: any) {
-  const context = await ensureProjectContext('查看项目概览')
+export async function showProjectOverview(state: any, commandTarget?: WeappViteProjectCommandTarget) {
+  const context = await ensureProjectContext('查看项目概览', commandTarget)
 
   if (!context) {
     return
@@ -276,8 +302,8 @@ export async function openDocumentation() {
   await vscode.env.openExternal(vscode.Uri.parse(selected.url))
 }
 
-export async function openProjectFile(state: any) {
-  const context = await ensureProjectContext('打开项目文件')
+export async function openProjectFile(state: any, commandTarget?: WeappViteProjectCommandTarget) {
+  const context = await ensureProjectContext('打开项目文件', commandTarget)
 
   if (!context) {
     return

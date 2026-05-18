@@ -2,11 +2,19 @@ import * as vscode from 'vscode'
 
 import {
   getPrimaryWorkspaceFolder,
-  getProjectContext,
+  getProjectContextCandidates,
 } from '../project/workspace'
+import {
+  getRelativeDisplayPath,
+} from '../shared/pathUtils'
+
+interface WeappViteProjectCommandTarget {
+  projectPath?: string
+}
 
 interface WeappViteProjectBaseNode {
   command?: string
+  commandTarget?: WeappViteProjectCommandTarget
   contextValue: string
   description?: string
   iconId: string
@@ -47,6 +55,7 @@ export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<Wea
 
     if (element.command) {
       item.command = {
+        arguments: element.commandTarget ? [element.commandTarget] : undefined,
         command: element.command,
         title: element.label,
       }
@@ -74,9 +83,9 @@ export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<Wea
       ] satisfies WeappViteProjectNode[]
     }
 
-    const context = await getProjectContext(workspaceFolder)
+    const contexts = await getProjectContextCandidates(workspaceFolder)
 
-    if (!context) {
+    if (contexts.length === 0) {
       return [
         {
           kind: 'info',
@@ -96,91 +105,113 @@ export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<Wea
       ] satisfies WeappViteProjectNode[]
     }
 
-    const signalCount = context.packageSignals.length + context.fileSignals.length
+    return contexts.map((context) => {
+      const signalCount = context.packageSignals.length + context.fileSignals.length
+      const projectPath = context.workspaceFolder.uri.fsPath
+      const relativePath = getRelativeDisplayPath(workspaceFolder.uri.fsPath, projectPath)
+      const commandTarget = {
+        projectPath,
+      }
 
-    return [
-      {
+      return {
         kind: 'group',
-        label: 'Project',
-        description: context.workspaceFolder.name,
-        contextValue: 'weappProject.group',
+        label: context.workspaceFolder.name,
+        description: relativePath || '.',
+        contextValue: 'weappProject.project',
         iconId: 'root-folder',
+        tooltip: projectPath,
         children: [
           {
-            kind: 'info',
-            label: '包管理器',
+            kind: 'group',
+            label: 'Project',
             description: context.packageManager,
-            contextValue: 'weappProject.info',
-            iconId: 'package',
-          },
-          {
-            kind: 'info',
-            label: '识别信号',
-            description: `${signalCount} 个`,
-            contextValue: 'weappProject.info',
-            iconId: signalCount > 0 ? 'pass' : 'warning',
-            tooltip: [...context.packageSignals, ...context.fileSignals].join('\n') || '暂无识别信号',
-          },
-          {
-            kind: 'action',
-            label: '打开项目文件',
-            command: 'weapp-vite.openProjectFile',
-            contextValue: 'weappProject.action',
-            iconId: 'go-to-file',
-          },
-          {
-            kind: 'action',
-            label: '项目概览',
-            command: 'weapp-vite.showProjectInfo',
-            contextValue: 'weappProject.action',
+            contextValue: 'weappProject.group',
             iconId: 'info',
+            children: [
+              {
+                kind: 'info',
+                label: '包管理器',
+                description: context.packageManager,
+                contextValue: 'weappProject.info',
+                iconId: 'package',
+              },
+              {
+                kind: 'info',
+                label: '识别信号',
+                description: `${signalCount} 个`,
+                contextValue: 'weappProject.info',
+                iconId: signalCount > 0 ? 'pass' : 'warning',
+                tooltip: [...context.packageSignals, ...context.fileSignals].join('\n') || '暂无识别信号',
+              },
+              {
+                kind: 'action',
+                label: '打开项目文件',
+                command: 'weapp-vite.openProjectFile',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'go-to-file',
+              },
+              {
+                kind: 'action',
+                label: '项目概览',
+                command: 'weapp-vite.showProjectInfo',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'info',
+              },
+            ],
+          },
+          {
+            kind: 'group',
+            label: 'Tasks',
+            description: '常用命令',
+            contextValue: 'weappProject.group',
+            iconId: 'terminal',
+            children: [
+              {
+                kind: 'action',
+                label: 'Dev',
+                command: 'weapp-vite.dev',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'debug-start',
+              },
+              {
+                kind: 'action',
+                label: 'Build',
+                command: 'weapp-vite.build',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'tools',
+              },
+              {
+                kind: 'action',
+                label: 'Open DevTools',
+                command: 'weapp-vite.open',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'device-mobile',
+              },
+              {
+                kind: 'action',
+                label: 'Doctor / Info',
+                command: 'weapp-vite.doctor',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'pulse',
+              },
+              {
+                kind: 'action',
+                label: 'Generate',
+                command: 'weapp-vite.generate',
+                commandTarget,
+                contextValue: 'weappProject.action',
+                iconId: 'new-file',
+              },
+            ],
           },
         ],
-      },
-      {
-        kind: 'group',
-        label: 'Tasks',
-        description: '常用命令',
-        contextValue: 'weappProject.group',
-        iconId: 'terminal',
-        children: [
-          {
-            kind: 'action',
-            label: 'Dev',
-            command: 'weapp-vite.dev',
-            contextValue: 'weappProject.action',
-            iconId: 'debug-start',
-          },
-          {
-            kind: 'action',
-            label: 'Build',
-            command: 'weapp-vite.build',
-            contextValue: 'weappProject.action',
-            iconId: 'tools',
-          },
-          {
-            kind: 'action',
-            label: 'Open DevTools',
-            command: 'weapp-vite.open',
-            contextValue: 'weappProject.action',
-            iconId: 'device-mobile',
-          },
-          {
-            kind: 'action',
-            label: 'Doctor / Info',
-            command: 'weapp-vite.doctor',
-            contextValue: 'weappProject.action',
-            iconId: 'pulse',
-          },
-          {
-            kind: 'action',
-            label: 'Generate',
-            command: 'weapp-vite.generate',
-            contextValue: 'weappProject.action',
-            iconId: 'new-file',
-          },
-        ],
-      },
-    ] satisfies WeappViteProjectNode[]
+      }
+    }) satisfies WeappViteProjectNode[]
   }
 }
