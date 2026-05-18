@@ -211,6 +211,9 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
 .VPSidebar a[href] .text::before {
   --guide-icon-bg: rgb(100 116 139 / 9%);
   --guide-icon-border: rgb(100 116 139 / 16%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 4h7l5 5v11H7z%22/%3E%3Cpath d=%22M14 4v5h5%22/%3E%3Cpath d=%22M9 13h6%22/%3E%3Cpath d=%22M9 17h4%22/%3E%3C/svg%3E"
+    )};
 
   content: "";
   width: 18px;
@@ -397,6 +400,146 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   --guide-icon-border: rgb(249 115 22 / 22%);
   --guide-icon: #{guide-icon(
       "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/handbook/"] .text::before {
+  --guide-icon-bg: rgb(14 165 233 / 11%);
+  --guide-icon-border: rgb(14 165 233 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 19.5A2.5 2.5 0 0 1 6.5 17H20%22/%3E%3Cpath d=%22M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z%22/%3E%3Cpath d=%22M8 7h8%22/%3E%3Cpath d=%22M8 11h6%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/handbook/sfc"] .text::before,
+.VPSidebar a[href="/handbook/debugging.html"] .text::before {
+  --guide-icon-bg: rgb(245 158 11 / 11%);
+  --guide-icon-border: rgb(245 158 11 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/handbook/wevu"] .text::before,
+.VPSidebar a[href="/handbook/performance.html"] .text::before {
+  --guide-icon-bg: rgb(16 185 129 / 11%);
+  --guide-icon-border: rgb(16 185 129 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M8 12h8%22/%3E%3Cpath d=%22M12 8v8%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/handbook/navigation.html"] .text::before,
+.VPSidebar a[href="/handbook/network.html"] .text::before,
+.VPSidebar a[href="/handbook/native-apis.html"] .text::before {
+  --guide-icon-bg: rgb(6 182 212 / 11%);
+  --guide-icon-border: rgb(6 182 212 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/handbook/subpackages.html"] .text::before,
+.VPSidebar a[href="/handbook/build-and-output.html"] .text::before,
+.VPSidebar a[href="/handbook/publish.html"] .text::before {
+  --guide-icon-bg: rgb(132 204 22 / 12%);
+  --guide-icon-border: rgb(132 204 22 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/config/"] .text::before {
+  --guide-icon-bg: rgb(100 116 139 / 11%);
+  --guide-icon-border: rgb(100 116 139 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 12h10%22/%3E%3Cpath d=%22M10 17h4%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/config/route-rules.html"] .text::before,
+.VPSidebar a[href="/config/subpackages.html"] .text::before,
+.VPSidebar a[href="/config/chunks.html"] .text::before {
+  --guide-icon-bg: rgb(132 204 22 / 12%);
+  --guide-icon-border: rgb(132 204 22 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/config/vue.html"] .text::before,
+.VPSidebar a[href="/config/wevu.html"] .text::before,
+.VPSidebar a[href="/config/wxml.html"] .text::before,
+.VPSidebar a[href="/config/wxs.html"] .text::before {
+  --guide-icon-bg: rgb(20 184 166 / 11%);
+  --guide-icon-border: rgb(20 184 166 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/config/worker.html"] .text::before,
+.VPSidebar a[href="/config/hmr.html"] .text::before,
+.VPSidebar a[href="/config/analyze.html"] .text::before,
+.VPSidebar a[href="/config/web.html"] .text::before {
+  --guide-icon-bg: rgb(244 63 94 / 11%);
+  --guide-icon-border: rgb(244 63 94 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/wevu/"] .text::before {
+  --guide-icon-bg: rgb(16 185 129 / 11%);
+  --guide-icon-border: rgb(16 185 129 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 9v6%22/%3E%3Cpath d=%22M9 12h6%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/wevu/vue-sfc"] .text::before,
+.VPSidebar a[href="/wevu/api-package.html"] .text::before,
+.VPSidebar a[href="/wevu/jsx-runtime.html"] .text::before {
+  --guide-icon-bg: rgb(20 184 166 / 11%);
+  --guide-icon-border: rgb(20 184 166 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/wevu/store.html"] .text::before,
+.VPSidebar a[href="/wevu/router.html"] .text::before,
+.VPSidebar a[href="/wevu/fetch.html"] .text::before {
+  --guide-icon-bg: rgb(6 182 212 / 11%);
+  --guide-icon-border: rgb(6 182 212 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/packages/"] .text::before {
+  --guide-icon-bg: rgb(34 197 94 / 11%);
+  --guide-icon-border: rgb(34 197 94 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/packages/weapi/"] .text::before {
+  --guide-icon-bg: rgb(14 165 233 / 11%);
+  --guide-icon-border: rgb(14 165 233 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href^="/packages/weapi/alipay-compat-matrix"] .text::before,
+.VPSidebar a[href^="/packages/weapi/douyin-compat-matrix"] .text::before,
+.VPSidebar a[href="/packages/weapi/compat-overview.html"] .text::before {
+  --guide-icon-bg: rgb(244 63 94 / 11%);
+  --guide-icon-border: rgb(244 63 94 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E"
     )};
 }
 
