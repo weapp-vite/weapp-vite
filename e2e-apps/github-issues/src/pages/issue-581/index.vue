@@ -13,10 +13,15 @@ function fetchIssue581Rows(): Issue581Row[] {
   return [{ name: '123' }, { name: '456' }]
 }
 
+function createIssue581Rows(names: string[]): Issue581Row[] {
+  return names.map(name => ({ name }))
+}
+
 function useIssue581List() {
   const queryData = ref<Issue581Row[]>()
   const state = reactive([{ name: 'init' }])
   const loading = ref(true)
+  const flushCount = ref(0)
 
   watch(queryData, (newData) => {
     state.push(...newData || [])
@@ -25,11 +30,19 @@ function useIssue581List() {
   Promise.resolve().then(() => {
     loading.value = false
     queryData.value = fetchIssue581Rows()
+    flushCount.value += 1
   })
 
   return {
     state,
     loading,
+    flushCount,
+    appendRows(names: string[]) {
+      loading.value = true
+      queryData.value = createIssue581Rows(names)
+      loading.value = false
+      flushCount.value += 1
+    },
   }
 }
 
@@ -40,8 +53,14 @@ function _runE2E() {
     ok: true,
     issue: 581,
     loading: back.loading.value,
+    flushCount: back.flushCount.value,
     rows: back.state.map(row => row.name),
   }
+}
+
+function _appendIssue581Rows(names: string[]) {
+  back.appendRows(names)
+  return _runE2E()
 }
 </script>
 
@@ -50,7 +69,12 @@ function _runE2E() {
     <view class="issue581-title">
       issue-581 reactive array flush
     </view>
-    <view class="issue581-loading" :data-loading="back.loading ? 'true' : 'false'">
+    <view
+      class="issue581-loading"
+      :data-flush-count="back.flushCount"
+      :data-loading="back.loading ? 'true' : 'false'"
+      :data-row-count="back.state.length"
+    >
       {{ back.loading ? 'loading' : 'loaded' }}
     </view>
     <view

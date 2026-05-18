@@ -739,6 +739,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('wx:for="{{back.state}}"')
     expect(pageWxml).toContain('data-issue581-name="{{value.name}}"')
     expect(pageWxml).toContain('data-loading="{{back.loading ? \'true\' : \'false\'}}"')
+    expect(pageWxml).toContain('data-row-count="{{back.state.length}}"')
     expect(pageJs).toContain('fetchIssue581Rows')
     expect(pageJs).toContain('_runE2E')
   })
