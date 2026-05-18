@@ -379,10 +379,14 @@ export function getEditor(documentOrEditor: any) {
   return null
 }
 
-function getPackageManager(packageJson: Record<string, any>) {
+function getPackageManagerFromPackageJson(packageJson: Record<string, any> | null) {
   const packageManager = packageJson?.packageManager
 
   if (typeof packageManager === 'string') {
+    if (packageManager.startsWith('pnpm@')) {
+      return 'pnpm'
+    }
+
     if (packageManager.startsWith('yarn@')) {
       return 'yarn'
     }
@@ -392,19 +396,54 @@ function getPackageManager(packageJson: Record<string, any>) {
     }
   }
 
+  return null
+}
+
+async function getPackageManagerFromLockfile(folderPath: string) {
+  if (await pathExists(path.join(folderPath, 'pnpm-lock.yaml'))) {
+    return 'pnpm'
+  }
+
+  if (await pathExists(path.join(folderPath, 'yarn.lock'))) {
+    return 'yarn'
+  }
+
+  if (
+    await pathExists(path.join(folderPath, 'package-lock.json'))
+    || await pathExists(path.join(folderPath, 'npm-shrinkwrap.json'))
+  ) {
+    return 'npm'
+  }
+
+  return null
+}
+
+function getPackageManager(packageJson: Record<string, any> | null) {
+  const packageManager = getPackageManagerFromPackageJson(packageJson)
+
+  if (packageManager) {
+    return packageManager
+  }
+
   return 'pnpm'
 }
 
 async function getResolvedPackageManager(folderPath: string, packageJson: Record<string, any> | null, workspaceRoot: string) {
-  const currentPackageManager = getPackageManager(packageJson ?? {})
+  const directPackageManager = getPackageManagerFromPackageJson(packageJson)
 
-  if (typeof packageJson?.packageManager === 'string') {
-    return currentPackageManager
+  if (directPackageManager) {
+    return directPackageManager
   }
 
   let currentPath = folderPath
 
   while (isSameOrDescendantPath(currentPath, workspaceRoot)) {
+    const currentLockfilePackageManager = await getPackageManagerFromLockfile(currentPath)
+
+    if (currentLockfilePackageManager) {
+      return currentLockfilePackageManager
+    }
+
     const parentPath = path.dirname(currentPath)
 
     if (parentPath === currentPath || !isSameOrDescendantPath(parentPath, workspaceRoot)) {
@@ -412,15 +451,16 @@ async function getResolvedPackageManager(folderPath: string, packageJson: Record
     }
 
     const parentPackageJson = await readJsonFile(path.join(parentPath, 'package.json'))
+    const parentPackageManager = getPackageManagerFromPackageJson(parentPackageJson)
 
-    if (typeof parentPackageJson?.packageManager === 'string') {
-      return getPackageManager(parentPackageJson)
+    if (parentPackageManager) {
+      return parentPackageManager
     }
 
     currentPath = parentPath
   }
 
-  return currentPackageManager
+  return getPackageManager(packageJson)
 }
 
 async function getExactProjectContext(workspaceFolder: any, workspaceRoot = workspaceFolder.uri.fsPath) {

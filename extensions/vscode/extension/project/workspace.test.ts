@@ -441,16 +441,88 @@ it('resolves rooted usingComponents from the nearest monorepo project when app.c
   ])
 })
 
-it('discovers weapp-vite project contexts under a monorepo workspace root', async () => {
+it.each([
+  {
+    name: 'pnpm packageManager',
+    expectedPackageManager: 'pnpm',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        packageManager: 'pnpm@9.0.0',
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+    },
+  },
+  {
+    name: 'yarn packageManager',
+    expectedPackageManager: 'yarn',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        packageManager: 'yarn@4.0.0',
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+    },
+  },
+  {
+    name: 'npm packageManager',
+    expectedPackageManager: 'npm',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        packageManager: 'npm@10.0.0',
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+    },
+  },
+  {
+    name: 'pnpm lockfile',
+    expectedPackageManager: 'pnpm',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+      'pnpm-lock.yaml': 'lockfileVersion: 9.0\n',
+    },
+  },
+  {
+    name: 'yarn lockfile',
+    expectedPackageManager: 'yarn',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+      'yarn.lock': '# yarn lockfile\n',
+    },
+  },
+  {
+    name: 'npm lockfile',
+    expectedPackageManager: 'npm',
+    rootFiles: {
+      'package.json': JSON.stringify({
+        workspaces: [
+          'apps/*',
+        ],
+      }, null, 2),
+      'package-lock.json': '{}\n',
+    },
+  },
+])('discovers weapp-vite project contexts under a $name monorepo workspace root', async ({ expectedPackageManager, rootFiles }) => {
   const workspaceRoot = normalizeFsPath('/workspace')
   const projectRoot = normalizeFsPath('/workspace/apps/demo')
-  const fileContents = new Map<string, string>([
-    [normalizeFsPath('/workspace/package.json'), JSON.stringify({
-      packageManager: 'yarn@4.0.0',
-      workspaces: [
-        'apps/*',
-      ],
-    }, null, 2)],
+  const fileContents = new Map<string, string>(Object.entries(rootFiles).map(([fileName, content]) => [
+    normalizeFsPath(`/workspace/${fileName}`),
+    content,
+  ]))
+
+  for (const [filePath, content] of [
     [normalizeFsPath('/workspace/apps/demo/package.json'), JSON.stringify({
       scripts: {
         dev: 'wv dev',
@@ -466,7 +538,9 @@ it('discovers weapp-vite project contexts under a monorepo workspace root', asyn
         build: 'tsc -p tsconfig.json',
       },
     }, null, 2)],
-  ])
+  ] as Array<[string, string]>) {
+    fileContents.set(filePath, content)
+  }
 
   vi.doMock('vscode', () => {
     const mockVscode = {
@@ -571,7 +645,7 @@ it('discovers weapp-vite project contexts under a monorepo workspace root', asyn
   assert.equal(contexts.length, 1)
   assert.equal(contexts[0].workspaceFolder.uri.fsPath, projectRoot)
   assert.equal(contexts[0].packageJsonPath, normalizeFsPath('/workspace/apps/demo/package.json'))
-  assert.equal(contexts[0].packageManager, 'yarn')
+  assert.equal(contexts[0].packageManager, expectedPackageManager)
   assert.deepEqual(contexts[0].scripts, {
     dev: 'wv dev',
   })
