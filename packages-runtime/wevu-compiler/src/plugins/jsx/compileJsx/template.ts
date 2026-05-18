@@ -2,6 +2,7 @@ import type { File } from '@weapp-vite/ast/babelTypes'
 import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/types'
 import type { JsxCompileContext } from './types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
 import { compileRenderableExpression } from './render'
@@ -10,6 +11,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
   return {
     platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
     mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
+    formatWxml: options?.template?.formatWxml ?? false,
     warnings: [],
     inlineExpressions: [],
     inlineExpressionSeed: 0,
@@ -37,7 +39,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
 
   const template = compileRenderableExpression(renderExpression, context)
   return {
-    template,
+    template: context.formatWxml ? formatWxml(template) : template,
     warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
   }
@@ -63,6 +65,9 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   let template: string | undefined
   if (renderExpression) {
     template = compileRenderableExpression(renderExpression, context)
+    if (context.formatWxml) {
+      template = formatWxml(template)
+    }
   }
   else {
     context.warnings = context.warnings.map(message => (

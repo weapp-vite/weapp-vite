@@ -31,6 +31,7 @@ keywords:
   {
     removeComments?: boolean
     simplifyWhitespace?: boolean
+    formatWxml?: boolean | 'auto'
     htmlTagToWxml?: boolean | Record<string, string>
     htmlTagToWxmlTagClass?: boolean
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
@@ -54,6 +55,7 @@ export default defineConfig({
       template: {
         htmlTagToWxml: true,
         htmlTagToWxmlTagClass: true,
+        formatWxml: 'auto',
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: false,
         slotMultipleInstance: true,
@@ -77,6 +79,11 @@ export default defineConfig({
   - 启用后，`<h3 class="title" :class="dynamicCls" />` 会编译为带有稳定语义 class 的节点，静态 class 会拼合成 `h3 title`，动态 `:class` 保持原样。
   - 适合低成本还原 `h1/h2/h3/ul/ol/li/p/br/hr` 等 HTML 标签的默认外观。
   - 设为 `false` 时，只做标签名映射，不追加这层 class。
+- `formatWxml`：是否格式化 `.vue` / JSX 编译生成的 WXML。
+  - `auto` 或省略：开发态默认开启，生产构建默认关闭。
+  - `true`：始终输出带缩进和换行的 WXML，便于在开发者工具中调试。
+  - `false`：始终保持紧凑输出，适合对包体更敏感的场景。
+  - 当前只做标签层级缩进；含文本内容的元素会保持单行，避免重排文本空白语义。
 - `scopedSlotsCompiler`：作用域插槽编译策略。
   - `auto`：自动选择最小可用方案（默认）。
   - `augmented`：强制使用增强方案。

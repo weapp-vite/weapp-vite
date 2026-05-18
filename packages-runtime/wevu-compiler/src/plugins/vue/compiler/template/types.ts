@@ -82,6 +82,7 @@ export interface TransformContext {
   classStyleRuntime: ClassStyleRuntime
   objectLiteralBindMode: ObjectLiteralBindMode
   mustacheInterpolation: MustacheInterpolationMode
+  formatWxml: boolean
   classStyleBindings: ClassStyleBinding[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
@@ -129,6 +130,7 @@ export interface TemplateCompileOptions {
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode
   mustacheInterpolation?: MustacheInterpolationMode
+  formatWxml?: boolean
   wxsExtension?: string
   classStyleWxsSrc?: string
   wevuComponentTags?: Iterable<string>

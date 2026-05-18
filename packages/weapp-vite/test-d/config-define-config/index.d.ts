@@ -46,6 +46,7 @@ export interface WeappViteConfig {
     template?: {
       htmlTagToWxml?: boolean | Record<string, string>
       htmlTagToWxmlTagClass?: boolean
+      formatWxml?: boolean | 'auto'
       slotSingleRootNoWrapper?: boolean
     }
   }

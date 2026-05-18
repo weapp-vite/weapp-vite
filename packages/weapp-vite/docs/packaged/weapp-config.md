@@ -42,6 +42,12 @@ export default defineConfig({
 
 如果你的迁移策略是“先跑通，再用 CSS 逐步恢复默认外观”，这个开关很有价值；如果不希望产物里自动带这层语义 class，可以显式设为 `false`。
 
+### `vue.template.formatWxml`
+
+控制 `.vue` / JSX 编译生成的 WXML 是否格式化。默认 `auto`：开发态开启，生产构建关闭。显式设为 `true` 可始终输出带缩进和换行的 WXML，显式设为 `false` 可始终保持紧凑输出。
+
+格式化只处理标签层级缩进，含文本内容的元素会保持单行，避免重排文本空白语义。
+
 ### `layout`
 
 页面 layout 既可能来自项目级规则，也可能来自页面侧 `definePageMeta`。排查时先确认是哪一层生效。

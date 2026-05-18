@@ -84,6 +84,47 @@ describe('compileVueTemplateToWxml', () => {
     expect(normalized).toContain(`scene==null?undefined:scene.summary`)
   })
 
+  it('formats generated wxml when enabled without touching default compact output', () => {
+    const template = `
+<view class="page">
+  <view>
+    <view />
+  </view>
+</view>
+    `.trim()
+
+    const compact = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const formatted = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      formatWxml: true,
+    })
+
+    expect(compact.code).toBe('<view class="page"><view><view /></view></view>')
+    expect(formatted.code).toBe([
+      '<view class="page">',
+      '  <view>',
+      '    <view />',
+      '  </view>',
+      '</view>',
+      '',
+    ].join('\n'))
+  })
+
+  it('keeps text-bearing elements inline during wxml formatting', () => {
+    const template = `
+<view>
+  <text>Hello {{ name }}</text>
+  <view><text>Nested</text></view>
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      formatWxml: true,
+    })
+
+    expect(code).toContain('  <text>Hello {{name}}</text>\n')
+    expect(code).toContain('  <view>\n    <text>Nested</text>\n  </view>\n')
+  })
+
   it('collects component prop binding paths for auto function prop snapshots', () => {
     const template = `
 <view :callback="callback" />

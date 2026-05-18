@@ -40,6 +40,7 @@ const objectConfig = defineConfig({
           div: 'view',
         },
         htmlTagToWxmlTagClass: false,
+        formatWxml: 'auto',
         slotSingleRootNoWrapper: true,
       },
     },
@@ -92,6 +93,7 @@ expectAssignable<{
 } | undefined>(objectConfig.weapp?.analyze)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
+expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSingleRootNoWrapper)
 
 const promiseConfig = defineConfig(Promise.resolve({

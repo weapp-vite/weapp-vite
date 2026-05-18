@@ -3,6 +3,7 @@ import type { InlineExpressionAsset, TemplateCompileOptions } from '../../vue/co
 export interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
   mustacheInterpolation: NonNullable<TemplateCompileOptions['mustacheInterpolation']>
+  formatWxml: boolean
   warnings: string[]
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number

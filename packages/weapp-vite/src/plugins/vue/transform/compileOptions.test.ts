@@ -361,6 +361,74 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.htmlTagToWxmlTagClass).toBe(true)
   })
 
+  it('defaults formatWxml to dev mode and allows explicit overrides', () => {
+    const devOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    expect(devOptions.template.formatWxml).toBe(true)
+
+    const buildOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        isDev: false,
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    expect(buildOptions.template.formatWxml).toBe(false)
+
+    const explicitBuildOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        isDev: false,
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              formatWxml: true,
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    expect(explicitBuildOptions.template.formatWxml).toBe(true)
+  })
+
   it('allows disabling mapped tag class injection in compile options', () => {
     const options = createCompileVueFileOptions(
       {} as any,

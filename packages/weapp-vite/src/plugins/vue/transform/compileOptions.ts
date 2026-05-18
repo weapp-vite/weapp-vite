@@ -79,6 +79,10 @@ function buildCompileVueFileOptions(
   const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'js'
   const objectLiteralBindMode = configService.weappViteConfig?.vue?.template?.objectLiteralBindMode ?? 'runtime'
   const mustacheInterpolation = configService.weappViteConfig?.vue?.template?.mustacheInterpolation ?? 'compact'
+  const formatWxmlConfig = configService.weappViteConfig?.vue?.template?.formatWxml ?? 'auto'
+  const formatWxml = formatWxmlConfig === 'auto'
+    ? configService.isDev
+    : formatWxmlConfig
   const wxsEnabled = configService.weappViteConfig?.wxs !== false
   const wxsExtension = configService.outputExtensions?.wxs
   const templatePlatformOptions = resolveVueTemplatePlatformOptions({
@@ -194,6 +198,7 @@ function buildCompileVueFileOptions(
       classStyleRuntime: templatePlatformOptions.classStyleRuntime,
       objectLiteralBindMode,
       mustacheInterpolation,
+      formatWxml,
       wxsExtension: templatePlatformOptions.wxsExtension,
       classStyleWxsSrc,
     },

@@ -46,6 +46,8 @@
   把常见 HTML 标签映射为小程序内置标签。
 - `weapp.vue.template.htmlTagToWxmlTagClass`
   默认开启。映射发生时，会再补一个原标签名 class，方便你自己用 CSS 恢复默认外观。
+- `weapp.vue.template.formatWxml`
+  默认 `auto`。开发态会格式化生成的 WXML，生产构建保持紧凑输出；也可以显式设置 `true` 或 `false`。
 
 例如：
 

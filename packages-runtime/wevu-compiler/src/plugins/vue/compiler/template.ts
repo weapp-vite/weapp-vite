@@ -3,6 +3,7 @@ import {
   parse,
 } from '@vue/compiler-dom'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { getMiniProgramTemplatePlatform } from './template/platforms'
@@ -92,6 +93,7 @@ export function compileVueTemplateToWxml(
       classStyleRuntime: resolvedRuntime === 'wxs' ? 'wxs' : 'js',
       objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       mustacheInterpolation: options?.mustacheInterpolation ?? 'compact',
+      formatWxml: options?.formatWxml ?? false,
       classStyleBindings: [],
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,
@@ -117,6 +119,9 @@ export function compileVueTemplateToWxml(
       const ext = context.classStyleWxsExtension || 'wxs'
       const helperTag = buildClassStyleWxsTag(ext, context.classStyleWxsSrc)
       wxml = `${helperTag}\n${wxml}`
+    }
+    if (context.formatWxml) {
+      wxml = formatWxml(wxml)
     }
 
     const result: TemplateCompileResult = {

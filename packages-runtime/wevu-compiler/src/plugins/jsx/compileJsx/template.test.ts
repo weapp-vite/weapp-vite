@@ -23,6 +23,27 @@ describe.sequential('compileJsx template helpers', () => {
       },
     } as any)
     expect(customContext.mustacheInterpolation).toBe('spaced')
+    expect(customContext.formatWxml).toBe(false)
+  })
+
+  it('formats compiled jsx templates when template formatWxml is enabled', async () => {
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      'export default { render() { return <view><view /></view> } }',
+      '/project/src/pages/index/index.tsx',
+      {
+        template: {
+          formatWxml: true,
+        },
+      },
+    )
+
+    expect(result.template).toBe([
+      '<view>',
+      '  <view />',
+      '</view>',
+      '',
+    ].join('\n'))
   })
 
   it('rewrites missing default-export warning with filename', async () => {
