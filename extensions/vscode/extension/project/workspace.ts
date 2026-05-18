@@ -213,6 +213,18 @@ async function getExistingProjectFile(filePaths: string[]) {
   return null
 }
 
+function createProjectWorkspaceFolder(workspaceFolder: any, projectPath: string) {
+  if (path.normalize(workspaceFolder.uri.fsPath) === path.normalize(projectPath)) {
+    return workspaceFolder
+  }
+
+  return {
+    ...workspaceFolder,
+    name: path.basename(projectPath),
+    uri: vscode.Uri.file(projectPath),
+  }
+}
+
 export async function getProjectViteConfigPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
   if (!workspaceFolder) {
     return null
@@ -226,14 +238,11 @@ export async function getProjectViteConfigPath(workspaceFolder = getPrimaryWorks
 export async function getWeappViteProjectSignals(folderPath: string, packageJson?: Record<string, any> | null) {
   const resolvedPackageJson = packageJson ?? await readJsonFile(path.join(folderPath, 'package.json'))
   const viteConfigCandidates = PROJECT_VITE_CONFIG_FILE_NAMES.map(fileName => path.join(folderPath, fileName))
-  const appJsonCandidates = [
-    path.join(folderPath, 'src', 'app.json'),
-    path.join(folderPath, 'app.json'),
-  ]
+  const appEntryCandidates = PROJECT_APP_ENTRY_FILE_NAMES.map(fileName => path.join(folderPath, fileName))
   const packageSignals = []
   const fileSignals = []
   let hasWeappViteConfigSignal = false
-  let hasAppJsonSignal = false
+  let hasAppEntrySignal = false
   const dependencyBuckets = [
     resolvedPackageJson?.dependencies,
     resolvedPackageJson?.devDependencies,
@@ -270,10 +279,10 @@ export async function getWeappViteProjectSignals(folderPath: string, packageJson
     break
   }
 
-  for (const appJsonPath of appJsonCandidates) {
-    if (await pathExists(appJsonPath)) {
-      fileSignals.push(`存在 ${getRelativeDisplayPath(folderPath, appJsonPath)}`)
-      hasAppJsonSignal = true
+  for (const appEntryPath of appEntryCandidates) {
+    if (await pathExists(appEntryPath)) {
+      fileSignals.push(`存在 ${getRelativeDisplayPath(folderPath, appEntryPath)}`)
+      hasAppEntrySignal = true
       break
     }
   }
@@ -281,10 +290,10 @@ export async function getWeappViteProjectSignals(folderPath: string, packageJson
   return {
     packageSignals: [...new Set(packageSignals)],
     fileSignals: [...new Set(fileSignals)],
-    hasAppJsonSignal,
+    hasAppJsonSignal: hasAppEntrySignal,
     hasPackageSignal: packageSignals.length > 0,
     hasWeappViteConfigSignal,
-    isConfirmedWeappViteProject: packageSignals.length > 0 && (hasWeappViteConfigSignal || hasAppJsonSignal),
+    isConfirmedWeappViteProject: packageSignals.length > 0 && (hasWeappViteConfigSignal || hasAppEntrySignal),
     packageJson: resolvedPackageJson,
     scripts,
   }
@@ -386,7 +395,35 @@ function getPackageManager(packageJson: Record<string, any>) {
   return 'pnpm'
 }
 
-export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) {
+async function getResolvedPackageManager(folderPath: string, packageJson: Record<string, any> | null, workspaceRoot: string) {
+  const currentPackageManager = getPackageManager(packageJson ?? {})
+
+  if (typeof packageJson?.packageManager === 'string') {
+    return currentPackageManager
+  }
+
+  let currentPath = folderPath
+
+  while (isSameOrDescendantPath(currentPath, workspaceRoot)) {
+    const parentPath = path.dirname(currentPath)
+
+    if (parentPath === currentPath || !isSameOrDescendantPath(parentPath, workspaceRoot)) {
+      break
+    }
+
+    const parentPackageJson = await readJsonFile(path.join(parentPath, 'package.json'))
+
+    if (typeof parentPackageJson?.packageManager === 'string') {
+      return getPackageManager(parentPackageJson)
+    }
+
+    currentPath = parentPath
+  }
+
+  return currentPackageManager
+}
+
+async function getExactProjectContext(workspaceFolder: any, workspaceRoot = workspaceFolder.uri.fsPath) {
   if (!workspaceFolder) {
     return null
   }
@@ -404,11 +441,80 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
     workspaceFolder,
     packageJsonPath: await pathExists(packageJsonPath) ? packageJsonPath : null,
     packageJson: projectSignals.packageJson,
-    packageManager: getPackageManager(packageJson),
+    packageManager: await getResolvedPackageManager(folderPath, packageJson, workspaceRoot),
     scripts: projectSignals.scripts,
     packageSignals: projectSignals.packageSignals,
     fileSignals: projectSignals.fileSignals,
   }
+}
+
+export async function getProjectContextCandidates(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return []
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath
+  const exactContext = await getExactProjectContext(workspaceFolder, workspaceRoot)
+  const contexts = exactContext ? [exactContext] : []
+  const seenProjectPaths = new Set(contexts.map(context => path.normalize(context.workspaceFolder.uri.fsPath)))
+
+  if (typeof vscode.workspace.findFiles !== 'function' || !('RelativePattern' in vscode)) {
+    return contexts
+  }
+
+  const packageJsonUris = await vscode.workspace.findFiles(
+    new vscode.RelativePattern(workspaceRoot, '**/package.json'),
+    '**/{node_modules,dist,coverage,.cache,.codex-tmp,.minidev,.turbo,.weapp-vite}/**',
+    200,
+  )
+
+  for (const packageJsonUri of packageJsonUris) {
+    const projectPath = path.dirname(packageJsonUri.fsPath)
+    const normalizedProjectPath = path.normalize(projectPath)
+
+    if (seenProjectPaths.has(normalizedProjectPath)) {
+      continue
+    }
+
+    const packageJson = await readJsonFile(packageJsonUri.fsPath)
+    const projectSignals = await getWeappViteProjectSignals(projectPath, packageJson)
+
+    if (!projectSignals.isConfirmedWeappViteProject) {
+      continue
+    }
+
+    const projectWorkspaceFolder = createProjectWorkspaceFolder(workspaceFolder, projectPath)
+
+    contexts.push({
+      workspaceFolder: projectWorkspaceFolder,
+      packageJsonPath: packageJsonUri.fsPath,
+      packageJson: projectSignals.packageJson,
+      packageManager: await getResolvedPackageManager(projectPath, packageJson, workspaceRoot),
+      scripts: projectSignals.scripts,
+      packageSignals: projectSignals.packageSignals,
+      fileSignals: projectSignals.fileSignals,
+    })
+    seenProjectPaths.add(normalizedProjectPath)
+  }
+
+  return contexts.sort((left, right) => {
+    const leftPath = left.workspaceFolder.uri.fsPath
+    const rightPath = right.workspaceFolder.uri.fsPath
+    const leftDepth = path.relative(workspaceRoot, leftPath).split(path.sep).filter(Boolean).length
+    const rightDepth = path.relative(workspaceRoot, rightPath).split(path.sep).filter(Boolean).length
+
+    return leftDepth - rightDepth || leftPath.localeCompare(rightPath)
+  })
+}
+
+export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return null
+  }
+
+  const [context] = await getProjectContextCandidates(workspaceFolder)
+
+  return context ?? null
 }
 
 export async function findNearestWeappViteProjectWorkspaceFolder(startPath: string) {

@@ -24,9 +24,11 @@ import {
   getAppJsonTextWithAddedSpecificRoute,
   getCurrentPageRouteCandidate,
   getCurrentPageRouteLocation,
+  getDocumentProjectWorkspaceFolder,
   getEditor,
   getPrimaryWorkspaceFolder,
   getProjectContext,
+  getProjectContextCandidates,
   getProjectIssueSnapshot,
   getProjectNavigationItems,
   getVueUsingComponentFileTarget,
@@ -46,6 +48,9 @@ import {
   OUTPUT_CHANNEL_NAME,
   TERMINAL_NAME,
 } from '../shared/constants'
+import {
+  getRelativeDisplayPath,
+} from '../shared/pathUtils'
 
 const TRAILING_FILE_SEGMENT_PATTERN = /\/[^/]+$/u
 
@@ -171,10 +176,38 @@ async function ensureProjectContext(operationLabel: string) {
     return null
   }
 
-  const context = await getProjectContext(workspaceFolder)
+  const activeDocument = vscode.window.activeTextEditor?.document
+  const activeWorkspaceFolder = activeDocument
+    ? await getProjectContext(await getDocumentProjectWorkspaceFolder(activeDocument))
+    : null
 
-  if (context) {
-    return context
+  if (activeWorkspaceFolder) {
+    return activeWorkspaceFolder
+  }
+
+  const contexts = await getProjectContextCandidates(workspaceFolder)
+
+  if (contexts.length === 1) {
+    return contexts[0]
+  }
+
+  if (contexts.length > 1) {
+    const selected = await vscode.window.showQuickPick(contexts.map((context) => {
+      const relativePath = getRelativeDisplayPath(workspaceFolder.uri.fsPath, context.workspaceFolder.uri.fsPath)
+
+      return {
+        label: context.workspaceFolder.name,
+        description: relativePath || '.',
+        detail: [...context.packageSignals, ...context.fileSignals].join(' / '),
+        context,
+      }
+    }), {
+      placeHolder: `选择要${operationLabel}的 weapp-vite 项目`,
+      matchOnDescription: true,
+      matchOnDetail: true,
+    })
+
+    return selected?.context ?? null
   }
 
   void vscode.window.showWarningMessage('weapp-vite: 当前工作区未识别为 weapp-vite 项目。')

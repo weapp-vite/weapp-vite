@@ -441,6 +441,143 @@ it('resolves rooted usingComponents from the nearest monorepo project when app.c
   ])
 })
 
+it('discovers weapp-vite project contexts under a monorepo workspace root', async () => {
+  const workspaceRoot = normalizeFsPath('/workspace')
+  const projectRoot = normalizeFsPath('/workspace/apps/demo')
+  const fileContents = new Map<string, string>([
+    [normalizeFsPath('/workspace/package.json'), JSON.stringify({
+      packageManager: 'yarn@4.0.0',
+      workspaces: [
+        'apps/*',
+      ],
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/package.json'), JSON.stringify({
+      scripts: {
+        dev: 'wv dev',
+      },
+      dependencies: {
+        'weapp-vite': 'workspace:*',
+      },
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/apps/demo/src/app.json'), '{}'],
+    [normalizeFsPath('/workspace/packages/tooling/package.json'), JSON.stringify({
+      scripts: {
+        build: 'tsc -p tsconfig.json',
+      },
+    }, null, 2)],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'workspace',
+            uri: {
+              fsPath: workspaceRoot,
+              path: workspaceRoot,
+            },
+          },
+        ],
+        getWorkspaceFolder: () => ({
+          name: 'workspace',
+          uri: {
+            fsPath: workspaceRoot,
+            path: workspaceRoot,
+          },
+        }),
+        findFiles: async () => [
+          {
+            fsPath: normalizeFsPath('/workspace/package.json'),
+            path: '/workspace/package.json',
+          },
+          {
+            fsPath: normalizeFsPath('/workspace/apps/demo/package.json'),
+            path: '/workspace/apps/demo/package.json',
+          },
+          {
+            fsPath: normalizeFsPath('/workspace/packages/tooling/package.json'),
+            path: '/workspace/packages/tooling/package.json',
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    getProjectContext,
+    getProjectContextCandidates,
+  } = await import('./workspace')
+
+  const contexts = await getProjectContextCandidates({
+    name: 'workspace',
+    uri: {
+      fsPath: workspaceRoot,
+      path: workspaceRoot,
+    },
+  })
+  const context = await getProjectContext({
+    name: 'workspace',
+    uri: {
+      fsPath: workspaceRoot,
+      path: workspaceRoot,
+    },
+  })
+
+  assert.equal(contexts.length, 1)
+  assert.equal(contexts[0].workspaceFolder.uri.fsPath, projectRoot)
+  assert.equal(contexts[0].packageJsonPath, normalizeFsPath('/workspace/apps/demo/package.json'))
+  assert.equal(contexts[0].packageManager, 'yarn')
+  assert.deepEqual(contexts[0].scripts, {
+    dev: 'wv dev',
+  })
+  assert.equal(context?.workspaceFolder.uri.fsPath, projectRoot)
+})
+
 it('updates app.json routes when a page directory moves', async () => {
   const fileContents = new Map<string, string>([
     [normalizeFsPath('/workspace/src/app.json'), JSON.stringify({
