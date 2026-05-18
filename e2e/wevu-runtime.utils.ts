@@ -22,6 +22,7 @@ const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
   'pages/class-computed/index',
   'pages/function-props-auto/index',
   'pages/function-props-disabled/index',
+  'pages/function-props-dynamic/index',
   'pages/template-compat/index',
   'pages/wevu-inline-object-reactivity-repro/index',
 ])

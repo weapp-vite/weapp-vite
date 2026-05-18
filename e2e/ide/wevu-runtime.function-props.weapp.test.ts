@@ -49,10 +49,17 @@ describe.sequential('wevu runtime function props (weapp e2e)', () => {
 
     const autoResult = await runRouteE2E(miniProgram, '/pages/function-props-auto/index')
     expect(autoResult.checks?.callbackReceived).toBe(true)
+    expect(autoResult.checks?.handlerReceived).toBe(true)
     expect(autoResult.checks?.parentCallbackCalled).toBe(true)
+    expect(autoResult.checks?.parentHandlerCalled).toBe(true)
 
     const disabledResult = await runRouteE2E(miniProgram, '/pages/function-props-disabled/index')
     expect(disabledResult.checks?.callbackFiltered).toBe(true)
+    expect(disabledResult.checks?.handlerFiltered).toBe(true)
     expect(disabledResult.checks?.parentCallbackNotCalled).toBe(true)
+
+    const dynamicResult = await runRouteE2E(miniProgram, '/pages/function-props-dynamic/index')
+    expect(dynamicResult.checks?.dynamicHandlerReceived).toBe(true)
+    expect(dynamicResult.checks?.parentDynamicHandlerCalled).toBe(true)
   })
 })

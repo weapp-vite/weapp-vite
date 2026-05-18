@@ -17,22 +17,34 @@ export default defineComponent({
       return value
     }
 
+    const handlers = {
+      save(payload: string) {
+        const value = `handler:${payload}`
+        calls.value.push(value)
+        return value
+      },
+    }
+
     async function runE2E() {
       await nextTick()
       const pages = getCurrentPages() as any[]
       const page = pages[pages.length - 1]
       const child = page?.selectComponent?.('#function-prop-child')
       const callbackResult = child?.invokeCallback?.('auto')
+      const handlerResult = child?.invokeHandler?.('member')
 
       const checks = {
         childFound: Boolean(child),
         callbackReceived: callbackResult?.type === 'function' && callbackResult?.value === 'callback:auto',
+        handlerReceived: handlerResult?.type === 'function' && handlerResult?.value === 'handler:member',
         parentCallbackCalled: calls.value.includes('callback:auto'),
+        parentHandlerCalled: calls.value.includes('handler:member'),
       }
 
       const result = buildResult('function-props-auto', checks, {
         calls: calls.value,
         callbackResult,
+        handlerResult,
       })
       __e2e.value = result
       __e2eText.value = stringifyResult(result)
@@ -43,6 +55,7 @@ export default defineComponent({
       __e2e,
       __e2eText,
       callback,
+      handlers,
       runE2E,
       _runE2E: runE2E,
     }
@@ -61,6 +74,7 @@ export default defineComponent({
     <x-function-prop-child
       id="function-prop-child"
       :callback="callback"
+      :handler="handlers.save"
     />
     <text selectable class="details">
       {{ __e2eText }}

@@ -11,6 +11,7 @@
     "pages/class-computed/index",
     "pages/function-props-auto/index",
     "pages/function-props-disabled/index",
+    "pages/function-props-dynamic/index",
     "pages/root-guard/index",
     "pages/style-matrix/index",
     "pages/template-compat/index",

@@ -86,6 +86,15 @@ function collectFunctionPropPath(rawExpValue: string): string | null {
   return parts.join('.')
 }
 
+function isComputedMemberExpression(rawExpValue: string): boolean {
+  const parsed = parseBabelExpression(rawExpValue)
+  if (!parsed) {
+    return false
+  }
+  const normalized = unwrapTsExpression(parsed)
+  return normalized.type === 'MemberExpression' && normalized.computed
+}
+
 export function transformBindDirective(
   node: DirectiveNode,
   context: TransformContext,
@@ -105,7 +114,23 @@ export function transformBindDirective(
   if (options?.isComponent && !COMPONENT_NON_PROP_BINDINGS.has(argValue)) {
     const path = collectFunctionPropPath(rawExpValue)
     if (path) {
-      context.functionPropPaths.add(path)
+      if (path.includes('.')) {
+        const bindingRef = registerRuntimeBindingExpression(rawExpValue, context, { hint: `:${argValue} 函数 prop 绑定` })
+        if (bindingRef) {
+          const bindingName = bindingRef.split('[')[0] || bindingRef
+          context.functionPropPaths.add(bindingName)
+          return `${argValue}="${renderMustache(bindingRef, context)}"`
+        }
+      }
+      else {
+        context.functionPropPaths.add(path)
+      }
+    }
+    else if (isComputedMemberExpression(rawExpValue)) {
+      const runtimeAttr = createBindRuntimeAttr(argValue, rawExpValue, context)
+      if (runtimeAttr) {
+        return runtimeAttr
+      }
     }
   }
 

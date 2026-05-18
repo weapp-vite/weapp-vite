@@ -106,7 +106,13 @@ describe('compileVueTemplateToWxml', () => {
       { wevuComponentTags: ['van-cell'] },
     )
 
-    expect(result.functionPropPaths).toEqual(['callback', 'title', 'handlers.save', 'handlers.change'])
+    expect(result.code).toContain('on-save="{{__wv_bind_0}}"')
+    expect(result.code).toContain('dynamic="{{__wv_bind_1}}"')
+    expect(result.code).toContain('change="{{__wv_bind_2}}"')
+    expect(result.functionPropPaths).toEqual(['callback', 'title', '__wv_bind_0', '__wv_bind_2'])
+    expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === 'handlers.save')).toBe(true)
+    expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_1' && binding.exp === 'callbacks[id]')).toBe(true)
+    expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_2' && binding.exp === 'handlers.change')).toBe(true)
   })
 
   it('wraps object literal in v-bind attribute expression', () => {
