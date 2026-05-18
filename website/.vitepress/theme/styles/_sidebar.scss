@@ -269,6 +269,22 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
     )};
 }
 
+.VPSidebar a[href="/guide/skills.html"] .text::before {
+  --guide-icon-bg: rgb(99 102 241 / 11%);
+  --guide-icon-border: rgb(99 102 241 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2v5%22/%3E%3Cpath d=%22M12 17v5%22/%3E%3Cpath d=%22M4.93 4.93l3.54 3.54%22/%3E%3Cpath d=%22M15.53 15.53l3.54 3.54%22/%3E%3Cpath d=%22M2 12h5%22/%3E%3Cpath d=%22M17 12h5%22/%3E%3Cpath d=%22M4.93 19.07l3.54-3.54%22/%3E%3Cpath d=%22M15.53 8.47l3.54-3.54%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/guide/ai-workflows.html"] .text::before {
+  --guide-icon-bg: rgb(14 165 233 / 11%);
+  --guide-icon-border: rgb(14 165 233 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%224%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%2215%22 y=%2214%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Cpath d=%22M9 7h3a4 4 0 0 1 4 4v3%22/%3E%3Cpath d=%22m13 11 3 3 3-3%22/%3E%3C/svg%3E"
+    )};
+}
+
 .VPSidebar a[href^="/guide/directory-structure"] .text::before {
   --guide-icon-bg: rgb(16 185 129 / 12%);
   --guide-icon-border: rgb(16 185 129 / 24%);
