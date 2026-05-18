@@ -20,6 +20,8 @@ const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
   'pages/composition-api/index',
   'pages/composition-api-vue/index',
   'pages/class-computed/index',
+  'pages/function-props-auto/index',
+  'pages/function-props-disabled/index',
   'pages/template-compat/index',
   'pages/wevu-inline-object-reactivity-repro/index',
 ])
