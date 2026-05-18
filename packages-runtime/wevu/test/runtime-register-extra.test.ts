@@ -6,7 +6,7 @@ import {
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCurrentScope, nextTick, onScopeDispose, ref, setPageLayout, watch, watchEffect } from '@/index'
+import { getCurrentScope, nextTick, onScopeDispose, reactive, ref, setPageLayout, watch, watchEffect } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
@@ -344,6 +344,50 @@ describe('mountRuntimeInstance and teardown', () => {
 
     expect(getterCalls).toBe(0)
     expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
+
+    teardownRuntimeInstance(target)
+  })
+
+  it('keeps setup reactive array updates when another setup ref inside the same object flushes first', async () => {
+    const app = createApp({})
+    const target: any = {
+      route: 'pages/issue-581/index',
+      setData: vi.fn(),
+    }
+    const queryData = ref<{ name: string }[] | undefined>()
+    const isLoading = ref(true)
+
+    mountRuntimeInstance(target, app as any, undefined, () => {
+      const state = reactive([{ name: 'init' }])
+
+      watch(queryData, (newData) => {
+        state.push(...newData || [])
+      })
+
+      const back = {
+        state,
+        loading: isLoading,
+      }
+
+      return {
+        back,
+      }
+    })
+
+    target.setData.mockClear()
+    isLoading.value = false
+    queryData.value = [{ name: '123' }, { name: '456' }]
+    await nextTick()
+
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({
+      'back.loading': false,
+    }))
+
+    await nextTick()
+
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({
+      'back.state': [{ name: 'init' }, { name: '123' }, { name: '456' }],
+    }))
 
     teardownRuntimeInstance(target)
   })
