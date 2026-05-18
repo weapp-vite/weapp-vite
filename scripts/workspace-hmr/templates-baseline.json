@@ -71,6 +71,13 @@
         }
       }
     },
+    "e2e-apps/wevu-runtime-e2e": {
+      "thresholds": {
+        "maxPendingCount": 24,
+        "maxEmittedCount": 24
+      },
+      "scenarios": {}
+    },
     "templates/weapp-vite-lib-template": {
       "startupMs": 1256,
       "scenarios": {
