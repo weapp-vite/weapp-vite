@@ -33,13 +33,13 @@ catalog:
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/postcss': ^4.3.0
   '@tailwindcss/vite': ^4.3.0
-  '@types/node': ^25.8.0
+  '@types/node': ^25.9.0
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.7
   '@vue/compiler-core': ^3.5.34
   '@vue/compiler-dom': ^3.5.34
-  '@vue/language-core': ^3.2.9
+  '@vue/language-core': ^3.3.0
   antd-mini: ^3.4.3
   autoprefixer: ^10.5.0
   bundle-require: ^5.1.0
@@ -55,12 +55,12 @@ catalog:
   gm-crypto: ^0.1.12
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
-  lru-cache: ^11.3.6
+  lru-cache: ^11.4.0
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
   obug: ^2.1.1
-  oxc-parser: ^0.131.0
+  oxc-parser: ^0.132.0
   oxc-walker: ^1.0.0
   pathe: ^2.0.3
   pkg-types: ^2.3.1
@@ -79,7 +79,7 @@ catalog:
   vite: 8.0.13
   vite-plugin-inspect: ^11.3.3
   vue: ^3.5.34
-  vue-tsc: ^3.2.9
+  vue-tsc: ^3.3.0
   weapp-tailwindcss: ^4.12.0
   zod: ^4.4.3
 
