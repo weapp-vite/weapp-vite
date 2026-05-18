@@ -59,6 +59,16 @@ const PROJECT_APP_ENTRY_FILE_NAMES = [
   'app.config.cjs',
 ]
 
+export const WORKSPACE_FIND_FILES_EXCLUDE_PATTERN = '**/{.git,.hg,.svn,node_modules,.pnpm,dist,dist-*,build,coverage,.cache,.codex-tmp,.minidev,.turbo,.vite,.weapp-vite,.wevu-config,miniprogram_dist,miniprogram_npm,submodules}/**'
+
+export function findWorkspaceFiles(basePath: string, pattern: string, maxResults?: number) {
+  return vscode.workspace.findFiles(
+    new vscode.RelativePattern(basePath, pattern),
+    WORKSPACE_FIND_FILES_EXCLUDE_PATTERN,
+    maxResults,
+  )
+}
+
 function getUsingComponentCandidatePaths(componentPath: string) {
   const normalizedPath = componentPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
 
@@ -337,7 +347,7 @@ export async function getAppJsonPageRouteSuggestions(document: any) {
     '**/*.wxml',
   ]
   const files = await Promise.all(patterns.map(async (pattern) => {
-    return vscode.workspace.findFiles(new vscode.RelativePattern(appJsonDir, pattern))
+    return findWorkspaceFiles(appJsonDir, pattern)
   }))
   const routes = new Set<string>()
 
@@ -502,11 +512,7 @@ export async function getProjectContextCandidates(workspaceFolder = getPrimaryWo
     return contexts
   }
 
-  const packageJsonUris = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(workspaceRoot, '**/package.json'),
-    '**/{node_modules,dist,coverage,.cache,.codex-tmp,.minidev,.turbo,.weapp-vite}/**',
-    200,
-  )
+  const packageJsonUris = await findWorkspaceFiles(workspaceRoot, '**/package.json', 200)
 
   for (const packageJsonUri of packageJsonUris) {
     const projectPath = path.dirname(packageJsonUri.fsPath)
@@ -740,7 +746,7 @@ export async function getWeappPagesTreeSnapshot(workspaceFolder = getPrimaryWork
     '**/*.wxml',
   ]
   const pageFiles = await Promise.all(patterns.map(async (pattern) => {
-    return vscode.workspace.findFiles(new vscode.RelativePattern(appJsonDir, pattern))
+    return findWorkspaceFiles(appJsonDir, pattern)
   }))
   const declaredRoutes = new Set(collectAppJsonPageRoutes(appJson))
   const unregisteredRoutes = new Set<string>()
@@ -920,7 +926,7 @@ export async function getVueTextsWithMovedUsingComponentPath(
 ) {
   const appEntryPath = await getProjectAppEntryPath(workspaceFolder)
   const searchRoot = appEntryPath ? path.dirname(appEntryPath) : workspaceFolder.uri.fsPath
-  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const vueFiles = await findWorkspaceFiles(searchRoot, '**/*.vue')
   const updates = []
 
   for (const file of vueFiles) {
@@ -984,7 +990,7 @@ export async function getVueTextsWithRemovedUsingComponentPath(
 ) {
   const appEntryPath = await getProjectAppEntryPath(workspaceFolder)
   const searchRoot = appEntryPath ? path.dirname(appEntryPath) : workspaceFolder.uri.fsPath
-  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const vueFiles = await findWorkspaceFiles(searchRoot, '**/*.vue')
   const updates = []
 
   for (const file of vueFiles) {
@@ -1051,7 +1057,7 @@ export async function getProjectIssueSnapshot(workspaceFolder = getPrimaryWorksp
   const appJsonPath = pagesSnapshot?.appJsonPath ?? await getProjectAppJsonPath(context.workspaceFolder)
   const appEntryPath = await getProjectAppEntryPath(context.workspaceFolder)
   const searchRoot = appEntryPath ? path.dirname(appEntryPath) : context.workspaceFolder.uri.fsPath
-  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const vueFiles = await findWorkspaceFiles(searchRoot, '**/*.vue')
   const missingComponentEntries: WeappProjectIssueSnapshot['missingComponentEntries'] = []
 
   for (const file of vueFiles) {

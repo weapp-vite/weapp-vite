@@ -71,6 +71,59 @@ function normalizeFsPath(fsPath: string) {
   return path.normalize(fsPath)
 }
 
+it('excludes heavy generated and dependency folders from workspace file scans', async () => {
+  const findFilesCalls: Array<{
+    exclude: string | undefined
+    maxResults: number | undefined
+    pattern: { base: string, pattern: string }
+  }> = []
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        findFiles: async (pattern: { base: string, pattern: string }, exclude?: string, maxResults?: number) => {
+          findFilesCalls.push({
+            pattern,
+            exclude,
+            maxResults,
+          })
+
+          return []
+        },
+      },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    findWorkspaceFiles,
+    WORKSPACE_FIND_FILES_EXCLUDE_PATTERN,
+  } = await import('./workspace')
+
+  await findWorkspaceFiles('/workspace', '**/*.vue', 25)
+
+  assert.equal(findFilesCalls.length, 1)
+  assert.equal(findFilesCalls[0].pattern.base, '/workspace')
+  assert.equal(findFilesCalls[0].pattern.pattern, '**/*.vue')
+  assert.equal(findFilesCalls[0].exclude, WORKSPACE_FIND_FILES_EXCLUDE_PATTERN)
+  assert.equal(findFilesCalls[0].maxResults, 25)
+  assert.match(WORKSPACE_FIND_FILES_EXCLUDE_PATTERN, /node_modules/u)
+  assert.match(WORKSPACE_FIND_FILES_EXCLUDE_PATTERN, /\.pnpm/u)
+  assert.match(WORKSPACE_FIND_FILES_EXCLUDE_PATTERN, /\.codex-tmp/u)
+  assert.match(WORKSPACE_FIND_FILES_EXCLUDE_PATTERN, /submodules/u)
+})
+
 it('updates rooted usingComponents paths when a component file moves', async () => {
   const fileContents = new Map<string, string>([
     [normalizeFsPath('/workspace/src/app.json'), '{}\n'],
