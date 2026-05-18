@@ -23,6 +23,7 @@ export interface ResolvedSetDataOptions {
   toPlainMaxDepth: number
   toPlainMaxKeys: number
   includeFunctions: boolean
+  functionPaths: string[]
   pickSet: Set<string> | undefined
   omitSet: Set<string> | undefined
   shouldIncludeKey: (key: string) => boolean
@@ -75,6 +76,9 @@ export function resolveSetDataOptions(
     ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxKeys!))
     : Number.POSITIVE_INFINITY
   const includeFunctions = Boolean(setDataOptions?.includeFunctions)
+  const functionPaths = Array.isArray(setDataOptions?.functionPaths)
+    ? [...new Set(setDataOptions.functionPaths.filter(path => typeof path === 'string' && path.length > 0))]
+    : []
   const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
     ? new Set(setDataOptions!.pick)
     : undefined
@@ -114,6 +118,7 @@ export function resolveSetDataOptions(
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions,
+    functionPaths,
     pickSet,
     omitSet,
     shouldIncludeKey,

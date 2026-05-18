@@ -173,6 +173,7 @@ export function createScopedSlotComponent(
     forIndexSeed: 0,
     inlineExpressions: [],
     inlineExpressionSeed: 0,
+    functionPropPaths: new Set(),
   }
   const scopeMapping = collectScopePropMapping(context)
   const slotMapping = {

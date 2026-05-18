@@ -37,10 +37,11 @@ export interface DefineComponentOptions<
   /**
    * 允许函数值作为组件 prop 通过小程序 data/properties 链路传递。
    *
-   * 默认关闭：setup 返回函数仍只作为 methods 暴露，避免函数进入 setData 快照。
-   * 仅在迁移 Vue 组件或确实需要 `:callback="fn"` 这类函数 prop 时开启。
+   * - `auto` / undefined：默认由 SFC 编译器精确标记模板中的函数 prop 绑定。
+   * - `true`：手写组件或动态传参场景下全量允许函数进入快照。
+   * - `false`：关闭函数 prop 快照放行。
    */
-  allowFunctionProps?: boolean
+  allowFunctionProps?: boolean | 'auto'
   watch?: Record<string, any>
   setup?: SetupFunction<P, D, C, M, S>
   /**

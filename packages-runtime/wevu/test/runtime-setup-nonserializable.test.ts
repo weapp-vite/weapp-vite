@@ -1,3 +1,4 @@
+import { WEVU_FUNCTION_PROP_PATHS_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, getCurrentInstance, getCurrentSetupContext, ref } from '@/index'
 
@@ -111,6 +112,88 @@ describe('runtime: setup returns non-serializable values', () => {
     }), {})
     expect(mergedPayload.count).toBe(1)
     expect(mergedPayload.inc).toBe(firstPayload.inc)
+  })
+
+  it('keeps compiler-marked setup functions in setData by default', async () => {
+    defineComponent({
+      [WEVU_FUNCTION_PROP_PATHS_KEY]: ['inc'],
+      data: () => ({}),
+      setup() {
+        const count = ref(0)
+        function inc() {
+          count.value++
+          return count.value
+        }
+        function ignored() {
+          return 'ignored'
+        }
+        return { count, inc, ignored }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload.count).toBe(0)
+    expect(firstPayload.inc).toBeTypeOf('function')
+    expect('ignored' in firstPayload).toBe(false)
+    expect(inst.inc()).toBe(1)
+  })
+
+  it('filters compiler-marked setup functions when allowFunctionProps is disabled', async () => {
+    defineComponent({
+      [WEVU_FUNCTION_PROP_PATHS_KEY]: ['inc'],
+      allowFunctionProps: false,
+      data: () => ({}),
+      setup() {
+        function inc() {
+          return 'ok'
+        }
+        return { inc }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect('inc' in firstPayload).toBe(false)
+    expect(inst.inc()).toBe('ok')
+  })
+
+  it('keeps compiler-marked nested data functions in setData by default', async () => {
+    const save = vi.fn(() => 'saved')
+    defineComponent({
+      [WEVU_FUNCTION_PROP_PATHS_KEY]: ['handlers.save'],
+      data: () => ({
+        handlers: {
+          save,
+          reset: vi.fn(),
+        },
+      }),
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload.handlers.save).toBe(save)
+    expect('reset' in firstPayload.handlers).toBe(false)
+    expect(firstPayload.handlers.save()).toBe('saved')
+    expect(save).toHaveBeenCalledTimes(1)
   })
 
   it('keeps data functions in setData when allowFunctionProps is enabled', async () => {

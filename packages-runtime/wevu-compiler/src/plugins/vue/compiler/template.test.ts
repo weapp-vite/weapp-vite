@@ -84,6 +84,31 @@ describe('compileVueTemplateToWxml', () => {
     expect(normalized).toContain(`scene==null?undefined:scene.summary`)
   })
 
+  it('collects component prop binding paths for auto function prop snapshots', () => {
+    const template = `
+<view :callback="callback" />
+<Child
+  :callback="callback"
+  :title="title"
+  :on-save="handlers.save"
+  :class="classes"
+  :ref="childRef"
+  :key="id"
+  :dynamic="callbacks[id]"
+  @tap="callback"
+/>
+<van-cell :change="handlers.change" />
+    `.trim()
+
+    const result = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/FunctionProps/index.vue',
+      { wevuComponentTags: ['van-cell'] },
+    )
+
+    expect(result.functionPropPaths).toEqual(['callback', 'title', 'handlers.save', 'handlers.change'])
+  })
+
   it('wraps object literal in v-bind attribute expression', () => {
     const template = `
 <InfoBanner :root="{ a: 'aaaa' }" />

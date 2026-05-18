@@ -101,7 +101,7 @@ counter.inc()
 
 在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
 
-函数 prop 默认不会进入 `setData` 快照。迁移 Vue 组件并确实需要 `:callback="fn"` 时，可在组件上设置 `allowFunctionProps: true`，同时继续优先使用 `emit` / 小程序事件完成常规父子通信。
+SFC 中静态可识别的组件函数 prop 绑定默认会进入 `setData` 快照，例如 `:callback="fn"`、`:on-save="handlers.save"`。动态绑定或手写组件无法被编译器精确标记时，可设置 `allowFunctionProps: true` 全量放行；需要恢复严格过滤时，可设置 `allowFunctionProps: false`。常规父子通信仍可优先使用 `emit` / 小程序事件。
 
 `options` 支持：
 

@@ -63,6 +63,10 @@ export interface TransformScriptOptions {
    */
   inlineExpressions?: InlineExpressionAsset[]
   /**
+   * 模板中作为组件 prop 传递的函数候选路径。
+   */
+  functionPropPaths?: string[]
+  /**
    * 对 `<script setup>` 类型声明生成的结构化 props（如 Array/Object）放宽小程序运行时类型约束，
    * 以避免小程序属性校验对复杂表达式/代理值产生误报。
    */

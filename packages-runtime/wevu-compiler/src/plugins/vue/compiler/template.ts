@@ -104,6 +104,7 @@ export function compileVueTemplateToWxml(
       layoutHostIndexSeed: 0,
       inlineExpressions: [],
       inlineExpressionSeed: 0,
+      functionPropPaths: new Set(),
       wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
     }
 
@@ -144,6 +145,9 @@ export function compileVueTemplateToWxml(
     }
     if (context.inlineExpressions.length) {
       result.inlineExpressions = context.inlineExpressions
+    }
+    if (context.functionPropPaths.size) {
+      result.functionPropPaths = [...context.functionPropPaths]
     }
 
     return result

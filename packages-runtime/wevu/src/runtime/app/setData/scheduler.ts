@@ -28,6 +28,7 @@ export function createSetDataScheduler(options: {
   toPlainMaxDepth: number
   toPlainMaxKeys: number
   includeFunctions?: boolean
+  functionPaths: string[]
   debug: ((info: SetDataDebugInfo) => void) | undefined
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
@@ -55,6 +56,7 @@ export function createSetDataScheduler(options: {
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions = false,
+    functionPaths,
     debug,
     debugWhen,
     debugSampleRate,
@@ -111,6 +113,7 @@ export function createSetDataScheduler(options: {
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
+          functionPaths,
         }),
       }
     }
@@ -194,6 +197,7 @@ export function createSetDataScheduler(options: {
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions,
+    functionPaths,
   })
 
   const collectDiffSnapshot = () => {
@@ -230,6 +234,8 @@ export function createSetDataScheduler(options: {
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
+          functionPaths,
+          _path: key,
         })
       }
       latestStateTokens[key] = token
@@ -267,6 +273,8 @@ export function createSetDataScheduler(options: {
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
+          functionPaths,
+          _path: key,
         })
       }
       latestComputedTokens[key] = token
@@ -402,6 +410,7 @@ export function createSetDataScheduler(options: {
         toPlainMaxDepth,
         toPlainMaxKeys,
         includeFunctions,
+        functionPaths,
         plainCache,
         pendingPatches,
         fallbackTopKeys,

@@ -148,15 +148,14 @@ export default defineComponent({
 - 从原生小程序迁移时，如果已有成熟的 `properties` 定义，可以先保留，逐步迁移到 `props`。
 - 不建议同时定义 `props` 和 `properties`；如果同时存在，当前实现会优先采用显式传入的 `properties`。
 
-## 函数 prop（显式开启）
+## 函数 prop（默认精确识别）
 
-小程序运行时可以把函数值放在 data 中并作为组件 property 传递，但这类写法不适合作为默认通信方式。Wevu 默认仍会把 `setup()` 返回的函数提升为 methods，并从 `setData` 快照中过滤函数。
+小程序运行时可以把函数值放在 data 中并作为组件 property 传递。Wevu 会把 `setup()` 返回的函数提升为 methods，同时由 SFC 编译器标记模板里静态可识别的组件 prop 绑定路径，让这些函数按小程序语义进入 `setData` 快照。
 
-如果正在迁移 Vue 组件，且确实需要 `:callback="fn"` 这类函数 prop，可以在组件上显式开启：
+默认支持的写法包括 `:callback="callback"`、`:on-save="handlers.save"` 这类标识符或成员路径：
 
 ```ts
 defineComponent({
-  allowFunctionProps: true,
   props: {
     callback: Function,
   },
@@ -170,7 +169,7 @@ defineComponent({
 })
 ```
 
-开启后，data/setup 返回的函数会进入 Wevu 的快照并可作为 prop 传给子组件。常规父子通信仍建议优先使用 `emit` / 小程序事件。
+动态绑定（例如 `v-bind="props"`、`:callback="callbacks[id]"`）和手写非 SFC 组件无法被编译器精确标记；这类场景可设置 `allowFunctionProps: true` 全量放行。需要恢复严格过滤时，可设置 `allowFunctionProps: false`。
 
 ## Behavior 迁移补充（SFC 场景）
 

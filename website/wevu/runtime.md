@@ -79,7 +79,7 @@ Wevu 同时支持两种 props 定义方式：
 
 如果同时声明了 `props` 和 `properties`，当前实现会优先保留显式传入的 `properties`。
 
-函数 prop 默认不会进入 `setData` 快照。需要兼容 Vue 风格函数传参时，使用组件级 `allowFunctionProps: true` 显式开启；开启后可声明 `props: { callback: Function }` 并通过 `:callback="callback"` 传递。
+SFC 中静态可识别的组件函数 prop 绑定默认会进入 `setData` 快照，例如声明 `props: { callback: Function }` 后通过 `:callback="callback"` 传递。动态绑定或手写组件无法被编译器精确标记时，可使用组件级 `allowFunctionProps: true` 全量放行；需要恢复严格过滤时，可设置 `allowFunctionProps: false`。
 
 如果你使用 Weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
 

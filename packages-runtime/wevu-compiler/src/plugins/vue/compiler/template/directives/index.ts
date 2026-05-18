@@ -18,7 +18,7 @@ export function transformDirective(
   const { name, exp, arg } = node
 
   if (name === 'bind') {
-    return transformBindDirective(node, context, forInfo)
+    return transformBindDirective(node, context, forInfo, options)
   }
 
   if (name === 'on') {

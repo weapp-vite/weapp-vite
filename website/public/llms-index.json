@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-18T07:17:08.071Z",
+  "generatedAt": "2026-05-18T07:47:21.503Z",
   "site": "https://vite.icebreaker.top",
   "count": 263,
   "items": [
@@ -6288,7 +6288,7 @@
         "最终注册到原生时会发生什么",
         "代码示例",
         "优先级与选择建议",
-        "函数 prop（显式开启）",
+        "函数 prop（默认精确识别）",
         "Behavior 迁移补充（SFC 场景）",
         "写法 1： + defineComponent（最直观）"
       ],

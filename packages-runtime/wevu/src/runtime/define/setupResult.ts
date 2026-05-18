@@ -34,9 +34,10 @@ export function applySetupResult(
   runtime: any,
   target: any,
   result: any,
-  options?: { includeFunctionsInState?: boolean },
+  options?: { includeFunctionsInState?: boolean, functionPropPaths?: Set<string> },
 ) {
   const includeFunctionsInState = Boolean(options?.includeFunctionsInState)
+  const functionPropPaths = options?.functionPropPaths
   const declaredPropKeys = new Set<string>(
     Array.isArray(target?.[WEVU_PROP_KEYS_KEY]) ? target[WEVU_PROP_KEYS_KEY] : [],
   )
@@ -65,7 +66,7 @@ export function applySetupResult(
     if (typeof val === 'function') {
       const bound = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
       ;(methods as any)[key] = bound
-      if (includeFunctionsInState) {
+      if (includeFunctionsInState || functionPropPaths?.has(key)) {
         ;(state as any)[key] = bound
       }
       methodsChanged = true

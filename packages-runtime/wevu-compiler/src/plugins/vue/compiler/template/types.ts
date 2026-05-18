@@ -57,6 +57,7 @@ export interface TemplateCompileResult {
   templateRefs?: TemplateRefBinding[]
   layoutHosts?: LayoutHostBinding[]
   inlineExpressions?: InlineExpressionAsset[]
+  functionPropPaths?: string[]
 }
 
 /**
@@ -93,6 +94,7 @@ export interface TransformContext {
   layoutHostIndexSeed: number
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
+  functionPropPaths: Set<string>
   wevuComponentTags?: Set<string>
 }
 

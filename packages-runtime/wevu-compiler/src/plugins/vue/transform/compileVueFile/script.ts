@@ -78,6 +78,7 @@ export async function compileScriptPhase(
       templateRefs: templateCompiled?.templateRefs,
       layoutHosts: templateCompiled?.layoutHosts,
       inlineExpressions: templateCompiled?.inlineExpressions,
+      functionPropPaths: templateCompiled?.functionPropPaths,
       relaxStructuredTypeOnlyProps,
     })
     return {

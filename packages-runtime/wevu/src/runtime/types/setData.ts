@@ -190,6 +190,13 @@ export interface SetDataSnapshotOptions {
    * @internal
    */
   includeFunctions?: boolean
+
+  /**
+   * 允许函数进入 setData 快照的状态路径。
+   *
+   * @internal
+   */
+  functionPaths?: string[]
 }
 
 export interface SetDataDebugInfo {

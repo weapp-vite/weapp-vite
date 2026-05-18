@@ -11,6 +11,7 @@ describe('runtime: setData scheduler', () => {
       computedRefs: {},
       dirtyComputedKeys: new Set(),
       includeComputed: false,
+      functionPaths: [],
       setDataStrategy: 'diff',
       computedCompare: 'reference',
       computedCompareMaxDepth: 2,

@@ -3,4 +3,4 @@
 "create-weapp-vite": patch
 ---
 
-Wevu 组件新增 `allowFunctionProps` 显式开关，允许迁移 Vue 组件时把 data/setup 中的函数作为 prop 传递；默认仍过滤函数并优先推荐使用事件通信。
+Wevu 组件现在默认支持 SFC 编译器可静态识别的函数 prop 绑定路径，可在迁移 Vue/原生小程序组件时直接使用 `:callback="fn"`；动态绑定或手写组件仍可通过 `allowFunctionProps: true` 全量放行，`allowFunctionProps: false` 可显式关闭。

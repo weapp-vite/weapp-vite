@@ -2,7 +2,7 @@ import type { File as BabelFile, ObjectExpression, Program } from '@weapp-vite/a
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
-import { WEVU_IS_PAGE_KEY } from '@weapp-core/constants'
+import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
@@ -30,6 +30,23 @@ function hasStaticProperty(target: ObjectExpression, keyName: string) {
     }
   }
   return false
+}
+
+function injectFunctionPropPaths(componentOptionsObject: ObjectExpression, paths: string[]) {
+  const uniquePaths = [...new Set(paths)].filter(Boolean)
+  if (!uniquePaths.length) {
+    return false
+  }
+  if (hasStaticProperty(componentOptionsObject, WEVU_FUNCTION_PROP_PATHS_KEY)) {
+    return false
+  }
+  componentOptionsObject.properties.push(
+    t.objectProperty(
+      t.identifier(WEVU_FUNCTION_PROP_PATHS_KEY),
+      t.arrayExpression(uniquePaths.map(path => t.stringLiteral(path))),
+    ),
+  )
+  return true
 }
 
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
@@ -288,6 +305,16 @@ export function rewriteDefaultExport(
     }
     else {
       warn('无法自动注入内联表达式元数据：组件选项不是对象字面量。')
+    }
+  }
+
+  const functionPropPaths = options?.functionPropPaths ?? []
+  if (functionPropPaths.length) {
+    if (componentOptionsObject) {
+      transformed = injectFunctionPropPaths(componentOptionsObject, functionPropPaths) || transformed
+    }
+    else {
+      warn('无法自动注入函数 prop 元数据：组件选项不是对象字面量。')
     }
   }
 

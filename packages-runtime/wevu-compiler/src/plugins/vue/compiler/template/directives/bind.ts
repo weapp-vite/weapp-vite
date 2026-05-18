@@ -46,10 +46,51 @@ const SIMPLE_MEMBER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
 const isSimpleIdentifier = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 const isSimpleMemberPath = (value: string) => SIMPLE_MEMBER_PATH_RE.test(value)
 
+const COMPONENT_NON_PROP_BINDINGS = new Set([
+  'class',
+  'style',
+  'id',
+  'key',
+  'ref',
+  'is',
+  'slot',
+  'layout-host',
+])
+
+function collectFunctionPropPath(rawExpValue: string): string | null {
+  const parsed = parseBabelExpression(rawExpValue)
+  if (!parsed) {
+    return null
+  }
+  const normalized = unwrapTsExpression(parsed)
+  if (normalized.type === 'Identifier') {
+    return normalized.name
+  }
+  if (normalized.type !== 'MemberExpression' || normalized.computed) {
+    return null
+  }
+
+  const parts: string[] = []
+  let current: Expression = normalized
+  while (current.type === 'MemberExpression' && !current.computed) {
+    if (current.property.type !== 'Identifier') {
+      return null
+    }
+    parts.unshift(current.property.name)
+    current = unwrapTsExpression(current.object as Expression)
+  }
+  if (current.type !== 'Identifier') {
+    return null
+  }
+  parts.unshift(current.name)
+  return parts.join('.')
+}
+
 export function transformBindDirective(
   node: DirectiveNode,
   context: TransformContext,
   forInfo?: ForParseResult,
+  options?: { isComponent?: boolean },
 ): string | null {
   const { arg } = node
   if (!arg) {
@@ -59,6 +100,13 @@ export function transformBindDirective(
   const rawExpValue = getBindDirectiveExpression(node)
   if (!rawExpValue) {
     return null
+  }
+
+  if (options?.isComponent && !COMPONENT_NON_PROP_BINDINGS.has(argValue)) {
+    const path = collectFunctionPropPath(rawExpValue)
+    if (path) {
+      context.functionPropPaths.add(path)
+    }
   }
 
   if (argValue === 'key') {

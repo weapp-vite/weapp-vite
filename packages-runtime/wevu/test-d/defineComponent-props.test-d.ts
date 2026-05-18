@@ -54,3 +54,14 @@ defineComponent({
     return {}
   },
 })
+
+defineComponent({
+  allowFunctionProps: 'auto',
+  props: {
+    callback: Function as PropType<() => void>,
+  },
+  setup(props) {
+    expectType<(() => void) | undefined>(props.callback)
+    return {}
+  },
+})

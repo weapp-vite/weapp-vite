@@ -202,6 +202,19 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(code).toContain('__weapp_vite_inline_map')
   })
 
+  it('injects function prop path metadata into object options', () => {
+    const { transformed, code } = runRewrite(
+      'export default { setup() {} }',
+      {
+        functionPropPaths: ['callback', 'handlers.save'],
+      },
+    )
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('__wevuFunctionPropPaths: ["callback", "handlers.save"]')
+    expect(code).toContain('createWevuComponent')
+  })
+
   it('injects static setup seeds into data for first paint', () => {
     const { code } = runRewrite(
       `

@@ -28,6 +28,7 @@ function createBaseOptions(): {
       computedRefs: {},
       dirtyComputedKeys: new Set<string>(),
       includeComputed: false,
+      functionPaths: [],
       computedCompare: 'reference',
       computedCompareMaxDepth: 2,
       computedCompareMaxKeys: 10,

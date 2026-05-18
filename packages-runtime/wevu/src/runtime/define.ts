@@ -11,7 +11,7 @@ import type {
   MiniProgramComponentRawOptions,
   ShallowUnwrapRef,
 } from './types'
-import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { normalizeProps } from './define/props'
@@ -162,12 +162,30 @@ export function defineComponent(
     ...mpOptions
   } = resolvedOptions
 
-  const resolvedSetData = allowFunctionProps
+  const rawFunctionPropPaths = (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
+  const functionPropPaths: string[] = Array.isArray(rawFunctionPropPaths)
+    ? [...new Set(rawFunctionPropPaths.filter((path: unknown): path is string => typeof path === 'string' && path.length > 0))]
+    : []
+  delete (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
+
+  const resolvedSetData = allowFunctionProps === true
     ? {
         ...(setData ?? {}),
         includeFunctions: true,
+        functionPaths: functionPropPaths,
       }
-    : setData
+    : allowFunctionProps === false
+      ? setData
+      : functionPropPaths.length
+        ? {
+            ...(setData ?? {}),
+            functionPaths: functionPropPaths,
+          }
+        : setData
+  const setupFunctionPropKeys = new Set(
+    functionPropPaths
+      .filter(path => !path.includes('.')),
+  )
 
   const runtimeApp = createApp({
     data,
@@ -183,7 +201,8 @@ export function defineComponent(
       const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
       if (result && ctx) {
         applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>, {
-          includeFunctionsInState: Boolean(allowFunctionProps),
+          includeFunctionsInState: allowFunctionProps === true,
+          functionPropPaths: allowFunctionProps === false ? undefined : setupFunctionPropKeys,
         })
       }
       return result
