@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-18T08:55:28.270Z",
+  "generatedAt": "2026-05-18T08:59:47.007Z",
   "site": "https://vite.icebreaker.top",
   "count": 263,
   "items": [
@@ -1238,7 +1238,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-05-18",
       "source": "guide/ai.md"
     },
     {

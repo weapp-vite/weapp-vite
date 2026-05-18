@@ -18,17 +18,13 @@ date: 2026-05-03
 
 ## 什么时候需要安装
 
-| 场景                                | 推荐动作                                                       |
-| ----------------------------------- | -------------------------------------------------------------- |
-| 新项目通过 `create-weapp-vite` 创建 | 在脚手架交互提示里选择安装推荐 skills                          |
-| 已有项目接入 `weapp-vite`           | 手动执行 `npx skills add sonofmagic/skills`                    |
-| 直接维护本 monorepo                 | 执行 `pnpm skills:link`，同步 `skills/*` 与 `.claude/skills/*` |
-| 只想查看链接结果                    | 执行 `pnpm skills:link:dry`                                    |
+| 场景                                | 推荐动作                                    |
+| ----------------------------------- | ------------------------------------------- |
+| 新项目通过 `create-weapp-vite` 创建 | 在脚手架交互提示里选择安装推荐 skills       |
+| 已有项目接入 `weapp-vite`           | 手动执行 `npx skills add sonofmagic/skills` |
 
 ```sh
 npx skills add sonofmagic/skills
-pnpm skills:link
-pnpm skills:link:dry
 ```
 
 ## 公开 Skills 速查
