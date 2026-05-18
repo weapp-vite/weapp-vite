@@ -95,10 +95,46 @@ Component({ properties: { __wvSlotOwnerId: { type: String, value: "" }, __wvSlot
   <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[]}}" __wvSlotScope="{{__wvSlotScope}}" />
 </view>
 ",
-  "pages/index/index.__scoped-slot-default-0.js": "const require_src = require("../../weapp-vendors/wevu-src.js");
+  "pages/index/index.__scoped-slot-default-0.js": "const require_common = require("../../weapp-vendors/wevu-ref.js");
+const require_src = require("../../weapp-vendors/wevu-src.js");
 //#region \\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-default-0
 var createWevuScopedSlotComponent = (typeof globalThis !== "undefined" ? globalThis : void 0)?.__weapp_vite_createScopedSlotComponent ?? require_src.__wevuScopedSlotCreator;
-if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent();
+var __wevuComputed = { __wv_bind_0: function() {
+	return (() => {
+		let __wv_list_0 = [];
+		try {
+			__wv_list_0 = require_common.$(require_common.$(this.__wvOwnerProxy.tabItems));
+		} catch (__wv_err_0) {
+			__wv_list_0 = [];
+		}
+		if (Array.isArray(__wv_list_0)) return __wv_list_0.map((__wv_item_0, __wv_index_1) => {
+			return (() => {
+				try {
+					return __wv_item_0.to.name;
+				} catch (__wv_expr_err) {
+					return;
+				}
+			})();
+		});
+		else if (__wv_list_0 != null && typeof __wv_list_0 === "object") {
+			const __wv_res_0 = {};
+			const __wv_keys_0 = Object.keys(__wv_list_0);
+			for (let __wv_i_0 = 0; __wv_i_0 < __wv_keys_0.length; __wv_i_0++) {
+				const __wv_key_0 = __wv_keys_0[__wv_i_0];
+				const __wv_item_0 = __wv_list_0[__wv_key_0];
+				__wv_res_0[__wv_key_0] = (() => {
+					try {
+						return __wv_item_0.to.name;
+					} catch (__wv_expr_err) {
+						return;
+					}
+				})();
+			}
+			return __wv_res_0;
+		} else return [];
+	})();
+} };
+if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent({ computed: __wevuComputed });
 //#endregion
 ",
   "pages/index/index.__scoped-slot-default-0.json": "{
@@ -109,7 +145,7 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
   }
 }
 ",
-  "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wvOwner.tabItems}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
+  "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wvOwner.tabItems}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_bind_0[__wv_index_1]}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
   "pages/index/index.js": "//#region <fixture>/src/pages/index/index.vue
 require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
 	computed: { __wv_bind_0: function() {
