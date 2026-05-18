@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.3.1
+
+### Patch Changes
+
+- 🐛 **优化 VS Code Activity Bar 图标，改用更清晰的 24x24 单色线条图标，避免原多色品牌 Logo 在侧栏小尺寸下糊成一团。** [`6c4fc92`](https://github.com/weapp-vite/weapp-vite/commit/6c4fc92681ebeb86f09dfef00c8e15f72484f415) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展在无工作区窗口激活时，项目视图因为未注册而报 `No view is registered with id: weapp-vite.project` 的问题。** [`fe6cdab`](https://github.com/weapp-vite/weapp-vite/commit/fe6cdab1bb599a6847819b98050422d2e1b8d95d) by @sonofmagic
+
 ## 0.3.0
 
 ### Minor Changes
