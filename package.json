@@ -121,6 +121,7 @@
     "check:weapp-core-constants-changeset": "tsx scripts/check-weapp-core-constants-changeset.ts",
     "check:weapp-core-constants-dependency-range": "tsx scripts/check-weapp-core-constants-dependency-range.ts",
     "check:vscode-extension-changeset": "tsx scripts/check-vscode-extension-changeset.ts",
+    "check:website-sidebar-icons": "node --import tsx scripts/check-website-sidebar-icons.ts",
     "check:changeset:frontmatter": "node scripts/check-changeset-frontmatter.mjs",
     "check:rolldown:report": "node scripts/print-rolldown-versions.mjs --mode report",
     "check:rolldown:single-version": "node scripts/print-rolldown-versions.mjs",

@@ -129,8 +129,8 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Web 兼容矩阵', link: '/guide/web-compat-matrix' },
     ],
   },
-  { text: '生态集成', link: 'integration/tailwindcss' },
-  { text: '配置与 API', link: 'config' },
+  { text: '生态集成', link: '/integration/tailwindcss' },
+  { text: '配置与 API', link: '/config/' },
   { text: '常见问题', link: '/troubleshoot/index' },
   { text: '调试与贡献', link: '/guide/debug' },
   { text: '模块化风格', link: '/guide/module' },
@@ -642,7 +642,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Wevu 编译期配置', link: '/config/wevu' },
       { text: '开发态 HMR 配置', link: '/config/hmr' },
       { text: 'WXML 配置', link: '/config/wxml' },
-      { text: '🧪 WXS 配置', link: '/config/wxs' },
+      { text: 'WXS 配置', link: '/config/wxs' },
       { text: '共享配置', link: '/config/shared' },
     ],
   },
@@ -660,7 +660,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '实验能力',
     collapsed: false,
-    items: [{ text: '🧪 Web 运行时配置', link: '/config/web' }],
+    items: [{ text: 'Web 运行时配置', link: '/config/web' }],
   },
 ]
 // https://vitepress.dev/reference/site-config

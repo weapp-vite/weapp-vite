@@ -202,23 +202,13 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
     )};
 }
 
-.VPSidebar a[href^="/guide/"] .text,
-.VPSidebar a[href="/config.html"] .text,
-.VPSidebar a[href="/config/"] .text,
-.VPSidebar a[href^="/troubleshoot/"] .text,
-.VPSidebar a[href^="/deep/"] .text,
-.VPSidebar a[href^="/integration/"] .text {
+.VPSidebar a[href] .text {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-.VPSidebar a[href^="/guide/"] .text::before,
-.VPSidebar a[href="/config.html"] .text::before,
-.VPSidebar a[href="/config/"] .text::before,
-.VPSidebar a[href^="/troubleshoot/"] .text::before,
-.VPSidebar a[href^="/deep/"] .text::before,
-.VPSidebar a[href^="/integration/"] .text::before {
+.VPSidebar a[href] .text::before {
   --guide-icon-bg: rgb(100 116 139 / 9%);
   --guide-icon-border: rgb(100 116 139 / 16%);
 
