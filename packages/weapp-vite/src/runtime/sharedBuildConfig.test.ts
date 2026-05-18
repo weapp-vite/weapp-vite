@@ -183,6 +183,9 @@ describe('sharedBuildConfig', () => {
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src.js')
     expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/src-BdXSqz-9.mjs',
+    })).toBe('weapp-vendors/wevu-src.js')
+    expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
       moduleIds: [
         '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
