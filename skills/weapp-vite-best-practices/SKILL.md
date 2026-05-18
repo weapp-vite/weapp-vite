@@ -44,12 +44,13 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.typescript`
 3. 按目标启用能力：
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
-   - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`
+   - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
    - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`，分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`
    - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
@@ -58,6 +59,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
+   - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
 6. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
 
 ## 约束

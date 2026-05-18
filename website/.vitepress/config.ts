@@ -620,6 +620,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '基础目录与资源收集', link: '/config/paths' },
       { text: '构建输出与兼容', link: '/config/build-and-output' },
       { text: 'TypeScript 支持文件', link: '/config/typescript' },
+      { text: 'Analyze 报告配置', link: '/config/analyze' },
     ],
   },
   {

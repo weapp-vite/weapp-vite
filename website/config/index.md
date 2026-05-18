@@ -56,7 +56,7 @@ export default defineConfig({
 - 小程序源码入口、插件入口、静态资源复制
 - 自动路由、自动导入组件、分包、共享 chunk
 - Vue SFC / Wevu 编译期增强
-- 托管 TypeScript 支持文件
+- 托管 TypeScript 支持文件、analyze 报告
 - MCP、日志转发、运行时注入
 - Web 运行时、库模式、worker 构建
 
@@ -124,6 +124,7 @@ export default defineConfig(env => ({
 | 想按目录批量套 layout | [Route Rules 与 Layout](./route-rules.md) |
 | 项目有分包、独立分包、共享样式或分包独立 npm | [分包配置](./subpackages.md)、[npm 配置](./npm.md)、[共享 Chunk 配置](./chunks.md) |
 | 使用 Vue SFC / Wevu，需要调模板编译、setData 策略或 HMR | [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[开发态 HMR 配置](./hmr.md) |
+| 想把分包体积、重复模块和 HMR profile 纳入本地或 CI 检查 | [Analyze 报告配置](./analyze.md)、[分包配置](./subpackages.md)、[开发态 HMR 配置](./hmr.md) |
 | 想做浏览器预览、AI 协作、截图、日志桥接 | [共享配置](./shared.md)、[Web 运行时配置](./web.md) |
 | 想做小程序组件库或业务模块库 | [库模式配置](./lib.md) |
 
@@ -134,6 +135,7 @@ export default defineConfig(env => ({
 | [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / `copy` / `isAdditionalWxml` |
 | [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` / 顶层 `build.*` |
 | [TypeScript 支持文件](./typescript.md) | `.weapp-vite/tsconfig.*`、托管类型输出、`weapp.typescript` |
+| [Analyze 报告配置](./analyze.md) | `weapp.analyze.budgets`、历史快照、Markdown / PR 报告、HMR profile 分析 |
 | [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `appPrelude` / `forwardConsole` / `injectWeapi` / `injectWebRuntimeGlobals` / `mcp` |
 | [Route Rules 与 Layout](./route-rules.md) | `weapp.routeRules`、layout 默认值、`layouts/` 约定 |
 | [JSON 配置](./json.md) | `jsonAlias` / `json.defaults` / `json.mergeStrategy` |

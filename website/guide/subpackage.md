@@ -259,13 +259,17 @@ export default defineConfig({
 pnpm run analyze
 ```
 
-默认会输出人类可读摘要。需要对接 CI 或自定义检查时，用 JSON 模式：
+默认会输出人类可读摘要，并在可用时打开分析仪表盘。需要对接 CI 或自定义检查时，用 JSON、Markdown 或预算检查模式：
 
 ```bash
 pnpm run analyze -- --json --output report/analyze.json
+pnpm run analyze -- --markdown --output report/analyze.md
+pnpm run analyze -- --budget-check
 ```
 
-输出文件会包含主包、分包、共享 chunk 与源码映射，便于做体积预警和规则校验。
+输出文件会包含主包、分包、共享 chunk、源码映射和组件依赖建议，便于做体积预警和规则校验。若配置了 `weapp.analyze.budgets`，`--budget-check` 会在超限时返回非 0 退出码；若保持默认历史快照，Markdown / PR 报告会对比上一份快照并输出增量归因。
+
+更多预算和历史快照配置见 [Analyze 报告配置](/config/analyze.md)。
 
 ## 常见问题
 

@@ -101,7 +101,7 @@ wv build [root]
 
 ### 3) `analyze`
 
-分析小程序分包产物映射、组件依赖链路，或输出 Web 静态分析结果。
+分析小程序分包产物映射、组件依赖链路、预算与增量归因，或输出 Web 静态分析结果。
 
 ```bash
 wv analyze [root]
@@ -109,14 +109,34 @@ wv analyze [root]
 
 参数：
 
-| 参数                        | 说明                              |
-| --------------------------- | --------------------------------- |
-| `--json`                    | 输出 JSON 结果（stdout）          |
-| `--output <file>`           | 将分析结果写入文件                |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）       |
-| `--project-config <path>`   | 小程序 `project.config.json` 路径 |
+| 参数                        | 说明                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `--hmr-profile [file]`      | 分析 HMR JSONL profile，省略值时优先读取 `weapp.hmr.profileJson`，否则回退默认路径 |
+| `--json`                    | 输出 JSON 结果（stdout）                                                           |
+| `--markdown`                | 输出完整 Markdown 报告                                                             |
+| `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |
+| `--budget-check`            | 检查 analyze 预算，超限时返回非 0 退出码                                           |
+| `--output <file>`           | 将分析结果写入文件，格式随 `--json` / `--markdown` / `--report pr` 决定            |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                                                        |
+| `--project-config <path>`   | 小程序 `project.config.json` 路径                                                  |
 
 小程序模式下，JSON 结果会包含 `components` 字段，用于展示组件被哪些页面递归引用、组件所属主包/分包、总使用次数，以及主包组件跨分包使用时的优化建议。默认终端摘要会展示组件建议数量和前几条高优先级建议，完整列表可通过 `--json` 或 `--output` 查看。
+
+`weapp.analyze.budgets` 可覆盖默认总包、主包、普通分包、独立分包预算与预警比例。配合 `--budget-check` 时，预算超限会让命令返回非 0 退出码，适合 CI 阻断。`weapp.analyze.history` 默认会写入 `.weapp-vite/analyze-history`，Markdown / PR 报告会基于上一份快照输出增量归因。
+
+常用示例：
+
+```bash
+wv analyze --json --output reports/analyze.json
+wv analyze --markdown --output reports/analyze.md
+wv analyze --report pr --output reports/analyze-pr.md
+wv analyze --budget-check
+wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
+wv analyze --platform h5 --json
+```
+
+> [!TIP]
+> HMR profile 需要先在 `weapp.hmr.profileJson` 中开启，或通过 `--hmr-profile <file>` 指向已有 JSONL 文件。Web 平台当前只做 `weapp.web` 与 `executionMode` 静态分析，不提供小程序分包体积和 dashboard。
 
 ### 4) `open`
 
