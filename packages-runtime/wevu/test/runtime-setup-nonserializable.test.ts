@@ -145,6 +145,38 @@ describe('runtime: setup returns non-serializable values', () => {
     expect(inst.inc()).toBe(1)
   })
 
+  it('keeps only compiler-marked setup functions when allowFunctionProps is auto', async () => {
+    defineComponent({
+      [WEVU_FUNCTION_PROP_PATHS_KEY]: ['inc'],
+      allowFunctionProps: 'auto',
+      data: () => ({}),
+      setup() {
+        const count = ref(0)
+        function inc() {
+          count.value++
+          return count.value
+        }
+        function ignored() {
+          return 'ignored'
+        }
+        return { count, inc, ignored }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload.count).toBe(0)
+    expect(firstPayload.inc).toBeTypeOf('function')
+    expect('ignored' in firstPayload).toBe(false)
+    expect(inst.inc()).toBe(1)
+  })
+
   it('filters compiler-marked setup functions when allowFunctionProps is disabled', async () => {
     defineComponent({
       [WEVU_FUNCTION_PROP_PATHS_KEY]: ['inc'],
