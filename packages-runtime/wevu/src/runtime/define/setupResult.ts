@@ -30,7 +30,13 @@ export function shouldExposeInSnapshot(value: unknown): boolean {
   return isPlainObject(value)
 }
 
-export function applySetupResult(runtime: any, target: any, result: any) {
+export function applySetupResult(
+  runtime: any,
+  target: any,
+  result: any,
+  options?: { includeFunctionsInState?: boolean },
+) {
+  const includeFunctionsInState = Boolean(options?.includeFunctionsInState)
   const declaredPropKeys = new Set<string>(
     Array.isArray(target?.[WEVU_PROP_KEYS_KEY]) ? target[WEVU_PROP_KEYS_KEY] : [],
   )
@@ -57,7 +63,11 @@ export function applySetupResult(runtime: any, target: any, result: any) {
   Object.keys(result).forEach((key) => {
     const val = (result as any)[key]
     if (typeof val === 'function') {
-      ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
+      const bound = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
+      ;(methods as any)[key] = bound
+      if (includeFunctionsInState) {
+        ;(state as any)[key] = bound
+      }
       methodsChanged = true
     }
     else {

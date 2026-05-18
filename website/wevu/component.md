@@ -148,6 +148,30 @@ export default defineComponent({
 - 从原生小程序迁移时，如果已有成熟的 `properties` 定义，可以先保留，逐步迁移到 `props`。
 - 不建议同时定义 `props` 和 `properties`；如果同时存在，当前实现会优先采用显式传入的 `properties`。
 
+## 函数 prop（显式开启）
+
+小程序运行时可以把函数值放在 data 中并作为组件 property 传递，但这类写法不适合作为默认通信方式。Wevu 默认仍会把 `setup()` 返回的函数提升为 methods，并从 `setData` 快照中过滤函数。
+
+如果正在迁移 Vue 组件，且确实需要 `:callback="fn"` 这类函数 prop，可以在组件上显式开启：
+
+```ts
+defineComponent({
+  allowFunctionProps: true,
+  props: {
+    callback: Function,
+  },
+  setup() {
+    function callback(value: string) {
+      console.log(value)
+    }
+
+    return { callback }
+  },
+})
+```
+
+开启后，data/setup 返回的函数会进入 Wevu 的快照并可作为 prop 传给子组件。常规父子通信仍建议优先使用 `emit` / 小程序事件。
+
 ## Behavior 迁移补充（SFC 场景）
 
 结论先说：

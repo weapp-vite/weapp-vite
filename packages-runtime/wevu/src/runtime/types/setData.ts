@@ -183,6 +183,13 @@ export interface SetDataSnapshotOptions {
    * setData 序列化上限：最多处理的对象 key 数（累计）。超过时将停止深拷贝，保留更浅层结构。
    */
   toPlainMaxKeys?: number
+
+  /**
+   * 是否允许函数进入 setData 快照。
+   *
+   * @internal
+   */
+  includeFunctions?: boolean
 }
 
 export interface SetDataDebugInfo {

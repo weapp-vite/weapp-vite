@@ -101,6 +101,8 @@ counter.inc()
 
 在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
 
+函数 prop 默认不会进入 `setData` 快照。迁移 Vue 组件并确实需要 `:callback="fn"` 时，可在组件上设置 `allowFunctionProps: true`，同时继续优先使用 `emit` / 小程序事件完成常规父子通信。
+
 `options` 支持：
 
 - `bubbles`：事件是否冒泡（默认 `false`）

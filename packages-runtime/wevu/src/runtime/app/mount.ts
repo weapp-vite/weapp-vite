@@ -123,6 +123,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       elevateTopKeyThreshold,
       toPlainMaxDepth,
       toPlainMaxKeys,
+      includeFunctions,
       shouldIncludeKey,
     } = resolveSetDataOptions(setDataOptions)
     const diagnosticsLogger = createDiagnosticsLogger(diagnostics)
@@ -178,6 +179,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       elevateTopKeyThreshold,
       toPlainMaxDepth,
       toPlainMaxKeys,
+      includeFunctions,
       debug: mergedDebug,
       debugWhen: mergedDebugWhen,
       debugSampleRate,

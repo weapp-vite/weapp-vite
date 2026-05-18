@@ -34,6 +34,13 @@ export interface DefineComponentOptions<
    * 适合迁移 Vue 组件或需要兼容 `undefined -> null` 传参链路的场景；默认关闭，避免影响原生 `properties` 的严格类型语义。
    */
   allowNullPropInput?: boolean
+  /**
+   * 允许函数值作为组件 prop 通过小程序 data/properties 链路传递。
+   *
+   * 默认关闭：setup 返回函数仍只作为 methods 暴露，避免函数进入 setData 快照。
+   * 仅在迁移 Vue 组件或确实需要 `:callback="fn"` 这类函数 prop 时开启。
+   */
+  allowFunctionProps?: boolean
   watch?: Record<string, any>
   setup?: SetupFunction<P, D, C, M, S>
   /**

@@ -153,6 +153,7 @@ export function collectSnapshot(options: {
   plainCache: WeakMap<object, { version: number, value: any }>
   toPlainMaxDepth: number
   toPlainMaxKeys: number
+  includeFunctions?: boolean
 }) {
   const {
     state,
@@ -162,6 +163,7 @@ export function collectSnapshot(options: {
     plainCache,
     toPlainMaxDepth,
     toPlainMaxKeys,
+    includeFunctions = false,
   } = options
   const seen = new WeakMap<object, any>()
   // collectSnapshot 的返回值会被 owner snapshot / patch scheduler 复用。
@@ -177,14 +179,14 @@ export function collectSnapshot(options: {
     if (!shouldIncludeKey(key)) {
       continue
     }
-    out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
+    out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, _budget: budget })
   }
 
   for (const key of computedKeys) {
     if (!shouldIncludeKey(key)) {
       continue
     }
-    out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
+    out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, _budget: budget })
   }
 
   return out

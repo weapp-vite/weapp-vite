@@ -15,6 +15,7 @@ export interface ToPlainOptions {
   cache?: WeakMap<object, { version: number, value: any }>
   maxDepth?: number
   maxKeys?: number
+  includeFunctions?: boolean
   _depth?: number
   _budget?: { keys: number }
 }
@@ -25,6 +26,7 @@ function toPlainInternal(
   cache: WeakMap<object, { version: number, value: any }> | undefined,
   depth: number,
   budget: { keys: number },
+  includeFunctions: boolean,
 ): any {
   const unwrapped = unref(value)
   if (typeof unwrapped === 'bigint') {
@@ -35,7 +37,7 @@ function toPlainInternal(
     return unwrapped.toString()
   }
   if (typeof unwrapped === 'function') {
-    return undefined
+    return includeFunctions ? unwrapped : undefined
   }
   if (typeof unwrapped !== 'object' || unwrapped === null) {
     return unwrapped
@@ -73,8 +75,8 @@ function toPlainInternal(
     seen.set(raw, entries)
     raw.forEach((mapValue, mapKey) => {
       entries.push([
-        toPlainInternal(mapKey, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }),
-        toPlainInternal(mapValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }),
+        toPlainInternal(mapKey, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions),
+        toPlainInternal(mapValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions),
       ])
     })
     return entries
@@ -83,7 +85,7 @@ function toPlainInternal(
     const values: any[] = []
     seen.set(raw, values)
     raw.forEach((setValue) => {
-      values.push(toPlainInternal(setValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }))
+      values.push(toPlainInternal(setValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions))
     })
     return values
   }
@@ -97,7 +99,7 @@ function toPlainInternal(
       if (typeof iter === 'function') {
         const values = [...view]
         seen.set(raw, values)
-        return values.map(item => toPlainInternal(item, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }))
+        return values.map(item => toPlainInternal(item, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions))
       }
       const bytes = [...new Uint8Array(view.buffer, view.byteOffset, view.byteLength)]
       seen.set(raw, bytes)
@@ -115,7 +117,7 @@ function toPlainInternal(
     seen.set(raw, arr)
     const nextDepth = depth - 1
     for (let index = 0; index < raw.length; index += 1) {
-      const next = toPlainInternal(raw[index], seen, cache, nextDepth, budget)
+      const next = toPlainInternal(raw[index], seen, cache, nextDepth, budget, includeFunctions)
       arr[index] = next === undefined ? null : next
     }
     if (cacheRef) {
@@ -131,7 +133,7 @@ function toPlainInternal(
     if (budget.keys <= 0) {
       break
     }
-    const next = toPlainInternal((raw as any)[key], seen, cache, nextDepth, budget)
+    const next = toPlainInternal((raw as any)[key], seen, cache, nextDepth, budget, includeFunctions)
     if (next !== undefined) {
       output[key] = next
     }
@@ -145,7 +147,7 @@ function toPlainInternal(
 export function toPlain(value: any, seen = new WeakMap<object, any>(), options?: ToPlainOptions): any {
   const depth = options?._depth ?? (typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options.maxDepth)) : Number.POSITIVE_INFINITY)
   const budget = options?._budget ?? (typeof options?.maxKeys === 'number' ? { keys: Math.max(0, Math.floor(options.maxKeys)) } : { keys: Number.POSITIVE_INFINITY })
-  return toPlainInternal(value, seen, options?.cache, depth, budget)
+  return toPlainInternal(value, seen, options?.cache, depth, budget, Boolean(options?.includeFunctions))
 }
 
 type DeepEqualCompare = (a: any, b: any) => boolean

@@ -209,4 +209,28 @@ describe('runtime: props sync', () => {
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
     expect(payloads.some((payload: any) => Object.hasOwn(payload, 'bool'))).toBe(false)
   })
+
+  it('syncs function props into setup props when declared as Function', async () => {
+    const callback = vi.fn(() => 'ok')
+    defineComponent({
+      props: {
+        callback: Function,
+      } as any,
+      setup(props) {
+        return { props }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    expect(opts.properties.callback.type).toBe(Function)
+
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { callback } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.callback).toBe(callback)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.callback()).toBe('ok')
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
 })

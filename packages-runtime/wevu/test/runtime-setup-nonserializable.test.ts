@@ -77,4 +77,61 @@ describe('runtime: setup returns non-serializable values', () => {
     expect(lastPayload).toEqual(expect.objectContaining({ count: 1 }))
     expect('ctx' in lastPayload).toBe(false)
   })
+
+  it('keeps setup returned functions in state and setData when allowFunctionProps is enabled', async () => {
+    defineComponent({
+      allowFunctionProps: true,
+      data: () => ({}),
+      setup() {
+        const count = ref(0)
+        function inc() {
+          count.value++
+          return count.value
+        }
+        return { count, inc }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload.count).toBe(0)
+    expect(firstPayload.inc).toBeTypeOf('function')
+    expect(inst.inc()).toBe(1)
+    await Promise.resolve()
+
+    const mergedPayload = setData.mock.calls.map(([payload]: any[]) => payload ?? {}).reduce((acc, payload) => ({
+      ...acc,
+      ...payload,
+    }), {})
+    expect(mergedPayload.count).toBe(1)
+    expect(mergedPayload.inc).toBe(firstPayload.inc)
+  })
+
+  it('keeps data functions in setData when allowFunctionProps is enabled', async () => {
+    const callback = vi.fn(() => 'ok')
+    defineComponent({
+      allowFunctionProps: true,
+      data: () => ({
+        callback,
+      }),
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload.callback).toBe(callback)
+    expect(firstPayload.callback()).toBe('ok')
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
 })

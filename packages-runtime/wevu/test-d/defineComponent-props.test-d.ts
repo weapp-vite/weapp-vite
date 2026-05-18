@@ -23,6 +23,7 @@ expectType<boolean>(({} as Props).flag)
 expectType<string>(({} as Props).withValue)
 
 defineComponent({
+  allowFunctionProps: true,
   props: {
     step: { type: Number, default: 1 },
     optionalStep: Number,

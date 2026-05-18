@@ -13,17 +13,21 @@ import { hasOwn } from '../../utils'
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
 
-const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, MiniProgramComponentShortProperty | null>([
+type NormalizedNativePropertyType = MiniProgramComponentShortProperty | FunctionConstructor | null
+
+const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, NormalizedNativePropertyType>([
   [String, String],
   [Number, Number],
   [Boolean, Boolean],
   [Object, Object],
   [Array, Array],
+  [Function, Function],
   ['String', String],
   ['Number', Number],
   ['Boolean', Boolean],
   ['Object', Object],
   ['Array', Array],
+  ['Function', Function],
   [null, null],
   ['null', null],
   ['Null', null],
@@ -38,7 +42,7 @@ function normalizeTypeCandidates(raw: unknown) {
     return []
   }
   const source = Array.isArray(raw) ? raw : [raw]
-  const normalized: Array<MiniProgramComponentShortProperty | null> = []
+  const normalized: NormalizedNativePropertyType[] = []
   source.forEach((item) => {
     const mapped = toNativePropertyType(item)
     if (mapped === undefined) {
@@ -48,7 +52,7 @@ function normalizeTypeCandidates(raw: unknown) {
       normalized.push(mapped)
     }
   })
-  const requiredNativeTypes = normalized.filter((item): item is MiniProgramComponentShortProperty => item !== null)
+  const requiredNativeTypes = normalized.filter((item): item is Exclude<NormalizedNativePropertyType, null> => item !== null)
   if (requiredNativeTypes.length > 0) {
     return requiredNativeTypes
   }
@@ -96,7 +100,7 @@ function normalizeOptionalTypeCandidates(raw: unknown) {
   if (!Array.isArray(raw)) {
     return []
   }
-  const normalized: MiniProgramComponentShortProperty[] = []
+  const normalized: Array<Exclude<NormalizedNativePropertyType, null>> = []
   raw.forEach((item) => {
     const mapped = toNativePropertyType(item)
     if (mapped === undefined || mapped === null || normalized.includes(mapped)) {
@@ -218,7 +222,7 @@ function normalizeVueProps(
         applyTypeOptions(propOptions, (definition as any).type)
       }
       if (Array.isArray((definition as any).optionalTypes)) {
-        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is MiniProgramComponentShortProperty => item !== undefined && item !== null)
+        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is Exclude<NormalizedNativePropertyType, null> => item !== undefined && item !== null)
         if (optionalTypes.length > 0) {
           const existingOptionalTypes = Array.isArray(propOptions.optionalTypes)
             ? propOptions.optionalTypes as any[]

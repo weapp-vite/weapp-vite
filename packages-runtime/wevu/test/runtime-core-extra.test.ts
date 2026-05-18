@@ -41,6 +41,8 @@ describe('runtime diff/toPlain coverage', () => {
     expect(toPlain(big)).toBe(big.toString())
     expect(toPlain(Symbol('x'))).toBe('Symbol(x)')
     expect(toPlain(() => {})).toBeUndefined()
+    const fn = () => 'ok'
+    expect(toPlain(fn, new WeakMap(), { includeFunctions: true })).toBe(fn)
     expect(toPlain(3)).toBe(3)
 
     const noSet = markNoSetData({ a: 1 })

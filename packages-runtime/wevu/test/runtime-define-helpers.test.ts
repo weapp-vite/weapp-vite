@@ -39,6 +39,7 @@ describe('runtime: define helpers', () => {
       status: { type: Number, optionalTypes: [String, Date, Object], observer: statusObserver, value: 0 },
       mode: [String, Number],
       mixedInvalid: [Date, String, Number],
+      onSelect: Function,
       createdAt: Date,
       anyValue: null,
       withOptionalOnly: { optionalTypes: [Boolean] },
@@ -55,6 +56,7 @@ describe('runtime: define helpers', () => {
     expect(result.properties.mode.optionalTypes).toEqual([Number])
     expect(result.properties.mixedInvalid.type).toBe(String)
     expect(result.properties.mixedInvalid.optionalTypes).toEqual([Number])
+    expect(result.properties.onSelect.type).toBe(Function)
     expect(result.properties.createdAt.type).toBeNull()
     expect(result.properties.anyValue.type).toBeNull()
     expect(result.properties.withOptionalOnly.type).toBeNull()

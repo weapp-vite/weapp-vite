@@ -158,14 +158,22 @@ export function defineComponent(
     watch,
     setup,
     props,
+    allowFunctionProps,
     ...mpOptions
   } = resolvedOptions
+
+  const resolvedSetData = allowFunctionProps
+    ? {
+        ...(setData ?? {}),
+        includeFunctions: true,
+      }
+    : setData
 
   const runtimeApp = createApp({
     data,
     computed,
     methods,
-    setData,
+    setData: resolvedSetData,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   } as any)
 
@@ -174,7 +182,9 @@ export function defineComponent(
     ? ((props, ctx) => {
       const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
       if (result && ctx) {
-        applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>)
+        applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>, {
+          includeFunctionsInState: Boolean(allowFunctionProps),
+        })
       }
       return result
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
@@ -198,7 +208,7 @@ export function defineComponent(
     data: data as () => Record<string, any>,
     computed: computed as ComputedDefinitions,
     methods: methods as MethodDefinitions,
-    setData,
+    setData: resolvedSetData,
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps,

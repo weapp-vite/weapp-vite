@@ -22,6 +22,7 @@ export interface ResolvedSetDataOptions {
   elevateTopKeyThreshold: number
   toPlainMaxDepth: number
   toPlainMaxKeys: number
+  includeFunctions: boolean
   pickSet: Set<string> | undefined
   omitSet: Set<string> | undefined
   shouldIncludeKey: (key: string) => boolean
@@ -73,6 +74,7 @@ export function resolveSetDataOptions(
   const toPlainMaxKeys = typeof setDataOptions?.toPlainMaxKeys === 'number'
     ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxKeys!))
     : Number.POSITIVE_INFINITY
+  const includeFunctions = Boolean(setDataOptions?.includeFunctions)
   const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
     ? new Set(setDataOptions!.pick)
     : undefined
@@ -111,6 +113,7 @@ export function resolveSetDataOptions(
     elevateTopKeyThreshold,
     toPlainMaxDepth,
     toPlainMaxKeys,
+    includeFunctions,
     pickSet,
     omitSet,
     shouldIncludeKey,

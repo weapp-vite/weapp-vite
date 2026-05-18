@@ -27,6 +27,7 @@ export function runPatchUpdate(options: {
   elevateTopKeyThreshold: number
   toPlainMaxDepth: number
   toPlainMaxKeys: number
+  includeFunctions?: boolean
   plainCache: WeakMap<object, { version: number, value: any }>
   pendingPatches: Map<string, PatchEntry>
   fallbackTopKeys: Set<string>
@@ -55,6 +56,7 @@ export function runPatchUpdate(options: {
     elevateTopKeyThreshold,
     toPlainMaxDepth,
     toPlainMaxKeys,
+    includeFunctions = false,
     plainCache,
     pendingPatches,
     fallbackTopKeys,
@@ -126,7 +128,7 @@ export function runPatchUpdate(options: {
       return plainByPath.get(path)
     }
     const value = normalizeSetDataValue(
-      toPlain(getStateValueByPath(path), seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys }),
+      toPlain(getStateValueByPath(path), seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions }),
     )
     plainByPath.set(path, value)
     return value
@@ -162,7 +164,7 @@ export function runPatchUpdate(options: {
       if (!shouldIncludeKey(key)) {
         continue
       }
-      const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys })
+      const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions })
       const prevValue = latestComputedSnapshot[key]
       const equal = computedCompare === 'deep'
         ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })
