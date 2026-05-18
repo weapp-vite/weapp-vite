@@ -12,6 +12,7 @@ import {
   readWeappGenerateConfigSnapshot,
 } from '../project/projectConfig'
 import {
+  findWorkspaceFiles,
   getCurrentPageRouteCandidate,
   getPrimaryWorkspaceFolder,
   getProjectAppJsonPath,
@@ -938,7 +939,7 @@ export async function isRecognizedWeappVueDocument(document: vscode.TextDocument
 
   const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
   const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
-  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const vueFiles = await findWorkspaceFiles(searchRoot, '**/*.vue')
 
   for (const file of vueFiles) {
     const fileText = await readTextFile(file.fsPath)
@@ -1180,8 +1181,8 @@ async function getWorkspaceTemplateDocuments(document: vscode.TextDocument) {
   const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
   const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
   const [vueFiles, wxmlFiles] = await Promise.all([
-    vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue')),
-    vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.wxml')),
+    findWorkspaceFiles(searchRoot, '**/*.vue'),
+    findWorkspaceFiles(searchRoot, '**/*.wxml'),
   ])
   const files = [...vueFiles, ...wxmlFiles]
   const seen = new Set<string>()

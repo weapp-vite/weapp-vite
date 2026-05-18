@@ -71,19 +71,21 @@ it('manifest keeps publish-safe file whitelist', () => {
   ].sort())
 })
 
-it('manifest activates for standard and dedicated weapp-vite config files', () => {
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.ts'), true)
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.mts'), true)
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.cts'), true)
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.js'), true)
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.mjs'), true)
-  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.cjs'), true)
+it('manifest avoids broad Vite and package.json workspace activation', () => {
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.ts'), false)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.mts'), false)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.cts'), false)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.js'), false)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.mjs'), false)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/vite.config.cjs'), false)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.ts'), true)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.mts'), true)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.cts'), true)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.js'), true)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.mjs'), true)
   assert.equal(packageJson.activationEvents.includes('workspaceContains:**/weapp-vite.config.cjs'), true)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/node_modules/weapp-vite/package.json'), true)
+  assert.equal(packageJson.activationEvents.includes('workspaceContains:**/package.json'), false)
 })
 
 it('manifest contributes weapp-vite file icon theme for dedicated config files', () => {
