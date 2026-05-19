@@ -8,6 +8,14 @@ Component({
       type: Function,
       value: undefined,
     },
+    metaTitle: {
+      type: String,
+      value: '',
+    },
+    dynamicLabel: {
+      type: null,
+      value: '',
+    },
   },
   data: {
     callbackType: 'unset',
@@ -40,6 +48,15 @@ Component({
       return {
         type,
         value,
+      }
+    },
+    inspectProps(this: any) {
+      const data = this.data ?? {}
+      return {
+        callbackType: typeof data.callback,
+        handlerType: typeof data.handler,
+        metaTitle: data.metaTitle,
+        dynamicLabel: data.dynamicLabel,
       }
     },
   },

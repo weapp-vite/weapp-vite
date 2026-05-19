@@ -50,6 +50,9 @@ describe.sequential('wevu runtime function props (weapp e2e)', () => {
     const autoResult = await runRouteE2E(miniProgram, '/pages/function-props-auto/index')
     expect(autoResult.checks?.callbackReceived).toBe(true)
     expect(autoResult.checks?.handlerReceived).toBe(true)
+    expect(autoResult.checks?.staticMemberValueReceived).toBe(true)
+    expect(autoResult.checks?.computedMemberValueReceived).toBe(true)
+    expect(autoResult.checks?.staticMemberHandlerIsFunction).toBe(true)
     expect(autoResult.checks?.parentCallbackCalled).toBe(true)
     expect(autoResult.checks?.parentHandlerCalled).toBe(true)
 

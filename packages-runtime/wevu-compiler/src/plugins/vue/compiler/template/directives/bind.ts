@@ -45,6 +45,7 @@ const SIMPLE_MEMBER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
 
 const isSimpleIdentifier = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 const isSimpleMemberPath = (value: string) => SIMPLE_MEMBER_PATH_RE.test(value)
+const FUNCTION_LIKE_PROP_NAME_RE = /callback|handler|listener|function|fn/i
 
 const COMPONENT_NON_PROP_BINDINGS = new Set([
   'class',
@@ -95,6 +96,14 @@ function isComputedMemberExpression(rawExpValue: string): boolean {
   return normalized.type === 'MemberExpression' && normalized.computed
 }
 
+function isFunctionLikePropName(argValue: string) {
+  return FUNCTION_LIKE_PROP_NAME_RE.test(argValue) || argValue === 'change' || /^on[-:_A-Z]/.test(argValue)
+}
+
+function shouldWrapStaticMemberFunctionProp(argValue: string, path: string) {
+  return path.includes('.') && isFunctionLikePropName(argValue)
+}
+
 export function transformBindDirective(
   node: DirectiveNode,
   context: TransformContext,
@@ -114,7 +123,7 @@ export function transformBindDirective(
   if (options?.isComponent && !COMPONENT_NON_PROP_BINDINGS.has(argValue)) {
     const path = collectFunctionPropPath(rawExpValue)
     if (path) {
-      if (path.includes('.')) {
+      if (shouldWrapStaticMemberFunctionProp(argValue, path)) {
         const bindingRef = registerRuntimeBindingExpression(rawExpValue, context, { hint: `:${argValue} 函数 prop 绑定` })
         if (bindingRef) {
           const bindingName = bindingRef.split('[')[0] || bindingRef
