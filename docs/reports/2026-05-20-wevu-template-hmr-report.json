@@ -1,0 +1,398 @@
+{
+  "budgetMs": 500,
+  "generatedAt": "2026-05-19T16:13:01.565Z",
+  "iterations": 1,
+  "project": {
+    "source": "templates/weapp-vite-wevu-template",
+    "workspace": ".tmp/wevu-template-hmr-workspace"
+  },
+  "scenarios": [
+    {
+      "averageMs": 131.75187499999993,
+      "averageWallMs": 305.4713750000001,
+      "group": "page",
+      "id": "page-index-json-macro",
+      "label": "pages/index definePageJson",
+      "maxMs": 131.75187499999993,
+      "maxWallMs": 305.4713750000001,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/index/index.json",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:23.914Z",
+          "totalMs": 131.75187499999993,
+          "eventId": "mpctzucm-1",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue",
+          "relativeFile": "src/pages/index/index.vue",
+          "sourceRootFile": "pages/index/index.vue",
+          "buildCoreMs": 128.85149999999987,
+          "transformMs": 19.105250000000183,
+          "writeMs": 1.0853750000001128,
+          "watchToDirtyMs": 1.488207999999986,
+          "emitMs": 0.3267919999999549,
+          "sharedChunkResolveMs": 0.0061249999999972715,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "dirtyReasonSummary": [
+            "entry-json-only:1"
+          ],
+          "pendingReasonSummary": [],
+          "wallMs": 305.4713750000001
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue"
+    },
+    {
+      "averageMs": 141.91762500000004,
+      "averageWallMs": 304.7629999999999,
+      "group": "page",
+      "id": "page-index-script",
+      "label": "pages/index script setup",
+      "maxMs": 141.91762500000004,
+      "maxWallMs": 304.7629999999999,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/index/index.js",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:24.530Z",
+          "totalMs": 141.91762500000004,
+          "eventId": "mpctzutg-3",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue",
+          "relativeFile": "src/pages/index/index.vue",
+          "sourceRootFile": "pages/index/index.vue",
+          "buildCoreMs": 138.68016599999987,
+          "transformMs": 45.19195900000068,
+          "writeMs": 1.7919170000000122,
+          "watchToDirtyMs": 1.1754170000001523,
+          "emitMs": 0.2701250000000073,
+          "sharedChunkResolveMs": 0.03404199999999946,
+          "dirtyCount": 1,
+          "pendingCount": 3,
+          "emittedCount": 3,
+          "dirtyReasonSummary": [
+            "entry-direct:1"
+          ],
+          "pendingReasonSummary": [
+            "shared-chunk(wevu-ref.js,wevu-src.js+)+3:direct"
+          ],
+          "wallMs": 304.7629999999999
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue"
+    },
+    {
+      "averageMs": 125.50629100000015,
+      "averageWallMs": 203.56608300000016,
+      "group": "page",
+      "id": "page-index-template",
+      "label": "pages/index template",
+      "maxMs": 125.50629100000015,
+      "maxWallMs": 203.56608300000016,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/index/index.wxml",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:25.121Z",
+          "totalMs": 125.50629100000015,
+          "eventId": "mpctzvab-5",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue",
+          "relativeFile": "src/pages/index/index.vue",
+          "sourceRootFile": "pages/index/index.vue",
+          "buildCoreMs": 122.80483300000014,
+          "transformMs": 14.83433099999911,
+          "writeMs": 1.3919999999998254,
+          "watchToDirtyMs": 1.05987499999992,
+          "emitMs": 0.24958300000025702,
+          "sharedChunkResolveMs": 0.0038340000000971486,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "dirtyReasonSummary": [
+            "entry-local-asset:1"
+          ],
+          "pendingReasonSummary": [],
+          "wallMs": 203.56608300000016
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue"
+    },
+    {
+      "averageMs": 111.24158399999988,
+      "averageWallMs": 203.5786250000001,
+      "group": "page",
+      "id": "page-index-style",
+      "label": "pages/index style",
+      "maxMs": 111.24158399999988,
+      "maxWallMs": 203.5786250000001,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/index/index.wxss",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:25.710Z",
+          "totalMs": 111.24158399999988,
+          "eventId": "mpctzvr3-7",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue",
+          "relativeFile": "src/pages/index/index.vue",
+          "sourceRootFile": "pages/index/index.vue",
+          "buildCoreMs": 108.61479299999974,
+          "transformMs": 13.411290000000463,
+          "writeMs": 1.0737500000000182,
+          "watchToDirtyMs": 1.3499160000001211,
+          "emitMs": 0.203125,
+          "sharedChunkResolveMs": 0.0017909999996845727,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "dirtyReasonSummary": [
+            "entry-local-asset:1"
+          ],
+          "pendingReasonSummary": [],
+          "wallMs": 203.5786250000001
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/index/index.vue"
+    },
+    {
+      "averageMs": 202.36645899999985,
+      "averageWallMs": 202.36645899999985,
+      "group": "page",
+      "id": "page-layouts-json-macro",
+      "label": "pages/layouts definePageJson",
+      "maxMs": 202.36645899999985,
+      "maxWallMs": 202.36645899999985,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/layouts/index.json",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/layouts/index.vue",
+          "totalMs": 202.36645899999985,
+          "wallMs": 202.36645899999985
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/layouts/index.vue"
+    },
+    {
+      "averageMs": 124.75187499999993,
+      "averageWallMs": 203.1944169999988,
+      "group": "page",
+      "id": "page-layouts-template",
+      "label": "pages/layouts template",
+      "maxMs": 124.75187499999993,
+      "maxWallMs": 203.1944169999988,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/pages/layouts/index.wxml",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:31.802Z",
+          "totalMs": 124.75187499999993,
+          "eventId": "mpcu00fx-c",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/pages/layouts/index.vue",
+          "relativeFile": "src/pages/layouts/index.vue",
+          "sourceRootFile": "pages/layouts/index.vue",
+          "buildCoreMs": 121.8531669999993,
+          "transformMs": 16.841790999993464,
+          "writeMs": 1.084833000000799,
+          "watchToDirtyMs": 1.6396249999997963,
+          "emitMs": 0.1742500000000291,
+          "sharedChunkResolveMs": 0.0020409999997355044,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "dirtyReasonSummary": [
+            "entry-local-asset:1"
+          ],
+          "pendingReasonSummary": [],
+          "wallMs": 203.1944169999988
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/pages/layouts/index.vue"
+    },
+    {
+      "averageMs": 203.16470800000025,
+      "averageWallMs": 203.16470800000025,
+      "group": "layout",
+      "id": "layout-default-template",
+      "label": "layouts/default template",
+      "maxMs": 203.16470800000025,
+      "maxWallMs": 203.16470800000025,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/layouts/default.wxml",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/layouts/default.vue",
+          "totalMs": 203.16470800000025,
+          "wallMs": 203.16470800000025
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/layouts/default.vue"
+    },
+    {
+      "averageMs": 145.9632500000007,
+      "averageWallMs": 302.92645900000025,
+      "group": "layout",
+      "id": "layout-default-style",
+      "label": "layouts/default style",
+      "maxMs": 145.9632500000007,
+      "maxWallMs": 302.92645900000025,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/layouts/default.wxss",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:37.997Z",
+          "totalMs": 145.9632500000007,
+          "eventId": "mpcu057f-h",
+          "event": "update",
+          "file": ".tmp/wevu-template-hmr-workspace/src/layouts/default.vue",
+          "relativeFile": "src/layouts/default.vue",
+          "sourceRootFile": "layouts/default.vue",
+          "buildCoreMs": 144.20033300000068,
+          "transformMs": 56.56341500000599,
+          "writeMs": 1.361917000000176,
+          "watchToDirtyMs": 0.1586250000000291,
+          "emitMs": 0.24237499999981083,
+          "sharedChunkResolveMs": 0.018416000000797794,
+          "dirtyCount": 2,
+          "pendingCount": 4,
+          "emittedCount": 4,
+          "dirtyReasonSummary": [
+            "layout-self:1",
+            "layout-dependent:1"
+          ],
+          "pendingReasonSummary": [
+            "layout-propagation",
+            "shared-chunk(wevu-src.js,wevu-router.js+)+3:dependency"
+          ],
+          "wallMs": 302.92645900000025
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/layouts/default.vue"
+    },
+    {
+      "averageMs": 303.8245000000006,
+      "averageWallMs": 303.8245000000006,
+      "group": "layout",
+      "id": "layout-admin-script",
+      "label": "layouts/admin script",
+      "maxMs": 303.8245000000006,
+      "maxWallMs": 303.8245000000006,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/layouts/admin.js",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/layouts/admin.vue",
+          "totalMs": 303.8245000000006,
+          "wallMs": 303.8245000000006
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/layouts/admin.vue"
+    },
+    {
+      "averageMs": 304.38145799999984,
+      "averageWallMs": 304.38145799999984,
+      "group": "app",
+      "id": "app-json-macro",
+      "label": "app defineAppJson",
+      "maxMs": 304.38145799999984,
+      "maxWallMs": 304.38145799999984,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/app.json",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/app.vue",
+          "totalMs": 304.38145799999984,
+          "wallMs": 304.38145799999984
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/app.vue"
+    },
+    {
+      "averageMs": 128.36295900000187,
+      "averageWallMs": 302.83379200000127,
+      "group": "app",
+      "id": "app-style",
+      "label": "app style",
+      "maxMs": 128.36295900000187,
+      "maxWallMs": 302.83379200000127,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/app.wxss",
+      "overBudget": false,
+      "samples": [
+        {
+          "timestamp": "2026-05-19T16:12:49.920Z",
+          "totalMs": 128.36295900000187,
+          "eventId": "mpcu0ef3-p",
+          "event": "create",
+          "file": ".tmp/wevu-template-hmr-workspace/src/app.vue",
+          "relativeFile": "src/app.vue",
+          "sourceRootFile": "app.vue",
+          "buildCoreMs": 126.41091700000106,
+          "transformMs": 59.17687500001557,
+          "writeMs": 1.4993329999997513,
+          "watchToDirtyMs": 0.23533400000087568,
+          "emitMs": 0.21737500000017462,
+          "sharedChunkResolveMs": 0.011000000002240995,
+          "dirtyCount": 1,
+          "pendingCount": 4,
+          "emittedCount": 4,
+          "dirtyReasonSummary": [
+            "importer-graph:1"
+          ],
+          "pendingReasonSummary": [
+            "shared-chunk(wevu-src.js,wevu-router.js+)+4:dependency"
+          ],
+          "wallMs": 302.83379200000127
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/app.vue"
+    },
+    {
+      "averageMs": 203.28304099999878,
+      "averageWallMs": 203.28304099999878,
+      "group": "json",
+      "id": "json-sitemap",
+      "label": "sitemap.json",
+      "maxMs": 203.28304099999878,
+      "maxWallMs": 203.28304099999878,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/sitemap.json",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/sitemap.json",
+          "totalMs": 203.28304099999878,
+          "wallMs": 203.28304099999878
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/sitemap.json"
+    },
+    {
+      "averageMs": 302.89054199999373,
+      "averageWallMs": 302.89054199999373,
+      "group": "json",
+      "id": "json-theme",
+      "label": "theme.json",
+      "maxMs": 302.89054199999373,
+      "maxWallMs": 302.89054199999373,
+      "outputFile": ".tmp/wevu-template-hmr-workspace/dist/theme.json",
+      "overBudget": false,
+      "samples": [
+        {
+          "file": ".tmp/wevu-template-hmr-workspace/src/theme.json",
+          "totalMs": 302.89054199999373,
+          "wallMs": 302.89054199999373
+        }
+      ],
+      "sourceFile": ".tmp/wevu-template-hmr-workspace/src/theme.json"
+    }
+  ],
+  "summary": {
+    "maxMs": 304.38145799999984,
+    "maxWallMs": 305.4713750000001,
+    "overBudgetCount": 0,
+    "scenarioCount": 13
+  }
+}
