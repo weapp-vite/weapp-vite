@@ -30,6 +30,7 @@ import {
   getRouteFromPageFilePath,
 } from './project/navigation'
 import {
+  clearProjectContextCache,
   findNearestWeappViteProjectWorkspaceFolder,
   getAppJsonTextWithMovedRoute,
   getAppJsonTextWithMovedRoutes,
@@ -259,6 +260,62 @@ async function writeTextFile(filePath: string, text: string) {
   await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), Buffer.from(text, 'utf8'))
 }
 
+function createDebouncedTask(delay: number, task: () => void | Promise<void>) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+
+  const schedule = () => {
+    if (timer) {
+      clearTimeout(timer)
+    }
+
+    timer = setTimeout(() => {
+      timer = undefined
+      void task()
+    }, delay)
+  }
+
+  schedule.dispose = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+  }
+
+  return schedule
+}
+
+function getDocumentRefreshKey(document: any) {
+  return document.uri?.toString?.() ?? document.uri?.fsPath ?? document.fileName
+}
+
+function createDebouncedDocumentTask(delay: number, task: (document: any) => void | Promise<void>) {
+  const timers = new Map<string, ReturnType<typeof setTimeout>>()
+
+  const schedule = (document: any) => {
+    const key = getDocumentRefreshKey(document)
+    const pendingTimer = timers.get(key)
+
+    if (pendingTimer) {
+      clearTimeout(pendingTimer)
+    }
+
+    timers.set(key, setTimeout(() => {
+      timers.delete(key)
+      void task(document)
+    }, delay))
+  }
+
+  schedule.dispose = () => {
+    for (const timer of timers.values()) {
+      clearTimeout(timer)
+    }
+
+    timers.clear()
+  }
+
+  return schedule
+}
+
 async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
   const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.newUri.fsPath)
 
@@ -428,6 +485,33 @@ export function activate(context: any) {
   const state = {
     getOutputChannel,
     terminalCache: undefined,
+  }
+  const scheduleStatusBarRefresh = createDebouncedTask(250, refreshStatusBar)
+  const schedulePagesTreeRefresh = createDebouncedTask(350, () => {
+    pagesTreeProvider.refresh()
+  })
+  const schedulePagesTreeStateSync = createDebouncedDocumentTask(350, async (document) => {
+    await syncPagesTreeState(pagesTreeProvider, pagesTreeView, document)
+  })
+  const schedulePackageJsonDiagnosticsRefresh = createDebouncedDocumentTask(300, refreshPackageJsonDiagnostics)
+  const scheduleAppJsonDiagnosticsRefresh = createDebouncedDocumentTask(300, refreshAppJsonDiagnostics)
+  const scheduleVuePageDiagnosticsRefresh = createDebouncedDocumentTask(450, refreshVuePageDiagnostics)
+  const refreshProjectState = (refreshTree = true) => {
+    clearProjectContextCache()
+    scheduleStatusBarRefresh()
+
+    if (refreshTree) {
+      projectTreeProvider.refresh()
+    }
+  }
+  const refreshPagesState = (document?: any) => {
+    schedulePagesTreeRefresh()
+
+    const targetDocument = document ?? vscode.window.activeTextEditor?.document
+
+    if (targetDocument) {
+      schedulePagesTreeStateSync(targetDocument)
+    }
   }
   const disposables = [
     vscode.commands.registerCommand('weapp-vite.generate', resourceUri => showGeneratePicker(state, resourceUri)),
@@ -604,25 +688,22 @@ export function activate(context: any) {
       wxmlScriptRenameProvider,
     ),
     vscode.window.onDidChangeActiveTextEditor(() => {
-      void refreshStatusBar()
-      void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      scheduleStatusBarRefresh()
+      refreshPagesState()
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      void refreshStatusBar()
-      projectTreeProvider.refresh()
-      pagesTreeProvider.refresh()
-      void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      refreshProjectState()
+      refreshPagesState()
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('weapp-vite')) {
-        void refreshStatusBar()
-        projectTreeProvider.refresh()
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+        refreshProjectState()
+        refreshPagesState()
 
         for (const document of vscode.workspace.textDocuments) {
-          void refreshPackageJsonDiagnostics(document)
-          void refreshAppJsonDiagnostics(document)
-          void refreshVuePageDiagnostics(document)
+          schedulePackageJsonDiagnosticsRefresh(document)
+          scheduleAppJsonDiagnosticsRefresh(document)
+          scheduleVuePageDiagnosticsRefresh(document)
         }
       }
     }),
@@ -639,32 +720,32 @@ export function activate(context: any) {
         void refreshVuePageDiagnostics(document)
       }
 
-      if (document.fileName.endsWith('package.json') || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
-        void refreshStatusBar()
-        projectTreeProvider.refresh()
+      if (isPackageJsonDocument(document) || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
+        refreshProjectState()
       }
 
-      pagesTreeProvider.refresh()
-      if (vscode.window.activeTextEditor?.document === document) {
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, document)
+      if (isAppJsonDocument(document) || isVueDocument(document)) {
+        refreshPagesState(document)
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
       void refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
-      pagesTreeProvider.refresh()
-      if (vscode.window.activeTextEditor?.document === document) {
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, document)
+      if (isAppJsonDocument(document) || isVueDocument(document)) {
+        refreshPagesState(document)
       }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      void refreshPackageJsonDiagnostics(event.document)
-      void refreshAppJsonDiagnostics(event.document)
-      void refreshVuePageDiagnostics(event.document)
-      pagesTreeProvider.refresh()
-      if (vscode.window.activeTextEditor?.document === event.document) {
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, event.document)
+      schedulePackageJsonDiagnosticsRefresh(event.document)
+      scheduleAppJsonDiagnosticsRefresh(event.document)
+      scheduleVuePageDiagnosticsRefresh(event.document)
+      if (isPackageJsonDocument(event.document) || VITE_CONFIG_FILE_PATTERN.test(event.document.fileName)) {
+        refreshProjectState(false)
+      }
+
+      if (isAppJsonDocument(event.document) || isVueDocument(event.document)) {
+        refreshPagesState(event.document)
       }
     }),
     vscode.workspace.onDidRenameFiles((event) => {
@@ -680,16 +761,14 @@ export function activate(context: any) {
           return
         }
 
-        pagesTreeProvider.refresh()
-        projectTreeProvider.refresh()
-        void refreshStatusBar()
+        refreshProjectState()
 
         for (const document of vscode.workspace.textDocuments) {
           void refreshAppJsonDiagnostics(document)
           void refreshVuePageDiagnostics(document)
         }
 
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+        refreshPagesState()
       })()
     }),
     vscode.workspace.onDidDeleteFiles((event) => {
@@ -705,18 +784,26 @@ export function activate(context: any) {
           return
         }
 
-        pagesTreeProvider.refresh()
-        projectTreeProvider.refresh()
-        void refreshStatusBar()
+        refreshProjectState()
 
         for (const document of vscode.workspace.textDocuments) {
           void refreshAppJsonDiagnostics(document)
           void refreshVuePageDiagnostics(document)
         }
 
-        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+        refreshPagesState()
       })()
     }),
+    {
+      dispose() {
+        scheduleStatusBarRefresh.dispose()
+        schedulePagesTreeRefresh.dispose()
+        schedulePagesTreeStateSync.dispose()
+        schedulePackageJsonDiagnosticsRefresh.dispose()
+        scheduleAppJsonDiagnosticsRefresh.dispose()
+        scheduleVuePageDiagnosticsRefresh.dispose()
+      },
+    },
   ]
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUS_BAR_PRIORITY)
@@ -731,7 +818,7 @@ export function activate(context: any) {
     void refreshAppJsonDiagnostics(document)
   }
 
-  context.subscriptions.push(...disposables, projectTreeView, pagesTreeView, getOutputChannel(), getDiagnostics(), {
+  context.subscriptions.push(...disposables, projectTreeView, pagesTreeView, getDiagnostics(), {
     dispose() {
       templateDecorationController.dispose()
       state.terminalCache = undefined

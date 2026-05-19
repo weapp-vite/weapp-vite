@@ -446,7 +446,7 @@ it('extension index exports activate and deactivate', async () => {
   })
 })
 
-it('activate registers commands, providers, status bar and diagnostics', async () => {
+it('activate registers commands, providers, status bar and diagnostics without eagerly opening output', async () => {
   await withMockedVscode(async (state) => {
     const extension = await import(`${extensionIndexUrl}?t=${Date.now()}`)
     const subscriptions: Disposable[] = []
@@ -506,7 +506,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
     ])
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
-    assert.equal(state.outputChannels.length, 1)
+    assert.equal(state.outputChannels.length, 0)
     assert.equal(state.diagnosticCollections.length, 1)
     assert.ok(subscriptions.length >= 1)
   })
