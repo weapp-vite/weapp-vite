@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.3.2
+
+### Patch Changes
+
+- 🐛 **降低 VS Code 扩展在编辑过程中的性能消耗：缓存项目识别扫描结果，项目文件变化时再失效；同时合并文档变化触发的诊断、页面树和状态栏刷新，避免每次输入都重复扫描工作区与重建视图。** [#591](https://github.com/weapp-vite/weapp-vite/pull/591) by @sonofmagic
+
 ## 0.3.1
 
 ### Patch Changes

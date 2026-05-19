@@ -1,5 +1,19 @@
 # @wevu/compiler
 
+## 6.16.18
+
+### Patch Changes
+
+- 🐛 **为模板运行时 computed 绑定补充错误日志，当调用表达式、class/style 或 v-for 数据源在小程序运行时求值失败时，通过 `console.error` 输出绑定名、原始表达式和异常对象，避免关闭作用域插槽后迁移遗漏的 computed 被静默吞掉。** [#589](https://github.com/weapp-vite/weapp-vite/pull/589) by @sonofmagic
+
+- 🐛 **移除组件函数 prop 的名称猜测规则，普通成员绑定如 `:selected="data.userId"` 会继续直接输出为 `selected="{{data.userId}}"`。需要透传动态函数 prop 时，可通过 `vue.template.functionPropNames` 显式声明字符串或正则形式的 prop 名称。** [`bb03dc6`](https://github.com/weapp-vite/weapp-vite/commit/bb03dc60c8afbca14dde7586b369108f84aa51b2) by @sonofmagic
+
+- 🐛 **收窄组件成员路径 prop 绑定的运行时 computed 回退规则，避免普通静态成员与动态索引数据绑定被不必要地生成 `__wv_bind_*`，同时保留函数 prop 的路径元数据以支持透传。** [`fc42f44`](https://github.com/weapp-vite/weapp-vite/commit/fc42f446046ce4133fdfd581283a53ea207ebbb1) by @sonofmagic
+
+- 🐛 **统一公开包的 workspace 内部依赖发布策略，改为发布时写入精确版本，并补充仓库守卫防止内部依赖再次回退到宽松 range。** [`56da329`](https://github.com/weapp-vite/weapp-vite/commit/56da329a2d6eb582323b7146b480f153f2183d2e) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.18`
+
 ## 6.16.17
 
 ### Patch Changes

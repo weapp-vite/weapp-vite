@@ -1,5 +1,15 @@
 # wevu
 
+## 6.16.18
+
+### Patch Changes
+
+- 🐛 **修复无 `setup()` 的 Options 组件中，模板生成的 computed class/style 无法读取 props 的问题；普通组件现在也会初始化并同步 `__wevuProps`，确保 props 变化能驱动运行时绑定更新。** [#591](https://github.com/weapp-vite/weapp-vite/pull/591) by @sonofmagic
+
+- 🐛 **统一公开包的 workspace 内部依赖发布策略，改为发布时写入精确版本，并补充仓库守卫防止内部依赖再次回退到宽松 range。** [`56da329`](https://github.com/weapp-vite/weapp-vite/commit/56da329a2d6eb582323b7146b480f153f2183d2e) by @sonofmagic
+- 📦 **Dependencies** [`5dac261`](https://github.com/weapp-vite/weapp-vite/commit/5dac261acfc9eed0b8c5c4e5acdae59728ac67d8)
+  → `@wevu/compiler@6.16.18`, `@wevu/web-apis@1.2.15`
+
 ## 6.16.17
 
 ### Patch Changes
