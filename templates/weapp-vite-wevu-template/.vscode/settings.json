@@ -2,7 +2,9 @@
   "prettier.enable": false,
   "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
     "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "never",
     "source.organizeImports": "never"
   },
   "eslint.rules.customizations": [
@@ -168,6 +170,7 @@
     "**/docs/reports/**": true
   },
   "tailwindCSS.files.exclude": [
+    "**/*",
     "**/.git/**",
     "**/node_modules/**",
     "**/dist/**",
@@ -193,6 +196,7 @@
     "**/__temp__/**",
     "**/docs/reports/**"
   ],
+  "tailwindCSS.codeActions": false,
   "i18n-ally.usage.scanningIgnore": [
     "**/.git/**",
     "**/node_modules/**",

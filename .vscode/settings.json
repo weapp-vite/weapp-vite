@@ -14,7 +14,9 @@
   "editor.formatOnSave": false,
   // Auto fix
   "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
     "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "never",
     "source.organizeImports": "never"
   },
   // Silent the stylistic rules in you IDE, but still auto fix them
@@ -196,9 +198,14 @@
     "**/build/**",
     "**/coverage/**",
     "**/miniprogram_npm/**",
+    "templates/weapp-vite-template/**",
+    "templates/weapp-vite-wevu-template/**",
+    "templates/weapp-vite-lib-template/**",
+    "templates/weapp-vite-plugin-template/**",
     "**/__temp__/**",
     "**/docs/reports/**"
   ],
+  "tailwindCSS.codeActions": false,
   "i18n-ally.usage.scanningIgnore": [
     "**/.git/**",
     "**/node_modules/**",

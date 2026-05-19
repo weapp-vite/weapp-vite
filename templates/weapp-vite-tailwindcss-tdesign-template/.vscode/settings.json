@@ -2,7 +2,9 @@
   "prettier.enable": false,
   "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
     "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "never",
     "source.organizeImports": "never"
   },
   "eslint.rules.customizations": [
@@ -218,6 +220,7 @@
     "**/__temp__/**",
     "**/docs/reports/**"
   ],
+  "tailwindCSS.codeActions": false,
   "i18n-ally.usage.scanningIgnore": [
     "**/.git/**",
     "**/node_modules/**",
