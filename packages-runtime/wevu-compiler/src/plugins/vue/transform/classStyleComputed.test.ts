@@ -63,6 +63,9 @@ describe('classStyleComputed', () => {
     expect(code).toContain('__wv_bind_0')
     expect(code).toContain('return"base"')
     expect(code).toContain('return"display: none"')
+    expect(code).toContain('console.error')
+    expect(code).toContain('[wevu]')
+    expect(code).toContain('__wv_bind_0 = getValue()')
   })
 
   it('builds nested for expressions for array/object lists', () => {

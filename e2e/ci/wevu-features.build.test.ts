@@ -98,10 +98,10 @@ describe.sequential('e2e app: wevu-features (build)', () => {
 
     expect(useAttrsPageWxml).toContain('<UseAttrsFeature')
     expect(useAttrsPageWxml).toContain('stateClass="{{currentToneClass}}"')
-    expect(useAttrsPageWxml).toMatch(/visible="\{\{__wv_bind_\d+\}\}"/)
+    expect(useAttrsPageWxml).toContain('visible="{{controlState.visible}}"')
     expect(useAttrsPageWxml).toContain('badgeStyle="{{currentBadgeStyle}}"')
     expect(useAttrsPageWxml).toContain('extraLabel="{{currentExtraLabel}}"')
-    expect(useAttrsPageWxml).toMatch(/seedTag="\{\{__wv_bind_\d+\}\}"/)
+    expect(useAttrsPageWxml).toContain('seedTag="{{controlState.seed}}"')
     expect(useAttrsPageWxml).toContain('bindtap="cycleToneClass"')
     expect(useAttrsPageWxml).toContain('bindtap="toggleVisible"')
     expect(useAttrsPageWxml).toContain('bindtap="toggleStrongBorder"')

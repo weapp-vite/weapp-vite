@@ -71,14 +71,17 @@ describe('scoped slot native output snapshots', () => {
       '<van-tabbar-item wx:for="{{__wvOwner.tabItems}}"',
     )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
-      'name="{{__wv_bind_0[__wv_index_1]}}"',
+      'name="{{__wv_item_0.to.name}}"',
     )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
       '>{{__wv_item_0.label}}</van-tabbar-item>',
     )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).not.toContain('generic:scoped-slots-default')
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
-      'createWevuScopedSlotComponent({ computed: __wevuComputed })',
+      'createWevuScopedSlotComponent()',
+    )
+    expect(outputSnapshot['pages/index/index.js']).toContain(
+      `console.error("[wevu] 模板运行时表达式执行失败: __wv_bind_0 = {['default']:true}", __wv_expr_err)`,
     )
   })
 })
