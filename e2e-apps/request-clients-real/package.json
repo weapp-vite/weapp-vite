@@ -11,7 +11,7 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.100.10",
+    "@tanstack/vue-query": "^5.100.11",
     "@weapp-vite/dashboard": "workspace:*",
     "axios": "^1.16.1",
     "graphql-request": "^7.3.1",

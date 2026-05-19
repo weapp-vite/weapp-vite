@@ -269,7 +269,7 @@
     "tsd": "^0.33.0",
     "tsdown": "0.22.0",
     "tslib": "catalog:",
-    "tsx": "^4.22.1",
+    "tsx": "^4.22.2",
     "turbo": "^2.9.14",
     "type-fest": "^5.6.0",
     "typescript": "catalog:",
