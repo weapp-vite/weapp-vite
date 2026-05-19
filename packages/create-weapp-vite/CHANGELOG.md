@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.3.31
+
+### Patch Changes
+
+- 🐛 **优化模板内 VS Code 保存配置，避免全局保存修复设置触发 Tailwind CSS IntelliSense 和 Stylelint 的耗时 code action。** [`052c91f`](https://github.com/weapp-vite/weapp-vite/commit/052c91f46ffcd5acf6247dd6d839c64b01414a72) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 页面中 `definePageJson` 仅修改页面 JSON 元数据时的开发热更新路径，避免编辑器原子保存触发完整入口重建，并减少 shared chunk 相关页面的无效重发。** [`1787406`](https://github.com/weapp-vite/weapp-vite/commit/1787406482df10bad9fca668642657da80929ba7) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 页面热更新分类，页面模板和样式等不影响运行时脚本图的局部修改不再通过 shared chunk 扩散重发其它入口，提升 wevu 模板开发时的 HMR 响应速度。** [`961fb89`](https://github.com/weapp-vite/weapp-vite/commit/961fb894343e43a48f4055dc40b816bb46b03b22) by @sonofmagic
+
 ## 2.3.30
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.16.19
+
+### Patch Changes
+
+- 🐛 **优化 Vue SFC 页面中 `definePageJson` 仅修改页面 JSON 元数据时的开发热更新路径，避免编辑器原子保存触发完整入口重建，并减少 shared chunk 相关页面的无效重发。** [`1787406`](https://github.com/weapp-vite/weapp-vite/commit/1787406482df10bad9fca668642657da80929ba7) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 页面热更新分类，页面模板和样式等不影响运行时脚本图的局部修改不再通过 shared chunk 扩散重发其它入口，提升 wevu 模板开发时的 HMR 响应速度。** [`961fb89`](https://github.com/weapp-vite/weapp-vite/commit/961fb894343e43a48f4055dc40b816bb46b03b22) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.19`, `wevu@6.16.19`
+
 ## 6.16.18
 
 ### Patch Changes
