@@ -314,7 +314,7 @@ importers:
         specifier: ^3.5.34
         version: 3.5.34
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:@weapp-core/constants
       '@weapp-vite/miniprogram-automator':
         specifier: workspace:*
@@ -556,10 +556,10 @@ importers:
   '@weapp-core/init':
     dependencies:
       '@weapp-core/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../logger
       '@weapp-core/shared':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../shared
 
   '@weapp-core/logger':
@@ -1895,10 +1895,10 @@ importers:
         specifier: 'catalog:'
         version: 7.29.0
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/constants
       '@weapp-core/shared':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/shared
       domhandler:
         specifier: ^6.0.1
@@ -1922,7 +1922,7 @@ importers:
   packages-runtime/web-apis:
     dependencies:
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/constants
       '@wevu/api':
         specifier: workspace:*
@@ -1931,7 +1931,7 @@ importers:
   packages-runtime/wevu:
     dependencies:
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/constants
       '@weapp-core/shared':
         specifier: workspace:*
@@ -1964,7 +1964,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.34
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/constants
       '@weapp-core/shared':
         specifier: workspace:*
@@ -2030,10 +2030,10 @@ importers:
         specifier: ^8.4.3
         version: 8.4.3(@types/node@25.9.0)
       '@weapp-core/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/logger
       '@weapp-core/shared':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/shared
       pathe:
         specifier: 'catalog:'
@@ -2158,10 +2158,10 @@ importers:
   packages/weapp-ide-cli:
     dependencies:
       '@weapp-core/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/logger
       '@weapp-core/shared':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/shared
       '@weapp-vite/devtools-runtime':
         specifier: workspace:*
@@ -2200,7 +2200,7 @@ importers:
         specifier: 'catalog:'
         version: 3.3.0
       '@weapp-core/constants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/constants
       '@weapp-core/init':
         specifier: workspace:*

@@ -43,6 +43,7 @@ jobs:
 
       - name: Validate constants release guards
         run: |
+          pnpm check:publishable-workspace-dependency-protocols
           pnpm check:weapp-core-constants-changeset
           pnpm check:weapp-core-constants-dependency-range
 

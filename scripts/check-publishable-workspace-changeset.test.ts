@@ -16,6 +16,7 @@ import {
   isCurrentModuleEntry,
   isReleaseWorthyWorkspaceFile,
 } from './check-publishable-workspace-changeset'
+import { collectWorkspaceProtocolViolations } from './check-publishable-workspace-dependency-protocols'
 import { collectConstantsReleaseVersionIssues } from './check-weapp-core-constants-release-version'
 
 it('extractChangesetPackages reads package names from frontmatter', () => {
@@ -249,4 +250,52 @@ it('collectConstantsReleaseVersionIssues accepts constants versions without an e
   })
 
   assert.deepEqual(issues, [])
+})
+
+it('collectWorkspaceProtocolViolations requires exact workspace protocol for publishable packages', () => {
+  const workspacePackageNames = new Set(['@weapp-core/constants', 'wevu'])
+
+  assert.deepEqual(
+    collectWorkspaceProtocolViolations({
+      file: 'packages-runtime/wevu/package.json',
+      packageJson: {
+        name: 'wevu',
+        dependencies: {
+          '@weapp-core/constants': 'workspace:*',
+        },
+      },
+      workspacePackageNames,
+    }),
+    [],
+  )
+
+  const violations = collectWorkspaceProtocolViolations({
+    file: 'packages-runtime/wevu/package.json',
+    packageJson: {
+      name: 'wevu',
+      dependencies: {
+        '@weapp-core/constants': 'workspace:^',
+      },
+    },
+    workspacePackageNames,
+  })
+
+  assert.equal(violations.length, 1)
+  assert.match(violations[0]!, /workspace:\^/)
+})
+
+it('collectWorkspaceProtocolViolations ignores private package manifests', () => {
+  const violations = collectWorkspaceProtocolViolations({
+    file: 'apps/demo/package.json',
+    packageJson: {
+      name: 'demo',
+      private: true,
+      dependencies: {
+        wevu: 'workspace:^',
+      },
+    },
+    workspacePackageNames: new Set(['wevu']),
+  })
+
+  assert.deepEqual(violations, [])
 })

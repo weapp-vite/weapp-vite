@@ -62,7 +62,7 @@
     "types": "./dist/index.d.ts"
   },
   "dependencies": {
-    "@weapp-core/logger": "workspace:^",
-    "@weapp-core/shared": "workspace:^"
+    "@weapp-core/logger": "workspace:*",
+    "@weapp-core/shared": "workspace:*"
   }
 }

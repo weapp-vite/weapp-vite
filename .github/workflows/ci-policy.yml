@@ -26,6 +26,7 @@ jobs:
       main_command: |
         pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
+        pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:vscode-extension-changeset
@@ -56,6 +57,7 @@ jobs:
       main_command: |
         pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
+        pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:vscode-extension-changeset

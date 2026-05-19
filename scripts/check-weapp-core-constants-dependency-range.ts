@@ -3,7 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 
 const CONSTANTS_PACKAGE_NAME = '@weapp-core/constants'
-const EXPECTED_SPEC = 'workspace:^'
+const EXPECTED_SPEC = 'workspace:*'
 const sections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'] as const
 
 async function collectPackageJsonFiles(dir: string) {

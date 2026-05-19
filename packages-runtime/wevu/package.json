@@ -192,7 +192,7 @@
     "miniprogram-api-typings": "^5.0.0"
   },
   "dependencies": {
-    "@weapp-core/constants": "workspace:^",
+    "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
