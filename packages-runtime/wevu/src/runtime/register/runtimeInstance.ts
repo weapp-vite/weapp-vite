@@ -34,14 +34,12 @@ import {
 } from './runtimeInstance/setupContext'
 import { runRuntimeSetupPhase } from './runtimeInstance/setupPhase'
 import {
-
   attachNativeInstanceRef,
   attachRuntimeInstance,
-  attachRuntimeProxyProps,
   attachRuntimeRef,
   callNativeSetData,
+  ensureRuntimeProps,
   resolveNativeSetData,
-  syncRuntimeProps,
 } from './runtimeInstance/utils'
 import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { registerWatches } from './watch'
@@ -262,6 +260,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   target.__wevu = runtimeWithDefaults
   attachPageLayoutSetter(target)
+  ensureRuntimeProps(target, runtimeState as Record<string, any>)
 
   attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
 
@@ -280,9 +279,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       runtimeState: runtimeState as Record<string, any>,
       runtimeProxy: runtimeProxy as Record<string, any>,
       setup,
-      syncRuntimeProps,
-      attachRuntimeProxyProps,
     })
+    runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    refreshOwnerSnapshot()
+  }
+  else if (
+    (target as any).properties
+    && typeof (target as any).properties === 'object'
+    && Object.keys((target as any).properties).length > 0
+  ) {
     runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
     refreshOwnerSnapshot()
   }
