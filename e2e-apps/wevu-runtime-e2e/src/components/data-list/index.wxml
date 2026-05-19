@@ -1,0 +1,3 @@
+<view class="data-list">
+  <text class="selected">{{selected}}</text>
+</view>

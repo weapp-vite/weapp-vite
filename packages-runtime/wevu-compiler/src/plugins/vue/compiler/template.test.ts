@@ -138,6 +138,7 @@ describe('compileVueTemplateToWxml', () => {
   :key="id"
   :dynamic="callbacks[id]"
   :handler="callbacks[id]"
+  :selected="data.userId"
   @tap="callback"
 />
 <van-cell :change="handlers.change" />
@@ -146,15 +147,16 @@ describe('compileVueTemplateToWxml', () => {
     const result = compileVueTemplateToWxml(
       template,
       '/project/src/components/FunctionProps/index.vue',
-      { wevuComponentTags: ['van-cell'] },
+      { functionPropNames: ['handler'], wevuComponentTags: ['van-cell'] },
     )
 
     expect(result.code).toContain('subtitle="{{meta.title}}"')
     expect(result.code).toContain('on-save="{{__wv_bind_0}}"')
     expect(result.code).toContain('dynamic="{{callbacks[id]}}"')
     expect(result.code).toContain('handler="{{__wv_bind_1}}"')
+    expect(result.code).toContain('selected="{{data.userId}}"')
     expect(result.code).toContain('change="{{__wv_bind_2}}"')
-    expect(result.functionPropPaths).toEqual(['callback', 'title', 'meta.title', '__wv_bind_0', '__wv_bind_1', '__wv_bind_2'])
+    expect(result.functionPropPaths).toEqual(['callback', 'title', 'meta.title', '__wv_bind_0', '__wv_bind_1', 'data.userId', '__wv_bind_2'])
     expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === 'handlers.save')).toBe(true)
     expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_1' && binding.exp === 'callbacks[id]')).toBe(true)
     expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_2' && binding.exp === 'handlers.change')).toBe(true)

@@ -1,4 +1,5 @@
 {
+  "data-list": "/components/data-list/index",
   "x-child": "/components/x-child/index",
   "x-compat": "/components/x-compat/index",
   "x-function-prop-child": "/components/x-function-prop-child/index",

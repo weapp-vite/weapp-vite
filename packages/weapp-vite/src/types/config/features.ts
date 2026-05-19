@@ -283,6 +283,7 @@ export interface WeappVueTemplateConfig {
   objectLiteralBindMode?: 'runtime' | 'inline'
   mustacheInterpolation?: 'compact' | 'spaced'
   classStyleWxsShared?: boolean
+  functionPropNames?: string[]
 }
 
 /**

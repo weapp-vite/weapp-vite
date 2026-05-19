@@ -12,6 +12,7 @@
     "pages/function-props-auto/index",
     "pages/function-props-disabled/index",
     "pages/function-props-dynamic/index",
+    "pages/non-function-prop-bind/index",
     "pages/root-guard/index",
     "pages/style-matrix/index",
     "pages/template-compat/index",

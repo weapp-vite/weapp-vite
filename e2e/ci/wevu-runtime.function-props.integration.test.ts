@@ -10,6 +10,7 @@ const DYNAMIC_VALUE_MEMBER_BINDING_RE = /dynamic-label="\{\{labels\[currentKey\]
 const AUTO_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"callback",\s*"__wv_bind_\d+",\s*"meta\.title"\s*\]/
 const DISABLED_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"callback",\s*"__wv_bind_\d+"\s*\]/
 const DYNAMIC_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"__wv_bind_\d+"\s*\]/
+const NON_FUNCTION_SELECTED_RUNTIME_BINDING_RE = /selected="\{\{__wv_bind_\d+\}\}"/
 
 describe.sequential('wevu runtime function props integration', () => {
   it('emits compiler metadata for auto function prop paths and preserves opt-out', async () => {
@@ -18,12 +19,15 @@ describe.sequential('wevu runtime function props integration', () => {
     const autoBase = path.join(DIST_ROOT, 'pages/function-props-auto/index')
     const disabledBase = path.join(DIST_ROOT, 'pages/function-props-disabled/index')
     const dynamicBase = path.join(DIST_ROOT, 'pages/function-props-dynamic/index')
+    const nonFunctionBase = path.join(DIST_ROOT, 'pages/non-function-prop-bind/index')
     const autoWxml = await fs.readFile(`${autoBase}.wxml`, 'utf8')
     const autoScript = await fs.readFile(`${autoBase}.js`, 'utf8')
     const disabledWxml = await fs.readFile(`${disabledBase}.wxml`, 'utf8')
     const disabledScript = await fs.readFile(`${disabledBase}.js`, 'utf8')
     const dynamicWxml = await fs.readFile(`${dynamicBase}.wxml`, 'utf8')
     const dynamicScript = await fs.readFile(`${dynamicBase}.js`, 'utf8')
+    const nonFunctionWxml = await fs.readFile(`${nonFunctionBase}.wxml`, 'utf8')
+    const nonFunctionScript = await fs.readFile(`${nonFunctionBase}.js`, 'utf8')
 
     expect(autoWxml).toContain('<x-function-prop-child')
     expect(autoWxml).toContain('callback="{{callback}}"')
@@ -50,5 +54,10 @@ describe.sequential('wevu runtime function props integration', () => {
     expect(dynamicScript).toMatch(DYNAMIC_FUNCTION_PROP_METADATA_RE)
     expect(dynamicScript).toContain('callbacks')
     expect(dynamicScript).toContain('currentKey')
+
+    expect(nonFunctionWxml).toContain('<data-list')
+    expect(nonFunctionWxml).toContain('selected="{{data.userId}}"')
+    expect(nonFunctionWxml).not.toMatch(NON_FUNCTION_SELECTED_RUNTIME_BINDING_RE)
+    expect(nonFunctionScript).not.toContain('__wv_bind_0 = data.userId')
   })
 })

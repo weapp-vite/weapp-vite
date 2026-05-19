@@ -107,6 +107,7 @@ export function compileVueTemplateToWxml(
       inlineExpressions: [],
       inlineExpressionSeed: 0,
       functionPropPaths: new Set(),
+      functionPropNames: new Set(options?.functionPropNames ?? []),
       wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
     }
 

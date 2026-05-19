@@ -96,6 +96,7 @@ export interface TransformContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   functionPropPaths: Set<string>
+  functionPropNames: Set<string>
   wevuComponentTags?: Set<string>
 }
 
@@ -133,6 +134,7 @@ export interface TemplateCompileOptions {
   formatWxml?: boolean
   wxsExtension?: string
   classStyleWxsSrc?: string
+  functionPropNames?: Iterable<string>
   wevuComponentTags?: Iterable<string>
 }
 

@@ -64,5 +64,9 @@ describe.sequential('wevu runtime function props (weapp e2e)', () => {
     const dynamicResult = await runRouteE2E(miniProgram, '/pages/function-props-dynamic/index')
     expect(dynamicResult.checks?.dynamicHandlerReceived).toBe(true)
     expect(dynamicResult.checks?.parentDynamicHandlerCalled).toBe(true)
+
+    const nonFunctionResult = await runRouteE2E(miniProgram, '/pages/non-function-prop-bind/index')
+    expect(nonFunctionResult.checks?.selectedReceived).toBe(true)
+    expect(nonFunctionResult.checks?.selectedTypeString).toBe(true)
   })
 })

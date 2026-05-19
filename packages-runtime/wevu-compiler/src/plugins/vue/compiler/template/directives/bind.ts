@@ -45,7 +45,6 @@ const SIMPLE_MEMBER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
 
 const isSimpleIdentifier = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 const isSimpleMemberPath = (value: string) => SIMPLE_MEMBER_PATH_RE.test(value)
-const FUNCTION_LIKE_PROP_NAME_RE = /callback|handler|listener|function|fn/i
 
 const COMPONENT_NON_PROP_BINDINGS = new Set([
   'class',
@@ -96,8 +95,16 @@ function isComputedMemberExpression(rawExpValue: string): boolean {
   return normalized.type === 'MemberExpression' && normalized.computed
 }
 
-function isFunctionLikePropName(argValue: string) {
-  return FUNCTION_LIKE_PROP_NAME_RE.test(argValue) || argValue === 'change' || /^on[-:_A-Z]/.test(argValue)
+function isEventCompatiblePropName(argValue: string) {
+  return argValue === 'change' || /^on[-:_A-Z]/.test(argValue)
+}
+
+function shouldUseRuntimeFunctionPropBinding(argValue: string, context: TransformContext) {
+  return isEventCompatiblePropName(argValue) || context.functionPropNames.has(argValue)
+}
+
+function shouldWrapStaticMemberFunctionProp(argValue: string, path: string, context: TransformContext) {
+  return path.includes('.') && shouldUseRuntimeFunctionPropBinding(argValue, context)
 }
 
 function createFunctionPropRuntimeAttr(argValue: string, rawExpValue: string, context: TransformContext): string | null {
@@ -108,10 +115,6 @@ function createFunctionPropRuntimeAttr(argValue: string, rawExpValue: string, co
   const bindingName = bindingRef.split('[')[0] || bindingRef
   context.functionPropPaths.add(bindingName)
   return `${argValue}="${renderMustache(bindingRef, context)}"`
-}
-
-function shouldWrapStaticMemberFunctionProp(argValue: string, path: string) {
-  return path.includes('.') && isFunctionLikePropName(argValue)
 }
 
 export function transformBindDirective(
@@ -133,7 +136,7 @@ export function transformBindDirective(
   if (options?.isComponent && !COMPONENT_NON_PROP_BINDINGS.has(argValue)) {
     const path = collectFunctionPropPath(rawExpValue)
     if (path) {
-      if (shouldWrapStaticMemberFunctionProp(argValue, path)) {
+      if (shouldWrapStaticMemberFunctionProp(argValue, path, context)) {
         const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
         if (runtimeAttr) {
           return runtimeAttr
@@ -143,7 +146,7 @@ export function transformBindDirective(
         context.functionPropPaths.add(path)
       }
     }
-    else if (isFunctionLikePropName(argValue) && isComputedMemberExpression(rawExpValue)) {
+    else if (shouldUseRuntimeFunctionPropBinding(argValue, context) && isComputedMemberExpression(rawExpValue)) {
       const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
       if (runtimeAttr) {
         return runtimeAttr

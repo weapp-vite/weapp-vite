@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-18T09:10:24.629Z",
+  "generatedAt": "2026-05-19T08:30:15.617Z",
   "site": "https://vite.icebreaker.top",
   "count": 263,
   "items": [
@@ -913,7 +913,7 @@
         "weapp.vue.template {#weapp-vue-template}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-04-28",
+      "updatedAt": "2026-05-19",
       "source": "config/vue.md"
     },
     {

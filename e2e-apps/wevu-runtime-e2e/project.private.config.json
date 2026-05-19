@@ -64,6 +64,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/function-props-dynamic/index",
+          "pathName": "pages/function-props-dynamic/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/non-function-prop-bind/index",
+          "pathName": "pages/non-function-prop-bind/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/root-guard/index",
           "pathName": "pages/root-guard/index",
           "query": "",

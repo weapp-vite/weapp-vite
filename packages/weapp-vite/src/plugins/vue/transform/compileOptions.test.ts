@@ -135,6 +135,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
               scopedSlotsCompiler: 'augmented',
               slotSingleRootNoWrapper: true,
               classStyleRuntime: 'auto',
+              functionPropNames: ['handler'],
             },
           },
         },
@@ -152,6 +153,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     })
     expect(options.template.htmlTagToWxmlTagClass).toBe(false)
     expect(options.template.classStyleRuntime).toBe('wxs')
+    expect(options.template.functionPropNames).toEqual(['handler'])
     expect(options.template.wxsExtension).toBe('sjs')
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')
     expect(options.template.scopedSlotsRequireProps).toBe(false)
