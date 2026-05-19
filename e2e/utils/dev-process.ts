@@ -24,6 +24,8 @@ interface ProcessEntry {
   command: string
 }
 
+type CommandPattern = RegExp | string
+
 const PROCESS_ENTRY_SEPARATOR_RE = /\s+/
 
 function normalizeErrorMessage(error: unknown) {
@@ -58,6 +60,15 @@ function appendRecentOutput(message: string, outputChunks: string[]) {
     : output
 
   return `${message}\n\nRecent dev output:\n${recentOutput}`
+}
+
+function matchesCommandPattern(command: string, pattern: CommandPattern) {
+  if (typeof pattern === 'string') {
+    return command.includes(pattern)
+  }
+
+  pattern.lastIndex = 0
+  return pattern.test(command)
 }
 
 function sleep(ms: number) {
@@ -204,14 +215,14 @@ export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
 }
 
 export async function cleanupProcessesByCommandPatterns(
-  commandPatterns: readonly string[],
+  commandPatterns: readonly CommandPattern[],
   forceKillDelayMs = 3_000,
 ) {
   const processList = await listUnixProcesses()
   const matchedPidSet = new Set<number>()
 
   for (const processEntry of processList) {
-    if (commandPatterns.some(pattern => processEntry.command.includes(pattern))) {
+    if (commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
       matchedPidSet.add(processEntry.pid)
     }
   }

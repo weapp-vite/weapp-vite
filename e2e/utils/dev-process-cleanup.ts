@@ -3,19 +3,23 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { cleanupProcessesByCommandPatterns, cleanupTrackedDevProcesses } from './dev-process'
 
-const DEV_WORKSPACE_PATTERNS = [
-  'e2e-apps/',
-  'apps/',
-]
-const DEV_COMMAND_PATTERNS = [
-  'weapp-vite/bin/weapp-vite.js dev',
-  'packages/weapp-vite/src/cli.ts dev',
-  'packages/weapp-vite/dist/cli.mjs dev',
+const DEV_PROCESS_MATCH_PATTERNS = [
+  /(?:^|\s)(?:\S*\/)?pnpm(?:\.[cm]?js)?(?:\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+\s+run\s+\S+|\s+run\s+\S+\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+)/,
+  /(?:^|\s)weapp-vite\/bin\/weapp-vite\.js\s+dev[^\n]*(?:e2e-apps|apps)\//,
+  /(?:^|\s)packages\/weapp-vite\/src\/cli\.ts\s+dev[^\n]*(?:e2e-apps|apps)\//,
+  /(?:^|\s)packages\/weapp-vite\/dist\/cli\.mjs\s+dev[^\n]*(?:e2e-apps|apps)\//,
 ]
 
-function buildProcessMatchPatterns(commandPattern: string) {
-  return DEV_WORKSPACE_PATTERNS.map(workspacePattern => `${commandPattern}.*${workspacePattern}`)
-}
+const DEV_PROCESS_PKILL_PATTERNS = [
+  'pnpm.*--dir.*e2e-apps/.+ run ',
+  'pnpm.*--dir.*apps/.+ run ',
+  'weapp-vite/bin/weapp-vite.js dev.*e2e-apps/',
+  'weapp-vite/bin/weapp-vite.js dev.*apps/',
+  'packages/weapp-vite/src/cli.ts dev.*e2e-apps/',
+  'packages/weapp-vite/src/cli.ts dev.*apps/',
+  'packages/weapp-vite/dist/cli.mjs dev.*e2e-apps/',
+  'packages/weapp-vite/dist/cli.mjs dev.*apps/',
+]
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -28,28 +32,24 @@ export async function cleanupResidualDevProcesses() {
 
   await cleanupTrackedDevProcesses(2_500)
 
-  const processMatchPatterns = DEV_COMMAND_PATTERNS.flatMap(buildProcessMatchPatterns)
+  for (const pattern of DEV_PROCESS_PKILL_PATTERNS) {
+    await execa('pkill', ['-f', pattern], {
+      reject: false,
+      stdin: 'ignore',
+      stdout: 'ignore',
+      stderr: 'ignore',
+    })
 
-  for (const commandPattern of DEV_COMMAND_PATTERNS) {
-    for (const processMatchPattern of buildProcessMatchPatterns(commandPattern)) {
-      await execa('pkill', ['-f', processMatchPattern], {
-        reject: false,
-        stdin: 'ignore',
-        stdout: 'ignore',
-        stderr: 'ignore',
-      })
-
-      await execa('pkill', ['-9', '-f', processMatchPattern], {
-        reject: false,
-        stdin: 'ignore',
-        stdout: 'ignore',
-        stderr: 'ignore',
-      })
-    }
+    await execa('pkill', ['-9', '-f', pattern], {
+      reject: false,
+      stdin: 'ignore',
+      stdout: 'ignore',
+      stderr: 'ignore',
+    })
   }
 
   try {
-    await cleanupProcessesByCommandPatterns(processMatchPatterns, 2_500)
+    await cleanupProcessesByCommandPatterns(DEV_PROCESS_MATCH_PATTERNS, 2_500)
   }
   catch {}
   await sleep(1_000)
