@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.16.17
+
+### Patch Changes
+
+- 🐛 **补发共享常量包，并同步提升所有公开依赖包版本，确保新增的 wevu 函数 props 运行时常量会随用户更新一起解析到 npm 最新产物。** [`362bbd3`](https://github.com/weapp-vite/weapp-vite/commit/362bbd3e3bbed438746fe4db00602204da8c7ec2) by @sonofmagic
+
 ## 6.16.16
 
 ### Patch Changes

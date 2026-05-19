@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.3.22
+
+### Patch Changes
+
+- 🐛 **补发共享常量包，并同步提升所有公开依赖包版本，确保新增的 wevu 函数 props 运行时常量会随用户更新一起解析到 npm 最新产物。** [`362bbd3`](https://github.com/weapp-vite/weapp-vite/commit/362bbd3e3bbed438746fe4db00602204da8c7ec2) by @sonofmagic
+- 📦 **Dependencies** [`362bbd3`](https://github.com/weapp-vite/weapp-vite/commit/362bbd3e3bbed438746fe4db00602204da8c7ec2)
+  → `@weapp-core/constants@0.1.8`
+
 ## 1.3.21
 
 ### Patch Changes
