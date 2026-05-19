@@ -40,7 +40,11 @@ function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackage
   return !root || relativeSrc === root || relativeSrc.startsWith(`${root}/`)
 }
 
-async function normalizeWatchEvent(id: string, event: ChangeEvent) {
+async function normalizeWatchEvent(id: string, event: ChangeEvent, loadedEntrySet: Set<string>) {
+  if (event === 'create' && loadedEntrySet.has(id) && await fs.pathExists(id)) {
+    return 'update' satisfies ChangeEvent
+  }
+
   if (event !== 'delete') {
     return event
   }
@@ -414,7 +418,7 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isOutputFileChange(state, normalizedId)) {
       return
     }
-    const event = await normalizeWatchEvent(normalizedId, change.event)
+    const event = await normalizeWatchEvent(normalizedId, change.event, state.loadedEntrySet)
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,

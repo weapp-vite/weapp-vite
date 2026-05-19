@@ -105,6 +105,9 @@ function resolvePendingEntryIds(options: {
     if (dirtyReason !== 'dependency' && dirtyReason !== 'direct' && dirtyReason !== 'metadata') {
       continue
     }
+    if (dirtyReason === 'metadata') {
+      continue
+    }
     const chunkIds = options.sharedChunksByEntry.get(entryId)
     if (!chunkIds?.size) {
       continue

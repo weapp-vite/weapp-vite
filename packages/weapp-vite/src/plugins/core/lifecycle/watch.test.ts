@@ -295,6 +295,35 @@ const count = 1
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
+  it('normalizes transient create events on loaded vue entries back to metadata updates', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      entryId,
+      resolveVueSfcNonJsonSignature(previousSource, entryId),
+    )
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'create' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
+  })
+
   it('normalizes transient delete events on loaded scripts back to updates', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
     const entryId = '/project/src/pages/hmr/index.ts'

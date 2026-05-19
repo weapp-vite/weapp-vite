@@ -464,7 +464,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
-  it('expands metadata entry updates across non-source vendor shared chunk importers', async () => {
+  it('keeps metadata entry updates incremental across non-source vendor shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -485,8 +485,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-src.js)+2:metadata'])
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {
