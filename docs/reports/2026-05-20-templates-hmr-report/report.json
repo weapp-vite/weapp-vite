@@ -1,0 +1,2139 @@
+{
+  "budgetMs": 500,
+  "generatedAt": "2026-05-19T17:03:52.347Z",
+  "iterations": 1,
+  "summary": {
+    "maxMs": 13360.243790999986,
+    "maxWallMs": 18940.557417000004,
+    "measuredScenarioCount": 65,
+    "overBudgetCount": 34,
+    "failedTemplateCount": 0,
+    "failedScenarioCount": 4,
+    "templateCount": 9,
+    "scenarioCount": 69
+  },
+  "templates": [
+    {
+      "id": "weapp-vite-lib-template",
+      "project": {
+        "source": "templates/weapp-vite-lib-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template"
+      },
+      "scenarioCount": 11,
+      "scenarios": [
+        {
+          "averageMs": 198.33495900000003,
+          "averageWallMs": 309.74625000000015,
+          "group": "vue",
+          "id": "vue-page-template",
+          "label": "components/sfc-script/index.vue template",
+          "maxMs": 198.33495900000003,
+          "maxWallMs": 309.74625000000015,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/components/sfc-script/index.wxml",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:14.828Z",
+              "totalMs": 198.33495900000003,
+              "eventId": "mpcvgdfo-1",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue",
+              "relativeFile": "src/components/sfc-script/index.vue",
+              "sourceRootFile": "components/sfc-script/index.vue",
+              "buildCoreMs": 191.08583299999987,
+              "transformMs": 66.51241300000038,
+              "writeMs": 5.683291999999938,
+              "watchToDirtyMs": 0.8719170000001668,
+              "emitMs": 0.6939170000000559,
+              "sharedChunkResolveMs": 0.03300000000012915,
+              "dirtyCount": 1,
+              "pendingCount": 6,
+              "emittedCount": 6,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,weapp-vite-runtime.js+)+5:direct"
+              ],
+              "wallMs": 309.74625000000015
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue"
+        },
+        {
+          "averageMs": 141.84104100000013,
+          "averageWallMs": 304.5787919999998,
+          "group": "vue",
+          "id": "vue-page-script",
+          "label": "components/sfc-script/index.vue script",
+          "maxMs": 141.84104100000013,
+          "maxWallMs": 304.5787919999998,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/components/sfc-script/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:15.684Z",
+              "totalMs": 141.84104100000013,
+              "eventId": "mpcvge51-5",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue",
+              "relativeFile": "src/components/sfc-script/index.vue",
+              "sourceRootFile": "components/sfc-script/index.vue",
+              "buildCoreMs": 139.489916,
+              "transformMs": 50.31962899999917,
+              "writeMs": 1.803625000000011,
+              "watchToDirtyMs": 0.2430420000000595,
+              "emitMs": 0.30445800000006784,
+              "sharedChunkResolveMs": 0.017333000000235188,
+              "dirtyCount": 1,
+              "pendingCount": 6,
+              "emittedCount": 6,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,weapp-vite-runtime.js+)+5:direct"
+              ],
+              "wallMs": 304.5787919999998
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue"
+        },
+        {
+          "averageMs": 177.39641699999993,
+          "averageWallMs": 304.935708,
+          "group": "vue",
+          "id": "vue-page-style",
+          "label": "components/sfc-script/index.vue style",
+          "maxMs": 177.39641699999993,
+          "maxWallMs": 304.935708,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/components/sfc-script/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:16.740Z",
+              "totalMs": 177.39641699999993,
+              "eventId": "mpcvgexe-9",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue",
+              "relativeFile": "src/components/sfc-script/index.vue",
+              "sourceRootFile": "components/sfc-script/index.vue",
+              "buildCoreMs": 173.95162500000015,
+              "transformMs": 61.07804400000259,
+              "writeMs": 2.356583999999657,
+              "watchToDirtyMs": 0.41829199999983757,
+              "emitMs": 0.6699160000002848,
+              "sharedChunkResolveMs": 0.02374999999983629,
+              "dirtyCount": 1,
+              "pendingCount": 6,
+              "emittedCount": 6,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,weapp-vite-runtime.js+)+5:direct"
+              ],
+              "wallMs": 304.935708
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/components/sfc-script/index.vue"
+        },
+        {
+          "averageMs": 308.4688750000005,
+          "averageWallMs": 308.4688750000005,
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "maxMs": 308.4688750000005,
+          "maxWallMs": 308.4688750000005,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/app.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.json",
+              "totalMs": 308.4688750000005,
+              "wallMs": 308.4688750000005
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.json"
+        },
+        {
+          "averageMs": 49.722459000000526,
+          "averageWallMs": 203.16683300000113,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 49.722459000000526,
+          "maxWallMs": 203.16683300000113,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/app.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:23.350Z",
+              "totalMs": 49.722459000000526,
+              "eventId": "mpcvgk4k-k",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 48.63846000000012,
+              "transformMs": 0.12579100000039034,
+              "writeMs": 0.28545800000028976,
+              "watchToDirtyMs": 0.7675410000010743,
+              "emitMs": 0.030999999999039574,
+              "sharedChunkResolveMs": 0.01283300000068266,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [],
+              "pendingReasonSummary": [],
+              "wallMs": 203.16683300000113
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.ts"
+        },
+        {
+          "averageMs": 35.83470800000032,
+          "averageWallMs": 203.3264169999984,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.scss",
+          "maxMs": 35.83470800000032,
+          "maxWallMs": 203.3264169999984,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/app.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:24.050Z",
+              "totalMs": 35.83470800000032,
+              "eventId": "mpcvgkoe-o",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 35.13566599999831,
+              "transformMs": 0.072041999999783,
+              "writeMs": 0.5463749999998981,
+              "watchToDirtyMs": 0.14425000000119326,
+              "emitMs": 0.008417000000918051,
+              "sharedChunkResolveMs": 0.0020830000012210803,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 203.3264169999984
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/app.scss"
+        },
+        {
+          "averageMs": 509.3176249999997,
+          "averageWallMs": 509.3176249999997,
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "maxMs": 509.3176249999997,
+          "maxWallMs": 509.3176249999997,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/pages/index/index.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.wxml",
+              "totalMs": 509.3176249999997,
+              "wallMs": 509.3176249999997
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.wxml"
+        },
+        {
+          "averageMs": 164.01341700000194,
+          "averageWallMs": 307.34979100000055,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 164.01341700000194,
+          "maxWallMs": 307.34979100000055,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/pages/index/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:31.114Z",
+              "totalMs": 164.01341700000194,
+              "eventId": "mpcvgq12-z",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.wxml",
+              "relativeFile": "src/pages/index/index.wxml",
+              "sourceRootFile": "pages/index/index.wxml",
+              "buildCoreMs": 161.442583,
+              "transformMs": 53.459499999982654,
+              "writeMs": 1.8401669999984733,
+              "watchToDirtyMs": 0.3299170000027516,
+              "emitMs": 0.4007500000006985,
+              "sharedChunkResolveMs": 0.014833000001090113,
+              "dirtyCount": 2,
+              "pendingCount": 6,
+              "emittedCount": 6,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,weapp-vite-runtime.js+)+5:direct"
+              ],
+              "wallMs": 307.34979100000055
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 137.70016599999872,
+          "averageWallMs": 306.8590000000004,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.scss",
+          "maxMs": 137.70016599999872,
+          "maxWallMs": 306.8590000000004,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/pages/index/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:31.996Z",
+              "totalMs": 137.70016599999872,
+              "eventId": "mpcvgqqa-12",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 135.3394989999979,
+              "transformMs": 43.56308400000853,
+              "writeMs": 1.827292000001762,
+              "watchToDirtyMs": 0.23483399999895482,
+              "emitMs": 0.29854100000011385,
+              "sharedChunkResolveMs": 0.01341599999796017,
+              "dirtyCount": 2,
+              "pendingCount": 6,
+              "emittedCount": 6,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,weapp-vite-runtime.js+)+5:direct"
+              ],
+              "wallMs": 306.8590000000004
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/pages/index/index.scss"
+        },
+        {
+          "averageMs": 204.88945800000147,
+          "averageWallMs": 204.88945800000147,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 204.88945800000147,
+          "maxWallMs": 204.88945800000147,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/sitemap.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/sitemap.json",
+              "totalMs": 204.88945800000147,
+              "wallMs": 204.88945800000147
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 204.35616700000173,
+          "averageWallMs": 204.35616700000173,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 204.35616700000173,
+          "maxWallMs": 204.35616700000173,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/dist/theme.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/theme.json",
+              "totalMs": 204.35616700000173,
+              "wallMs": 204.35616700000173
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-lib-template/src/theme.json"
+        }
+      ],
+      "startupMs": 1222.5879579999998
+    },
+    {
+      "id": "weapp-vite-plugin-template",
+      "project": {
+        "source": "templates/weapp-vite-plugin-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template"
+      },
+      "scenarioCount": 6,
+      "scenarios": [
+        {
+          "averageMs": 75.57229200000006,
+          "averageWallMs": 306.84541700000045,
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "maxMs": 75.57229200000006,
+          "maxWallMs": 306.84541700000045,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/app.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:45.370Z",
+              "totalMs": 75.57229200000006,
+              "eventId": "mpcvh13h-1",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 74.0735840000001,
+              "transformMs": 0.09991700000000492,
+              "writeMs": 0.5546669999999949,
+              "watchToDirtyMs": 0.9440409999999702,
+              "dirtyReasonSummary": [],
+              "wallMs": 306.84541700000045
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/app.json"
+        },
+        {
+          "averageMs": 10.612084000000095,
+          "averageWallMs": 102.07500000000437,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 10.612084000000095,
+          "maxWallMs": 102.07500000000437,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/app.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:53:45.931Z",
+              "totalMs": 10.612084000000095,
+              "eventId": "mpcvh1kw-6",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 9.813293000000158,
+              "transformMs": 0.0722089999999298,
+              "writeMs": 0.3840829999999187,
+              "watchToDirtyMs": 0.41470800000001873,
+              "dirtyReasonSummary": [],
+              "wallMs": 102.07500000000437
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/app.ts"
+        },
+        {
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/pages/index/index.wxml",
+          "overBudget": false,
+          "samples": [],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/pages/index/index.wxml",
+          "error": "Timed out waiting for .tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/pages/index/index.wxml to contain marker: HMR_BENCH_WEAPP_VITE_PLUGIN_TEMPLATE_NATIVE_PAGE_TEMPLATE_1_mpcvh1wu"
+        },
+        {
+          "averageMs": 19.069666999999754,
+          "averageWallMs": 102.14112499999464,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 19.069666999999754,
+          "maxWallMs": 102.14112499999464,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/pages/index/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:54:16.543Z",
+              "totalMs": 19.069666999999754,
+              "eventId": "mpcvhp70-b",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/pages/index/index.wxml",
+              "relativeFile": "src/pages/index/index.wxml",
+              "sourceRootFile": "pages/index/index.wxml",
+              "buildCoreMs": 16.97045799999978,
+              "transformMs": 1.0166660000031698,
+              "writeMs": 0.4431670000012673,
+              "watchToDirtyMs": 0.6832919999978913,
+              "emitMs": 0.9727500000008149,
+              "dirtyCount": 2,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "sidecar-direct:1",
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 102.14112499999464
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 15.11883399999715,
+          "averageWallMs": 101.34004200000345,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.wxss",
+          "maxMs": 15.11883399999715,
+          "maxWallMs": 101.34004200000345,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/pages/index/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:54:17.049Z",
+              "totalMs": 15.11883399999715,
+              "eventId": "mpcvhpl5-e",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 14.081084999994346,
+              "transformMs": 0.3861659999965923,
+              "writeMs": 0.6509160000023257,
+              "watchToDirtyMs": 0.19795800000065356,
+              "emitMs": 0.18887499999982538,
+              "dirtyCount": 2,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 101.34004200000345
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/pages/index/index.wxss"
+        },
+        {
+          "averageMs": 100.91037499999948,
+          "averageWallMs": 100.91037499999948,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 100.91037499999948,
+          "maxWallMs": 100.91037499999948,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/dist/sitemap.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/sitemap.json",
+              "totalMs": 100.91037499999948,
+              "wallMs": 100.91037499999948
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-plugin-template/src/sitemap.json"
+        }
+      ],
+      "startupMs": 713.9340000000011
+    },
+    {
+      "id": "weapp-vite-tailwindcss-tdesign-template",
+      "project": {
+        "source": "templates/weapp-vite-tailwindcss-tdesign-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template"
+      },
+      "scenarioCount": 8,
+      "scenarios": [
+        {
+          "averageMs": 865.320667,
+          "averageWallMs": 933.7967920000083,
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "maxMs": 865.320667,
+          "maxWallMs": 933.7967920000083,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/app.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:54:38.192Z",
+              "totalMs": 865.320667,
+              "eventId": "mpcvi58u-1",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 861.7564170000005,
+              "transformMs": 0.07012499999837019,
+              "writeMs": 2.663249999999607,
+              "watchToDirtyMs": 0.9009999999998399,
+              "dirtyReasonSummary": [],
+              "wallMs": 933.7967920000083
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.json"
+        },
+        {
+          "averageMs": 485.88258400000086,
+          "averageWallMs": 815.5988339999894,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 485.88258400000086,
+          "maxWallMs": 815.5988339999894,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/app.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:54:39.852Z",
+              "totalMs": 485.88258400000086,
+              "eventId": "mpcvi6ti-4",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 484.74045900000056,
+              "transformMs": 0.1124999999992724,
+              "writeMs": 0.8109169999988808,
+              "watchToDirtyMs": 0.3110000000015134,
+              "emitMs": 0.020207999999911408,
+              "sharedChunkResolveMs": 0.007083000000420725,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 815.5988339999894
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.ts"
+        },
+        {
+          "averageMs": 7200.339,
+          "averageWallMs": 7266.5347080000065,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.css",
+          "maxMs": 7200.339,
+          "maxWallMs": 7266.5347080000065,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/app.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:54:48.513Z",
+              "totalMs": 7200.339,
+              "eventId": "mpcvi8bl-9",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 6725.612666999999,
+              "transformMs": 0.08858299999883457,
+              "writeMs": 474.5787080000009,
+              "watchToDirtyMs": 0.13070800000059535,
+              "emitMs": 0.01691699999901175,
+              "sharedChunkResolveMs": 0.004707999998572632,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 7266.5347080000065
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/app.css"
+        },
+        {
+          "averageMs": 873.2232079999958,
+          "averageWallMs": 8072.791666000005,
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "maxMs": 873.2232079999958,
+          "maxWallMs": 8072.791666000005,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/pages/index/index.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:55:04.812Z",
+              "totalMs": 873.2232079999958,
+              "eventId": "mpcvips2-f",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 863.1491669999959,
+              "transformMs": 1.0998320000217063,
+              "writeMs": 9.44304099999863,
+              "watchToDirtyMs": 0.3771249999990687,
+              "emitMs": 0.2538750000021537,
+              "sharedChunkResolveMs": 0.03250000000116415,
+              "dirtyCount": 1,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 8072.791666000005
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.wxml"
+        },
+        {
+          "averageMs": 554.5420830000003,
+          "averageWallMs": 619.5748339999991,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 554.5420830000003,
+          "maxWallMs": 619.5748339999991,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/pages/index/index.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:55:07.035Z",
+              "totalMs": 554.5420830000003,
+              "eventId": "mpcvirqo-j",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 550.2232920000097,
+              "transformMs": 1.6077499999883003,
+              "writeMs": 3.8104160000002594,
+              "watchToDirtyMs": 0.25645799999620067,
+              "emitMs": 0.25191699999413686,
+              "sharedChunkResolveMs": 0.018791000002238434,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 619.5748339999991
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 538.1216659999991,
+          "averageWallMs": 617.3798749999987,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.scss",
+          "maxMs": 538.1216659999991,
+          "maxWallMs": 617.3798749999987,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/pages/index/index.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:55:09.172Z",
+              "totalMs": 538.1216659999991,
+              "eventId": "mpcvitei-n",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 534.9778330000045,
+              "transformMs": 0.958500999964599,
+              "writeMs": 2.7639169999965816,
+              "watchToDirtyMs": 0.1748749999969732,
+              "emitMs": 0.20504100000107428,
+              "sharedChunkResolveMs": 0.009083000004466157,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 617.3798749999987
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.scss"
+        },
+        {
+          "averageMs": 916.926959000004,
+          "averageWallMs": 916.926959000004,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 916.926959000004,
+          "maxWallMs": 916.926959000004,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/sitemap.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/sitemap.json",
+              "totalMs": 916.926959000004,
+              "wallMs": 916.926959000004
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 513.8036250000005,
+          "averageWallMs": 513.8036250000005,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 513.8036250000005,
+          "maxWallMs": 513.8036250000005,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/dist/theme.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/theme.json",
+              "totalMs": 513.8036250000005,
+              "wallMs": 513.8036250000005
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-tdesign-template/src/theme.json"
+        }
+      ],
+      "startupMs": 9069.644916999998
+    },
+    {
+      "id": "weapp-vite-tailwindcss-template",
+      "project": {
+        "source": "templates/weapp-vite-tailwindcss-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template"
+      },
+      "scenarioCount": 8,
+      "scenarios": [
+        {
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/app.json",
+          "overBudget": false,
+          "samples": [],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/app.json",
+          "error": "Timed out waiting for .tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/app.json to contain marker: HMR_BENCH_WEAPP_VITE_TAILWINDCSS_TEMPLATE_APP_JSON_1_mpcvjbuf"
+        },
+        {
+          "averageMs": 900.0797920000041,
+          "averageWallMs": 926.4900420000195,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 900.0797920000041,
+          "maxWallMs": 926.4900420000195,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/app.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:56:03.613Z",
+              "totalMs": 900.0797920000041,
+              "eventId": "mpcvjz4o-2",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 898.1502499999988,
+              "transformMs": 0.11925099999643862,
+              "writeMs": 1.1813340000007884,
+              "watchToDirtyMs": 0.4876250000015716,
+              "emitMs": 0.26058300000295276,
+              "sharedChunkResolveMs": 0.00849999999627471,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "sidecar-direct:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 926.4900420000195
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/app.ts"
+        },
+        {
+          "averageMs": 7460.358958000004,
+          "averageWallMs": 7461.695917000005,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.css",
+          "maxMs": 7460.358958000004,
+          "maxWallMs": 7461.695917000005,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/app.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:56:12.006Z",
+              "totalMs": 7460.358958000004,
+              "eventId": "mpcvk0jl-5",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 6976.954791000004,
+              "transformMs": 0.07591600000159815,
+              "writeMs": 483.22987500000454,
+              "watchToDirtyMs": 0.15212500000052387,
+              "emitMs": 0.022166999995533843,
+              "sharedChunkResolveMs": 0.004625000001396984,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 7461.695917000005
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/app.css"
+        },
+        {
+          "averageMs": 8787.540833000006,
+          "averageWallMs": 8787.540833000006,
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "maxMs": 8787.540833000006,
+          "maxWallMs": 8787.540833000006,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/pages/index/index.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.wxml",
+              "totalMs": 8787.540833000006,
+              "wallMs": 8787.540833000006
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.wxml"
+        },
+        {
+          "averageMs": 506.02074999999604,
+          "averageWallMs": 517.2272499999963,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 506.02074999999604,
+          "maxWallMs": 517.2272499999963,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/pages/index/index.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:56:35.098Z",
+              "totalMs": 506.02074999999604,
+              "eventId": "mpcvknq8-g",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.wxml",
+              "relativeFile": "src/pages/index/index.wxml",
+              "sourceRootFile": "pages/index/index.wxml",
+              "buildCoreMs": 501.55412400000205,
+              "transformMs": 1.2761260000552284,
+              "writeMs": 3.5749999999970896,
+              "watchToDirtyMs": 0.4872920000052545,
+              "emitMs": 0.40433399999164976,
+              "sharedChunkResolveMs": 0.028124999997089617,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 517.2272499999963
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 516.4730419999978,
+          "averageWallMs": 515.1264999999839,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.scss",
+          "maxMs": 516.4730419999978,
+          "maxWallMs": 515.1264999999839,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/pages/index/index.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:56:36.641Z",
+              "totalMs": 516.4730419999978,
+              "eventId": "mpcvkowt-j",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 506.3646249999874,
+              "transformMs": 0.9067080000095302,
+              "writeMs": 9.653459000008297,
+              "watchToDirtyMs": 0.1629160000011325,
+              "emitMs": 0.29204200000094716,
+              "sharedChunkResolveMs": 0.010125000000698492,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 515.1264999999839
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/pages/index/index.scss"
+        },
+        {
+          "averageMs": 816.8790830000071,
+          "averageWallMs": 816.8790830000071,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 816.8790830000071,
+          "maxWallMs": 816.8790830000071,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/sitemap.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/sitemap.json",
+              "totalMs": 816.8790830000071,
+              "wallMs": 816.8790830000071
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 510.24566700001014,
+          "averageWallMs": 510.24566700001014,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 510.24566700001014,
+          "maxWallMs": 510.24566700001014,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/dist/theme.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/theme.json",
+              "totalMs": 510.24566700001014,
+              "wallMs": 510.24566700001014
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-template/src/theme.json"
+        }
+      ],
+      "startupMs": 8961.472790999993
+    },
+    {
+      "id": "weapp-vite-tailwindcss-vant-template",
+      "project": {
+        "source": "templates/weapp-vite-tailwindcss-vant-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template"
+      },
+      "scenarioCount": 8,
+      "scenarios": [
+        {
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/app.json",
+          "overBudget": false,
+          "samples": [],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/app.json",
+          "error": "Timed out waiting for .tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/app.json to contain marker: HMR_BENCH_WEAPP_VITE_TAILWINDCSS_VANT_TEMPLATE_APP_JSON_1_mpcvl6t2"
+        },
+        {
+          "averageMs": 677.8475840000028,
+          "averageWallMs": 718.0793340000091,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 677.8475840000028,
+          "maxWallMs": 718.0793340000091,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/app.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:57:30.109Z",
+              "totalMs": 677.8475840000028,
+              "eventId": "mpcvlu1i-2",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 675.3890839999949,
+              "transformMs": 0.11941600000136532,
+              "writeMs": 1.6860840000008466,
+              "watchToDirtyMs": 0.6285830000051646,
+              "emitMs": 0.14383300000190502,
+              "sharedChunkResolveMs": 0.0038329999952111393,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "sidecar-direct:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 718.0793340000091
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/app.ts"
+        },
+        {
+          "averageMs": 6979.514667000003,
+          "averageWallMs": 7045.294374999969,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.css",
+          "maxMs": 6979.514667000003,
+          "maxWallMs": 7045.294374999969,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/app.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:57:38.047Z",
+              "totalMs": 6979.514667000003,
+              "eventId": "mpcvlvaz-5",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 6504.1514600000155,
+              "transformMs": 0.08158299999922747,
+              "writeMs": 475.11579099999653,
+              "watchToDirtyMs": 0.21987499999522697,
+              "emitMs": 0.02754099999583559,
+              "sharedChunkResolveMs": 0.004041000000142958,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 7045.294374999969
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/app.css"
+        },
+        {
+          "averageMs": 8588.530499999993,
+          "averageWallMs": 8588.530499999993,
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "maxMs": 8588.530499999993,
+          "maxWallMs": 8588.530499999993,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/pages/index/index.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.wxml",
+              "totalMs": 8588.530499999993,
+              "wallMs": 8588.530499999993
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.wxml"
+        },
+        {
+          "averageMs": 522.7437910000008,
+          "averageWallMs": 609.8031670000055,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 522.7437910000008,
+          "maxWallMs": 609.8031670000055,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/pages/index/index.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:02.451Z",
+              "totalMs": 522.7437910000008,
+              "eventId": "mpcvmj48-g",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.wxml",
+              "relativeFile": "src/pages/index/index.wxml",
+              "sourceRootFile": "pages/index/index.wxml",
+              "buildCoreMs": 518.5509569999849,
+              "transformMs": 1.2745010000217007,
+              "writeMs": 3.5751670000026934,
+              "watchToDirtyMs": 0.32829200000560377,
+              "emitMs": 0.289375000007567,
+              "sharedChunkResolveMs": 0.022458999999798834,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 609.8031670000055
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 523.0400829999999,
+          "averageWallMs": 519.4466250000405,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.scss",
+          "maxMs": 523.0400829999999,
+          "maxWallMs": 519.4466250000405,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/pages/index/index.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:03.876Z",
+              "totalMs": 523.0400829999999,
+              "eventId": "mpcvmk7t-j",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 519.786831999998,
+              "transformMs": 0.8827930000115884,
+              "writeMs": 2.8659590000024764,
+              "watchToDirtyMs": 0.1688750000030268,
+              "emitMs": 0.21841699999640696,
+              "sharedChunkResolveMs": 0.007916000002296641,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 519.4466250000405
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/pages/index/index.scss"
+        },
+        {
+          "averageMs": 813.8064170000143,
+          "averageWallMs": 813.8064170000143,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 813.8064170000143,
+          "maxWallMs": 813.8064170000143,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/sitemap.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/sitemap.json",
+              "totalMs": 813.8064170000143,
+              "wallMs": 813.8064170000143
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 516.5221250000177,
+          "averageWallMs": 516.5221250000177,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 516.5221250000177,
+          "maxWallMs": 516.5221250000177,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/dist/theme.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/theme.json",
+              "totalMs": 516.5221250000177,
+              "wallMs": 516.5221250000177
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-tailwindcss-vant-template/src/theme.json"
+        }
+      ],
+      "startupMs": 8447.135458000004
+    },
+    {
+      "id": "weapp-vite-template",
+      "project": {
+        "source": "templates/weapp-vite-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-template"
+      },
+      "scenarioCount": 8,
+      "scenarios": [
+        {
+          "averageMs": 37.81916699999988,
+          "averageWallMs": 204.02170799998567,
+          "group": "app",
+          "id": "app-json",
+          "label": "app.json",
+          "maxMs": 37.81916699999988,
+          "maxWallMs": 204.02170799998567,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/app.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:19.330Z",
+              "totalMs": 37.81916699999988,
+              "eventId": "mpcvmwij-1",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 36.09600099999989,
+              "transformMs": 0.08525000000008731,
+              "writeMs": 0.48416599999995924,
+              "watchToDirtyMs": 1.2390000000000327,
+              "dirtyReasonSummary": [],
+              "wallMs": 204.02170799998567
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.json"
+        },
+        {
+          "averageMs": 35.52816699999994,
+          "averageWallMs": 203.78616700001294,
+          "group": "app",
+          "id": "app-script",
+          "label": "app.ts",
+          "maxMs": 35.52816699999994,
+          "maxWallMs": 203.78616700001294,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/app.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:20.035Z",
+              "totalMs": 35.52816699999994,
+              "eventId": "mpcvmx27-5",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.json",
+              "relativeFile": "src/app.json",
+              "sourceRootFile": "app.json",
+              "buildCoreMs": 34.661707999999635,
+              "transformMs": 0.08295800000018971,
+              "writeMs": 0.35225000000014006,
+              "watchToDirtyMs": 0.49820900000008805,
+              "emitMs": 0.016000000000076398,
+              "sharedChunkResolveMs": 0.004249999999956344,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [],
+              "pendingReasonSummary": [],
+              "wallMs": 203.78616700001294
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.ts"
+        },
+        {
+          "averageMs": 39.14308299999993,
+          "averageWallMs": 206.25112500000978,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.scss",
+          "maxMs": 39.14308299999993,
+          "maxWallMs": 206.25112500000978,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/app.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:20.743Z",
+              "totalMs": 39.14308299999993,
+              "eventId": "mpcvmxls-9",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.ts",
+              "relativeFile": "src/app.ts",
+              "sourceRootFile": "app.ts",
+              "buildCoreMs": 38.5253330000005,
+              "transformMs": 0.08033400000022084,
+              "writeMs": 0.37199999999984357,
+              "watchToDirtyMs": 0.22770799999989322,
+              "emitMs": 0.01804199999969569,
+              "sharedChunkResolveMs": 0.0045419999996738625,
+              "dirtyCount": 1,
+              "pendingCount": 0,
+              "emittedCount": 0,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 206.25112500000978
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/app.scss"
+        },
+        {
+          "averageMs": 306.3507080000127,
+          "averageWallMs": 306.3507080000127,
+          "group": "native-page",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "maxMs": 306.3507080000127,
+          "maxWallMs": 306.3507080000127,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/pages/index/index.wxml",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.wxml",
+              "totalMs": 306.3507080000127,
+              "wallMs": 306.3507080000127
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.wxml"
+        },
+        {
+          "averageMs": 70.27624999999898,
+          "averageWallMs": 204.6138749999809,
+          "group": "native-page",
+          "id": "native-page-script",
+          "label": "pages/index/index.ts",
+          "maxMs": 70.27624999999898,
+          "maxWallMs": 204.6138749999809,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/pages/index/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:27.415Z",
+              "totalMs": 70.27624999999898,
+              "eventId": "mpcvn2q9-k",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.wxml",
+              "relativeFile": "src/pages/index/index.wxml",
+              "sourceRootFile": "pages/index/index.wxml",
+              "buildCoreMs": 68.27745799999866,
+              "transformMs": 1.0631679999914923,
+              "writeMs": 1.4543749999993452,
+              "watchToDirtyMs": 0.3136670000003505,
+              "emitMs": 0.23075000000062573,
+              "sharedChunkResolveMs": 0.017583000000740867,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 204.6138749999809
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.ts"
+        },
+        {
+          "averageMs": 71.0439580000002,
+          "averageWallMs": 202.07204199995613,
+          "group": "native-page",
+          "id": "native-page-style",
+          "label": "pages/index/index.scss",
+          "maxMs": 71.0439580000002,
+          "maxWallMs": 202.07204199995613,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/pages/index/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:58:28.127Z",
+              "totalMs": 71.0439580000002,
+              "eventId": "mpcvn3a0-n",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.ts",
+              "relativeFile": "src/pages/index/index.ts",
+              "sourceRootFile": "pages/index/index.ts",
+              "buildCoreMs": 69.10604100000091,
+              "transformMs": 0.8955450000012206,
+              "writeMs": 1.3366669999995793,
+              "watchToDirtyMs": 0.198207999999795,
+              "emitMs": 0.40304199999991397,
+              "sharedChunkResolveMs": 0.009459000000788365,
+              "dirtyCount": 2,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(common.js)+2:direct"
+              ],
+              "wallMs": 202.07204199995613
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/pages/index/index.scss"
+        },
+        {
+          "averageMs": 203.07545800000662,
+          "averageWallMs": 203.07545800000662,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 203.07545800000662,
+          "maxWallMs": 203.07545800000662,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/sitemap.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/sitemap.json",
+              "totalMs": 203.07545800000662,
+              "wallMs": 203.07545800000662
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 204.43033399997512,
+          "averageWallMs": 204.43033399997512,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 204.43033399997512,
+          "maxWallMs": 204.43033399997512,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/dist/theme.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/theme.json",
+              "totalMs": 204.43033399997512,
+              "wallMs": 204.43033399997512
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-template/src/theme.json"
+        }
+      ],
+      "startupMs": 1117.1685000000289
+    },
+    {
+      "id": "weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+      "project": {
+        "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template"
+      },
+      "scenarioCount": 7,
+      "scenarios": [
+        {
+          "group": "vue",
+          "id": "vue-app-json-macro",
+          "label": "app defineAppJson",
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/app.json",
+          "overBudget": false,
+          "samples": [],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/app.vue",
+          "error": "Timed out waiting for .tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/app.json to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TAILWINDCSS_TDESIGN_RETAIL_TEMPLATE_VUE_APP_JSON_MACRO_1_mpcvnlnf"
+        },
+        {
+          "averageMs": 10045.562083000004,
+          "averageWallMs": 10090.737499999988,
+          "group": "vue",
+          "id": "vue-page-json-macro",
+          "label": "pages/home/home.vue definePageJson",
+          "maxMs": 10045.562083000004,
+          "maxWallMs": 10090.737499999988,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/pages/home/home.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:59:32.074Z",
+              "totalMs": 10045.562083000004,
+              "eventId": "mpcvo8x7-2",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue",
+              "relativeFile": "src/pages/home/home.vue",
+              "sourceRootFile": "pages/home/home.vue",
+              "buildCoreMs": 10009.530499000008,
+              "transformMs": 344110.5800459999,
+              "writeMs": 29.4742499999993,
+              "watchToDirtyMs": 0.4361250000001746,
+              "emitMs": 6.1212089999971795,
+              "sharedChunkResolveMs": 0.25858299999526935,
+              "dirtyCount": 75,
+              "pendingCount": 74,
+              "emittedCount": 74,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 10090.737499999988
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue"
+        },
+        {
+          "averageMs": 6383.189417000009,
+          "averageWallMs": 6417.010000000009,
+          "group": "vue",
+          "id": "vue-page-template",
+          "label": "pages/home/home.vue template",
+          "maxMs": 6383.189417000009,
+          "maxWallMs": 6417.010000000009,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/pages/home/home.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T16:59:46.158Z",
+              "totalMs": 6383.189417000009,
+              "eventId": "mpcvomm6-4",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue",
+              "relativeFile": "src/pages/home/home.vue",
+              "sourceRootFile": "pages/home/home.vue",
+              "buildCoreMs": 6370.733793000014,
+              "transformMs": 48.87975000005099,
+              "writeMs": 6.1831249999959255,
+              "watchToDirtyMs": 6.072832999998354,
+              "emitMs": 0.199666000000434,
+              "sharedChunkResolveMs": 0.004999999997380655,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-local-asset:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 6417.010000000009
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue"
+        },
+        {
+          "averageMs": 10264.641000000003,
+          "averageWallMs": 10287.468292000005,
+          "group": "vue",
+          "id": "vue-page-script",
+          "label": "pages/home/home.vue script",
+          "maxMs": 10264.641000000003,
+          "maxWallMs": 10287.468292000005,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/pages/home/home.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:00:05.440Z",
+              "totalMs": 10264.641000000003,
+              "eventId": "mpcvoyhz-6",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue",
+              "relativeFile": "src/pages/home/home.vue",
+              "sourceRootFile": "pages/home/home.vue",
+              "buildCoreMs": 10115.364709000016,
+              "transformMs": 375128.3379159997,
+              "writeMs": 139.11983299998974,
+              "watchToDirtyMs": 6.48887499999546,
+              "emitMs": 3.667583000002196,
+              "sharedChunkResolveMs": 0.09616600000299513,
+              "dirtyCount": 1,
+              "pendingCount": 74,
+              "emittedCount": 74,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-router.js,wevu-src.js+)+74:direct"
+              ],
+              "wallMs": 10287.468292000005
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue"
+        },
+        {
+          "averageMs": 7823.52691700001,
+          "averageWallMs": 7855.3359579999815,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.css",
+          "maxMs": 7823.52691700001,
+          "maxWallMs": 7855.3359579999815,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/app.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:00:24.910Z",
+              "totalMs": 7823.52691700001,
+              "eventId": "mpcvpfel-9",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/app.css",
+              "relativeFile": "src/app.css",
+              "sourceRootFile": "app.css",
+              "buildCoreMs": 7339.276542000007,
+              "transformMs": 6855.381629000112,
+              "writeMs": 475.59158300000126,
+              "watchToDirtyMs": 8.18674999999348,
+              "emitMs": 0.47204200000851415,
+              "sharedChunkResolveMs": 0.00999999999476131,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [],
+              "pendingReasonSummary": [],
+              "wallMs": 7855.3359579999815
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/app.css"
+        },
+        {
+          "averageMs": 8134.815791999994,
+          "averageWallMs": 18940.557417000004,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 8134.815791999994,
+          "maxWallMs": 18940.557417000004,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/sitemap.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:00:54.836Z",
+              "totalMs": 8134.815791999994,
+              "eventId": "mpcvq299-e",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/sitemap.json",
+              "relativeFile": "src/sitemap.json",
+              "sourceRootFile": "sitemap.json",
+              "buildCoreMs": 8036.161332999982,
+              "transformMs": 5.992504000038025,
+              "writeMs": 98.42566700000316,
+              "watchToDirtyMs": 0.2287920000089798,
+              "dirtyReasonSummary": [],
+              "wallMs": 18940.557417000004
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/sitemap.json"
+        }
+      ],
+      "startupMs": 11397.718083000043
+    },
+    {
+      "id": "weapp-vite-wevu-tailwindcss-tdesign-template",
+      "project": {
+        "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template"
+      },
+      "scenarioCount": 7,
+      "scenarios": [
+        {
+          "averageMs": 6780.205667,
+          "averageWallMs": 6836.368499999982,
+          "group": "vue",
+          "id": "vue-app-json-macro",
+          "label": "app defineAppJson",
+          "maxMs": 6780.205667,
+          "maxWallMs": 6836.368499999982,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/app.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:01:26.567Z",
+              "totalMs": 6780.205667,
+              "eventId": "mpcvqrsa-1",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/app.vue",
+              "relativeFile": "src/app.vue",
+              "sourceRootFile": "app.vue",
+              "buildCoreMs": 6775.6956249999985,
+              "transformMs": 24.61308100000133,
+              "writeMs": 3.5505000000011933,
+              "watchToDirtyMs": 0.7224999999998545,
+              "emitMs": 0.23704200000065612,
+              "sharedChunkResolveMs": 0.019624999998995918,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,wevu-router.js+)+1:dependency"
+              ],
+              "wallMs": 6836.368499999982
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/app.vue"
+        },
+        {
+          "averageMs": 6735.981916000019,
+          "averageWallMs": 6735.981916000019,
+          "group": "vue",
+          "id": "vue-page-json-macro",
+          "label": "pages/index/index.vue definePageJson",
+          "maxMs": 6735.981916000019,
+          "maxWallMs": 6735.981916000019,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/pages/index/index.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue",
+              "totalMs": 6735.981916000019,
+              "wallMs": 6735.981916000019
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 7311.965625000004,
+          "averageWallMs": 7336.778624999977,
+          "group": "vue",
+          "id": "vue-page-template",
+          "label": "pages/index/index.vue template",
+          "maxMs": 7311.965625000004,
+          "maxWallMs": 7336.778624999977,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/pages/index/index.wxml",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:02:01.256Z",
+              "totalMs": 7311.965625000004,
+              "eventId": "mpcvri53-6",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue",
+              "relativeFile": "src/pages/index/index.vue",
+              "sourceRootFile": "pages/index/index.vue",
+              "buildCoreMs": 7306.028292000003,
+              "transformMs": 22.63812499998312,
+              "writeMs": 3.7213750000009895,
+              "watchToDirtyMs": 1.4582910000026459,
+              "emitMs": 0.7576669999980368,
+              "sharedChunkResolveMs": 0.004666000000725035,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-local-asset:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 7336.778624999977
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 6598.854332999996,
+          "averageWallMs": 6620.858207999961,
+          "group": "vue",
+          "id": "vue-page-script",
+          "label": "pages/index/index.vue script",
+          "maxMs": 6598.854332999996,
+          "maxWallMs": 6620.858207999961,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/pages/index/index.js",
+          "overBudget": true,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:02:15.034Z",
+              "totalMs": 6598.854332999996,
+              "eventId": "mpcvrtbn-8",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue",
+              "relativeFile": "src/pages/index/index.vue",
+              "sourceRootFile": "pages/index/index.vue",
+              "buildCoreMs": 6593.227415999994,
+              "transformMs": 16.920376000030956,
+              "writeMs": 3.645082999995793,
+              "watchToDirtyMs": 1.7724170000001322,
+              "emitMs": 0.20941700000548735,
+              "sharedChunkResolveMs": 0.014541000004101079,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-ref.js,wevu-src.js+)+1:direct"
+              ],
+              "wallMs": 6620.858207999961
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 6946.007082999917,
+          "averageWallMs": 6946.007082999917,
+          "group": "app",
+          "id": "app-style",
+          "label": "app.css",
+          "maxMs": 6946.007082999917,
+          "maxWallMs": 6946.007082999917,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/app.wxss",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/app.css",
+              "totalMs": 6946.007082999917,
+              "wallMs": 6946.007082999917
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/app.css"
+        },
+        {
+          "averageMs": 13360.243790999986,
+          "averageWallMs": 13360.243790999986,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 13360.243790999986,
+          "maxWallMs": 13360.243790999986,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/sitemap.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/sitemap.json",
+              "totalMs": 13360.243790999986,
+              "wallMs": 13360.243790999986
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 6720.0947079999605,
+          "averageWallMs": 6720.0947079999605,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 6720.0947079999605,
+          "maxWallMs": 6720.0947079999605,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/dist/theme.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/theme.json",
+              "totalMs": 6720.0947079999605,
+              "wallMs": 6720.0947079999605
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-tailwindcss-tdesign-template/src/theme.json"
+        }
+      ],
+      "startupMs": 9661.072749999992
+    },
+    {
+      "id": "weapp-vite-wevu-template",
+      "project": {
+        "source": "templates/weapp-vite-wevu-template",
+        "workspace": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template"
+      },
+      "scenarioCount": 7,
+      "scenarios": [
+        {
+          "averageMs": 162.05549999999994,
+          "averageWallMs": 307.44220900000073,
+          "group": "vue",
+          "id": "vue-app-json-macro",
+          "label": "app defineAppJson",
+          "maxMs": 162.05549999999994,
+          "maxWallMs": 307.44220900000073,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/app.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:03:31.423Z",
+              "totalMs": 162.05549999999994,
+              "eventId": "mpcvtl8c-1",
+              "event": "create",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/app.vue",
+              "relativeFile": "src/app.vue",
+              "sourceRootFile": "app.vue",
+              "buildCoreMs": 158.39866700000016,
+              "transformMs": 57.081916999999976,
+              "writeMs": 2.4832910000000084,
+              "watchToDirtyMs": 0.8204169999999067,
+              "emitMs": 0.3531249999998636,
+              "sharedChunkResolveMs": 0.023333000000093307,
+              "dirtyCount": 1,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "importer-graph:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-src.js,wevu-router.js+)+3:dependency"
+              ],
+              "wallMs": 307.44220900000073
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/app.vue"
+        },
+        {
+          "averageMs": 306.0130830000853,
+          "averageWallMs": 306.0130830000853,
+          "group": "vue",
+          "id": "vue-page-json-macro",
+          "label": "pages/index/index.vue definePageJson",
+          "maxMs": 306.0130830000853,
+          "maxWallMs": 306.0130830000853,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/pages/index/index.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "totalMs": 306.0130830000853,
+              "wallMs": 306.0130830000853
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 125.2246669999995,
+          "averageWallMs": 306.2552919998998,
+          "group": "vue",
+          "id": "vue-page-template",
+          "label": "pages/index/index.vue template",
+          "maxMs": 125.2246669999995,
+          "maxWallMs": 306.2552919998998,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/pages/index/index.wxml",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:03:38.314Z",
+              "totalMs": 125.2246669999995,
+              "eventId": "mpcvtqks-6",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "relativeFile": "src/pages/index/index.vue",
+              "sourceRootFile": "pages/index/index.vue",
+              "buildCoreMs": 122.42708299999867,
+              "transformMs": 14.94104199999947,
+              "writeMs": 1.1728750000002037,
+              "watchToDirtyMs": 1.4435419999999795,
+              "emitMs": 0.18116700000064156,
+              "sharedChunkResolveMs": 0.004457999999431195,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-local-asset:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 306.2552919998998
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 123.40237500000148,
+          "averageWallMs": 203.41908300004434,
+          "group": "vue",
+          "id": "vue-page-script",
+          "label": "pages/index/index.vue script",
+          "maxMs": 123.40237500000148,
+          "maxWallMs": 203.41908300004434,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/pages/index/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:03:39.111Z",
+              "totalMs": 123.40237500000148,
+              "eventId": "mpcvtr6z-8",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "relativeFile": "src/pages/index/index.vue",
+              "sourceRootFile": "pages/index/index.vue",
+              "buildCoreMs": 120.33737500000097,
+              "transformMs": 45.56178800000089,
+              "writeMs": 1.4342500000002474,
+              "watchToDirtyMs": 1.3505000000004657,
+              "emitMs": 0.2802499999997963,
+              "sharedChunkResolveMs": 0.015541999999186373,
+              "dirtyCount": 1,
+              "pendingCount": 3,
+              "emittedCount": 3,
+              "dirtyReasonSummary": [
+                "entry-direct:1"
+              ],
+              "pendingReasonSummary": [
+                "shared-chunk(wevu-ref.js,wevu-src.js+)+3:direct"
+              ],
+              "wallMs": 203.41908300004434
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 120.05670800000007,
+          "averageWallMs": 202.0491659999825,
+          "group": "vue",
+          "id": "vue-page-style",
+          "label": "pages/index/index.vue style",
+          "maxMs": 120.05670800000007,
+          "maxWallMs": 202.0491659999825,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/pages/index/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "timestamp": "2026-05-19T17:03:39.823Z",
+              "totalMs": 120.05670800000007,
+              "eventId": "mpcvtrqu-a",
+              "event": "update",
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "relativeFile": "src/pages/index/index.vue",
+              "sourceRootFile": "pages/index/index.vue",
+              "buildCoreMs": 117.86512499999844,
+              "transformMs": 13.298666000002413,
+              "writeMs": 1.0670000000009168,
+              "watchToDirtyMs": 0.9692080000004353,
+              "emitMs": 0.1553750000002765,
+              "sharedChunkResolveMs": 0.005541000000448548,
+              "dirtyCount": 1,
+              "pendingCount": 1,
+              "emittedCount": 1,
+              "dirtyReasonSummary": [
+                "entry-local-asset:1"
+              ],
+              "pendingReasonSummary": [],
+              "wallMs": 202.0491659999825
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 203.96854099992197,
+          "averageWallMs": 203.96854099992197,
+          "group": "json",
+          "id": "json-sitemap",
+          "label": "sitemap.json",
+          "maxMs": 203.96854099992197,
+          "maxWallMs": 203.96854099992197,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/sitemap.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/sitemap.json",
+              "totalMs": 203.96854099992197,
+              "wallMs": 203.96854099992197
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/sitemap.json"
+        },
+        {
+          "averageMs": 306.46991700003855,
+          "averageWallMs": 306.46991700003855,
+          "group": "json",
+          "id": "json-theme",
+          "label": "theme.json",
+          "maxMs": 306.46991700003855,
+          "maxWallMs": 306.46991700003855,
+          "outputFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/dist/theme.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/theme.json",
+              "totalMs": 306.46991700003855,
+              "wallMs": 306.46991700003855
+            }
+          ],
+          "sourceFile": ".tmp/templates-hmr-workspaces/weapp-vite-wevu-template/src/theme.json"
+        }
+      ],
+      "startupMs": 1120.735374999931
+    }
+  ],
+  "timeoutMs": 30000
+}
