@@ -147,7 +147,7 @@ describe('compileVueTemplateToWxml', () => {
     const result = compileVueTemplateToWxml(
       template,
       '/project/src/components/FunctionProps/index.vue',
-      { functionPropNames: ['handler'], wevuComponentTags: ['van-cell'] },
+      { functionPropNames: [/^(?:handler|on-.+)$/], wevuComponentTags: ['van-cell'] },
     )
 
     expect(result.code).toContain('subtitle="{{meta.title}}"')
@@ -155,12 +155,34 @@ describe('compileVueTemplateToWxml', () => {
     expect(result.code).toContain('dynamic="{{callbacks[id]}}"')
     expect(result.code).toContain('handler="{{__wv_bind_1}}"')
     expect(result.code).toContain('selected="{{data.userId}}"')
-    expect(result.code).toContain('change="{{__wv_bind_2}}"')
-    expect(result.functionPropPaths).toEqual(['callback', 'title', 'meta.title', '__wv_bind_0', '__wv_bind_1', 'data.userId', '__wv_bind_2'])
+    expect(result.code).toContain('change="{{handlers.change}}"')
+    expect(result.functionPropPaths).toEqual(['callback', 'title', 'meta.title', '__wv_bind_0', '__wv_bind_1', 'data.userId', 'handlers.change'])
     expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === 'handlers.save')).toBe(true)
     expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_1' && binding.exp === 'callbacks[id]')).toBe(true)
-    expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_2' && binding.exp === 'handlers.change')).toBe(true)
+    expect(result.classStyleBindings?.some(binding => binding.exp === 'handlers.change')).toBe(false)
     expect(result.classStyleBindings?.some(binding => binding.exp === 'callbacks[id]' && binding.name !== '__wv_bind_1')).toBe(false)
+  })
+
+  it('does not infer runtime function prop bindings from event-like prop names', () => {
+    const template = `
+<Child
+  :on-save="handlers.save"
+  :change="handlers.change"
+  :handler="callbacks[id]"
+/>
+    `.trim()
+
+    const result = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/FunctionProps/index.vue',
+    )
+
+    expect(result.code).toContain('on-save="{{handlers.save}}"')
+    expect(result.code).toContain('change="{{handlers.change}}"')
+    expect(result.code).toContain('handler="{{callbacks[id]}}"')
+    expect(result.code).not.toContain('__wv_bind_')
+    expect(result.functionPropPaths).toEqual(['handlers.save', 'handlers.change'])
+    expect(result.classStyleBindings).toBeUndefined()
   })
 
   it('wraps object literal in v-bind attribute expression', () => {

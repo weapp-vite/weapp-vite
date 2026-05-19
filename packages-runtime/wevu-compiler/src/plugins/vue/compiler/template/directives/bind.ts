@@ -95,12 +95,14 @@ function isComputedMemberExpression(rawExpValue: string): boolean {
   return normalized.type === 'MemberExpression' && normalized.computed
 }
 
-function isEventCompatiblePropName(argValue: string) {
-  return argValue === 'change' || /^on[-:_A-Z]/.test(argValue)
-}
-
 function shouldUseRuntimeFunctionPropBinding(argValue: string, context: TransformContext) {
-  return isEventCompatiblePropName(argValue) || context.functionPropNames.has(argValue)
+  return context.functionPropNames.some((matcher) => {
+    if (typeof matcher === 'string') {
+      return matcher === argValue
+    }
+    matcher.lastIndex = 0
+    return matcher.test(argValue)
+  })
 }
 
 function shouldWrapStaticMemberFunctionProp(argValue: string, path: string, context: TransformContext) {

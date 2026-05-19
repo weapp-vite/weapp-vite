@@ -41,7 +41,7 @@ keywords:
     objectLiteralBindMode?: 'runtime' | 'inline'
     mustacheInterpolation?: 'compact' | 'spaced'
     classStyleWxsShared?: boolean
-    functionPropNames?: string[]
+    functionPropNames?: Array<string | RegExp>
   }
   ```
 
@@ -64,7 +64,7 @@ export default defineConfig({
         objectLiteralBindMode: 'runtime',
         mustacheInterpolation: 'compact',
         classStyleWxsShared: true,
-        functionPropNames: ['handler'],
+        functionPropNames: ['handler', /^on[A-Z]/],
       },
     },
   },
@@ -104,9 +104,9 @@ export default defineConfig({
   - `spaced`：输出 `{{ expr }}`，更便于调试阅读。
 - `classStyleWxsShared`：是否复用 class/style 的 WXS helper（主包与非独立分包共享，独立分包各自生成）。
 - `functionPropNames`：显式声明需要按函数 prop 传递的组件 prop 名称。
-  - 默认不按 `callback`、`handler`、`fn` 等名称猜测函数 prop。
-  - `on-*` / `onXxx` 形态和 `change` 会继续按事件兼容入口处理。
-  - 例如 `functionPropNames: ['handler']` 会让 `&lt;Comp :handler="callbacks[id]" /&gt;` 生成运行时绑定；普通值绑定如 `&lt;Comp :selected="data.userId" /&gt;` 仍直接输出 `selected` 对 `data.userId` 的 Mustache 绑定，不会生成 `__wv_bind_*`。
+  - 默认值为空，不内置 `callback`、`handler`、`on-*`、`change` 等名称猜测。
+  - 字符串按 prop 名称精确匹配；正则表达式按 prop 名称测试。
+  - 例如 `functionPropNames: ['handler', /^on[A-Z]/]` 会让 `&lt;Comp :handler="callbacks[id]" /&gt;` 生成运行时绑定；普通值绑定如 `&lt;Comp :selected="data.userId" /&gt;` 仍直接输出 `selected` 对 `data.userId` 的 Mustache 绑定，不会生成 `__wv_bind_*`。
 
 示例：关闭默认映射
 

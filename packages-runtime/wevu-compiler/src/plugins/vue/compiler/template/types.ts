@@ -1,6 +1,8 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { MiniProgramPlatform } from './platform'
 
+export type FunctionPropNameMatcher = string | RegExp
+
 /**
  * 作用域插槽组件资源描述。
  */
@@ -96,7 +98,7 @@ export interface TransformContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   functionPropPaths: Set<string>
-  functionPropNames: Set<string>
+  functionPropNames: FunctionPropNameMatcher[]
   wevuComponentTags?: Set<string>
 }
 
@@ -134,7 +136,7 @@ export interface TemplateCompileOptions {
   formatWxml?: boolean
   wxsExtension?: string
   classStyleWxsSrc?: string
-  functionPropNames?: Iterable<string>
+  functionPropNames?: Iterable<FunctionPropNameMatcher>
   wevuComponentTags?: Iterable<string>
 }
 

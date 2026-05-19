@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-19T08:30:15.617Z",
+  "generatedAt": "2026-05-19T08:57:27.373Z",
   "site": "https://vite.icebreaker.top",
   "count": 263,
   "items": [
@@ -6276,7 +6276,7 @@
         "是对原生",
         "的一层封装/增强：在组件",
         "lifetimes.created",
-        "迁移指南"
+        "配置"
       ],
       "headings": [
         "defineComponent（组件）",
@@ -6288,11 +6288,11 @@
         "最终注册到原生时会发生什么",
         "代码示例",
         "优先级与选择建议",
-        "函数 prop（默认精确识别）",
+        "函数 prop（显式配置）",
         "Behavior 迁移补充（SFC 场景）",
         "写法 1： + defineComponent（最直观）"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-05-19",
       "source": "wevu/component.md"
     },
     {

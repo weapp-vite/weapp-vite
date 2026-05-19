@@ -5,7 +5,7 @@ export default defineConfig({
     srcRoot: 'src',
     vue: {
       template: {
-        functionPropNames: ['handler'],
+        functionPropNames: [/^handler$/],
       },
     },
   },
