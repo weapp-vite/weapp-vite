@@ -430,7 +430,7 @@ async function main() {
     ])
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0]?.command, 'weapp-vite.runAction')
-    assert.equal(state.outputChannels.length, 1)
+    assert.equal(state.outputChannels.length, 0)
     assert.equal(state.diagnosticCollections.length, 1)
     assert.ok(subscriptions.length >= 1)
 
