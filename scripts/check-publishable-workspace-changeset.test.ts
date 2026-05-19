@@ -11,6 +11,7 @@ import {
   hasReleaseArtifactsForPackage,
 } from './changeset-utils'
 import {
+  collectConstantsDependentReleaseIssues,
   collectPublishableWorkspaceChangesetIssues,
   isCurrentModuleEntry,
   isReleaseWorthyWorkspaceFile,
@@ -146,6 +147,57 @@ it('collectPublishableWorkspaceChangesetIssues accepts complete release sets', (
     packages,
     changedFiles: ['@weapp-core/init/src/index.ts', 'packages/weapp-vite/src/index.ts'],
     changesetPackages: new Set(['weapp-vite', '@weapp-core/init']),
+  })
+
+  assert.deepEqual(issues, [])
+})
+
+it('collectPublishableWorkspaceChangesetIssues requires constants dependents when constants releases', () => {
+  const packages: PublishableWorkspacePackageEntry[] = [
+    {
+      dir: '@weapp-core/constants',
+      name: '@weapp-core/constants',
+      localWorkspaceDependencies: [],
+    },
+    {
+      dir: 'packages-runtime/wevu',
+      name: 'wevu',
+      localWorkspaceDependencies: ['@weapp-core/constants'],
+    },
+    {
+      dir: 'packages/weapp-vite',
+      name: 'weapp-vite',
+      localWorkspaceDependencies: ['@weapp-core/constants', 'wevu'],
+    },
+  ]
+
+  const issues = collectPublishableWorkspaceChangesetIssues({
+    packages,
+    changedFiles: ['@weapp-core/constants/src/index.ts'],
+    changesetPackages: new Set(['@weapp-core/constants']),
+  })
+
+  assert.equal(issues.length, 1)
+  assert.match(issues[0]!, /public direct dependents/)
+  assert.match(issues[0]!, /weapp-vite/)
+  assert.match(issues[0]!, /wevu/)
+})
+
+it('collectConstantsDependentReleaseIssues accepts complete constants release sets', () => {
+  const issues = collectConstantsDependentReleaseIssues({
+    packages: [
+      {
+        dir: '@weapp-core/constants',
+        name: '@weapp-core/constants',
+        localWorkspaceDependencies: [],
+      },
+      {
+        dir: 'packages-runtime/wevu',
+        name: 'wevu',
+        localWorkspaceDependencies: ['@weapp-core/constants'],
+      },
+    ],
+    changesetPackages: new Set(['@weapp-core/constants', 'wevu']),
   })
 
   assert.deepEqual(issues, [])

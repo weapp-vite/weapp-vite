@@ -7,6 +7,8 @@ import { pathToFileURL } from 'node:url'
 import fg from 'fast-glob'
 import { collectChangesetPackages } from './changeset-utils'
 
+const CONSTANTS_PACKAGE_NAME = '@weapp-core/constants'
+
 export interface PublishableWorkspacePackageEntry {
   dir: string
   name: string
@@ -215,6 +217,33 @@ export function isReleaseWorthyWorkspaceFile(file: string, packageDir: string) {
   return true
 }
 
+export function collectConstantsDependentReleaseIssues(options: {
+  packages: PublishableWorkspacePackageEntry[]
+  changesetPackages: Set<string>
+}) {
+  if (!options.changesetPackages.has(CONSTANTS_PACKAGE_NAME)) {
+    return []
+  }
+
+  const missingDependents = options.packages
+    .filter(pkg => pkg.localWorkspaceDependencies.includes(CONSTANTS_PACKAGE_NAME))
+    .map(pkg => pkg.name)
+    .filter(name => !options.changesetPackages.has(name))
+    .sort()
+
+  if (missingDependents.length === 0) {
+    return []
+  }
+
+  return [
+    [
+      `Releasing ${CONSTANTS_PACKAGE_NAME} requires releasing all public direct dependents.`,
+      `Missing in changesets: ${missingDependents.join(', ')}`,
+      `Add patch changesets for these packages so their published dependency ranges advance with ${CONSTANTS_PACKAGE_NAME}.`,
+    ].join('\n'),
+  ]
+}
+
 export function collectPublishableWorkspaceChangesetIssues(options: {
   packages: PublishableWorkspacePackageEntry[]
   changedFiles: string[]
@@ -226,7 +255,8 @@ export function collectPublishableWorkspaceChangesetIssues(options: {
     .sort()
 
   if (changedPackageNames.length === 0) {
-    return []
+    const constantsDependentIssues = collectConstantsDependentReleaseIssues(options)
+    return constantsDependentIssues
   }
 
   const changedPackageNameSet = new Set(changedPackageNames)
@@ -260,6 +290,8 @@ export function collectPublishableWorkspaceChangesetIssues(options: {
       ].join('\n'),
     )
   }
+
+  issues.push(...collectConstantsDependentReleaseIssues(options))
 
   return issues
 }
