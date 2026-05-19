@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 6.16.18
+
+### Patch Changes
+
+- 🐛 **移除组件函数 prop 的名称猜测规则，普通成员绑定如 `:selected="data.userId"` 会继续直接输出为 `selected="{{data.userId}}"`。需要透传动态函数 prop 时，可通过 `vue.template.functionPropNames` 显式声明字符串或正则形式的 prop 名称。** [`bb03dc6`](https://github.com/weapp-vite/weapp-vite/commit/bb03dc60c8afbca14dde7586b369108f84aa51b2) by @sonofmagic
+
+- 🐛 **统一公开包的 workspace 内部依赖发布策略，改为发布时写入精确版本，并补充仓库守卫防止内部依赖再次回退到宽松 range。** [`56da329`](https://github.com/weapp-vite/weapp-vite/commit/56da329a2d6eb582323b7146b480f153f2183d2e) by @sonofmagic
+- 📦 Updated 6 dependencies [`6842768`](https://github.com/weapp-vite/weapp-vite/commit/6842768923748560522f01bcb87bf634511aadc9)
+  <details><summary>Details</summary>
+
+  `wevu@6.16.18`, `@weapp-core/init@6.0.9`, `@wevu/web-apis@1.2.15`, `@weapp-vite/web@1.3.23`, `weapp-ide-cli@5.2.11`, `@weapp-vite/ast@6.16.18`
+
+  </details>
+
 ## 6.16.17
 
 ### Patch Changes

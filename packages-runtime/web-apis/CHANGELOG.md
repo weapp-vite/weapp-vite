@@ -1,5 +1,11 @@
 # @wevu/web-apis
 
+## 1.2.15
+
+### Patch Changes
+
+- 🐛 **统一公开包的 workspace 内部依赖发布策略，改为发布时写入精确版本，并补充仓库守卫防止内部依赖再次回退到宽松 range。** [`56da329`](https://github.com/weapp-vite/weapp-vite/commit/56da329a2d6eb582323b7146b480f153f2183d2e) by @sonofmagic
+
 ## 1.2.14
 
 ### Patch Changes
