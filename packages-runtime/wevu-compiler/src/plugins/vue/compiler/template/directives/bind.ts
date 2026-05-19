@@ -100,6 +100,16 @@ function isFunctionLikePropName(argValue: string) {
   return FUNCTION_LIKE_PROP_NAME_RE.test(argValue) || argValue === 'change' || /^on[-:_A-Z]/.test(argValue)
 }
 
+function createFunctionPropRuntimeAttr(argValue: string, rawExpValue: string, context: TransformContext): string | null {
+  const bindingRef = registerRuntimeBindingExpression(rawExpValue, context, { hint: `:${argValue} 函数 prop 绑定` })
+  if (!bindingRef) {
+    return null
+  }
+  const bindingName = bindingRef.split('[')[0] || bindingRef
+  context.functionPropPaths.add(bindingName)
+  return `${argValue}="${renderMustache(bindingRef, context)}"`
+}
+
 function shouldWrapStaticMemberFunctionProp(argValue: string, path: string) {
   return path.includes('.') && isFunctionLikePropName(argValue)
 }
@@ -124,19 +134,17 @@ export function transformBindDirective(
     const path = collectFunctionPropPath(rawExpValue)
     if (path) {
       if (shouldWrapStaticMemberFunctionProp(argValue, path)) {
-        const bindingRef = registerRuntimeBindingExpression(rawExpValue, context, { hint: `:${argValue} 函数 prop 绑定` })
-        if (bindingRef) {
-          const bindingName = bindingRef.split('[')[0] || bindingRef
-          context.functionPropPaths.add(bindingName)
-          return `${argValue}="${renderMustache(bindingRef, context)}"`
+        const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
+        if (runtimeAttr) {
+          return runtimeAttr
         }
       }
       else {
         context.functionPropPaths.add(path)
       }
     }
-    else if (isComputedMemberExpression(rawExpValue)) {
-      const runtimeAttr = createBindRuntimeAttr(argValue, rawExpValue, context)
+    else if (isFunctionLikePropName(argValue) && isComputedMemberExpression(rawExpValue)) {
+      const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
       if (runtimeAttr) {
         return runtimeAttr
       }

@@ -6,9 +6,10 @@ import { DIST_ROOT, runBuild } from '../wevu-runtime.utils'
 const STATIC_MEMBER_FUNCTION_PROP_BINDING_RE = /handler="\{\{__wv_bind_\d+\}\}"/
 const DYNAMIC_MEMBER_FUNCTION_PROP_BINDING_RE = /handler="\{\{__wv_bind_\d+\}\}"/
 const STATIC_VALUE_MEMBER_BINDING_RE = /meta-title="\{\{meta\.title\}\}"/
-const COMPUTED_VALUE_MEMBER_BINDING_RE = /dynamic-label="\{\{__wv_bind_\d+\}\}"/
+const DYNAMIC_VALUE_MEMBER_BINDING_RE = /dynamic-label="\{\{labels\[currentKey\]\}\}"/
 const AUTO_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"callback",\s*"__wv_bind_\d+",\s*"meta\.title"\s*\]/
 const DISABLED_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"callback",\s*"__wv_bind_\d+"\s*\]/
+const DYNAMIC_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"__wv_bind_\d+"\s*\]/
 
 describe.sequential('wevu runtime function props integration', () => {
   it('emits compiler metadata for auto function prop paths and preserves opt-out', async () => {
@@ -28,7 +29,7 @@ describe.sequential('wevu runtime function props integration', () => {
     expect(autoWxml).toContain('callback="{{callback}}"')
     expect(autoWxml).toMatch(STATIC_MEMBER_FUNCTION_PROP_BINDING_RE)
     expect(autoWxml).toMatch(STATIC_VALUE_MEMBER_BINDING_RE)
-    expect(autoWxml).toMatch(COMPUTED_VALUE_MEMBER_BINDING_RE)
+    expect(autoWxml).toMatch(DYNAMIC_VALUE_MEMBER_BINDING_RE)
     expect(autoScript).toContain('__wevuFunctionPropPaths')
     expect(autoScript).toContain('"callback"')
     expect(autoScript).toMatch(AUTO_FUNCTION_PROP_METADATA_RE)
@@ -46,7 +47,7 @@ describe.sequential('wevu runtime function props integration', () => {
     expect(dynamicWxml).toContain('<x-function-prop-child')
     expect(dynamicWxml).toMatch(DYNAMIC_MEMBER_FUNCTION_PROP_BINDING_RE)
     expect(dynamicScript).toContain('allowFunctionProps: true')
-    expect(dynamicScript).not.toContain('__wevuFunctionPropPaths')
+    expect(dynamicScript).toMatch(DYNAMIC_FUNCTION_PROP_METADATA_RE)
     expect(dynamicScript).toContain('callbacks')
     expect(dynamicScript).toContain('currentKey')
   })
