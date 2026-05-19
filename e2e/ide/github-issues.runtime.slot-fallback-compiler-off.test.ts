@@ -1,7 +1,10 @@
+import fs from 'node:fs/promises'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   delay,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
@@ -79,6 +82,14 @@ describe.sequential('e2e app: github-issues / slot fallback compiler off', () =>
         expect(renderedWxml).toContain(`data-slot-fallback-off-case="${caseName}"`)
         expect(countToken(renderedWxml, `data-slot-fallback-off-case="${caseName}"`)).toBe(1)
       }
+
+      const computedErrorScript = await fs.readFile(
+        path.join(DIST_ROOT, 'pages/slot-fallback-computed-error/index.js'),
+        'utf8',
+      )
+      expect(computedErrorScript).toContain('console.error')
+      expect(computedErrorScript).toContain('[wevu]')
+      expect(computedErrorScript).toContain('__wv_bind_0 = missingMigratedComputed()')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

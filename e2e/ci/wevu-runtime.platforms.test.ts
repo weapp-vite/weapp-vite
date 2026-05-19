@@ -146,7 +146,7 @@ describeRuntimePlatforms('wevu runtime platform outputs', () => {
         const scriptSource = await fs.readFile(scriptPath, 'utf-8')
         expect(scriptSource).toMatch(/this\.root(?:\)\.a|\.a)/)
         expect(scriptSource).toMatch(/try\s*\{\s*return/)
-        expect(scriptSource).toMatch(/catch(?:\s*\([^)]*\))?\s*\{\s*return\s*(?:""|''|``)\s*;\s*\}/)
+        expect(scriptSource).toMatch(/catch(?:\s*\([^)]*\))?\s*\{[\s\S]*console\.error\("\[wevu\] 模板运行时表达式执行失败:[\s\S]*return\s*(?:""|''|``)\s*;/)
       }
     }
 

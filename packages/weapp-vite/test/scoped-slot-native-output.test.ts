@@ -80,5 +80,8 @@ describe('scoped slot native output snapshots', () => {
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
       'createWevuScopedSlotComponent()',
     )
+    expect(outputSnapshot['pages/index/index.js']).toContain(
+      `console.error("[wevu] 模板运行时表达式执行失败: __wv_bind_0 = {['default']:true}", __wv_expr_err)`,
+    )
   })
 })

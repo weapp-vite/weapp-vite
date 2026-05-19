@@ -14,10 +14,47 @@ function createValidIdentifier(name: string | undefined, fallback: string) {
   return t.identifier(fallback)
 }
 
+function buildConsoleErrorGuard(message: string, errorId: t.Identifier) {
+  return t.ifStatement(
+    t.logicalExpression(
+      '&&',
+      t.binaryExpression(
+        '!==',
+        t.unaryExpression('typeof', t.identifier('console')),
+        t.stringLiteral('undefined'),
+      ),
+      t.binaryExpression(
+        '===',
+        t.unaryExpression('typeof', t.memberExpression(t.identifier('console'), t.identifier('error'))),
+        t.stringLiteral('function'),
+      ),
+    ),
+    t.blockStatement([
+      t.expressionStatement(
+        t.callExpression(
+          t.memberExpression(t.identifier('console'), t.identifier('error')),
+          [
+            t.stringLiteral(message),
+            t.cloneNode(errorId),
+          ],
+        ),
+      ),
+    ]),
+  )
+}
+
+function buildRuntimeExpressionErrorGuard(binding: ClassStyleBinding, errorId: t.Identifier) {
+  return buildConsoleErrorGuard(
+    `[wevu] 模板运行时表达式执行失败: ${binding.name} = ${binding.exp}`,
+    errorId,
+  )
+}
+
 function buildNormalizedExpression(
   binding: ClassStyleBinding,
   helpers: ClassStyleHelperIds,
 ) {
+  const errorId = t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER)
   if (binding.type === 'bind') {
     const exp = binding.expAst ? t.cloneNode(binding.expAst, true) : t.identifier('undefined')
     return t.callExpression(
@@ -27,8 +64,11 @@ function buildNormalizedExpression(
           t.tryStatement(
             t.blockStatement([t.returnStatement(exp)]),
             t.catchClause(
-              t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER),
-              t.blockStatement([t.returnStatement(t.identifier('undefined'))]),
+              t.cloneNode(errorId),
+              t.blockStatement([
+                buildRuntimeExpressionErrorGuard(binding, errorId),
+                t.returnStatement(t.identifier('undefined')),
+              ]),
             ),
             null,
           ),
@@ -51,8 +91,11 @@ function buildNormalizedExpression(
         t.tryStatement(
           t.blockStatement([t.returnStatement(normalizedCall)]),
           t.catchClause(
-            t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER),
-            t.blockStatement([t.returnStatement(t.stringLiteral(errorFallback))]),
+            t.cloneNode(errorId),
+            t.blockStatement([
+              buildRuntimeExpressionErrorGuard(binding, errorId),
+              t.returnStatement(t.stringLiteral(errorFallback)),
+            ]),
           ),
           null,
         ),
@@ -207,6 +250,10 @@ function buildForExpression(
     t.catchClause(
       t.identifier(`__wv_err_${level}`),
       t.blockStatement([
+        buildConsoleErrorGuard(
+          `[wevu] 模板 v-for 数据源表达式执行失败: ${info.listExp}`,
+          t.identifier(`__wv_err_${level}`),
+        ),
         t.expressionStatement(t.assignmentExpression('=', listId, t.arrayExpression([]))),
       ]),
     ),

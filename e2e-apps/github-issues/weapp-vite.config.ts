@@ -89,6 +89,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.slot-fallback-compiler-off.test.ts': [
     'pages/slot-fallback-compiler-off/**',
+    'pages/slot-fallback-computed-error/**',
   ],
   'github-issues.runtime.web-runtime.test.ts': [
     'pages/issue-448/**',
@@ -133,6 +134,7 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/slot-fallback-compiler-off/**',
+        'pages/slot-fallback-computed-error/**',
       ],
     }
   }

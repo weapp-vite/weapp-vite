@@ -117,6 +117,7 @@ require("../../weapp-vendors/wevu-src.js").__wevuCreatePage({
 			try {
 				return { ["default"]: true };
 			} catch (__wv_expr_err) {
+				if (typeof console !== "undefined" && typeof console.error === "function") console.error("[wevu] 模板运行时表达式执行失败: __wv_bind_0 = {['default']:true}", __wv_expr_err);
 				return;
 			}
 		})();

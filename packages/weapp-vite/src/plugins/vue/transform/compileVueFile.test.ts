@@ -484,6 +484,9 @@ const sayHello = () => 'Hello'
     expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "sayHello")')
     expect(result.script).toContain('__wevuProps.sayHello')
     expect(result.script).toContain(': this.sayHello)()')
+    expect(result.script).toContain('console.error')
+    expect(result.script).toContain('[wevu]')
+    expect(result.script).toContain('__wv_bind_0 = sayHello()')
   })
 
   it('compiles optional chaining in template interpolation and directives', async () => {
