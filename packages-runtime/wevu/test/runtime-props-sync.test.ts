@@ -178,6 +178,46 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
   })
 
+  it('exposes __wevuProps to computed bindings when component has no setup', async () => {
+    defineComponent({
+      props: {
+        color: { type: String, default: '' },
+        active: { type: Boolean, default: false },
+      } as any,
+      computed: {
+        __wv_style_0(this: any) {
+          return `color: ${this.__wevuProps?.color ?? ''}`
+        },
+        __wv_cls_0(this: any) {
+          return this.__wevuProps?.active ? 'is-active' : ''
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { color: 'red', active: false } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_style_0).toBe('color: red')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('')
+
+    inst.properties.color = 'blue'
+    inst.properties.active = true
+    opts.observers.color.call(inst, 'blue', 'red')
+    opts.observers.active.call(inst, true, false)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_style_0).toBe('color: blue')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('is-active')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_cls_0: 'is-active',
+      __wv_style_0: 'color: blue',
+    }))
+  })
+
   it('maps setup bindings that collide with prop keys to live __wevuProps values', async () => {
     defineComponent({
       props: {

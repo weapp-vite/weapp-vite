@@ -705,6 +705,119 @@ it.each([
   assert.equal(context?.workspaceFolder.uri.fsPath, projectRoot)
 })
 
+it('caches project context candidates until the cache is cleared', async () => {
+  const workspaceRoot = normalizeFsPath('/workspace')
+  const projectRoot = normalizeFsPath('/workspace/apps/demo')
+  const fileContents = new Map<string, string>([
+    [normalizeFsPath('/workspace/apps/demo/package.json'), JSON.stringify({
+      scripts: {
+        dev: 'wv dev',
+      },
+      dependencies: {
+        'weapp-vite': 'workspace:*',
+      },
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/apps/demo/src/app.json'), '{}'],
+  ])
+  let findFilesCalls = 0
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'workspace',
+            uri: {
+              fsPath: workspaceRoot,
+              path: workspaceRoot,
+            },
+          },
+        ],
+        findFiles: async () => {
+          findFilesCalls += 1
+
+          return [
+            {
+              fsPath: normalizeFsPath('/workspace/apps/demo/package.json'),
+              path: '/workspace/apps/demo/package.json',
+            },
+          ]
+        },
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    clearProjectContextCache,
+    getProjectContext,
+    getProjectContextCandidates,
+  } = await import('./workspace')
+  const workspaceFolder = {
+    name: 'workspace',
+    uri: {
+      fsPath: workspaceRoot,
+      path: workspaceRoot,
+    },
+  }
+
+  const firstContexts = await getProjectContextCandidates(workspaceFolder)
+  const cachedContext = await getProjectContext(workspaceFolder)
+
+  assert.equal(findFilesCalls, 1)
+  assert.equal(firstContexts[0].workspaceFolder.uri.fsPath, projectRoot)
+  assert.equal(cachedContext?.workspaceFolder.uri.fsPath, projectRoot)
+
+  clearProjectContextCache()
+
+  await getProjectContextCandidates(workspaceFolder)
+
+  assert.equal(findFilesCalls, 2)
+})
+
 it('updates app.json routes when a page directory moves', async () => {
   const fileContents = new Map<string, string>([
     [normalizeFsPath('/workspace/src/app.json'), JSON.stringify({

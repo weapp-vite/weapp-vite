@@ -25,6 +25,7 @@ import {
   normalizeEmitPayload,
   safeMarkNoSetData,
 } from './setupContext'
+import { ensureRuntimeProps } from './utils'
 
 type RuntimeSetupFunction<
   D extends object,
@@ -44,8 +45,6 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   runtimeState: Record<string, any>
   runtimeProxy: Record<string, any>
   setup: RuntimeSetupFunction<D, C, M>
-  syncRuntimeProps: (props: Record<string, any>, mpProperties: Record<string, any>) => void
-  attachRuntimeProxyProps: (state: Record<string, any>, props: Record<string, any>) => void
 }) {
   const {
     target,
@@ -54,34 +53,12 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     runtimeState,
     runtimeProxy,
     setup,
-    syncRuntimeProps,
-    attachRuntimeProxyProps,
   } = options
 
   // 从小程序 properties 提取 props 供 setup 使用，并复用 runtime state 上的 props 容器，
   // 避免 computed 首次求值早于 setup 时丢失依赖。
   const mpProperties = ((target as any).properties || {}) as Record<string, any>
-  const runtimeProps = runtimeState && typeof runtimeState === 'object'
-    ? ((runtimeState as any)[WEVU_PROPS_KEY] as Record<string, any> | undefined)
-    : undefined
-  const props = runtimeProps && typeof runtimeProps === 'object'
-    ? runtimeProps
-    : shallowReactive({}) as Record<string, any>
-  syncRuntimeProps(props, mpProperties)
-  if (runtimeState && typeof runtimeState === 'object') {
-    attachRuntimeProxyProps(runtimeState as Record<string, any>, props)
-  }
-  try {
-    Object.defineProperty(target, WEVU_PROPS_KEY, {
-      value: props,
-      configurable: true,
-      enumerable: false,
-      writable: false,
-    })
-  }
-  catch {
-    ;(target as any)[WEVU_PROPS_KEY] = props
-  }
+  const props = ensureRuntimeProps(target, runtimeState, mpProperties)
 
   // 与 Vue 3 对齐：attrs = 非 props 的 attributes。
   // 在小程序场景中，attrs 来源于 instance.properties 中“未声明在 props/properties 的字段”。

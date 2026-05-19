@@ -61,6 +61,18 @@ const PROJECT_APP_ENTRY_FILE_NAMES = [
 
 export const WORKSPACE_FIND_FILES_EXCLUDE_PATTERN = '**/{.git,.hg,.svn,node_modules,.pnpm,dist,dist-*,build,coverage,.cache,.codex-tmp,.minidev,.turbo,.vite,.weapp-vite,.wevu-config,miniprogram_dist,miniprogram_npm,submodules}/**'
 
+const projectContextCandidatesCache = new Map<string, Promise<WeappProjectContext[]>>()
+
+interface WeappProjectContext {
+  fileSignals: string[]
+  packageJson: Record<string, any> | null
+  packageJsonPath: string | null
+  packageManager: string
+  packageSignals: string[]
+  scripts: Record<string, any>
+  workspaceFolder: any
+}
+
 export function findWorkspaceFiles(basePath: string, pattern: string, maxResults?: number) {
   return vscode.workspace.findFiles(
     new vscode.RelativePattern(basePath, pattern),
@@ -191,6 +203,10 @@ async function pathExists(filePath: string) {
   catch {
     return false
   }
+}
+
+export function clearProjectContextCache() {
+  projectContextCandidatesCache.clear()
 }
 
 async function readJsonFile(filePath: string) {
@@ -498,7 +514,7 @@ async function getExactProjectContext(workspaceFolder: any, workspaceRoot = work
   }
 }
 
-export async function getProjectContextCandidates(workspaceFolder = getPrimaryWorkspaceFolder()) {
+async function resolveProjectContextCandidates(workspaceFolder: any) {
   if (!workspaceFolder) {
     return []
   }
@@ -551,6 +567,31 @@ export async function getProjectContextCandidates(workspaceFolder = getPrimaryWo
 
     return leftDepth - rightDepth || leftPath.localeCompare(rightPath)
   })
+}
+
+export async function getProjectContextCandidates(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return []
+  }
+
+  const workspaceRoot = path.normalize(workspaceFolder.uri.fsPath)
+  const cachedCandidates = projectContextCandidatesCache.get(workspaceRoot)
+
+  if (cachedCandidates) {
+    return cachedCandidates
+  }
+
+  const candidates = resolveProjectContextCandidates(workspaceFolder)
+
+  projectContextCandidatesCache.set(workspaceRoot, candidates)
+
+  try {
+    return await candidates
+  }
+  catch (error) {
+    projectContextCandidatesCache.delete(workspaceRoot)
+    throw error
+  }
 }
 
 export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) {

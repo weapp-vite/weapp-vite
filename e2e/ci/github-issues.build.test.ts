@@ -744,6 +744,33 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('_runE2E')
   })
 
+  it('issue #590: compiles props-based class/style bindings for components without setup', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-590/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-590/index.json')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-590/SimpleBadge/index.wxml')
+    const componentJsPath = path.join(DIST_ROOT, 'components/issue-590/SimpleBadge/index.js')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJSON(pageJsonPath) as {
+      usingComponents?: Record<string, string>
+    }
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-590 no setup props computed style')
+    expect(pageJson.usingComponents?.SimpleBadge).toBe('/components/issue-590/SimpleBadge/index')
+    expect(componentWxml).toContain('id="issue590-badge"')
+    expect(componentWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
+    expect(componentWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+    expect(componentJs).toMatch(/__wv_cls_\d+/)
+    expect(componentJs).toMatch(/__wv_style_\d+/)
+    expect(componentJs).toContain('__wevuProps')
+    expect(componentJs).toContain('issue590-badge')
+    expect(componentJs).toContain('issue-590 badge')
+  })
+
   it('issue #500: compiles missing inject continuation probe', async () => {
     await runBuild()
 

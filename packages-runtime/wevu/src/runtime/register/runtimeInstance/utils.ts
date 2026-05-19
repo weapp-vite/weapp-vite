@@ -10,6 +10,7 @@ import {
   WEVU_RUNTIME_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
 } from '@weapp-core/constants'
+import { shallowReactive } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod } from '../../nativeBridge'
 
@@ -141,4 +142,35 @@ export function syncRuntimeProps(props: Record<string, any>, mpProperties: Recor
   for (const [key, value] of Object.entries(mpProperties)) {
     props[key] = value
   }
+}
+
+export function ensureRuntimeProps(
+  target: InternalRuntimeState,
+  runtimeState: Record<string, any>,
+  mpProperties: Record<string, any> = ((target as any).properties || {}) as Record<string, any>,
+) {
+  const runtimeProps = runtimeState && typeof runtimeState === 'object'
+    ? ((runtimeState as any)[WEVU_PROPS_KEY] as Record<string, any> | undefined)
+    : undefined
+  const props = runtimeProps && typeof runtimeProps === 'object'
+    ? runtimeProps
+    : shallowReactive({}) as Record<string, any>
+
+  syncRuntimeProps(props, mpProperties)
+  if (runtimeState && typeof runtimeState === 'object') {
+    attachRuntimeProxyProps(runtimeState, props)
+  }
+  try {
+    Object.defineProperty(target, WEVU_PROPS_KEY, {
+      value: props,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    ;(target as any)[WEVU_PROPS_KEY] = props
+  }
+
+  return props
 }
