@@ -11,7 +11,7 @@ import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { resolveVueSfcNonJsonSignature } from '../../../../utils/file/vueSfcSignature'
+import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../utils/file/vueSfcSignature'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -358,6 +358,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const nonJsonSignature = resolveVueSfcNonJsonSignature(vueSource, vueEntryPath)
           if (nonJsonSignature) {
             ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, nonJsonSignature)
+          }
+          const scriptSignature = resolveVueSfcScriptSignature(vueSource, vueEntryPath)
+          if (scriptSignature) {
+            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, scriptSignature)
           }
         }
       }

@@ -10,7 +10,7 @@ import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
-import { resolveVueSfcNonJsonSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../utils/file/vueSfcSignature'
 import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -99,6 +99,26 @@ async function isVueEntryJsonOnlyUpdate(state: CorePluginState, normalizedId: st
   try {
     const source = await fs.readFile(normalizedId, 'utf-8')
     return resolveVueSfcNonJsonSignature(source, normalizedId) === previous
+  }
+  catch {
+    return false
+  }
+}
+
+async function isVueEntryLocalAssetOnlyUpdate(state: CorePluginState, normalizedId: string) {
+  if (!normalizedId.endsWith('.vue')) {
+    return false
+  }
+
+  const previous = state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.get(normalizedId)
+  if (!previous) {
+    return false
+  }
+
+  try {
+    const source = await fs.readFile(normalizedId, 'utf-8')
+    const currentScript = resolveVueSfcScriptSignature(source, normalizedId)
+    return currentScript === previous
   }
   catch {
     return false
@@ -213,6 +233,7 @@ async function processChangedFile(
 
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
@@ -227,12 +248,16 @@ async function processChangedFile(
     && isAppVueFile(normalizedId)
     && resolvedEntryMap.size
   ) {
-    ;(loadEntry as any)?.invalidateResolveCache?.()
-    for (const entryId of resolvedEntryMap.keys()) {
-      if (entryId === normalizedId) {
-        continue
+    const isJsonOnlyVueEntryUpdate = await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+    if (!isJsonOnlyVueEntryUpdate && !isLocalAssetOnlyVueEntryUpdate) {
+      ;(loadEntry as any)?.invalidateResolveCache?.()
+      for (const entryId of resolvedEntryMap.keys()) {
+        if (entryId === normalizedId) {
+          continue
+        }
+        markEntryDirtyWithCause(entryId, 'dependency', 'app-shell-dependent')
       }
-      markEntryDirtyWithCause(entryId, 'dependency', 'app-shell-dependent')
     }
   }
 
@@ -322,10 +347,17 @@ async function processChangedFile(
     && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')
   ) {
     const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
+      && event === 'update'
+      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
     markEntryDirtyWithCause(
       normalizedId,
-      isJsonOnlyVueEntryUpdate ? 'metadata' : 'direct',
-      isJsonOnlyVueEntryUpdate ? 'entry-json-only' : 'entry-direct',
+      isJsonOnlyVueEntryUpdate || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
+      isJsonOnlyVueEntryUpdate
+        ? 'entry-json-only'
+        : isLocalAssetOnlyVueEntryUpdate
+          ? 'entry-local-asset'
+          : 'entry-direct',
     )
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {

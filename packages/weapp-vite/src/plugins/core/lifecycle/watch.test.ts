@@ -84,6 +84,7 @@ function createState(overrides: Record<string, any> = {}) {
           hmr: {
             profile: {},
             vueEntryNonJsonSignatures: new Map(),
+            vueEntryScriptSignatures: new Map(),
           },
         },
       },
@@ -295,6 +296,66 @@ const count = 1
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
+  it('marks vue entry updates as metadata when only template content changed', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const nextSource = previousSource.replace('<view>{{ count }}</view>', '<view class="next">{{ count }}</view>')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      entryId,
+      resolveVueSfcNonJsonSignature(previousSource, entryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      entryId,
+      resolveVueSfcScriptSignature(previousSource, entryId),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
+  })
+
+  it('keeps vue entry updates direct when runtime script content changed', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const nextSource = previousSource.replace('const count = 1', 'const count = 2')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      entryId,
+      resolveVueSfcNonJsonSignature(previousSource, entryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      entryId,
+      resolveVueSfcScriptSignature(previousSource, entryId),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
   it('normalizes transient create events on loaded vue entries back to metadata updates', async () => {
     const entryId = '/project/src/pages/logs/index.vue'
     const previousSource = `<script setup lang="ts">
@@ -364,6 +425,78 @@ const count = 1
       'app-shell-dependent:2',
       'entry-direct:1',
     ])
+  })
+
+  it('keeps app.vue json-only updates scoped to the app entry', async () => {
+    const appEntry = '/project/src/app.vue'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+defineAppJson({ window: { navigationBarTitleText: '首页' } })
+</script>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([appEntry]),
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appEntry,
+      resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
+  })
+
+  it('keeps app.vue style-only updates scoped to the app entry', async () => {
+    const appEntry = '/project/src/app.vue'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+defineAppJson({ window: { navigationBarTitleText: '首页' } })
+</script>
+
+<style>
+page { color: red; }
+</style>`
+    const nextSource = previousSource.replace('color: red;', 'color: blue;')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([appEntry]),
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appEntry,
+      resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
   })
 
   it('does not mark deleted declared page entries as direct dirties after a real delete', async () => {

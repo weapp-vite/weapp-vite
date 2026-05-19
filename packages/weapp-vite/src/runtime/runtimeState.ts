@@ -112,6 +112,7 @@ export interface RuntimeState {
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
       vueEntryNonJsonSignatures: Map<string, string>
+      vueEntryScriptSignatures: Map<string, string>
       didEmitAllEntries: boolean
       lastEmittedEntryIds: Set<string>
       recentProfiles: Array<{
@@ -241,6 +242,7 @@ export function createRuntimeState(): RuntimeState {
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
         vueEntryNonJsonSignatures: new Map<string, string>(),
+        vueEntryScriptSignatures: new Map<string, string>(),
         didEmitAllEntries: false,
         lastEmittedEntryIds: new Set<string>(),
         recentProfiles: [],

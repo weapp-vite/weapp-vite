@@ -54,6 +54,17 @@ function buildNonJsonDescriptorPayload(descriptor: SFCDescriptor, filename: stri
   }
 }
 
+function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
+  const scriptSetupContent = descriptor.scriptSetup
+    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    : undefined
+
+  return {
+    script: serializeBlock(descriptor.script),
+    scriptSetup: serializeBlock(descriptor.scriptSetup, scriptSetupContent),
+  }
+}
+
 export function resolveVueSfcNonJsonSignature(source: string, filename: string) {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
@@ -61,4 +72,13 @@ export function resolveVueSfcNonJsonSignature(source: string, filename: string) 
   }
 
   return hashPayload(buildNonJsonDescriptorPayload(descriptor, filename))
+}
+
+export function resolveVueSfcScriptSignature(source: string, filename: string) {
+  const { descriptor, errors } = parse(source, { filename })
+  if (errors.length) {
+    return undefined
+  }
+
+  return hashPayload(buildScriptDescriptorPayload(descriptor, filename))
 }
