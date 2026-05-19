@@ -2,7 +2,7 @@ import type { PublishableWorkspacePackageEntry } from './check-publishable-works
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { it } from 'vitest'
 import {
   collectChangesetPackages as collectChangesetPackagesFromUtils,
@@ -15,6 +15,7 @@ import {
   isCurrentModuleEntry,
   isReleaseWorthyWorkspaceFile,
 } from './check-publishable-workspace-changeset'
+import { collectConstantsReleaseVersionIssues } from './check-weapp-core-constants-release-version'
 
 it('extractChangesetPackages reads package names from frontmatter', () => {
   const packages = extractChangesetPackages([
@@ -145,6 +146,54 @@ it('collectPublishableWorkspaceChangesetIssues accepts complete release sets', (
     packages,
     changedFiles: ['@weapp-core/init/src/index.ts', 'packages/weapp-vite/src/index.ts'],
     changesetPackages: new Set(['weapp-vite', '@weapp-core/init']),
+  })
+
+  assert.deepEqual(issues, [])
+})
+
+it('publish-packages runs constants guards before publishing packages', async () => {
+  const packageJsonPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../package.json',
+  )
+  const content = await fs.readFile(packageJsonPath, 'utf8')
+  const packageJson = JSON.parse(content) as {
+    scripts?: Record<string, string>
+  }
+
+  const publishScript = packageJson.scripts?.['publish-packages'] ?? ''
+  const changesetGuardIndex = publishScript.indexOf('check:weapp-core-constants-changeset')
+  const versionIndex = publishScript.indexOf('changeset version')
+  const versionGuardIndex = publishScript.indexOf('check:weapp-core-constants-release-version')
+  const publishIndex = publishScript.indexOf('changeset publish')
+
+  assert.notEqual(changesetGuardIndex, -1)
+  assert.notEqual(versionIndex, -1)
+  assert.notEqual(versionGuardIndex, -1)
+  assert.notEqual(publishIndex, -1)
+  assert.equal(changesetGuardIndex < versionIndex, true)
+  assert.equal(versionIndex < versionGuardIndex, true)
+  assert.equal(versionGuardIndex < publishIndex, true)
+})
+
+it('collectConstantsReleaseVersionIssues reports unchanged versions with changed constants sources', () => {
+  const issues = collectConstantsReleaseVersionIssues({
+    changedFiles: ['@weapp-core/constants/src/index.ts'],
+    packageName: '@weapp-core/constants',
+    tagExists: true,
+    version: '0.1.7',
+  })
+
+  assert.equal(issues.length, 1)
+  assert.match(issues[0]!, /@weapp-core\/constants is still at 0\.1\.7/)
+})
+
+it('collectConstantsReleaseVersionIssues accepts constants versions without an existing tag', () => {
+  const issues = collectConstantsReleaseVersionIssues({
+    changedFiles: ['@weapp-core/constants/src/index.ts'],
+    packageName: '@weapp-core/constants',
+    tagExists: false,
+    version: '0.1.8',
   })
 
   assert.deepEqual(issues, [])
