@@ -25,10 +25,17 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const defineEnv = configState.defineEnv
   let packageManager = configState.packageManager
   let options = configState.options
+  let loadingOptions: LoadConfigOptions | undefined
 
-  const builtinAliases = resolveBuiltinPackageAliases()
   const oxcRuntimeSupport = createOxcRuntimeSupport()
-  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, builtinAliases)
+  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, resolveBuiltinPackageAliases())
+
+  function injectBuiltinAliases(config: LoadConfigResult['config']) {
+    aliasManager.injectBuiltinAliases(config, resolveBuiltinPackageAliases({
+      isDev: loadingOptions?.isDev ?? options.isDev,
+      wevuRuntime: config.weapp?.wevu?.runtime,
+    }))
+  }
 
   const normalizeComparablePath = (input: string) => {
     const resolved = path.resolve(input)
@@ -190,7 +197,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   applyRuntimePlatform('miniprogram')
 
   const loadConfigImpl = createLoadConfig({
-    injectBuiltinAliases: aliasManager.injectBuiltinAliases,
+    injectBuiltinAliases,
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,
     oxcVitePlugin: oxcRuntimeSupport.vitePlugin,
   })
@@ -212,7 +219,14 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       emitDefaultAutoImportOutputs: true,
     })
 
-    const rawConfig = await loadConfigImpl(input)
+    loadingOptions = input
+    let rawConfig: LoadConfigResult
+    try {
+      rawConfig = await loadConfigImpl(input)
+    }
+    finally {
+      loadingOptions = undefined
+    }
     const resolvedConfig = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(rawConfig, {
       cwd: input.cwd ?? defaultCwd,
       isDev: false,
@@ -247,7 +261,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     ctx,
     getOptions,
     setOptions,
-    injectBuiltinAliases: aliasManager.injectBuiltinAliases,
+    injectBuiltinAliases,
     getDefineImportMetaEnv,
     applyRuntimePlatform,
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,

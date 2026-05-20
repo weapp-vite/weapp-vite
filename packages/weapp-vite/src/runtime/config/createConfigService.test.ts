@@ -15,6 +15,9 @@ const {
   mergeMock,
   mergeWebMock,
   mergeInlineConfigMock,
+  resolveBuiltinPackageAliasesMock,
+  injectBuiltinAliasesMock,
+  loadConfigFactoryOptionsMock,
 } = vi.hoisted(() => ({
   configureLoggerMock: vi.fn(),
   loggerInfoMock: vi.fn(),
@@ -24,6 +27,11 @@ const {
   mergeMock: vi.fn(),
   mergeWebMock: vi.fn(),
   mergeInlineConfigMock: vi.fn(),
+  resolveBuiltinPackageAliasesMock: vi.fn(() => []),
+  injectBuiltinAliasesMock: vi.fn((entries: any[]) => entries),
+  loadConfigFactoryOptionsMock: {
+    value: undefined as any,
+  },
 }))
 
 vi.mock('../../logger', () => ({
@@ -45,7 +53,7 @@ vi.mock('package-manager-detector/detect', () => ({
 }))
 
 vi.mock('../packageAliases', () => ({
-  resolveBuiltinPackageAliases: vi.fn(() => ({})),
+  resolveBuiltinPackageAliases: resolveBuiltinPackageAliasesMock,
 }))
 
 vi.mock('../oxcRuntime', () => ({
@@ -58,12 +66,15 @@ vi.mock('../oxcRuntime', () => ({
 
 vi.mock('./internal/alias', () => ({
   createAliasManager: vi.fn(() => ({
-    injectBuiltinAliases: vi.fn((entries: any[]) => entries),
+    injectBuiltinAliases: injectBuiltinAliasesMock,
   })),
 }))
 
 vi.mock('./internal/loadConfig', () => ({
-  createLoadConfig: vi.fn(() => loadConfigImplMock),
+  createLoadConfig: vi.fn((options: any) => {
+    loadConfigFactoryOptionsMock.value = options
+    return loadConfigImplMock
+  }),
 }))
 
 vi.mock('./internal/merge', () => ({
@@ -139,6 +150,7 @@ function createCtx(optionsOverrides: Record<string, any> = {}) {
 describe('createConfigService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resolveBuiltinPackageAliasesMock.mockReturnValue([])
     detectMock.mockResolvedValue({
       agent: 'pnpm',
       name: 'pnpm',
@@ -205,6 +217,48 @@ describe('createConfigService', () => {
     expect(define['import.meta.env.CUSTOM_FLAG']).toBe('1')
     expect(define['import.meta.env']).toBe('{"PLATFORM":"weapp","MP_PLATFORM":"weapp","IS_WEB":false,"IS_MINIPROGRAM":true,"CUSTOM_FLAG":1}')
     expect(JSON.parse(define['import.meta.env']).CUSTOM_FLAG).toBe(1)
+  })
+
+  it('resolves builtin aliases from dev mode and configured wevu runtime', async () => {
+    loadConfigImplMock.mockImplementationOnce(async () => {
+      const config = {
+        weapp: {
+          wevu: {
+            runtime: 'build',
+          },
+        },
+      }
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({
+        cwd: '/work',
+        isDev: true,
+        mode: 'development',
+        config,
+        srcRoot: 'src',
+        platform: 'weapp',
+        mpDistRoot: 'dist',
+        outputExtensions: {
+          script: '.js',
+        },
+        configMergeInfo: {
+          merged: false,
+        },
+        aliasEntries: [],
+        relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
+      })
+    })
+
+    const service = createConfigService(createCtx())
+    await service.load({
+      cwd: '/work',
+      isDev: true,
+      mode: 'development',
+    })
+
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledWith({
+      isDev: true,
+      wevuRuntime: 'build',
+    })
   })
 
   it('preserves user-defined import.meta.env member overrides for downstream preprocessors', () => {

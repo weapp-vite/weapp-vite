@@ -58,6 +58,66 @@ describe('runtime package aliases', () => {
     ]))
   })
 
+  it('uses development wevu entries in dev mode by default', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string) => {
+      if (packageName === 'class-variance-authority') {
+        return { rootPath: '/project/node_modules/class-variance-authority' }
+      }
+      if (packageName === 'wevu') {
+        return { rootPath: '/project/node_modules/wevu' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const aliases = resolveBuiltinPackageAliases({ isDev: true })
+
+    expect(aliases).toEqual(expect.arrayContaining([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/dev/index.mjs',
+      },
+      {
+        find: 'wevu/compiler',
+        replacement: '/project/node_modules/wevu/dist/dev/compiler.mjs',
+      },
+      {
+        find: 'wevu/router',
+        replacement: '/project/node_modules/wevu/dist/dev/router.mjs',
+      },
+      {
+        find: 'vue-demi',
+        replacement: '/project/node_modules/wevu/dist/dev/vue-demi.mjs',
+      },
+    ]))
+  })
+
+  it('allows forcing the wevu runtime entry mode', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string) => {
+      if (packageName === 'wevu') {
+        return { rootPath: '/project/node_modules/wevu' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const buildAliases = resolveBuiltinPackageAliases({ isDev: true, wevuRuntime: 'build' })
+    const devAliases = resolveBuiltinPackageAliases({ isDev: false, wevuRuntime: 'dev' })
+
+    expect(buildAliases).toEqual(expect.arrayContaining([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/index.mjs',
+      },
+    ]))
+    expect(devAliases).toEqual(expect.arrayContaining([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/dev/index.mjs',
+      },
+    ]))
+  })
+
   it('falls back to workspace dist entry when workspace package lookup is unavailable', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string) => {
       if (packageName === 'class-variance-authority') {
@@ -94,6 +154,31 @@ describe('runtime package aliases', () => {
       expect.objectContaining({
         find: 'vue-demi',
         replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/vue-demi\.mjs$/),
+      }),
+    ]))
+  })
+
+  it('falls back to workspace development dist entry in dev mode', () => {
+    getPackageInfoSyncMock.mockReturnValue(undefined)
+    existsSyncMock.mockImplementation((filePath: string) =>
+      filePath.endsWith('/pnpm-workspace.yaml')
+      || /\/packages-runtime\/wevu\/dist\/dev\/(?:index|compiler|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+    )
+
+    const aliases = resolveBuiltinPackageAliases({ isDev: true })
+
+    expect(aliases).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: 'wevu',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/index\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/api',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/api\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'vue-demi',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/vue-demi\.mjs$/),
       }),
     ]))
   })

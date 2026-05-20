@@ -8,10 +8,18 @@ export interface BuiltinPackageAliasEntry {
   replacement: string
 }
 
+export type WevuRuntimeAliasMode = 'auto' | 'dev' | 'build'
+
+export interface ResolveBuiltinPackageAliasesOptions {
+  isDev?: boolean
+  wevuRuntime?: WevuRuntimeAliasMode
+}
+
 interface PackageAliasTarget {
   find: string
   packageName: string
   distEntry: string
+  devDistEntry?: string
   fallbackWorkspacePackagePath?: string
 }
 
@@ -27,57 +35,80 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     find: 'wevu',
     packageName: 'wevu',
     distEntry: 'dist/index.mjs',
+    devDistEntry: 'dist/dev/index.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/compiler',
     packageName: 'wevu',
     distEntry: 'dist/compiler.mjs',
+    devDistEntry: 'dist/dev/compiler.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/jsx-runtime',
     packageName: 'wevu',
     distEntry: 'dist/jsx-runtime.mjs',
+    devDistEntry: 'dist/dev/jsx-runtime.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/store',
     packageName: 'wevu',
     distEntry: 'dist/store.mjs',
+    devDistEntry: 'dist/dev/store.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/api',
     packageName: 'wevu',
     distEntry: 'dist/api.mjs',
+    devDistEntry: 'dist/dev/api.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/fetch',
     packageName: 'wevu',
     distEntry: 'dist/fetch.mjs',
+    devDistEntry: 'dist/dev/fetch.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/web-apis',
     packageName: 'wevu',
     distEntry: 'dist/web-apis.mjs',
+    devDistEntry: 'dist/dev/web-apis.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'wevu/router',
     packageName: 'wevu',
     distEntry: 'dist/router.mjs',
+    devDistEntry: 'dist/dev/router.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
     find: 'vue-demi',
     packageName: 'wevu',
     distEntry: 'dist/vue-demi.mjs',
+    devDistEntry: 'dist/dev/vue-demi.mjs',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
 ]
+
+function resolveWevuRuntimeDistEntry(
+  target: PackageAliasTarget,
+  options: ResolveBuiltinPackageAliasesOptions,
+) {
+  if (!target.devDistEntry || target.packageName !== 'wevu') {
+    return target.distEntry
+  }
+  const mode = options.wevuRuntime ?? 'auto'
+  if (mode === 'dev' || (mode === 'auto' && options.isDev)) {
+    return target.devDistEntry
+  }
+  return target.distEntry
+}
 
 function resolveRepoRoot(fromDir: string) {
   let currentDir = fromDir
@@ -124,10 +155,12 @@ function resolvePackageEntry(
   return undefined
 }
 
-export function resolveBuiltinPackageAliases(): BuiltinPackageAliasEntry[] {
+export function resolveBuiltinPackageAliases(options: ResolveBuiltinPackageAliasesOptions = {}): BuiltinPackageAliasEntry[] {
   const aliases: BuiltinPackageAliasEntry[] = []
 
-  for (const { find, packageName, distEntry, fallbackWorkspacePackagePath } of PACKAGE_ALIASES) {
+  for (const target of PACKAGE_ALIASES) {
+    const { find, packageName, fallbackWorkspacePackagePath } = target
+    const distEntry = resolveWevuRuntimeDistEntry(target, options)
     const resolvedEntry = resolvePackageEntry(packageName, distEntry, fallbackWorkspacePackagePath)
     if (!resolvedEntry) {
       continue

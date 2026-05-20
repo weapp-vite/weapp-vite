@@ -88,21 +88,39 @@ function resolveComputedExportName(pageOutput: string) {
   return computedCall[1] ?? 'computed'
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function hasWevuComputedRuntimeExport(code: string, exportName: string) {
+  const escapedExportName = escapeRegExp(exportName)
+  return [
+    new RegExp(`Object\\.defineProperty\\(exports, "${escapedExportName}"`),
+    new RegExp(`exports(?:\\.${escapedExportName}|\\["${escapedExportName}"\\])\\s*=`),
+    new RegExp(`\\b${escapedExportName}\\s*:\\s*\\(\\)\\s*=>`),
+    new RegExp(`export\\s*\\{[^}]*\\b(?:[\\w$]+\\s+as\\s+${escapedExportName}|${escapedExportName})\\b[^}]*\\}`),
+  ].some(pattern => pattern.test(code))
+}
+
 async function readWevuComputedRuntime(outDir: string, exportName: string) {
   const vendorRoot = path.resolve(outDir, 'weapp-vendors')
   const files = await fs.readdir(vendorRoot)
+  const computedCandidates: string[] = []
   for (const file of files) {
     if (!file.endsWith('.js')) {
       continue
     }
     const filePath = path.join(vendorRoot, file)
     const code = await fs.readFile(filePath, 'utf8')
-    if (code.includes(`Object.defineProperty(exports, "${exportName}"`)) {
+    if (code.includes('computed')) {
+      computedCandidates.push(file)
+    }
+    if (hasWevuComputedRuntimeExport(code, exportName)) {
       return code
     }
   }
 
-  throw new Error(`watch build output missing wevu computed export: ${exportName}`)
+  throw new Error(`watch build output missing wevu computed export: ${exportName}; vendor files: ${files.join(', ')}; computed candidates: ${computedCandidates.join(', ')}`)
 }
 
 describe.sequential('issue #446 watch auto-import component template ref', () => {
@@ -149,7 +167,7 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
 
       expect(initialPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
       expect(initialPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
-      expect(initialRuntimeOutput).toContain(`Object.defineProperty(exports, "${initialComputedExport}"`)
+      expect(hasWevuComputedRuntimeExport(initialRuntimeOutput, initialComputedExport)).toBe(true)
 
       const originalSource = await fs.readFile(pageSourcePath, 'utf8')
       const updatedSource = originalSource.replaceAll('issue-446-short-bind', 'issue-446-short-bind-updated')
@@ -167,7 +185,7 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       expect(updatedPageOutput).toContain('issue-446-short-bind-updated')
       expect(updatedPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => nativeAnchorRef\.value != null\)/)
       expect(updatedPageOutput).toMatch(/(?:computed|require_[\w$]+\.[\w$]+)\(\(\) => typeof shortBindProbeRef\.value\?\.snapshot === "function"\)/)
-      expect(updatedRuntimeOutput).toContain(`Object.defineProperty(exports, "${updatedComputedExport}"`)
+      expect(hasWevuComputedRuntimeExport(updatedRuntimeOutput, updatedComputedExport)).toBe(true)
     }
     finally {
       await watcher?.close()

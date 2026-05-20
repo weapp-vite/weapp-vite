@@ -25,7 +25,7 @@ on:
       node-version:
         description: target Node.js version when full matrix is disabled
         required: false
-        default: '20'
+        default: '24'
         type: choice
         options:
           - '20'
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Resolve workflow inputs
         id: inputs
@@ -93,7 +93,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_FULL_MATRIX: ${{ github.event.inputs['full-matrix'] || 'false' }}
           INPUT_OS: ${{ github.event.inputs.os || 'ubuntu-latest' }}
-          INPUT_NODE_VERSION: ${{ github.event.inputs['node-version'] || '20' }}
+          INPUT_NODE_VERSION: ${{ github.event.inputs['node-version'] || '24' }}
         run: |
           full_matrix='{"include":[
             {"os":"ubuntu-latest","node-version":"20"},

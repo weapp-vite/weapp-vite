@@ -14,6 +14,7 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeat
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
+import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { handleTransformEntryPageLayoutFlow } from './layout'
 import {
   mayNeedTransformPageFeatureInjection,
@@ -56,6 +57,7 @@ export async function finalizeTransformEntryScript(options: {
     if (forcePageFeatureInjection || mayNeedTransformPageFeatureInjection(result.script)) {
       const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
         checkMtime: configService.isDev,
+        minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
       })
       if (injected.transformed) {
         result.script = injected.code

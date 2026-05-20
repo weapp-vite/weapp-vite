@@ -14,6 +14,7 @@ export function injectWevuPageFeaturesInJs(
   source: string,
   options?: {
     astEngine?: AstEngineName
+    minify?: boolean
   },
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   const enabled = collectWevuPageFeatureFlagsFromCode(source, options)
@@ -37,7 +38,9 @@ export function injectWevuPageFeaturesInJs(
   }
 
   const generated = generate(ast, {
-    retainLines: true,
+    compact: options?.minify === true,
+    minified: options?.minify === true,
+    retainLines: options?.minify !== true,
     sourceMaps: true,
     sourceFileName: 'inline.js',
   }, source)
@@ -49,7 +52,7 @@ export function injectWevuPageFeaturesInJs(
  */
 export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
-  options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName },
+  options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName, minify?: boolean },
 ): Promise<{ code: string, transformed: boolean, map?: EncodedSourceMapLike | null }> {
   const preflight = collectTargetOptionsObjectsFromCode(source, options.id, {
     astEngine: options.astEngine,
@@ -98,7 +101,9 @@ export async function injectWevuPageFeaturesInJsWithResolver(
   }
 
   const generated = generate(ast, {
-    retainLines: true,
+    compact: options?.minify === true,
+    minified: options?.minify === true,
+    retainLines: options?.minify !== true,
     sourceMaps: true,
     sourceFileName: 'inline.js',
   }, source)

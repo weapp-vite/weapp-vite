@@ -165,13 +165,12 @@ async function rewriteVueSourceForWatch(
 ) {
   const eol = detectEol(targetSource)
   const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
-  await fs.writeFile(
+  await replaceFileByRename(
     sourcePath,
     `${targetSource}${eol}${marker}${eol}`,
-    'utf8',
   )
   await new Promise(resolve => setTimeout(resolve, 120))
-  await fs.writeFile(sourcePath, targetSource, 'utf8')
+  await replaceFileByRename(sourcePath, targetSource)
 }
 
 async function waitForTaskWithSourceHeartbeat<T>(
@@ -776,12 +775,12 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
               waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
             [
               {
-                touchFilePath: PAGE_SOURCE_PATH,
-                touchContent: pageSourceWithHotCard,
-              },
-              {
                 touchFilePath: HOT_COMPONENT_SOURCE_PATH,
                 touchContent: hotCardSource,
+              },
+              {
+                touchFilePath: PAGE_SOURCE_PATH,
+                touchContent: pageSourceWithHotCard,
               },
             ],
             HOT_COMPONENT_TEMPLATE_TIMEOUT_MS,

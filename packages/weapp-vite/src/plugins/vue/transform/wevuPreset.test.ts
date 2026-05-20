@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAutoSetDataPickEnabledWithPreset, resolveWevuDefaultsWithPreset, resolveWevuPreset } from './wevuPreset'
+import { isAutoSetDataPickEnabledWithPreset, isWevuMinifyEnabled, resolveWevuDefaultsWithPreset, resolveWevuPreset } from './wevuPreset'
 
 describe('wevu performance preset', () => {
   it('resolves preset name', () => {
@@ -50,5 +50,20 @@ describe('wevu performance preset', () => {
     expect(resolved?.component?.setData?.strategy).toBe('patch')
     expect(resolved?.component?.setData?.diagnostics).toBe('fallback')
     expect(resolved?.component?.setData?.includeComputed).toBe(false)
+  })
+
+  it('defaults wevu minify by mode and respects explicit flag', () => {
+    expect(isWevuMinifyEnabled({} as any, true)).toBe(false)
+    expect(isWevuMinifyEnabled({} as any, false)).toBe(true)
+    expect(isWevuMinifyEnabled({
+      wevu: {
+        minify: true,
+      },
+    } as any, true)).toBe(true)
+    expect(isWevuMinifyEnabled({
+      wevu: {
+        minify: false,
+      },
+    } as any, false)).toBe(false)
   })
 })

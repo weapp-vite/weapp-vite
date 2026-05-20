@@ -186,10 +186,13 @@ describe('sharedBuildConfig', () => {
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BdXSqz-9.mjs',
     })).toBe('weapp-vendors/wevu-src.js')
     expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/dev/src-BD3I133J.mjs',
+    })).toBe('weapp-vendors/wevu-src.js')
+    expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
       moduleIds: [
         '/project/packages-runtime/wevu/dist/store-BD3I133J.mjs',
-        '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+        '/project/packages-runtime/wevu/dist/dev/src-BD3I133J.mjs',
       ],
     })).toBe('weapp-vendors/wevu-store.js')
     expect(resolveStableHashedDistChunkFileName({
@@ -217,7 +220,7 @@ describe('sharedBuildConfig', () => {
     })
     expect(output.chunkFileNames({
       name: 'src-BD3I133J',
-      facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+      facadeModuleId: '/project/packages-runtime/wevu/dist/dev/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src.js')
   })
 

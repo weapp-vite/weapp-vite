@@ -108,3 +108,14 @@ export function isAutoSetDataPickEnabledWithPreset(config?: WeappViteConfig): bo
   }
   return resolveWevuPreset(config) === 'performance'
 }
+
+/**
+ * 读取 wevu 输出是否压缩。
+ */
+export function isWevuMinifyEnabled(config: WeappViteConfig | undefined, isDev = false): boolean {
+  const explicit = config?.wevu?.minify
+  if (typeof explicit === 'boolean') {
+    return explicit
+  }
+  return !isDev
+}
