@@ -21,18 +21,18 @@ permissions:
 
 jobs:
   vscode-extension:
-    name: VSCode Extension Checks (Node 20)
+    name: VSCode Extension Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: '20'
+      node_version: '24'
       timeout_minutes: 10
       main_command: |
         pnpm --dir extensions/vscode run check:publish
     secrets: inherit
 
   vscode-extension-package:
-    name: VSCode Extension Package Dry Run (Node 20)
+    name: VSCode Extension Package Dry Run (Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
@@ -45,7 +45,7 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Build VSIX dry run
         run: pnpm --dir extensions/vscode run package:dry-run
@@ -59,7 +59,7 @@ jobs:
           include-hidden-files: true
 
   vscode-extension-host-smoke:
-    name: VSCode Extension Host Smoke (Node 20)
+    name: VSCode Extension Host Smoke (Node 24)
     runs-on: macos-latest
     timeout-minutes: 15
     needs: vscode-extension
@@ -69,7 +69,7 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Build extension
         run: pnpm --dir extensions/vscode run build
@@ -78,7 +78,7 @@ jobs:
         run: pnpm --dir extensions/vscode run test:host:smoke
 
   vscode-extension-vsix-e2e:
-    name: VSCode Extension VSIX E2E (Node 20)
+    name: VSCode Extension VSIX E2E (Node 24)
     runs-on: macos-latest
     timeout-minutes: 20
     needs: vscode-extension
@@ -88,7 +88,7 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Run VSIX install-mode e2e
         run: pnpm --dir extensions/vscode run test:vsix:e2e
