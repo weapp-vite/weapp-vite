@@ -8,6 +8,10 @@ const outDir = process.env.WEAPP_LIB_OUTDIR ?? 'dist'
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     lib: {
       entry: {
         'components/button/index': 'components/button/index.ts',

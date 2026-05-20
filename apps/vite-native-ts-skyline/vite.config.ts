@@ -5,6 +5,10 @@ import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: './miniprogram',
     typescript: {
       app: {

@@ -5,6 +5,10 @@ import { defineConfig } from 'weapp-vite'
 let idx = 0
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     // weapp-vite options
     srcRoot: './miniprogram',
     // platform: 'alipay',

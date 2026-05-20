@@ -1,5 +1,5 @@
-import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 import { defineConfig } from 'weapp-vite'
+import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 
 export default defineConfig(() => ({
   weapp: {
@@ -17,6 +17,8 @@ export default defineConfig(() => ({
     },
     hmr: {
       sharedChunks: 'auto',
+      logLevel: 'verbose',
+      profileJson: true,
     },
     autoImportComponents: {
       resolvers: [

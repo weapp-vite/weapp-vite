@@ -51,6 +51,10 @@ export default defineConfig({
     __WEAPP_CHUNK_SCENARIO__: JSON.stringify(scenarioId),
   },
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     chunks: {
       sharedStrategy,

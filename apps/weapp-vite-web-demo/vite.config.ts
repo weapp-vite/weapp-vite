@@ -9,6 +9,10 @@ const shouldOpen = process.env.WEAPP_WEB_OPEN === 'true'
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     autoImportComponents: {
       globs: [

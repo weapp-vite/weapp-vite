@@ -59,6 +59,10 @@ export default defineConfig({
     },
   },
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     typescript: {
       app: {
         compilerOptions: {

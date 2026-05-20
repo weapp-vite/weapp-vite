@@ -231,6 +231,10 @@ export default defineConfig({
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
     typescript: {

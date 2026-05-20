@@ -10,6 +10,10 @@ export default defineConfig({
     },
   },
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     multiPlatform: true,
     injectWeapi: {

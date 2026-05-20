@@ -5,6 +5,10 @@ export default defineConfig(
     console.log('[mode]:', mode)
     return {
       weapp: {
+        hmr: {
+          logLevel: 'verbose',
+          profileJson: true,
+        },
         srcRoot: 'src',
         multiPlatform: true,
         injectWeapi: {

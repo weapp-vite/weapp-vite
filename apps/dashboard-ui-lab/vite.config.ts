@@ -5,6 +5,10 @@ const lowBudget = process.env.WEAPP_VITE_DASHBOARD_LAB_LOW_BUDGET === '1'
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     jsFormat: 'esm',
     analyze: lowBudget

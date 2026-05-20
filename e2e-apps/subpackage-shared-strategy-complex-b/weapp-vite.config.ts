@@ -8,6 +8,10 @@ const outDir = process.env.WEAPP_CHUNK_OUTDIR ?? 'dist'
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     chunks: {
       sharedStrategy,

@@ -16,6 +16,10 @@ export default defineConfig({
     },
   },
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     debug: {
       inspect: {
         threshold: 100,

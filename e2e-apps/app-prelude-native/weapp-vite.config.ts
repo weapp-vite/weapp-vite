@@ -10,6 +10,10 @@ const requestGlobalsPreludeEnabled = process.env.APP_PRELUDE_REQUEST_GLOBALS ===
 
 export default defineConfig({
   weapp: {
+    hmr: {
+      logLevel: 'verbose',
+      profileJson: true,
+    },
     srcRoot: 'src',
     appPrelude: {
       mode: appPreludeMode,

@@ -24,6 +24,10 @@ export default defineConfig(async (env) => {
   return {
     plugins: devSetup ? [devSetup.plugin] : [],
     weapp: {
+      hmr: {
+        logLevel: 'verbose',
+        profileJson: true,
+      },
       appPrelude: {
         webRuntime: {
           networkDefaults: REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS,
