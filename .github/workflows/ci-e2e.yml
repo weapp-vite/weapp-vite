@@ -29,6 +29,9 @@ jobs:
             os: ubuntu-latest
             node-version: 22
           - platform: weapp
+            os: ubuntu-latest
+            node-version: 24
+          - platform: weapp
             os: windows-latest
             node-version: 20
           - platform: weapp
@@ -94,11 +97,11 @@ jobs:
 
   web-e2e-baseline-pr:
     if: github.event_name != 'schedule'
-    name: Web E2E Baseline (Node 20)
+    name: Web E2E Baseline (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: '20'
+      node_version: '24'
       timeout_minutes: 20
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
@@ -107,11 +110,11 @@ jobs:
 
   workspace-hmr-pr:
     if: github.event_name != 'schedule'
-    name: Workspace HMR Changed Projects (Node 20)
+    name: Workspace HMR Changed Projects (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: '20'
+      node_version: '24'
       timeout_minutes: 60
       fetch_depth: 0
       build_command: pnpm build:pkgs:ci
@@ -123,11 +126,11 @@ jobs:
 
   workspace-hmr-nightly:
     if: github.event_name == 'schedule'
-    name: Workspace HMR Nightly Full (Node 20)
+    name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: '20'
+      node_version: '24'
       timeout_minutes: 120
       fetch_depth: 0
       build_command: pnpm build:pkgs:ci

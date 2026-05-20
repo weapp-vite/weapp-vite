@@ -28,6 +28,8 @@ jobs:
             node-version: 20
           - os: ubuntu-latest
             node-version: 22
+          - os: ubuntu-latest
+            node-version: 24
           - os: windows-latest
             node-version: 20
           - os: macos-latest
@@ -70,11 +72,11 @@ jobs:
 
   weapi-compat-pr:
     if: github.event_name != 'schedule'
-    name: Weapi Compatibility Guard (Node 20)
+    name: Weapi Compatibility Guard (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: '20'
+      node_version: '24'
       timeout_minutes: 15
       main_command: |
         pnpm --filter @wevu/api catalog:check
