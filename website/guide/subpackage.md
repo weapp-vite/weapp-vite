@@ -139,6 +139,42 @@ flowchart LR
 - `App` 只能在主包里定义：独立分包里不要定义 `App()`，否则行为不可预期。
 - 独立分包中暂时不支持使用插件。
 
+### 只构建主包和指定分包
+
+如果你的项目有很多分包，但当前只需要开发订单、会员等少数业务域，可以使用 scoped build：
+
+```bash
+wv dev --scope main,packages/order
+wv build --scope packages/order
+```
+
+`--scope` 不是简单地在构建结束后删除目录，而是在入口阶段裁剪本次构建的 app 注册图：
+
+- `main` 表示主包。
+- `packages/order` 匹配 `app.json.subPackages[].root`。
+- `wv build --scope packages/order` 默认仍包含主包。
+- 最终产物 `app.json.subPackages` 只包含参与 scope 的分包。
+- 未参与 scope 的分包页面不会被注册到本次产物。
+- 开启 `autoRoutes` 时，`weapp-vite/auto-routes` 也只导出参与 scope 的主包页面和分包页面。
+
+也可以把常用 scope 固化到配置里：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    buildScope: {
+      includeMainPackage: true,
+      include: ['packages/order'],
+    },
+  },
+})
+```
+
+> [!NOTE]
+> scoped build 更适合开发和局部验证。发布前仍建议跑一次不带 scope 的完整构建，确认所有分包注册、依赖落位和包体分析都覆盖完整小程序。
+
 ### 单独开发某个分包（把它当成独立分包）
 
 当你想“只专注开发某个分包”（例如一个业务域由独立小组交付、或希望尽量隔离主包依赖）时，推荐把该分包按 **独立分包** 的方式组织与编译：运行时隔离、构建时独立上下文、依赖/样式/组件策略也能只对这个分包生效。

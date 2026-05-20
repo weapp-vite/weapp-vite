@@ -7,6 +7,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { jsExtensions } from '../../../constants'
 import { findJsEntry, findJsonEntry, findVueEntry } from '../../../utils'
+import { applyBuildScopeToAppConfig, resolveBuildScope } from '../../buildScope'
 import { createWarnOnce, mergeAutoRoutePages } from './shared'
 
 export function resolveScanAppBasename(absoluteSrcRoot: string) {
@@ -221,6 +222,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
       }
     }
     await applyAutoRoutesToAppConfigIfNeeded(ctx, config)
+    applyBuildScopeToAppConfig(config, resolveBuildScope(ctx.configService.weappViteConfig.buildScope))
 
     if (isObject(config)) {
       normalizeAppConfigSubPackages(config)

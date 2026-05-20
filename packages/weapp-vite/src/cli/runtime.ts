@@ -1,6 +1,7 @@
 import type { InlineConfig } from 'vite'
 import type { MpPlatform } from '../types'
 import logger, { colors } from '../logger'
+import { createBuildScopeConfigFromCli } from '../runtime/buildScope'
 import { resolveWeappViteTarget } from '../runtimeTarget'
 
 export interface RuntimeTargets {
@@ -49,13 +50,15 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
   }
 }
 
-export function createInlineConfig(platform: MpPlatform | undefined): InlineConfig | undefined {
-  if (!platform) {
+export function createInlineConfig(platform: MpPlatform | undefined, scope?: string): InlineConfig | undefined {
+  const buildScope = createBuildScopeConfigFromCli(scope)
+  if (!platform && !buildScope) {
     return undefined
   }
   return {
     weapp: {
-      platform,
+      ...(platform ? { platform } : {}),
+      ...(buildScope ? { buildScope } : {}),
     },
   }
 }

@@ -28,11 +28,12 @@ export function registerServeCommand(cli: CAC) {
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
+    .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      let inlineConfig = createInlineConfig(targets.platform)
+      let inlineConfig = createInlineConfig(targets.platform, options.scope)
       if (targets.runWeb) {
         const host = resolveWebHost(options.host)
         if (host !== undefined) {

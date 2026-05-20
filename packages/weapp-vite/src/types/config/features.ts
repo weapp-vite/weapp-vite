@@ -142,6 +142,27 @@ export interface WeappAutoRoutesConfig {
 }
 
 /**
+ * @description 局部构建范围配置。
+ */
+export interface WeappBuildScopeObjectConfig {
+  /**
+   * @description 是否包含主包页面。
+   */
+  includeMainPackage?: boolean
+  /**
+   * @description 参与构建的分包 root 列表。`main` 表示主包。
+   */
+  include?: string[]
+  /**
+   * @internal
+   * @description CLI 注入来源标记。
+   */
+  __weappViteBuildScopeSource?: boolean
+}
+
+export type WeappBuildScopeConfig = string | string[] | WeappBuildScopeObjectConfig
+
+/**
  * @description `@wevu/api` 注入配置
  */
 export interface WeappInjectWeapiConfig {

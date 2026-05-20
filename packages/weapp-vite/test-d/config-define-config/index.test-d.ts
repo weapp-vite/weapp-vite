@@ -36,6 +36,10 @@ const objectConfig = defineConfig({
         limit: 20,
       },
     },
+    buildScope: {
+      includeMainPackage: true,
+      include: ['main', 'subpackages/item'],
+    },
     vue: {
       template: {
         htmlTagToWxml: {
@@ -95,6 +99,10 @@ expectAssignable<{
     limit?: number
   }
 } | undefined>(objectConfig.weapp?.analyze)
+expectAssignable<string | string[] | {
+  includeMainPackage?: boolean
+  include?: string[]
+} | undefined>(objectConfig.weapp?.buildScope)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
@@ -103,6 +111,7 @@ expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSin
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {
     srcRoot: 'src',
+    buildScope: 'subpackages/item',
   },
 }))
 expectAssignable<Promise<UserConfig>>(promiseConfig)
@@ -111,6 +120,7 @@ const syncNoEnvConfig = defineConfig(() => ({
   weapp: {
     srcRoot: 'src',
     platform: 'alipay',
+    buildScope: ['main', 'subpackages/item'],
     autoImportComponents: {
       vueComponents: true,
     },

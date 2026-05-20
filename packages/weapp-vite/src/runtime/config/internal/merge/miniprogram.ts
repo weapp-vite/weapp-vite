@@ -8,6 +8,7 @@ import path from 'pathe'
 import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
+import { resolveBuildScope } from '../../../buildScope'
 import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/service'
 import { resolveBuiltinPackageAliases } from '../../../packageAliases'
 import { stripRollupOptions } from './inline'
@@ -77,10 +78,17 @@ export function resolveMiniprogramWatchInclude(options: {
   cwd: string
   srcRoot: string
   pluginRoot?: string
+  buildScope?: ReturnType<typeof resolveBuildScope>
 }) {
-  const watchInclude: string[] = [
-    path.join(options.cwd, options.srcRoot, '**'),
-  ]
+  const srcRoot = path.join(options.cwd, options.srcRoot)
+  const watchInclude: string[] = options.buildScope?.enabled
+    ? [
+        ...options.buildScope.includeMainPackage ? [path.join(srcRoot, 'pages', '**')] : [],
+        ...options.buildScope.subPackageRoots.map(root => path.join(srcRoot, root, '**')),
+      ]
+    : [
+        path.join(srcRoot, '**'),
+      ]
 
   if (!options.pluginRoot) {
     return watchInclude
@@ -163,6 +171,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       cwd,
       srcRoot,
       pluginRoot: config.weapp?.pluginRoot,
+      buildScope: resolveBuildScope(config.weapp?.buildScope),
     })
 
     const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(

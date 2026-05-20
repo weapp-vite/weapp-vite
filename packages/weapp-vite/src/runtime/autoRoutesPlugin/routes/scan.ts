@@ -3,6 +3,7 @@ import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 import type { CandidateEntry } from '../candidates'
 import path from 'pathe'
 import { toPosixPath } from '../../../utils/path'
+import { applyBuildScopeToAutoRoutes, resolveBuildScope } from '../../buildScope'
 import { createAutoRoutesArtifacts } from '../service/shared'
 import { resolveAutoRoutesMatcherContext } from '../shared'
 import { resolveRoute } from './resolve'
@@ -158,11 +159,11 @@ export async function scanRoutes(
   sortAutoRoutesEntries(entries)
   sortAutoRoutesSubPackages(subPackageList)
 
-  const snapshot: AutoRoutes = {
+  const snapshot: AutoRoutes = applyBuildScopeToAutoRoutes({
     pages,
     entries,
     subPackages: subPackageList,
-  }
+  }, resolveBuildScope(configService.weappViteConfig.buildScope))
 
   const { serialized, moduleCode, typedDefinition } = createAutoRoutesArtifacts(snapshot)
 

@@ -24,6 +24,30 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+### `buildScope`
+
+用于只构建主包和指定分包。常用在大项目里只调试某几个业务分包：
+
+```bash
+wv dev --scope main,packages/order
+wv build --scope packages/order
+```
+
+也可以写在配置里：
+
+```ts
+export default defineConfig({
+  weapp: {
+    buildScope: {
+      includeMainPackage: true,
+      include: ['packages/order'],
+    },
+  },
+})
+```
+
+`main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、自动路由和 typed router 也会按同一范围裁剪。发布前建议再跑不带 scope 的完整构建。
+
 ### `autoImportComponents`
 
 适合用目录扫描自动注册组件的项目。组件重名时要先解决命名冲突，不要让自动引入规则长期处于歧义状态。

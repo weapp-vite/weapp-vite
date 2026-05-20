@@ -27,6 +27,7 @@ export interface GlobalCLIOptions {
   'trustProject'?: boolean
   'analyze'?: boolean
   'ui'?: boolean
+  'scope'?: string
 }
 
 export interface AnalyzeCLIOptions extends GlobalCLIOptions {
