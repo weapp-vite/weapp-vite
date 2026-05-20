@@ -17,7 +17,7 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|web-apis[/\\]dist[/\\]index\.(?:m?js|cjs)|weapp-vite[/\\](?:dist[/\\]web-apis\.mjs|src[/\\](?:webApis\.ts|runtime[/\\]webApis[/\\]index\.ts)))(?:$|[?#])/
-const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\]([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
+const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\](?:dev[/\\])?([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
 const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
 
 function resolveSharedPathRoot(
