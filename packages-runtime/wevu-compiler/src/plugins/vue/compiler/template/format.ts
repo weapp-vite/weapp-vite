@@ -3,22 +3,49 @@ interface WxmlFormatToken {
   value: string
 }
 
-const TOKEN_RE = /<[^>]+>/g
-
 function tokenizeWxml(source: string): WxmlFormatToken[] {
   const tokens: WxmlFormatToken[] = []
   let index = 0
-  for (const match of source.matchAll(TOKEN_RE)) {
-    const start = match.index ?? 0
+
+  while (index < source.length) {
+    const start = source.indexOf('<', index)
+    if (start < 0) {
+      tokens.push({ type: 'text', value: source.slice(index) })
+      break
+    }
+
     if (start > index) {
       tokens.push({ type: 'text', value: source.slice(index, start) })
     }
-    tokens.push({ type: 'tag', value: match[0] })
-    index = start + match[0].length
+
+    let quote: '"' | '\'' | undefined
+    let end = start + 1
+    for (; end < source.length; end++) {
+      const char = source[end]
+      if (quote) {
+        if (char === quote) {
+          quote = undefined
+        }
+        continue
+      }
+      if (char === '"' || char === '\'') {
+        quote = char
+        continue
+      }
+      if (char === '>') {
+        break
+      }
+    }
+
+    if (end >= source.length) {
+      tokens.push({ type: 'text', value: source.slice(start) })
+      break
+    }
+
+    tokens.push({ type: 'tag', value: source.slice(start, end + 1) })
+    index = end + 1
   }
-  if (index < source.length) {
-    tokens.push({ type: 'text', value: source.slice(index) })
-  }
+
   return tokens.filter(token => token.value.length > 0)
 }
 

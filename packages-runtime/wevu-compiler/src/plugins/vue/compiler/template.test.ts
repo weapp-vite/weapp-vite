@@ -125,6 +125,25 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('  <view>\n    <text>Nested</text>\n  </view>\n')
   })
 
+  it('keeps greater-than markers inside attribute values during wxml formatting', () => {
+    const template = `
+<view>
+  <VueCard
+    :title="\`页面 -> Vue（\${mode}）\`"
+    subtitle="页面 -> Vue 静态链路"
+  />
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/component-interop/index.vue', {
+      formatWxml: true,
+    })
+
+    expect(code).toContain('title="{{\'页面 -> Vue（\'+mode+\'）\'}}"')
+    expect(code).toContain('subtitle="页面 -> Vue 静态链路"')
+    expect(code).not.toContain('页面 ->\n')
+  })
+
   it('collects component prop binding paths for auto function prop snapshots', () => {
     const template = `
 <view :callback="callback" />
