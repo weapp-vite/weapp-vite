@@ -489,7 +489,17 @@ describe('emitSharedVueEntryAssets', () => {
     const result = emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
-      ctx: {} as any,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                file: '/project/src/app.vue',
+              },
+            },
+          },
+        },
+      } as any,
       filename: '/project/src/app.vue',
       relativeBase: 'app',
       result: {
@@ -551,6 +561,49 @@ describe('emitSharedVueEntryAssets', () => {
       isAppVue: true,
       shouldEmitComponentJson: false,
     })
+  })
+
+  it('does not overwrite processed app styles during unrelated dev HMR updates', () => {
+    emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                file: '/project/src/pages/list/index.vue',
+                dirtyReasonSummary: ['entry-direct:1'],
+              },
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/app.vue',
+      relativeBase: 'app',
+      result: {
+        config: '{"window":{"navigationBarTitleText":"首页"}}',
+        style: '@tailwind base;',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: false,
+      configService: {
+        isDev: true,
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'wxs',
+      outputExtensions: {
+        wxss: 'wxss',
+      },
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
   })
 
   it('finalizes compiled page results with page feature and setDataPick injections', async () => {

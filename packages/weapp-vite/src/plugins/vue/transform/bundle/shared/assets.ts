@@ -317,20 +317,27 @@ export function emitCompiledEntryBundleAssets(options: {
   }
 }) {
   const isAppVue = APP_VUE_LIKE_FILE_RE.test(options.filename)
+  const hmrState = options.ctx.runtimeState?.build?.hmr
   const shouldEmitComponentJson = !isAppVue && !options.isPage
   const shouldMergeJsonAsset = isAppVue
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
-  const dirtyReasonSummary = options.ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
+  const dirtyReasonSummary = hmrState?.profile?.dirtyReasonSummary
   const isAssetOnlyHmr = dirtyReasonSummary?.some(item =>
     item.startsWith('entry-local-asset:')
     || item.startsWith('style-sidecar:'),
   ) === true
-  const shouldEmitSfcStyleAsset = Boolean(options.result.style) && (
+  const isAppVueHmrUpdate = Boolean(
     isAppVue
+    && options.configService.isDev
+    && hmrState?.profile?.file === options.filename,
+  )
+  const sfcStyle = options.result.style
+  const shouldEmitSfcStyleAsset = typeof sfcStyle === 'string' && sfcStyle.length > 0 && (
+    (isAppVue && (!options.configService.isDev || isAppVueHmrUpdate))
     || (
       options.configService.isDev
       && isAssetOnlyHmr
-      && options.ctx.runtimeState?.build?.hmr?.lastHmrEntryIds?.has(options.filename)
+      && hmrState?.lastHmrEntryIds?.has(options.filename)
     )
   )
 
@@ -353,7 +360,7 @@ export function emitCompiledEntryBundleAssets(options: {
       options.pluginCtx,
       options.bundle,
       options.relativeBase,
-      options.result.style,
+      sfcStyle,
       options.outputExtensions.wxss,
       isAppVue ? { updateExisting: false } : undefined,
     )
