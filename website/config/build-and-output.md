@@ -116,6 +116,54 @@ export default defineConfig({
 - `build` 模式始终清空输出目录，不受此字段影响
 - 大项目若频繁冷启动，可按需关闭开发态清理换取速度
 
+## `weapp.buildScope` {#weapp-buildscope}
+
+- **类型**：`string | string[] | { includeMainPackage?: boolean; include?: string[] }`
+- **默认值**：不启用，完整构建
+
+用于只构建主包和指定分包。它适合中大型小程序按业务分包日常开发、局部验证或临时分析，不建议直接替代发布前的完整构建。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    buildScope: {
+      includeMainPackage: true,
+      include: ['packages/order', 'packages/user'],
+    },
+  },
+})
+```
+
+等价的 CLI 写法：
+
+```bash
+wv dev --scope main,packages/order,packages/user
+wv build --scope packages/order
+```
+
+语义说明：
+
+- `main` 表示主包。
+- `packages/order` 这类值匹配 `app.json.subPackages[].root` / `subpackages[].root`。
+- CLI `--scope` 优先级高于配置文件里的 `weapp.buildScope`。
+- 字符串写法会按逗号分隔，例如 `'main,packages/order'`。
+- 数组写法适合在配置里复用，例如 `['main', 'packages/order']`。
+- `includeMainPackage` 默认是 `true`，所以 `wv build --scope packages/order` 会构建主包和 `packages/order` 分包。
+- 如果确实要排除主包，可以使用对象写法并设置 `includeMainPackage: false`。
+
+构建效果：
+
+- 产物 `app.json.pages` 只在包含主包时保留。
+- 产物 `app.json.subPackages` 只保留参与 scope 的分包。
+- `preloadRule` 会同步过滤到参与 scope 的页面和分包。
+- 开启 `weapp.autoRoutes` 时，`weapp-vite/auto-routes` 导出的 `pages`、`subPackages`、typed router 也会基于 scope 后的结果生成。
+- 开发态 watcher 会收窄到主包 `pages/**` 与参与 scope 的分包 root。
+
+> [!NOTE]
+> `buildScope` 是入口级裁剪，不是构建完成后删除文件。未参与 scope 的分包不会进入本次 app 注册图，因此微信开发者工具读取到的 `app.json` 也只包含本次参与构建的分包。
+
 ## `weapp.packageSizeWarningBytes` {#weapp-packagesizewarningbytes}
 
 - **类型**：`number`

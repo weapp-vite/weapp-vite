@@ -69,11 +69,13 @@ wv [root]
 | `--project-config <path>`   | 小程序 `project.config.json` 路径          |
 | `--host [host]`             | Web dev server host（`h5` 场景）           |
 | `--analyze`                 | 启动分包分析仪表盘（实验特性，小程序场景） |
+| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`   |
 
 补充说明：
 
 - 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`wv dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
 - 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
+- `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
 
 ### 2) `build`
 
@@ -98,6 +100,24 @@ wv build [root]
 | `--skipNpm`                 | 跳过 npm 构建                                  |
 | `-o, --open`                | 构建后尝试打开 IDE                             |
 | `--analyze`                 | 输出分包分析仪表盘（小程序场景）               |
+| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`       |
+
+局部构建示例：
+
+```bash
+wv dev --scope main,packages/order
+wv build --scope packages/order
+wv build --scope main,packages/order --analyze
+```
+
+语义说明：
+
+- `main` 表示主包。
+- `packages/order` 这类值匹配 `app.json.subPackages[].root` / `subpackages[].root`。
+- CLI `--scope` 的优先级高于配置文件中的 `weapp.buildScope`。
+- 不传 `--scope` 时保持完整构建行为。
+- 传入 `--scope packages/order` 时默认仍包含主包，因此最终产物会包含主包页面和 `packages/order` 分包。
+- 生成的 `app.json` 会同步裁剪 `subPackages` 与 `preloadRule`，未参与 scope 的分包不会被注册到本次产物。
 
 ### 3) `analyze`
 

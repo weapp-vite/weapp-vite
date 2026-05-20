@@ -17,7 +17,7 @@ keywords:
 `weapp-vite` 采用 **Vite 顶层配置 + `weapp` 小程序专属配置** 的组合模型：
 
 - 顶层字段仍然是标准 Vite 配置，例如 `build`、`resolve`、`css`、`server`
-- 小程序专属字段放在 `weapp` 下，例如 `srcRoot`、`autoRoutes`、`subPackages`、`mcp`
+- 小程序专属字段放在 `weapp` 下，例如 `srcRoot`、`autoRoutes`、`buildScope`、`subPackages`、`mcp`
 
 ```ts
 // vite.config.ts 或 weapp-vite.config.ts
@@ -133,7 +133,7 @@ export default defineConfig(env => ({
 | 主题 | 内容概览 |
 | --- | --- |
 | [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / `copy` / `isAdditionalWxml` |
-| [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` / 顶层 `build.*` |
+| [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `buildScope` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` / 顶层 `build.*` |
 | [TypeScript 支持文件](./typescript.md) | `.weapp-vite/tsconfig.*`、托管类型输出、`weapp.typescript` |
 | [Analyze 报告配置](./analyze.md) | `weapp.analyze.budgets`、历史快照、Markdown / PR 报告、HMR profile 分析 |
 | [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `appPrelude` / `forwardConsole` / `injectWeapi` / `injectWebRuntimeGlobals` / `mcp` |
