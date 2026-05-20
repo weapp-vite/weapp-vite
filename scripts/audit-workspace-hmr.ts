@@ -621,7 +621,7 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   const scenarios: ScenarioCase[] = []
   const nativeTemplate = findPreferredSource(files, filePath => isNativeTemplate(filePath) && isEntryLikeSource(project.sourceRoot, filePath))
   const nativeStyle = findPreferredSource(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
-  const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isScriptEntryFile(filePath))
+  const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isAuditableScriptEntry(project.sourceRoot, filePath))
   const vueFile = findPreferredVueSource(files, project.sourceRoot)
 
   if (nativeTemplate) {
@@ -791,6 +791,22 @@ function isSidecarEntryFile(filePath: string) {
 function isScriptEntryFile(filePath: string) {
   const basename = path.basename(filePath, path.extname(filePath))
   return basename === 'index' || isSidecarEntryFile(filePath)
+}
+
+export function isAuditableScriptEntry(sourceRoot: string, filePath: string) {
+  if (!isEntryLikeSource(sourceRoot, filePath)) {
+    return false
+  }
+  if (!isScriptEntryFile(filePath)) {
+    return false
+  }
+
+  const relative = normalizePath(path.relative(sourceRoot, filePath))
+  if (relative.startsWith('components/')) {
+    return isSidecarEntryFile(filePath)
+  }
+
+  return true
 }
 
 function pathExistsSyncLike(filePath: string) {

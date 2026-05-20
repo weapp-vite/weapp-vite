@@ -1,6 +1,10 @@
 import type { ProjectResult } from '../../../scripts/workspace-hmr/baseline'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  isAuditableScriptEntry,
   readWorkspaceHmrPollingMode,
   readWorkspaceHmrScope,
   readWorkspaceHmrWriteMode,
@@ -56,7 +60,29 @@ const githubIssuesResult: ProjectResult = {
   ],
 }
 
+async function fsMkdtemp(prefix: string) {
+  return await mkdtemp(path.join(os.tmpdir(), prefix))
+}
+
 describe('workspace HMR changed-file selection', () => {
+  it('skips component barrel scripts without sidecar component assets', async () => {
+    expect(isAuditableScriptEntry('/project/src', '/project/src/components/index.ts')).toBe(false)
+    expect(isAuditableScriptEntry('/project/src', '/project/src/pages/index/index.ts')).toBe(true)
+
+    const root = await fsMkdtemp('workspace-hmr-entry-')
+    try {
+      const componentDir = path.join(root, 'src/components/probe-card')
+      await mkdir(componentDir, { recursive: true })
+      await writeFile(path.join(componentDir, 'index.ts'), 'Component({})\n', 'utf8')
+      await writeFile(path.join(componentDir, 'index.wxml'), '<view />\n', 'utf8')
+
+      expect(isAuditableScriptEntry(path.join(root, 'src'), path.join(componentDir, 'index.ts'))).toBe(true)
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('parses workspace HMR scope values', () => {
     expect(readWorkspaceHmrScope(undefined)).toBe('workspace')
     expect(readWorkspaceHmrScope('apps,e2e-apps')).toBe('apps,e2e-apps')

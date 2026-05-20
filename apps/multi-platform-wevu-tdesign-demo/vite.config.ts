@@ -11,6 +11,7 @@ export default defineConfig({
   },
   weapp: {
     hmr: {
+      sharedChunks: 'off',
       logLevel: 'verbose',
       profileJson: true,
     },
