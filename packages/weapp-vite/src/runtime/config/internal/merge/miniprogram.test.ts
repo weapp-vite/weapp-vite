@@ -47,6 +47,22 @@ describe('runtime config merge miniprogram', () => {
     ])
   })
 
+  it('narrows miniprogram watch include patterns when build scope is enabled', () => {
+    expect(resolveMiniprogramWatchInclude({
+      cwd: '/project',
+      srcRoot: 'src',
+      buildScope: {
+        enabled: true,
+        includeMainPackage: true,
+        subPackageRoots: ['packages/order'],
+        source: 'config',
+      },
+    })).toEqual([
+      '/project/src/pages/**',
+      '/project/src/packages/order/**',
+    ])
+  })
+
   it('builds development inline config with watch include/exclude and plugin root outside src', () => {
     const applyRuntimePlatform = vi.fn()
     const injectBuiltinAliases = vi.fn()

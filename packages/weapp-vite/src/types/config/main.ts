@@ -7,6 +7,7 @@ import type {
   MultiPlatformConfig,
   WeappAppPreludeConfig,
   WeappAutoRoutesConfig,
+  WeappBuildScopeConfig,
   WeappHmrConfig,
   WeappInjectRequestGlobalsConfig,
   WeappInjectWeapiConfig,
@@ -185,6 +186,10 @@ export interface WeappViteConfig {
    * analyze 报告配置。
    */
   analyze?: WeappAnalyzeConfig
+  /**
+   * 局部构建范围。默认不启用，启用后只构建主包和指定分包。
+   */
+  buildScope?: WeappBuildScopeConfig
   jsonAlias?: AliasOptions
   npm?: WeappNpmConfig
   generate?: GenerateOptions

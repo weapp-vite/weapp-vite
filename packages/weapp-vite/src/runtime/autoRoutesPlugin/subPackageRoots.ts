@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import { applyBuildScopeToSubPackageRoots, resolveBuildScope } from '../buildScope'
 
 interface AppJsonLikeSubPackage {
   root?: string
@@ -30,5 +31,8 @@ export function getAutoRoutesSubPackageRoots(
     roots.add(root)
   }
 
-  return [...roots]
+  return applyBuildScopeToSubPackageRoots(
+    [...roots],
+    resolveBuildScope(ctx.configService?.weappViteConfig?.buildScope),
+  )
 }

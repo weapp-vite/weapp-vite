@@ -72,11 +72,12 @@ export function registerBuildCommand(cli: CAC) {
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
+    .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      const inlineConfig = createInlineConfig(targets.platform)
+      const inlineConfig = createInlineConfig(targets.platform, options.scope)
       const ctx = await createCompilerContext({
         cwd: root,
         mode: options.mode ?? 'production',

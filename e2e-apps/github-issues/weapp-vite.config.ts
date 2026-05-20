@@ -6,6 +6,7 @@ const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED ==
 const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED === 'true'
 const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
+const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
@@ -312,5 +313,11 @@ export default defineConfig({
               outDir: 'dist-slot-fallback-compiler-off',
             },
           }
-        : {}),
+        : issue595ScopedBuildEnabled
+          ? {
+              build: {
+                outDir: 'dist-issue-595',
+              },
+            }
+          : {}),
 })

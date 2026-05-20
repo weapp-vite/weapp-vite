@@ -12,6 +12,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
+const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 let standardBuildPromise: Promise<void> | null = null
 let distVariant: 'standard' | 'sourcemap' | null = null
@@ -198,6 +199,38 @@ async function runIssue558AugmentedBuild() {
 
   standardBuildPromise = null
   distVariant = null
+}
+
+async function runIssue595ScopedBuild() {
+  await fs.remove(ISSUE_595_DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--scope',
+    'main,subpackages/item',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_595_SCOPED: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
+interface AppJsonWithSubPackages {
+  pages?: string[]
+  subPackages?: Array<{ root?: string, pages?: string[] }>
+  subpackages?: Array<{ root?: string, pages?: string[] }>
 }
 
 async function runIssue564AugmentedBuild() {
@@ -769,6 +802,23 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('__wevuProps')
     expect(componentJs).toContain('issue590-badge')
     expect(componentJs).toContain('issue-590 badge')
+  })
+
+  it('issue #595: builds scoped main package and selected subpackage only', async () => {
+    await runIssue595ScopedBuild()
+
+    const appJson = await fs.readJSON(path.join(ISSUE_595_DIST_ROOT, 'app.json')) as AppJsonWithSubPackages
+    const subPackageRoots = (appJson.subPackages ?? appJson.subpackages ?? []).map(entry => entry.root)
+    const files = await scanFiles(ISSUE_595_DIST_ROOT)
+
+    expect(appJson.pages).toContain('pages/block-slot/index')
+    expect(appJson.pages).toContain('pages/issue-590/index')
+    expect(subPackageRoots).toEqual(['subpackages/item'])
+    expect(files).toContain('pages/issue-590/index.js')
+    expect(files).toContain('subpackages/item/index.js')
+    expect(files).toContain('subpackages/item/login-required/index.js')
+    expect(files).not.toContain('subpackages/user/index.js')
+    expect(files).not.toContain('subpackages/issue-466/index.js')
   })
 
   it('issue #500: compiles missing inject continuation probe', async () => {

@@ -392,6 +392,47 @@ describe('scanPlugin service', () => {
     ])
   })
 
+  it('applies build scope after auto-routes hydrate app config', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findVueEntryMock.mockResolvedValue('/project/src/app.vue')
+    extractConfigFromVueMock.mockResolvedValue({})
+
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => {}),
+      getReference: vi.fn(() => ({
+        pages: ['pages/home/index'],
+        entries: ['pages/home/index', 'pkgA/pages/a', 'pkgB/pages/b'],
+        subPackages: [
+          { root: 'pkgA', pages: ['pages/a'] },
+          { root: 'pkgB', pages: ['pages/b'] },
+        ],
+      })),
+    }
+
+    const ctx = createCtx({
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {
+          autoRoutes: true,
+          buildScope: {
+            include: ['pkgB'],
+          },
+        },
+      },
+      autoRoutesService,
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(entry.json.pages).toEqual(['pages/home/index'])
+    expect(entry.json.subPackages).toEqual([{ root: 'pkgB', pages: ['pages/b'] }])
+  })
+
   it('throws when app config resolves but is not an object', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
     findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
