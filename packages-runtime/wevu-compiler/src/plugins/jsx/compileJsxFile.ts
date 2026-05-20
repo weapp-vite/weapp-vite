@@ -107,6 +107,7 @@ export async function compileJsxFile(
     skipComponentTransform: options?.isApp,
     isApp: options?.isApp,
     isPage: options?.isPage,
+    minify: options?.minify,
     warn: options?.warn,
     wevuDefaults: options?.wevuDefaults,
     inlineExpressions,

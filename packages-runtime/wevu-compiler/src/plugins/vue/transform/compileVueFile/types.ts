@@ -73,6 +73,10 @@ export interface CompileVueFileOptions {
   astEngine?: AstEngineName
   isPage?: boolean
   isApp?: boolean
+  /**
+   * 是否压缩生成的 wevu 脚本输出。
+   */
+  minify?: boolean
   warn?: (message: string) => void
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions

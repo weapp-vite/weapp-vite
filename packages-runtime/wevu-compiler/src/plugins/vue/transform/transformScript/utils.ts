@@ -39,6 +39,10 @@ export interface TransformScriptOptions {
    */
   wevuDefaults?: WevuDefaults
   /**
+   * 是否压缩生成的脚本代码。
+   */
+  minify?: boolean
+  /**
    * 编译期警告回调
    */
   warn?: (message: string) => void

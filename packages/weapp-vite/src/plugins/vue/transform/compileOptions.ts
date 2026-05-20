@@ -9,7 +9,7 @@ import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../util
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
-import { resolveWevuDefaultsWithPreset } from './wevuPreset'
+import { isWevuMinifyEnabled, resolveWevuDefaultsWithPreset } from './wevuPreset'
 
 export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
@@ -101,6 +101,7 @@ function buildCompileVueFileOptions(
   }
   const jsonConfig = configService.weappViteConfig?.json
   const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
+  const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
 
   async function resolveAutoImportComponentSourceType(match: NonNullable<ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>>) {
@@ -211,6 +212,7 @@ function buildCompileVueFileOptions(
     },
     sfcSrc: createSfcResolveSrcOptions(pluginCtx, configService),
     wevuDefaults,
+    minify: wevuMinify,
   } as const
 }
 

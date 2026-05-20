@@ -302,6 +302,11 @@ export interface WeappWevuConfig {
   preset?: 'performance'
   defaults?: WevuDefaults
   autoSetDataPick?: boolean
+  /**
+   * @description 是否压缩 wevu 相关脚本输出。
+   * @description 默认保持当前可读输出行为，开启后仅影响 wevu 编译生成的脚本代码。
+   */
+  minify?: boolean
 }
 
 export interface WeappRouteRule {

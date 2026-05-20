@@ -6,6 +6,7 @@ const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
     wevu: {
+      minify: true,
       defaults: {
         component: {
           allowNullPropInput: false,
@@ -62,6 +63,7 @@ const objectConfig = defineConfig({
 })
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
+expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.minify)
 expectAssignable<boolean | {
   enabled?: boolean
   mode?: 'inline' | 'entry' | 'require'

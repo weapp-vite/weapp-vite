@@ -70,6 +70,7 @@ export async function compileScriptPhase(
       skipComponentTransform: isAppFile,
       isApp: isAppFile,
       isPage: options?.isPage === true,
+      minify: options?.minify,
       warn: options?.warn,
       templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
       wevuDefaults: options?.wevuDefaults,

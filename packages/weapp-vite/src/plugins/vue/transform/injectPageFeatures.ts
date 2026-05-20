@@ -12,7 +12,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
   ctx: VitePluginResolveLike,
   source: string,
   id: string,
-  options?: { checkMtime?: boolean },
+  options?: { checkMtime?: boolean, minify?: boolean },
 ): Promise<{ code: string, transformed: boolean, map?: EncodedSourceMapLike | null }> {
   const checkMtime = options?.checkMtime ?? true
   const injected = await injectWevuPageFeaturesInJsWithResolver(source, {
@@ -22,6 +22,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
       { readFile: readFileCached },
       { checkMtime },
     ),
+    minify: options?.minify,
   })
   return {
     ...injected,

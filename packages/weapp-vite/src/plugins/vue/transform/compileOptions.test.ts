@@ -19,6 +19,7 @@ const createUsingComponentPathResolverMock = vi.hoisted(() => vi.fn(() => 'resol
 const resolveWevuDefaultsWithPresetMock = vi.hoisted(() => vi.fn(() => ({
   preset: 'default',
 })))
+const isWevuMinifyEnabledMock = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('../../../logger', () => ({
   default: {
@@ -40,6 +41,7 @@ vi.mock('./usingComponentResolver', () => ({
 
 vi.mock('./wevuPreset', () => ({
   resolveWevuDefaultsWithPreset: resolveWevuDefaultsWithPresetMock,
+  isWevuMinifyEnabled: isWevuMinifyEnabledMock,
 }))
 
 describe('resolveVueTemplatePlatformOptions', () => {
@@ -165,6 +167,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       },
       mergeStrategy: 'merge',
     })
+    expect(options.minify).toBe(false)
     expect(options.wevuDefaults).toEqual({ preset: 'default' })
     expect(createUsingComponentPathResolverMock).toHaveBeenCalled()
     expect(await options.autoImportTags.resolveUsingComponent('FooCard')).toEqual({
@@ -506,6 +509,34 @@ describe('resolveVueTemplatePlatformOptions', () => {
         },
       },
     })
+  })
+
+  it('passes the wevu minify flag from config', () => {
+    isWevuMinifyEnabledMock.mockReturnValueOnce(true)
+
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          wevu: {
+            minify: true,
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.minify).toBe(true)
   })
 
   it('reuses cached compile options for the same vue entry', () => {

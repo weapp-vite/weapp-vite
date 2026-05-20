@@ -72,7 +72,9 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   const generated = generate(ast, {
-    retainLines: true,
+    compact: options?.minify === true,
+    minified: options?.minify === true,
+    retainLines: options?.minify !== true,
     sourceMaps: true,
     sourceFileName: 'inline.ts',
   }, source)
