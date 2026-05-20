@@ -18,6 +18,7 @@ import {
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
+  stabilizeWevuRuntimeChunkAccess,
   syncChunkImportsFromRequireCalls,
 } from '../../helpers'
 import { injectAppPreludeCode, resolveAppPreludeCode, resolveAppPreludeOptions } from './appPrelude'
@@ -51,6 +52,64 @@ function resolveInjectWeapiGlobalName(state: CorePluginState) {
   return injectWeapi.globalName?.trim() || 'wpi'
 }
 
+function pruneHmrMetadataOnlyChunks(bundle: OutputBundle, state: CorePluginState) {
+  if (
+    !state.ctx.configService.isDev
+    || !state.hmrState.hasBuiltOnce
+    || !state.hmrState.skipSharedChunkRefresh
+  ) {
+    return
+  }
+
+  for (const [fileName, output] of Object.entries(bundle)) {
+    if (output?.type === 'chunk') {
+      delete bundle[fileName]
+    }
+  }
+}
+
+function hasChunkOutputs(bundle: OutputBundle) {
+  return Object.values(bundle).some(output => output?.type === 'chunk')
+}
+
+function isStableHmrSharedChunk(fileName: string) {
+  return fileName.startsWith('weapp-vendors/')
+    || (!fileName.includes('/') && fileName !== 'app.js')
+}
+
+function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePluginState) {
+  if (
+    !state.ctx.configService.isDev
+    || !state.hmrState.hasBuiltOnce
+    || state.hmrState.didEmitAllEntries
+    || state.hmrState.skipSharedChunkRefresh
+    || !state.hmrState.lastEmittedEntryIds?.size
+  ) {
+    return
+  }
+
+  for (const [fileName, output] of Object.entries(bundle)) {
+    if (output?.type !== 'chunk' || !isStableHmrSharedChunk(fileName)) {
+      continue
+    }
+
+    const knownImporters = state.hmrSharedChunkImporters.get(fileName)
+    if (!knownImporters?.size) {
+      delete bundle[fileName]
+      continue
+    }
+
+    const activeEntryIds = state.hmrState.lastHmrEntryIds?.size
+      ? state.hmrState.lastHmrEntryIds
+      : state.hmrState.lastEmittedEntryIds
+    const isCompleteSharedChunkRefresh = Array.from(knownImporters)
+      .every(entryId => activeEntryIds?.has(entryId))
+    if (!isCompleteSharedChunkRefresh) {
+      delete bundle[fileName]
+    }
+  }
+}
+
 export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: boolean) {
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
@@ -65,6 +124,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const rolldownBundle = bundle as unknown as OutputBundle
     await flushIndependentBuilds.call(this, state)
+    pruneHmrMetadataOnlyChunks(rolldownBundle, state)
 
     if (isPluginBuild) {
       filterPluginBundleOutputs(rolldownBundle, configService)
@@ -92,11 +152,23 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
       if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
         const forceFullSharedChunkRefresh = process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS === '1'
-        if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
+        if (
+          state.hmrState.skipSharedChunkRefresh
+          && state.hmrState.hasBuiltOnce
+          && !forceFullSharedChunkRefresh
+          && !hasChunkOutputs(rolldownBundle)
+        ) {
+          // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
+          // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
+        }
+        else if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
           refreshSharedChunkImporters(rolldownBundle, state)
         }
         else if (forceFullSharedChunkRefresh) {
           refreshSharedChunkImporters(rolldownBundle, state)
+        }
+        else if (state.hmrState.lastHmrEntryIds?.size) {
+          refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastHmrEntryIds)
         }
         else if (state.hmrState.lastEmittedEntryIds?.size) {
           refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastEmittedEntryIds)
@@ -371,7 +443,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
     }
 
+    stabilizeWevuRuntimeChunkAccess(rolldownBundle)
     syncChunkImportsFromRequireCalls(rolldownBundle)
+    prunePartialHmrStableSharedChunks(rolldownBundle, state)
 
     refreshModuleGraph(this, state)
 

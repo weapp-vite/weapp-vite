@@ -28,6 +28,8 @@ export interface CompilationCacheEntry {
   result: VueBundleTransformResult
   source?: string
   isPage: boolean
+  autoRoutesSignature?: string
+  refreshToken?: number
 }
 
 export interface VueBundleState {

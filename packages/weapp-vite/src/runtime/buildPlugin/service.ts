@@ -552,7 +552,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     delete snapshotBuildOptions.build?.watch
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
-    let snapshotBuildChain: Promise<'snapshot' | 'forwarded' | 'closed' | undefined> = Promise.resolve(undefined)
+    let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
 
     async function resolveSnapshotSidecarEntryId(reason?: SnapshotBuildReason) {
@@ -630,8 +630,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
         if (sidecarEntryId) {
           markSnapshotEntryDirty(sidecarEntryId)
-          await touch(sidecarEntryId)
-          return 'forwarded'
+          process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
+          try {
+            await build(snapshotBuildOptions)
+            return 'snapshot'
+          }
+          finally {
+            delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
+          }
         }
         markSnapshotEntriesFullDirty()
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'

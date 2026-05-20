@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { createDebugger } from '../../../debugger'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
@@ -22,12 +23,26 @@ interface HmrOptions {
   entryLayoutDependencies?: Map<string, Set<string>>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
+  setLastHmrEntries?: (entryIds: Set<string>) => void
+  setSkipSharedChunkRefresh?: (value: boolean) => void
+  rootInputIds?: Set<string>
 }
 
 interface PendingEntryResolution {
   pending: Set<string>
   sharedChunkResolveMs?: number
   pendingReasonSummary?: string[]
+  shouldEmitAllEntries?: boolean
+  forceFullSharedChunkRefresh?: boolean
+}
+
+function shouldExpandStableSharedChunk(chunkId: string, importers?: Set<string>) {
+  if ((importers?.size ?? 0) <= 1) {
+    return false
+  }
+
+  return chunkId.startsWith('weapp-vendors/')
+    || (!chunkId.includes('/') && chunkId !== 'app.js')
 }
 
 function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
@@ -105,15 +120,20 @@ function resolvePendingEntryIds(options: {
     if (dirtyReason !== 'dependency' && dirtyReason !== 'direct' && dirtyReason !== 'metadata') {
       continue
     }
-    if (dirtyReason === 'metadata') {
-      continue
-    }
     const chunkIds = options.sharedChunksByEntry.get(entryId)
     if (!chunkIds?.size) {
       continue
     }
     for (const chunkId of chunkIds) {
-      if (dirtyReason === 'dependency' || !options.sourceSharedChunks?.has(chunkId)) {
+      const isSourceSharedChunk = options.sourceSharedChunks?.has(chunkId) === true
+      if (dirtyReason === 'metadata') {
+        continue
+      }
+      if (
+        dirtyReason === 'dependency'
+        || !isSourceSharedChunk
+        || shouldExpandStableSharedChunk(chunkId, options.sharedChunkImporters?.get(chunkId))
+      ) {
         relatedChunkIds.add(chunkId)
       }
     }
@@ -129,6 +149,7 @@ function resolvePendingEntryIds(options: {
 
   const expandedImporters = new Set<string>()
   let expansionMode: DirtyEntryReason | 'mixed' | null = null
+  let hasStableSharedChunkExpansion = false
   for (const chunkId of relatedChunkIds) {
     const importers = options.sharedChunkImporters.get(chunkId)
     if (!importers) {
@@ -155,6 +176,9 @@ function resolvePendingEntryIds(options: {
     }
     if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter && !shouldExpandLayoutSharedChunks) {
       continue
+    }
+    if (shouldExpandStableSharedChunk(chunkId, importers)) {
+      hasStableSharedChunkExpansion = true
     }
     if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -197,7 +221,17 @@ function resolvePendingEntryIds(options: {
     pending,
     sharedChunkResolveMs: performance.now() - startedAt,
     pendingReasonSummary,
+    shouldEmitAllEntries: hasStableSharedChunkExpansion && pending.size === options.resolvedEntryMap.size,
+    forceFullSharedChunkRefresh: hasStableSharedChunkExpansion && pending.size === options.resolvedEntryMap.size,
   }
+}
+
+function shouldPreloadEntryAssetOnly(dirtyReasonSummary?: string[]) {
+  return dirtyReasonSummary?.some(item =>
+    item.startsWith('json-sidecar:')
+    || item.startsWith('style-sidecar:')
+    || item.startsWith('entry-local-asset:'),
+  ) === true
 }
 
 export function useLoadEntry(
@@ -218,12 +252,16 @@ export function useLoadEntry(
   const layoutEntryDependents = ctx.runtimeState.build.hmr.layoutEntryDependents
   const entryLayoutDependencies = ctx.runtimeState.build.hmr.entryLayoutDependencies
   const lastActualEmittedEntryIds = new Set<string>()
+  const lastChunkEmittedEntryIds = new Set<string>()
+  const metadataEntryIds = new Set<string>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
 
   const normalizeEntry = createEntryNormalizer(ctx.configService)
   const scanTemplateEntry = createTemplateScanner(ctx.wxmlService, debug)
+  const rootInputIds = options?.hmr?.rootInputIds
+  let loadEntry: ReturnType<typeof createEntryLoader>
   const emitEntriesChunks = createChunkEmitter(
     ctx.configService,
     loadedEntrySet,
@@ -231,11 +269,28 @@ export function useLoadEntry(
     (entryId) => {
       lastActualEmittedEntryIds.add(entryId)
     },
+    (entryId) => {
+      lastChunkEmittedEntryIds.add(entryId)
+    },
+    entryId => !rootInputIds?.has(entryId) && !metadataEntryIds.has(entryId),
+    async function preloadAssetOnlyEntry(resolvedId, entryId) {
+      if (rootInputIds?.has(entryId)) {
+        await loadEntry.call(this, resolvedId.id, 'app')
+        await this.load(resolvedId)
+        return
+      }
+      if (!shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+        await this.load(resolvedId)
+        return
+      }
+      const entryType = entriesMap.get(entryId)?.type === 'page' ? 'page' : 'component'
+      await loadEntry.call(this, resolvedId.id, entryType)
+    },
   )
   const applyAutoImports = createAutoImportAugmenter(ctx.autoImportService, ctx.wxmlService)
   const extendedLibManager = createExtendedLibManager()
 
-  const loadEntry = createEntryLoader({
+  loadEntry = createEntryLoader({
     ctx,
     entriesMap,
     loadedEntrySet,
@@ -309,6 +364,8 @@ export function useLoadEntry(
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())
+        options?.hmr?.setLastHmrEntries?.(new Set())
+        options?.hmr?.setSkipSharedChunkRefresh?.(true)
         return
       }
 
@@ -328,8 +385,14 @@ export function useLoadEntry(
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []
       lastActualEmittedEntryIds.clear()
+      lastChunkEmittedEntryIds.clear()
+      metadataEntryIds.clear()
 
       for (const entryId of pendingEntryIds) {
+        const reason = dirtyEntryReasons.get(entryId)
+        if (reason === 'metadata') {
+          metadataEntryIds.add(entryId)
+        }
         dirtyEntrySet.delete(entryId)
         dirtyEntryReasons.delete(entryId)
         const resolvedId = resolvedEntryMap.get(entryId)
@@ -339,14 +402,37 @@ export function useLoadEntry(
         pending.push(resolvedId)
       }
 
+      for (const resolvedId of pending) {
+        const baseName = removeExtensionDeep(resolvedId.id)
+        if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
+          continue
+        }
+        const entryType = entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(baseName))?.type === 'component'
+          ? 'component'
+          : 'page'
+        await loadEntry.call(this, resolvedId.id, entryType)
+      }
+
       if (pending.length) {
         await Promise.all(emitEntriesChunks.call(this, pending))
       }
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
-      const shouldEmitAllEntries = actualEmittedEntryIds.size > 0 && actualEmittedEntryIds.size === resolvedEntryMap.size
+      const actualChunkEmittedEntryIds = new Set(lastChunkEmittedEntryIds)
+      const hmrEntryIds = new Set(actualEmittedEntryIds)
+      const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
+      const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (
+        actualEmittedEntryIds.size === resolvedEntryMap.size
+        || pendingResolution.shouldEmitAllEntries === true
+      )
       options?.hmr?.setDidEmitAllEntries?.(shouldEmitAllEntries)
-      options?.hmr?.setLastEmittedEntries?.(actualEmittedEntryIds)
+      options?.hmr?.setLastEmittedEntries?.(
+        pendingResolution.forceFullSharedChunkRefresh === true
+          ? new Set(resolvedEntryMap.keys())
+          : actualChunkEmittedEntryIds,
+      )
+      options?.hmr?.setLastHmrEntries?.(hmrEntryIds)
+      options?.hmr?.setSkipSharedChunkRefresh?.(skipSharedChunkRefresh)
       ctx.runtimeState.build.hmr.profile = {
         ...ctx.runtimeState.build.hmr.profile,
         emitMs: performance.now() - emitStartedAt,

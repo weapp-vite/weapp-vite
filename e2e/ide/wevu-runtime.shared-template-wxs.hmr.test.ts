@@ -28,6 +28,8 @@ const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const TEMPLATE_EXT = 'wxml'
 const SCRIPT_MODULE_EXT = 'wxs'
+const COMMON_JS_OUTPUT_PATH = `${DIST_ROOT}/common.js`
+const WEVU_SRC_OUTPUT_PATH = `${DIST_ROOT}/weapp-vendors/wevu-src.js`
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
@@ -72,6 +74,11 @@ async function waitForFileContainsWithRetry(
 
 async function waitForIdeRecompileSettled(delayMs = 1200) {
   await new Promise(resolve => setTimeout(resolve, delayMs))
+}
+
+async function waitForInitialAppserviceReady() {
+  await waitForFileContains(COMMON_JS_OUTPUT_PATH, 'useSetupStore', 90_000)
+  await waitForFileContains(WEVU_SRC_OUTPUT_PATH, 'Object.defineProperty(exports, "Fn"', 90_000)
 }
 
 async function getSharedMiniProgram() {
@@ -222,6 +229,7 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       await waitForFileContains(sharedImportOutputPath, initialTemplateMarker, 90_000)
       await waitForFileContains(sharedIncludeOutputPath, initialIncludeMarker, 90_000)
       await waitForFileContains(sharedWxsOutputPath, initialWxsMarker, 90_000)
+      await waitForInitialAppserviceReady()
 
       let page = await relaunchIdeSession('/pages/hmr/index', initialTemplateMarker)
       if (!page) {

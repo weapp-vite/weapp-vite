@@ -9,6 +9,9 @@ export function createChunkEmitter(
   loadedEntrySet: Set<string>,
   debug?: (...args: any[]) => void,
   trackEmittedEntryId?: (entryId: string) => void,
+  trackEmittedChunkId?: (entryId: string) => void,
+  shouldEmitEntryChunk?: (entryId: string, resolvedId: ResolvedId) => boolean,
+  preloadAssetOnlyEntry?: (this: PluginContext, resolvedId: ResolvedId, entryId: string) => Promise<void>,
 ) {
   return function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId) => {
@@ -21,19 +24,28 @@ export function createChunkEmitter(
       loadedEntrySet.add(normalizedId)
 
       const start = shouldPreload ? performance.now() : 0
+      const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
       if (shouldPreload) {
-        await this.load(resolvedId)
+        if (!shouldEmitChunk && preloadAssetOnlyEntry) {
+          await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
+        }
+        else {
+          await this.load(resolvedId)
+        }
       }
 
       const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
 
-      this.emitFile({
-        type: 'chunk',
-        id: resolvedId.id,
-        fileName,
-        // @ts-ignore
-        preserveSignature: 'exports-only',
-      })
+      if (shouldEmitChunk) {
+        this.emitFile({
+          type: 'chunk',
+          id: resolvedId.id,
+          fileName,
+          // @ts-ignore
+          preserveSignature: 'exports-only',
+        })
+        trackEmittedChunkId?.(normalizedId)
+      }
       trackEmittedEntryId?.(normalizedId)
 
       if (shouldPreload) {

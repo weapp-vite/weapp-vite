@@ -62,6 +62,33 @@ function emitCssAssetIfChanged(
   return true
 }
 
+export async function emitStyleSidecarAsset(
+  ctx: CompilerContext,
+  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: OutputBundle,
+  stylePath: string,
+) {
+  const { configService } = ctx
+  const fileName = configService.relativeOutputPath(stylePath)
+  if (!fileName) {
+    return false
+  }
+
+  const rawCss = await fs.readFile(stylePath, 'utf8')
+  const normalizedCss = stripLeadingBlankLines(rawCss)
+  const processedCss = await processCssWithCache(normalizedCss, configService)
+  const sharedStyles = collectSharedStyleEntries(ctx, configService)
+  const cssWithImports = injectSharedStyleImports(
+    processedCss,
+    stylePath,
+    fileName,
+    sharedStyles,
+    configService,
+  )
+
+  return emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, cssWithImports)
+}
+
 async function handleBundleEntry(
   this: any,
   ctx: CompilerContext,

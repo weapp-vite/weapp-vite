@@ -10,7 +10,7 @@ import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
-import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../utils/file/vueSfcSignature'
 import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -40,9 +40,28 @@ function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackage
   return !root || relativeSrc === root || relativeSrc.startsWith(`${root}/`)
 }
 
-async function normalizeWatchEvent(id: string, event: ChangeEvent, loadedEntrySet: Set<string>) {
-  if (event === 'create' && loadedEntrySet.has(id) && await fs.pathExists(id)) {
+async function normalizeWatchEvent(
+  id: string,
+  event: ChangeEvent,
+  options: {
+    loadedEntrySet: Set<string>
+    resolvedEntryMap: Map<string, unknown>
+  },
+) {
+  if (event === 'create' && (options.loadedEntrySet.has(id) || options.resolvedEntryMap.has(id)) && await fs.pathExists(id)) {
     return 'update' satisfies ChangeEvent
+  }
+
+  if (event === 'create' && await fs.pathExists(id)) {
+    const ext = path.extname(id)
+    if (ext) {
+      const basePath = id.slice(0, -ext.length)
+      const primaryScript = await findJsEntry(basePath)
+      const primaryScriptId = primaryScript.path ? normalizeFsResolvedId(primaryScript.path) : ''
+      if (primaryScriptId && options.resolvedEntryMap.has(primaryScriptId)) {
+        return 'update' satisfies ChangeEvent
+      }
+    }
   }
 
   if (event !== 'delete') {
@@ -125,6 +144,26 @@ async function isVueEntryLocalAssetOnlyUpdate(state: CorePluginState, normalized
   }
 }
 
+async function isAppShellTopologyUpdate(state: CorePluginState, normalizedId: string) {
+  if (!isAppVueFile(normalizedId)) {
+    return false
+  }
+
+  const previous = state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(normalizedId)
+  if (previous === undefined) {
+    return false
+  }
+
+  try {
+    const source = await fs.readFile(normalizedId, 'utf-8')
+    const current = resolveVueSfcHasTemplate(source, normalizedId)
+    return current !== undefined && current !== previous
+  }
+  catch {
+    return false
+  }
+}
+
 async function processChangedFile(
   state: CorePluginState,
   id: string,
@@ -146,6 +185,11 @@ async function processChangedFile(
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
+    if (entryId.endsWith('.vue')) {
+      const hmr = ctx.runtimeState.build.hmr
+      hmr.dirtyVueEntryIds ??= new Set<string>()
+      hmr.dirtyVueEntryIds.add(entryId)
+    }
     dirtyReasonStats.set(cause, (dirtyReasonStats.get(cause) ?? 0) + 1)
   }
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
@@ -153,6 +197,11 @@ async function processChangedFile(
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const isTemplateSidecar = Boolean(path.extname(normalizedId) && watchedTemplateExts.has(path.extname(normalizedId)))
   const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedId.endsWith(suffix))
+  const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
+    ? normalizeFsResolvedId(scanService.appEntry.path)
+    : normalizedId
+  let isAppShellTopologyChanged = false
+  let handledSidecarMetadataUpdate = false
 
   const addWxmlImporterEntries = async (startId: string) => {
     const wxmlService = ctx.wxmlService
@@ -194,7 +243,8 @@ async function processChangedFile(
           affectedLayoutEntryIds.add(primaryScriptId)
         }
         else {
-          markEntryDirtyWithCause(primaryScriptId, reason, 'wxml-importer')
+          markEntryDirtyWithCause(primaryScriptId, 'metadata', 'wxml-importer')
+          handledSidecarMetadataUpdate = true
         }
       }
     }
@@ -209,8 +259,23 @@ async function processChangedFile(
       affectedLayoutEntryIds.add(normalizedScriptId)
     }
     else {
-      markEntryDirtyWithCause(normalizedScriptId, reason, cause)
+      const entryReason = cause === 'sidecar-direct' || cause === 'json-sidecar' || cause === 'style-sidecar'
+        ? 'metadata'
+        : reason
+      markEntryDirtyWithCause(normalizedScriptId, entryReason, cause)
     }
+  }
+  const markChangedEntryDirty = (
+    reason: 'direct' | 'metadata',
+    cause: string,
+  ) => {
+    if (isAppVueFile(normalizedId)) {
+      if (concreteChangedEntryId !== normalizedId) {
+        markEntryDirtyWithCause(concreteChangedEntryId, reason, cause)
+        return
+      }
+    }
+    markEntryDirtyWithCause(normalizedId, reason, cause)
   }
 
   const addCssImporterEntries = async (startId: string) => {
@@ -232,6 +297,7 @@ async function processChangedFile(
   }
 
   if (isDeletedMissingSelf) {
+    ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
   }
@@ -240,6 +306,12 @@ async function processChangedFile(
     const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
     if (didChangeRoutes) {
       dirtyReasonStats.set('auto-routes-topology', 1)
+      const appEntryId = scanService.appEntry?.path
+        ? normalizeFsResolvedId(scanService.appEntry.path)
+        : undefined
+      if (appEntryId && resolvedEntryMap.has(appEntryId)) {
+        state.markEntryDirty(appEntryId, 'direct')
+      }
     }
   }
 
@@ -249,11 +321,14 @@ async function processChangedFile(
     && resolvedEntryMap.size
   ) {
     const isJsonOnlyVueEntryUpdate = await isVueEntryJsonOnlyUpdate(state, normalizedId)
-    const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+    isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await isAppShellTopologyUpdate(state, normalizedId)
+    const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
+      && !isAppShellTopologyChanged
+      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
     if (!isJsonOnlyVueEntryUpdate && !isLocalAssetOnlyVueEntryUpdate) {
       ;(loadEntry as any)?.invalidateResolveCache?.()
       for (const entryId of resolvedEntryMap.keys()) {
-        if (entryId === normalizedId) {
+        if (entryId === normalizedId || entryId === concreteChangedEntryId) {
           continue
         }
         markEntryDirtyWithCause(entryId, 'dependency', 'app-shell-dependent')
@@ -262,10 +337,11 @@ async function processChangedFile(
   }
 
   invalidateFileCache(normalizedId)
-  if (event === 'update') {
+  const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
+  const shouldHandleUpdateLikeSidecar = event === 'update' || (event === 'create' && isStyleFile && await fs.pathExists(normalizedId))
+  if (shouldHandleUpdateLikeSidecar) {
     const isTemplateFile = isTemplate(normalizedId)
     const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
-    const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
 
     if (isTemplateFile) {
       const wxmlService = ctx.wxmlService
@@ -289,10 +365,12 @@ async function processChangedFile(
           })()
       const primaryScript = await findJsEntry(basePath)
       if (primaryScript.path) {
-        markScriptDirty(primaryScript.path, 'sidecar-direct')
+        markScriptDirty(primaryScript.path, configSuffix ? 'json-sidecar' : isStyleFile ? 'style-sidecar' : 'sidecar-direct')
+        handledSidecarMetadataUpdate = true
       }
       else if (isStyleFile) {
         await addCssImporterEntries(normalizedId)
+        handledSidecarMetadataUpdate = true
       }
     }
   }
@@ -344,20 +422,30 @@ async function processChangedFile(
   if (
     !isDeletedMissingSelf
     && isCurrentSubPackageFile(relativeSrc, subPackageMeta)
-    && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')
+    && !handledSidecarMetadataUpdate
+    && (
+      loadedEntrySet.has(normalizedId)
+      || loadedEntrySet.has(concreteChangedEntryId)
+      || resolvedEntryMap.has(normalizedId)
+      || resolvedEntryMap.has(concreteChangedEntryId)
+      || declaredEntryType === 'page'
+      || declaredEntryType === 'component'
+    )
   ) {
     const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
+      && !isAppShellTopologyChanged
       && event === 'update'
       && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
-    markEntryDirtyWithCause(
-      normalizedId,
+    markChangedEntryDirty(
       isJsonOnlyVueEntryUpdate || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
         ? 'entry-json-only'
-        : isLocalAssetOnlyVueEntryUpdate
-          ? 'entry-local-asset'
-          : 'entry-direct',
+        : isAppShellTopologyChanged
+          ? 'entry-direct'
+          : isLocalAssetOnlyVueEntryUpdate
+            ? 'entry-local-asset'
+            : 'entry-direct',
     )
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
@@ -375,7 +463,10 @@ async function processChangedFile(
       }
     }
   }
-  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct') && !dirtyReasonStats.has('css-importer')
+  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct')
+    && !dirtyReasonStats.has('json-sidecar')
+    && !dirtyReasonStats.has('style-sidecar')
+    && !dirtyReasonStats.has('css-importer')
   const sharedChunkAffected = shouldExpandSharedChunkAffected
     ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
     : new Set<string>()
@@ -450,7 +541,10 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isOutputFileChange(state, normalizedId)) {
       return
     }
-    const event = await normalizeWatchEvent(normalizedId, change.event, state.loadedEntrySet)
+    const event = await normalizeWatchEvent(normalizedId, change.event, {
+      loadedEntrySet: state.loadedEntrySet,
+      resolvedEntryMap: state.resolvedEntryMap,
+    })
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,

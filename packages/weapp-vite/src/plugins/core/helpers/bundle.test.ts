@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterPluginBundleOutputs, syncChunkImportsFromRequireCalls } from './bundle'
+import { filterPluginBundleOutputs, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
 
 describe('core helper bundle', () => {
   it('keeps plugin assets intact in pluginOnly mode', () => {
@@ -77,5 +77,101 @@ describe('core helper bundle', () => {
     expect(bundle['weapp-vendors/request-globals-runtime.js'].imports).toEqual([
       'weapp-vendors/web-apis-shared.js',
     ])
+  })
+
+  it('adds stable wevu runtime exports and rewrites page chunk access with old-alias fallback', () => {
+    const bundle = {
+      'pages/hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/hmr/index.js',
+        code: [
+          'const require_src_ABC = require("../../weapp-vendors/wevu-src.js");',
+          'var page = require_src_ABC.eo({});',
+          'require("../../weapp-vendors/wevu-src.js").to({});',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-src.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: [
+          'function eo(e) { return e }',
+          'function to(e) { return eo(e) }',
+          'Object.defineProperty(exports, "eo", { enumerable: true, get: function() { return eo; } });',
+          'Object.defineProperty(exports, "to", { enumerable: true, get: function() { return to; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    expect(bundle['weapp-vendors/wevu-src.js'].code).toContain('"__wevuDefineComponent"')
+    expect(bundle['weapp-vendors/wevu-src.js'].code).toContain('"__wevuCreateWevuComponent"')
+    expect(bundle['pages/hmr/index.js'].code).toContain('(require_src_ABC.__wevuDefineComponent || require_src_ABC.eo)({})')
+    expect(bundle['pages/hmr/index.js'].code).toContain('(require("../../weapp-vendors/wevu-src.js").__wevuCreateWevuComponent || require("../../weapp-vendors/wevu-src.js").to)({})')
+  })
+
+  it('resolves semantic wevu exports from ESM export lists before rewriting access', () => {
+    const bundle = {
+      'pages/hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/hmr/index.js',
+        code: 'require("../../weapp-vendors/wevu-src.js").pt({});',
+        imports: ['weapp-vendors/wevu-src.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: 'function pt(e) { return e } function Ce(e) { return pt(e) } export { Ce as createWevuComponent, pt as defineComponent };',
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    expect(bundle['weapp-vendors/wevu-src.js'].code).toContain('"__wevuDefineComponent"')
+    expect(bundle['pages/hmr/index.js'].code).toContain('(require("../../weapp-vendors/wevu-src.js").__wevuDefineComponent || require("../../weapp-vendors/wevu-src.js").pt)({})')
+  })
+
+  it('exports actually consumed wevu runtime members when rolldown only preserves partial exports', () => {
+    const bundle = {
+      'pages/runtime/index.js': {
+        type: 'chunk',
+        fileName: 'pages/runtime/index.js',
+        code: [
+          'const require_src_ABC = require("../../weapp-vendors/wevu-src.js");',
+          'var page = require_src_ABC.eo({});',
+          'require_src_ABC.Ot(() => state.count, () => {});',
+          'require_src_ABC.Mo([{ fontSize: "24rpx" }]);',
+          'require("../../weapp-vendors/wevu-src.js").to({});',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-src.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: [
+          'function eo(e) { return e }',
+          'function to(e) { return eo(e) }',
+          'function Ot(source, cb) { return cb(source()) }',
+          'function Mo(value) { return value }',
+          'function unused() { return null }',
+          'Object.defineProperty(exports, "u", { enumerable: true, get: function() { return unused; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    const wevuCode = bundle['weapp-vendors/wevu-src.js'].code
+    expect(wevuCode).toContain('"__wevuDefineComponent"')
+    expect(wevuCode).toContain('"__wevuCreateWevuComponent"')
+    expect(wevuCode).toContain('"eo"')
+    expect(wevuCode).toContain('"to"')
+    expect(wevuCode).toContain('"Ot"')
+    expect(wevuCode).toContain('"Mo"')
+    expect(wevuCode).not.toContain('"unused"')
   })
 })

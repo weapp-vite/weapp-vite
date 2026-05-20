@@ -4,11 +4,13 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './type
 import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
+import { resolveTransformAutoRoutesSource } from '../../plugin/shared'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
 
@@ -140,8 +142,27 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
   }
 
   try {
-    const source = await fs.readFile(filename, 'utf-8')
-    if (source === cached.source) {
+    const rawSource = await fs.readFile(filename, 'utf-8')
+    const isApp = isAppVueLikeFile(filename)
+    const transformed = isApp
+      ? await resolveTransformAutoRoutesSource({
+          source: rawSource,
+          autoRoutesService: ctx.autoRoutesService,
+        })
+      : {
+          source: rawSource,
+          signature: undefined,
+        }
+    const source = transformed.source
+    const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
+    const normalizedDirtyFilename = normalizeFsResolvedId(filename)
+    const currentRefreshToken = (cached.refreshToken ?? 0)
+      + (dirtyVueEntryIds?.has(normalizedDirtyFilename) ? 1 : 0)
+    if (
+      source === cached.source
+      && transformed.signature === cached.autoRoutesSignature
+      && currentRefreshToken === 0
+    ) {
       return cached.result
     }
 
@@ -151,12 +172,15 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       ctx,
       pluginCtx,
       isPage: cached.isPage,
-      isApp: isAppVueLikeFile(filename),
+      isApp,
       configService,
       compileOptionsState,
     })
 
     cached.source = source
+    cached.autoRoutesSignature = transformed.signature
+    cached.refreshToken = 0
+    dirtyVueEntryIds?.delete(normalizedDirtyFilename)
     cached.result = compiled
     return compiled
   }

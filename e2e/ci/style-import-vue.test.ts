@@ -47,7 +47,7 @@ async function waitForFileContains(filePath: string, markers: string[], timeoutM
 }
 
 function injectStyleMarker(source: string, selector: string, marker: string) {
-  const updatedSource = source.replace(selector, `${selector} /* ${marker} */`)
+  const updatedSource = source.replace(selector, `${selector}\n  --hmr-marker: ${marker};`)
   if (updatedSource === source) {
     throw new Error(`Failed to inject style marker for selector: ${selector}`)
   }

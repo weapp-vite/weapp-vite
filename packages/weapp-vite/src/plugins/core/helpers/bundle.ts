@@ -11,6 +11,12 @@ import { emitJsonAsset } from '../../utils/wxmlEmit'
 
 const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
 const REQUIRE_CALL_RE = /\brequire\((`[^`]+`|'[^']+'|"[^"]+")\)/g
+const WEVU_SRC_CHUNK_RE = /(?:^|\/)wevu-src\.js$/
+const WEVU_EXPORT_ALIASES = [
+  ['defineComponent', '__wevuDefineComponent'],
+  ['createWevuComponent', '__wevuCreateWevuComponent'],
+] as const
+const JS_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
 export function filterPluginBundleOutputs(
   bundle: OutputBundle,
@@ -234,5 +240,226 @@ export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
     }
 
     chunk.imports = [...nextImports]
+  }
+}
+
+function resolveRequireTarget(fromFile: string, specifier: string) {
+  if (!specifier.startsWith('.')) {
+    return ''
+  }
+  return resolveRelativeImport(fromFile, specifier)
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function collectLocalRuntimeIdentifiers(code: string) {
+  const identifiers = new Set<string>()
+  for (const match of code.matchAll(/\b(?:function|class)\s+([A-Za-z_$][\w$]*)\b/g)) {
+    identifiers.add(match[1])
+  }
+  for (const match of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)) {
+    identifiers.add(match[1])
+  }
+  return identifiers
+}
+
+function resolveWevuExportAliasMap(wevuChunk: OutputChunk) {
+  const aliases = new Map<string, string>()
+  const code = wevuChunk.code
+  const localIdentifiers = collectLocalRuntimeIdentifiers(code)
+
+  for (const [exportName] of WEVU_EXPORT_ALIASES) {
+    const exportRe = new RegExp(`\\b([A-Za-z_$][\\w$]*)\\s+as\\s+${exportName}\\b`)
+    const exportMatch = exportRe.exec(code)
+    if (exportMatch?.[1]) {
+      aliases.set(exportName, exportMatch[1])
+    }
+  }
+
+  const propertyExports = Array.from(
+    code.matchAll(/Object\.defineProperty\(exports,\s*["']([^"']+)["'][\s\S]*?return\s+([A-Za-z_$][\w$]*)\s*(?:;\s*)?\}/g),
+  )
+  for (const [exportName] of WEVU_EXPORT_ALIASES) {
+    if (aliases.has(exportName)) {
+      continue
+    }
+    const semanticExport = propertyExports.find(match => match[1] === exportName)
+    if (semanticExport?.[2]) {
+      aliases.set(exportName, semanticExport[2])
+      continue
+    }
+    const stableExport = propertyExports.find(match => match[1] === `__wevu${exportName[0].toUpperCase()}${exportName.slice(1)}`)
+    if (stableExport?.[2]) {
+      aliases.set(exportName, stableExport[2])
+      continue
+    }
+  }
+
+  if (!aliases.has('defineComponent') && localIdentifiers.has('eo')) {
+    aliases.set('defineComponent', 'eo')
+  }
+  if (!aliases.has('createWevuComponent') && localIdentifiers.has('to')) {
+    aliases.set('createWevuComponent', 'to')
+  }
+
+  if (!aliases.has('defineComponent')) {
+    const createWevuComponentExport = propertyExports.find(match => match[1] === 'createWevuComponent')
+      ?? propertyExports.find(match => match[1] === '__wevuCreateWevuComponent')
+    const createWevuComponentLocal = createWevuComponentExport?.[2]
+    if (createWevuComponentLocal) {
+      const functionRe = new RegExp(`function\\s+${createWevuComponentLocal}\\s*\\([^)]*\\)\\s*\\{[\\s\\S]{0,500}?\\b([A-Za-z_$][\\w$]*)\\s*\\(`)
+      const functionMatch = functionRe.exec(code)
+      if (functionMatch?.[1]) {
+        aliases.set('defineComponent', functionMatch[1])
+      }
+    }
+  }
+
+  return aliases
+}
+
+function collectExistingExportNames(code: string) {
+  return new Set(
+    Array.from(
+      code.matchAll(/Object\.defineProperty\(exports,\s*["']([^"']+)["']/g),
+      match => match[1],
+    ),
+  )
+}
+
+function collectImportedWevuRuntimeMembers(
+  bundle: OutputBundle,
+  wevuChunkFileName: string,
+) {
+  const members = new Set<string>()
+
+  for (const output of Object.values(bundle)) {
+    if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunkFileName) {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const runtimeRefs = new Set<string>()
+    const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
+    for (const match of chunk.code.matchAll(localRequireRe)) {
+      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[2]))
+      if (resolved === wevuChunkFileName) {
+        runtimeRefs.add(match[1])
+      }
+    }
+
+    for (const ref of runtimeRefs) {
+      const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.([A-Za-z_$][\\w$]*)\\b`, 'g')
+      for (const match of chunk.code.matchAll(memberRe)) {
+        members.add(match[1])
+      }
+    }
+
+    const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\b/g
+    for (const match of chunk.code.matchAll(inlineRequireRe)) {
+      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[1]))
+      if (resolved === wevuChunkFileName) {
+        members.add(match[2])
+      }
+    }
+  }
+
+  return members
+}
+
+function appendWevuRuntimeExports(
+  chunk: OutputChunk,
+  aliases: Map<string, string>,
+  importedMembers: Set<string>,
+) {
+  const lines: string[] = []
+  const existingExports = collectExistingExportNames(chunk.code)
+  const localIdentifiers = collectLocalRuntimeIdentifiers(chunk.code)
+
+  for (const [exportName, stableName] of WEVU_EXPORT_ALIASES) {
+    const localName = aliases.get(exportName)
+    if (!localName || existingExports.has(stableName)) {
+      continue
+    }
+    lines.push(`Object.defineProperty(exports, ${JSON.stringify(stableName)}, { enumerable: false, get: function() { return ${localName}; } });`)
+    existingExports.add(stableName)
+  }
+
+  for (const member of importedMembers) {
+    if (!JS_IDENTIFIER_RE.test(member) || existingExports.has(member) || !localIdentifiers.has(member)) {
+      continue
+    }
+    lines.push(`Object.defineProperty(exports, ${JSON.stringify(member)}, { enumerable: true, get: function() { return ${member}; } });`)
+    existingExports.add(member)
+  }
+
+  if (lines.length) {
+    chunk.code = `${chunk.code}\n${lines.join('\n')}`
+  }
+}
+
+function rewriteStableWevuRuntimeAccess(chunk: OutputChunk, wevuChunkFileName: string, aliases: Map<string, string>) {
+  if (!aliases.size) {
+    return
+  }
+
+  let nextCode = chunk.code
+  for (const [exportName, stableName] of WEVU_EXPORT_ALIASES) {
+    const localName = aliases.get(exportName)
+    if (!localName) {
+      continue
+    }
+    const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\s*\(/g
+    nextCode = nextCode.replace(inlineRequireRe, (full, rawSpecifier: string, property: string) => {
+      if (property !== localName && property !== stableName) {
+        return full
+      }
+      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(rawSpecifier))
+      if (resolved !== wevuChunkFileName) {
+        return full
+      }
+      return `(require(${rawSpecifier}).${stableName} || require(${rawSpecifier}).${property})(`
+    })
+
+    const localRequireRe = /\b((?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?)/g
+    const runtimeRefs = new Set<string>()
+    for (const match of nextCode.matchAll(localRequireRe)) {
+      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[3]))
+      if (resolved === wevuChunkFileName) {
+        runtimeRefs.add(match[2])
+      }
+    }
+
+    for (const ref of runtimeRefs) {
+      const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.(?:${stableName}|${localName})\\s*\\(`, 'g')
+      nextCode = nextCode.replace(memberRe, (full) => {
+        const property = full.includes(`.${stableName}`) ? stableName : localName
+        return `(${ref}.${stableName} || ${ref}.${property})(`
+      })
+    }
+  }
+
+  chunk.code = nextCode
+}
+
+export function stabilizeWevuRuntimeChunkAccess(bundle: OutputBundle) {
+  const wevuChunk = Object.values(bundle).find((output): output is OutputChunk => {
+    return output?.type === 'chunk' && WEVU_SRC_CHUNK_RE.test(output.fileName)
+  })
+  if (!wevuChunk) {
+    return
+  }
+
+  const aliases = resolveWevuExportAliasMap(wevuChunk)
+  const importedMembers = collectImportedWevuRuntimeMembers(bundle, wevuChunk.fileName)
+
+  appendWevuRuntimeExports(wevuChunk, aliases, importedMembers)
+  for (const output of Object.values(bundle)) {
+    if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunk.fileName) {
+      continue
+    }
+    rewriteStableWevuRuntimeAccess(output as OutputChunk, wevuChunk.fileName, aliases)
   }
 }

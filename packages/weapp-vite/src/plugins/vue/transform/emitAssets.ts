@@ -69,11 +69,19 @@ export function emitSfcStyleIfMissing(
   relativeBase: string,
   style: string,
   extension = 'wxss',
+  options?: {
+    updateExisting?: boolean
+  },
 ) {
   const fileName = resolveSfcAssetFileName(relativeBase, extension)
   const cacheKey = `asset:${fileName}`
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
+    if (options?.updateExisting === false) {
+      emittedAssetSourceCache.set(cacheKey, existing.source?.toString?.() ?? '')
+      return
+    }
+
     const current = existing.source?.toString?.() ?? ''
     if (current !== style) {
       existing.source = style

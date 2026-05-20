@@ -1089,6 +1089,42 @@ describe('createEntryLoader', () => {
     expect((emitEntriesChunks as unknown as Mock).mock.calls.length).toBe(emitCalls)
   })
 
+  it('does not short-circuit cached app output when the app entry is dirty', async () => {
+    const appScript = '/project/src/app.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === appScript) {
+        return {
+          path: '/project/src/app.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService, configService, runtimeState } = createLoader()
+    configService.isDev = true
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.json') {
+        return {
+          pages: ['pages/a/index'],
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    const readCalls = readFileMock.mock.calls.length
+
+    runtimeState.build.hmr.dirtyEntrySet.add(appScript)
+    await (loader as any).call(pluginCtx, appScript, 'app')
+
+    expect(readFileMock.mock.calls.length).toBeGreaterThan(readCalls)
+  })
+
   it('augments json usingComponents from <script setup> imports used in template', async () => {
     mockFindVueEntry.mockResolvedValue('/project/src/pages/auto/index.vue')
     mockExtractConfigFromVue.mockResolvedValue({
@@ -1542,7 +1578,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/layouts/default',
+          id: '/project/src/layouts/default',
         }),
       ]),
     )
@@ -1602,7 +1638,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/layouts/default',
+          id: '/project/src/layouts/default',
         }),
       ]),
     )
@@ -1662,7 +1698,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/layouts/default',
+          id: '/project/src/layouts/default',
         }),
       ]),
     )
@@ -1724,7 +1760,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/layouts/default',
+          id: '/project/src/layouts/default',
         }),
       ]),
     )

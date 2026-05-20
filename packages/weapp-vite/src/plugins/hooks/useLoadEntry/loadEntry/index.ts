@@ -11,7 +11,7 @@ import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../utils/file/vueSfcSignature'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -80,6 +80,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const appEntryOutputCache: {
     current?: {
       appSignature: string
+      appVueNonJsonSignature?: string
       pluginSignature?: string
       pluginJsonPath?: string
       autoRoutesSignature?: string
@@ -118,6 +119,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const relativeCwdId = configService.relativeCwd(id)
     const normalizedId = normalizeFsResolvedId(id)
     const libConfig = configService.weappLibConfig
+    let appVueNonJsonSignature: string | undefined
     const libEntry = libConfig?.enabled && normalizedId
       ? ctx.runtimeState.lib.entries.get(normalizedId)
       : undefined
@@ -189,8 +191,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let pluginJsonForRegistration: any
     let appResult: Awaited<ReturnType<typeof collectAppEntries>> | undefined
     let shouldSkipAppEntries = false
+    const forceEmitEntrySet = new Set<string>()
     const nativeLayoutScriptEntries = new Set<string>()
-    const autoRoutesSignature = configService.isDev
+    let autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const registerPageLayoutComponentEntries = async (
@@ -240,6 +243,25 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     if (type === 'app') {
+      const vueEntryPath = await findVueEntry(baseName)
+      const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
+      if (configService.isDev && vueEntryPath) {
+        const vueSource = await fs.readFile(vueEntryPath, 'utf-8').catch(() => undefined)
+        if (vueSource) {
+          appVueNonJsonSignature = resolveVueSfcNonJsonSignature(vueSource, vueEntryPath)
+          if (appVueNonJsonSignature) {
+            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizeFsResolvedId(vueEntryPath), appVueNonJsonSignature)
+          }
+          const scriptSignature = resolveVueSfcScriptSignature(vueSource, vueEntryPath)
+          if (scriptSignature) {
+            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizeFsResolvedId(vueEntryPath), scriptSignature)
+          }
+          const hasTemplate = resolveVueSfcHasTemplate(vueSource, vueEntryPath)
+          if (hasTemplate !== undefined) {
+            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizeFsResolvedId(vueEntryPath), hasTemplate)
+          }
+        }
+      }
       appResult = await collectAppEntries({
         pluginCtx: this,
         id,
@@ -254,6 +276,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         extendedLibManager,
         cache: appEntriesCache,
       })
+      autoRoutesSignature = configService.isDev
+        ? ctx.autoRoutesService?.getSignature?.()
+        : undefined
       entries.push(...appResult.entries)
       if (get(json, 'tabBar.custom')) {
         explicitEntryTypes.set(normalizeEntry('custom-tab-bar/index', jsonPath), 'component')
@@ -275,9 +300,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       shouldSkipAppEntries = Boolean(
         configService.isDev
         && !isPluginBuild
+        && !dirtyEntrySet.has(normalizedId)
+        && !dirtyEntrySet.has(normalizedVueEntryPath ?? '')
         && appResult.cacheHit
         && appEntryOutputCache.current
         && appEntryOutputCache.current.appSignature === appResult.appSignature
+        && appEntryOutputCache.current.appVueNonJsonSignature === appVueNonJsonSignature
         && appEntryOutputCache.current.pluginSignature === appResult.pluginSignature
         && appEntryOutputCache.current.pluginJsonPath === appResult.pluginJsonPath
         && appEntryOutputCache.current.autoRoutesSignature === autoRoutesSignature
@@ -363,17 +391,27 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           if (scriptSignature) {
             ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, scriptSignature)
           }
+          const hasTemplate = resolveVueSfcHasTemplate(vueSource, vueEntryPath)
+          if (hasTemplate !== undefined) {
+            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedId, hasTemplate)
+          }
         }
       }
 
       await ctx.autoImportService?.awaitPendingRegistrations?.()
       applyAutoImports(baseName, json)
       const componentEntries = analyzeCommonJson(json)
-      const pendingAutoImportEntries = Array.from(
-        ctx.runtimeState?.autoImport?.pendingEntriesByImporter.get(baseName) ?? [],
-      )
+      const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
+      const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined
+      const pendingAutoImportEntries = Array.from(new Set([
+        ...Array.from(pendingAutoImportMap?.get(baseName) ?? []),
+        ...Array.from(vueBaseName ? pendingAutoImportMap?.get(vueBaseName) ?? [] : []),
+      ]))
       if (pendingAutoImportEntries.length) {
-        ctx.runtimeState?.autoImport?.pendingEntriesByImporter.delete(baseName)
+        pendingAutoImportMap?.delete(baseName)
+        if (vueBaseName) {
+          pendingAutoImportMap?.delete(vueBaseName)
+        }
       }
       const mergedComponentEntries = Array.from(new Set([
         ...componentEntries,
@@ -381,7 +419,11 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ]))
       entries.push(...mergedComponentEntries)
       for (const componentEntry of mergedComponentEntries) {
-        explicitEntryTypes.set(normalizeEntry(componentEntry, jsonPath), 'component')
+        const normalizedComponentEntry = normalizeEntry(componentEntry, jsonPath)
+        explicitEntryTypes.set(normalizedComponentEntry, 'component')
+        if (pendingAutoImportEntries.includes(componentEntry)) {
+          forceEmitEntrySet.add(normalizedComponentEntry)
+        }
       }
     }
 
@@ -430,6 +472,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       resolvedEntryMap,
       loadedEntrySet,
       dirtyEntrySet,
+      forceEmitEntrySet,
       replaceLayoutDependencies,
       emitEntriesChunks,
       registerJsonAsset,
@@ -445,6 +488,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     if (type === 'app' && !shouldSkipAppEntries && appResult) {
       appEntryOutputCache.current = {
         appSignature: appResult.appSignature,
+        appVueNonJsonSignature,
         pluginSignature: appResult.pluginSignature,
         pluginJsonPath: appResult.pluginJsonPath,
         autoRoutesSignature,

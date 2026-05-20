@@ -11,7 +11,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 function parseUsingComponents(config: string | undefined) {
   if (!config) {
@@ -34,7 +34,7 @@ export async function transformVueLikeFile(options: {
   pluginCtx: any
   code: string
   id: string
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
   setAppShell: (shell: ResolvedAppShell | undefined) => void
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
@@ -124,11 +124,14 @@ export async function transformVueLikeFile(options: {
     }))
 
     let transformedSource = source
+    let autoRoutesSignature: string | undefined
     if (isApp) {
-      transformedSource = await measureStage('ensureAutoRoutes', async () => await inlineTransformAutoRoutes({
+      const transformed = await measureStage('ensureAutoRoutes', async () => await resolveTransformAutoRoutesSource({
         source: transformedSource,
         autoRoutesService: ctx.autoRoutesService,
       }))
+      transformedSource = transformed.source
+      autoRoutesSignature = transformed.signature
     }
     const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
       reExportResolutionCache,
@@ -146,11 +149,14 @@ export async function transformVueLikeFile(options: {
     if (Array.isArray(result.meta?.styleBlocks)) {
       styleBlocksCache.set(filename, result.meta.styleBlocks as SFCStyleBlock[])
     }
-    syncVueSfcStyleDependencies(
+    const sfcStyleDependencies = syncVueSfcStyleDependencies(
       ctx,
       filename,
       (result.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
     )
+    for (const dependency of sfcStyleDependencies) {
+      addNormalizedWatchFile(pluginCtx, dependency)
+    }
     registerScopedSlotHostGenerics(ctx, result.scopedSlotComponents, parseUsingComponents(result.config))
 
     await measureStage('finalizeCompiledResult', async () => {
@@ -159,6 +165,7 @@ export async function transformVueLikeFile(options: {
         pluginCtx,
         filename,
         source: transformedSource,
+        autoRoutesSignature,
         result,
         compilationCache,
         setAppShell,
@@ -179,6 +186,9 @@ export async function transformVueLikeFile(options: {
       isPage,
       isApp,
       isDev: configService.isDev,
+      hmrStyleToken: configService.isDev && ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds?.has(filename)
+        ? ctx.runtimeState.build.hmr.profile.eventId
+        : undefined,
     }))
 
     reportTiming(filename, isPage)

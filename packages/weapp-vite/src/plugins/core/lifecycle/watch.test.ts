@@ -52,6 +52,7 @@ function createState(overrides: Record<string, any> = {}) {
     ctx: {
       scanService: {
         markDirty: vi.fn(),
+        appEntry: undefined,
         independentSubPackageMap: new Map(),
         markIndependentDirty: vi.fn(),
       },
@@ -83,8 +84,10 @@ function createState(overrides: Record<string, any> = {}) {
         build: {
           hmr: {
             profile: {},
+            vueEntryHasTemplate: new Map(),
             vueEntryNonJsonSignatures: new Map(),
             vueEntryScriptSignatures: new Map(),
+            dirtyVueEntryIds: new Set(),
           },
         },
       },
@@ -125,7 +128,7 @@ describe('core lifecycle watch hook', () => {
     vi.restoreAllMocks()
   })
 
-  it('marks template sidecar updates as direct entry dirties', async () => {
+  it('marks template sidecar updates as metadata entry dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/pages/hmr/index.ts',
@@ -136,7 +139,8 @@ describe('core lifecycle watch hook', () => {
     await hook('/project/src/pages/hmr/index.wxml', { event: 'update' })
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
-    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
   })
 
   it('does not expand sidecar updates through stale shared chunk importers', async () => {
@@ -153,12 +157,25 @@ describe('core lifecycle watch hook', () => {
     await hook('/project/src/pages/hmr/index.css', { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
-    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'metadata')
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
-  it('marks css importers dirty when imported style dependencies change', async () => {
+  it('marks style sidecar updates separately for asset-only preloading', async () => {
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/components/x-child/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/components/x-child/index.wxss', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/components/x-child/index.ts', 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
+
+  it('marks css importers direct dirty when imported style dependencies change', async () => {
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
@@ -181,11 +198,36 @@ describe('core lifecycle watch hook', () => {
     expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })
 
-  it('marks html template updates as direct entry dirties', async () => {
+  it('treats created existing style files as update-like css importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    const dependencyId = '/project/src/pages/index/hello.css'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    collectAffectedScriptsAndImportersMock.mockResolvedValue({
+      importers: new Set([vueEntry]),
+      scripts: new Set<string>(),
+    })
+    const state = createState({
+      loadedEntrySet: new Set([vueEntry]),
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'create' })
+
+    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('create')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+  })
+
+  it('marks html template updates as metadata entry dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/pages/hmr-html/index.ts',
@@ -196,7 +238,20 @@ describe('core lifecycle watch hook', () => {
     await hook('/project/src/pages/hmr-html/index.html', { event: 'update' })
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.html')
-    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.ts', 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.ts', 'metadata')
+  })
+
+  it('marks json sidecar updates separately for asset-only preloading', async () => {
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/components/x-child/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/components/x-child/index.json', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/components/x-child/index.ts', 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
   })
 
   it('records watch-to-dirty profile for the latest hmr file event', async () => {
@@ -385,6 +440,60 @@ const count = 1
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
+  it('normalizes transient create events on resolved vue entries back to metadata updates', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [entryId, { id: entryId }],
+      ]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      entryId,
+      resolveVueSfcNonJsonSignature(previousSource, entryId),
+    )
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'create' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
+  })
+
+  it('normalizes transient create events on resolved sidecars back to updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/hmr/index.ts',
+    })
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [entryId, { id: entryId }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/pages/hmr/index.wxml', { event: 'create' })
+
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
+  })
+
   it('normalizes transient delete events on loaded scripts back to updates', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
     const entryId = '/project/src/pages/hmr/index.ts'
@@ -499,6 +608,106 @@ page { color: red; }
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
   })
 
+  it('invalidates app shell dependents when app.vue gains a template', async () => {
+    const appEntry = '/project/src/app.vue'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+defineAppJson({ window: { navigationBarTitleText: '首页' } })
+</script>
+
+<style>
+page { color: red; }
+</style>`
+    const nextSource = `${previousSource}
+
+<template>
+  <view class="happy"><slot /></view>
+</template>`
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([appEntry]),
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appEntry, false)
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appEntry,
+      resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'app-shell-dependent:1',
+      'entry-direct:1',
+    ])
+  })
+
+  it('maps app.vue shell topology changes to the concrete app script entry', async () => {
+    const appVueEntry = '/project/src/app.vue'
+    const appScriptEntry = '/project/src/app.ts'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+defineAppJson({ window: { navigationBarTitleText: '首页' } })
+</script>`
+    const nextSource = `${previousSource}
+
+<template>
+  <view class="happy"><slot /></view>
+</template>
+
+<style>.happy { min-height: 100vh; }</style>`
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const baseState = createState({
+      loadedEntrySet: new Set([appScriptEntry]),
+      resolvedEntryMap: new Map([
+        [appScriptEntry, { id: appScriptEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+    })
+    const state = {
+      ...baseState,
+      ctx: {
+        ...baseState.ctx,
+        scanService: {
+          ...baseState.ctx.scanService,
+          appEntry: {
+            path: appScriptEntry,
+          },
+        },
+      },
+    }
+    state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appVueEntry, false)
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appVueEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appVueEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appVueEntry,
+      resolveVueSfcScriptSignature(previousSource, appVueEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appVueEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appScriptEntry, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appVueEntry, 'direct')
+  })
+
   it('does not mark deleted declared page entries as direct dirties after a real delete', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     const entryId = '/project/src/pages/logs/hmr-added.vue'
@@ -519,11 +728,19 @@ page { color: red; }
   it('syncs auto-routes state before rebuilding a truly deleted route file', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     const entryId = '/project/src/pages/logs/hmr-added.vue'
+    const appEntry = '/project/src/app.vue'
     const baseState = createState()
     const state = {
       ...baseState,
+      resolvedEntryMap: new Map([[appEntry, { id: appEntry }]]),
       ctx: {
         ...baseState.ctx,
+        scanService: {
+          ...baseState.ctx.scanService,
+          appEntry: {
+            path: appEntry,
+          },
+        },
         autoRoutesService: {
           isRouteFile: vi.fn((id: string) => id === entryId),
           handleFileChange: vi.fn(async () => true),
@@ -535,6 +752,7 @@ page { color: red; }
     await hook(entryId, { event: 'delete' })
 
     expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'delete')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
@@ -550,7 +768,7 @@ page { color: red; }
     await hook('/project/src/pages/hmr/index.wxml', { event: 'delete' })
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
-    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'metadata')
     expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
     expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
     expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.wxml')

@@ -17,10 +17,13 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const hmrSharedChunkDependencies = new Map<string, Set<string>>()
   const hmrSharedChunksByModule = new Map<string, Set<string>>()
   const hmrSourceSharedChunks = new Set<string>()
+  const hmrRootInputIds = new Set<string>()
   const hmrState = {
     didEmitAllEntries: false,
     hasBuiltOnce: false,
+    lastHmrEntryIds: new Set<string>(),
     lastEmittedEntryIds: new Set<string>(),
+    skipSharedChunkRefresh: false,
   }
   const {
     loadEntry,
@@ -38,6 +41,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       sharedChunkImporters: hmrSharedChunkImporters,
       sharedChunksByEntry: hmrSharedChunksByEntry,
       sourceSharedChunks: hmrSourceSharedChunks,
+      rootInputIds: hmrRootInputIds,
       setDidEmitAllEntries: (value) => {
         hmrState.didEmitAllEntries = value
         if (ctx.runtimeState?.build?.hmr) {
@@ -49,6 +53,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         if (ctx.runtimeState?.build?.hmr) {
           ctx.runtimeState.build.hmr.lastEmittedEntryIds = new Set(entryIds)
         }
+      },
+      setLastHmrEntries: (entryIds) => {
+        hmrState.lastHmrEntryIds = new Set(entryIds)
+        if (ctx.runtimeState?.build?.hmr) {
+          ctx.runtimeState.build.hmr.lastHmrEntryIds = new Set(entryIds)
+        }
+      },
+      setSkipSharedChunkRefresh: (value) => {
+        hmrState.skipSharedChunkRefresh = value
       },
     },
   })
@@ -76,6 +89,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     hmrSharedChunkDependencies,
     hmrSharedChunksByModule,
     hmrSourceSharedChunks,
+    hmrRootInputIds,
   }
 
   return [

@@ -29,7 +29,9 @@ export interface CorePluginState {
   hmrState: {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
+    lastHmrEntryIds?: Set<string>
     lastEmittedEntryIds?: Set<string>
+    skipSharedChunkRefresh?: boolean
   }
   hmrSharedChunksMode: 'full' | 'auto' | 'off'
   hmrSharedChunkImporters: Map<string, Set<string>>
@@ -37,6 +39,7 @@ export interface CorePluginState {
   hmrSharedChunkDependencies: Map<string, Set<string>>
   hmrSharedChunksByModule: Map<string, Set<string>>
   hmrSourceSharedChunks: Set<string>
+  hmrRootInputIds: Set<string>
 }
 
 export interface RemoveImplicitPagePreloadOptions {

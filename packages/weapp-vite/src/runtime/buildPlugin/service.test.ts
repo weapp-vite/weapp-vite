@@ -390,7 +390,7 @@ describe('runtime buildPlugin service', () => {
     nowSpy.mockRestore()
   })
 
-  it('marks only the matched entry dirty for direct sidecar snapshot updates', async () => {
+  it('runs a stable narrow snapshot build for direct sidecar updates', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const forceFullValues: Array<string | undefined> = []
@@ -421,16 +421,16 @@ describe('runtime buildPlugin service', () => {
     touchMock.mockClear()
 
     sidecarWatcher.emit('change', '/project/src/pages/logs/index.wxml')
-    await waitForMockCalls(touchMock, 1)
+    await waitForMockCalls(buildMock, 2)
 
-    expect(buildMock).toHaveBeenCalledTimes(1)
+    expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(['/project/src/pages/logs/index.ts']))
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get('/project/src/pages/logs/index.ts')).toBe('direct')
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
-    expect(touchMock).toHaveBeenCalledWith('/project/src/pages/logs/index.ts')
-    expect(loggerSuccessMock).not.toHaveBeenCalled()
-    expect(forceFullValues).toEqual([])
+    expect(touchMock).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).toHaveBeenCalled()
+    expect(forceFullValues).toEqual(['1'])
   })
 
   it('keeps full snapshot fallback for sidecar topology changes', async () => {

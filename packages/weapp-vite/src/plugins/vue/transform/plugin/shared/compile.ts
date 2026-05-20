@@ -102,14 +102,15 @@ export function finalizeTransformEntryCode(options: {
   isPage: boolean
   isApp: boolean
   isDev: boolean
+  hmrStyleToken?: number | string
 }) {
-  const { result, filename, styleBlocks, isPage, isApp, isDev } = options
+  const { result, filename, styleBlocks, isPage, isApp, isDev, hmrStyleToken } = options
   const script = result.script ?? ''
   const returned = new MagicString(script)
   let hasMutation = false
 
   if (styleBlocks?.length) {
-    const styleImports = buildWeappVueStyleRequests(filename, styleBlocks)
+    const styleImports = buildWeappVueStyleRequests(filename, styleBlocks, { hmrToken: hmrStyleToken })
       .map(request => `import ${JSON.stringify(request)};\n`)
       .join('')
     returned.prepend(styleImports)
@@ -166,8 +167,9 @@ export async function finalizeTransformCompiledResult(options: {
   pluginCtx: any
   filename: string
   source: string
+  autoRoutesSignature?: string
   result: VueTransformResult
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
   setAppShell?: (shell: ResolvedAppShell | undefined) => void
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
@@ -189,6 +191,7 @@ export async function finalizeTransformCompiledResult(options: {
     pluginCtx,
     filename,
     source,
+    autoRoutesSignature,
     result,
     compilationCache,
     setAppShell,
@@ -240,7 +243,13 @@ export async function finalizeTransformCompiledResult(options: {
     forcePageFeatureInjection: isPage,
   })
 
-  compilationCache.set(filename, { result, source, isPage })
+  compilationCache.set(filename, {
+    result,
+    source,
+    isPage,
+    autoRoutesSignature,
+    refreshToken: 0,
+  })
 
   const relativeBase = resolveVueOutputBase(configService, filename)
   if (relativeBase) {

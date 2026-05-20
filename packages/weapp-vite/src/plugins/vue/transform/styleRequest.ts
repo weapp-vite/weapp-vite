@@ -9,6 +9,22 @@ export interface WeappVueStyleRequest {
   index: number
 }
 
+interface BuildWeappVueStyleRequestOptions {
+  hmrToken?: number | string
+}
+
+function appendHmrToken(query: string, token: number | string | undefined) {
+  if (typeof token === 'number') {
+    return Number.isFinite(token) && token > 0
+      ? `${query}&hmr=${token}`
+      : query
+  }
+  if (typeof token === 'string' && token.trim()) {
+    return `${query}&hmr=${encodeURIComponent(token)}`
+  }
+  return query
+}
+
 function resolveEncodedStyleRequestFilename(filename: string) {
   const normalizedFilename = normalizeFsResolvedId(filename)
   return {
@@ -64,7 +80,7 @@ export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | un
   return { filename: normalizedFilename, index }
 }
 
-export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyleBlock, index: number): string {
+export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyleBlock, index: number, options: BuildWeappVueStyleRequestOptions = {}): string {
   const lang = styleBlock.lang || 'css'
   const { encodedFilename } = resolveEncodedStyleRequestFilename(filename)
 
@@ -77,13 +93,14 @@ export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyle
       ? `&module=${encodeURIComponent(styleBlock.module)}`
       : '&module=true'
   }
+  query = appendHmrToken(query, options.hmrToken)
 
   // 重要：`lang.*` 必须放在末尾，确保 Vite 的 CSS_LANGS_RE 能命中。
   query += `&lang.${lang}`
   return `${WEAPP_VUE_STYLE_VIRTUAL_PREFIX}${encodedFilename}?${query}`
 }
 
-export function buildWeappVueStyleRequests(filename: string, styleBlocks: SFCStyleBlock[]): string[] {
+export function buildWeappVueStyleRequests(filename: string, styleBlocks: SFCStyleBlock[], options: BuildWeappVueStyleRequestOptions = {}): string[] {
   const { encodedFilename } = resolveEncodedStyleRequestFilename(filename)
   return styleBlocks.map((styleBlock, index) => {
     const lang = styleBlock.lang || 'css'
@@ -96,6 +113,7 @@ export function buildWeappVueStyleRequests(filename: string, styleBlocks: SFCSty
         ? `&module=${encodeURIComponent(styleBlock.module)}`
         : '&module=true'
     }
+    query = appendHmrToken(query, options.hmrToken)
     query += `&lang.${lang}`
     return `${WEAPP_VUE_STYLE_VIRTUAL_PREFIX}${encodedFilename}?${query}`
   })

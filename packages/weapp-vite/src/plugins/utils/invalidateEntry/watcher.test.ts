@@ -117,6 +117,30 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/index.wxml')
   })
 
+  it('treats raw rename on an existing ready sidecar file as update even when the add event was missed', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const existsSpy = vi.spyOn(fs, 'existsSync')
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    existsSpy.mockImplementation((value) => {
+      const filePath = String(value)
+      return filePath === '/project/src' || filePath === '/project/src/pages/hmr/hello.css'
+    })
+
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('ready')
+    watcher.emit('raw', 'rename', 'pages/hmr/hello.css', { watchedPath: '/project/src' })
+    await vi.advanceTimersByTimeAsync(120)
+
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update')
+    expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/hello.css')
+  })
+
   it('does not drop pre-ready atomic restore events for known sidecar files', async () => {
     vi.stubEnv('VITEST', '')
     vi.stubEnv('NODE_ENV', 'development')

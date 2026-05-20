@@ -1,5 +1,6 @@
 import type chokidar from 'chokidar'
 import type { ConfigService } from '../config/types'
+import process from 'node:process'
 
 type ChokidarWatchOptions = NonNullable<Parameters<typeof chokidar.watch>[1]>
 
@@ -20,14 +21,24 @@ function resolvePollingWatchConfig(configService: Pick<ConfigService, 'inlineCon
     : undefined
   const serverWatch = configService.inlineConfig?.server?.watch
 
-  const usePollingCandidate = chokidar?.usePolling ?? serverWatch?.usePolling
-  const intervalCandidate = chokidar?.interval ?? serverWatch?.interval
-  const binaryIntervalCandidate = chokidar?.binaryInterval ?? serverWatch?.binaryInterval
+  const envUsePolling = process.env.CHOKIDAR_USEPOLLING
+  const envInterval = process.env.CHOKIDAR_INTERVAL
+  const envBinaryInterval = process.env.CHOKIDAR_BINARY_INTERVAL
+
+  const usePollingCandidate = chokidar?.usePolling
+    ?? serverWatch?.usePolling
+    ?? (envUsePolling === '1' || envUsePolling === 'true'
+      ? true
+      : envUsePolling === '0' || envUsePolling === 'false'
+        ? false
+        : undefined)
+  const intervalCandidate = chokidar?.interval ?? serverWatch?.interval ?? (envInterval ? Number(envInterval) : undefined)
+  const binaryIntervalCandidate = chokidar?.binaryInterval ?? serverWatch?.binaryInterval ?? (envBinaryInterval ? Number(envBinaryInterval) : undefined)
 
   return {
     usePolling: typeof usePollingCandidate === 'boolean' ? usePollingCandidate : undefined,
-    interval: typeof intervalCandidate === 'number' ? intervalCandidate : undefined,
-    binaryInterval: typeof binaryIntervalCandidate === 'number' ? binaryIntervalCandidate : undefined,
+    interval: typeof intervalCandidate === 'number' && Number.isFinite(intervalCandidate) ? intervalCandidate : undefined,
+    binaryInterval: typeof binaryIntervalCandidate === 'number' && Number.isFinite(binaryIntervalCandidate) ? binaryIntervalCandidate : undefined,
   }
 }
 

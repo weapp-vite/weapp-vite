@@ -392,6 +392,99 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
+  it('emits page SFC style assets during asset-only HMR refresh', () => {
+    emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
+              profile: {
+                dirtyReasonSummary: ['entry-local-asset:1'],
+              },
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/pages/hmr-sfc/index.vue',
+      relativeBase: 'pages/hmr-sfc/index',
+      result: {
+        template: '<view />',
+        style: '.marker { color: red; }',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: true,
+      configService: {
+        isDev: true,
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'wxs',
+      outputExtensions: {
+        wxss: 'wxss',
+      },
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/hmr-sfc/index',
+      '.marker { color: red; }',
+      'wxss',
+      undefined,
+    )
+  })
+
+  it('does not overwrite Vite-processed page SFC style assets during css importer HMR', () => {
+    emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
+              profile: {
+                dirtyReasonSummary: ['css-importer:1'],
+              },
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/pages/hmr-sfc/index.vue',
+      relativeBase: 'pages/hmr-sfc/index',
+      result: {
+        template: '<view />',
+        style: '@import "./hello.css";',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: true,
+      configService: {
+        isDev: true,
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'wxs',
+      outputExtensions: {
+        wxss: 'wxss',
+      },
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
+  })
+
   it('emits compiled app entry assets with merged app json config', () => {
     const result = emitCompiledEntryBundleAssets({
       bundle: {},
@@ -402,6 +495,7 @@ describe('emitSharedVueEntryAssets', () => {
       result: {
         template: '<view />',
         config: '{"window":{"navigationBarTitleText":"首页"}}',
+        style: '.app { color: red; }',
         scopedSlotComponents: [],
       } as any,
       isPage: false,
@@ -420,7 +514,9 @@ describe('emitSharedVueEntryAssets', () => {
       templateExtension: 'axml',
       jsonExtension: 'json',
       scriptModuleExtension: 'sjs',
-      outputExtensions: {},
+      outputExtensions: {
+        wxss: 'acss',
+      },
       platformAssetOptions: {
         platform: 'alipay',
         templateExtension: 'axml',
@@ -429,6 +525,14 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(emitPlatformTemplateAssetMock).not.toHaveBeenCalled()
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'app',
+      '.app { color: red; }',
+      'acss',
+      { updateExisting: false },
+    )
     expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
       expect.anything(),
       {},
@@ -763,6 +867,46 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(compileVueFileMock).not.toHaveBeenCalled()
     expect(result).toBe(cached.result)
+  })
+
+  it('refreshes compiled cache when an unchanged source was invalidated in dev', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+      refreshToken: 1,
+    } as any
+    readFileMock.mockResolvedValue('<view />')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ refreshed: true })',
+    })
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(cached.refreshToken).toBe(0)
+    expect(cached.result).toBe(result)
+    expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
   it('refreshes compiled cache when source changes in dev', async () => {

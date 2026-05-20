@@ -630,6 +630,32 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(unavailableResult).toEqual({ code: 'App({})' })
   })
 
+  it('tracks the dev app entry for shared chunk hmr', async () => {
+    const sourceId = '/project/src/app.ts'
+    const resolvedEntryMap = new Map<string, any>()
+    const loadEntry = vi.fn(async () => ({ code: 'App({})' }))
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: 'weapp',
+          packageJson: { dependencies: {} },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+      resolvedEntryMap,
+    } as any)
+
+    await load.call({}, sourceId)
+
+    expect(resolvedEntryMap.get(sourceId)).toEqual({ id: sourceId })
+  })
+
   it('returns app result when loadEntry output is non-object', async () => {
     const sourceId = '/project/src/app.ts'
     const loadEntry = vi.fn(async () => 'AppRawCode')
@@ -825,7 +851,7 @@ describe('core lifecycle load hook injectWeapi', () => {
 
 describe('core lifecycle options hook', () => {
   it('builds input map from subPackageMeta entries', async () => {
-    const optionsHook = createOptionsHook({
+    const state = {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
@@ -837,7 +863,8 @@ describe('core lifecycle options hook', () => {
         entries: ['pages/a/index', 'pages/b/index'],
       },
       pendingIndependentBuilds: [],
-    } as any)
+    } as any
+    const optionsHook = createOptionsHook(state)
 
     const options: Record<string, any> = {}
     await optionsHook(options)
@@ -846,6 +873,10 @@ describe('core lifecycle options hook', () => {
       'pages/a/index': '/project/src/pages/a/index',
       'pages/b/index': '/project/src/pages/b/index',
     })
+    expect(Array.from(state.hmrRootInputIds)).toEqual([
+      '/project/src/pages/a/index',
+      '/project/src/pages/b/index',
+    ])
   })
 
   it('loads lib entries when weapp lib mode is enabled', async () => {
@@ -873,7 +904,7 @@ describe('core lifecycle options hook', () => {
       options: {},
     }
 
-    const optionsHook = createOptionsHook({
+    const state = {
       ctx: {
         runtimeState,
         configService,
@@ -882,7 +913,8 @@ describe('core lifecycle options hook', () => {
       },
       subPackageMeta: undefined,
       pendingIndependentBuilds: [],
-    } as any)
+    } as any
+    const optionsHook = createOptionsHook(state)
 
     const options: Record<string, any> = {}
     await optionsHook(options)
@@ -893,6 +925,7 @@ describe('core lifecycle options hook', () => {
     expect(runtimeState.lib.enabled).toBe(true)
     expect(runtimeState.lib.entries.size).toBe(1)
     expect(configService.options.weappLibOutputMap.get('components/card')).toBe('lib/card')
+    expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/src/components/card.ts'])
   })
 
   it('handles app entry and independent subpackage builds when lib mode is disabled', async () => {
@@ -955,6 +988,7 @@ describe('core lifecycle options hook', () => {
     expect(configService.options.currentSubPackageRoot).toBe('pkgA')
     expect(state.pendingIndependentBuilds).toHaveLength(1)
     expect(buildService.buildIndependentBundle).toHaveBeenCalledWith('pkgA', pkgAMeta)
+    expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/src/app.ts'])
   })
 
   it('uses plugin main entry as root input in pluginOnly mode', async () => {
@@ -1011,6 +1045,7 @@ describe('core lifecycle options hook', () => {
     expect(options.input).toEqual({
       index: '/project/plugin/index.ts',
     })
+    expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/plugin/index.ts'])
     expect(scanService.loadSubPackages).not.toHaveBeenCalled()
   })
 })

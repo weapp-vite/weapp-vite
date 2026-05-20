@@ -1,7 +1,9 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
+import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../../bundle'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
@@ -183,6 +185,7 @@ export async function preloadNativeLayoutEntries(options: {
 export async function loadTransformStyleBlock(options: {
   id: string
   pluginCtx: any
+  ctx: CompilerContext
   configService: CompilerContext['configService']
   styleBlocksCache: Map<string, SFCStyleBlock[]>
   loadScopedSlotModule: (id: string, scopedSlotModules: Map<string, string>) => string | null
@@ -194,6 +197,7 @@ export async function loadTransformStyleBlock(options: {
   const {
     id,
     pluginCtx,
+    ctx,
     configService,
     styleBlocksCache,
     loadScopedSlotModule,
@@ -232,6 +236,9 @@ export async function loadTransformStyleBlock(options: {
   if (!block) {
     return null
   }
+
+  const dependencies = syncVueSfcStyleDependencies(ctx, filename, styles)
+  addNormalizedWatchFiles(options.pluginCtx, dependencies)
 
   return {
     code: block.content,

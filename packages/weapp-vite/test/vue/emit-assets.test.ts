@@ -64,6 +64,45 @@ describe('emitSfcStyleIfMissing', () => {
     expect(emitFile).not.toHaveBeenCalled()
     expect(bundle['components/hello.wxss'].source).toBe('.new{}')
   })
+
+  it('keeps existing asset when updateExisting is disabled', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {
+      'app.wxss': { type: 'asset', source: '.processed{}' },
+    }
+
+    emitSfcStyleIfMissing(
+      { emitFile },
+      bundle,
+      'app',
+      '@import "tailwindcss";',
+      'wxss',
+      { updateExisting: false },
+    )
+
+    expect(emitFile).not.toHaveBeenCalled()
+    expect(bundle['app.wxss'].source).toBe('.processed{}')
+  })
+
+  it('emits missing asset when updateExisting is disabled', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitSfcStyleIfMissing(
+      { emitFile },
+      bundle,
+      'app',
+      '.app{}',
+      'wxss',
+      { updateExisting: false },
+    )
+
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'app.wxss',
+      source: '.app{}',
+    })
+  })
 })
 
 describe('emitSfcJsonAsset', () => {

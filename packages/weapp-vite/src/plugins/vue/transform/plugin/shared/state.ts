@@ -108,7 +108,7 @@ export async function loadTransformPageEntries(scanService: CompilerContext['sca
 
 export function invalidatePageLayoutCaches(
   configService: NonNullable<CompilerContext['configService']> | undefined,
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
 ) {
   if (!configService) {
@@ -125,7 +125,7 @@ export function invalidatePageLayoutCaches(
 
 export function invalidateVueFileCaches(
   file: string,
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
   options: {
     existsSync: (filePath: string) => boolean
@@ -138,6 +138,7 @@ export function invalidateVueFileCaches(
     const cached = compilationCache.get(file)
     if (cached) {
       cached.source = undefined
+      cached.refreshToken = (cached.refreshToken ?? 0) + 1
     }
   }
   styleBlocksCache.delete(file)
@@ -147,7 +148,7 @@ export function handleTransformLayoutInvalidation(
   file: string,
   options: {
     configService: NonNullable<CompilerContext['configService']> | undefined
-    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
     isLayoutFile: (file: string, configService: NonNullable<CompilerContext['configService']>) => boolean
     invalidateResolvedPageLayoutsCache: (srcRoot: string) => void
@@ -166,7 +167,7 @@ export function handleTransformLayoutInvalidation(
 export function handleTransformVueFileInvalidation(
   file: string,
   options: {
-    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
     existsSync: (filePath: string) => boolean
   },

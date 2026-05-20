@@ -10,6 +10,8 @@ const mocked = vi.hoisted(() => {
   let sharedChunkImporters: Map<string, Set<string>> | undefined
   let setDidEmitAllEntries: ((value: boolean) => void) | undefined
   let setLastEmittedEntries: ((value: Set<string>) => void) | undefined
+  let setLastHmrEntries: ((value: Set<string>) => void) | undefined
+  let setSkipSharedChunkRefresh: ((value: boolean) => void) | undefined
   return {
     loadEntry,
     loadedEntrySet,
@@ -34,16 +36,30 @@ const mocked = vi.hoisted(() => {
     set setLastEmittedEntries(value: ((value: Set<string>) => void) | undefined) {
       setLastEmittedEntries = value
     },
+    get setLastHmrEntries() {
+      return setLastHmrEntries
+    },
+    set setLastHmrEntries(value: ((value: Set<string>) => void) | undefined) {
+      setLastHmrEntries = value
+    },
+    get setSkipSharedChunkRefresh() {
+      return setSkipSharedChunkRefresh
+    },
+    set setSkipSharedChunkRefresh(value: ((value: boolean) => void) | undefined) {
+      setSkipSharedChunkRefresh = value
+    },
   }
 })
 
 vi.mock('./hooks/useLoadEntry', () => {
   return {
     __esModule: true,
-    useLoadEntry: (_ctx: any, options?: { hmr?: { sharedChunkImporters?: Map<string, Set<string>>, setDidEmitAllEntries?: (value: boolean) => void, setLastEmittedEntries?: (value: Set<string>) => void } }) => {
+    useLoadEntry: (_ctx: any, options?: { hmr?: { sharedChunkImporters?: Map<string, Set<string>>, setDidEmitAllEntries?: (value: boolean) => void, setLastEmittedEntries?: (value: Set<string>) => void, setLastHmrEntries?: (value: Set<string>) => void, setSkipSharedChunkRefresh?: (value: boolean) => void } }) => {
       mocked.sharedChunkImporters = options?.hmr?.sharedChunkImporters
       mocked.setDidEmitAllEntries = options?.hmr?.setDidEmitAllEntries
       mocked.setLastEmittedEntries = options?.hmr?.setLastEmittedEntries
+      mocked.setLastHmrEntries = options?.hmr?.setLastHmrEntries
+      mocked.setSkipSharedChunkRefresh = options?.hmr?.setSkipSharedChunkRefresh
       return {
         loadEntry: mocked.loadEntry,
         loadedEntrySet: mocked.loadedEntrySet,
@@ -178,6 +194,7 @@ describe('weapp-vite:pre load', () => {
       build: {
         hmr: {
           didEmitAllEntries: false,
+          lastHmrEntryIds: new Set<string>(),
           lastEmittedEntryIds: new Set<string>(),
         },
       },
@@ -204,12 +221,16 @@ describe('weapp-vite:pre load', () => {
     expect(plugins.length).toBeGreaterThan(0)
 
     const emittedEntryIds = new Set(['/project/src/pages/index.vue'])
+    const hmrEntryIds = new Set(['/project/src/pages/index.vue', '/project/src/pages/index.json'])
     mocked.setDidEmitAllEntries?.(false)
     mocked.setLastEmittedEntries?.(emittedEntryIds)
+    mocked.setLastHmrEntries?.(hmrEntryIds)
 
     expect(runtimeState.build.hmr.didEmitAllEntries).toBe(false)
     expect(runtimeState.build.hmr.lastEmittedEntryIds).toEqual(emittedEntryIds)
     expect(runtimeState.build.hmr.lastEmittedEntryIds).not.toBe(emittedEntryIds)
+    expect(runtimeState.build.hmr.lastHmrEntryIds).toEqual(hmrEntryIds)
+    expect(runtimeState.build.hmr.lastHmrEntryIds).not.toBe(hmrEntryIds)
   })
 
   it('refreshes shared chunk importers on full rebuilds', async () => {
@@ -385,6 +406,85 @@ describe('weapp-vite:pre load', () => {
 
     expect(Array.from(mocked.sharedChunkImporters?.get('common.js') ?? [])).toEqual([indexEntry])
     expect(Array.from(mocked.sharedChunkImporters?.get('common-next.js') ?? [])).toEqual([dataEntry])
+  })
+
+  it('skips shared chunk importer refresh when hmr emitted no js chunks', async () => {
+    mocked.loadEntry.mockClear()
+    mocked.loadedEntrySet.clear()
+    mocked.resolvedEntryMap.clear()
+
+    const dataEntry = '/project/src/pages/data/index.ts'
+    const indexEntry = '/project/src/pages/index/index.ts'
+    mocked.resolvedEntryMap.set(dataEntry, { id: dataEntry })
+    mocked.resolvedEntryMap.set(indexEntry, { id: indexEntry })
+
+    const plugins = weappVite({
+      currentBuildTarget: 'app',
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        weappViteConfig: {
+          hmr: { sharedChunks: 'auto' },
+          chunks: { sharedStrategy: 'hoist' },
+        },
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      } as any,
+      buildService: {} as any,
+    } as any)
+
+    const core = plugins.find(p => p.name === 'weapp-vite:pre')!
+    const firstBundle = {
+      'pages/data/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: dataEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: indexEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'common.js': {
+        type: 'chunk',
+        isEntry: false,
+        facadeModuleId: '/project/src/common.ts',
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, firstBundle)
+    expect(Array.from(mocked.sharedChunkImporters?.get('common.js') ?? []).sort()).toEqual([dataEntry, indexEntry].sort())
+
+    mocked.setSkipSharedChunkRefresh?.(true)
+    mocked.setLastEmittedEntries?.(new Set())
+    const secondBundle = {
+      'common-next.js': {
+        type: 'chunk',
+        isEntry: false,
+        facadeModuleId: '/project/src/common-next.ts',
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, secondBundle)
+
+    expect(Array.from(mocked.sharedChunkImporters?.get('common.js') ?? []).sort()).toEqual([dataEntry, indexEntry].sort())
+    expect(mocked.sharedChunkImporters?.has('common-next.js')).toBe(false)
   })
 
   it('tracks shared chunk importers for vue layout chunks', async () => {

@@ -3,6 +3,8 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
 
+const LEADING_ROOT_SLASH_RE = /^[/\\]+/
+
 export interface ResolvedEntryRecord {
   entry: string
   resolvedId: ResolvedId | null
@@ -51,7 +53,9 @@ export function createEntryResolver(configService?: { isDev?: boolean }) {
       entries
         .filter(entry => !entry.includes(':'))
         .map(async (entry) => {
-          const absPath = path.resolve(absoluteRoot, entry)
+          const absPath = path.isAbsolute(entry) && await fs.pathExists(entry)
+            ? entry
+            : path.resolve(absoluteRoot, entry.replace(LEADING_ROOT_SLASH_RE, ''))
           return {
             entry,
             resolvedId: await resolveEntryWithCache(pluginCtx, absPath),

@@ -320,6 +320,19 @@ export function emitCompiledEntryBundleAssets(options: {
   const shouldEmitComponentJson = !isAppVue && !options.isPage
   const shouldMergeJsonAsset = isAppVue
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
+  const dirtyReasonSummary = options.ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
+  const isAssetOnlyHmr = dirtyReasonSummary?.some(item =>
+    item.startsWith('entry-local-asset:')
+    || item.startsWith('style-sidecar:'),
+  ) === true
+  const shouldEmitSfcStyleAsset = Boolean(options.result.style) && (
+    isAppVue
+    || (
+      options.configService.isDev
+      && isAssetOnlyHmr
+      && options.ctx.runtimeState?.build?.hmr?.lastHmrEntryIds?.has(options.filename)
+    )
+  )
 
   const { jsonConfig } = emitBundleVueEntryAssets({
     bundle: options.bundle,
@@ -334,6 +347,17 @@ export function emitCompiledEntryBundleAssets(options: {
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
   })
+
+  if (shouldEmitSfcStyleAsset) {
+    emitSfcStyleIfMissing(
+      options.pluginCtx,
+      options.bundle,
+      options.relativeBase,
+      options.result.style,
+      options.outputExtensions.wxss,
+      isAppVue ? { updateExisting: false } : undefined,
+    )
+  }
 
   if (options.result.config || shouldEmitComponentJson) {
     emitSharedVueEntryJsonAsset({

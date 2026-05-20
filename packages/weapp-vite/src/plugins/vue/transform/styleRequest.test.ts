@@ -28,4 +28,19 @@ describe('styleRequest', () => {
       '\0weapp-vite:vue-style:%2Fproject%2Fsrc%2Fpages%2Fhome%2Findex.vue?weapp-vite-vue&type=style&index=1&scoped=true&module=true&lang.scss',
     ])
   })
+
+  it('keeps hmr token before lang marker in vue style requests', () => {
+    const request = buildWeappVueStyleRequest('/project/src/pages/home/index.vue', {
+      lang: 'scss',
+    } as any, 0, {
+      hmrToken: 42,
+    })
+
+    expect(request).toContain('&hmr=42&lang.scss')
+    expect(request.endsWith('&lang.scss')).toBe(true)
+    expect(parseWeappVueStyleRequest(request)).toEqual({
+      filename: '/project/src/pages/home/index.vue',
+      index: 0,
+    })
+  })
 })

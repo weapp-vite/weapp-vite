@@ -199,6 +199,7 @@ export function syncVueSfcStyleDependencies(
     }
   }
   registerCssImports(ctx, filename, dependencies)
+  return dependencies
 }
 
 function collectCssImporters(

@@ -82,3 +82,12 @@ export function resolveVueSfcScriptSignature(source: string, filename: string) {
 
   return hashPayload(buildScriptDescriptorPayload(descriptor, filename))
 }
+
+export function resolveVueSfcHasTemplate(source: string, filename: string) {
+  const { descriptor, errors } = parse(source, { filename })
+  if (errors.length) {
+    return undefined
+  }
+
+  return Boolean(descriptor.template?.content.trim())
+}

@@ -31,10 +31,10 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     && hmrState
     && !isAppVueHmrUpdate
     && !hmrState.didEmitAllEntries
-    && hmrState.lastEmittedEntryIds.size > 0,
+    && (hmrState.lastHmrEntryIds?.size ?? hmrState.lastEmittedEntryIds?.size ?? 0) > 0,
   )
   const emittedEntryIds = shouldFilterHmrEntries && hmrState
-    ? hmrState.lastEmittedEntryIds
+    ? (hmrState.lastHmrEntryIds?.size ? hmrState.lastHmrEntryIds : hmrState.lastEmittedEntryIds)
     : undefined
 
   return {

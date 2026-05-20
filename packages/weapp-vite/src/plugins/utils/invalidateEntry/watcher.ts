@@ -158,7 +158,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       let derivedEvent: ChangeEvent | undefined
 
       if (exists) {
-        derivedEvent = wasKnown ? 'update' : 'create'
+        derivedEvent = wasKnown || isReady ? 'update' : 'create'
         knownSidecarFiles.add(resolved)
       }
       else if (wasKnown) {

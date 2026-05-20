@@ -224,6 +224,7 @@ interface RuntimeLogMeta {
   entries: RuntimeLogEntry[]
   stats: RuntimeLogStats
   dispose: () => void
+  reset: () => void
   closed: boolean
   closeWrapped: boolean
 }
@@ -463,6 +464,13 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     dispose() {
       miniProgram.removeListener('console', onConsole)
       miniProgram.removeListener('exception', onException)
+    },
+    reset() {
+      entries.length = 0
+      stats.warn = 0
+      stats.error = 0
+      stats.exception = 0
+      stats.total = 0
     },
     closed: false,
     closeWrapped: false,
@@ -1241,6 +1249,11 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   return miniProgram
 }
 
+function resetMiniProgramRuntimeLogs(miniProgram: any) {
+  const meta = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
+  meta?.reset()
+}
+
 async function resolveCurrentPageAfterWarmupFailure(miniProgram: any, route: string, error: unknown, project: string) {
   if (typeof miniProgram.currentPage !== 'function') {
     return undefined
@@ -1893,6 +1906,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 refreshProject: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
               })
               await compileMiniProgramProject(withRuntimeLogs, project)
+              resetMiniProgramRuntimeLogs(withRuntimeLogs)
             }
             if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup(skipWarmup)) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)

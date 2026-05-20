@@ -10,6 +10,7 @@ const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
+const stabilizeWevuRuntimeChunkAccessMock = vi.hoisted(() => vi.fn())
 const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../runtime/chunkStrategy', () => ({
@@ -42,6 +43,7 @@ vi.mock('../helpers', () => ({
   refreshModuleGraph: refreshModuleGraphMock,
   refreshSharedChunkImporters: vi.fn(),
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+  stabilizeWevuRuntimeChunkAccess: stabilizeWevuRuntimeChunkAccessMock,
   syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
 }))
 

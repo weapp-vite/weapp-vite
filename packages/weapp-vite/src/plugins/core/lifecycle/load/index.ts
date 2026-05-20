@@ -27,7 +27,7 @@ import {
 export { createOptionsHook } from './options'
 
 export function createLoadHook(state: CorePluginState) {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, resolvedEntryMap } = state
   const { configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
   const weapiResolution = { checked: false, available: false }
@@ -112,6 +112,9 @@ export function createLoadHook(state: CorePluginState) {
     if (relativeBasename === resolveRootEntryBasename(state)) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
+      if (configService.isDev && sourceId && !sourceId.startsWith('\0')) {
+        resolvedEntryMap.set(sourceId, { id: sourceId } as any)
+      }
       const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
         ? resolveRequestGlobalsTargetsForCode((result as any).code, sourceId, injectRequestGlobalsOptions)
         : injectRequestGlobalsOptions?.targets ?? []

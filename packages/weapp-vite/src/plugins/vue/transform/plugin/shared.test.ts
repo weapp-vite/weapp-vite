@@ -673,6 +673,26 @@ describe('vue transform plugin shared helpers', () => {
     expect(output.map?.sources).toEqual(['index.vue'])
   })
 
+  it('passes hmr style token into transform entry style requests', () => {
+    finalizeTransformEntryCode({
+      result: {
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      styleBlocks: [{ content: '.page{}' }] as any,
+      isPage: true,
+      isApp: false,
+      isDev: true,
+      hmrStyleToken: 7,
+    })
+
+    expect(buildWeappVueStyleRequestsMock).toHaveBeenCalledWith(
+      '/project/src/pages/home/index.vue',
+      [{ content: '.page{}' }],
+      { hmrToken: 7 },
+    )
+  })
+
   it('skips resolver-based page feature injection without direct page hook hints', async () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,
@@ -882,6 +902,7 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:scoped-slot',
       pluginCtx: {},
+      ctx: {} as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -894,6 +915,7 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:style',
       pluginCtx: {},
+      ctx: {} as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -909,6 +931,7 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:none',
       pluginCtx: {},
+      ctx: {} as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -979,6 +1002,8 @@ console.log(pages, routeSubPackages)
       result,
       source: '<template />',
       isPage: true,
+      autoRoutesSignature: undefined,
+      refreshToken: 0,
     })
     expect(scopedSlotEmitter).toHaveBeenCalledWith(
       pluginCtx,

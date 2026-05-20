@@ -20,7 +20,7 @@ import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, 
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
-  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
+  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
@@ -61,6 +61,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       return await loadTransformStyleBlock({
         id,
         pluginCtx: this,
+        ctx,
         configService: ctx.configService,
         styleBlocksCache,
         loadScopedSlotModule: (id) => {

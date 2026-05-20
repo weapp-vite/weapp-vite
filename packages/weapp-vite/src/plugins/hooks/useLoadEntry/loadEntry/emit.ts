@@ -94,6 +94,7 @@ interface EmitEntryOutputOptions {
   resolvedEntryMap: Map<string, ResolvedId>
   loadedEntrySet: Set<string>
   dirtyEntrySet: Set<string>
+  forceEmitEntrySet?: Set<string>
   replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
@@ -127,6 +128,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     resolvedEntryMap,
     loadedEntrySet,
     dirtyEntrySet,
+    forceEmitEntrySet,
     replaceLayoutDependencies,
     emitEntriesChunks,
     registerJsonAsset,
@@ -285,13 +287,15 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
     }
 
+    const isForcedEntry = forceEmitEntrySet?.has(entry) === true
+      || forceEmitEntrySet?.has(normalizedResolvedId) === true
     const isDirtyEntry = dirtyEntrySet.has(normalizedResolvedId)
-    if (!isDirtyEntry && loadedEntrySet.has(normalizedResolvedId)) {
+    if (!isDirtyEntry && !isForcedEntry && loadedEntrySet.has(normalizedResolvedId)) {
       continue
     }
 
     pendingResolvedIds.push(resolvedId)
-    if (isDirtyEntry) {
+    if (isDirtyEntry || isForcedEntry) {
       dirtyEntrySet.delete(normalizedResolvedId)
     }
   }

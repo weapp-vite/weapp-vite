@@ -36,6 +36,7 @@ const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
+const emitStyleSidecarAssetMock = vi.hoisted(() => vi.fn(async () => true))
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const FULL_REQUEST_GLOBAL_TARGETS_LITERAL = JSON.stringify(FULL_REQUEST_GLOBAL_TARGETS)
@@ -58,6 +59,10 @@ vi.mock('../../utils/wxmlEmit', () => ({
   emitWxmlAssetsWithCache: emitWxmlAssetsWithCacheMock,
 }))
 
+vi.mock('../../css', () => ({
+  emitStyleSidecarAsset: emitStyleSidecarAssetMock,
+}))
+
 vi.mock('../helpers', () => ({
   emitJsonAssets: emitJsonAssetsMock,
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
@@ -67,6 +72,7 @@ vi.mock('../helpers', () => ({
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+  stabilizeWevuRuntimeChunkAccess: vi.fn(),
   syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
 }))
 
@@ -152,7 +158,7 @@ describe('core lifecycle emit hook extra branches', () => {
     flushIndependentBuildsMock.mockResolvedValue(undefined)
   })
 
-  it('creates renderStart runtime and stores watch files snapshot', () => {
+  it('creates renderStart runtime and stores watch files snapshot', async () => {
     emitWxmlAssetsWithCacheMock.mockImplementationOnce(({ runtime }) => {
       runtime.addWatchFile?.('foo\\\\bar//main.wxml')
       runtime.emitFile({ type: 'asset', fileName: 'a.wxml', source: '<view />' })
@@ -164,7 +170,7 @@ describe('core lifecycle emit hook extra branches', () => {
     const emitFile = vi.fn()
     const hook = createRenderStartHook(state)
 
-    hook.call({
+    await hook.call({
       addWatchFile,
       emitFile,
     })
@@ -177,6 +183,38 @@ describe('core lifecycle emit hook extra branches', () => {
       source: '<view />',
     })
     expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
+  })
+
+  it('emits changed style sidecar assets during metadata-only hmr', async () => {
+    const state = createState({
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                file: '/project/src/pages/hmr/index.wxss',
+                dirtyReasonSummary: ['style-sidecar:1'],
+              },
+            },
+          },
+          wxml: {
+            emittedCode: new Map(),
+          },
+        },
+      },
+    })
+    const hook = createRenderStartHook(state)
+    const emitFile = vi.fn()
+
+    await hook.call({ emitFile })
+
+    expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
+      state.ctx,
+      expect.objectContaining({ emitFile }),
+      {},
+      '/project/src/pages/hmr/index.wxss',
+    )
+    expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
@@ -201,6 +239,138 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
     expect(refreshModuleGraphMock).not.toHaveBeenCalled()
+  })
+
+  it('drops js chunks during metadata-only dev hmr to keep stable shared chunks on disk', async () => {
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+      },
+      hmrState: {
+        hasBuiltOnce: true,
+        skipSharedChunkRefresh: true,
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'Object.defineProperty(exports, "onlyFresh", { get: function() { return onlyFresh } })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/hmr/index.json': {
+        type: 'asset',
+        fileName: 'pages/hmr/index.json',
+        source: '{}',
+      },
+      'pages/hmr/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/hmr/index.wxml',
+        source: '<view />',
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js']).toBeUndefined()
+    expect(bundle['pages/hmr/index.json']).toBeDefined()
+    expect(bundle['pages/hmr/index.wxml']).toBeDefined()
+    expect(refreshSharedChunkImportersMock).not.toHaveBeenCalled()
+    expect(refreshPartialSharedChunkImportersMock).not.toHaveBeenCalled()
+  })
+
+  it('drops incomplete stable shared chunks during partial dev hmr rebuilds', async () => {
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['pages/hmr/index.ts']),
+      },
+      hmrSharedChunkImporters: new Map([
+        ['common.js', new Set(['app.ts', 'pages/hmr/index.ts'])],
+        ['weapp-vendors/wevu-src.js', new Set(['pages/runtime/index.ts', 'pages/hmr/index.ts'])],
+      ]),
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/hmr/index.js',
+        code: 'exports.default = {}',
+        imports: ['../../common.js'],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'Object.defineProperty(exports, "initStoreManager", { get: function() { return initStoreManager } })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: 'Object.defineProperty(exports, "T", { get: function() { return T } })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/hmr/index.js']).toBeDefined()
+    expect(bundle['common.js']).toBeUndefined()
+    expect(bundle['weapp-vendors/wevu-src.js']).toBeUndefined()
+    expect(refreshPartialSharedChunkImportersMock).toHaveBeenCalledWith(
+      bundle,
+      state,
+      state.hmrState.lastEmittedEntryIds,
+    )
+  })
+
+  it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {
+    const emittedEntryIds = new Set(['pages/runtime/index.ts', 'pages/hmr/index.ts'])
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: emittedEntryIds,
+      },
+      hmrSharedChunkImporters: new Map([
+        ['weapp-vendors/wevu-src.js', new Set(emittedEntryIds)],
+      ]),
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: 'Object.defineProperty(exports, "Fn", { get: function() { return Fn } })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
   })
 
   it('handles shared/runtime chunk diagnostics and watcher service watch files', async () => {

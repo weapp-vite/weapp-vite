@@ -82,7 +82,7 @@ export function createTransformStageMeasurer(vueTransformTiming: ((payload: {
   }
 }
 
-export async function inlineTransformAutoRoutes(options: {
+export async function resolveTransformAutoRoutesSource(options: {
   source: string
   autoRoutesService?: {
     ensureFresh?: () => Promise<void>
@@ -91,11 +91,15 @@ export async function inlineTransformAutoRoutes(options: {
       entries?: unknown[]
       subPackages?: unknown[]
     } | undefined
+    getSignature?: () => string | undefined
   }
 }) {
   const { source, autoRoutesService } = options
   if (!mayNeedInlineAutoRoutes(source)) {
-    return source
+    return {
+      source,
+      signature: undefined,
+    }
   }
 
   AUTO_ROUTES_DYNAMIC_IMPORT_RE.lastIndex = 0
@@ -108,9 +112,10 @@ export async function inlineTransformAutoRoutes(options: {
     entries: routesRef?.entries ?? [],
     subPackages: routesRef?.subPackages ?? [],
   }
+  const signature = autoRoutesService?.getSignature?.()
 
   let importReplacementIndex = 0
-  return source
+  const transformedSource = source
     .split('\n')
     .map((line) => {
       const replaced = resolveInlineAutoRoutesImport(line, inlineRoutes, importReplacementIndex)
@@ -122,4 +127,24 @@ export async function inlineTransformAutoRoutes(options: {
     })
     .join('\n')
     .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
+
+  return {
+    source: transformedSource,
+    signature,
+  }
+}
+
+export async function inlineTransformAutoRoutes(options: {
+  source: string
+  autoRoutesService?: {
+    ensureFresh?: () => Promise<void>
+    getReference?: () => {
+      pages?: unknown[]
+      entries?: unknown[]
+      subPackages?: unknown[]
+    } | undefined
+    getSignature?: () => string | undefined
+  }
+}) {
+  return (await resolveTransformAutoRoutesSource(options)).source
 }

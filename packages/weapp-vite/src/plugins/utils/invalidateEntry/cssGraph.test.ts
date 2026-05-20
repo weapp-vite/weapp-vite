@@ -172,7 +172,7 @@ describe('invalidateEntry cssGraph', () => {
     const external = '/project/src/pages/index/external.css'
     const global = '/project/src/styles/global.scss'
 
-    syncVueSfcStyleDependencies(ctx, vueFile, [
+    const dependencies = syncVueSfcStyleDependencies(ctx, vueFile, [
       {
         content: '@import "./hello.css";\n@import "@/styles/global.scss";',
       },
@@ -182,6 +182,14 @@ describe('invalidateEntry cssGraph', () => {
       },
     ] as any)
 
+    expect(dependencies).toEqual(new Set([
+      hello,
+      hello.slice(0, -'.css'.length),
+      global,
+      global.slice(0, -'.scss'.length),
+      external,
+      external.slice(0, -'.css'.length),
+    ]))
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toEqual(new Set([vueFile]))
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello.slice(0, -'.css'.length))).toEqual(new Set([vueFile]))
     expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toEqual(new Set([vueFile]))

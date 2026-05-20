@@ -1,5 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLoadEntry } from './index'
+
+const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
+
+vi.mock('./loadEntry', () => ({
+  createEntryLoader: vi.fn(() => Object.assign(loadEntryMock, {
+    invalidateResolveCache: vi.fn(),
+  })),
+}))
 
 function createContext() {
   return {
@@ -61,6 +69,10 @@ function seedResolvedEntries(
 }
 
 describe('useLoadEntry emitDirtyEntries', () => {
+  beforeEach(() => {
+    loadEntryMock.mockClear()
+  })
+
   it('reuses runtimeState-backed hmr containers across hook creation', () => {
     const ctx = createContext()
     const first = useLoadEntry(ctx, {})
@@ -109,6 +121,32 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
     expect(hook.dirtyEntrySet.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
+  })
+
+  it('marks shared chunk refresh as skipped when no dirty entries exist', async () => {
+    const ctx = createContext()
+    const setDidEmitAllEntries = vi.fn()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    const setSkipSharedChunkRefresh = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        setDidEmitAllEntries,
+        setLastEmittedEntries,
+        setLastHmrEntries,
+        setSkipSharedChunkRefresh,
+      },
+    })
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set())
+    expect(setSkipSharedChunkRefresh).toHaveBeenLastCalledWith(true)
   })
 
   it('falls back to full when shared chunk is only partially updated', async () => {
@@ -229,11 +267,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const setDidEmitAllEntries = vi.fn()
     const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         setDidEmitAllEntries,
         setLastEmittedEntries,
+        setLastHmrEntries,
       },
     })
 
@@ -245,6 +285,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set())
   })
 
   it('expands dependency-driven updates across all affected shared chunk importers', async () => {
@@ -298,10 +339,12 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-src.js)+2:direct'])
   })
 
-  it('keeps direct entry updates incremental across bounded source shared chunk importers', async () => {
+  it('expands direct entry updates across stable root shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const setDidEmitAllEntries = vi.fn()
+    const setLastEmittedEntries = vi.fn()
     const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
@@ -309,6 +352,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
         sharedChunkImporters,
         sharedChunksByEntry,
         sourceSharedChunks,
+        setDidEmitAllEntries,
+        setLastEmittedEntries,
       },
     })
 
@@ -322,11 +367,79 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(true)
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:direct'])
   })
 
-  it('keeps direct page template edits incremental across source shared chunks used by layout dependencies', async () => {
+  it('records only actual chunk emits when root inputs participate in stable shared chunks', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const setDidEmitAllEntries = vi.fn()
+    const setLastEmittedEntries = vi.fn()
+    const sourceSharedChunks = new Set<string>()
+    const rootInputIds = new Set(['/project/src/app.ts'])
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+        rootInputIds,
+        setDidEmitAllEntries,
+        setLastEmittedEntries,
+      },
+    })
+
+    const ids = ['/project/src/app.ts', '/project/src/a.js', '/project/src/b.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[1], new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[1], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(true)
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
+  })
+
+  it('expands stable root shared chunk updates to the app entry', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const setDidEmitAllEntries = vi.fn()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+        setDidEmitAllEntries,
+      },
+    })
+
+    const ids = ['/project/src/app.ts', '/project/src/pages/hmr/index.ts', '/project/src/pages/layouts/index.ts']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[1], new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[1], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(true)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:direct'])
+  })
+
+  it('expands direct page template edits across stable vendor chunks even when they contain source modules', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -345,20 +458,20 @@ describe('useLoadEntry emitDirtyEntries', () => {
     sharedChunkImporters.set('weapp-vendors/wevu-ref.js', new Set(ids))
     sharedChunksByEntry.set(ids[0], new Set(['weapp-vendors/wevu-ref.js']))
     sourceSharedChunks.add('weapp-vendors/wevu-ref.js')
-    ctx.runtimeState.build.hmr.entryLayoutDependencies.set(ids[0], new Set([ids[1], ids[2]]))
     hook.markEntryDirty(ids[0], 'direct')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-ref.js)+2:direct'])
   })
 
-  it('keeps large direct importer sets incremental for source-only edits', async () => {
+  it('keeps large direct importer sets incremental for source-only nested chunks', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
+    const setDidEmitAllEntries = vi.fn()
     const sourceSharedChunks = new Set<string>()
     const hook = useLoadEntry(ctx, {
       hmr: {
@@ -366,20 +479,22 @@ describe('useLoadEntry emitDirtyEntries', () => {
         sharedChunkImporters,
         sharedChunksByEntry,
         sourceSharedChunks,
+        setDidEmitAllEntries,
       },
     })
 
     const ids = Array.from({ length: 130 }, (_, index) => `/project/src/page-${index}.js`)
     seedResolvedEntries(hook.resolvedEntryMap, ids)
-    sharedChunkImporters.set('common.js', new Set(ids))
-    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
-    sourceSharedChunks.add('common.js')
+    sharedChunkImporters.set('src/shared/common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['src/shared/common.js']))
+    sourceSharedChunks.add('src/shared/common.js')
     hook.markEntryDirty(ids[0], 'direct')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
@@ -408,7 +523,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:dependency'])
   })
 
-  it('keeps direct entry updates incremental even when source shared chunk ownership is incomplete', async () => {
+  it('expands direct entry updates across stable vendor chunks even when source chunk ownership is incomplete', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -432,11 +547,41 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(20)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(wevu-ref.js)+19:direct'])
+  })
+
+  it('keeps metadata entry updates incremental across nested source shared chunk importers', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+      },
+    })
+
+    const ids = ['/project/src/a.vue', '/project/src/b.vue', '/project/src/c.vue']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('src/shared/common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['src/shared/common.js']))
+    sourceSharedChunks.add('src/shared/common.js')
+    hook.markEntryDirty(ids[0], 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
+    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
-  it('keeps metadata entry updates incremental across source shared chunk importers', async () => {
+  it('keeps metadata entry updates incremental across stable root shared chunks', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -460,11 +605,13 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
+    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
-  it('keeps metadata entry updates incremental across non-source vendor shared chunk importers', async () => {
+  it('keeps metadata entry updates incremental across stable vendor chunks', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -485,8 +632,108 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
+    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+  })
+
+  it('reloads metadata entries through loadEntry so JSON assets refresh without JS chunk emit', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['json-sidecar:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const id = '/project/src/components/x-child/index.ts'
+    hook.entriesMap.set(id, {
+      type: 'component',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'component')
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+    expect(hook.loadedEntrySet.has(id)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
+  })
+
+  it('reloads style sidecar metadata through loadEntry without JS chunk emit', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['style-sidecar:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const id = '/project/src/components/x-child/index.ts'
+    hook.entriesMap.set(id, {
+      type: 'component',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'component')
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+  })
+
+  it('reloads Vue entry local asset metadata through loadEntry without JS chunk emit', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['entry-local-asset:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const id = '/project/src/pages/hmr-sfc/index.vue'
+    hook.entriesMap.set(id, {
+      type: 'page',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([id]))
   })
 
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {

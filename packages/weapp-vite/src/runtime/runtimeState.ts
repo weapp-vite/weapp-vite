@@ -111,9 +111,12 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
+      vueEntryHasTemplate: Map<string, boolean>
       vueEntryNonJsonSignatures: Map<string, string>
       vueEntryScriptSignatures: Map<string, string>
+      dirtyVueEntryIds: Set<string>
       didEmitAllEntries: boolean
+      lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
       recentProfiles: Array<{
         timestamp?: string
@@ -241,9 +244,12 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
+        vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntryNonJsonSignatures: new Map<string, string>(),
         vueEntryScriptSignatures: new Map<string, string>(),
+        dirtyVueEntryIds: new Set<string>(),
         didEmitAllEntries: false,
+        lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),
         recentProfiles: [],
         profile: {},

@@ -34,6 +34,8 @@ export function createOptionsHook(state: CorePluginState) {
 
   return async function options(options: any) {
     state.pendingIndependentBuilds = []
+    state.hmrRootInputIds ??= new Set<string>()
+    state.hmrRootInputIds.clear()
     let scannedInput: Record<string, string>
 
     if (subPackageMeta) {
@@ -119,5 +121,11 @@ export function createOptionsHook(state: CorePluginState) {
     }
 
     options.input = scannedInput
+    for (const input of Object.values(scannedInput)) {
+      const normalized = normalizeFsResolvedId(input)
+      if (normalized) {
+        state.hmrRootInputIds.add(normalized)
+      }
+    }
   }
 }
