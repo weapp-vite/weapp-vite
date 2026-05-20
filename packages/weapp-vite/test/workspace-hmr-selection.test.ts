@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  collectWorkspaceHmrTopSlowScenarios,
   isAuditableScriptEntry,
   readWorkspaceHmrPollingMode,
   readWorkspaceHmrScope,
@@ -65,6 +66,56 @@ async function fsMkdtemp(prefix: string) {
 }
 
 describe('workspace HMR changed-file selection', () => {
+  it('sorts top slow HMR scenarios for reports', () => {
+    const results: ProjectResult[] = [
+      {
+        ...templateResult,
+        id: 'apps/fast',
+        scenarios: [
+          {
+            ...templateResult.scenarios[0],
+            id: 'fast-template',
+            totalMs: 120,
+            profile: {
+              buildCoreMs: 100,
+              pendingCount: 1,
+              emittedCount: 1,
+            },
+          },
+        ],
+      },
+      {
+        ...githubIssuesResult,
+        id: 'apps/slow',
+        startupMs: 2_000,
+        scenarios: [
+          {
+            ...githubIssuesResult.scenarios[0],
+            id: 'slow-template',
+            totalMs: 800,
+            profile: {
+              transformMs: 600,
+              pendingCount: 2,
+              emittedCount: 2,
+            },
+          },
+        ],
+      },
+    ]
+
+    expect(collectWorkspaceHmrTopSlowScenarios(results, 1)).toMatchObject([
+      {
+        project: 'apps/slow',
+        startupMs: 2_000,
+        topPhase: 'transform',
+        topPhaseMs: 600,
+        scenario: {
+          id: 'slow-template',
+        },
+      },
+    ])
+  })
+
   it('skips component barrel scripts without sidecar component assets', async () => {
     expect(isAuditableScriptEntry('/project/src', '/project/src/components/index.ts')).toBe(false)
     expect(isAuditableScriptEntry('/project/src', '/project/src/pages/index/index.ts')).toBe(true)

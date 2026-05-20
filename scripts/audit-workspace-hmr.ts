@@ -1270,6 +1270,30 @@ interface WorkspaceHmrReportSummary {
   failedProjects: string[]
 }
 
+interface WorkspaceHmrFinding {
+  project: string
+  scenario?: string
+  metric: string
+  value: string
+  suggestion: string
+}
+
+interface WorkspaceHmrSlowScenario {
+  project: string
+  scenario: ScenarioResult
+  startupMs?: number
+  topPhase: string
+  topPhaseMs?: number
+}
+
+const FINDING_MAX_ROWS = 12
+const SLOW_SCENARIO_MAX_ROWS = 8
+const SLOW_STARTUP_MS = 10_000
+const SLOW_SCENARIO_MS = 1_000
+const HIGH_PENDING_COUNT = 12
+const HIGH_EMITTED_COUNT = 12
+const HIGH_IMPACT_FILE_COUNT = 8
+
 function summarizeProjectResults(results: ProjectResult[]): WorkspaceHmrReportSummary {
   const measuredScenarioMs = results
     .flatMap(project => project.scenarios.map(scenario => scenario.totalMs))
@@ -1310,12 +1334,154 @@ function formatDuration(value: number | undefined) {
   return value == null ? '-' : `${formatMetric(value)}ms`
 }
 
+export function collectWorkspaceHmrTopSlowScenarios(results: ProjectResult[], limit = SLOW_SCENARIO_MAX_ROWS): WorkspaceHmrSlowScenario[] {
+  return results
+    .flatMap(project => project.scenarios
+      .filter(scenario => typeof scenario.totalMs === 'number')
+      .map((scenario) => {
+        const topPhase = dominantPhaseMetric(scenario)
+        return {
+          project: project.id,
+          scenario,
+          startupMs: project.startupMs,
+          topPhase: topPhase.phase,
+          topPhaseMs: topPhase.ms,
+        }
+      }))
+    .sort((left, right) => (right.scenario.totalMs ?? 0) - (left.scenario.totalMs ?? 0))
+    .slice(0, limit)
+}
+
+function collectActionableFindings(results: ProjectResult[], summary: WorkspaceHmrReportSummary): WorkspaceHmrFinding[] {
+  const findings: WorkspaceHmrFinding[] = []
+  const slowScenarioLimit = Math.max(SLOW_SCENARIO_MS, summary.scenarioP95Ms ?? 0)
+
+  for (const project of results) {
+    if (project.error) {
+      findings.push({
+        project: project.id,
+        metric: 'project-error',
+        value: project.error,
+        suggestion: '先检查项目启动、入口发现和初始 dist 产物；若是审计误选入口，收紧场景发现规则。',
+      })
+    }
+    if ((project.startupMs ?? 0) > SLOW_STARTUP_MS) {
+      findings.push({
+        project: project.id,
+        metric: 'startupMs',
+        value: formatDuration(project.startupMs),
+        suggestion: '启动阶段偏慢，优先检查依赖扫描、Tailwind/Vite 插件初始化和首轮 dist 稳定等待。',
+      })
+    }
+
+    for (const scenario of project.scenarios) {
+      if (scenario.error) {
+        findings.push({
+          project: project.id,
+          scenario: scenario.id,
+          metric: 'scenario-error',
+          value: scenario.error,
+          suggestion: '先确认源文件 mutation 是否命中真实产物，再检查 profile 样本归因。',
+        })
+      }
+      if ((scenario.totalMs ?? 0) > slowScenarioLimit) {
+        findings.push({
+          project: project.id,
+          scenario: scenario.id,
+          metric: 'totalMs',
+          value: formatDuration(scenario.totalMs),
+          suggestion: dominantPhaseSuggestion(scenario),
+        })
+      }
+      if ((scenario.profile?.pendingCount ?? 0) > HIGH_PENDING_COUNT || (scenario.profile?.emittedCount ?? 0) > HIGH_EMITTED_COUNT) {
+        findings.push({
+          project: project.id,
+          scenario: scenario.id,
+          metric: 'pending/emitted',
+          value: `${scenario.profile?.pendingCount ?? '-'} / ${scenario.profile?.emittedCount ?? '-'}`,
+          suggestion: sharedChunkSuggestion(scenario),
+        })
+      }
+      if ((scenario.impact?.length ?? 0) > HIGH_IMPACT_FILE_COUNT) {
+        findings.push({
+          project: project.id,
+          scenario: scenario.id,
+          metric: 'impactFiles',
+          value: String(scenario.impact?.length ?? 0),
+          suggestion: '影响文件偏多，检查入口依赖是否触发共享 chunk、全局配置或多分包产物刷新。',
+        })
+      }
+    }
+  }
+
+  return findings
+    .sort((left, right) => findingSeverity(right) - findingSeverity(left))
+    .slice(0, FINDING_MAX_ROWS)
+}
+
+function findingSeverity(finding: WorkspaceHmrFinding) {
+  const parsed = Number.parseFloat(finding.value)
+  const numeric = Number.isFinite(parsed) ? parsed : 0
+  if (finding.metric === 'project-error' || finding.metric === 'scenario-error') {
+    return 1_000_000
+  }
+  if (finding.metric === 'totalMs' || finding.metric === 'startupMs') {
+    return numeric
+  }
+  if (finding.metric === 'pending/emitted') {
+    return 500 + numeric
+  }
+  return numeric
+}
+
+function dominantPhaseSuggestion(scenario: ScenarioResult) {
+  const { phase } = dominantPhaseMetric(scenario)
+
+  if (phase === 'transform') {
+    return 'transform 阶段偏慢，优先检查 Vue/SFC 编译、Tailwind 类扫描和脚本依赖转换。'
+  }
+  if (phase === 'write') {
+    return '写盘阶段偏慢，检查 impact 文件数量、dist 输出体积和是否存在无关产物刷新。'
+  }
+  if (phase === 'emit') {
+    return 'emit 阶段偏慢，检查入口数量、组件自动导入和额外资产发射。'
+  }
+  return 'build 阶段偏慢，优先检查共享 chunk 影响面、页面依赖图和 Vite/Rolldown 增量缓存。'
+}
+
+function dominantPhaseMetric(scenario: ScenarioResult) {
+  const profile = scenario.profile
+  const phases = [
+    ['build', profile?.buildCoreMs],
+    ['transform', profile?.transformMs],
+    ['write', profile?.writeMs],
+    ['emit', profile?.emitMs],
+  ] as const
+  const [phase, ms] = phases
+    .filter((item): item is [typeof phases[number][0], number] => typeof item[1] === 'number')
+    .sort((left, right) => right[1] - left[1])[0] ?? ['total', scenario.totalMs]
+
+  return {
+    phase,
+    ms,
+  }
+}
+
+function sharedChunkSuggestion(scenario: ScenarioResult) {
+  const reasons = scenario.profile?.pendingReasonSummary ?? []
+  if (reasons.some(reason => reason.startsWith('shared-chunk('))) {
+    return '共享 chunk 扩展导致影响面偏大；可先确认项目是否能接受 `weapp.hmr.sharedChunks: "off"` 的开发态速度取舍，默认 `auto` 更偏正确性。'
+  }
+  return 'pending/emitted 偏高，检查 dirty reason、自动路由/layout 传播或是否发生全量入口刷新。'
+}
+
 async function writeGitHubStepSummary(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string) {
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
   if (!summaryPath) {
     return
   }
   const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
+  const slowScenarios = collectWorkspaceHmrTopSlowScenarios(results, 5)
   const lines = [
     '## Workspace HMR Audit',
     '',
@@ -1330,13 +1496,30 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
     `- report json: ${formatReportPath(reportJsonPath)}`,
     `- thresholds: ${formatReportPath(thresholdMdPath)}`,
     '',
-    thresholdMarkdown,
-    '',
   ]
+  if (slowScenarios.length) {
+    lines.push('### Top Slow Scenarios', '')
+    lines.push('| project | scenario | total | startup | pending/emitted | top phase |')
+    lines.push('| --- | --- | ---: | ---: | ---: | --- |')
+    for (const item of slowScenarios) {
+      lines.push([
+        item.project,
+        item.scenario.id,
+        formatDuration(item.scenario.totalMs),
+        formatDuration(item.startupMs),
+        `${item.scenario.profile?.pendingCount ?? '-'} / ${item.scenario.profile?.emittedCount ?? '-'}`,
+        `${item.topPhase} ${formatDuration(item.topPhaseMs)}`,
+      ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
+    }
+    lines.push('')
+  }
+  lines.push(thresholdMarkdown, '')
   await appendFile(summaryPath, `${lines.join('\n')}\n`, 'utf8')
 }
 
 function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string) {
+  const findings = collectActionableFindings(results, summary)
+  const slowScenarios = collectWorkspaceHmrTopSlowScenarios(results)
   const lines = [
     '# Workspace HMR Audit',
     '',
@@ -1374,6 +1557,46 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
   }
   lines.push('')
+  lines.push('## Top Slow Scenarios', '')
+  if (!slowScenarios.length) {
+    lines.push('No measured scenarios.', '')
+  }
+  else {
+    lines.push('| project | scenario | total | observed | startup | pending/emitted | impact | top phase | suggestion |')
+    lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |')
+    for (const item of slowScenarios) {
+      lines.push([
+        item.project,
+        item.scenario.id,
+        formatDuration(item.scenario.totalMs),
+        formatDuration(item.scenario.observedMs),
+        formatDuration(item.startupMs),
+        `${item.scenario.profile?.pendingCount ?? '-'} / ${item.scenario.profile?.emittedCount ?? '-'}`,
+        String(item.scenario.impact?.length ?? 0),
+        `${item.topPhase} ${formatDuration(item.topPhaseMs)}`,
+        dominantPhaseSuggestion(item.scenario),
+      ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
+    }
+    lines.push('')
+  }
+  lines.push('## Actionable Findings', '')
+  if (!findings.length) {
+    lines.push('No actionable HMR findings detected by the report heuristics.', '')
+  }
+  else {
+    lines.push('| project | scenario | metric | value | suggestion |')
+    lines.push('| --- | --- | --- | ---: | --- |')
+    for (const finding of findings) {
+      lines.push([
+        finding.project,
+        finding.scenario ?? '-',
+        finding.metric,
+        finding.value,
+        finding.suggestion,
+      ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
+    }
+    lines.push('')
+  }
   for (const project of results) {
     lines.push(`## ${project.id}`, '')
     if (project.error) {
