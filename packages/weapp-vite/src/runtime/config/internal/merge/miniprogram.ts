@@ -128,7 +128,10 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     ? resolveNpmBuildCandidateDependenciesSync(ctx, packageJson)
     : []
   if (npmBuildCandidates.length > 0) {
-    const builtinAliases = resolveBuiltinPackageAliases()
+    const builtinAliases = resolveBuiltinPackageAliases({
+      isDev,
+      wevuRuntime: config.weapp?.wevu?.runtime,
+    })
     external.push(
       ...npmBuildCandidates.map((pkg) => {
         return new RegExp(`^${escapeRegex(pkg)}(\\/|$)`)

@@ -78,7 +78,7 @@ export async function finalizeCompiledVueLikeResult(options: {
   if (isPage && result.script) {
     const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
       checkMtime: configService.isDev,
-      minify: isWevuMinifyEnabled(configService.weappViteConfig),
+      minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
     })
     if (injected.transformed) {
       result.script = injected.code

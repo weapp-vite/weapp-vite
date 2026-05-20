@@ -6,7 +6,7 @@ export interface AliasEntry {
 }
 
 export interface AliasManager {
-  injectBuiltinAliases: (config: InlineConfig) => void
+  injectBuiltinAliases: (config: InlineConfig, builtinAliases?: AliasEntry[]) => void
 }
 
 type RawAliasOption = NonNullable<NonNullable<InlineConfig['resolve']>['alias']>
@@ -28,9 +28,9 @@ export function normalizeAliasOptions(alias?: RawAliasOption | null): AliasEntry
 
 export function createAliasManager(
   oxcAlias: AliasEntry & { find: RegExp },
-  builtinAliases: AliasEntry[],
+  defaultBuiltinAliases: AliasEntry[],
 ): AliasManager {
-  function injectBuiltinAliases(config: InlineConfig) {
+  function injectBuiltinAliases(config: InlineConfig, builtinAliases: AliasEntry[] = defaultBuiltinAliases) {
     const resolve = config.resolve ?? (config.resolve = {})
     const aliasArray = normalizeAliasOptions(resolve.alias)
 

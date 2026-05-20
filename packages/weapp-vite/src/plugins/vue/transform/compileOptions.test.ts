@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCompileVueFileOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -19,7 +19,7 @@ const createUsingComponentPathResolverMock = vi.hoisted(() => vi.fn(() => 'resol
 const resolveWevuDefaultsWithPresetMock = vi.hoisted(() => vi.fn(() => ({
   preset: 'default',
 })))
-const isWevuMinifyEnabledMock = vi.hoisted(() => vi.fn(() => false))
+const isWevuMinifyEnabledMock = vi.hoisted(() => vi.fn((_config: any, isDev = false) => !isDev))
 
 vi.mock('../../../logger', () => ({
   default: {
@@ -45,6 +45,10 @@ vi.mock('./wevuPreset', () => ({
 }))
 
 describe('resolveVueTemplatePlatformOptions', () => {
+  beforeEach(() => {
+    isWevuMinifyEnabledMock.mockClear()
+  })
+
   it('resolves template platform and wxs runtime support', () => {
     const weappOptions = resolveVueTemplatePlatformOptions({
       platform: 'weapp',
@@ -117,6 +121,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'alipay',
+        isDev: true,
         outputExtensions: {
           wxs: 'sjs',
         },
@@ -191,6 +196,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: true,
         outputExtensions: {},
         weappViteConfig: {
           wxs: false,
@@ -289,6 +295,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: true,
         outputExtensions: {},
         weappViteConfig: {
           vue: {
@@ -317,6 +324,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: true,
         outputExtensions: {},
         weappViteConfig: {
           vue: {
@@ -346,6 +354,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: false,
         outputExtensions: {},
         weappViteConfig: {
           vue: {
@@ -443,6 +452,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: false,
         outputExtensions: {},
         weappViteConfig: {
           vue: {
@@ -477,6 +487,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: false,
         outputExtensions: {},
         weappViteConfig: {
           wevu: {
@@ -522,6 +533,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       false,
       {
         platform: 'weapp',
+        isDev: false,
         outputExtensions: {},
         weappViteConfig: {
           wevu: {
@@ -537,6 +549,35 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.minify).toBe(true)
+    expect(isWevuMinifyEnabledMock).toHaveBeenCalledWith({
+      wevu: {
+        minify: true,
+      },
+    }, false)
+  })
+
+  it('passes dev mode to the wevu minify resolver', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: true,
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.minify).toBe(false)
+    expect(isWevuMinifyEnabledMock).toHaveBeenCalledWith({}, true)
   })
 
   it('reuses cached compile options for the same vue entry', () => {

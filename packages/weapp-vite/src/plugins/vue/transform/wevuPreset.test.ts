@@ -52,12 +52,18 @@ describe('wevu performance preset', () => {
     expect(resolved?.component?.setData?.includeComputed).toBe(false)
   })
 
-  it('defaults wevu minify to false and respects explicit flag', () => {
-    expect(isWevuMinifyEnabled({} as any)).toBe(false)
+  it('defaults wevu minify by mode and respects explicit flag', () => {
+    expect(isWevuMinifyEnabled({} as any, true)).toBe(false)
+    expect(isWevuMinifyEnabled({} as any, false)).toBe(true)
     expect(isWevuMinifyEnabled({
       wevu: {
         minify: true,
       },
-    } as any)).toBe(true)
+    } as any, true)).toBe(true)
+    expect(isWevuMinifyEnabled({
+      wevu: {
+        minify: false,
+      },
+    } as any, false)).toBe(false)
   })
 })

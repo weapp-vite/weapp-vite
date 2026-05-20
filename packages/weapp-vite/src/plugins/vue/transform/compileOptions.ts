@@ -101,7 +101,7 @@ function buildCompileVueFileOptions(
   }
   const jsonConfig = configService.weappViteConfig?.json
   const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
-  const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig)
+  const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
 
   async function resolveAutoImportComponentSourceType(match: NonNullable<ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>>) {

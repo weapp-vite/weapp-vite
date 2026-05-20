@@ -307,6 +307,10 @@ export interface WeappWevuConfig {
    * @description 默认保持当前可读输出行为，开启后仅影响 wevu 编译生成的脚本代码。
    */
   minify?: boolean
+  /**
+   * @description wevu 运行时入口版本。`auto` 表示开发模式使用 `dist/dev`，构建模式使用 `dist`。
+   */
+  runtime?: 'auto' | 'dev' | 'build'
 }
 
 export interface WeappRouteRule {

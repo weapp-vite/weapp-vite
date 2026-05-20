@@ -57,7 +57,7 @@ export async function finalizeTransformEntryScript(options: {
     if (forcePageFeatureInjection || mayNeedTransformPageFeatureInjection(result.script)) {
       const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
         checkMtime: configService.isDev,
-        minify: isWevuMinifyEnabled(configService.weappViteConfig),
+        minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
       })
       if (injected.transformed) {
         result.script = injected.code
