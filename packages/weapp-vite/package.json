@@ -129,7 +129,7 @@
     "comment-json": "catalog:",
     "fdir": "catalog:",
     "htmlparser2": "catalog:",
-    "local-pkg": "^1.1.2",
+    "local-pkg": "^1.2.0",
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
     "merge": "catalog:",

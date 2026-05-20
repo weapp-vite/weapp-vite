@@ -33,13 +33,13 @@ catalog:
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/postcss': ^4.3.0
   '@tailwindcss/vite': ^4.3.0
-  '@types/node': ^25.9.0
+  '@types/node': ^25.9.1
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.7
   '@vue/compiler-core': ^3.5.34
   '@vue/compiler-dom': ^3.5.34
-  '@vue/language-core': ^3.3.0
+  '@vue/language-core': ^3.3.1
   antd-mini: ^3.4.3
   autoprefixer: ^10.5.0
   bundle-require: ^5.1.0
@@ -47,7 +47,7 @@ catalog:
   clsx: ^2.1.1
   comment-json: ^5.0.0
   dayjs: ^1.11.20
-  echarts: ^6.0.0
+  echarts: ^6.1.0
   esbuild: ^0.28.0
   eslint: ^10.4.0
   estree-walker: ^3.0.3
@@ -55,7 +55,7 @@ catalog:
   gm-crypto: ^0.1.12
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
-  lru-cache: ^11.4.0
+  lru-cache: ^11.5.0
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
@@ -65,10 +65,10 @@ catalog:
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.15
-  rolldown: 1.0.1
+  rolldown: 1.0.2
   sass: ^1.99.0
   sass-embedded: ^1.99.0
-  stylelint: ^17.11.1
+  stylelint: ^17.12.0
   tailwind-merge: ^3.6.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.3.0
@@ -79,7 +79,7 @@ catalog:
   vite: 8.0.13
   vite-plugin-inspect: ^11.3.3
   vue: ^3.5.34
-  vue-tsc: ^3.3.0
+  vue-tsc: ^3.3.1
   weapp-tailwindcss: ^4.12.0
   zod: ^4.4.3
 
