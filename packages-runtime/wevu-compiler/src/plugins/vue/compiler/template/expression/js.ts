@@ -109,6 +109,14 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
       createThisMemberAccess('props'),
     )
   }
+  if (name === 'data') {
+    const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
+    return t.conditionalExpression(
+      t.binaryExpression('!=', propsObject, t.nullLiteral()),
+      createMemberAccess(propsObject, 'data'),
+      createThisMemberAccess('data'),
+    )
+  }
   const thisAccess = createThisMemberAccess(name)
   const propsAccess = createMemberAccess(createThisMemberAccess(WEVU_PROPS_KEY), name)
   const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
