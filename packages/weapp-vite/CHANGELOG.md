@@ -1,5 +1,29 @@
 # weapp-vite
 
+## 6.16.19
+
+### Patch Changes
+
+- 🐛 **修复页面或组件热更新时可能重复写入 `app.wxss` 的问题，避免 Vite/Tailwind 已处理的应用级样式被原始 SFC 样式覆盖，并减少无关样式产物写入。** [`10277a0`](https://github.com/weapp-vite/weapp-vite/commit/10277a050fca8547938038b8a3e97ba3697b1030) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 页面中 `definePageJson` 仅修改页面 JSON 元数据时的开发热更新路径，避免编辑器原子保存触发完整入口重建，并减少 shared chunk 相关页面的无效重发。** [`1787406`](https://github.com/weapp-vite/weapp-vite/commit/1787406482df10bad9fca668642657da80929ba7) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 页面热更新分类，页面模板和样式等不影响运行时脚本图的局部修改不再通过 shared chunk 扩散重发其它入口，提升 wevu 模板开发时的 HMR 响应速度。** [`961fb89`](https://github.com/weapp-vite/weapp-vite/commit/961fb894343e43a48f4055dc40b816bb46b03b22) by @sonofmagic
+
+- 🐛 **修复开发热更新中稳定 vendor chunk 被单个页面增量构建覆盖后，其他页面仍引用旧导出名导致小程序 IDE 运行时报错的问题。** [`6631b25`](https://github.com/weapp-vite/weapp-vite/commit/6631b2534163d762213dce86ebfbc063fb4b9885) by @sonofmagic
+
+- 🐛 **新增 scoped build 配置和 CLI 参数，支持通过 `weapp.buildScope` 或 `wv dev/build --scope` 只构建主包与指定分包，并同步裁剪自动路由、typed router、分包声明、preloadRule 与开发态监听范围。** [#596](https://github.com/weapp-vite/weapp-vite/pull/596) by @sonofmagic
+
+- 🐛 **为 `weapp.wevu` 新增独立的 `minify` 与 `runtime` 开关，可按需控制 wevu 编译生成脚本是否压缩，并允许指定 wevu 运行时入口版本。`runtime` 默认使用 `auto`，开发模式走 `wevu/dist/dev` 可读入口，构建模式走默认压缩入口；显式配置为 `dev` 或 `build` 时会覆盖该自动选择。** [#594](https://github.com/weapp-vite/weapp-vite/pull/594) by @sonofmagic
+
+- 🐛 **依赖更新** [`7ad96ca`](https://github.com/weapp-vite/weapp-vite/commit/7ad96ca963731768a386571865053649c67faf69) by @sonofmagic
+- 📦 Updated 4 dependencies [`7ad96ca`](https://github.com/weapp-vite/weapp-vite/commit/7ad96ca963731768a386571865053649c67faf69)
+  <details><summary>Details</summary>
+
+  `rolldown-require@2.0.17`, `@weapp-vite/web@1.3.24`, `wevu@6.16.19`, `@weapp-vite/ast@6.16.19`
+
+  </details>
+
 ## 6.16.18
 
 ### Patch Changes
