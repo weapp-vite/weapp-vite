@@ -43,7 +43,7 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: |
         pnpm lint
-        pnpm build:ci
+        pnpm ${{ matrix.os == 'macos-latest' && 'build:ci:macos' || 'build:ci' }}
         pnpm test:coverage
       upload_codecov: true
     secrets: inherit
@@ -65,7 +65,7 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: |
         pnpm lint
-        pnpm build:ci
+        pnpm ${{ matrix.os == 'macos-latest' && 'build:ci:macos' || 'build:ci' }}
         pnpm test:coverage
       upload_codecov: true
     secrets: inherit
