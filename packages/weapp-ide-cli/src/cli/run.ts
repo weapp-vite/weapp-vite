@@ -6,6 +6,7 @@ import { createAlias, createPathCompat, transformArgv } from '../utils'
 import { readOptionValue, removeOption } from './automator-argv'
 import {
   CONFIG_COMMAND_NAME,
+  MCP_COMMAND_NAME,
   MINIDEV_NAMESPACE_COMMAND_NAMES,
   WECHAT_CLI_COMMAND_NAMES,
 } from './command-catalog'
@@ -48,6 +49,7 @@ export function createCli() {
   }
 
   cli.command(`${CONFIG_COMMAND_NAME} [...args]`, '配置 weapp-ide-cli').allowUnknownOptions()
+  cli.command(`${MCP_COMMAND_NAME} [...args]`, '启动 weapp-ide-cli MCP 服务').allowUnknownOptions()
 
   for (const command of AUTOMATOR_COMMAND_NAMES) {
     cli.command(`${command} [...args]`, 'automator 增强命令').allowUnknownOptions()
@@ -133,6 +135,12 @@ export async function parse(argv: string[]) {
 
   if (matchedCommand === CONFIG_COMMAND_NAME) {
     await handleConfigCommand(argv.slice(1))
+    return
+  }
+
+  if (matchedCommand === MCP_COMMAND_NAME) {
+    const { runMcpCommand } = await import('./run-mcp')
+    await runMcpCommand(argv.slice(1))
     return
   }
 

@@ -30,6 +30,24 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
     expect(result.script).toContain('String(__wevuUnref(')
   })
 
+  it('resolves renamed defineProps destructure aliases in template runtime bindings', async () => {
+    const source = `
+<script setup lang="ts">
+const { x: y } = defineProps<{ x: string }>()
+</script>
+<template>
+  <view :class="{ [y]: y }">{{ y }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
+
+    expect(result.template).toContain('{{y}}')
+    expect(result.template).toContain('class="{{__wv_cls_0}}"')
+    expect(result.script).toContain('__wevuProps.x')
+    expect(result.script).not.toContain('__wevuProps.y')
+  })
+
   it('avoids generating __wevuProps.props for call expressions using props.xxx', async () => {
     const source = `
 <script setup lang="ts">

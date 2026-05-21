@@ -19,6 +19,7 @@ const dispatchWechatCliCommandMock = vi.hoisted(() => vi.fn())
 const getAutomatorCommandHelpMock = vi.hoisted(() => vi.fn())
 const isAutomatorCommandMock = vi.hoisted(() => vi.fn())
 const runAutomatorCommandMock = vi.hoisted(() => vi.fn())
+const runMcpCommandMock = vi.hoisted(() => vi.fn())
 const fsMock = vi.hoisted(() => ({
   pathExists: vi.fn(),
   writeJSON: vi.fn(),
@@ -73,6 +74,10 @@ vi.mock('../src/cli/run-automator', () => ({
   getAutomatorCommandHelp: getAutomatorCommandHelpMock,
   isAutomatorCommand: isAutomatorCommandMock,
   runAutomatorCommand: runAutomatorCommandMock,
+}))
+
+vi.mock('../src/cli/run-mcp', () => ({
+  runMcpCommand: runMcpCommandMock,
 }))
 
 vi.mock('@weapp-vite/miniprogram-automator', () => ({
@@ -164,6 +169,7 @@ describe('cli parsing', () => {
     getAutomatorCommandHelpMock.mockReset()
     isAutomatorCommandMock.mockReset()
     runAutomatorCommandMock.mockReset()
+    runMcpCommandMock.mockReset()
     fsMock.pathExists.mockReset()
     fsMock.writeJSON.mockReset()
     fsMock.readJSON.mockReset()
@@ -241,6 +247,17 @@ describe('cli parsing', () => {
     expect(runMinidevMock).toHaveBeenCalledWith(['login'])
     expect(resolveCliPathMock).not.toHaveBeenCalled()
     expect(isOperatingSystemSupportedMock).not.toHaveBeenCalled()
+  })
+
+  it('delegates mcp command to the local MCP runner', async () => {
+    const { parse } = await loadRunModule()
+    runMcpCommandMock.mockResolvedValue(undefined)
+
+    await parse(['mcp', '--workspace-root', './mini-app'])
+
+    expect(runMcpCommandMock).toHaveBeenCalledWith(['--workspace-root', './mini-app'])
+    expect(dispatchWechatCliCommandMock).not.toHaveBeenCalled()
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
   })
 
   it('supports ali alias for minidev runner', async () => {

@@ -45,6 +45,57 @@ weapp cache --clean all
 
 `weapp` 与 `weapp-ide-cli` 等价，选择任一前缀即可。
 
+## AI / MCP 直接调用
+
+`weapp-ide-cli` 内置 MCP Server，可让支持 MCP 的 AI 客户端直接连接微信开发者工具 automator 会话，进入模拟器执行页面检查、元素定位、点击、输入、截图与基础 E2E 验证。
+
+AI 客户端建议使用 stdio 配置：
+
+```json
+{
+  "mcpServers": {
+    "weapp-ide-cli": {
+      "command": "weapp",
+      "args": [
+        "mcp",
+        "--workspace-root",
+        "<repo-root>"
+      ]
+    }
+  }
+}
+```
+
+也可以直接启动：
+
+```sh
+weapp mcp --workspace-root .
+```
+
+启动后 AI 可以直接调用这些工具：
+
+| MCP Tool                     | 说明                       |
+| ---------------------------- | -------------------------- |
+| `weapp_devtools_connect`     | 连接 DevTools 并读取当前页 |
+| `weapp_devtools_active_page` | 获取当前页、尺寸、data     |
+| `weapp_devtools_page_stack`  | 获取页面栈                 |
+| `weapp_runtime_find_node`    | 查询单个元素并返回快照     |
+| `weapp_runtime_find_nodes`   | 查询多个元素并返回快照     |
+| `weapp_runtime_tap_node`     | 点击元素                   |
+| `weapp_runtime_input_node`   | 向元素输入文本             |
+| `weapp_devtools_capture`     | 截取模拟器当前视口         |
+| `weapp_devtools_host_api`    | 调用基础 `wx.*` API        |
+
+推荐调用顺序：
+
+1. `weapp_devtools_connect`
+2. `weapp_devtools_active_page`
+3. `weapp_runtime_find_node` / `weapp_runtime_find_nodes`
+4. `weapp_runtime_tap_node` / `weapp_runtime_input_node`
+5. `weapp_devtools_capture`
+
+首次使用前请确保微信开发者工具已登录，并已开启「设置 -> 安全设置 -> 服务端口」。
+
 从当前版本开始，`weapp-ide-cli` 会在调用微信开发者工具前自动尝试预热本机 DevTools 配置：
 
 - 确保安全设置里启用服务端口

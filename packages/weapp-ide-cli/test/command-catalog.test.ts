@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CONFIG_COMMAND_NAME,
   isWeappIdeTopLevelCommand,
+  MCP_COMMAND_NAME,
   MINIDEV_NAMESPACE_COMMAND_NAMES,
   WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES,
   WECHAT_CLI_COMMAND_NAMES,
@@ -59,6 +60,7 @@ describe('command catalog', () => {
 
   it('contains config and minidev namespace entries', () => {
     expect(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES).toContain(CONFIG_COMMAND_NAME)
+    expect(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES).toContain(MCP_COMMAND_NAME)
     for (const command of MINIDEV_NAMESPACE_COMMAND_NAMES) {
       expect(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES).toContain(command)
     }

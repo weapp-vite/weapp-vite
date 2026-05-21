@@ -79,6 +79,7 @@ export function compileVueTemplateToWxml(
       filename,
       warnings,
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
+      propsAliases: options?.propsAliases,
       htmlTagToWxmlMap,
       htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',

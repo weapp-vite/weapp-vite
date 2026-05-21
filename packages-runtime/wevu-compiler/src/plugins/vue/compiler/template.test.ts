@@ -1529,6 +1529,27 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:(showPrimary)||(showSecondary)}`)).toBe(true)
   })
 
+  it('keeps v-if and v-else named slot branches intact', () => {
+    const template = `
+<Card>
+  <template #header v-if="abc">
+    <view />
+  </template>
+  <template #header v-else>
+    <text />
+  </template>
+</Card>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`<Card vue-slots="{{__wv_bind_0}}">`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{abc}}"><view slot="header"><view /></view></block>`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><view slot="header"><text /></view></block>`)
+    expect(code).not.toContain('<view slot="header"><text /></view></Card>')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['header']:true}`)).toBe(true)
+  })
+
   it('projects plain named slot single child without synthetic view wrapper when enabled', () => {
     const template = `
 <Child>

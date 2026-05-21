@@ -164,6 +164,26 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   )
 }
 
+function createAliasedPropsAccess(name: string, propName: string): t.Expression {
+  const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
+  const propsAccess = createMemberAccess(propsObject, propName)
+  const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
+  const hasDefinedPropsValue = t.binaryExpression('!==', propsAccess, t.identifier('undefined'))
+  const hasPropsKey = createHasOwnPropertyCall(propsObject, propName)
+  const hasUsablePropsValue = t.logicalExpression(
+    '&&',
+    hasPropsObject,
+    t.logicalExpression('||', hasDefinedPropsValue, hasPropsKey),
+  )
+  const thisAccess = createThisMemberAccess(name)
+  const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
+  return t.conditionalExpression(
+    t.logicalExpression('&&', hasUsablePropsValue, t.unaryExpression('!', hasThisMember)),
+    propsAccess,
+    thisAccess,
+  )
+}
+
 function collectForAliasMapping(context: TransformContext): Record<string, string> {
   const mapping: Record<string, string> = {}
   for (const forInfo of context.forStack) {
@@ -248,7 +268,12 @@ export function normalizeJsExpressionWithContext(
         }
       }
       else {
-        replacement = createUnrefCall(createIdentifierAccessWithPropsFallback(name))
+        const propsAlias = context.propsAliases?.[name]
+        replacement = createUnrefCall(
+          propsAlias
+            ? createAliasedPropsAccess(name, propsAlias)
+            : createIdentifierAccessWithPropsFallback(name),
+        )
       }
 
       const parent = path.parentPath

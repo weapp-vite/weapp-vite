@@ -71,6 +71,10 @@ export interface TransformScriptOptions {
    */
   functionPropPaths?: string[]
   /**
+   * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
+   */
+  propsAliases?: Record<string, string>
+  /**
    * 对 `<script setup>` 类型声明生成的结构化 props（如 Array/Object）放宽小程序运行时类型约束，
    * 以避免小程序属性校验对复杂表达式/代理值产生误报。
    */

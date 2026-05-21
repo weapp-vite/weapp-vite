@@ -2,12 +2,13 @@
 import type {
   DevtoolsRuntimeHooks,
 } from '@weapp-vite/devtools-runtime'
-import { Buffer } from 'node:buffer'
-import path from 'node:path'
 import {
   acquireSharedMiniProgram,
   closeSharedMiniProgram,
   releaseSharedMiniProgram,
+  resolveDevtoolsProjectPath,
+  resolveDevtoolsWorkspacePath,
+  toDevtoolsSerializableValue,
 } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
 
@@ -106,15 +107,11 @@ export class RuntimeSessionManager {
   }
 
   resolveProjectPath(projectPath: string) {
-    return path.isAbsolute(projectPath)
-      ? path.normalize(projectPath)
-      : path.resolve(this.workspaceRoot, projectPath)
+    return resolveDevtoolsProjectPath(this.workspaceRoot, projectPath)
   }
 
   resolveWorkspacePath(filePath: string) {
-    return path.isAbsolute(filePath)
-      ? path.normalize(filePath)
-      : path.resolve(this.workspaceRoot, filePath)
+    return resolveDevtoolsWorkspacePath(this.workspaceRoot, filePath)
   }
 
   async withMiniProgram<T>(
@@ -309,25 +306,7 @@ export async function summarizeElement(element: MiniProgramElement, withWxml = f
 }
 
 export function toSerializableValue(value: unknown): unknown {
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value
-  }
-  if (typeof value === 'bigint') {
-    return value.toString()
-  }
-  if (value instanceof Date) {
-    return value.toISOString()
-  }
-  if (Buffer.isBuffer(value)) {
-    return value.toString('base64')
-  }
-  if (Array.isArray(value)) {
-    return value.map(item => toSerializableValue(item))
-  }
-  if (typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, toSerializableValue(item)]))
-  }
-  return String(value)
+  return toDevtoolsSerializableValue(value)
 }
 
 export async function callRequiredMethod<TResult>(
