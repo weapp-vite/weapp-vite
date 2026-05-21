@@ -18,6 +18,21 @@ export interface ScriptPhaseResult {
 }
 
 type SfcDescriptor = Parameters<typeof compileScript>[0]
+type CompiledScript = ReturnType<typeof compileScript>
+
+export function resolveScriptSetupPropsAliases(bindings: Record<string, any> | undefined) {
+  const aliases = bindings?.__propsAliases
+  if (!aliases || typeof aliases !== 'object') {
+    return undefined
+  }
+  const resolved: Record<string, string> = {}
+  for (const [alias, propName] of Object.entries(aliases)) {
+    if (typeof propName === 'string' && propName.length > 0) {
+      resolved[alias] = propName
+    }
+  }
+  return Object.keys(resolved).length ? resolved : undefined
+}
 
 export async function compileScriptPhase(
   descriptor: Pick<SFCDescriptor, 'scriptSetup' | 'template' | 'script'>,
@@ -28,6 +43,7 @@ export async function compileScriptPhase(
   templateCompiled: TemplateCompileResult | undefined,
   isAppFile: boolean,
   componentSourceInfo?: ComponentSourceInfo,
+  precompiledScript?: CompiledScript,
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -38,11 +54,13 @@ export async function compileScriptPhase(
 
   let scriptCode: string | undefined
   let scriptMap: EncodedSourceMapLike | null = null
+  let propsAliases = options?.template?.propsAliases
   if (descriptor.script || descriptor.scriptSetup) {
-    const scriptCompiled = compileScript(descriptorForCompile, {
+    const scriptCompiled = precompiledScript ?? compileScript(descriptorForCompile, {
       id: filename,
       isProd: false,
     })
+    propsAliases ??= resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
 
     scriptCode = scriptCompiled.content
     scriptMap = scriptCompiled.map && typeof scriptCompiled.map === 'object'
@@ -80,6 +98,7 @@ export async function compileScriptPhase(
       layoutHosts: templateCompiled?.layoutHosts,
       inlineExpressions: templateCompiled?.inlineExpressions,
       functionPropPaths: templateCompiled?.functionPropPaths,
+      propsAliases,
       relaxStructuredTypeOnlyProps,
     })
     return {

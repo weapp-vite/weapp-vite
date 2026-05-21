@@ -70,6 +70,10 @@ export interface TransformContext {
   filename: string
   warnings: string[]
   platform: MiniProgramPlatform
+  /**
+   * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
+   */
+  propsAliases?: Record<string, string>
   htmlTagToWxmlMap?: Record<string, string>
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
@@ -124,6 +128,10 @@ export type TransformNode = (node: any, context: TransformContext) => string
  */
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
+  /**
+   * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
+   */
+  propsAliases?: Record<string, string>
   htmlTagToWxml?: boolean | Record<string, string>
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode

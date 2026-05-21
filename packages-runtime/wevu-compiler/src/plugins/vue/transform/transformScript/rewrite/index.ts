@@ -267,7 +267,7 @@ export function rewriteDefaultExport(
   if (classStyleBindings.length) {
     if (componentOptionsObject) {
       ensureClassStyleRuntimeImports(ast.program)
-      transformed = injectClassStyleComputed(componentOptionsObject, classStyleBindings, warn) || transformed
+      transformed = injectClassStyleComputed(componentOptionsObject, classStyleBindings, options?.propsAliases, warn) || transformed
     }
     else {
       warn('无法自动注入 class/style 计算属性：组件选项不是对象字面量。')
