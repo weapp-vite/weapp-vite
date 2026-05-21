@@ -1,27 +1,32 @@
-import type { Element, MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
+import type {
+  AutomatorMiniProgram,
+  DevtoolsRuntimeHooks,
+  DevtoolsRuntimeSessionOptions,
+} from './mcp'
+
+export {
+  readDevtoolsElementSnapshot,
+  resolveDevtoolsProjectPath,
+  resolveDevtoolsWorkspacePath,
+  toDevtoolsSerializableValue,
+} from './mcp'
+export type {
+  AutomatorElement,
+  AutomatorMiniProgram,
+  AutomatorPage,
+  DevtoolsConnectionInput,
+  DevtoolsContext,
+  DevtoolsElementSnapshot,
+  DevtoolsPageSnapshot,
+  DevtoolsRuntimeHooks,
+  DevtoolsRuntimeSessionOptions,
+  DevtoolsToolResult,
+  MiniProgramElementLike,
+} from './mcp'
 
 export interface MiniProgramEventMap {
   console: (payload: unknown) => void
   exception: (payload: unknown) => void
-}
-
-export type AutomatorMiniProgram = InstanceType<typeof MiniProgram>
-export type AutomatorPage = InstanceType<typeof Page>
-export type AutomatorElement = InstanceType<typeof Element> & {
-  input?: (value: string) => Promise<void>
-}
-
-export interface DevtoolsRuntimeSessionOptions {
-  miniProgram?: AutomatorMiniProgram
-  preferOpenedSession?: boolean
-  projectPath: string
-  sharedSession?: boolean
-  timeout?: number
-}
-
-export interface DevtoolsRuntimeHooks {
-  connectMiniProgram: (options: DevtoolsRuntimeSessionOptions) => Promise<AutomatorMiniProgram>
-  normalizeConnectionError?: (error: unknown) => unknown
 }
 
 interface SharedMiniProgramSessionEntry {
