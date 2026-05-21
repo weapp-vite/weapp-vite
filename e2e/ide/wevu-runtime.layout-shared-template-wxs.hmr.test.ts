@@ -22,6 +22,7 @@ const SHARED_WXS = path.join(SHARED_DIR, 'layout-helper.wxs')
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const COMMON_JS_OUTPUT_PATH = path.join(DIST_ROOT, 'common.js')
 const WEVU_SRC_OUTPUT_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
+const WEVU_RUNTIME_READY_MARKER = '"__wevuCreateWevuComponent"'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
@@ -145,7 +146,7 @@ async function waitForIdeRecompileSettled(delayMs = 1200) {
 
 async function waitForInitialAppserviceReady() {
   await waitForFileContains(COMMON_JS_OUTPUT_PATH, 'useSetupStore', 90_000)
-  await waitForFileContains(WEVU_SRC_OUTPUT_PATH, 'Object.defineProperty(exports, "Fn"', 90_000)
+  await waitForFileContains(WEVU_SRC_OUTPUT_PATH, WEVU_RUNTIME_READY_MARKER, 90_000)
 }
 
 async function getSharedMiniProgram() {
