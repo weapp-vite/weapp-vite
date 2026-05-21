@@ -72,6 +72,10 @@ jobs:
             git diff --name-only -- "${files[@]}"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Update unit test snapshots
+        if: steps.changes.outputs.has_changes == 'true'
+        run: pnpm vitest run -u packages/weapp-vite/test/resolvers/tdesign.test.ts packages/weapp-vite/test/resolvers/vant.test.ts
+
       - name: Create pull request
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v7
@@ -85,6 +89,7 @@ jobs:
             ## 概要
             - 执行 `pnpm builtin`
             - 执行 `pnpm auto-import:components`
+            - 更新已有单元测试快照
             - 更新微信内置组件和自动导入组件生成产物
 
             ## 说明
@@ -95,3 +100,5 @@ jobs:
             packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/weui.json
+            packages/weapp-vite/test/resolvers/__snapshots__/tdesign.test.ts.snap
+            packages/weapp-vite/test/resolvers/__snapshots__/vant.test.ts.snap
