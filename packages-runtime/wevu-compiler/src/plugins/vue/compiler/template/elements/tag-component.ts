@@ -91,15 +91,28 @@ function shouldAugmentPlainSlot(decl: ScopedSlotDeclaration, context: TransformC
   return hasDirectComponentSlotChild(decl.children, context)
 }
 
-function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext) {
-  const ifDirective = node.props.find(
+function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {
+  conditionKind?: 'if' | 'else-if' | 'else'
+  condition?: string
+} {
+  const directive = node.props.find(
     (prop): prop is DirectiveNode =>
       prop.type === NodeTypes.DIRECTIVE
-      && prop.name === 'if'
-      && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION,
+      && (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else')
+      && (prop.name === 'else' || prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION),
   )
-  const rawExp = ifDirective?.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? ifDirective.exp.content : ''
-  return rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined
+  if (!directive) {
+    return {}
+  }
+  if (directive.name === 'else') {
+    return { conditionKind: 'else' }
+  }
+  const rawExp = directive.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? directive.exp.content : ''
+  const conditionKind = directive.name === 'else-if' ? 'else-if' : 'if'
+  return {
+    conditionKind,
+    condition: rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined,
+  }
 }
 
 function pushSlotNamesAttr(
@@ -210,12 +223,13 @@ export function transformComponentWithSlots(
       const templateSlot = findSlotDirective(child as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
+        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
           (child as ElementNode).children,
           context,
-          { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
+          templateSlotCondition,
         )
         slotDeclarations.push(declaration)
         renderItems.push({ type: 'declaration', declaration })
@@ -364,12 +378,13 @@ export function transformComponentWithSlotsFallback(
       const templateSlot = findSlotDirective(child as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
+        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
           (child as ElementNode).children,
           context,
-          { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
+          templateSlotCondition,
         )
         slotDeclarations.push(declaration)
         renderItems.push({ type: 'declaration', declaration })

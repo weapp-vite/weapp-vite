@@ -29,6 +29,7 @@ export interface ScopedSlotDeclaration {
   props: Record<string, string>
   children: any[]
   implicitDefault?: boolean
+  conditionKind?: 'if' | 'else-if' | 'else'
   condition?: string
 }
 
@@ -131,11 +132,19 @@ export function buildSlotDeclaration(
   context: TransformContext,
   options?: {
     implicitDefault?: boolean
+    conditionKind?: 'if' | 'else-if' | 'else'
     condition?: string
   },
 ): ScopedSlotDeclaration {
   const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
-  return { name, props, children, implicitDefault: options?.implicitDefault, condition: options?.condition }
+  return {
+    name,
+    props,
+    children,
+    implicitDefault: options?.implicitDefault,
+    conditionKind: options?.conditionKind,
+    condition: options?.condition,
+  }
 }
 
 export function createScopedSlotComponent(
@@ -274,6 +283,15 @@ export function renderSlotFallback(
 ): string {
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
   const wrapCondition = (content: string) => {
+    if (decl.conditionKind === 'else') {
+      return context.platform.wrapElse(content)
+    }
+    if (decl.conditionKind === 'else-if' && decl.condition) {
+      return context.platform.wrapElseIf(decl.condition, content, exp => renderMustache(exp, context))
+    }
+    if (decl.conditionKind === 'if' && decl.condition) {
+      return context.platform.wrapIf(decl.condition, content, exp => renderMustache(exp, context))
+    }
     return decl.condition ? context.platform.wrapIf(decl.condition, content, exp => renderMustache(exp, context)) : content
   }
 
