@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.16.19
+
+### Patch Changes
+
+- 🐛 **修复 WXML 格式化时属性值内的 `>` 被误判为标签结束的问题，避免 `->` 等内容导致生成的组件属性被拆行并触发小程序编译错误。** [`2a803b0`](https://github.com/weapp-vite/weapp-vite/commit/2a803b0ca8ed137fba09595b20e81013db304b9a) by @sonofmagic
+- 📦 **Dependencies** [`7ad96ca`](https://github.com/weapp-vite/weapp-vite/commit/7ad96ca963731768a386571865053649c67faf69)
+  → `rolldown-require@2.0.17`, `@weapp-vite/ast@6.16.19`
+
 ## 6.16.18
 
 ### Patch Changes

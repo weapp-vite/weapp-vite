@@ -1,5 +1,12 @@
 # @weapp-vite/dashboard
 
+## 6.16.19
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`7ad96ca`](https://github.com/weapp-vite/weapp-vite/commit/7ad96ca963731768a386571865053649c67faf69) by @sonofmagic
+  - 默认 catalog 变更键：@types/node, @vue/language-core, echarts, lru-cache, rolldown, stylelint, vue-tsc。命名 catalog 变更键：无。
+
 ## 6.16.18
 
 ## 6.16.17
