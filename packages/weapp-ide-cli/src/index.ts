@@ -1,6 +1,7 @@
 export * from './cli/index'
 export * from './cli/wechatDevtoolsSettings'
 export * from './config'
+export * from './mcp'
 export * from './runtime/platform'
 export type { BaseConfig, ConfigSource, ResolvedConfig } from './types'
 export * from './utils'
