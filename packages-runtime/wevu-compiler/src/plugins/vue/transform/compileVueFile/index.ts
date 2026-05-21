@@ -1,9 +1,10 @@
 import type { CompileVueFileOptions, VueTransformResult } from './types'
+import { compileScript } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
 import { parseVueFile } from './parse'
-import { compileScriptPhase } from './script'
+import { compileScriptPhase, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
 
@@ -55,12 +56,26 @@ export async function compileVueFile(
     autoImportTags,
   })
 
+  const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
+    ? compileScript(parsed.descriptorForCompile, {
+        id: filename,
+        isProd: false,
+      })
+    : undefined
+  const propsAliases = scriptCompiled
+    ? resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
+    : undefined
+
   const baseTemplateOptions = parsed.isAppFile
     ? {
         ...options?.template,
+        propsAliases,
         scopedSlotsRequireProps: true,
       }
-    : options?.template
+    : {
+        ...options?.template,
+        propsAliases,
+      }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size
     ? {
@@ -88,6 +103,7 @@ export async function compileVueFile(
     templateCompiled,
     parsed.isAppFile,
     componentSourceInfo,
+    scriptCompiled,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

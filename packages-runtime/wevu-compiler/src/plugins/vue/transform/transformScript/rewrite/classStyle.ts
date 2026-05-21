@@ -8,6 +8,7 @@ import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
 export function injectClassStyleComputed(
   optionsObject: t.ObjectExpression,
   bindings: ClassStyleBinding[],
+  propsAliases?: Record<string, string>,
   warn?: (message: string) => void,
 ): boolean {
   if (!bindings.length) {
@@ -19,7 +20,7 @@ export function injectClassStyleComputed(
     normalizeStyle: t.identifier('__wevuNormalizeStyle'),
     unref: t.identifier('__wevuUnref'),
   }
-  const entries = buildClassStyleComputedEntries(bindings, helpers)
+  const entries = buildClassStyleComputedEntries(bindings, helpers, propsAliases)
   if (!entries.length) {
     return false
   }

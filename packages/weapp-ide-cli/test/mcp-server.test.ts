@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { registerWeappIdeMcpTools } from '../src/mcp/server'
 
@@ -77,7 +78,7 @@ describe('weapp-ide-cli mcp server', () => {
     })
 
     expect(withMiniProgram).toHaveBeenCalledWith(expect.objectContaining({
-      projectPath: '/workspace/dist/dev/mp-weixin',
+      projectPath: path.resolve('/workspace', 'dist/dev/mp-weixin'),
       sharedSession: true,
     }), expect.any(Function))
     expect(page.$).toHaveBeenCalledWith('#save')
