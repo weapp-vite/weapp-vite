@@ -1,5 +1,6 @@
 ---
 "@wevu/compiler": patch
+"create-weapp-vite": patch
 "wevu": patch
 ---
 
