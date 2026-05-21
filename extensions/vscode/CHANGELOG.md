@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.3.3
+
+### Patch Changes
+
+- 🐛 **优化 VS Code 插件 Activity Bar 图标，改用更清晰的小程序标识并调整线条布局，避免图形重叠。** [`dd67d8b`](https://github.com/weapp-vite/weapp-vite/commit/dd67d8b7c08351fea5e898fa1ccf68647159e186) by @sonofmagic
+
 ## 0.3.2
 
 ### Patch Changes
