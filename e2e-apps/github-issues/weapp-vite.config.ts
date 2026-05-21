@@ -79,6 +79,8 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-300/**',
     'pages/issue-322/**',
     'pages/issue-328/**',
+    'pages/issue-599/**',
+    'components/issue-599/**',
     'subpackages/item/**',
     'subpackages/user/**',
   ],

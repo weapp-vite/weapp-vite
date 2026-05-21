@@ -58,4 +58,22 @@ describe('template expression globals', () => {
       },
     ])
   })
+
+  it('prefers props data over state data in template expressions', () => {
+    const context = createContext()
+    const result = normalizeJsExpressionWithContext('data.userId + data.profile.name', context)
+    const code = result && generateExpression(result)
+
+    expect(code).toMatch(/this\.__wevuProps\.data!==undefined\|\|Object\.prototype\.hasOwnProperty\.call\(this\.__wevuProps,["']data["']\)/)
+    expect(code).toContain('?this.__wevuProps.data:this.data')
+  })
+
+  it('prefers props data over state data for direct data access', () => {
+    const context = createContext()
+    const result = normalizeJsExpressionWithContext('data', context)
+    const code = result && generateExpression(result)
+
+    expect(code).toMatch(/this\.__wevuProps\.data!==undefined\|\|Object\.prototype\.hasOwnProperty\.call\(this\.__wevuProps,["']data["']\)/)
+    expect(code).toContain('?this.__wevuProps.data:this.data')
+  })
 })

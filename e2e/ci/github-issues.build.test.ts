@@ -804,6 +804,30 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('issue-590 badge')
   })
 
+  it('issue #599: prefers props named data in generated computed bindings', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-599/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-599/index.json')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
+    const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJSON(pageJsonPath) as {
+      usingComponents?: Record<string, string>
+    }
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-599 data prop computed')
+    expect(pageJson.usingComponents?.DataPropProbe).toBe('/components/issue-599/DataPropProbe/index')
+    expect(componentWxml).toContain('data-issue599-label="{{data.label}}"')
+    expect(componentWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+    expect(componentJs).toContain('this.__wevuProps.data')
+    expect(componentJs).toContain('this.data')
+    expect(componentJs).toContain('Object.prototype.hasOwnProperty.call(this.__wevuProps, "data")')
+  })
+
   it('issue #595: builds scoped main package and selected subpackage only', async () => {
     await runIssue595ScopedBuild()
 

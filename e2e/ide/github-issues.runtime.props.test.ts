@@ -134,4 +134,27 @@ describe.sequential('e2e app: github-issues / props', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('issue #599: renders props named data in computed style bindings', async (ctx) => {
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
+    const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
+    expect(await fs.readFile(componentWxmlPath, 'utf-8')).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+    expect(await fs.readFile(componentJsPath, 'utf-8')).toContain('this.__wevuProps.data')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-599/index', 'issue-599 data prop computed')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-599 page')
+      }
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('data-issue599-label="issue-599 data prop computed"')
+      expect(renderedWxml).toContain('data-issue599-color="#1677ff"')
+      expect(renderedWxml).not.toContain('undefinedrpx')
+      expect(renderedWxml).toMatch(/font-size:\s*(?:32rpx|\d+(?:\.\d+)?px)/)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })
