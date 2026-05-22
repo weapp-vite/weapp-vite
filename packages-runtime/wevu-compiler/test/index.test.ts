@@ -42,7 +42,8 @@ const { x: y } = defineProps<{ x: string }>()
 
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
-    expect(result.template).toContain('{{y}}')
+    expect(result.template).toContain('{{x}}')
+    expect(result.template).not.toContain('{{y}}')
     expect(result.template).toContain('class="{{__wv_cls_0}}"')
     expect(result.script).toContain('__wevuProps.x')
     expect(result.script).not.toContain('__wevuProps.y')
