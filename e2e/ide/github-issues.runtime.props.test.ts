@@ -135,6 +135,30 @@ describe.sequential('e2e app: github-issues / props', () => {
     }
   })
 
+  it('issue #597: keeps v-if and v-else named slot branches intact in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-597/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-597/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    expect(issuePageWxml).toContain('<block wx:if="{{abc}}"><view slot="header"')
+    expect(issuePageWxml).toContain('<block wx:else><text slot="header"')
+    expect(issuePageWxml).not.toContain('</block><text slot="header"')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-597/index', 'issue-597 conditional named slot')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-597 page')
+      }
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('data-issue597-branch="if"')
+      expect(renderedWxml).not.toContain('data-issue597-branch="else"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #599: renders props named data in computed style bindings', async (ctx) => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
@@ -152,6 +176,30 @@ describe.sequential('e2e app: github-issues / props', () => {
       expect(renderedWxml).toContain('data-issue599-color="#1677ff"')
       expect(renderedWxml).not.toContain('undefinedrpx')
       expect(renderedWxml).toMatch(/font-size:\s*(?:32rpx|\d+(?:\.\d+)?px)/)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #600: renders renamed defineProps destructure aliases in template and computed bindings', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-600/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-600/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
+    expect(issuePageJs).toContain('this.__wevuProps.x')
+    expect(issuePageJs).not.toContain('this.__wevuProps.y')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-600/index?x=issue-600-alias', 'issue-600-alias')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-600 page')
+      }
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('data-issue600-value="issue-600-alias"')
+      expect(renderedWxml).toContain('issue-600-alias')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
