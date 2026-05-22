@@ -1,5 +1,13 @@
 # wevu
 
+## 6.16.20
+
+### Patch Changes
+
+- 🐛 **修复 `<script setup>` 中 `defineProps` 解构重命名后，模板运行时绑定和自动生成的 class/style computed 无法读取原始 prop 值的问题。** [#602](https://github.com/weapp-vite/weapp-vite/pull/602) by @sonofmagic
+- 📦 **Dependencies** [`596c1ae`](https://github.com/weapp-vite/weapp-vite/commit/596c1ae92bed38d54d6ee360b1a3da478ab34a30)
+  → `@wevu/compiler@6.16.20`
+
 ## 6.16.19
 
 ### Patch Changes

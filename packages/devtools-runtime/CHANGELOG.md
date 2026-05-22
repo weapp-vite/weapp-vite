@@ -1,5 +1,12 @@
 # @weapp-vite/devtools-runtime
 
+## 0.3.0
+
+### Minor Changes
+
+- ✨ **新增 `weapp mcp` 标准 MCP 入口，让 AI 客户端可以直接连接微信开发者工具 automator 会话，并调用页面读取、元素查询、点击输入、截图与基础宿主 API 工具完成小程序模拟器里的 E2E 验证。** [`f41e375`](https://github.com/weapp-vite/weapp-vite/commit/f41e37591bb104b03ae9e7d60ae4499e46ce37fb) by @sonofmagic
+  - 同时将 DevTools MCP 的路径解析、结构化输出序列化和元素快照读取抽到 `@weapp-vite/devtools-runtime` 公共模块，供 `@weapp-vite/mcp` 与 `weapp-ide-cli` 复用，避免两套 MCP 入口重复维护基础运行时契约。
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 6.16.20
+
+### Patch Changes
+
+- 📦 Updated 4 dependencies [`f41e375`](https://github.com/weapp-vite/weapp-vite/commit/f41e37591bb104b03ae9e7d60ae4499e46ce37fb)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/mcp@1.3.4`, `weapp-ide-cli@5.3.0`, `wevu@6.16.20`, `@weapp-vite/ast@6.16.20`
+
+  </details>
+
 ## 6.16.19
 
 ### Patch Changes

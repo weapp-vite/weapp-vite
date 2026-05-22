@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.32
+
+### Patch Changes
+
+- 🐛 **修复 `defineProps` 解构重命名后模板直出表达式仍访问本地别名的问题，确保模板插值、普通属性绑定与自动 computed 均能读取原始 prop。** [`c90a70d`](https://github.com/weapp-vite/weapp-vite/commit/c90a70d63a31814216d711229ad122f07f294114) by @sonofmagic
+
+- 🐛 **修复 `<script setup>` 中 `defineProps` 解构重命名后，模板运行时绑定和自动生成的 class/style computed 无法读取原始 prop 值的问题。** [#602](https://github.com/weapp-vite/weapp-vite/pull/602) by @sonofmagic
+
 ## 2.3.31
 
 ### Patch Changes
