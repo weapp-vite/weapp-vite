@@ -34,10 +34,10 @@ export const TEMPLATE_CATALOG = {
   'oxc-parser': '^0.132.0',
   'oxc-walker': '^1.0.0',
   'pkg-types': '^2.3.1',
-  'sass-embedded': '^1.99.0',
+  'sass-embedded': '^1.100.0',
   'tailwind-merge': '^3.6.0',
   'tailwind-variants': '^3.2.2',
-  'tdesign-miniprogram': '^1.14.0',
+  'tdesign-miniprogram': '^1.15.0',
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.3.3',
   'vue-tsc': '^3.3.1',
@@ -56,19 +56,19 @@ export const TEMPLATE_CATALOG = {
   pathe: '^2.0.3',
   postcss: '^8.5.15',
   rolldown: '1.0.2',
-  sass: '^1.99.0',
+  sass: '^1.100.0',
   stylelint: '^17.12.0',
   tailwindcss: '^4.3.0',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
-  vite: '8.0.13',
+  vite: '8.0.14',
   vue: '^3.5.34',
   zod: '^4.4.3'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.14.0'
+    'tdesign-miniprogram': '1.15.0'
   },
   'weapp-tailwindcss-fixed': {
     'weapp-tailwindcss': '4.12.0'
