@@ -1907,8 +1907,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(issuePageJs).toMatch(/__wv_cls_\d+/)
     expect(issuePageJs).toMatch(/__wv_style_\d+/)
-    expect(issuePageJs).toContain('props: {')
-    expect(issuePageJs).toContain('allowNullPropInput: true')
+    expect(issuePageJs).toContain('hasEmailError: Boolean(errors.value?.email)')
+    expect(issuePageJs).toContain('emailError: errors.value?.email ?? ""')
     expect(issuePageJs).toMatch(/return\s+["'`]issue322-input issue322-input-base["'`]/)
     expect(issuePageJs).toMatch(/return\s+["'`]display: none["'`]/)
   })
