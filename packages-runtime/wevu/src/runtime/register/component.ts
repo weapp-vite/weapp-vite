@@ -28,6 +28,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     topLevelMethods,
     templateRefs,
     layoutHosts,
+    propsAliases,
+    propsDerivedKeys,
     userObservers,
     setupLifecycle,
     legacyCreated,
@@ -129,8 +131,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...(userOptions as any),
   }
 
-  const { attachWevuPropKeys, syncWevuPropsFromInstance, finalObservers } = createPropsSync({
+  const { attachWevuPropKeys, syncWevuPropsFromInstance, syncWevuPropsFromValues, finalObservers } = createPropsSync({
     restOptions,
+    propsAliases,
+    propsDerivedKeys,
     userObservers,
   })
 
@@ -163,6 +167,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     enableOnShareAppMessage,
     enableOnShareTimeline,
     enableOnAddToFavorites,
+    syncWevuPropsFromValues,
     effectiveOnSaveExitState,
     effectiveOnPullDownRefresh,
     effectiveOnReachBottom,
@@ -193,6 +198,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     attachWevuPropKeys,
     setupLifecycle,
     syncWevuPropsFromInstance,
+    syncWevuPropsFromValues,
     isPage,
     legacyCreated,
     getRuntimeOwnerLabel,

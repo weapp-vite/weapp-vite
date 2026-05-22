@@ -74,6 +74,7 @@ export interface TransformContext {
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */
   propsAliases?: Record<string, string>
+  propsDerivedKeys?: string[]
   htmlTagToWxmlMap?: Record<string, string>
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
@@ -132,6 +133,7 @@ export interface TemplateCompileOptions {
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */
   propsAliases?: Record<string, string>
+  propsDerivedKeys?: string[]
   htmlTagToWxml?: boolean | Record<string, string>
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode

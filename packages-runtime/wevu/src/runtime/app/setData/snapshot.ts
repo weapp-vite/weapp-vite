@@ -147,6 +147,7 @@ export function applySnapshotUpdate(
 
 export function collectSnapshot(options: {
   state: Record<string, any>
+  setupState?: Record<string, any>
   computedRefs: Record<string, { value: any }>
   includeComputed: boolean
   shouldIncludeKey: (key: string) => boolean
@@ -158,6 +159,7 @@ export function collectSnapshot(options: {
 }) {
   const {
     state,
+    setupState,
     computedRefs,
     includeComputed,
     shouldIncludeKey,
@@ -174,7 +176,11 @@ export function collectSnapshot(options: {
   const budget = Number.isFinite(toPlainMaxKeys) ? { keys: toPlainMaxKeys } : undefined
 
   const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
+  const rawSetupState = setupState && typeof setupState === 'object'
+    ? (isReactive(setupState) ? toRaw(setupState as any) : setupState)
+    : undefined
   const stateKeys = Object.keys(rawState)
+  const setupStateKeys = rawSetupState ? Object.keys(rawSetupState) : []
   const computedKeys = includeComputed ? Object.keys(computedRefs) : []
 
   for (const key of stateKeys) {
@@ -182,6 +188,13 @@ export function collectSnapshot(options: {
       continue
     }
     out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
+  }
+
+  for (const key of setupStateKeys) {
+    if (!shouldIncludeKey(key)) {
+      continue
+    }
+    out[key] = toPlain(rawSetupState![key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
   }
 
   for (const key of computedKeys) {

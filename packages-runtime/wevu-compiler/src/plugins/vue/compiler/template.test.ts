@@ -248,9 +248,34 @@ describe('compileVueTemplateToWxml', () => {
     )
     const computedCode = buildComputedCode(classStyleBindings ?? [])
 
-    expect(code).toContain('data-value="{{x}}"')
+    expect(code).toContain('data-value="{{y}}"')
+    expect(code).toContain('{{y}}')
+    expect(code).not.toContain('{{x}}')
+    expect(computedCode).toContain('this.__wevuProps.x')
+    expect(computedCode).not.toContain('this.__wevuProps.y')
+  })
+
+  it('keeps props aliases separate from same-name setup bindings', () => {
+    const template = `
+<view :class="{ [y]: y }" :data-alias="y">{{ y }}</view>
+<view :class="{ [x]: x }" :data-setup="x">{{ x }}</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-600/index.vue',
+      {
+        propsAliases: {
+          y: 'x',
+        },
+      },
+    )
+    const computedCode = buildComputedCode(classStyleBindings ?? [])
+
+    expect(code).toContain('data-alias="{{y}}"')
+    expect(code).toContain('data-setup="{{x}}"')
+    expect(code).toContain('{{y}}')
     expect(code).toContain('{{x}}')
-    expect(code).not.toContain('{{y}}')
     expect(computedCode).toContain('this.__wevuProps.x')
     expect(computedCode).not.toContain('this.__wevuProps.y')
   })

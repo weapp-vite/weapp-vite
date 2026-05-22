@@ -24,9 +24,8 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
     expect(result.template).toContain('{{__wv_bind_0}}')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "bool") ? this.bool :')
     expect(result.script).toContain('this.__wevuProps != null && (this.__wevuProps.bool !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "bool"))')
-    expect(result.script).toContain('&& !("bool" in this) ? this.__wevuProps.bool : this.bool')
+    expect(result.script).toContain('__wevuPropsDerivedKeys: ["str", "bool"]')
     expect(result.script).toContain('String(__wevuUnref(')
   })
 
@@ -42,9 +41,10 @@ const { x: y } = defineProps<{ x: string }>()
 
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
-    expect(result.template).toContain('{{x}}')
-    expect(result.template).not.toContain('{{y}}')
+    expect(result.template).toContain('{{y}}')
+    expect(result.template).not.toContain('{{x}}')
     expect(result.template).toContain('class="{{__wv_cls_0}}"')
+    expect(result.script).toContain('__wevuPropsAliases')
     expect(result.script).toContain('__wevuProps.x')
     expect(result.script).not.toContain('__wevuProps.y')
   })

@@ -9,6 +9,7 @@ import {
   WEVU_PROPS_KEY,
   WEVU_RUNTIME_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
+  WEVU_SETUP_STATE_KEY,
 } from '@weapp-core/constants'
 import { shallowReactive } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
@@ -32,6 +33,20 @@ export function attachRuntimeProxyProps(state: Record<string, any>, props: Recor
   }
   catch {
     ;(state as any)[WEVU_PROPS_KEY] = props
+  }
+}
+
+export function attachRuntimeSetupState(state: Record<string, any>, setupState: Record<string, any>) {
+  try {
+    Object.defineProperty(state, WEVU_SETUP_STATE_KEY, {
+      value: setupState,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(state as any)[WEVU_SETUP_STATE_KEY] = setupState
   }
 }
 

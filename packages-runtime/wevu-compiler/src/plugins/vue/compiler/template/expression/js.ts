@@ -120,7 +120,10 @@ function createPropsKeyAccessFallback(name: string, fallback: t.Expression): t.E
   )
 }
 
-function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
+function createIdentifierAccessWithPropsFallback(
+  name: string,
+  context: TransformContext,
+): t.Expression {
   if (name === 'props') {
     const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
     return t.conditionalExpression(
@@ -147,11 +150,14 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   const hasStateObject = t.binaryExpression('!=', stateObject, t.nullLiteral())
   const hasStateKey = createHasOwnPropertyCall(stateObject, name)
   const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
-  const shouldUseStateAccess = t.logicalExpression('&&', hasStateObject, hasStateKey)
+  const isPropsDerivedKey = Boolean(context.propsDerivedKeys?.includes(name))
+  const shouldUseStateAccess = isPropsDerivedKey
+    ? t.booleanLiteral(false)
+    : t.logicalExpression('&&', hasStateObject, hasStateKey)
   const shouldUsePropsAccess = t.logicalExpression(
     '&&',
     hasUsablePropsValue,
-    t.unaryExpression('!', hasThisMember),
+    isPropsDerivedKey ? t.booleanLiteral(true) : t.unaryExpression('!', hasThisMember),
   )
   return t.conditionalExpression(
     shouldUseStateAccess,
@@ -176,9 +182,8 @@ function createAliasedPropsAccess(name: string, propName: string): t.Expression 
     t.logicalExpression('||', hasDefinedPropsValue, hasPropsKey),
   )
   const thisAccess = createThisMemberAccess(name)
-  const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
   return t.conditionalExpression(
-    t.logicalExpression('&&', hasUsablePropsValue, t.unaryExpression('!', hasThisMember)),
+    hasUsablePropsValue,
     propsAccess,
     thisAccess,
   )
@@ -272,7 +277,7 @@ export function normalizeJsExpressionWithContext(
         replacement = createUnrefCall(
           propsAlias
             ? createAliasedPropsAccess(name, propsAlias)
-            : createIdentifierAccessWithPropsFallback(name),
+            : createIdentifierAccessWithPropsFallback(name, context),
         )
       }
 

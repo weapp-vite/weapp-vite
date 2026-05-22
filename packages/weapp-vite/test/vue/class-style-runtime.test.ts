@@ -311,8 +311,8 @@ defineProps<{
       },
     })
 
-    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.$state')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "root")')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(')
+    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.__wevuProps, "root")')
     expect(result.script).toContain('__wevuProps.root')
     expect(result.script).toContain(': this.root).a')
     expect(result.script).toContain('__wv_expr_err')

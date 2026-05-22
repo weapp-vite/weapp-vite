@@ -10,13 +10,78 @@ import { refreshOwnerSnapshotFromInstance } from '../snapshot'
 
 export function createPropsSync(options: {
   restOptions: Record<string, any>
+  propsAliases?: Record<string, string>
+  propsDerivedKeys?: string[]
   userObservers?: Record<string, any>
 }) {
-  const { restOptions, userObservers } = options
+  const { restOptions, propsAliases, propsDerivedKeys, userObservers } = options
   const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
     ? Object.keys(restOptions.properties as any)
     : []
   const propKeySet = new Set(propKeys)
+  const propsDerivedKeySet = new Set(propsDerivedKeys ?? [])
+  const aliasEntries = Object.entries(propsAliases ?? {})
+    .filter(([alias, propName]) => alias && propName)
+  const syncedAliases = new WeakMap<InternalRuntimeState, Set<string>>()
+
+  const syncSetupStatePropsAliases = (instance: InternalRuntimeState, propsProxy: Record<string, unknown>) => {
+    if (!aliasEntries.length) {
+      return
+    }
+    const runtime = (instance as any).__wevu
+    const setupState = runtime?.setupState
+    const state = runtime?.state
+    if (!setupState || typeof setupState !== 'object') {
+      return
+    }
+    const aliases = syncedAliases.get(instance) ?? new Set<string>()
+    syncedAliases.set(instance, aliases)
+    for (const [alias, propName] of aliasEntries) {
+      if (hasOwn(setupState, alias) && !aliases.has(alias)) {
+        continue
+      }
+      const value = propsProxy[propName]
+      try {
+        ;(setupState as any)[alias] = value
+        aliases.add(alias)
+      }
+      catch {
+        // 忽略 alias 同步失败，保持 props 主链路可用。
+      }
+      if (state && typeof state === 'object' && (!hasOwn(state, alias) || aliases.has(alias))) {
+        try {
+          ;(state as any)[alias] = value
+        }
+        catch {
+          // 旧兼容 state 写入失败时不阻断运行时。
+        }
+      }
+    }
+  }
+
+  const syncPropsDerivedKeys = (instance: InternalRuntimeState, propsProxy: Record<string, unknown>) => {
+    if (!propsDerivedKeySet.size) {
+      return
+    }
+    const runtime = (instance as any).__wevu
+    const setupState = runtime?.setupState
+    if (!setupState || typeof setupState !== 'object') {
+      return
+    }
+    const aliasToPropName = new Map<string, string>(aliasEntries)
+    for (const key of propsDerivedKeySet) {
+      const propName = aliasToPropName.get(key) ?? key
+      if (!hasOwn(propsProxy, propName)) {
+        continue
+      }
+      try {
+        ;(setupState as any)[key] = propsProxy[propName]
+      }
+      catch {
+        // 忽略 props-derived 同步失败，保持主 props 链路可用。
+      }
+    }
+  }
 
   const attachWevuPropKeys = (instance: InternalRuntimeState) => {
     try {
@@ -127,12 +192,44 @@ export function createPropsSync(options: {
           }
         }
       }
+      syncPropsDerivedKeys(instance, propsProxy as Record<string, unknown>)
+      syncSetupStatePropsAliases(instance, propsProxy as Record<string, unknown>)
       refreshOwnerSnapshotFromInstance(instance)
     }
     if (pendingPropValues) {
       delete (instance as any)[WEVU_PENDING_PROP_VALUES_KEY]
     }
 
+    syncWevuAttrsFromInstance(instance)
+  }
+
+  const syncWevuPropsFromValues = (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => {
+    if (!values || typeof values !== 'object') {
+      return
+    }
+    const propsProxy = (instance as any)[WEVU_PROPS_KEY]
+    if (!propsProxy || typeof propsProxy !== 'object') {
+      return
+    }
+    let changed = false
+    for (const key of propKeys) {
+      if (!hasOwn(values, key)) {
+        continue
+      }
+      try {
+        ;(propsProxy as any)[key] = values[key]
+        changed = true
+      }
+      catch {
+        // 忽略 query props 同步失败，保持页面生命周期主链路可用。
+      }
+    }
+    if (!changed) {
+      return
+    }
+    syncPropsDerivedKeys(instance, propsProxy as Record<string, unknown>)
+    syncSetupStatePropsAliases(instance, propsProxy as Record<string, unknown>)
+    refreshOwnerSnapshotFromInstance(instance)
     syncWevuAttrsFromInstance(instance)
   }
 
@@ -149,6 +246,8 @@ export function createPropsSync(options: {
     }
     const pendingPropValues = ((instance as any)[WEVU_PENDING_PROP_VALUES_KEY] ??= Object.create(null)) as Record<string, unknown>
     pendingPropValues[key] = value
+    syncPropsDerivedKeys(instance, propsProxy as Record<string, unknown>)
+    syncSetupStatePropsAliases(instance, propsProxy as Record<string, unknown>)
     refreshOwnerSnapshotFromInstance(instance)
     syncWevuAttrsFromInstance(instance)
   }
@@ -191,6 +290,7 @@ export function createPropsSync(options: {
   return {
     attachWevuPropKeys,
     syncWevuPropsFromInstance,
+    syncWevuPropsFromValues,
     finalObservers,
   }
 }

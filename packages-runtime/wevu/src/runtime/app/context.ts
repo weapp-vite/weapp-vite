@@ -3,6 +3,7 @@ import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMe
 import {
   WEVU_INLINE_MAP_KEY,
   WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PROPS_KEY,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
 import { isRef, ref, toRaw } from '../../reactivity'
@@ -13,6 +14,7 @@ import { createComputedAccessors } from './computed'
 
 export function createRuntimeContext<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   state: D
+  setupState: Record<string, any>
   computedDefs: C
   methodDefs: M
   appConfig: AppConfig
@@ -21,6 +23,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
 }) {
   const {
     state,
+    setupState,
     computedDefs,
     methodDefs,
     appConfig,
@@ -101,6 +104,15 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (typeof key === 'string') {
         // setup 返回的方法会在运行时后置注入，读取版本号可确保相关 computed 在方法注入后失效重算。
         void setupMethodVersion.value
+        if (hasOwn(setupState, key)) {
+          return Reflect.get(setupState, key, receiver)
+        }
+        if (key === 'props') {
+          const props = (target as any)[WEVU_PROPS_KEY]
+          if (props && typeof props === 'object') {
+            return props
+          }
+        }
         if (key === 'data') {
           return state
         }
@@ -130,18 +142,33 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
           return nativeValue
         }
       }
-      return Reflect.get(target, key, receiver)
+      const targetValue = Reflect.get(target, key, receiver)
+      if (typeof key === 'string' && hasOwn(setupState, key)) {
+        return Reflect.get(setupState, key, receiver)
+      }
+      return targetValue
     },
     set(target, key, value, receiver) {
       if (typeof key === 'string' && (computedRefs as any)[key]) {
         setComputedValue(computedSetters, key, value)
         return true
       }
+      if (hasOwn(setupState, key)) {
+        const existingValue = Reflect.get(setupState, key, receiver)
+        if (isRef(existingValue) && !isRef(value)) {
+          existingValue.value = value
+          return true
+        }
+        return Reflect.set(setupState, key, value, receiver)
+      }
       if (Reflect.has(target, key)) {
         const existingValue = Reflect.get(target, key, receiver)
         if (isRef(existingValue) && !isRef(value)) {
           existingValue.value = value
           return true
+        }
+        if (hasOwn((target as any)[WEVU_PROPS_KEY] ?? {}, key)) {
+          return Reflect.set(setupState, key, value, receiver)
         }
         return Reflect.set(target, key, value, receiver)
       }
@@ -155,7 +182,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (key === 'data') {
         return true
       }
-      if (typeof key === 'string' && ((computedRefs as any)[key] || hasOwn(boundMethods, key))) {
+      if (typeof key === 'string' && (hasOwn(setupState, key) || (computedRefs as any)[key] || hasOwn(boundMethods, key))) {
         return true
       }
       const nativeInstance = resolveNativeInstance(target as object, target as object)
@@ -169,11 +196,17 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       Reflect.ownKeys(target).forEach((key) => {
         keys.add(key as string | symbol)
       })
+      Reflect.ownKeys(setupState).forEach((key) => {
+        keys.add(key as string | symbol)
+      })
       Object.keys(boundMethods).forEach(key => keys.add(key))
       Object.keys(computedRefs).forEach(key => keys.add(key))
       return [...keys]
     },
     getOwnPropertyDescriptor(target, key) {
+      if (typeof key === 'string' && hasOwn(setupState, key)) {
+        return Object.getOwnPropertyDescriptor(setupState, key)
+      }
       if (Reflect.has(target, key)) {
         return Object.getOwnPropertyDescriptor(target, key)
       }

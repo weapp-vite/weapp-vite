@@ -187,7 +187,9 @@ describe.sequential('e2e app: github-issues / props', () => {
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-600/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
-    expect(issuePageWxml).toContain('data-issue600-value="{{x}}"')
+    expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
+    expect(issuePageWxml).toContain('data-issue600-setup-value="{{x}}"')
+    expect(issuePageJs).toContain('__wevuPropsAliases')
     expect(issuePageJs).toContain('this.__wevuProps.x')
     expect(issuePageJs).not.toContain('this.__wevuProps.y')
 
@@ -199,7 +201,14 @@ describe.sequential('e2e app: github-issues / props', () => {
       }
       const renderedWxml = await readPageWxml(issuePage)
       expect(renderedWxml).toContain('data-issue600-value="issue-600-alias"')
+      expect(renderedWxml).toContain('data-issue600-setup-value="issue-600-setup"')
       expect(renderedWxml).toContain('issue-600-alias')
+      expect(renderedWxml).toContain('issue-600-setup')
+      expect(await issuePage.callMethod('_runE2E')).toMatchObject({
+        ok: true,
+        x: 'issue-600-setup',
+        y: 'issue-600-alias',
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

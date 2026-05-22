@@ -145,8 +145,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
 function rewriteForAliasExpression(exp: string, context: TransformContext): string {
   const normalized = normalizeWxmlExpression(exp)
   const forAliases = collectForAliasMapping(context)
-  const propsAliases = context.propsAliases ?? {}
-  if (!Object.keys(forAliases).length && !Object.keys(propsAliases).length) {
+  if (!Object.keys(forAliases).length) {
     return normalized
   }
   const parsed = parseBabelExpressionFile(normalized)
@@ -169,11 +168,6 @@ function rewriteForAliasExpression(exp: string, context: TransformContext): stri
         if (aliasExp) {
           replaceIdentifierWithExpression(path, t.cloneNode(aliasExp, true))
         }
-        return
-      }
-      const propName = propsAliases[name]
-      if (propName && t.isValidIdentifier(propName)) {
-        replaceIdentifierWithExpression(path, t.identifier(propName))
       }
     },
   })

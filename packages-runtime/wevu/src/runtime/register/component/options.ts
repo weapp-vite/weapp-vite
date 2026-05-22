@@ -1,6 +1,7 @@
 import type { LayoutHostBinding } from '../../layoutBridge'
 import type { TemplateRefBinding } from '../../templateRefs'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
+import { WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
 
 interface PreparedComponentOptions {
@@ -12,6 +13,8 @@ interface PreparedComponentOptions {
   topLevelMethods: Record<string, (...args: any[]) => any>
   templateRefs: TemplateRefBinding[] | undefined
   layoutHosts: LayoutHostBinding[] | undefined
+  propsAliases: Record<string, string> | undefined
+  propsDerivedKeys: string[] | undefined
   userObservers: Record<string, any> | undefined
   setupLifecycle: 'created' | 'attached'
   legacyCreated: unknown
@@ -131,6 +134,8 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     'export',
     '__wevuTemplateRefs',
     '__wevuLayoutHosts',
+    WEVU_PROPS_ALIASES_KEY,
+    WEVU_PROPS_DERIVED_KEYS_KEY,
     'setupLifecycle',
     'features',
     '__wevu_isPage',
@@ -196,6 +201,10 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   delete (restOptions as any).__wevuTemplateRefs
   const layoutHosts = (restOptions as any).__wevuLayoutHosts as LayoutHostBinding[] | undefined
   delete (restOptions as any).__wevuLayoutHosts
+  const propsAliases = (restOptions as any)[WEVU_PROPS_ALIASES_KEY] as Record<string, string> | undefined
+  delete (restOptions as any)[WEVU_PROPS_ALIASES_KEY]
+  const propsDerivedKeys = (restOptions as any)[WEVU_PROPS_DERIVED_KEYS_KEY] as string[] | undefined
+  delete (restOptions as any)[WEVU_PROPS_DERIVED_KEYS_KEY]
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const setupLifecycle = (restOptions as any).setupLifecycle === 'created' ? 'created' : 'attached'
   delete (restOptions as any).setupLifecycle
@@ -217,6 +226,8 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     topLevelMethods,
     templateRefs,
     layoutHosts,
+    propsAliases,
+    propsDerivedKeys,
     userObservers,
     setupLifecycle,
     legacyCreated,
