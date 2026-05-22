@@ -232,6 +232,29 @@ describe('compileVueTemplateToWxml', () => {
     expect(computedCode).not.toContain('this.$state')
   })
 
+  it('rewrites defineProps destructure aliases in template expressions', () => {
+    const template = `
+<view :class="{ [y]: y }" :data-value="y">{{ y }}</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-600/index.vue',
+      {
+        propsAliases: {
+          y: 'x',
+        },
+      },
+    )
+    const computedCode = buildComputedCode(classStyleBindings ?? [])
+
+    expect(code).toContain('data-value="{{x}}"')
+    expect(code).toContain('{{x}}')
+    expect(code).not.toContain('{{y}}')
+    expect(computedCode).toContain('this.__wevuProps.x')
+    expect(computedCode).not.toContain('this.__wevuProps.y')
+  })
+
   it('inlines object literal in v-bind attribute expression when enabled', () => {
     const template = `
 <icon :prop="{ active: props.event.isMyFavorite }" />

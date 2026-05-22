@@ -187,7 +187,7 @@ describe.sequential('e2e app: github-issues / props', () => {
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-600/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
-    expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
+    expect(issuePageWxml).toContain('data-issue600-value="{{x}}"')
     expect(issuePageJs).toContain('this.__wevuProps.x')
     expect(issuePageJs).not.toContain('this.__wevuProps.y')
 
