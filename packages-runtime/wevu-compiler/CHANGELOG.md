@@ -1,5 +1,19 @@
 # @wevu/compiler
 
+## 6.16.20
+
+### Patch Changes
+
+- 🐛 **修复模板中名为 `data` 的 props 在自动 class/style 或复杂绑定 computed 中被误解析为运行时 state 别名的问题，确保 `data.xxx` 会优先读取同名 props。** [#604](https://github.com/weapp-vite/weapp-vite/pull/604) by @sonofmagic
+
+- 🐛 **修复 `defineProps` 解构重命名后模板直出表达式仍访问本地别名的问题，确保模板插值、普通属性绑定与自动 computed 均能读取原始 prop。** [`c90a70d`](https://github.com/weapp-vite/weapp-vite/commit/c90a70d63a31814216d711229ad122f07f294114) by @sonofmagic
+
+- 🐛 **修复 `<script setup>` 中 `defineProps` 解构重命名后，模板运行时绑定和自动生成的 class/style computed 无法读取原始 prop 值的问题。** [#602](https://github.com/weapp-vite/weapp-vite/pull/602) by @sonofmagic
+
+- 🐛 **修复同名 `slot` 在 `v-if` / `v-else` 条件分支中的输出错误，确保具名插槽的两个分支都会按条件保留，不再把 `v-else` 分支拍平成普通节点。** [#601](https://github.com/weapp-vite/weapp-vite/pull/601) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.20`
+
 ## 6.16.19
 
 ### Patch Changes
