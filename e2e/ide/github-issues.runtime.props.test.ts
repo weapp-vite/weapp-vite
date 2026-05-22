@@ -14,6 +14,7 @@ import {
   releaseSharedMiniProgram,
   tapElement,
 } from './github-issues.runtime.shared'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 describe.sequential('e2e app: github-issues / props', () => {
   beforeAll(async () => {
@@ -66,16 +67,21 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(issuePageJs).toContain('issue322-input')
 
     const miniProgram = await getSharedMiniProgram(ctx)
+    const runtimeErrors = attachRuntimeErrorCollector(miniProgram)
     try {
+      const marker = runtimeErrors.mark()
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-322/index', 'state: none')
       if (!issuePage) {
         throw new Error('Failed to launch issue-322 page')
       }
+      expect(runtimeErrors.getSince(marker)).toEqual([])
       await tapElement(issuePage, '.issue322-btn-set')
       await issuePage.waitFor(260)
+      expect(runtimeErrors.getSince(marker)).toEqual([])
       expect(await readClassName(issuePage, '.issue322-input')).toContain('issue322-input-error')
     }
     finally {
+      runtimeErrors.dispose()
       await releaseSharedMiniProgram(miniProgram)
     }
   })
