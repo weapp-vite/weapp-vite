@@ -30,11 +30,12 @@ describe('ide devtools logs', () => {
     fs.rmSync(sandboxRoot, { recursive: true, force: true })
   })
 
-  it('detects simulator boot subPackages errors in recent WeChat DevTools logs', () => {
+  it('detects simulator boot and precompile state errors in recent WeChat DevTools logs', () => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
     writeLog(sandboxRoot, [
       `[${timestamp}][ERROR] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined`,
+      `[${timestamp}][ERROR] TypeError: Cannot read property 'getPreCompileOptions' of undefined`,
       '[2026-05-03 12:08:14.848][INFO] ignored line',
     ].join('\n'))
 
@@ -43,8 +44,9 @@ describe('ide devtools logs', () => {
       sinceMs: startedAt,
     })
 
-    expect(issues).toHaveLength(1)
+    expect(issues).toHaveLength(2)
     expect(issues[0]?.line).toContain('subPackages')
+    expect(issues[1]?.line).toContain('getPreCompileOptions')
     expect(() => assertNoRecentDevtoolsSimulatorBootIssues({
       label: 'demo',
       rootDir: sandboxRoot,

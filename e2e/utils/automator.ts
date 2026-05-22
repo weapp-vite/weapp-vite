@@ -86,6 +86,7 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
   /subPackages[\s\S]{0,80}undefined/i,
+  /getPreCompileOptions/i,
 ]
 const TRAILING_PATH_SEPARATOR_PATTERN = /[\\/]+$/
 const ENV_LIST_SPLIT_PATTERN = /[,;\n]/

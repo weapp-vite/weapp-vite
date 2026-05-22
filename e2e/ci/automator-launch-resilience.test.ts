@@ -221,6 +221,41 @@ describe.sequential('automator launch resilience', () => {
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
+  it('retries launch when DevTools reports a precompile options state error', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+
+    const firstError = new Error('TypeError: Cannot read property \'getPreCompileOptions\' of undefined')
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockRejectedValueOnce(firstError)
+      .mockResolvedValueOnce(secondMiniProgram)
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
+
+    const { launchAutomator } = await import('../utils/automator')
+    const miniProgram = await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(miniProgram).toBeTruthy()
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  })
+
   it('cleans devtools compile cache before retrying launch timeout', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'

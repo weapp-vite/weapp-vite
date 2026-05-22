@@ -15,10 +15,13 @@ export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
   devtoolsLaunchSkipped?: boolean
   env?: Record<string, string>
+  recoverableFailureKind?: SuiteTaskRecoverableFailureKind
   label: string
   command: string
   args: string[]
 }
+
+export type SuiteTaskRecoverableFailureKind = 'devtools-precompile-options'
 
 export interface SuiteTaskResult {
   artifacts: SuiteTaskArtifact[]
@@ -43,10 +46,18 @@ function formatDuration(durationMs: number) {
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
 const DEVTOOLS_LAUNCH_SKIP_PATTERN = /\[runtime:launch-skip\]/
+const DEVTOOLS_PRECOMPILE_OPTIONS_ERROR_PATTERNS = [
+  /getPreCompileOptions/i,
+  /Cannot read (?:property|properties) ['"]?getPreCompileOptions['"]? of undefined/i,
+  /Cannot read (?:property|properties) \(reading ['"]?getPreCompileOptions['"]?\)/i,
+] as const
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
 const TASK_HEARTBEAT_INTERVAL_MS = 30_000
 const TASK_STDIO_CLOSE_GRACE_MS = 200
+const IDE_SUITE_NAME_PATTERN = /^e2e:ide(?:$|-|:)/
+const DEVTOOLS_TASK_RETRY_LIMIT = 2
+const DEVTOOLS_PRECOMPILE_OPTIONS_RETRY_MESSAGE = '[warn] [runtime:launch-recover] retry devtools task after precompile options error'
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
@@ -60,16 +71,39 @@ function isDevtoolsVitestTask(task: SuiteTask) {
   return task.args.some(arg => arg.endsWith(DEVTOOLS_CONFIG_BASENAME))
 }
 
+function isIdeSuiteName(suiteName: string) {
+  return IDE_SUITE_NAME_PATTERN.test(suiteName)
+}
+
+export function isRecoverableDevtoolsPrecompileOptionsOutput(text: string) {
+  return DEVTOOLS_PRECOMPILE_OPTIONS_ERROR_PATTERNS.some(pattern => pattern.test(text))
+}
+
+function shouldRetryDevtoolsTaskFailure(suiteName: string, task: SuiteTask) {
+  return isIdeSuiteName(suiteName) && isDevtoolsVitestTask(task)
+}
+
+function resetTaskRuntimeState(task: SuiteTask) {
+  task.artifacts = []
+  task.devtoolsLaunchSkipped = undefined
+  task.recoverableFailureKind = undefined
+}
+
 function createTaskArtifactCollector() {
   const artifacts: SuiteTaskArtifact[] = []
   const seen = new Set<string>()
   let devtoolsLaunchSkipped = false
+  let recoverableFailureKind: SuiteTaskRecoverableFailureKind | undefined
 
   function collectFromText(text: string) {
     const lines = text.split(NEWLINE_SPLIT_PATTERN)
     for (const line of lines) {
       if (DEVTOOLS_LAUNCH_SKIP_PATTERN.test(line)) {
         devtoolsLaunchSkipped = true
+      }
+
+      if (!recoverableFailureKind && isRecoverableDevtoolsPrecompileOptionsOutput(line)) {
+        recoverableFailureKind = 'devtools-precompile-options'
       }
 
       const matched = line.match(REPORT_LINE_PATTERN)
@@ -98,6 +132,9 @@ function createTaskArtifactCollector() {
     collectFromText,
     get devtoolsLaunchSkipped() {
       return devtoolsLaunchSkipped
+    },
+    get recoverableFailureKind() {
+      return recoverableFailureKind
     },
   }
 }
@@ -239,6 +276,7 @@ async function defaultRunTask(task: SuiteTask) {
       stderrForwarder.flush()
       task.artifacts = collector.artifacts
       task.devtoolsLaunchSkipped = collector.devtoolsLaunchSkipped
+      task.recoverableFailureKind = collector.recoverableFailureKind
       child.stdout?.destroy()
       child.stderr?.destroy()
       resolve(code)
@@ -324,16 +362,32 @@ export async function runTaskSuite(
     const startedAt = Date.now()
     const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt)
     let exitCode = 1
+    let retryableFailureKind: SuiteTaskRecoverableFailureKind | undefined
 
     try {
-      if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
-        task.env = {
-          ...task.env,
-          [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
+      for (let attempt = 1; attempt <= DEVTOOLS_TASK_RETRY_LIMIT; attempt += 1) {
+        resetTaskRuntimeState(task)
+        if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
+          task.env = {
+            ...task.env,
+            [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
+          }
         }
+        await options.beforeEachTask?.(task)
+        exitCode = await runTask(task)
+        if (exitCode === 0) {
+          break
+        }
+
+        retryableFailureKind = task.recoverableFailureKind
+        if (attempt < DEVTOOLS_TASK_RETRY_LIMIT
+          && shouldRetryDevtoolsTaskFailure(suiteName, task)
+          && retryableFailureKind === 'devtools-precompile-options') {
+          console.warn(`${DEVTOOLS_PRECOMPILE_OPTIONS_RETRY_MESSAGE} suite=${suiteName} task=${task.label} attempt=${attempt}/${DEVTOOLS_TASK_RETRY_LIMIT}`)
+          continue
+        }
+        break
       }
-      await options.beforeEachTask?.(task)
-      exitCode = await runTask(task)
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)

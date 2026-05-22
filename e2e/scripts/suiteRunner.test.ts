@@ -10,6 +10,7 @@ import {
   formatSuiteArtifactsSummary,
   formatSuiteSummary,
   getTaskSpawnOptions,
+  isRecoverableDevtoolsPrecompileOptionsOutput,
   runTaskSuite,
 } from './suiteRunner'
 
@@ -114,6 +115,12 @@ describe('suiteRunner', () => {
     expect(process.exitCode).toBeUndefined()
 
     process.exitCode = previousExitCode
+  })
+
+  it('detects devtools precompile options errors from task output', () => {
+    expect(isRecoverableDevtoolsPrecompileOptionsOutput('[wevu] TypeError: Cannot read property \'getPreCompileOptions\' of undefined')).toBe(true)
+    expect(isRecoverableDevtoolsPrecompileOptionsOutput('[wevu] TypeError: Cannot read properties of undefined (reading \'getPreCompileOptions\')')).toBe(true)
+    expect(isRecoverableDevtoolsPrecompileOptionsOutput('[wevu] TypeError: Cannot read property \'email\' of undefined')).toBe(false)
   })
 
   it('prints heartbeat logs while a task is still running', async () => {
@@ -472,5 +479,61 @@ describe('suiteRunner', () => {
     expect(tasks[0]?.devtoolsLaunchSkipped).toBe(true)
     expect(secondTask?.label).toBe('ide/second.test.ts')
     expect(secondTask?.env).toBeUndefined()
+  })
+
+  it('retries an ide devtools task once when the first attempt hits a recoverable precompile options error', async () => {
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    const tasks: SuiteTask[] = [
+      {
+        label: 'ide/example.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts', '/repo/e2e/ide/example.test.ts'],
+      },
+    ]
+    const beforeEachTask = vi.fn()
+    const runTask = vi
+      .fn<(task: SuiteTask) => Promise<number>>()
+      .mockImplementationOnce(async (task) => {
+        task.recoverableFailureKind = 'devtools-precompile-options'
+        return 1
+      })
+      .mockResolvedValueOnce(0)
+
+    const exitCode = await runTaskSuite('e2e:ide-full', tasks, {
+      beforeEachTask,
+      runTask,
+      writeReport: false,
+    })
+
+    expect(exitCode).toBe(0)
+    expect(beforeEachTask).toHaveBeenCalledTimes(2)
+    expect(runTask).toHaveBeenCalledTimes(2)
+    expect(tasks[0]?.recoverableFailureKind).toBeUndefined()
+
+    process.exitCode = previousExitCode
+  })
+
+  it('does not retry non-ide tasks for recoverable devtools precompile options errors', async () => {
+    const tasks: SuiteTask[] = [
+      {
+        label: 'ci/example.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.ci.config.ts', '/repo/e2e/ci/example.test.ts'],
+      },
+    ]
+
+    const exitCode = await runTaskSuite('e2e:ci', tasks, {
+      runTask: vi
+        .fn<(task: SuiteTask) => Promise<number>>()
+        .mockImplementationOnce(async (task) => {
+          task.recoverableFailureKind = 'devtools-precompile-options'
+          return 1
+        }),
+      writeReport: false,
+    })
+
+    expect(exitCode).toBe(1)
   })
 })
