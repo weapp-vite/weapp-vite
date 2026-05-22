@@ -68,6 +68,35 @@ describe('classStyleComputed', () => {
     expect(code).toContain('__wv_bind_0 = getValue()')
   })
 
+  it('keeps data props fallback through computed class/style expressions', () => {
+    const bindings: any = [
+      {
+        name: '__wv_style_0',
+        type: 'style',
+        exp: 'data.color + data.size',
+        expAst: t.binaryExpression(
+          '+',
+          t.memberExpression(t.identifier('data'), t.identifier('color')),
+          t.memberExpression(t.identifier('data'), t.identifier('size')),
+        ),
+        errorFallback: '',
+        forStack: [],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    expect(code).toContain('this.__wevuProps.data')
+    expect(code).toContain('Object.prototype.hasOwnProperty.call(this.__wevuProps,"data")')
+    expect(code).toContain('this.data')
+    expect(code).toContain('unref')
+    expect(code).toContain('normalizeStyle')
+  })
+
   it('builds nested for expressions for array/object lists', () => {
     const bindings: any = [
       {

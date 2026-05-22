@@ -218,6 +218,20 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.type === 'bind')).toBe(true)
   })
 
+  it('prefers props named data in generated style computed bindings', () => {
+    const template = `
+<view :style="{ color: data.color, fontSize: data.size + 'rpx' }" />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/components/DataProp/index.vue')
+    const computedCode = buildComputedCode(classStyleBindings ?? [])
+
+    expect(code).toContain('style="{{__wv_style_0}}"')
+    expect(computedCode).toMatch(/this\.__wevuProps\.data!==undefined\|\|Object\.prototype\.hasOwnProperty\.call\(this\.__wevuProps,["']data["']\)/)
+    expect(computedCode).toContain('?this.__wevuProps.data:this.data')
+    expect(computedCode).not.toContain('this.$state')
+  })
+
   it('inlines object literal in v-bind attribute expression when enabled', () => {
     const template = `
 <icon :prop="{ active: props.event.isMyFavorite }" />

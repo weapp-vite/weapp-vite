@@ -100,6 +100,26 @@ function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expressi
   )
 }
 
+function createPropsKeyAccessFallback(name: string, fallback: t.Expression): t.Expression {
+  const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
+  const propsAccess = createMemberAccess(propsObject, name)
+  const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
+  const hasPropsValue = t.logicalExpression(
+    '&&',
+    hasPropsObject,
+    t.logicalExpression(
+      '||',
+      t.binaryExpression('!==', propsAccess, t.identifier('undefined')),
+      createHasOwnPropertyCall(propsObject, name),
+    ),
+  )
+  return t.conditionalExpression(
+    hasPropsValue,
+    propsAccess,
+    fallback,
+  )
+}
+
 function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   if (name === 'props') {
     const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
@@ -108,6 +128,9 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
       propsObject,
       createThisMemberAccess('props'),
     )
+  }
+  if (name === 'data') {
+    return createPropsKeyAccessFallback(name, createThisMemberAccess(name))
   }
   const thisAccess = createThisMemberAccess(name)
   const propsAccess = createMemberAccess(createThisMemberAccess(WEVU_PROPS_KEY), name)

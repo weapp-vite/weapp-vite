@@ -538,6 +538,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-599/index",
+          "pathName": "pages/issue-599/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
