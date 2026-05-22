@@ -1,7 +1,8 @@
 <script setup lang="ts">
-const { x: y } = defineProps<{
-  x: string
+const { x: y = 'ppp' } = defineProps<{
+  x?: string
 }>()
+const x = 'issue-600-setup'
 
 definePageJson({
   navigationBarTitleText: 'issue-600',
@@ -9,7 +10,8 @@ definePageJson({
 
 function _runE2E() {
   return {
-    ok: y === 'issue-600-alias',
+    ok: y === 'issue-600-alias' && x === 'issue-600-setup',
+    x,
     y,
   }
 }
@@ -23,6 +25,13 @@ function _runE2E() {
       :data-issue600-value="y"
     >
       {{ y }}
+    </view>
+    <view
+      class="issue600-setup-probe"
+      :class="{ [x]: x }"
+      :data-issue600-setup-value="x"
+    >
+      {{ x }}
     </view>
   </view>
 </template>

@@ -311,10 +311,8 @@ defineProps<{
       },
     })
 
-    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.$state')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "root")')
-    expect(result.script).toContain('__wevuProps.root')
-    expect(result.script).toContain(': this.root).a')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(__wevuResolvePropValue(this, "root", this.root))')
+    expect(result.script).toContain('__wevuResolvePropValue(this, "root", this.root)')
     expect(result.script).toContain('__wv_expr_err')
     expect(result.script).toContain('catch')
   })
@@ -333,10 +331,8 @@ defineProps<{
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wevuNormalizeClass(__wevuUnref(this.$state')
-    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "root")')
-    expect(scriptResult.code).toContain('__wevuProps.root')
-    expect(scriptResult.code).toContain(': this.root).a')
+    expect(scriptResult.code).toContain('__wevuNormalizeClass(__wevuUnref(__wevuResolvePropValue(this, "root", this.root))')
+    expect(scriptResult.code).toContain('__wevuResolvePropValue(this, "root", this.root)')
     expect(scriptResult.code).toContain('__wv_expr_err')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('return ""')
@@ -356,7 +352,7 @@ defineProps<{
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
+    expect(scriptResult.code).toContain('__wevuResolvePropValue(this, "errors", this.errors)')
     expect(scriptResult.code).toContain('issue322-input-error')
     expect(scriptResult.code).toContain('return "issue322-input issue322-input-base"')
   })
@@ -375,7 +371,7 @@ defineProps<{
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
+    expect(scriptResult.code).toContain('__wevuResolvePropValue(this, "errors", this.errors)')
     expect(scriptResult.code).toContain('display: none')
     expect(scriptResult.code).toContain('return "color:#0f172a;display: none"')
   })
@@ -425,6 +421,17 @@ defineProps<{
     const normalizeClass = createTestNormalizeClass(unref)
     const fn = vm.runInNewContext(`(${fnCode})`, {
       __wevuNormalizeClass: normalizeClass,
+      __wevuResolvePropValue: (target: any, key: string, fallback: any) => {
+        const props = target?.__wevuProps ?? {}
+        if (key in props) {
+          return props[key]
+        }
+        const state = target?.$state ?? target
+        if (state && key in state) {
+          return state[key]
+        }
+        return fallback
+      },
       __wevuUnref: unref,
     }) as (this: any) => string[]
 
@@ -457,6 +464,17 @@ defineProps<{
     const unref = createTestUnref()
     const fn = vm.runInNewContext(`(${fnCode})`, {
       __wevuNormalizeClass: (value: any) => unref(value),
+      __wevuResolvePropValue: (target: any, key: string, fallback: any) => {
+        const props = target?.__wevuProps ?? {}
+        if (key in props) {
+          return props[key]
+        }
+        const state = target?.$state ?? target
+        if (state && key in state) {
+          return state[key]
+        }
+        return fallback
+      },
       __wevuUnref: unref,
     }) as (this: any) => string
 

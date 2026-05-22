@@ -121,4 +121,31 @@ describe('runtime: setData snapshot helpers', () => {
     })
     expect(Object.getPrototypeOf(withComputed)).toBe(Object.prototype)
   })
+
+  it('collects setup state alongside reactive state in snapshot output', () => {
+    const state = reactive({
+      plain: 'data',
+    }) as Record<string, any>
+    const setupState = reactive({
+      setupOnly: 'value',
+    }) as Record<string, any>
+    const computedRefs = {}
+    const plainCache = new WeakMap<object, { version: number, value: any }>()
+
+    const snapshot = collectSnapshot({
+      state,
+      setupState,
+      computedRefs,
+      includeComputed: false,
+      shouldIncludeKey: _key => true,
+      plainCache,
+      toPlainMaxDepth: 5,
+      toPlainMaxKeys: 20,
+    })
+
+    expect(snapshot).toEqual({
+      plain: 'data',
+      setupOnly: 'value',
+    })
+  })
 })

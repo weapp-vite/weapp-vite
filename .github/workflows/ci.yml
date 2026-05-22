@@ -26,20 +26,25 @@ jobs:
         include:
           - os: ubuntu-latest
             node-version: 20
+            timeout_minutes: 25
           - os: ubuntu-latest
             node-version: 22
+            timeout_minutes: 25
           - os: ubuntu-latest
             node-version: 24
+            timeout_minutes: 25
           - os: windows-latest
             node-version: 20
+            timeout_minutes: 40
           - os: macos-latest
             node-version: 20
+            timeout_minutes: 25
       max-parallel: 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 25
+      timeout_minutes: ${{ matrix.timeout_minutes }}
       build_command: pnpm build:pkgs:ci
       main_command: |
         pnpm lint
@@ -55,8 +60,34 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20, 22, 24]
+        include:
+          - os: ubuntu-latest
+            node-version: 20
+            timeout_minutes: 25
+          - os: ubuntu-latest
+            node-version: 22
+            timeout_minutes: 25
+          - os: ubuntu-latest
+            node-version: 24
+            timeout_minutes: 25
+          - os: windows-latest
+            node-version: 20
+            timeout_minutes: 40
+          - os: windows-latest
+            node-version: 22
+            timeout_minutes: 40
+          - os: windows-latest
+            node-version: 24
+            timeout_minutes: 40
+          - os: macos-latest
+            node-version: 20
+            timeout_minutes: 25
+          - os: macos-latest
+            node-version: 22
+            timeout_minutes: 25
+          - os: macos-latest
+            node-version: 24
+            timeout_minutes: 25
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}

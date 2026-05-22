@@ -31,6 +31,7 @@ export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M e
 
 export interface RuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
   readonly state: D
+  readonly setupState?: Record<string, any>
   readonly proxy: ComponentPublicInstance<D, C, M>
   readonly methods: ExtractMethods<M>
   readonly computed: Readonly<ExtractComputed<C>>

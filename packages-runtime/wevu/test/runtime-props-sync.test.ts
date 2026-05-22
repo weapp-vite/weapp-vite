@@ -1,6 +1,7 @@
-import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
+import { WEVU_PROPS_ALIASES_KEY, WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
+import { resolvePropValue } from '@/runtime'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -34,13 +35,13 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('')
 
     inst.properties.title = 'Hello'
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
   })
 
@@ -68,8 +69,8 @@ describe('runtime: props sync', () => {
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.newProps).toBe(initialRef)
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.newProps.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.newProps).toBe(initialRef)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.newProps.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' })
   })
 
@@ -93,7 +94,7 @@ describe('runtime: props sync', () => {
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
   })
 
@@ -120,8 +121,8 @@ describe('runtime: props sync', () => {
     opts.lifetimes.ready.call(inst)
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.subtitle).toBe('Sub')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.subtitle).toBe('Sub')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ 'props.title': 'Hello', 'props.subtitle': 'Sub' }))
   })
 
@@ -143,7 +144,7 @@ describe('runtime: props sync', () => {
     opts.lifetimes.attached.call(inst)
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
   })
 
   it('exposes __wevuProps on runtime proxy for compiled fallback expressions', async () => {
@@ -176,6 +177,30 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.boolText).toBe('true')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
+  })
+
+  it('resolves props values with a compact runtime helper', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup() {
+        return {}
+      },
+      computed: {
+        titleText(this: any) {
+          return resolvePropValue(this, 'title', this.title)
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: 'hello' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.titleText).toBe('hello')
   })
 
   it('exposes __wevuProps to computed bindings when component has no setup', async () => {
@@ -218,7 +243,7 @@ describe('runtime: props sync', () => {
     }))
   })
 
-  it('maps setup bindings that collide with prop keys to live __wevuProps values', async () => {
+  it('keeps setup bindings separate from props when names collide', async () => {
     defineComponent({
       props: {
         bool: { type: Boolean, default: false },
@@ -236,18 +261,176 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.bool).toBe(true)
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.bool).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.bool).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.bool).toBe(true)
 
     inst.properties.bool = false
     opts.observers.bool.call(inst, false, true)
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.bool).toBe(false)
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.bool).toBe(false)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.bool).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.bool).toBe(false)
 
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
     expect(payloads.some((payload: any) => Object.hasOwn(payload, 'bool'))).toBe(false)
+  })
+
+  it('keeps setup state bindings separate from props aliases when names collide', async () => {
+    defineComponent({
+      props: {
+        x: { type: String, default: 'from-props' },
+      } as any,
+      setup(props) {
+        const x = 'from-setup'
+        return { x, props }
+      },
+      computed: {
+        label(this: any) {
+          return `${this.x}:${this.props.x}`
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { x: 'from-props' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-props')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:from-props')
+
+    inst.properties.x = 'next-props'
+    opts.observers.x.call(inst, 'next-props', 'from-props')
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('next-props')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:next-props')
+  })
+
+  it('syncs compiled props aliases into setup state without shadowing same-name setup bindings', async () => {
+    defineComponent({
+      props: {
+        x: { type: String, default: 'from-props' },
+      } as any,
+      [WEVU_PROPS_ALIASES_KEY]: {
+        y: 'x',
+        x: 'x',
+      },
+      setup() {
+        const x = 'from-setup'
+        return { x }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { x: 'from-props' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-props')
+
+    inst.properties.x = 'next-props'
+    opts.observers.x.call(inst, 'next-props', 'from-props')
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('next-props')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'next-props' }))
+  })
+
+  it('syncs page query props into compiled props aliases before first render', async () => {
+    defineComponent({
+      __wevu_isPage: true,
+      props: {
+        x: { type: String, default: 'from-props' },
+      } as any,
+      [WEVU_PROPS_ALIASES_KEY]: {
+        y: 'x',
+      },
+      __wevuPropsDerivedKeys: ['y'],
+      setup() {
+        const x = 'from-setup'
+        return { x }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { x: 'from-props' } }
+    opts.lifetimes.created.call(inst)
+    opts.onLoad.call(inst, { x: 'from-query' })
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-query')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-query')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }))
+  })
+
+  it('syncs replayed page options into compiled props aliases', async () => {
+    defineComponent({
+      __wevu_isPage: true,
+      props: {
+        x: { type: String, default: 'from-props' },
+      } as any,
+      [WEVU_PROPS_ALIASES_KEY]: {
+        y: 'x',
+      },
+      __wevuPropsDerivedKeys: ['y'],
+      setup() {
+        const x = 'from-setup'
+        return { x }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      options: { x: 'from-options' },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: { x: 'from-props' },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.onShow.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-options')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-options')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-options' }))
+  })
+
+  it('syncs aliased props-derived bindings from their source prop names', async () => {
+    defineComponent({
+      __wevu_isPage: true,
+      props: {
+        x: { type: String, default: 'from-props' },
+      } as any,
+      [WEVU_PROPS_ALIASES_KEY]: {
+        y: 'x',
+      },
+      __wevuPropsDerivedKeys: ['y'],
+      setup() {
+        const x = 'from-setup'
+        return { x }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { x: 'from-props' } }
+    opts.lifetimes.created.call(inst)
+    opts.onLoad.call(inst, { x: 'from-query' })
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-query')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-query')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }))
   })
 
   it('syncs function props into setup props when declared as Function', async () => {
@@ -269,8 +452,8 @@ describe('runtime: props sync', () => {
     opts.lifetimes.attached.call(inst)
     await nextTick()
 
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.callback).toBe(callback)
-    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.callback()).toBe('ok')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.callback).toBe(callback)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.callback()).toBe('ok')
     expect(callback).toHaveBeenCalledTimes(1)
   })
 })

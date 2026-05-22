@@ -12,6 +12,7 @@ import type {
 import {
   WEVU_ATTRS_KEY,
   WEVU_PROPS_KEY,
+  WEVU_SETUP_STATE_KEY,
 } from '@weapp-core/constants'
 import { addMutationRecorder, effect, isReactive, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
 import { clearPatchIndices } from '../../reactivity/reactive'
@@ -89,6 +90,20 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       }
     }
     const state = reactive(rawState)
+    const setupState = reactive(Object.create(null))
+    if (rawState && typeof rawState === 'object' && !hasOwn(rawState as object, WEVU_SETUP_STATE_KEY)) {
+      try {
+        Object.defineProperty(rawState as object, WEVU_SETUP_STATE_KEY, {
+          value: setupState,
+          configurable: true,
+          enumerable: false,
+          writable: false,
+        })
+      }
+      catch {
+        // 若 data 返回对象不可扩展，则跳过预置，后续由注册阶段兜底注入。
+      }
+    }
     const computedDefs = resolvedComputed
     const methodDefs = resolvedMethods
 
@@ -150,6 +165,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       touchSetupMethodsVersion,
     } = createRuntimeContext({
       state,
+      setupState: setupState as Record<string, any>,
       computedDefs,
       methodDefs,
       appConfig,
@@ -162,6 +178,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     let tracker: ReturnType<typeof effect> | undefined
     const scheduler = createSetDataScheduler({
       state: state as any,
+      setupState: setupState as any,
       computedRefs,
       dirtyComputedKeys,
       includeComputed,
@@ -208,7 +225,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
         // 在 setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
         // 仅跟踪这些明确注册过的键，避免每轮 flush 扫描整份 state。
         trackedSetupReactiveKeys.forEach((key) => {
-          const v = (state as any)[key]
+          const v = (setupState as any)[key] ?? (state as any)[key]
           // setup 返回的组合式对象常常是“普通对象 + 内含 refs/reactive”，
           // 这里递归触达内部响应式源，确保异步更新也能继续驱动 setData。
           touchSetupBinding(v)
@@ -272,6 +289,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const runtimeInstance: RuntimeInstance<D, C, M> = {
       get state() {
         return state
+      },
+      get setupState() {
+        return setupState as Record<string, any>
       },
       get proxy() {
         return publicInstance

@@ -144,9 +144,12 @@ describeRuntimePlatforms('wevu runtime platform outputs', () => {
       if (pagePath === 'pages/root-guard/index') {
         const scriptPath = path.join(DIST_ROOT, `${pagePath}.js`)
         const scriptSource = await fs.readFile(scriptPath, 'utf-8')
-        expect(scriptSource).toMatch(/this\.root(?:\)\.a|\.a)/)
+        expect(scriptSource).toContain('props: { root: {')
+        expect(scriptSource).toContain('allowNullPropInput: true')
+        expect(scriptSource).toContain('__wevuPropsDerivedKeys: ["root"]')
         expect(scriptSource).toMatch(/try\s*\{\s*return/)
-        expect(scriptSource).toMatch(/catch(?:\s*\([^)]*\))?\s*\{[\s\S]*console\.error\("\[wevu\] 模板运行时表达式执行失败:[\s\S]*return\s*(?:""|''|``)\s*;/)
+        expect(scriptSource).not.toContain('[wevu] 模板运行时表达式执行失败:')
+        expect(scriptSource).toMatch(/catch(?:\s*\([^)]*\))?\s*\{[\s\S]*return\s*(?:""|''|``)\s*;/)
       }
     }
 

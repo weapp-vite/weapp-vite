@@ -68,6 +68,9 @@ export const WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER = '__wv_current_layout_pr
 export const WEVU_INTERNAL_KEY_IDENTIFIER = '__wv_key'
 
 export const WEVU_PROPS_KEY = '__wevuProps'
+export const WEVU_SETUP_STATE_KEY = '__wevuSetupState'
+export const WEVU_PROPS_ALIASES_KEY = '__wevuPropsAliases'
+export const WEVU_PROPS_DERIVED_KEYS_KEY = '__wevuPropsDerivedKeys'
 export const WEVU_ATTRS_KEY = '__wevuAttrs'
 export const WEVU_NATIVE_INSTANCE_KEY = '__wevuNativeInstance'
 export const WEVU_RUNTIME_KEY = '__wevuRuntime'

@@ -5,8 +5,11 @@ import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
   WEVU_INLINE_MAP_KEY,
   WEVU_PARENT_INSTANCE_KEY,
+  WEVU_PROPS_ALIASES_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROVIDES_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SETUP_STATE_KEY,
   WEVU_SLOT_NAMES_ATTR,
   WEVU_SLOT_NAMES_PROP,
 } from '../src'
@@ -21,6 +24,9 @@ describe('@weapp-core/constants', () => {
     expect(WEVU_PUBLIC_RUNTIME_KEY).toBe('$wevu')
     expect(WEVU_PROVIDES_KEY).toBe('__wevuProvides')
     expect(WEVU_PARENT_INSTANCE_KEY).toBe('__wevuParentInstance')
+    expect(WEVU_SETUP_STATE_KEY).toBe('__wevuSetupState')
+    expect(WEVU_PROPS_ALIASES_KEY).toBe('__wevuPropsAliases')
+    expect(WEVU_PROPS_DERIVED_KEYS_KEY).toBe('__wevuPropsDerivedKeys')
     expect(WEVU_SLOT_NAMES_PROP).toBe('vueSlots')
     expect(WEVU_SLOT_NAMES_ATTR).toBe('vue-slots')
   })

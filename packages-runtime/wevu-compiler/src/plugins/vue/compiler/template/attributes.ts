@@ -211,7 +211,10 @@ export function renderClassAttribute(
   if (staticValue) {
     jsParts.push(t.stringLiteral(staticValue))
   }
-  const dynamicAst = normalizeJsExpressionWithContext(dynamicClassExp, context, { hint: 'class 绑定' })
+  const dynamicAst = normalizeJsExpressionWithContext(dynamicClassExp, context, {
+    hint: 'class 绑定',
+    runtimePropAccess: 'helper',
+  })
   if (dynamicAst) {
     jsParts.push(dynamicAst)
   }
@@ -266,13 +269,19 @@ export function renderStyleAttribute(
     jsParts.push(t.stringLiteral(staticValue))
   }
   if (dynamicStyleExp) {
-    const dynamicAst = normalizeJsExpressionWithContext(dynamicStyleExp, context, { hint: 'style 绑定' })
+    const dynamicAst = normalizeJsExpressionWithContext(dynamicStyleExp, context, {
+      hint: 'style 绑定',
+      runtimePropAccess: 'helper',
+    })
     if (dynamicAst) {
       jsParts.push(dynamicAst)
     }
   }
   if (vShowExp) {
-    const showAst = normalizeJsExpressionWithContext(vShowExp, context, { hint: 'v-show' })
+    const showAst = normalizeJsExpressionWithContext(vShowExp, context, {
+      hint: 'v-show',
+      runtimePropAccess: 'helper',
+    })
     if (showAst) {
       jsParts.push(t.conditionalExpression(
         showAst,

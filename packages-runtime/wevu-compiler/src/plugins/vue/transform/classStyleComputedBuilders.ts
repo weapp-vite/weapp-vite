@@ -53,6 +53,10 @@ function buildRuntimeExpressionErrorGuard(binding: ClassStyleBinding, errorId: t
   )
 }
 
+function shouldReportRuntimeExpressionError(binding: ClassStyleBinding) {
+  return binding.type === 'bind'
+}
+
 function createDataPropsFallbackExpression(fallback: t.Expression) {
   const propsObject = t.memberExpression(t.thisExpression(), t.identifier(WEVU_PROPS_KEY))
   const propsAccess = t.memberExpression(propsObject, t.identifier('data'))
@@ -202,7 +206,9 @@ function buildNormalizedExpression(
           t.catchClause(
             t.cloneNode(errorId),
             t.blockStatement([
-              buildRuntimeExpressionErrorGuard(binding, errorId),
+              ...shouldReportRuntimeExpressionError(binding)
+                ? [buildRuntimeExpressionErrorGuard(binding, errorId)]
+                : [],
               t.returnStatement(t.stringLiteral(errorFallback)),
             ]),
           ),

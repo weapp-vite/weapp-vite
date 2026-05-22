@@ -1,9 +1,4 @@
-import {
-  WEVU_PROP_KEYS_KEY,
-  WEVU_PROPS_KEY,
-} from '@weapp-core/constants'
 import { isReactive, isRef, toRaw } from '../../reactivity'
-import { hasOwn } from '../../utils'
 import { hasTrackableSetupBinding } from '../setupTracking'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -38,11 +33,9 @@ export function applySetupResult(
 ) {
   const includeFunctionsInState = Boolean(options?.includeFunctionsInState)
   const functionPropPaths = options?.functionPropPaths
-  const declaredPropKeys = new Set<string>(
-    Array.isArray(target?.[WEVU_PROP_KEYS_KEY]) ? target[WEVU_PROP_KEYS_KEY] : [],
-  )
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
+  const setupState = runtime?.setupState ?? Object.create(null)
   const rawState = isReactive(state) ? toRaw(state) : state
   let methodsChanged = false
   if (runtime && !runtime.methods) {
@@ -61,13 +54,22 @@ export function applySetupResult(
       // 个别场景 runtime 可能只读，保持兼容行为。
     }
   }
+  if (runtime && !runtime.setupState) {
+    try {
+      runtime.setupState = setupState
+    }
+    catch {
+      // 个别场景 runtime 可能只读，保持兼容行为。
+    }
+  }
   Object.keys(result).forEach((key) => {
     const val = (result as any)[key]
     if (typeof val === 'function') {
       const bound = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
       ;(methods as any)[key] = bound
+      ;(state as any)[key] = bound
       if (includeFunctionsInState || functionPropPaths?.has(key)) {
-        ;(state as any)[key] = bound
+        ;(setupState as any)[key] = bound
       }
       methodsChanged = true
     }
@@ -75,40 +77,7 @@ export function applySetupResult(
       if (hasTrackableSetupBinding(val)) {
         runtime?.__wevu_trackSetupReactiveKey?.(key)
       }
-      if (declaredPropKeys.has(key)) {
-        let fallbackValue = val
-        try {
-          Object.defineProperty(rawState, key, {
-            configurable: true,
-            enumerable: false,
-            get() {
-              const propsSource = (rawState as any)[WEVU_PROPS_KEY]
-              if (propsSource && typeof propsSource === 'object' && hasOwn(propsSource, key)) {
-                return (propsSource as any)[key]
-              }
-              return fallbackValue
-            },
-            set(next: unknown) {
-              fallbackValue = next
-              const propsSource = (rawState as any)[WEVU_PROPS_KEY]
-              if (!propsSource || typeof propsSource !== 'object') {
-                return
-              }
-              try {
-                ;(propsSource as any)[key] = next
-              }
-              catch {
-                // 忽略异常
-              }
-            },
-          })
-        }
-        catch {
-          ;(state as any)[key] = val
-        }
-        return
-      }
-      // 不可序列化的实例不应出现在 setData 快照中。
+      ;(state as any)[key] = val
       if (val === target || !shouldExposeInSnapshot(val)) {
         try {
           Object.defineProperty(rawState, key, {
@@ -119,12 +88,10 @@ export function applySetupResult(
           })
         }
         catch {
-          ;(state as any)[key] = val
+          // 保持 state 的兼容写入已完成，这里只兜底非枚举定义。
         }
       }
-      else {
-        ;(state as any)[key] = val
-      }
+      ;(setupState as any)[key] = val
     }
   })
   if (runtime) {

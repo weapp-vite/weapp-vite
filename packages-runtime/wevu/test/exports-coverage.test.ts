@@ -102,6 +102,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'resetWevuDefaults',
   'resolveLayoutBridge',
   'resolveLayoutHost',
+  'resolvePropValue',
   'resolveRuntimePageLayoutName',
   'runSetupFunction',
   'setCurrentInstance',

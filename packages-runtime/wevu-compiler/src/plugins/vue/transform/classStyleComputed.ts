@@ -36,7 +36,7 @@ function applyPropsAliasesToExpression(expression: t.Expression, propsAliases: R
       if (!propName || path.scope.hasBinding(path.node.name)) {
         return
       }
-      const replacement = createMemberAccess(t.identifier('props'), propName)
+      const replacement = createMemberAccess(t.memberExpression(t.thisExpression(), t.identifier('__wevuProps')), propName)
       const parent = path.parentPath
       if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
         parent.node.shorthand = false
