@@ -262,8 +262,10 @@ describe('class/style runtime', () => {
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuResolvePropValue(this, "groupTabs", this.groupTabs))')
-    expect(scriptResult.code).toContain('__wevuResolvePropValue(this, "groupTabs", this.groupTabs)')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.$state')
+    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "groupTabs")')
+    expect(scriptResult.code).toContain('__wevuProps.groupTabs')
+    expect(scriptResult.code).toContain(': this.groupTabs')
     expect(scriptResult.code).toContain('try')
     expect(scriptResult.code).toContain('catch')
   })

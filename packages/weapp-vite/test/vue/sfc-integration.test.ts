@@ -306,7 +306,8 @@ const selectedEventIdx = -1
     expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(__wevuResolvePropValue(this, "root", this.root))')
     expect(result.script).toContain('__wevuResolvePropValue(this, "root", this.root)')
     expect(result.script).toContain('event.isPublic ? \'pub\' : \'pri\'')
-    expect(result.script).toContain('__wevuResolvePropValue(this, "events", this.events)')
+    expect(result.script).toContain('__wevuProps.events')
+    expect(result.script).toContain(': this.events')
     expect(result.script).toContain('__wevuResolvePropValue(this, "isExpand", this.isExpand)')
   })
 
