@@ -7,6 +7,8 @@
 
 重点：迁移后不再直接写原生构造器，生命周期通过 `wevu` hooks 注册。
 
+渐进迁移时允许原生页面和 Vue SFC 页面共存。不要因为接入 `weapp-vite` 就立刻删除所有 `Page/Component` 文件；先用路由和构建验证证明两类页面能同时工作。
+
 ## 状态层
 
 - 原生：`this.data` + `this.setData({ ... })`
@@ -57,6 +59,8 @@ if (import.meta.env.PLATFORM === 'weapp') {
 
 ## 高频坑位
 
+- 把“工具链接入”做成“一次性全量重写”，导致无法定位问题和回滚
+- 试点页夹带全局状态、请求层或视觉系统重构，行为漂移无法归因
 - 列表字段未兜底，导致 `map/forEach of undefined`
 - `usingComponents` 未迁移到 JSON 宏，组件不渲染
 - `query` 参数未 parse，导致类型错乱
