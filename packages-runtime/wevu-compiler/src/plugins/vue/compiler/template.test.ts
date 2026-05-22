@@ -227,8 +227,7 @@ describe('compileVueTemplateToWxml', () => {
     const computedCode = buildComputedCode(classStyleBindings ?? [])
 
     expect(code).toContain('style="{{__wv_style_0}}"')
-    expect(computedCode).toMatch(/this\.__wevuProps\.data!==undefined\|\|Object\.prototype\.hasOwnProperty\.call\(this\.__wevuProps,["']data["']\)/)
-    expect(computedCode).toContain('?this.__wevuProps.data:this.data')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"data",this.data)')
     expect(computedCode).not.toContain('this.$state')
   })
 
@@ -251,8 +250,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-value="{{y}}"')
     expect(code).toContain('{{y}}')
     expect(code).not.toContain('{{x}}')
-    expect(computedCode).toContain('this.__wevuProps.x')
-    expect(computedCode).not.toContain('this.__wevuProps.y')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.y,true)')
+    expect(computedCode).not.toContain('__wevuResolvePropValue(this,"y",this.y)')
   })
 
   it('keeps props aliases separate from same-name setup bindings', () => {
@@ -276,8 +275,46 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-setup="{{x}}"')
     expect(code).toContain('{{y}}')
     expect(code).toContain('{{x}}')
-    expect(computedCode).toContain('this.__wevuProps.x')
-    expect(computedCode).not.toContain('this.__wevuProps.y')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.y,true)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.x)')
+    expect(computedCode).not.toContain('__wevuResolvePropValue(this,"y",this.y)')
+  })
+
+  it('uses compact runtime props helper for complex class/style/v-show aliases', () => {
+    const template = `
+<view
+  class="issue600-complex"
+  :class="[y && (y + '-alias'), { [x]: x && y, visible: visible && y !== 'hidden' }, y ? ['nested', { ready: x === 'issue-600-setup' }] : []]"
+  :style="[{ color: theme.color }, y ? { fontSize: size + 'rpx' } : null]"
+  v-show="visible && y !== 'hidden'"
+  :data-alias="y"
+>
+  {{ y }}
+</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-600/index.vue',
+      {
+        propsAliases: {
+          y: 'x',
+        },
+      },
+    )
+    const computedCode = buildComputedCode(classStyleBindings ?? [])
+
+    expect(code).toContain('class="{{__wv_cls_0}}"')
+    expect(code).toContain('style="{{__wv_style_0}}"')
+    expect(code).toContain('data-alias="{{y}}"')
+    expect(computedCode).toContain('issue600-complex')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.y,true)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.x)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"visible",this.visible)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"theme",this.theme)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"size",this.size)')
+    expect(computedCode).toContain('__wevuResolvePropValue(this,"x",this.y,true)')
+    expect(computedCode).not.toContain('__wevuResolvePropValue(this,"y",this.y)')
   })
 
   it('inlines object literal in v-bind attribute expression when enabled', () => {

@@ -303,13 +303,11 @@ const selectedEventIdx = -1
     })
 
     expect(result.script).toContain('__wv_expr_err')
-    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.__wevuProps, "root")')
-    expect(result.script).toContain('__wevuProps.root')
-    expect(result.script).toContain(': this.root).a')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(__wevuResolvePropValue(this, "root", this.root))')
+    expect(result.script).toContain('__wevuResolvePropValue(this, "root", this.root)')
     expect(result.script).toContain('event.isPublic ? \'pub\' : \'pri\'')
-    expect(result.script).toContain('__wevuProps.events')
-    expect(result.script).toContain(': this.events')
+    expect(result.script).toContain('__wevuResolvePropValue(this, "events", this.events)')
+    expect(result.script).toContain('__wevuResolvePropValue(this, "isExpand", this.isExpand)')
   })
 
   it('should unref computed boolean in class ternary expression', async () => {
@@ -332,10 +330,8 @@ const computedValue = computed(() => Boolean(source))
       },
     })
 
-    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.$state')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "computedValue")')
-    expect(result.script).toContain('__wevuProps.computedValue')
-    expect(result.script).toContain(': this.computedValue) ? \'a\' : \'b\')')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(__wevuResolvePropValue(this, "computedValue", this.computedValue))')
+    expect(result.script).toContain('__wevuResolvePropValue(this, "computedValue", this.computedValue)')
     expect(result.script).toContain('__wv_expr_err')
   })
 

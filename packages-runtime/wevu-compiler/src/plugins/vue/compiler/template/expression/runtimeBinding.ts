@@ -49,7 +49,10 @@ export function registerRuntimeBindingExpression(
   context: TransformContext,
   options?: { hint?: string },
 ): string | null {
-  const expAst = normalizeJsExpressionWithContext(exp, context, options)
+  const expAst = normalizeJsExpressionWithContext(exp, context, {
+    ...options,
+    runtimePropAccess: 'helper',
+  })
   if (!expAst) {
     return null
   }

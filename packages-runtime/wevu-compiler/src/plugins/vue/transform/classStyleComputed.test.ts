@@ -134,10 +134,61 @@ describe('classStyleComputed', () => {
     })
 
     expect(code).toContain('this.__wevuProps.data')
-    expect(code).toContain('Object.prototype.hasOwnProperty.call(this.__wevuProps,"data")')
     expect(code).toContain('this.data')
     expect(code).toContain('unref')
     expect(code).toContain('normalizeStyle')
+  })
+
+  it('uses runtime prop fallback helper for complex aliased class expressions', () => {
+    const bindings: any = [
+      {
+        name: '__wv_cls_0',
+        type: 'class',
+        exp: 'root.a ? [foo, { [bar]: baz && items.length > 0 }] : nested.title + "-" + count',
+        expAst: t.conditionalExpression(
+          t.memberExpression(t.identifier('root'), t.identifier('a')),
+          t.arrayExpression([
+            t.identifier('foo'),
+            t.objectExpression([
+              t.objectProperty(
+                t.identifier('bar'),
+                t.logicalExpression(
+                  '&&',
+                  t.identifier('baz'),
+                  t.binaryExpression(
+                    '>',
+                    t.memberExpression(t.identifier('items'), t.identifier('length')),
+                    t.numericLiteral(0),
+                  ),
+                ),
+                true,
+              ),
+            ]),
+          ]),
+          t.binaryExpression(
+            '+',
+            t.binaryExpression(
+              '+',
+              t.memberExpression(t.identifier('nested'), t.identifier('title')),
+              t.stringLiteral('-'),
+            ),
+            t.identifier('count'),
+          ),
+        ),
+        errorFallback: 'base',
+        forStack: [],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    expect(code).toContain('root.a')
+    expect(code).toContain('root.a?[foo,{[bar]:baz&&items.length>0}]:nested.title+"-"+count')
+    expect(code).toContain('return"base"')
   })
 
   it('builds nested for expressions for array/object lists', () => {

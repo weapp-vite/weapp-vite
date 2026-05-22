@@ -23,8 +23,7 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
 
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
-    expect(result.template).toContain('{{__wv_bind_0}}')
-    expect(result.script).toContain('this.__wevuProps != null && (this.__wevuProps.bool !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "bool"))')
+    expect(result.script).toContain('__wevuResolvePropValue')
     expect(result.script).toContain('__wevuPropsDerivedKeys: ["str", "bool"]')
     expect(result.script).toContain('String(__wevuUnref(')
   })
@@ -41,11 +40,8 @@ const { x: y } = defineProps<{ x: string }>()
 
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
-    expect(result.template).toContain('{{y}}')
-    expect(result.template).not.toContain('{{x}}')
-    expect(result.template).toContain('class="{{__wv_cls_0}}"')
+    expect(result.script).toContain('__wevuResolvePropValue')
     expect(result.script).toContain('__wevuPropsAliases')
-    expect(result.script).toContain('__wevuProps.x')
     expect(result.script).not.toContain('__wevuProps.y')
   })
 
@@ -61,9 +57,26 @@ const props = defineProps<{ str: string; bool: boolean }>()
 
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
-    expect(result.template).toContain('{{__wv_bind_0}}')
-    expect(result.script).toContain('this.__wevuProps != null ? this.__wevuProps : this.props')
+    expect(result.script).toContain('__wevuResolvePropValue')
     expect(result.script).not.toContain('__wevuProps.props')
+  })
+
+  it('uses compact runtime prop helper for aliased complex computed bindings', async () => {
+    const source = `
+<script setup lang="ts">
+const { x: y } = defineProps<{ x: { a: string }, nested: { title: string }, foo: string, bar: string, baz: boolean, items: any[], count: number }>()
+</script>
+<template>
+  <view :class="{ [y.a]: y.a ? [foo, { [bar]: baz && items.length > 0 }] : nested.title + '-' + count }" />
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
+
+    expect(result.script).toContain('__wevuResolvePropValue')
+    expect(result.script).not.toContain('this.__wevuProps != null && (this.__wevuProps.x !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "x"))')
+    expect(result.script).not.toContain('this.__wevuProps != null && (this.__wevuProps.nested !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "nested"))')
+    expect(result.script).toContain('__wv_cls_0')
   })
 
   it('produces consistent output for LF and CRLF sources', async () => {

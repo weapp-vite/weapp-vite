@@ -1,6 +1,7 @@
 import { WEVU_PROPS_ALIASES_KEY, WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
+import { resolvePropValue } from '@/runtime'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -176,6 +177,30 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.boolText).toBe('true')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
+  })
+
+  it('resolves props values with a compact runtime helper', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup() {
+        return {}
+      },
+      computed: {
+        titleText(this: any) {
+          return resolvePropValue(this, 'title', this.title)
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: 'hello' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.titleText).toBe('hello')
   })
 
   it('exposes __wevuProps to computed bindings when component has no setup', async () => {

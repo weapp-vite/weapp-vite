@@ -97,9 +97,11 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-300 props destructure boolean binding')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
     expect(await fs.readFile(probeWxmlPath, 'utf-8')).toContain('{{__wv_bind_0}}')
-    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('__wevuProps.bool')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('__wevuPropsDerivedKeys')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('"bool"')
     expect(await fs.readFile(strictProbeWxmlPath, 'utf-8')).toContain('{{__wv_bind_0}}')
-    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('__wevuProps.bool')
+    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('__wevuPropsDerivedKeys')
+    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('"bool"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -169,7 +171,9 @@ describe.sequential('e2e app: github-issues / props', () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
     expect(await fs.readFile(componentWxmlPath, 'utf-8')).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
-    expect(await fs.readFile(componentJsPath, 'utf-8')).toContain('this.__wevuProps.data')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+    expect(componentJs).toContain('__wevuPropsDerivedKeys')
+    expect(componentJs).toContain('"data"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -196,8 +200,9 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
     expect(issuePageWxml).toContain('data-issue600-setup-value="{{x}}"')
     expect(issuePageJs).toContain('__wevuPropsAliases')
-    expect(issuePageJs).toContain('this.__wevuProps.x')
-    expect(issuePageJs).not.toContain('this.__wevuProps.y')
+    expect(issuePageJs).toContain('y: "x"')
+    expect(issuePageJs).toContain('__wevuPropsDerivedKeys')
+    expect(issuePageJs).not.toContain('y: "y"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
