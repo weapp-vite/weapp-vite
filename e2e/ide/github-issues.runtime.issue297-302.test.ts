@@ -46,7 +46,7 @@ describe.sequential('e2e app: github-issues / issue-297-302', () => {
     const bindTokens = issuePageWxml.match(/__wv_bind_\d+/g) ?? []
     expect(new Set(bindTokens).size).toBeGreaterThanOrEqual(5)
 
-    expect(issuePageJs).toMatch(/sayHello\)\(1,/)
+    expect(issuePageJs).toContain('sayHello(1, \'root\', dasd)')
     expect(issuePageJs).toContain('dasd')
     expect(issuePageJs).toContain('this.sayHello')
     expect(issuePageJs).toContain('_runE2E')

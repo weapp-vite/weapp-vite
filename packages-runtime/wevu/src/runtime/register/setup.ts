@@ -22,6 +22,7 @@ export function runSetupFunction(
   const runtimeContext = context?.runtime ?? {
     methods: Object.create(null),
     state: {},
+    setupState: {},
     proxy: {},
     watch: () => () => {},
     bindModel: () => {},

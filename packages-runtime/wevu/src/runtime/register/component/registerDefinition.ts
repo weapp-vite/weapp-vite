@@ -40,6 +40,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   attachWevuPropKeys: (instance: InternalRuntimeState) => void
   setupLifecycle: 'created' | 'attached'
   syncWevuPropsFromInstance: (instance: InternalRuntimeState) => void
+  syncWevuPropsFromValues: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
   isPage: boolean
   legacyCreated: unknown
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string

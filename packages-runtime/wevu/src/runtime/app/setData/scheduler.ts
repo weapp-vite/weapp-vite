@@ -9,6 +9,7 @@ import { collectSnapshot } from './snapshot'
 
 export function createSetDataScheduler(options: {
   state: Record<string, any>
+  setupState?: Record<string, any>
   computedRefs: Record<string, { value: any }>
   dirtyComputedKeys: Set<string>
   includeComputed: boolean
@@ -37,6 +38,7 @@ export function createSetDataScheduler(options: {
 }) {
   const {
     state,
+    setupState,
     computedRefs,
     dirtyComputedKeys,
     includeComputed,
@@ -153,11 +155,14 @@ export function createSetDataScheduler(options: {
 
   const resolveTopKeysByRoot = (root: object) => {
     const matches: string[] = []
-    for (const key of Object.keys(state)) {
+    const rawSetupState = setupState && typeof setupState === 'object'
+      ? (isReactive(setupState) ? toRaw(setupState as any) : setupState)
+      : undefined
+    for (const key of new Set([...Object.keys(state), ...(rawSetupState ? Object.keys(rawSetupState) : [])])) {
       if (!shouldIncludeKey(key)) {
         continue
       }
-      const value = state[key]
+      const value = rawSetupState && hasOwn(rawSetupState, key) ? rawSetupState[key] : state[key]
       const candidate = isRef(value) ? value.value : value
       if (!candidate || typeof candidate !== 'object') {
         continue
@@ -190,6 +195,7 @@ export function createSetDataScheduler(options: {
 
   const collect = () => collectSnapshot({
     state,
+    setupState,
     computedRefs,
     includeComputed,
     shouldIncludeKey,
@@ -202,18 +208,22 @@ export function createSetDataScheduler(options: {
 
   const collectDiffSnapshot = () => {
     const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
+    const rawSetupState = setupState && typeof setupState === 'object'
+      ? (isReactive(setupState) ? toRaw(setupState as any) : setupState)
+      : undefined
     const nextSnapshot: Record<string, any> = { ...latestSnapshot }
     const seen = new WeakMap<object, any>()
     const includedStateKeys = new Set<string>()
     const includedComputedKeys = new Set<string>()
     const replacedTopLevelKeys = new Set<string>()
 
-    for (const key of Object.keys(rawState)) {
+    for (const key of new Set([...Object.keys(rawState), ...(rawSetupState ? Object.keys(rawSetupState) : [])])) {
       if (!shouldIncludeKey(key)) {
         continue
       }
       includedStateKeys.add(key)
-      const token = createValueToken(rawState[key])
+      const source = rawSetupState && hasOwn(rawSetupState, key) ? rawSetupState : rawState
+      const token = createValueToken(source[key])
       const previousToken = latestStateTokens[key]
       if (
         previousToken
@@ -229,7 +239,7 @@ export function createSetDataScheduler(options: {
         replacedTopLevelKeys.add(key)
       }
       if (!isSameToken(previousToken, token) || !hasOwn(latestSnapshot, key)) {
-        nextSnapshot[key] = toPlain(rawState[key], seen, {
+        nextSnapshot[key] = toPlain(source[key], seen, {
           cache: plainCache,
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,

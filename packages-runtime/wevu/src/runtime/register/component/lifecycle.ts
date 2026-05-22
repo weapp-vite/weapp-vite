@@ -32,6 +32,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   enableOnShareAppMessage: boolean
   enableOnShareTimeline: boolean
   enableOnAddToFavorites: boolean
+  syncWevuPropsFromValues?: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
   effectiveOnSaveExitState: (...args: any[]) => any
   effectiveOnPullDownRefresh: (...args: any[]) => any
   effectiveOnReachBottom: (...args: any[]) => any
@@ -65,6 +66,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     enableOnShareAppMessage,
     enableOnShareTimeline,
     enableOnAddToFavorites,
+    syncWevuPropsFromValues,
     effectiveOnSaveExitState,
     effectiveOnPullDownRefresh,
     effectiveOnReachBottom,
@@ -77,6 +79,9 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     effectiveOnAddToFavorites,
     hasHook,
   } = options
+  const flushPageSnapshotIfPossible = (target: InternalRuntimeState) => {
+    ;(target as any).__wevu?.__wevu_flushSetupSnapshotSync?.()
+  }
 
   const pageLifecycleHooks: Record<string, any> = {
     onLoad(this: InternalRuntimeState, ...args: any[]) {
@@ -85,6 +90,11 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
       ;(this as any)[WEVU_ON_LOAD_CALLED_KEY] = true
       mountRuntimeInstance(this, runtimeApp, watch, setup)
+      const pageOptions = args[0] && typeof args[0] === 'object'
+        ? args[0]
+        : resolvePageOptions(this)
+      syncWevuPropsFromValues?.(this, pageOptions)
+      flushPageSnapshotIfPossible(this)
       enableDeferredSetData(this)
       if (isPage) {
         ensurePageShareMenus({
@@ -94,7 +104,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
       callHookList(this, 'onLoad', args)
       if (typeof userOnLoad === 'function') {
-        return userOnLoad.apply(this, args)
+        return userOnLoad.apply(this, args.length ? args : [pageOptions])
       }
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
@@ -113,6 +123,8 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         if (!(this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
+        syncWevuPropsFromValues?.(this, resolvePageOptions(this))
+        flushPageSnapshotIfPossible(this)
         ensurePageShareMenus({
           enableOnShareAppMessage,
           enableOnShareTimeline,
@@ -140,6 +152,8 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         if (!(this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
+        syncWevuPropsFromValues?.(this, resolvePageOptions(this))
+        flushPageSnapshotIfPossible(this)
         ensurePageShareMenus({
           enableOnShareAppMessage,
           enableOnShareTimeline,

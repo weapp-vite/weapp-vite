@@ -13,6 +13,7 @@ import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from '.
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
 import { injectLayoutHosts } from './layoutHosts'
+import { injectPropsAliases, injectPropsDerivedKeys } from './propsAliases'
 import { injectSetupInitialData } from './setupInitialData'
 import { injectTemplateRefs } from './templateRefs'
 
@@ -261,6 +262,11 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && options?.relaxStructuredTypeOnlyProps) {
     transformed = relaxStructuredTypeOnlyProps(componentOptionsObject) || transformed
+  }
+
+  if (componentOptionsObject) {
+    transformed = injectPropsAliases(componentOptionsObject, options?.propsAliases) || transformed
+    transformed = injectPropsDerivedKeys(componentOptionsObject, options?.propsDerivedKeys) || transformed
   }
 
   const classStyleBindings = options?.classStyleBindings ?? []

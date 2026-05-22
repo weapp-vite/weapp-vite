@@ -206,6 +206,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
+  const runtimeSetupState = runtime?.setupState ?? Object.create(null)
   if (runtimeState && typeof runtimeState === 'object') {
     attachRuntimeRef(runtimeState as Record<string, any>, runtime)
     attachNativeInstanceRef(runtimeState as Record<string, any>, target)
@@ -226,6 +227,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const runtimeWithDefaults = {
     ...(runtime ?? {}),
     state: runtimeState,
+    setupState: runtimeSetupState,
     proxy: runtimeProxy,
     methods: runtimeMethods,
     computed: runtimeComputed,

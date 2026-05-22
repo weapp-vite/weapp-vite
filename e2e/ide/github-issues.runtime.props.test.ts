@@ -14,6 +14,7 @@ import {
   releaseSharedMiniProgram,
   tapElement,
 } from './github-issues.runtime.shared'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 describe.sequential('e2e app: github-issues / props', () => {
   beforeAll(async () => {
@@ -66,16 +67,21 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(issuePageJs).toContain('issue322-input')
 
     const miniProgram = await getSharedMiniProgram(ctx)
+    const runtimeErrors = attachRuntimeErrorCollector(miniProgram)
     try {
+      const marker = runtimeErrors.mark()
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-322/index', 'state: none')
       if (!issuePage) {
         throw new Error('Failed to launch issue-322 page')
       }
+      expect(runtimeErrors.getSince(marker)).toEqual([])
       await tapElement(issuePage, '.issue322-btn-set')
       await issuePage.waitFor(260)
+      expect(runtimeErrors.getSince(marker)).toEqual([])
       expect(await readClassName(issuePage, '.issue322-input')).toContain('issue322-input-error')
     }
     finally {
+      runtimeErrors.dispose()
       await releaseSharedMiniProgram(miniProgram)
     }
   })
@@ -91,9 +97,11 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-300 props destructure boolean binding')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
     expect(await fs.readFile(probeWxmlPath, 'utf-8')).toContain('{{__wv_bind_0}}')
-    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('__wevuProps.bool')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('__wevuPropsDerivedKeys')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('"bool"')
     expect(await fs.readFile(strictProbeWxmlPath, 'utf-8')).toContain('{{__wv_bind_0}}')
-    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('__wevuProps.bool')
+    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('__wevuPropsDerivedKeys')
+    expect(await fs.readFile(strictProbeJsPath, 'utf-8')).toContain('"bool"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -163,7 +171,9 @@ describe.sequential('e2e app: github-issues / props', () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
     expect(await fs.readFile(componentWxmlPath, 'utf-8')).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
-    expect(await fs.readFile(componentJsPath, 'utf-8')).toContain('this.__wevuProps.data')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+    expect(componentJs).toContain('__wevuPropsDerivedKeys')
+    expect(componentJs).toContain('"data"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -187,9 +197,12 @@ describe.sequential('e2e app: github-issues / props', () => {
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-600/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
-    expect(issuePageWxml).toContain('data-issue600-value="{{x}}"')
-    expect(issuePageJs).toContain('this.__wevuProps.x')
-    expect(issuePageJs).not.toContain('this.__wevuProps.y')
+    expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
+    expect(issuePageWxml).toContain('data-issue600-setup-value="{{x}}"')
+    expect(issuePageJs).toContain('__wevuPropsAliases')
+    expect(issuePageJs).toContain('y: "x"')
+    expect(issuePageJs).toContain('__wevuPropsDerivedKeys')
+    expect(issuePageJs).not.toContain('y: "y"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -199,7 +212,14 @@ describe.sequential('e2e app: github-issues / props', () => {
       }
       const renderedWxml = await readPageWxml(issuePage)
       expect(renderedWxml).toContain('data-issue600-value="issue-600-alias"')
+      expect(renderedWxml).toContain('data-issue600-setup-value="issue-600-setup"')
       expect(renderedWxml).toContain('issue-600-alias')
+      expect(renderedWxml).toContain('issue-600-setup')
+      expect(await issuePage.callMethod('_runE2E')).toMatchObject({
+        ok: true,
+        x: 'issue-600-setup',
+        y: 'issue-600-alias',
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

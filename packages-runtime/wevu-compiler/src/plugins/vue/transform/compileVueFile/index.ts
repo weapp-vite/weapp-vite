@@ -4,7 +4,7 @@ import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
 import { parseVueFile } from './parse'
-import { compileScriptPhase, resolveScriptSetupPropsAliases } from './script'
+import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
 
@@ -65,16 +65,21 @@ export async function compileVueFile(
   const propsAliases = scriptCompiled
     ? resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
     : undefined
+  const propsDerivedKeys = scriptCompiled
+    ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content)
+    : undefined
 
   const baseTemplateOptions = parsed.isAppFile
     ? {
         ...options?.template,
         propsAliases,
+        propsDerivedKeys,
         scopedSlotsRequireProps: true,
       }
     : {
         ...options?.template,
         propsAliases,
+        propsDerivedKeys,
       }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size

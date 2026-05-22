@@ -75,6 +75,10 @@ export interface TransformScriptOptions {
    */
   propsAliases?: Record<string, string>
   /**
+   * Vue `<script setup>` 中直接来自 props 的绑定名，用于运行时区分 props-derived binding 与普通 setup state。
+   */
+  propsDerivedKeys?: string[]
+  /**
    * 对 `<script setup>` 类型声明生成的结构化 props（如 Array/Object）放宽小程序运行时类型约束，
    * 以避免小程序属性校验对复杂表达式/代理值产生误报。
    */

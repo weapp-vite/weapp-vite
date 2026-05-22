@@ -49,6 +49,7 @@ const JS_RUNTIME_GLOBALS = new Set([
   'arguments',
   'globalThis',
   '__wevuUnref',
+  '__wevuResolvePropValue',
   'getApp',
   'getCurrentPages',
   ...getMiniProgramRuntimeGlobalKeys(),
@@ -100,6 +101,18 @@ function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expressi
   )
 }
 
+function createResolvePropValueCall(name: string, fallback: t.Expression, preferProps = false): t.Expression {
+  const args: t.Expression[] = [
+    t.thisExpression(),
+    t.stringLiteral(name),
+    fallback,
+  ]
+  if (preferProps) {
+    args.push(t.booleanLiteral(true))
+  }
+  return t.callExpression(t.identifier('__wevuResolvePropValue'), args)
+}
+
 function createPropsKeyAccessFallback(name: string, fallback: t.Expression): t.Expression {
   const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
   const propsAccess = createMemberAccess(propsObject, name)
@@ -120,7 +133,22 @@ function createPropsKeyAccessFallback(name: string, fallback: t.Expression): t.E
   )
 }
 
-function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
+function createIdentifierAccessWithPropsFallback(
+  name: string,
+  context: TransformContext,
+  useRuntimePropHelper = false,
+): t.Expression {
+  if (useRuntimePropHelper) {
+    if (name === 'props') {
+      const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
+      return t.conditionalExpression(
+        t.binaryExpression('!=', propsObject, t.nullLiteral()),
+        propsObject,
+        createThisMemberAccess('props'),
+      )
+    }
+    return createResolvePropValueCall(name, createThisMemberAccess(name))
+  }
   if (name === 'props') {
     const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
     return t.conditionalExpression(
@@ -147,11 +175,14 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   const hasStateObject = t.binaryExpression('!=', stateObject, t.nullLiteral())
   const hasStateKey = createHasOwnPropertyCall(stateObject, name)
   const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
-  const shouldUseStateAccess = t.logicalExpression('&&', hasStateObject, hasStateKey)
+  const isPropsDerivedKey = Boolean(context.propsDerivedKeys?.includes(name))
+  const shouldUseStateAccess = isPropsDerivedKey
+    ? t.booleanLiteral(false)
+    : t.logicalExpression('&&', hasStateObject, hasStateKey)
   const shouldUsePropsAccess = t.logicalExpression(
     '&&',
     hasUsablePropsValue,
-    t.unaryExpression('!', hasThisMember),
+    isPropsDerivedKey ? t.booleanLiteral(true) : t.unaryExpression('!', hasThisMember),
   )
   return t.conditionalExpression(
     shouldUseStateAccess,
@@ -165,23 +196,7 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
 }
 
 function createAliasedPropsAccess(name: string, propName: string): t.Expression {
-  const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
-  const propsAccess = createMemberAccess(propsObject, propName)
-  const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
-  const hasDefinedPropsValue = t.binaryExpression('!==', propsAccess, t.identifier('undefined'))
-  const hasPropsKey = createHasOwnPropertyCall(propsObject, propName)
-  const hasUsablePropsValue = t.logicalExpression(
-    '&&',
-    hasPropsObject,
-    t.logicalExpression('||', hasDefinedPropsValue, hasPropsKey),
-  )
-  const thisAccess = createThisMemberAccess(name)
-  const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
-  return t.conditionalExpression(
-    t.logicalExpression('&&', hasUsablePropsValue, t.unaryExpression('!', hasThisMember)),
-    propsAccess,
-    thisAccess,
-  )
+  return createResolvePropValueCall(propName, createThisMemberAccess(name), true)
 }
 
 function collectForAliasMapping(context: TransformContext): Record<string, string> {
@@ -198,7 +213,7 @@ function collectForAliasMapping(context: TransformContext): Record<string, strin
 export function normalizeJsExpressionWithContext(
   exp: string,
   context: TransformContext,
-  options?: { hint?: string },
+  options?: { hint?: string, runtimePropAccess?: 'default' | 'helper' },
 ): t.Expression | null {
   const trimmed = exp.trim()
   if (!trimmed) {
@@ -272,7 +287,7 @@ export function normalizeJsExpressionWithContext(
         replacement = createUnrefCall(
           propsAlias
             ? createAliasedPropsAccess(name, propsAlias)
-            : createIdentifierAccessWithPropsFallback(name),
+            : createIdentifierAccessWithPropsFallback(name, context, options?.runtimePropAccess === 'helper'),
         )
       }
 
@@ -280,9 +295,11 @@ export function normalizeJsExpressionWithContext(
       if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
         parent.node.shorthand = false
         parent.node.value = replacement
+        path.skip()
         return
       }
       path.replaceWith(replacement)
+      path.skip()
     },
   })
 

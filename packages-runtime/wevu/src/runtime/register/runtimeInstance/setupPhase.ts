@@ -12,7 +12,6 @@ import {
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_EXPOSED_KEY,
   WEVU_PROP_KEYS_KEY,
-  WEVU_PROPS_KEY,
 } from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
@@ -25,7 +24,7 @@ import {
   normalizeEmitPayload,
   safeMarkNoSetData,
 } from './setupContext'
-import { ensureRuntimeProps } from './utils'
+import { attachRuntimeSetupState, ensureRuntimeProps } from './utils'
 
 type RuntimeSetupFunction<
   D extends object,
@@ -116,6 +115,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
   const slots = createSetupSlotsProxy(props)
+  const setupState = runtimeWithDefaults.setupState ?? Object.create(null)
+  attachRuntimeSetupState(runtimeState, setupState)
   try {
     Object.defineProperty(runtimeState, '$slots', {
       value: slots,
@@ -168,53 +169,22 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     const result = instanceScope.run(() => runSetupFunction(setup, props, context))
     let methodsChanged = false
     if (result && typeof result === 'object') {
-      const runtimeRawState = isReactive(runtime.state)
-        ? toRaw(runtime.state)
-        : runtime.state
+      const runtimeSetupState = (runtime as any).setupState && typeof (runtime as any).setupState === 'object'
+        ? (isReactive((runtime as any).setupState) ? toRaw((runtime as any).setupState) : (runtime as any).setupState)
+        : Object.create(null)
       Object.keys(result).forEach((key) => {
         const val = (result as any)[key]
         if (typeof val === 'function') {
           ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+          ;(runtime.state as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
           methodsChanged = true
         }
         else {
           if (hasTrackableSetupBinding(val)) {
             ;(runtime as any).__wevu_trackSetupReactiveKey?.(key)
           }
-          if (declaredPropKeys.has(key)) {
-            let fallbackValue = val
-            try {
-              Object.defineProperty(runtimeRawState as Record<string, unknown>, key, {
-                configurable: true,
-                enumerable: false,
-                get() {
-                  const propsSource = (runtimeRawState as any)[WEVU_PROPS_KEY]
-                  if (propsSource && typeof propsSource === 'object' && hasOwn(propsSource, key)) {
-                    return (propsSource as any)[key]
-                  }
-                  return fallbackValue
-                },
-                set(next: unknown) {
-                  fallbackValue = next
-                  const propsSource = (runtimeRawState as any)[WEVU_PROPS_KEY]
-                  if (!propsSource || typeof propsSource !== 'object') {
-                    return
-                  }
-                  try {
-                    ;(propsSource as any)[key] = next
-                  }
-                  catch {
-                    // 忽略异常
-                  }
-                },
-              })
-            }
-            catch {
-              ;(runtime.state as any)[key] = val
-            }
-            return
-          }
           ;(runtime.state as any)[key] = val
+          ;(runtimeSetupState as any)[key] = val
         }
       })
     }

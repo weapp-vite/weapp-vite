@@ -2,6 +2,10 @@ import { unref } from '../reactivity'
 
 const hyphenateRE = /\B([A-Z])/g
 
+function hasOwnProperty(target: object, key: string) {
+  return Object.prototype.hasOwnProperty.call(target, key)
+}
+
 function hyphenate(value: string) {
   if (!value) {
     return ''
@@ -102,4 +106,39 @@ export function normalizeClass(value: any): string {
     return res.trim()
   }
   return res
+}
+
+export function resolvePropValue(target: any, key: string, fallback: any, preferProps = false) {
+  if (target == null) {
+    return fallback
+  }
+  const propsObject = unref(target.__wevuProps)
+  if (key === 'data') {
+    if (propsObject != null && (propsObject[key] !== undefined || hasOwnProperty(propsObject, key))) {
+      return propsObject[key]
+    }
+    return key in target ? target[key] : fallback
+  }
+  const hasPropsValue = propsObject != null
+    && (propsObject[key] !== undefined || hasOwnProperty(propsObject, key))
+  if (preferProps) {
+    if (hasPropsValue) {
+      return propsObject[key]
+    }
+    if (key in target) {
+      return target[key]
+    }
+    return fallback
+  }
+  const stateObject = unref(target.$state)
+  if (stateObject != null && hasOwnProperty(stateObject, key)) {
+    return target[key]
+  }
+  if (hasPropsValue) {
+    return propsObject[key]
+  }
+  if (!(key in target)) {
+    return fallback
+  }
+  return target[key]
 }
