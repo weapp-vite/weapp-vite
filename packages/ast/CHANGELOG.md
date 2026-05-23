@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.16.21
+
+### Patch Changes
+
+- 🐛 **增强原生小程序渐进迁移到 weapp-vite 的项目 skill，补充工具链优先接入、原生页面与 Vue SFC 共存、分波次迁移、回滚边界和验证矩阵说明，方便既有小程序在不一次性重写的前提下逐步采用现代化工程链路。** [`f3868b2`](https://github.com/weapp-vite/weapp-vite/commit/f3868b23d1483ab7d9af14f78d11ac914a368f78) by @sonofmagic
+
 ## 6.16.20
 
 ## 6.16.19
