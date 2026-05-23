@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.21
+
+### Patch Changes
+
+- 🐛 **修复 `<script setup>` 中 props 解构别名与同名 setup 绑定混用时的运行时和编译期分层问题，保证 props 别名、setup 本地状态与原始 props 可以分别更新，并让 issue #600 的页面在 IDE 与生成产物中保持一致。同时让 class/style/v-show 运行时 fallback 在首帧对象尚未就绪时静默回退，避免 issue #322 场景在 IDE 控制台输出模板表达式异常。** [#606](https://github.com/weapp-vite/weapp-vite/pull/606) by @sonofmagic
+
+- 🐛 **增强原生小程序渐进迁移到 weapp-vite 的项目 skill，补充工具链优先接入、原生页面与 Vue SFC 共存、分波次迁移、回滚边界和验证矩阵说明，方便既有小程序在不一次性重写的前提下逐步采用现代化工程链路。** [`f3868b2`](https://github.com/weapp-vite/weapp-vite/commit/f3868b23d1483ab7d9af14f78d11ac914a368f78) by @sonofmagic
+- 📦 **Dependencies** [`52fc0f7`](https://github.com/weapp-vite/weapp-vite/commit/52fc0f7ea021ac89ea43e58f939d99e9683e39e3)
+  → `@weapp-core/constants@0.1.9`, `@weapp-vite/ast@6.16.21`
+
 ## 6.16.20
 
 ### Patch Changes

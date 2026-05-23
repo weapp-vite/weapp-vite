@@ -69,6 +69,14 @@ function isCurrentPageProtocolTimeout(error: unknown) {
     && error.method === 'App.getCurrentPage'
 }
 
+function isPageStackProtocolTimeout(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error
+    && error.method === 'App.getPageStack'
+}
+
 function normalizeRoutePath(value: string | undefined) {
   return String(value ?? '')
     .split('?', 1)[0]
@@ -138,10 +146,32 @@ export default class MiniProgram extends EventEmitter {
       }
       catch (error) {
         lastError = error
-        if (!isCurrentPageProtocolTimeout(error) || attempt >= CURRENT_PAGE_RETRIES) {
+        if (!isCurrentPageProtocolTimeout(error)) {
           throw error
         }
-        await sleep(CURRENT_PAGE_RETRY_DELAY)
+        if (attempt < CURRENT_PAGE_RETRIES) {
+          await sleep(CURRENT_PAGE_RETRY_DELAY)
+          continue
+        }
+      }
+    }
+
+    if (isCurrentPageProtocolTimeout(lastError)) {
+      try {
+        const { pageStack } = await this.send('App.getPageStack')
+        const page = pageStack[pageStack.length - 1]
+        if (page) {
+          return Page.create(this.connection, {
+            id: page.pageId,
+            path: page.path,
+            query: page.query,
+          }, this.pageMap)
+        }
+      }
+      catch (error) {
+        if (!isPageStackProtocolTimeout(error)) {
+          throw error
+        }
       }
     }
 
@@ -333,7 +363,28 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private async changeRoute(method: string, url?: string) {
-    const currentPage = await this.currentPage()
+    const currentPage = await this.currentPage().catch(async (error) => {
+      if (!isCurrentPageProtocolTimeout(error)) {
+        throw error
+      }
+      try {
+        const { pageStack } = await this.send('App.getPageStack')
+        const page = pageStack[pageStack.length - 1]
+        return page
+          ? Page.create(this.connection, {
+              id: page.pageId,
+              path: page.path,
+              query: page.query,
+            }, this.pageMap)
+          : undefined
+      }
+      catch (pageStackError) {
+        if (!isPageStackProtocolTimeout(pageStackError)) {
+          throw pageStackError
+        }
+        return undefined
+      }
+    })
     logChangeRouteDebug(`start method=${method} url=${url ?? '<none>'} current=${currentPage?.path ?? '<none>'}`)
     if (currentPage && isPluginPath(currentPage.path)) {
       const pluginId = extractPluginId(currentPage.path)
