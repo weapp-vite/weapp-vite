@@ -198,7 +198,10 @@ describe.sequential('e2e app: github-issues / props', () => {
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     expect(issuePageWxml).toContain('data-issue600-value="{{y}}"')
-    expect(issuePageWxml).toContain('data-issue600-setup-value="{{x}}"')
+    expect(issuePageWxml).toContain('data-issue600-summary="{{summary}}"')
+    expect(issuePageWxml).toContain('data-issue600-setup-value="{{setupValue}}"')
+    expect(issuePageWxml).toContain('guard-if')
+    expect(issuePageWxml).toContain('guard-else')
     expect(issuePageJs).toContain('__wevuPropsAliases')
     expect(issuePageJs).toContain('y: "x"')
     expect(issuePageJs).toContain('__wevuPropsDerivedKeys')
@@ -206,19 +209,44 @@ describe.sequential('e2e app: github-issues / props', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-600/index?x=issue-600-alias', 'issue-600-alias')
-      if (!issuePage) {
-        throw new Error('Failed to launch issue-600 page')
+      const aliasPage = await relaunchPage(miniProgram, '/pages/issue-600/index?x=issue-600-alias', 'issue-600-alias')
+      if (!aliasPage) {
+        throw new Error('Failed to launch issue-600 alias page')
       }
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('data-issue600-value="issue-600-alias"')
-      expect(renderedWxml).toContain('data-issue600-setup-value="issue-600-setup"')
-      expect(renderedWxml).toContain('issue-600-alias')
-      expect(renderedWxml).toContain('issue-600-setup')
-      expect(await issuePage.callMethod('_runE2E')).toMatchObject({
+      const aliasRenderedWxml = await readPageWxml(aliasPage)
+      expect(aliasRenderedWxml).toContain('data-issue600-value="issue-600-alias"')
+      expect(aliasRenderedWxml).toContain('data-issue600-summary="issue-600-alias|issue-600-setup|alias-ready|setup-ready"')
+      expect(aliasRenderedWxml).toContain('issue-600-alias')
+      expect(aliasRenderedWxml).toContain('issue-600-setup')
+      expect(aliasRenderedWxml).toContain('guard-if')
+      expect(aliasRenderedWxml).not.toContain('guard-else')
+      expect(await aliasPage.callMethod('_runE2E')).toMatchObject({
         ok: true,
-        x: 'issue-600-setup',
+        setupValue: 'issue-600-setup',
         y: 'issue-600-alias',
+        aliasTone: 'alias-ready',
+        setupTone: 'setup-ready',
+        summary: 'issue-600-alias|issue-600-setup|alias-ready|setup-ready',
+      })
+
+      const defaultPage = await relaunchPage(miniProgram, '/pages/issue-600/index', 'issue-600-default')
+      if (!defaultPage) {
+        throw new Error('Failed to launch issue-600 default page')
+      }
+      const defaultRenderedWxml = await readPageWxml(defaultPage)
+      expect(defaultRenderedWxml).toContain('data-issue600-value="issue-600-default"')
+      expect(defaultRenderedWxml).toContain('data-issue600-summary="issue-600-default|issue-600-setup|alias-fallback|setup-ready"')
+      expect(defaultRenderedWxml).toContain('issue-600-default')
+      expect(defaultRenderedWxml).toContain('issue-600-setup')
+      expect(defaultRenderedWxml).toContain('guard-else')
+      expect(defaultRenderedWxml).not.toContain('guard-if')
+      expect(await defaultPage.callMethod('_runE2E')).toMatchObject({
+        ok: true,
+        setupValue: 'issue-600-setup',
+        y: 'issue-600-default',
+        aliasTone: 'alias-fallback',
+        setupTone: 'setup-ready',
+        summary: 'issue-600-default|issue-600-setup|alias-fallback|setup-ready',
       })
     }
     finally {
