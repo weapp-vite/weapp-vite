@@ -209,6 +209,37 @@ describe('MiniProgram', () => {
     expect(page.path).toBe('/pages/recovered')
   })
 
+  it('falls back to pageStack when currentPage keeps timing out after retries', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(timeoutError)
+      .mockRejectedValueOnce(timeoutError)
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce({
+        pageStack: [
+          { pageId: 7, path: '/pages/fallback', query: { ok: 1 } },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(3, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(4, 'App.getPageStack', {})
+    expect(page.path).toBe('/pages/fallback')
+  })
+
   it('falls back to pageStack when App.getCurrentPage times out during route changes', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
