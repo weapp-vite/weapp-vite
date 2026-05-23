@@ -29,6 +29,8 @@ jobs:
           ref: main
 
       - uses: pnpm/action-setup@v5
+        with:
+          version: 10.33.3
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
