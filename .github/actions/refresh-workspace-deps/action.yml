@@ -15,4 +15,4 @@ runs:
 
     - name: Refresh injected workspace dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --ignore-scripts
