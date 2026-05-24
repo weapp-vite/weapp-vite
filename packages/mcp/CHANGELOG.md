@@ -1,5 +1,12 @@
 # @weapp-vite/mcp
 
+## 1.3.6
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@weapp-vite/devtools-runtime@0.3.2`
+
 ## 1.3.5
 
 ### Patch Changes
