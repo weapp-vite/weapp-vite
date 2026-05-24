@@ -494,6 +494,137 @@ it('resolves rooted usingComponents from the nearest monorepo project when app.c
   ])
 })
 
+it('collects subpackage kind in pages tree snapshot', async () => {
+  const workspaceRoot = normalizeFsPath('/workspace')
+  const projectRoot = normalizeFsPath('/workspace/apps/demo')
+  const fileContents = new Map<string, string>([
+    [normalizeFsPath('/workspace/apps/demo/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': 'workspace:*',
+      },
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/apps/demo/src/app.json'), JSON.stringify({
+      pages: [
+        'pages/home/index',
+      ],
+      subPackages: [
+        {
+          root: 'packageA',
+          pages: [
+            'detail/index',
+          ],
+        },
+        {
+          root: 'packageB',
+          independent: true,
+          pages: [
+            'landing/index',
+          ],
+        },
+      ],
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/src/pages/home/index.vue'), '<template></template>'],
+    [normalizeFsPath('/workspace/apps/demo/src/packageA/detail/index.vue'), '<template></template>'],
+    [normalizeFsPath('/workspace/apps/demo/src/packageB/landing/index.vue'), '<template></template>'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'workspace',
+            uri: {
+              fsPath: workspaceRoot,
+              path: workspaceRoot,
+            },
+          },
+        ],
+        findFiles: async () => [
+          {
+            fsPath: normalizeFsPath('/workspace/apps/demo/package.json'),
+            path: '/workspace/apps/demo/package.json',
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    getWeappPagesTreeSnapshot,
+  } = await import('./workspace')
+
+  const snapshot = await getWeappPagesTreeSnapshot({
+    name: 'workspace',
+    uri: {
+      fsPath: workspaceRoot,
+      path: workspaceRoot,
+    },
+  })
+
+  assert.equal(snapshot?.workspaceFolder.uri.fsPath, projectRoot)
+  assert.deepEqual(snapshot?.subpackages.map(subPackage => ({
+    independent: subPackage.independent,
+    root: subPackage.root,
+    routes: subPackage.pages.map(page => page.route),
+  })), [
+    {
+      independent: false,
+      root: 'packageA',
+      routes: ['packageA/detail/index'],
+    },
+    {
+      independent: true,
+      root: 'packageB',
+      routes: ['packageB/landing/index'],
+    },
+  ])
+})
+
 it.each([
   {
     name: 'pnpm packageManager',

@@ -8,7 +8,7 @@ import {
   getRelativeDisplayPath,
 } from '../shared/pathUtils'
 
-interface WeappViteProjectCommandTarget {
+export interface WeappViteProjectCommandTarget {
   projectPath?: string
 }
 
@@ -19,6 +19,7 @@ interface WeappViteProjectBaseNode {
   description?: string
   iconId: string
   label: string
+  defaultExpanded?: boolean
   tooltip?: string
 }
 
@@ -31,7 +32,11 @@ interface WeappViteProjectActionNode extends WeappViteProjectBaseNode {
   kind: 'action' | 'info'
 }
 
-type WeappViteProjectNode = WeappViteProjectActionNode | WeappViteProjectGroupNode
+export type WeappViteProjectNode = WeappViteProjectActionNode | WeappViteProjectGroupNode
+
+function hasAnyScript(scripts: Record<string, string> | undefined, candidates: string[]) {
+  return candidates.some(candidate => typeof scripts?.[candidate] === 'string')
+}
 
 export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<WeappViteProjectNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<WeappViteProjectNode | undefined>()
@@ -44,7 +49,9 @@ export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<Wea
 
   getTreeItem(element: WeappViteProjectNode) {
     const collapsibleState = element.kind === 'group'
-      ? vscode.TreeItemCollapsibleState.Expanded
+      ? element.defaultExpanded
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed
       : vscode.TreeItemCollapsibleState.None
     const item = new vscode.TreeItem(element.label, collapsibleState)
 
@@ -106,111 +113,130 @@ export class WeappViteProjectTreeProvider implements vscode.TreeDataProvider<Wea
     }
 
     return contexts.map((context) => {
-      const signalCount = context.packageSignals.length + context.fileSignals.length
       const projectPath = context.workspaceFolder.uri.fsPath
       const relativePath = getRelativeDisplayPath(workspaceFolder.uri.fsPath, projectPath)
       const commandTarget = {
         projectPath,
       }
+      const actionNodes: WeappViteProjectNode[] = [
+        {
+          kind: 'action',
+          label: '打开项目文件',
+          command: 'weapp-vite.openProjectFile',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'go-to-file',
+        },
+        {
+          kind: 'action',
+          label: '查看 Pages',
+          command: 'weapp-vite.selectProject',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'list-tree',
+        },
+      ]
+
+      if (hasAnyScript(context.scripts, ['dev', 'dev:open'])) {
+        actionNodes.push({
+          kind: 'action',
+          label: 'Dev',
+          command: 'weapp-vite.dev',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'debug-start',
+        })
+      }
+
+      if (hasAnyScript(context.scripts, ['build'])) {
+        actionNodes.push({
+          kind: 'action',
+          label: 'Build',
+          command: 'weapp-vite.build',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'tools',
+        })
+      }
+
+      if (hasAnyScript(context.scripts, ['open'])) {
+        actionNodes.push({
+          kind: 'action',
+          label: 'Open DevTools',
+          command: 'weapp-vite.open',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'device-mobile',
+        })
+      }
+
+      if (hasAnyScript(context.scripts, ['doctor', 'info'])) {
+        actionNodes.push({
+          kind: 'action',
+          label: 'Doctor / Info',
+          command: 'weapp-vite.doctor',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'pulse',
+        })
+      }
+
+      if (hasAnyScript(context.scripts, ['generate', 'g'])) {
+        actionNodes.push({
+          kind: 'action',
+          label: 'Generate',
+          command: 'weapp-vite.generate',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'new-file',
+        })
+      }
+
+      actionNodes.push(
+        {
+          kind: 'action',
+          label: '修复项目问题',
+          command: 'weapp-vite.repairProjectIssues',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'wrench',
+        },
+        {
+          kind: 'action',
+          label: '生成缺失页面',
+          command: 'weapp-vite.generateMissingPagesFromAppJson',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'diff-added',
+        },
+        {
+          kind: 'action',
+          label: '生成缺失组件',
+          command: 'weapp-vite.generateMissingComponentsFromProject',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'symbol-method',
+        },
+        {
+          kind: 'action',
+          label: '同步未注册页面',
+          command: 'weapp-vite.syncUnregisteredPagesToAppJson',
+          commandTarget,
+          contextValue: 'weappProject.action',
+          iconId: 'sync',
+        },
+      )
 
       return {
         kind: 'group',
         label: context.workspaceFolder.name,
+        command: 'weapp-vite.selectProject',
+        commandTarget,
         description: relativePath || '.',
         contextValue: 'weappProject.project',
         iconId: 'root-folder',
         tooltip: projectPath,
-        children: [
-          {
-            kind: 'group',
-            label: 'Project',
-            description: context.packageManager,
-            contextValue: 'weappProject.group',
-            iconId: 'info',
-            children: [
-              {
-                kind: 'info',
-                label: '包管理器',
-                description: context.packageManager,
-                contextValue: 'weappProject.info',
-                iconId: 'package',
-              },
-              {
-                kind: 'info',
-                label: '识别信号',
-                description: `${signalCount} 个`,
-                contextValue: 'weappProject.info',
-                iconId: signalCount > 0 ? 'pass' : 'warning',
-                tooltip: [...context.packageSignals, ...context.fileSignals].join('\n') || '暂无识别信号',
-              },
-              {
-                kind: 'action',
-                label: '打开项目文件',
-                command: 'weapp-vite.openProjectFile',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'go-to-file',
-              },
-              {
-                kind: 'action',
-                label: '项目概览',
-                command: 'weapp-vite.showProjectInfo',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'info',
-              },
-            ],
-          },
-          {
-            kind: 'group',
-            label: 'Tasks',
-            description: '常用命令',
-            contextValue: 'weappProject.group',
-            iconId: 'terminal',
-            children: [
-              {
-                kind: 'action',
-                label: 'Dev',
-                command: 'weapp-vite.dev',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'debug-start',
-              },
-              {
-                kind: 'action',
-                label: 'Build',
-                command: 'weapp-vite.build',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'tools',
-              },
-              {
-                kind: 'action',
-                label: 'Open DevTools',
-                command: 'weapp-vite.open',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'device-mobile',
-              },
-              {
-                kind: 'action',
-                label: 'Doctor / Info',
-                command: 'weapp-vite.doctor',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'pulse',
-              },
-              {
-                kind: 'action',
-                label: 'Generate',
-                command: 'weapp-vite.generate',
-                commandTarget,
-                contextValue: 'weappProject.action',
-                iconId: 'new-file',
-              },
-            ],
-          },
-        ],
+        children: actionNodes,
       }
     }) satisfies WeappViteProjectNode[]
   }

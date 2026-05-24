@@ -36,6 +36,7 @@ function createMockVscode() {
       }
     },
     TreeItemCollapsibleState: {
+      Collapsed: 1,
       None: 0,
       Expanded: 2,
     },
@@ -49,7 +50,7 @@ afterEach(() => {
   vi.resetModules()
 })
 
-it('builds project and task nodes for recognized workspace', async () => {
+it('builds project actions for recognized workspace', async () => {
   vi.doMock('vscode', () => createVscodeModule(createMockVscode()))
   vi.doMock('../project/workspace', () => {
     const workspaceFolder = {
@@ -63,14 +64,19 @@ it('builds project and task nodes for recognized workspace', async () => {
       getPrimaryWorkspaceFolder() {
         return workspaceFolder
       },
-      getProjectContextCandidates: async () => {
-        return [{
-          fileSignals: ['vite.config.ts'],
-          packageManager: 'pnpm',
-          packageSignals: ['dependency: weapp-vite'],
-          workspaceFolder,
-        }]
-      },
+      getProjectContextCandidates: async () => [{
+        fileSignals: ['vite.config.ts'],
+        packageManager: 'pnpm',
+        packageSignals: ['dependency: weapp-vite'],
+        scripts: {
+          build: 'pnpm build',
+          dev: 'pnpm dev',
+          doctor: 'pnpm info',
+          generate: 'pnpm generate',
+          open: 'pnpm open',
+        },
+        workspaceFolder,
+      }],
     }
   })
   vi.resetModules()
@@ -83,21 +89,22 @@ it('builds project and task nodes for recognized workspace', async () => {
   assert.equal(rootNodes[0].label, 'demo')
   assert.equal(rootNodes[0].description, '.')
 
-  const projectSections = await provider.getChildren(rootNodes[0])
+  const rootItem = provider.getTreeItem(rootNodes[0])
 
-  assert.equal(projectSections[0].label, 'Project')
-  assert.equal(projectSections[1].label, 'Tasks')
+  assert.equal(rootItem.command?.command, 'weapp-vite.selectProject')
+  assert.equal(rootItem.collapsibleState, 1)
+  assert.deepEqual(rootItem.command?.arguments, [
+    {
+      projectPath: '/workspace',
+    },
+  ])
 
-  const projectNodes = await provider.getChildren(projectSections[0])
-  assert.equal(projectNodes[0].label, '包管理器')
-  assert.equal(projectNodes[0].description, 'pnpm')
-  assert.equal(projectNodes[1].label, '识别信号')
-  assert.equal(projectNodes[1].description, '2 个')
+  const projectNodes = await provider.getChildren(rootNodes[0])
 
-  const taskNodes = await provider.getChildren(projectSections[1])
-  const devItem = provider.getTreeItem(taskNodes[0])
+  assert.equal(projectNodes.map(node => node.label).join(','), '打开项目文件,查看 Pages,Dev,Build,Open DevTools,Doctor / Info,Generate,修复项目问题,生成缺失页面,生成缺失组件,同步未注册页面')
 
-  assert.equal(taskNodes.map(node => node.label).join(','), 'Dev,Build,Open DevTools,Doctor / Info,Generate')
+  const devItem = provider.getTreeItem(projectNodes[2])
+
   assert.equal(devItem.command?.command, 'weapp-vite.dev')
   assert.deepEqual(devItem.command?.arguments, [
     {
@@ -121,32 +128,37 @@ it('shows all monorepo projects and scopes task commands to each project', async
       getPrimaryWorkspaceFolder() {
         return workspaceFolder
       },
-      getProjectContextCandidates: async () => {
-        return [
-          {
-            fileSignals: ['src/app.json'],
-            packageManager: 'pnpm',
-            packageSignals: ['依赖包含 weapp-vite'],
-            workspaceFolder: {
-              name: 'alpha',
-              uri: {
-                fsPath: '/workspace/apps/alpha',
-              },
+      getProjectContextCandidates: async () => [
+        {
+          fileSignals: ['src/app.json'],
+          packageManager: 'pnpm',
+          packageSignals: ['依赖包含 weapp-vite'],
+          scripts: {
+            build: 'pnpm build',
+          },
+          workspaceFolder: {
+            name: 'alpha',
+            uri: {
+              fsPath: '/workspace/apps/alpha',
             },
           },
-          {
-            fileSignals: ['src/app.json'],
-            packageManager: 'yarn',
-            packageSignals: ['脚本 dev 调用了 weapp-vite CLI'],
-            workspaceFolder: {
-              name: 'beta',
-              uri: {
-                fsPath: '/workspace/packages/beta',
-              },
+        },
+        {
+          fileSignals: ['src/app.json'],
+          packageManager: 'yarn',
+          packageSignals: ['脚本 dev 调用了 weapp-vite CLI'],
+          scripts: {
+            build: 'yarn build',
+            dev: 'yarn dev',
+          },
+          workspaceFolder: {
+            name: 'beta',
+            uri: {
+              fsPath: '/workspace/packages/beta',
             },
           },
-        ]
-      },
+        },
+      ],
     }
   })
   vi.resetModules()
@@ -157,11 +169,13 @@ it('shows all monorepo projects and scopes task commands to each project', async
 
   assert.equal(rootNodes.map(node => `${node.label}:${node.description}`).join(','), 'alpha:apps/alpha,beta:packages/beta')
 
-  const betaSections = await provider.getChildren(rootNodes[1])
-  const betaTasks = await provider.getChildren(betaSections[1])
-  const buildItem = provider.getTreeItem(betaTasks[1])
+  const betaTasks = await provider.getChildren(rootNodes[1])
+  const buildNode = betaTasks.find(node => node.label === 'Build')
 
-  assert.equal(betaSections[0].description, 'yarn')
+  assert.ok(buildNode)
+
+  const buildItem = provider.getTreeItem(buildNode)
+
   assert.equal(buildItem.command?.command, 'weapp-vite.build')
   assert.deepEqual(buildItem.command?.arguments, [
     {

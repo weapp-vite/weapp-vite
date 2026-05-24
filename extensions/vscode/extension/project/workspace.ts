@@ -141,6 +141,7 @@ export interface WeappPageTreeEntry {
 export interface WeappPagesTreeSnapshot {
   appJsonPath: string
   subpackages: Array<{
+    independent: boolean
     pages: WeappPageTreeEntry[]
     root: string
   }>
@@ -768,6 +769,7 @@ export async function getWeappPagesTreeSnapshot(workspaceFolder = getPrimaryWork
   )
   const subpackages = await Promise.all(getSubpackageEntries(appJson).map(async (subPackage) => {
     const root = normalizeRoute(typeof subPackage.root === 'string' ? subPackage.root : '')
+    const independent = subPackage.independent === true
     const pages = await Promise.all(
       (Array.isArray(subPackage.pages) ? subPackage.pages : [])
         .filter((page): page is string => typeof page === 'string')
@@ -775,6 +777,7 @@ export async function getWeappPagesTreeSnapshot(workspaceFolder = getPrimaryWork
     )
 
     return {
+      independent,
       root,
       pages,
     }

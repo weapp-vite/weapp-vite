@@ -81,6 +81,7 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
           appJsonPath: '/workspace/src/app.json',
           subpackages: [
             {
+              independent: true,
               root: 'packageA',
               pages: [
                 {
@@ -148,10 +149,16 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
   const subpackages = await provider.getChildren(rootNodes[1])
 
   assert.equal(subpackages[0].label, 'packageA')
+  assert.equal(subpackages[0].description, '独立分包 · 1 个页面')
+
+  const subpackageItem = provider.getTreeItem(subpackages[0])
+
+  assert.equal(subpackageItem.contextValue, 'weappPages.subpackage.independent')
 
   const subpackagePages = await provider.getChildren(subpackages[0])
 
   assert.equal(subpackagePages[0].label, 'packageA/detail/index')
+  assert.equal(subpackagePages[0].description, 'src/packageA/detail/index.vue · 独立分包')
 
   const unregisteredPages = await provider.getChildren(rootNodes[2])
   const unregisteredPageItem = provider.getTreeItem(unregisteredPages[0])
@@ -245,6 +252,94 @@ it('uses html-like file icon resource for existing wxml pages in tree', async ()
   assert.equal(wxmlPageItem.iconPath?.id, 'file')
   assert.equal(wxmlPageItem.resourceUri?.fsPath, '/workspace/src/pages/native/index.html')
   assert.equal(wxmlPageItem.command?.arguments?.[0]?.fsPath, '/workspace/src/pages/native/index.wxml')
+})
+
+it('loads pages from selected project workspace folder', async () => {
+  const snapshotWorkspacePaths: string[] = []
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
+
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
+
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
+        },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.doMock('../project/workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async (workspaceFolder: { uri: { fsPath: string } }) => {
+        snapshotWorkspacePaths.push(workspaceFolder.uri.fsPath)
+
+        return {
+          appJsonPath: `${workspaceFolder.uri.fsPath}/src/app.json`,
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: `${workspaceFolder.uri.fsPath}/src/pages/home/index.vue`,
+              route: 'pages/home/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder,
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setProjectWorkspaceFolder({
+    uri: {
+      fsPath: '/workspace/apps/demo',
+    },
+  })
+  const rootNodes = await provider.getChildren()
+  const appPages = await provider.getChildren(rootNodes[0])
+
+  assert.deepEqual(snapshotWorkspacePaths, ['/workspace/apps/demo'])
+  assert.equal(appPages[0].description, 'src/pages/home/index.vue')
 })
 
 it('marks current page in pages tree', async () => {
@@ -563,6 +658,7 @@ it('filters current page nodes in tree', async () => {
           appJsonPath: '/workspace/src/app.json',
           subpackages: [
             {
+              independent: false,
               root: 'packageA',
               pages: [
                 {

@@ -1,7 +1,11 @@
 import type {
+  WeappViteProjectCommandTarget,
+  WeappViteProjectNode,
+} from './ui/projectTree'
+
+import type {
   WeappPagesTreeFilterMode,
 } from './ui/tree'
-
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import * as vscode from 'vscode'
@@ -41,6 +45,7 @@ import {
   getMissingVueUsingComponents,
   getProjectAppJsonPath,
   getProjectContext,
+  getProjectContextCandidates,
   getVueTextsWithMovedUsingComponentPath,
   getVueTextsWithRemovedUsingComponentPath,
   isAppJsonDocument,
@@ -231,6 +236,34 @@ async function syncPagesTreeState(pagesTreeProvider: WeappVitePagesTreeProvider,
   }
   catch {
   }
+}
+
+async function resolveProjectWorkspaceFolderFromTarget(commandTarget?: WeappViteProjectCommandTarget) {
+  const projectPath = commandTarget?.projectPath
+
+  if (!projectPath) {
+    return null
+  }
+
+  const contexts = await getProjectContextCandidates()
+  const matchedContext = contexts.find(context => context.workspaceFolder.uri.fsPath === projectPath)
+
+  return matchedContext?.workspaceFolder ?? null
+}
+
+async function selectProjectForPagesTree(
+  pagesTreeProvider: WeappVitePagesTreeProvider,
+  pagesTreeView: any,
+  commandTarget?: WeappViteProjectCommandTarget,
+) {
+  const workspaceFolder = await resolveProjectWorkspaceFolderFromTarget(commandTarget)
+
+  if (!workspaceFolder) {
+    return
+  }
+
+  pagesTreeProvider.setProjectWorkspaceFolder(workspaceFolder)
+  await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
 async function revealCurrentPageInPagesTree(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
@@ -520,6 +553,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.open', commandTarget => runWorkspaceCommand('open', state, commandTarget)),
     vscode.commands.registerCommand('weapp-vite.useFileIcons', () => enableWeappViteFileIcons()),
     vscode.commands.registerCommand('weapp-vite.doctor', commandTarget => runWorkspaceCommand('doctor', state, commandTarget)),
+    vscode.commands.registerCommand('weapp-vite.selectProject', commandTarget => selectProjectForPagesTree(pagesTreeProvider, pagesTreeView, commandTarget)),
     vscode.commands.registerCommand('weapp-vite.showProjectInfo', commandTarget => showProjectOverview(state, commandTarget)),
     vscode.commands.registerCommand('weapp-vite.showOutput', () => getOutputChannel().show(true)),
     vscode.commands.registerCommand('weapp-vite.runAction', () => showCommandPalette(state)),
@@ -690,6 +724,14 @@ export function activate(context: any) {
     vscode.window.onDidChangeActiveTextEditor(() => {
       scheduleStatusBarRefresh()
       refreshPagesState()
+    }),
+    projectTreeView.onDidChangeSelection((event: { selection?: readonly WeappViteProjectNode[] }) => {
+      const [selectedNode] = event.selection ?? []
+      const commandTarget = selectedNode?.commandTarget
+
+      if (commandTarget?.projectPath) {
+        void selectProjectForPagesTree(pagesTreeProvider, pagesTreeView, commandTarget)
+      }
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       refreshProjectState()

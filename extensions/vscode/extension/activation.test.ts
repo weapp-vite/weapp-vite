@@ -155,8 +155,11 @@ function createMockVscode() {
         }
       },
       createTreeView(viewId: string, options: unknown) {
-        const treeView: TreeViewRecord & { reveal: () => Promise<boolean>, dispose: () => void } = {
+        const treeView: TreeViewRecord & { onDidChangeSelection: (handler: Handler) => Disposable & { handler: Handler }, reveal: () => Promise<boolean>, dispose: () => void } = {
           options,
+          onDidChangeSelection(handler: Handler) {
+            return { dispose() {}, handler }
+          },
           reveal: async () => true,
           viewId,
           dispose() {},
@@ -453,7 +456,7 @@ it('activate registers commands, providers, status bar and diagnostics without e
 
     extension.activate({ subscriptions } satisfies MockExtensionContext)
 
-    assert.equal(state.registeredCommands.length, 35)
+    assert.equal(state.registeredCommands.length, 36)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -463,6 +466,7 @@ it('activate registers commands, providers, status bar and diagnostics without e
         'weapp-vite.open',
         'weapp-vite.useFileIcons',
         'weapp-vite.doctor',
+        'weapp-vite.selectProject',
         'weapp-vite.showProjectInfo',
         'weapp-vite.showOutput',
         'weapp-vite.runAction',

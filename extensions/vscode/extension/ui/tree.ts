@@ -15,7 +15,9 @@ interface WeappPagesTreeBaseNode {
 
 interface WeappPagesTreeGroupNode extends WeappPagesTreeBaseNode {
   children: WeappPagesTreeNode[]
+  contextValue?: string
   kind: 'group' | 'subpackage'
+  tooltip?: string
 }
 
 export type WeappPagesTreeFilterMode = 'all' | 'current' | 'problems'
@@ -37,6 +39,7 @@ interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   pageFilePath: string | null
   route: string
   sortKey: string
+  subpackageKind?: 'independent' | 'ordinary'
   tooltip: string
 }
 
@@ -112,6 +115,18 @@ function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], cur
   return badges
 }
 
+function getSubpackageKindLabel(subpackageKind: WeappPagesTreePageNode['subpackageKind']) {
+  if (subpackageKind === 'independent') {
+    return '独立分包'
+  }
+
+  if (subpackageKind === 'ordinary') {
+    return '普通分包'
+  }
+
+  return null
+}
+
 function getPageNodeSortKey(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, route: string) {
   const priority = baseStatus === 'missing'
     ? 0
@@ -135,9 +150,14 @@ function createPageNode(
   workspacePath: string,
   baseStatus: WeappPagesTreePageNode['baseStatus'],
   current: boolean,
+  subpackageKind?: WeappPagesTreePageNode['subpackageKind'],
 ): WeappPagesTreeNode {
   const primaryDescription = getPageNodeDescription(pageFilePath, workspacePath)
-  const badges = getPageNodeBadges(baseStatus, current)
+  const subpackageKindLabel = getSubpackageKindLabel(subpackageKind)
+  const badges = [
+    ...getPageNodeBadges(baseStatus, current),
+    ...(subpackageKindLabel ? [subpackageKindLabel] : []),
+  ]
 
   return {
     kind: 'page',
@@ -152,11 +172,13 @@ function createPageNode(
     pageFilePath,
     route,
     sortKey: getPageNodeSortKey(baseStatus, current, route),
+    subpackageKind,
     tooltip: [
       `route: ${route}`,
       pageFilePath
         ? `页面文件: ${getRelativeDisplayPath(workspacePath, pageFilePath)}`
         : '页面文件缺失，点击后打开 app.json',
+      subpackageKindLabel ? `分包类型: ${subpackageKindLabel}` : '',
       baseStatus === 'unregistered' ? '声明状态: 未加入 app.json' : '',
       current ? '当前页面: 是' : '',
     ].filter(Boolean).join('\n'),
@@ -168,6 +190,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
   private currentRoute: string | null = null
   private filterMode: WeappPagesTreeFilterMode = 'all'
   private pageNodesByRoute = new Map<string, WeappPagesTreePageNode>()
+  private projectWorkspaceFolder: any = null
 
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event
 
@@ -204,6 +227,18 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
 
   getPageNodeByRoute(route: string) {
     return this.pageNodesByRoute.get(route) ?? null
+  }
+
+  setProjectWorkspaceFolder(workspaceFolder: any | null) {
+    const nextPath = workspaceFolder?.uri?.fsPath ?? null
+    const currentPath = this.projectWorkspaceFolder?.uri?.fsPath ?? null
+
+    if (nextPath === currentPath) {
+      return
+    }
+
+    this.projectWorkspaceFolder = workspaceFolder
+    this.refresh()
   }
 
   async resolvePageNodeByRoute(route: string) {
@@ -254,7 +289,8 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       item.tooltip = element.tooltip
     }
     else {
-      item.contextValue = element.kind === 'group' ? 'weappPages.group' : 'weappPages.subpackage'
+      item.contextValue = element.contextValue ?? (element.kind === 'group' ? 'weappPages.group' : 'weappPages.subpackage')
+      item.tooltip = element.tooltip
     }
 
     return item
@@ -265,7 +301,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       return 'children' in element ? element.children : []
     }
 
-    const workspaceFolder = getPrimaryWorkspaceFolder()
+    const workspaceFolder = this.projectWorkspaceFolder ?? getPrimaryWorkspaceFolder()
 
     if (!workspaceFolder) {
       return []
@@ -284,6 +320,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       route: string,
       pageFilePath: string | null,
       baseStatus: WeappPagesTreePageNode['baseStatus'],
+      subpackageKind?: WeappPagesTreePageNode['subpackageKind'],
     ) => {
       const node = createPageNode(
         route,
@@ -292,6 +329,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         workspacePath,
         baseStatus,
         route === this.currentRoute,
+        subpackageKind,
       ) as WeappPagesTreePageNode
 
       this.pageNodesByRoute.set(route, node)
@@ -337,10 +375,13 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
     }
 
     const subpackageNodes = (await Promise.all(snapshot.subpackages.map(async (subPackage) => {
+      const subpackageKind = subPackage.independent ? 'independent' : 'ordinary'
+      const subpackageKindLabel = getSubpackageKindLabel(subpackageKind) ?? ''
       const pages = await Promise.all(subPackage.pages.map(async page => createTrackedPageNode(
         page.route,
         page.pageFilePath,
         page.pageFilePath ? 'exists' : 'missing',
+        subpackageKind,
       )))
       const filteredChildren = sortPageNodes(filterPageNodes(pages))
 
@@ -351,8 +392,14 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       return {
         kind: 'subpackage',
         label: subPackage.root,
-        description: `${filteredChildren.length} 个页面`,
+        description: `${subpackageKindLabel} · ${filteredChildren.length} 个页面`,
+        contextValue: subPackage.independent ? 'weappPages.subpackage.independent' : 'weappPages.subpackage.ordinary',
         children: filteredChildren,
+        tooltip: [
+          `分包: ${subPackage.root}`,
+          `类型: ${subpackageKindLabel}`,
+          `页面数: ${filteredChildren.length}`,
+        ].join('\n'),
       } satisfies WeappPagesTreeGroupNode
     }))).filter(Boolean) as WeappPagesTreeGroupNode[]
 
