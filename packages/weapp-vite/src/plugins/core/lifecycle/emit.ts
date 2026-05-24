@@ -18,7 +18,7 @@ export function createRenderStartHook(state: CorePluginState) {
     if (isCurrentStyleSidecarUpdate(state)) {
       const currentFile = ctx.runtimeState.build.hmr.profile.file
       if (typeof currentFile === 'string' && path.extname(currentFile)) {
-        await emitStyleSidecarAsset(ctx, this, {} as any, currentFile)
+        await emitStyleSidecarAsset(ctx, this, {} as any, currentFile, state.resolvedConfig)
       }
     }
     emitJsonAssets.call(this, state)

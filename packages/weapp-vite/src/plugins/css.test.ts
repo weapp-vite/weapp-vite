@@ -6,12 +6,36 @@ import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWatchPath } from '../utils/path'
 
+const readFileMock = vi.fn(async () => '.sidecar{color:red}')
 const processCssWithCache = vi.fn(async (code: string) => code)
+const preprocessCSSMock = vi.fn(async (code: string) => ({
+  code,
+  deps: [],
+}))
 const renderSharedStyleEntry = vi.fn(async () => ({
   css: '/* shared */',
   dependencies: [],
 }))
 const pathExistsMock = vi.fn(async () => true)
+
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      readFile: readFileMock,
+    },
+  }
+})
+
+vi.mock('vite', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vite')>()
+  return {
+    ...actual,
+    preprocessCSS: preprocessCSSMock,
+  }
+})
 
 vi.mock('./css/shared/preprocessor', () => ({
   cssCodeCache: { get: () => undefined, set: () => undefined },
@@ -24,6 +48,7 @@ vi.mock('./utils/cache', () => ({
 }))
 
 const { css } = await import('./css')
+const { emitStyleSidecarAsset } = await import('./css')
 
 function invokeHook<T extends (...args: any[]) => any>(
   hook: undefined | null | T | { handler?: T },
@@ -122,7 +147,13 @@ describe('css plugin shared style injection', () => {
 
   beforeEach(() => {
     emitted = []
+    readFileMock.mockClear()
     processCssWithCache.mockClear()
+    preprocessCSSMock.mockClear()
+    preprocessCSSMock.mockImplementation(async (code: string) => ({
+      code,
+      deps: [],
+    }))
     renderSharedStyleEntry.mockReset()
     renderSharedStyleEntry.mockResolvedValue({
       css: '/* shared */',
@@ -207,6 +238,93 @@ describe('css plugin shared style injection', () => {
     const cssAsset = emitted.find(asset => asset.fileName === 'app.wxss')
     expect(cssAsset).toBeTruthy()
     expect(cssAsset?.source).toContain('.root{color:red}')
+  })
+
+  it('normalizes source style asset filenames to wxss after Vite preprocessing', async () => {
+    preprocessCSSMock.mockResolvedValue({
+      code: '.page .title{color:red;background-clip:text;-webkit-background-clip:text}',
+      deps: ['/project/src/pages/index/tokens.scss'],
+    })
+
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.scss': {
+        type: 'asset',
+        fileName: 'pages/index/index.scss',
+        source: '$brand: red;\n// https://example.com\n.page { .title { color: $brand; background-clip: text; } }',
+        originalFileNames: [resolve(absoluteSrcRoot, 'pages/index/index.scss')],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(bundle['pages/index/index.scss']).toBeUndefined()
+    const cssAsset = emitted.find(asset => asset.fileName === 'pages/index/index.wxss')
+    expect(cssAsset).toBeTruthy()
+    expect(cssAsset?.source).toContain('.page .title')
+    expect(cssAsset?.source).toContain('-webkit-background-clip:text')
+    expect(cssAsset?.source).not.toContain('$brand')
+    expect(cssAsset?.source).not.toContain('// https://example.com')
+    expect(preprocessCSSMock).toHaveBeenCalledWith(
+      expect.stringContaining('$brand: red;'),
+      resolve(absoluteSrcRoot, 'pages/index/index.scss'),
+      resolvedConfig,
+    )
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/pages/index/tokens.scss'))
+  })
+
+  it('keeps existing wxss asset source instead of rereading raw scss original files', async () => {
+    readFileMock.mockResolvedValueOnce('$brand: red;\n.page { .title { color: $brand; } }')
+
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        source: '.page .title{color:red}',
+        originalFileNames: [resolve(absoluteSrcRoot, 'pages/index/index.scss')],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(preprocessCSSMock).toHaveBeenCalledWith(
+      '.page .title{color:red}',
+      resolve(absoluteSrcRoot, 'pages/index/index.scss'),
+      resolvedConfig,
+    )
+    expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:red}')
+    expect(emitted.find(asset => asset.fileName === 'pages/index/index.scss')).toBeUndefined()
+  })
+
+  it('emits style sidecars as wxss and preprocesses raw scss during dev updates', async () => {
+    readFileMock.mockResolvedValueOnce('$brand: red;\n// https://example.com\n.page { .title { color: $brand; } }')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.page .title{color:red}',
+      deps: ['/project/src/pages/index/tokens.scss'],
+    })
+
+    await emitStyleSidecarAsset(
+      ctx,
+      pluginContext,
+      {} as any,
+      resolve(absoluteSrcRoot, 'pages/index/index.scss'),
+      resolvedConfig,
+    )
+
+    const sidecarAsset = emitted.find(asset => asset.fileName === 'pages/index/index.wxss')
+    expect(sidecarAsset).toBeTruthy()
+    expect(sidecarAsset?.source).toBe('.page .title{color:red}')
+    expect(emitted.find(asset => asset.fileName.endsWith('.scss'))).toBeUndefined()
+    expect(preprocessCSSMock).toHaveBeenCalledWith(
+      expect.stringContaining('$brand: red;'),
+      resolve(absoluteSrcRoot, 'pages/index/index.scss'),
+      resolvedConfig,
+    )
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/pages/index/tokens.scss'))
   })
 
   it('returns early when shared style entries are empty', async () => {

@@ -4,6 +4,7 @@ import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { preprocessCSS } from 'vite'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
@@ -24,9 +25,51 @@ type OutputChunkWithViteMetadata = OutputChunk & {
 }
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
+const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
+const VITE_PREPROCESS_STYLE_RE = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 
 function stripLeadingBlankLines(code: string) {
   return code.replace(LEADING_BLANK_LINES_RE, '')
+}
+
+function isSourceStyleAsset(fileName: string) {
+  return SOURCE_STYLE_ASSET_RE.test(fileName)
+}
+
+function shouldPreprocessWithVite(fileName: string) {
+  return VITE_PREPROCESS_STYLE_RE.test(fileName)
+}
+
+async function preprocessStyleSource(
+  code: string,
+  fileName: string,
+  resolvedConfig: ResolvedConfig | undefined,
+  options?: {
+    enabled?: boolean
+  },
+) {
+  const normalizedCss = stripLeadingBlankLines(code)
+  if (!resolvedConfig || options?.enabled === false || !shouldPreprocessWithVite(fileName)) {
+    return {
+      css: normalizedCss,
+      dependencies: [] as string[],
+    }
+  }
+
+  const processed = await preprocessCSS(normalizedCss, fileName, resolvedConfig)
+  return {
+    css: stripLeadingBlankLines(processed.code),
+    dependencies: processed.deps ? Array.from(processed.deps) : [],
+  }
+}
+
+function resolveOutputStyleFileName(
+  configService: CompilerContext['configService'],
+  stylePath: string,
+) {
+  return configService.relativeOutputPath(
+    changeFileExtension(stylePath, configService.outputExtensions.wxss),
+  )
 }
 
 function emitCssAssetIfChanged(
@@ -64,19 +107,28 @@ function emitCssAssetIfChanged(
 
 export async function emitStyleSidecarAsset(
   ctx: CompilerContext,
-  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  pluginCtx: {
+    emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
+    addWatchFile?: (id: string) => void
+  },
   bundle: OutputBundle,
   stylePath: string,
+  resolvedConfig?: ResolvedConfig,
 ) {
   const { configService } = ctx
-  const fileName = configService.relativeOutputPath(stylePath)
+  const fileName = resolveOutputStyleFileName(configService, stylePath)
   if (!fileName) {
     return false
   }
 
   const rawCss = await fs.readFile(stylePath, 'utf8')
-  const normalizedCss = stripLeadingBlankLines(rawCss)
-  const processedCss = await processCssWithCache(normalizedCss, configService)
+  const { css, dependencies } = await preprocessStyleSource(rawCss, stylePath, resolvedConfig)
+  if (typeof pluginCtx.addWatchFile === 'function') {
+    for (const dependency of dependencies) {
+      pluginCtx.addWatchFile(normalizeWatchPath(dependency))
+    }
+  }
+  const processedCss = await processCssWithCache(css, configService)
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const cssWithImports = injectSharedStyleImports(
     processedCss,
@@ -98,6 +150,7 @@ async function handleBundleEntry(
   configService: CompilerContext['configService'],
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
   emitted: Set<string>,
+  resolvedConfig?: ResolvedConfig,
 ) {
   if (asset.type !== 'asset') {
     return
@@ -129,27 +182,78 @@ async function handleBundleEntry(
     return owners
   }
 
-  if (bundleKey.endsWith('.wxss')) {
+  const resolveOriginalStylePath = () => {
     const [rawOriginal] = asset.originalFileNames ?? []
-    const absOriginal = rawOriginal
+    return rawOriginal
       ? toAbsolute(rawOriginal)
       : path.resolve(configService.absoluteSrcRoot, bundleKey)
-    const fileName = configService.relativeOutputPath(absOriginal)
+  }
+
+  const emitStyleAssetForOwner = async (owner: string, preprocessId: string, shouldPreprocess: boolean) => {
+    const fileName = resolveOutputStyleFileName(configService, owner)
+    if (!fileName) {
+      return
+    }
+    const normalizedFileName = toPosixPath(fileName)
+    const rawCss = asset.source.toString()
+    const { css, dependencies } = await preprocessStyleSource(rawCss, preprocessId, resolvedConfig, {
+      enabled: shouldPreprocess,
+    })
+    if (typeof this.addWatchFile === 'function') {
+      for (const dependency of dependencies) {
+        this.addWatchFile(normalizeWatchPath(dependency))
+      }
+    }
+    const processedCss = await processCssWithCache(css, configService)
+
+    const cssWithImports = injectSharedStyleImports(
+      processedCss,
+      owner,
+      fileName,
+      sharedStyles,
+      configService,
+    )
+
+    emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
+    emitted.add(normalizedFileName)
+  }
+
+  const isFinalStyleAsset = bundleKey.endsWith(`.${configService.outputExtensions.wxss}`)
+  const isCssAsset = bundleKey.endsWith('.css')
+  const isSourceStyleAssetKey = isSourceStyleAsset(bundleKey)
+
+  if (isFinalStyleAsset) {
+    const absOriginal = resolveOriginalStylePath()
+    const fileName = resolveOutputStyleFileName(configService, absOriginal)
 
     if (fileName) {
       emitted.add(toPosixPath(fileName))
     }
 
-    if (fileName && fileName !== bundleKey) {
-      delete bundle[bundleKey]
-      const css = await fs.readFile(absOriginal, 'utf8')
-      emitCssAssetIfChanged(ctx, this, bundle, fileName, css)
+    if (fileName) {
+      const source = asset.source.toString()
+      const { css, dependencies } = await preprocessStyleSource(source, absOriginal, resolvedConfig, {
+        enabled: shouldPreprocessWithVite(absOriginal),
+      })
+      if (typeof this.addWatchFile === 'function') {
+        for (const dependency of dependencies) {
+          this.addWatchFile(normalizeWatchPath(dependency))
+        }
+      }
+      const processedCss = await processCssWithCache(css, configService)
+      if (fileName !== bundleKey) {
+        delete bundle[bundleKey]
+        emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
+      }
+      else if (processedCss !== source) {
+        asset.source = processedCss
+      }
     }
 
     return
   }
 
-  if (!bundleKey.endsWith('.css')) {
+  if (!isCssAsset && !isSourceStyleAssetKey) {
     return
   }
 
@@ -166,32 +270,18 @@ async function handleBundleEntry(
       )
 
   if (!owners.size) {
+    if (isSourceStyleAssetKey && !isCssAsset) {
+      await emitStyleAssetForOwner(resolveOriginalStylePath(), resolveOriginalStylePath(), !isCssAsset)
+      delete bundle[bundleKey]
+      return
+    }
     delete bundle[bundleKey]
     return
   }
 
   await Promise.all(Array.from(owners).map(async (owner) => {
     const modulePath = owner
-    const converted = changeFileExtension(modulePath, configService.outputExtensions.wxss)
-    const fileName = configService.relativeOutputPath(converted)
-    if (!fileName) {
-      return
-    }
-    const normalizedFileName = toPosixPath(fileName)
-    const rawCss = asset.source.toString()
-    const normalizedCss = stripLeadingBlankLines(rawCss)
-    const processedCss = await processCssWithCache(normalizedCss, configService)
-
-    const cssWithImports = injectSharedStyleImports(
-      processedCss,
-      modulePath,
-      fileName,
-      sharedStyles,
-      configService,
-    )
-
-    emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
-    emitted.add(normalizedFileName)
+    await emitStyleAssetForOwner(modulePath, resolveOriginalStylePath(), !isCssAsset)
   }))
 
   delete bundle[bundleKey]
@@ -319,7 +409,7 @@ async function generateBundleSharedCss(
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const emitted = new Set<string>()
   const tasks = Object.entries(bundle).map(([bundleKey, asset]) => {
-    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, emitted)
+    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, emitted, resolvedConfig)
   })
 
   await Promise.all(tasks)

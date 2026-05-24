@@ -23,6 +23,7 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
+    "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",

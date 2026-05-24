@@ -12,6 +12,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   return {
     name: 'weapp-vite:pre',
     enforce: 'pre',
+    configResolved(config) {
+      state.resolvedConfig = config
+    },
     buildStart: createBuildStartHook(state),
     watchChange: createWatchChangeHook(state),
     options: createOptionsHook(state),

@@ -1,5 +1,4 @@
 import { fs } from '@weapp-core/shared/fs'
-import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
@@ -17,7 +16,9 @@ vi.mock('@/logger', () => ({
   // warn: vi.fn(),
 }))
 
-describe.skipIf(CI.isCI)('build style', {
+const SOURCE_STYLE_RE = /\.(?:scss|sass|less|styl|pcss|postcss)$/
+
+describe('build style', {
   timeout: 100000000,
 }, () => {
   const cwd = getFixture('style')
@@ -36,9 +37,23 @@ describe.skipIf(CI.isCI)('build style', {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
+    expect(files.filter(file => SOURCE_STYLE_RE.test(file))).toEqual([])
+    expect(files).toContain('pages/index/index.wxss')
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(content).toMatchSnapshot(file)
     }
+  })
+
+  it('compiles raw scss through Sass and PostCSS into wxss', async () => {
+    const files = await scanFiles(distDir)
+    expect(files.filter(file => SOURCE_STYLE_RE.test(file))).toEqual([])
+
+    const pageWxss = await fs.readFile(path.resolve(distDir, 'pages/index/index.wxss'), 'utf-8')
+    expect(pageWxss).toContain('.page .title')
+    expect(pageWxss).toContain('-webkit-background-clip: text;')
+    expect(pageWxss).not.toContain('$brand')
+    expect(pageWxss).not.toContain('// https://example.com')
+    expect(pageWxss).not.toContain('.page {\n  .title')
   })
 })

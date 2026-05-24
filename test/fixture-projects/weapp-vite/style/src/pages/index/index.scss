@@ -1,5 +1,13 @@
 @import '../../shared.css';
 
+$brand: red;
+
+// https://example.com
 .page {
-  color: red;
+  color: $brand;
+
+  .title {
+    color: $brand;
+    background-clip: text;
+  }
 }

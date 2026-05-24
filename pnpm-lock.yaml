@@ -2975,6 +2975,9 @@ importers:
 
   test/fixture-projects/weapp-vite/style:
     devDependencies:
+      autoprefixer:
+        specifier: 'catalog:'
+        version: 10.5.0(postcss@8.5.15)
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.1

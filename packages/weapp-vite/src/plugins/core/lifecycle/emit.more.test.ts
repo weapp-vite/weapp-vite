@@ -213,6 +213,7 @@ describe('core lifecycle emit hook extra branches', () => {
       expect.objectContaining({ emitFile }),
       {},
       '/project/src/pages/hmr/index.wxss',
+      undefined,
     )
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })

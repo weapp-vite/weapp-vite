@@ -1,4 +1,5 @@
 import type { RolldownOutput } from 'rolldown'
+import type { ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry, SubPackageMetaValue } from '../../../types'
 
@@ -24,6 +25,7 @@ export interface CorePluginState {
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
+  resolvedConfig?: ResolvedConfig
   moduleImporters: Map<string, Set<string>>
   entryModuleIds: Set<string>
   hmrState: {

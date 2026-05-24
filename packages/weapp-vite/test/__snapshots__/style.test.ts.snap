@@ -96,6 +96,11 @@ exports[`build style > dist > pages/index/index.wxss 1`] = `
 }
 .page {
   color: red;
+}
+.page .title {
+  color: red;
+  -webkit-background-clip: text;
+          background-clip: text;
 }/*$vite$:1*/"
 `;
 
