@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.34
+
+### Patch Changes
+
+- 🐛 **修复小程序样式产物可能泄露 `.scss`、`.sass`、`.less`、`.styl`、`.pcss` 或 `.postcss` 源后缀文件的问题。页面、组件和 HMR 样式 sidecar 现在会先经过 Vite 的 CSS/Sass/PostCSS 管线，再统一输出为目标小程序平台的样式后缀。** [`3332279`](https://github.com/weapp-vite/weapp-vite/commit/33322796c12319ed34401f630b9ffd50b83c4790) by @sonofmagic
+
+- 🐛 **修复增强作用域插槽在属性 observer 早于 attached 触发时，运行时计算绑定无法读取 `__wvSlotPropsData` / `__wvOwner` 的问题，避免首页 `KpiBoard` 这类 `#items` + `v-for` 场景初次渲染时出现 `Cannot read property 'items' of undefined`。同时作用域插槽 props 尚未同步时，编译器生成的 scoped slot `v-for` 数据源保护会先按空列表处理，不再把初始化时序记录为模板运行时错误。** [`434c3c8`](https://github.com/weapp-vite/weapp-vite/commit/434c3c86984651daf49dbf9344456790882e2c22) by @sonofmagic
+
 ## 2.3.33
 
 ### Patch Changes

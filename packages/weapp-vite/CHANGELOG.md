@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.16.22
+
+### Patch Changes
+
+- 🐛 **修复小程序样式产物可能泄露 `.scss`、`.sass`、`.less`、`.styl`、`.pcss` 或 `.postcss` 源后缀文件的问题。页面、组件和 HMR 样式 sidecar 现在会先经过 Vite 的 CSS/Sass/PostCSS 管线，再统一输出为目标小程序平台的样式后缀。** [`3332279`](https://github.com/weapp-vite/weapp-vite/commit/33322796c12319ed34401f630b9ffd50b83c4790) by @sonofmagic
+- 📦 Updated 5 dependencies [`3eb68b6`](https://github.com/weapp-vite/weapp-vite/commit/3eb68b6e3d31ffc29c90c4c29a44ce0fc05fd1ea)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/miniprogram-automator@1.1.3`, `wevu@6.16.22`, `weapp-ide-cli@5.3.2`, `@weapp-vite/mcp@1.3.6`, `@weapp-vite/ast@6.16.22`
+
+  </details>
+
 ## 6.16.21
 
 ### Patch Changes

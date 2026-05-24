@@ -1,5 +1,15 @@
 # 更新日志
 
+## 0.3.4
+
+### Patch Changes
+
+- 🐛 **优化 Pages 视图的筛选入口，让清除筛选更容易点击，并减少对 hover 触发的依赖。** [`a2f7749`](https://github.com/weapp-vite/weapp-vite/commit/a2f77493f7e61abb0f1431032864df62b92c2949) by @sonofmagic
+
+- 🐛 **优化 VS Code 扩展 Activity Bar 图标比例，让 weapp-vite 标识在侧边栏中显示得更饱满清晰。** [`ff24e7b`](https://github.com/weapp-vite/weapp-vite/commit/ff24e7b0671f532a915b99d30b647ae637b7b780) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展在 monorepo 中选中子项目后 Pages 视图不能自动切换到对应项目的问题，并在 Pages 视图中标记普通分包、独立分包及其页面；同时精简 Project 视图，只展示可稳定触发的项目动作。** [`451e144`](https://github.com/weapp-vite/weapp-vite/commit/451e14486077f7ee493b4e72d3be2dfff6c681b5) by @sonofmagic
+
 ## 0.3.3
 
 ### Patch Changes
