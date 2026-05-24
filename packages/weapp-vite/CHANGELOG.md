@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.16.23
+
+### Patch Changes
+
+- 🐛 **修复预处理样式文件名可能泄露到小程序 dist 的问题，确保 `.scss`、`.sass`、`.less` 等源样式资产在最终输出阶段被移除或转换为当前平台样式后缀。** [`b3cfaf6`](https://github.com/weapp-vite/weapp-vite/commit/b3cfaf63de5b2ad8b5b5636f08546ddbd13d3aac) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.23`, `wevu@6.16.23`
+
 ## 6.16.22
 
 ### Patch Changes
