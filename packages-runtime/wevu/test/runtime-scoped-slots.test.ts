@@ -374,6 +374,40 @@ describe('runtime: scoped slots', () => {
     }))
   })
 
+  it('keeps slot props readable when owner id arrives before slot prop observers', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        return this.__wvSlotPropsData.items.map((item: string) => item.toUpperCase())
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    updateOwnerSnapshot(ownerId, { ready: true }, { ready: true } as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        __wvOwnerId: '',
+        __wvSlotScope: null,
+        __wvSlotProps: ['items', ['alpha']],
+      },
+      setData: vi.fn(),
+    }
+
+    expect(() => {
+      opts.properties.__wvOwnerId.observer.call(inst, ownerId)
+    }).not.toThrow()
+    expect(inst.__wvSlotPropsData).toEqual({ items: ['alpha'] })
+    expect(inst.__wvOwner).toEqual({ ready: true })
+    expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { ready: true } })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: ['ALPHA'],
+    }))
+  })
+
   it('keeps slot prop observers on properties', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!

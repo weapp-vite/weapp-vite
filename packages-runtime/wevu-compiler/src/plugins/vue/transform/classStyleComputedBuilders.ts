@@ -3,6 +3,7 @@ import type { ClassStyleHelperIds } from './classStyleComputed'
 import {
   WEVU_EXPRESSION_ERROR_IDENTIFIER,
   WEVU_PROPS_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 
@@ -55,6 +56,11 @@ function buildRuntimeExpressionErrorGuard(binding: ClassStyleBinding, errorId: t
 
 function shouldReportRuntimeExpressionError(binding: ClassStyleBinding) {
   return binding.type === 'bind'
+}
+
+function shouldReportForSourceError(info: ForParseResult) {
+  const listExp = info.listExp?.trim() ?? ''
+  return !listExp.startsWith(`${WEVU_SLOT_PROPS_DATA_KEY}.`)
 }
 
 function createDataPropsFallbackExpression(fallback: t.Expression) {
@@ -365,10 +371,14 @@ function buildForExpression(
     t.catchClause(
       t.identifier(`__wv_err_${level}`),
       t.blockStatement([
-        buildConsoleErrorGuard(
-          `[wevu] 模板 v-for 数据源表达式执行失败: ${info.listExp}`,
-          t.identifier(`__wv_err_${level}`),
-        ),
+        ...shouldReportForSourceError(info)
+          ? [
+              buildConsoleErrorGuard(
+                `[wevu] 模板 v-for 数据源表达式执行失败: ${info.listExp}`,
+                t.identifier(`__wv_err_${level}`),
+              ),
+            ]
+          : [],
         t.expressionStatement(t.assignmentExpression('=', listId, t.arrayExpression([]))),
       ]),
     ),

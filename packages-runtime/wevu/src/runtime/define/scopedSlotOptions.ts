@@ -122,9 +122,8 @@ function flushScopedSlotComputedBindings(instance: any, computed?: ComputedDefin
   }
 }
 
-function mergeSlotProps(
+function syncSlotPropsData(
   instance: any,
-  computed?: ComputedDefinitions,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
   const scopeSource = hasOwn(override ?? {}, WEVU_SLOT_SCOPE_KEY)
@@ -141,6 +140,15 @@ function mergeSlotProps(
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
   }
+  return merged
+}
+
+function mergeSlotProps(
+  instance: any,
+  computed?: ComputedDefinitions,
+  override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
+) {
+  const merged = syncSlotPropsData(instance, override)
   if (typeof instance?.setData === 'function') {
     instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: merged })
   }
@@ -171,6 +179,7 @@ function setOwnerProxy(instance: any, proxy: any) {
 
 function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
   setOwnerProxy(instance, proxy)
+  syncSlotPropsData(instance)
   instance[WEVU_SLOT_OWNER_KEY] = snapshot || {}
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {

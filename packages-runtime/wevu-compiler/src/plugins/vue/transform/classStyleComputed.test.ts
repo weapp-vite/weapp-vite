@@ -225,4 +225,36 @@ describe('classStyleComputed', () => {
     expect(code).toContain('Object.keys')
     expect(code).toContain('actualKey')
   })
+
+  it('keeps scoped slot v-for source missing values silent during initialization', () => {
+    const bindings: any = [
+      {
+        name: '__wv_bind_0',
+        type: 'bind',
+        exp: 'card.item.label',
+        expAst: t.memberExpression(
+          t.memberExpression(t.identifier('card'), t.identifier('item')),
+          t.identifier('label'),
+        ),
+        forStack: [
+          {
+            listExp: '__wvSlotPropsData.items',
+            listExpAst: t.memberExpression(t.identifier('__wvSlotPropsData'), t.identifier('items')),
+            item: 'card',
+            index: 'index',
+          },
+        ],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    expect(code).toContain('__wvSlotPropsData.items')
+    expect(code).not.toContain('模板 v-for 数据源表达式执行失败: __wvSlotPropsData.items')
+    expect(code).toContain('__wv_bind_0 = card.item.label')
+  })
 })
