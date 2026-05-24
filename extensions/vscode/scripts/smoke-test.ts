@@ -64,6 +64,9 @@ function createMockVscode() {
       createTreeView(viewId: string, options: unknown) {
         const treeView = {
           options,
+          onDidChangeSelection() {
+            return { dispose() {} }
+          },
           reveal: async () => true,
           viewId,
           dispose() {},
@@ -387,6 +390,7 @@ async function main() {
         'weapp-vite.open',
         'weapp-vite.useFileIcons',
         'weapp-vite.doctor',
+        'weapp-vite.selectProject',
         'weapp-vite.showProjectInfo',
         'weapp-vite.showOutput',
         'weapp-vite.runAction',
