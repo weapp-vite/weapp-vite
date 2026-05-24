@@ -2,7 +2,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
-import { getFixture, scanFiles } from './utils'
+import { getFixture, normalizeFixtureRegionPaths, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({
   // ...await importOriginal<typeof import('@/logger')>(),
@@ -41,7 +41,7 @@ describe('build style', {
     expect(files).toContain('pages/index/index.wxss')
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
-      expect(content).toMatchSnapshot(file)
+      expect(normalizeFixtureRegionPaths(content)).toMatchSnapshot(file)
     }
   })
 

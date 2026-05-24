@@ -63,6 +63,26 @@ export async function scanFiles(root: string) {
   return files
 }
 
+const REGION_PREFIX = '//#region '
+const FIXTURE_REGION_MARKER = 'test/fixture-projects/weapp-vite/'
+
+export function normalizeFixtureRegionPaths(content: string) {
+  return content
+    .split('\n')
+    .map((line) => {
+      if (!line.startsWith(REGION_PREFIX)) {
+        return line
+      }
+      const normalizedSource = line.slice(REGION_PREFIX.length).replaceAll('\\', '/')
+      const markerIndex = normalizedSource.indexOf(FIXTURE_REGION_MARKER)
+      if (markerIndex < 0) {
+        return line
+      }
+      return `//#region ${normalizedSource.slice(markerIndex)}`
+    })
+    .join('\n')
+}
+
 export function createTask() {
   const result: {
     resolve: (value: unknown) => void

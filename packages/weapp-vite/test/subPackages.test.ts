@@ -3,7 +3,7 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
-import { createTestCompilerContext, getFixture, scanFiles } from './utils'
+import { createTestCompilerContext, getFixture, normalizeFixtureRegionPaths, scanFiles } from './utils'
 
 async function waitForPathExists(
   targetPath: string,
@@ -75,7 +75,8 @@ describe.skipIf(CI.isCI).sequential('subPackages', () => {
       expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(false)
       expect(await fs.exists(path.resolve(distDir, 'packageB/pages/banana.js'))).toBe(true)
       expect(await fs.exists(path.resolve(distDir, 'packageB/pages/banana.wxml'))).toBe(true)
-      expect(await fs.readFile(path.resolve(distDir, 'packageB/pages/banana.js'), 'utf8')).toMatchSnapshot()
+      const bananaJs = await fs.readFile(path.resolve(distDir, 'packageB/pages/banana.js'), 'utf8')
+      expect(normalizeFixtureRegionPaths(bananaJs)).toMatchSnapshot()
     }
     finally {
       await dispose()
