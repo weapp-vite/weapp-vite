@@ -187,7 +187,7 @@
     "@oxc-node/cli": "^0.1.0",
     "@oxc-node/core": "^0.1.0",
     "@swc-node/register": "^1.11.1",
-    "@swc/core": "^1.15.33",
+    "@swc/core": "^1.15.40",
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.28.0",
     "@types/estree": "^1.0.9",
