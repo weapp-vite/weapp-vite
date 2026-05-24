@@ -289,7 +289,7 @@ it('manifest exposes pages explorer title action for current page reveal', () =>
     {
       command: 'weapp-vite.clearPagesTreeFilter',
       group: 'navigation',
-      when: 'view == weapp-vite.pages',
+      when: 'view == weapp-vite.pages && weapp-vite.pagesFilterActive',
     },
     {
       command: 'weapp-vite.generateMissingPagesFromAppJson',

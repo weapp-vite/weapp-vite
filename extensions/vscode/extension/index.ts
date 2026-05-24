@@ -281,11 +281,13 @@ async function applyPagesTreeFilter(
   filterMode: WeappPagesTreeFilterMode,
 ) {
   pagesTreeProvider.setFilterMode(filterMode)
+  await vscode.commands.executeCommand('setContext', 'weapp-vite.pagesFilterActive', pagesTreeProvider.hasActiveFilter())
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
 async function clearPagesTreeFilter(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
   pagesTreeProvider.clearFilterMode()
+  await vscode.commands.executeCommand('setContext', 'weapp-vite.pagesFilterActive', pagesTreeProvider.hasActiveFilter())
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 

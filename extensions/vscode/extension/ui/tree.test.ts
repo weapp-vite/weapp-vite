@@ -698,11 +698,13 @@ it('filters current page nodes in tree', async () => {
   provider.setFilterMode('current')
   const rootNodes = await provider.getChildren()
 
-  assert.equal(rootNodes.length, 1)
-  assert.equal(rootNodes[0].label, 'Subpackages')
-  assert.equal(rootNodes[0].description, '1 个分包')
+  assert.equal(rootNodes.length, 2)
+  assert.equal(rootNodes[0].label, '当前筛选')
+  assert.equal(rootNodes[0].description, '仅当前页')
+  assert.equal(rootNodes[1].label, 'Subpackages')
+  assert.equal(rootNodes[1].description, '1 个分包')
 
-  const subpackages = await provider.getChildren(rootNodes[0])
+  const subpackages = await provider.getChildren(rootNodes[1])
 
   assert.equal(subpackages.length, 1)
   assert.equal(subpackages[0].label, 'packageA')
@@ -796,13 +798,18 @@ it('filters problem page nodes in tree', async () => {
   provider.setFilterMode('problems')
   const problemGroups = await provider.getChildren()
 
-  assert.equal(problemGroups.length, 2)
-  assert.equal(problemGroups[0].label, 'App Pages')
-  assert.equal(problemGroups[0].description, '1 个页面')
-  assert.equal(problemGroups[1].label, 'Unregistered Pages')
+  assert.equal(problemGroups.length, 3)
+  assert.equal(problemGroups[0].label, '当前筛选')
+  assert.equal(problemGroups[0].description, '仅问题页')
+  assert.equal(problemGroups[1].label, 'App Pages')
+  assert.equal(problemGroups[1].description, '1 个页面')
+  assert.equal(problemGroups[2].label, 'Unregistered Pages')
 
-  const problemPages = await provider.getChildren(problemGroups[0])
+  const filterItem = provider.getTreeItem(problemGroups[0])
+  const problemPages = await provider.getChildren(problemGroups[1])
 
+  assert.equal(filterItem.command?.command, 'weapp-vite.clearPagesTreeFilter')
+  assert.equal(filterItem.iconPath?.id, 'filter-filled')
   assert.deepEqual(problemPages.map(page => page.label), [
     'pages/missing/index',
   ])
@@ -888,10 +895,12 @@ it('shows empty filter node when no page matches current filter', async () => {
   const rootNodes = await provider.getChildren()
   const emptyItem = provider.getTreeItem(rootNodes[0])
 
-  assert.equal(rootNodes.length, 1)
-  assert.equal(rootNodes[0].label, '当前筛选没有匹配页面')
+  assert.equal(rootNodes.length, 2)
+  assert.equal(rootNodes[0].label, '当前筛选')
   assert.equal(rootNodes[0].description, '仅问题页')
+  assert.equal(rootNodes[1].label, '当前筛选没有匹配页面')
+  assert.equal(rootNodes[1].description, '仅问题页')
   assert.equal(emptyItem.command?.command, 'weapp-vite.clearPagesTreeFilter')
-  assert.equal(emptyItem.iconPath?.id, 'filter')
-  assert.equal(emptyItem.contextValue, 'weappPages.emptyFilter')
+  assert.equal(emptyItem.iconPath?.id, 'filter-filled')
+  assert.equal(emptyItem.contextValue, 'weappPages.filterControl')
 })

@@ -227,6 +227,7 @@ function createMockVscode() {
         registeredCommands.push({ command, handler })
         return { dispose() {} }
       },
+      executeCommand: async () => undefined,
     },
     ConfigurationTarget: {
       Global: 1,
