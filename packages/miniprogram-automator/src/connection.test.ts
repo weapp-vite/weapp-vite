@@ -75,6 +75,32 @@ describe('Connection', () => {
     vi.useRealTimers()
   })
 
+  it('supports request scoped protocol timeouts', async () => {
+    vi.useFakeTimers()
+    try {
+      const { default: Connection } = await import('./Connection')
+      const transport = new FakeTransport()
+      const connection = new Connection(transport as any)
+
+      const pending = connection.send('App.getCurrentPage', {}, { timeout: 1_000 })
+      const assertion = expect(pending).rejects.toMatchObject({
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      })
+
+      await vi.runOnlyPendingTimersAsync()
+      await assertion
+
+      transport.emit('message', JSON.stringify({
+        id: 'fixed-id',
+        result: { pageId: 1 },
+      }))
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('emits protocol events without request ids', async () => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()

@@ -56,6 +56,7 @@ const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+const PAGE_WXML_PROTOCOL_TIMEOUT = 4_000
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 
 function isRecord(value: unknown): value is Record<string, any> {
@@ -295,7 +296,11 @@ export async function readPageWxml(page: any) {
     if (!element) {
       throw new Error('Failed to find page element')
     }
-    return stripAutomatorOverlay(await element.wxml())
+    return stripAutomatorOverlay(await runWithTimeout(
+      () => element.wxml(),
+      PAGE_WXML_PROTOCOL_TIMEOUT,
+      'Element.getWXML',
+    ))
   }, {
     timeoutMs: 5_000,
     retries: 2,

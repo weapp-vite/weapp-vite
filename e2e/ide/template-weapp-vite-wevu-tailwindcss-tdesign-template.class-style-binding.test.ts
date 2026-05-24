@@ -3,6 +3,10 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import {
+  createTemplateWevuTdesignRegressionLaunchOptions,
+  relaunchTemplateWevuTdesignRegressionPage,
+} from './template-wevu-tdesign-regression.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
@@ -76,10 +80,7 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-      warmupRoute: ROUTE,
-    })
+    sharedMiniProgram = await launchAutomator(createTemplateWevuTdesignRegressionLaunchOptions(TEMPLATE_ROOT))
   }
   return sharedMiniProgram
 }
@@ -105,14 +106,11 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
     await closeSharedMiniProgram()
   })
 
-  it('covers class/style binding branches with interactive scenarios', async () => {
+  it('covers class/style binding branches with interactive scenarios', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
-      const page = await miniProgram.reLaunch(ROUTE)
-      if (!page) {
-        throw new Error(`Failed to launch route: ${ROUTE}`)
-      }
+      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'class/style binding')
       await page.waitFor(160)
 
       await page.callMethod('applyScenarioBase')

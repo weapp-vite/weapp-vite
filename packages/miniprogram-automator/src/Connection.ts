@@ -15,6 +15,9 @@ interface PendingCallback {
   reject: (error: Error) => void
   timeout: ReturnType<typeof setTimeout>
 }
+interface SendOptions {
+  timeout?: number
+}
 interface ProtocolResponse {
   id?: string
   method?: string
@@ -33,21 +36,22 @@ export default class Connection extends EventEmitter {
     transport.on('close', this.onClose)
   }
 
-  send(method: string, params: Record<string, any> = {}) {
+  send(method: string, params: Record<string, any> = {}, options: SendOptions = {}) {
     const id = uuid()
     const payload = stringify({ id, method, params })
+    const requestTimeout = options.timeout ?? REQUEST_TIMEOUT
     debugProtocol(`${dateFormat('yyyy-mm-dd HH:MM:ss:l')} SEND ► ${payload}`)
     return new Promise<any>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.callbacks.delete(id)
-        const error = new Error(`DevTools did not respond to protocol method ${method} within ${REQUEST_TIMEOUT}ms`) as Error & {
+        const error = new Error(`DevTools did not respond to protocol method ${method} within ${requestTimeout}ms`) as Error & {
           code: string
           method: string
         }
         error.code = 'DEVTOOLS_PROTOCOL_TIMEOUT'
         error.method = method
         reject(error)
-      }, REQUEST_TIMEOUT)
+      }, requestTimeout)
 
       this.callbacks.set(id, { resolve, reject, timeout })
       try {

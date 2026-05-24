@@ -51,12 +51,36 @@ describe('runtime diff/toPlain coverage', () => {
     const circular: any = { a: 1 }
     circular.self = circular
     const plain = toPlain(circular)
-    expect(plain.self).toBe(plain)
+    expect(plain).toEqual({ a: 1 })
 
     const view = new Uint8Array([1, 2])
     expect(toPlain(view)).toEqual([1, 2])
     const dataView = new DataView(new ArrayBuffer(2))
     expect(toPlain(dataView)).toEqual([0, 0])
+  })
+
+  it('does not emit circular setData payloads from non-view setup objects', () => {
+    const sharedRuntime: any = {
+      fetch: () => Promise.resolve(),
+      URL,
+    }
+    sharedRuntime.self = sharedRuntime
+    sharedRuntime.nested = {
+      owner: sharedRuntime,
+    }
+
+    const plain = toPlain({
+      __rh: sharedRuntime,
+      label: 'request-globals',
+    })
+
+    expect(plain).toEqual({
+      __rh: {
+        nested: {},
+      },
+      label: 'request-globals',
+    })
+    expect(() => JSON.stringify(plain)).not.toThrow()
   })
 
   it('uses cache and respects depth', () => {

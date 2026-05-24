@@ -98,6 +98,7 @@ const RELAUNCH_RETRYABLE_PATTERNS = [
   /Timeout in warmup reLaunch/i,
   /Timeout in warmup current page/i,
   /Timeout in read current page/i,
+  /Operation timed out after \d+ms/i,
   /reLaunch returned empty page/i,
   /timed out waiting page root/i,
   /Failed to find page root/i,
@@ -265,6 +266,7 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   skipRelaunchPageRootCheck?: boolean
   skipWarmup?: boolean
+  warmupAnyPage?: boolean
   warmupRoute?: string
 }
 
@@ -1285,11 +1287,24 @@ async function warmupMiniProgramRoute(
   miniProgram: any,
   route: string,
   project: string,
-  options: { allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void } = {},
+  options: { allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void } = {},
 ) {
   const currentPageReadyTimeout = options.allowRelaunch === false
     ? Math.min(BRIDGE_WARMUP_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
     : Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
+  if (options.allowRelaunch === false && options.allowAnyPage) {
+    const bootedPage = await waitForAnyCurrentPageReady(miniProgram, Math.min(3_000, currentPageReadyTimeout), {
+      checkDevtoolsLog: options.checkDevtoolsLog,
+      closeOnQueryTimeout: false,
+      queryTimeoutMs: 1_500,
+    })
+    if (bootedPage) {
+      process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
+      return
+    }
+    process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
+    return
+  }
   const currentPage = await waitForCurrentRouteReady(miniProgram, route, currentPageReadyTimeout, {
     checkDevtoolsLog: options.checkDevtoolsLog,
     closeOnQueryTimeout: options.allowRelaunch === false,
@@ -1302,11 +1317,15 @@ async function warmupMiniProgramRoute(
   if (options.allowRelaunch === false) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
       checkDevtoolsLog: options.checkDevtoolsLog,
-      closeOnQueryTimeout: true,
+      closeOnQueryTimeout: !options.allowAnyPage,
       queryTimeoutMs: currentPageReadyTimeout,
     })
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
+      return
+    }
+    if (options.allowAnyPage) {
+      process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
       return
     }
     try {
@@ -1843,7 +1862,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupRoute, ...rest } = options
+  const { projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAnyPage, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -1911,6 +1930,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup(skipWarmup)) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+                allowAnyPage: warmupAnyPage,
                 allowRelaunch: false,
                 checkDevtoolsLog: devtoolsLogMonitor.assertClean,
               })

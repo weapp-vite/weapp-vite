@@ -3,6 +3,10 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import {
+  createTemplateWevuTdesignRegressionLaunchOptions,
+  relaunchTemplateWevuTdesignRegressionPage,
+} from './template-wevu-tdesign-regression.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
@@ -29,9 +33,7 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-    })
+    sharedMiniProgram = await launchAutomator(createTemplateWevuTdesignRegressionLaunchOptions(TEMPLATE_ROOT))
   }
   return sharedMiniProgram
 }
@@ -59,12 +61,9 @@ describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
     await closeSharedMiniProgram()
   })
 
-  it('toggles urgent state from both the row and the switch', async () => {
+  it('toggles urgent state from both the row and the switch', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
-    const page = await miniProgram.reLaunch(ROUTE)
-    if (!page) {
-      throw new Error(`Failed to launch route: ${ROUTE}`)
-    }
+    const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'form')
 
     await page.waitFor(200)
 

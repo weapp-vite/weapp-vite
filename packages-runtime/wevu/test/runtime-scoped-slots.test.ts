@@ -345,6 +345,35 @@ describe('runtime: scoped slots', () => {
     }))
   })
 
+  it('keeps slot props readable for computed bindings before attach', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        return this.__wvSlotPropsData.items.map((item: string) => item.toUpperCase())
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        __wvSlotScope: null,
+        __wvSlotProps: ['items', ['alpha']],
+      },
+      setData: vi.fn(),
+    }
+
+    expect(() => {
+      opts.properties.__wvSlotProps.observer.call(inst, ['items', ['alpha']])
+    }).not.toThrow()
+    expect(inst.__wvSlotPropsData).toEqual({ items: ['alpha'] })
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { items: ['alpha'] } })
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: ['ALPHA'],
+    }))
+  })
+
   it('keeps slot prop observers on properties', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!

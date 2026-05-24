@@ -2,6 +2,7 @@
 import type { HomeResponse } from '../../services/home/home'
 import { onLoad, onReachBottom, onShow, ref, useAsyncPullDownRefresh, useNativeInstance } from 'wevu'
 import { wpi } from 'wevu/api'
+import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { fetchGoodsList } from '../../services/good/fetchGoods'
 import { fetchHome } from '../../services/home/home'
@@ -120,6 +121,16 @@ function goodListAddCartHandle() {
   })
 }
 
+function showLayoutDialogProbe() {
+  void confirmDialog({
+    context: nativeInstance,
+    title: '布局弹窗',
+    content: '验证 layout dialog 选择器桥接',
+    confirmBtn: '确认',
+    cancelBtn: '取消',
+  }).catch(() => {})
+}
+
 async function navToSearchPage() {
   await wpi.navigateTo({
     url: '/pages/goods/search/index',
@@ -165,6 +176,7 @@ defineExpose({
   onReTry,
   goodListClickHandle,
   goodListAddCartHandle,
+  showLayoutDialogProbe,
   navToSearchPage,
   navToActivityDetail,
 })

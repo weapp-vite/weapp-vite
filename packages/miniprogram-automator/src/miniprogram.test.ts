@@ -181,6 +181,8 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
       method: 'reLaunch',
       args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
     })
     expect(currentPageReads).toBeGreaterThanOrEqual(3)
   })
@@ -207,6 +209,38 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
     expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
     expect(page.path).toBe('/pages/recovered')
+  })
+
+  it('falls back to pageStack when currentPage times out after retries', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(timeoutError)
+      .mockRejectedValueOnce(timeoutError)
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce({
+        pageStack: [
+          { pageId: 7, path: '/pages/fallback', query: { ok: 1 } },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(connection.send).toHaveBeenCalledTimes(4)
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(3, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(4, 'App.getPageStack', {})
+    expect(page.path).toBe('/pages/fallback')
   })
 
   it('falls back to pageStack when currentPage keeps timing out after retries', async () => {
@@ -277,7 +311,114 @@ describe('MiniProgram', () => {
     const page = await pending
 
     expect(page.path).toBe('/pages/next')
-    expect(connection.send).toHaveBeenCalledWith('App.getPageStack', {})
+    expect(connection.send).toHaveBeenCalledWith('App.getPageStack', {}, {
+      timeout: 12_000,
+    })
+  })
+
+  it('continues host route changes when route context probing times out', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const connection = new FakeConnection()
+    let routeChanged = false
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        if (!routeChanged) {
+          throw timeoutError
+        }
+        return { pageId: 2, path: '/pages/next', query: {} }
+      }
+      if (method === 'App.getPageStack') {
+        return new Promise(() => {})
+      }
+      if (method === 'App.callWxMethod') {
+        routeChanged = true
+        return {}
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(12_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('keeps polling route context when currentPage is slower than the short protocol timeout', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 4
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: '/pages/index', query: {} }
+      }
+      if (method === 'App.callWxMethod') {
+        return {}
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(12_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(currentPageReads).toBeGreaterThanOrEqual(4)
+  })
+
+  it('waits for the target route when the route change command does not respond', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string, _params?: Record<string, any>, options?: { timeout?: number }) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 3
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: '/pages/index', query: {} }
+      }
+      if (method === 'App.callWxMethod') {
+        if (options?.timeout) {
+          throw Object.assign(
+            new Error(`DevTools did not respond to protocol method App.callWxMethod within ${options.timeout}ms`),
+            {
+              code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+              method: 'App.callWxMethod',
+            },
+          )
+        }
+        return {}
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(20_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
   })
 
   it('renders remote debug qr code and resolves after connection event', async () => {

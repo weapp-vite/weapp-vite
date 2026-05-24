@@ -24,10 +24,16 @@ interface IToolClearCacheOptions {
   clean: 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage'
 }
 type AutomatorCallable = (...args: any[]) => any
+interface CurrentPageOptions {
+  retries?: number
+  timeout?: number
+}
 
 const CLOSE_STEP_TIMEOUT = 2000
 const CURRENT_PAGE_RETRIES = 3
 const CURRENT_PAGE_RETRY_DELAY = 400
+const CHANGE_ROUTE_CONTEXT_TIMEOUT = 12_000
+const CHANGE_ROUTE_CALL_TIMEOUT = 12_000
 const CHANGE_ROUTE_READY_TIMEOUT = 15_000
 const CHANGE_ROUTE_POLL_DELAY = 500
 const CHANGE_ROUTE_DEBUG_ENABLED = process.env.WEAPP_VITE_E2E_CHANGE_ROUTE_DEBUG === '1'
@@ -53,6 +59,10 @@ function withTimeout<T>(task: Promise<T>, timeoutMs: number) {
       })
   })
 }
+
+function isOperationTimeoutError(error: unknown, timeoutMs: number) {
+  return error instanceof Error && error.message.includes(`Operation timed out after ${timeoutMs}ms`)
+}
 function isFnStr(value: unknown) {
   if (!isStr(value)) {
     return false
@@ -75,6 +85,18 @@ function isPageStackProtocolTimeout(error: unknown) {
     && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
     && 'method' in error
     && error.method === 'App.getPageStack'
+}
+
+function isCallWxMethodProtocolTimeout(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error
+    && error.method === 'App.callWxMethod'
+}
+
+function isRouteContextProbeError(error: unknown) {
+  return isCurrentPageProtocolTimeout(error) || isPageStackProtocolTimeout(error)
 }
 
 function normalizeRoutePath(value: string | undefined) {
@@ -137,11 +159,13 @@ export default class MiniProgram extends EventEmitter {
     return await this.changeRoute('switchTab', url)
   }
 
-  async currentPage() {
+  async currentPage(options: CurrentPageOptions = {}) {
     let lastError: unknown
-    for (let attempt = 1; attempt <= CURRENT_PAGE_RETRIES; attempt += 1) {
+    const retries = options.retries ?? CURRENT_PAGE_RETRIES
+    const sendOptions = options.timeout ? { timeout: options.timeout } : undefined
+    for (let attempt = 1; attempt <= retries; attempt += 1) {
       try {
-        const { pageId, path, query } = await this.send('App.getCurrentPage')
+        const { pageId, path, query } = await this.send('App.getCurrentPage', {}, sendOptions)
         return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
       }
       catch (error) {
@@ -149,7 +173,7 @@ export default class MiniProgram extends EventEmitter {
         if (!isCurrentPageProtocolTimeout(error)) {
           throw error
         }
-        if (attempt < CURRENT_PAGE_RETRIES) {
+        if (attempt < retries) {
           await sleep(CURRENT_PAGE_RETRY_DELAY)
           continue
         }
@@ -158,7 +182,7 @@ export default class MiniProgram extends EventEmitter {
 
     if (isCurrentPageProtocolTimeout(lastError)) {
       try {
-        const { pageStack } = await this.send('App.getPageStack')
+        const { pageStack } = await this.send('App.getPageStack', {}, sendOptions)
         const page = pageStack[pageStack.length - 1]
         if (page) {
           return Page.create(this.connection, {
@@ -184,6 +208,10 @@ export default class MiniProgram extends EventEmitter {
 
   async callWxMethod(method: string, ...args: any[]) {
     return (await this.send('App.callWxMethod', { method, args })).result
+  }
+
+  private async callWxMethodWithTimeout(method: string, timeout: number, ...args: any[]) {
+    return (await this.send('App.callWxMethod', { method, args }, { timeout })).result
   }
 
   async mockWxMethod(method: string, result: any, ...args: any[]) {
@@ -363,35 +391,23 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private async changeRoute(method: string, url?: string) {
-    const currentPage = await this.currentPage().catch(async (error) => {
-      if (!isCurrentPageProtocolTimeout(error)) {
+    const currentPage = await this.resolveRouteContextPage()
+    logChangeRouteDebug(`start method=${method} url=${url ?? '<none>'} current=${currentPage?.path ?? '<none>'}`)
+    try {
+      if (currentPage && isPluginPath(currentPage.path)) {
+        await this.callPluginWxMethod(extractPluginId(currentPage.path), method, { url })
+      }
+      else {
+        await this.callWxMethodWithTimeout(method, CHANGE_ROUTE_CALL_TIMEOUT, { url })
+      }
+    }
+    catch (error) {
+      if (isCallWxMethodProtocolTimeout(error) || isOperationTimeoutError(error, CHANGE_ROUTE_CALL_TIMEOUT)) {
+        logChangeRouteDebug(`call-timeout method=${method} url=${url ?? '<none>'}`)
+      }
+      else {
         throw error
       }
-      try {
-        const { pageStack } = await this.send('App.getPageStack')
-        const page = pageStack[pageStack.length - 1]
-        return page
-          ? Page.create(this.connection, {
-              id: page.pageId,
-              path: page.path,
-              query: page.query,
-            }, this.pageMap)
-          : undefined
-      }
-      catch (pageStackError) {
-        if (!isPageStackProtocolTimeout(pageStackError)) {
-          throw pageStackError
-        }
-        return undefined
-      }
-    })
-    logChangeRouteDebug(`start method=${method} url=${url ?? '<none>'} current=${currentPage?.path ?? '<none>'}`)
-    if (currentPage && isPluginPath(currentPage.path)) {
-      const pluginId = extractPluginId(currentPage.path)
-      await this.callPluginWxMethod(pluginId, method, { url })
-    }
-    else {
-      await this.callWxMethod(method, { url })
     }
 
     const expectedRoute = normalizeRoutePath(url)
@@ -401,7 +417,7 @@ export default class MiniProgram extends EventEmitter {
 
     while (Date.now() - startedAt <= CHANGE_ROUTE_READY_TIMEOUT) {
       try {
-        const page = await this.currentPage()
+        const page = await this.readRoutePollingCurrentPage()
         lastPage = page
         logChangeRouteDebug(`poll method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
         if (!expectedRoute || normalizeRoutePath(page?.path) === expectedRoute) {
@@ -415,7 +431,7 @@ export default class MiniProgram extends EventEmitter {
       }
 
       try {
-        const stack = await this.pageStack()
+        const stack = await this.readRoutePollingPageStack()
         const stackTop = stack[stack.length - 1]
         if (stackTop) {
           lastPage = stackTop
@@ -429,6 +445,10 @@ export default class MiniProgram extends EventEmitter {
       catch (error) {
         lastError = error
         logChangeRouteDebug(`stack-error method=${method} url=${url ?? '<none>'} error=${error instanceof Error ? error.message : String(error)}`)
+        if (isOperationTimeoutError(error, CHANGE_ROUTE_CONTEXT_TIMEOUT)) {
+          await sleep(CHANGE_ROUTE_POLL_DELAY)
+          continue
+        }
       }
       await sleep(CHANGE_ROUTE_POLL_DELAY)
     }
@@ -444,8 +464,52 @@ export default class MiniProgram extends EventEmitter {
       : new Error(`Timed out waiting route ${expectedRoute || '<current>'} after ${method}`)
   }
 
-  private async send(method: string, params: Record<string, any> = {}) {
-    return await this.connection.send(method, params)
+  private async resolveRouteContextPage() {
+    const currentPageTask = this.currentPage()
+      .catch((error) => {
+        if (isRouteContextProbeError(error)) {
+          return undefined
+        }
+        throw error
+      })
+    const timeoutTask = sleep(CHANGE_ROUTE_CONTEXT_TIMEOUT).then(() => undefined)
+
+    try {
+      return await Promise.race([currentPageTask, timeoutTask])
+    }
+    finally {
+      void currentPageTask.catch(() => {})
+    }
+  }
+
+  private async readRoutePollingCurrentPage() {
+    const { pageId, path, query } = await this.send('App.getCurrentPage', {}, {
+      timeout: CHANGE_ROUTE_CONTEXT_TIMEOUT,
+    })
+    return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
+  }
+
+  private async readRoutePollingPageStack() {
+    const { pageStack } = await this.send('App.getPageStack', {}, {
+      timeout: CHANGE_ROUTE_CONTEXT_TIMEOUT,
+    })
+    return pageStack.map((page: {
+      pageId: number
+      path: string
+      query: any
+    }) => {
+      return Page.create(this.connection, {
+        id: page.pageId,
+        path: page.path,
+        query: page.query,
+      }, this.pageMap)
+    })
+  }
+
+  private async send(method: string, params: Record<string, any> = {}, options?: { timeout?: number }) {
+    return options
+      ? await this.connection.send(method, params, options)
+      : await this.connection.send(method, params)
   }
 
   private onLogAdded = (payload: any) => {

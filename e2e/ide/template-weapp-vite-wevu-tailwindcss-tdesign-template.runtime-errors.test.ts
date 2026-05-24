@@ -4,6 +4,10 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+import {
+  createTemplateWevuTdesignRegressionLaunchOptions,
+  relaunchTemplateWevuTdesignRegressionPage,
+} from './template-wevu-tdesign-regression.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
@@ -35,9 +39,7 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-    })
+    sharedMiniProgram = await launchAutomator(createTemplateWevuTdesignRegressionLaunchOptions(TEMPLATE_ROOT))
   }
   return sharedMiniProgram
 }
@@ -103,7 +105,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
     await closeSharedMiniProgram()
   })
 
-  it('does not emit runtime console errors when opening layout pages', async () => {
+  it('does not emit runtime console errors when opening layout pages', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
     const warningCollector = attachConsoleWarningCollector(miniProgram)
@@ -112,10 +114,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
       for (const route of ROUTES) {
         const marker = collector.mark()
         const warningMarker = warningCollector.mark()
-        const page = await miniProgram.reLaunch(route)
-        if (!page) {
-          throw new Error(`Failed to launch route: ${route}`)
-        }
+        const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, route, 'runtime errors')
         await page.waitFor(300)
         expect(collector.getSince(marker)).toEqual([])
         expect(warningCollector.getSince(warningMarker)).toEqual([])
@@ -127,16 +126,13 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
     }
   })
 
-  it('does not emit runtime console errors when homepage layout toast is triggered', async () => {
+  it('does not emit runtime console errors when homepage layout toast is triggered', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
     const warningCollector = attachConsoleWarningCollector(miniProgram)
 
     try {
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      if (!page) {
-        throw new Error('Failed to launch route: /pages/index/index')
-      }
+      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
 
       await page.waitFor(300)
 
@@ -163,19 +159,16 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
     }
   })
 
-  it('renders homepage KpiBoard scoped slot items in DevTools', async () => {
+  it('renders homepage KpiBoard scoped slot items in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
     const warningCollector = attachConsoleWarningCollector(miniProgram)
 
     try {
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      if (!page) {
-        throw new Error('Failed to launch route: /pages/index/index')
-      }
-
       const marker = collector.mark()
       const warningMarker = warningCollector.mark()
+      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
+
       const renderedText = await waitForElementText(
         page,
         '[data-kpi-board-scope-label="visits"]',

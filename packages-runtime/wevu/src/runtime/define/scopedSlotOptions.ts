@@ -136,6 +136,7 @@ function mergeSlotProps(
   const scope = normalizeSlotBindings(scopeSource)
   const slotProps = normalizeSlotBindings(propsSource)
   const merged = { ...scope, ...slotProps }
+  instance[WEVU_SLOT_PROPS_DATA_KEY] = merged
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
@@ -170,6 +171,7 @@ function setOwnerProxy(instance: any, proxy: any) {
 
 function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
   setOwnerProxy(instance, proxy)
+  instance[WEVU_SLOT_OWNER_KEY] = snapshot || {}
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_OWNER_KEY] = snapshot || {}

@@ -58,6 +58,7 @@ const statusText = computed(() => {
 
 const requestCountText = computed(() => query.data.value?.requestCount ?? 0)
 const generatedAtText = computed(() => query.data.value?.generatedAt ?? '--')
+const queryPayloadText = computed(() => JSON.stringify(query.data.value ?? null))
 const errorText = computed(() => {
   const error = query.error.value
   return error instanceof Error ? error.message : String(error ?? '')
@@ -176,7 +177,7 @@ onLoad((queryOptions) => {
 
     <view class="panel">
       <text class="panel-title">payload</text>
-      <text id="vue-query-payload" class="payload mono">{{ JSON.stringify(query.data) }}</text>
+      <text id="vue-query-payload" class="payload mono">{{ queryPayloadText }}</text>
     </view>
 
     <view v-if="query.isError" class="panel error">

@@ -52,6 +52,7 @@ const IDE_TEMPLATES_PATTERNS = [
 const IDE_DIRECT_LAUNCH_PATTERNS = new Set([
   'ide/app-lifecycle.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
+  'ide/plugin-demo.runtime.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ])
 const IDE_SMOKE_TESTS = [

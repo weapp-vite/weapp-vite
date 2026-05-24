@@ -4,6 +4,10 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+import {
+  createTemplateWevuTdesignRegressionLaunchOptions,
+  relaunchTemplateWevuTdesignRegressionPage,
+} from './template-wevu-tdesign-regression.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
@@ -30,9 +34,7 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-    })
+    sharedMiniProgram = await launchAutomator(createTemplateWevuTdesignRegressionLaunchOptions(TEMPLATE_ROOT))
   }
   return sharedMiniProgram
 }
@@ -51,15 +53,12 @@ describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback d
     await closeSharedMiniProgram()
   })
 
-  it('closes page alert dialog after confirming', async () => {
+  it('closes page alert dialog after confirming', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
-      const page = await miniProgram.reLaunch(ROUTE)
-      if (!page) {
-        throw new Error(`Failed to launch route: ${ROUTE}`)
-      }
+      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'layout feedback dialog')
 
       await page.waitFor(400)
       const marker = collector.mark()
@@ -84,15 +83,12 @@ describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback d
     }
   })
 
-  it('closes page confirm dialog after canceling and confirming', async () => {
+  it('closes page confirm dialog after canceling and confirming', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
-      let page = await miniProgram.reLaunch(ROUTE)
-      if (!page) {
-        throw new Error(`Failed to launch route: ${ROUTE}`)
-      }
+      let page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'layout feedback dialog')
 
       await page.waitFor(400)
       let marker = collector.mark()
@@ -113,10 +109,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback d
       expect(actionLogs).toContainEqual(expect.stringContaining('点击取消'))
       expect(collector.getSince(marker)).toEqual([])
 
-      page = await miniProgram.reLaunch(ROUTE)
-      if (!page) {
-        throw new Error(`Failed to relaunch route: ${ROUTE}`)
-      }
+      page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'layout feedback dialog')
       await page.waitFor(400)
       marker = collector.mark()
 
@@ -140,13 +133,10 @@ describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback d
     }
   })
 
-  it('can close dialog host via native confirm/cancel methods', async () => {
+  it('can close dialog host via native confirm/cancel methods', async (ctx) => {
     const miniProgram = await getSharedMiniProgram()
 
-    const page = await miniProgram.reLaunch(ROUTE)
-    if (!page) {
-      throw new Error(`Failed to launch route: ${ROUTE}`)
-    }
+    const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, ROUTE, 'layout feedback dialog')
 
     await page.waitFor(400)
 
