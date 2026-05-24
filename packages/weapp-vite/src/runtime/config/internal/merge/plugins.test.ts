@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { arrangePlugins, normalizePluginOptions } from './plugins'
 
-const vitePluginWeappMock = vi.hoisted(() => vi.fn(() => ({ name: 'weapp-vite:context' })))
+const vitePluginWeappMock = vi.hoisted(() => vi.fn(() => [
+  { name: 'weapp-vite:context' },
+  { name: 'weapp-vite:output-finalizer' },
+]))
 
 vi.mock('../../../../plugins', () => ({
   WEAPP_VITE_CONTEXT_PLUGIN_NAME: 'weapp-vite:context',
@@ -20,7 +23,7 @@ describe('runtime config merge plugins', () => {
     ])
   })
 
-  it('places weapp context plugin first, keeps tsconfig plugins last, and removes duplicates', () => {
+  it('places weapp plugins first, keeps output finalizer last, and removes duplicates', () => {
     const config: any = {
       plugins: [
         { name: 'user-a' },
@@ -38,6 +41,7 @@ describe('runtime config merge plugins', () => {
       { name: 'user-a' },
       { name: 'user-b' },
       { name: 'vite-tsconfig-paths' },
+      { name: 'weapp-vite:output-finalizer' },
     ])
   })
 })

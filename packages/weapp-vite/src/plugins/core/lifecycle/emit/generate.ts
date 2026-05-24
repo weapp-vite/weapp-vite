@@ -10,6 +10,7 @@ import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED
 import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../../utils'
+import { normalizePreprocessorStyleAssets } from '../../../outputFinalizer'
 import {
   filterPluginBundleOutputs,
   flushIndependentBuilds,
@@ -139,6 +140,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         }
         rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd)
       }
+      normalizePreprocessorStyleAssets(rolldownBundle, state.ctx.configService.outputExtensions?.wxss)
       return
     }
 
@@ -446,6 +448,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     stabilizeWevuRuntimeChunkAccess(rolldownBundle)
     syncChunkImportsFromRequireCalls(rolldownBundle)
     prunePartialHmrStableSharedChunks(rolldownBundle, state)
+    normalizePreprocessorStyleAssets(rolldownBundle, state.ctx.configService.outputExtensions?.wxss)
 
     refreshModuleGraph(this, state)
 

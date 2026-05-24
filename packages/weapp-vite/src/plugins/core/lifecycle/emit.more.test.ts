@@ -1131,6 +1131,122 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['main.js'].code).toContain('__weappViteInjectedApi__')
   })
 
+  it('drops duplicate preprocessor style assets before final output', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          outputExtensions: {
+            wxss: 'wxss',
+          },
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.scss': {
+        type: 'asset',
+        fileName: 'app.scss',
+        source: '.app{color:red}',
+      },
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: '.app{color:red}',
+      },
+      'asset.txt': {
+        type: 'asset',
+        fileName: 'asset.txt',
+        source: 'plain text asset',
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.scss']).toBeUndefined()
+    expect(bundle['app.wxss']).toMatchObject({
+      type: 'asset',
+      fileName: 'app.wxss',
+      source: '.app{color:red}',
+    })
+    expect(bundle['asset.txt'].source).toBe('plain text asset')
+  })
+
+  it('renames remaining preprocessor style assets to the current platform style extension', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          outputExtensions: {
+            wxss: 'acss',
+          },
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.scss': {
+        type: 'asset',
+        fileName: 'pages/index/index.scss',
+        source: '.page{color:red}',
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.scss']).toBeUndefined()
+    expect(bundle['pages/index/index.acss']).toMatchObject({
+      type: 'asset',
+      fileName: 'pages/index/index.acss',
+      source: '.page{color:red}',
+    })
+  })
+
+  it('normalizes preprocessor style assets before plugin build output returns', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          outputExtensions: {
+            wxss: 'wxss',
+          },
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+
+    const hook = createGenerateBundleHook(state, true)
+    const bundle = {
+      'components/card/index.scss': {
+        type: 'asset',
+        fileName: 'components/card/index.scss',
+        source: '.card{color:red}',
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['components/card/index.scss']).toBeUndefined()
+    expect(bundle['components/card/index.wxss']).toMatchObject({
+      type: 'asset',
+      fileName: 'components/card/index.wxss',
+      source: '.card{color:red}',
+    })
+  })
+
   it('resolves fallback shared chunk label via scan or raw final file name', async () => {
     applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
       options.onFallback?.({

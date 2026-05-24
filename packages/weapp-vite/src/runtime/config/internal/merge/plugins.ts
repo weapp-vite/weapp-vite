@@ -3,6 +3,8 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
 
+const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
+
 export function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
   const normalized: PluginOption[] = []
   if (!option) {
@@ -28,8 +30,21 @@ export function arrangePlugins(
   subPackageMeta: SubPackageMetaValue | undefined,
 ) {
   const existing = normalizePluginOptions(config.plugins)
+  const internal = normalizePluginOptions(vitePluginWeapp(ctx as any, subPackageMeta))
   const tsconfigPlugins: PluginOption[] = []
   const others: PluginOption[] = []
+  const finalizers: PluginOption[] = []
+
+  for (const entry of internal) {
+    if (!entry) {
+      continue
+    }
+    if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)) {
+      finalizers.push(entry)
+      continue
+    }
+    others.push(entry)
+  }
 
   for (const entry of existing) {
     if (!entry) {
@@ -39,15 +54,14 @@ export function arrangePlugins(
       tsconfigPlugins.push(entry)
       continue
     }
-    if (isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)) {
+    if (
+      isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)
+      || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)
+    ) {
       continue
     }
     others.push(entry)
   }
 
-  config.plugins = [
-    vitePluginWeapp(ctx as any, subPackageMeta),
-    ...others,
-    ...tsconfigPlugins,
-  ]
+  config.plugins = [...others, ...tsconfigPlugins, ...finalizers]
 }

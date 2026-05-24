@@ -8,6 +8,7 @@ import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
 import { weappVite } from './core'
 import { css } from './css'
+import { createOutputFinalizerPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
 import { vue } from './vue'
 import { wevu } from './wevu'
@@ -73,6 +74,7 @@ export function vitePluginWeapp(
   }
 
   groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
+  groups.push([createOutputFinalizerPlugin(ctx)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {
