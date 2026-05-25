@@ -6,6 +6,10 @@ import {
   buildClassStyleComputedObject,
 } from './classStyleComputed'
 
+function restoreEscapedUnicode(code: string) {
+  return code.replaceAll(/\\u[\dA-Fa-f]{4}/g, escapeText => String.fromCharCode(Number.parseInt(escapeText.slice(2), 16)))
+}
+
 describe('classStyleComputed', () => {
   it('returns null when no class/style bindings are provided', () => {
     expect(buildClassStyleComputedObject([], {
@@ -256,5 +260,76 @@ describe('classStyleComputed', () => {
     expect(code).toContain('__wvSlotPropsData.items')
     expect(code).not.toContain('模板 v-for 数据源表达式执行失败: __wvSlotPropsData.items')
     expect(code).toContain('__wv_bind_0 = card.item.label')
+  })
+
+  it('reports normal v-for source errors', () => {
+    const bindings: any = [
+      {
+        name: '__wv_bind_0',
+        type: 'bind',
+        exp: 'item.label',
+        expAst: t.memberExpression(t.identifier('item'), t.identifier('label')),
+        forStack: [
+          {
+            listExp: 'items.missing.list',
+            listExpAst: t.memberExpression(
+              t.memberExpression(t.identifier('items'), t.identifier('missing')),
+              t.identifier('list'),
+            ),
+            item: 'item',
+            index: 'index',
+          },
+        ],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    const readableCode = restoreEscapedUnicode(code ?? '')
+    expect(readableCode).toContain('模板 v-for 数据源表达式执行失败: items.missing.list')
+    expect(readableCode).toContain('模板运行时表达式执行失败: __wv_bind_0 = item.label')
+  })
+
+  it('keeps scoped slot owner v-for source missing values silent during initialization', () => {
+    const bindings: any = [
+      {
+        name: '__wv_bind_0',
+        type: 'bind',
+        exp: 'tabItems',
+        expAst: t.memberExpression(
+          t.memberExpression(t.thisExpression(), t.identifier('__wvOwnerProxy')),
+          t.identifier('tabItems'),
+        ),
+        forStack: [
+          {
+            listExp: '__wv_bind_0',
+            listExpAst: t.memberExpression(
+              t.memberExpression(t.thisExpression(), t.identifier('__wvOwnerProxy')),
+              t.identifier('tabItems'),
+            ),
+            item: '__wv_item_0',
+            index: '__wv_index_0',
+            itemAliases: {
+              label: '__wv_item_0.label',
+            },
+          },
+        ],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    expect(code).toContain('this.__wvOwnerProxy.tabItems')
+    expect(code).not.toContain('模板 v-for 数据源表达式执行失败: __wv_bind_0')
+    expect(code).not.toContain('模板运行时表达式执行失败: __wv_bind_0 = tabItems')
+    expect(code).toContain('return this.__wvOwnerProxy.tabItems')
   })
 })

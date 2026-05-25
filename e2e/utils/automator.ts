@@ -213,7 +213,10 @@ let loginPreflightPassed = false
 let localhostListenPatched = false
 const automator = new Automator()
 
-interface RuntimeLogStats {
+export interface RuntimeLogStats {
+  debug: number
+  info: number
+  log: number
   warn: number
   error: number
   exception: number
@@ -243,7 +246,7 @@ interface RelaunchRecoveryOptions {
   skipPageRootCheck?: boolean
 }
 
-type RuntimeLogLevel = 'warn' | 'error' | 'exception'
+type RuntimeLogLevel = 'debug' | 'info' | 'log' | 'warn' | 'error' | 'exception'
 
 interface RuntimeLogEntry {
   level: RuntimeLogLevel
@@ -415,6 +418,30 @@ function isWarnConsoleEntry(entry: any) {
     || COMPONENT_WARN_PATTERN.test(text)
 }
 
+function resolveConsoleLevel(entry: any): Exclude<RuntimeLogLevel, 'exception'> {
+  const payload = resolveConsolePayload(entry)
+  const rawLevel = String(payload?.level ?? payload?.type ?? '').toLowerCase()
+  if (rawLevel === 'debug') {
+    return 'debug'
+  }
+  if (rawLevel === 'info') {
+    return 'info'
+  }
+  if (rawLevel === 'warn' || rawLevel === 'warning') {
+    return 'warn'
+  }
+  if (rawLevel === 'error' || rawLevel === 'fatal') {
+    return 'error'
+  }
+  if (isErrorConsoleEntry(entry)) {
+    return 'error'
+  }
+  if (isWarnConsoleEntry(entry)) {
+    return 'warn'
+  }
+  return 'log'
+}
+
 function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta {
   const existing = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
   if (existing) {
@@ -423,10 +450,24 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
 
   const entries: RuntimeLogEntry[] = []
   const stats: RuntimeLogStats = {
+    debug: 0,
+    info: 0,
+    log: 0,
     warn: 0,
     error: 0,
     exception: 0,
     total: 0,
+  }
+
+  const appendRuntimeLogEvent = (entry: RuntimeLogEntry) => {
+    appendIdeReportEvent({
+      source: 'runtime',
+      kind: 'message',
+      project,
+      level: entry.level,
+      channel: entry.level === 'exception' ? 'exception' : 'runtime',
+      text: entry.text,
+    })
   }
 
   const onConsole = (entry: any) => {
@@ -434,17 +475,12 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     if (!text) {
       return
     }
-    if (isErrorConsoleEntry(entry)) {
-      stats.error += 1
-      stats.total += 1
-      entries.push({ level: 'error', text })
-      return
-    }
-    if (isWarnConsoleEntry(entry)) {
-      stats.warn += 1
-      stats.total += 1
-      entries.push({ level: 'warn', text })
-    }
+    const level = resolveConsoleLevel(entry)
+    stats[level] += 1
+    stats.total += 1
+    const runtimeEntry = { level, text }
+    entries.push(runtimeEntry)
+    appendRuntimeLogEvent(runtimeEntry)
   }
 
   const onException = (entry: any) => {
@@ -453,7 +489,9 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
       : normalizeConsoleText(entry)
     stats.exception += 1
     stats.total += 1
-    entries.push({ level: 'exception', text })
+    const runtimeEntry = { level: 'exception', text } satisfies RuntimeLogEntry
+    entries.push(runtimeEntry)
+    appendRuntimeLogEvent(runtimeEntry)
   }
 
   miniProgram.on('console', onConsole)
@@ -472,6 +510,9 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
       stats.warn = 0
       stats.error = 0
       stats.exception = 0
+      stats.log = 0
+      stats.info = 0
+      stats.debug = 0
       stats.total = 0
     },
     closed: false,
@@ -1170,60 +1211,51 @@ async function waitForAnyCurrentPageReady(
   return null
 }
 
+export function formatRuntimeStatsLine(stats: RuntimeLogStats) {
+  const runtimeIssueCount = stats.warn + stats.error + stats.exception
+  return `[e2e-runtime-stats] warn=${stats.warn} error=${stats.error} exception=${stats.exception} total=${runtimeIssueCount} log=${stats.log} info=${stats.info} debug=${stats.debug} all=${stats.total}`
+}
+
 function logRuntimeStats(meta: RuntimeLogMeta) {
-  const summary = `[e2e-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
+  const runtimeLogCount = meta.stats.debug + meta.stats.info + meta.stats.log
+  const runtimeIssueCount = meta.stats.warn + meta.stats.error + meta.stats.exception
+  const summary = formatRuntimeStatsLine(meta.stats)
   appendIdeReportEvent({
     source: 'runtime',
     kind: 'stats',
     project: meta.project,
+    log: meta.stats.log + meta.stats.debug,
+    info: meta.stats.info,
     warn: meta.stats.warn,
     error: meta.stats.error,
     exception: meta.stats.exception,
-    total: meta.stats.total,
+    total: runtimeIssueCount,
   })
-  if (meta.stats.total > 0) {
+  if (runtimeIssueCount > 0) {
     process.stderr.write(`${summary}\n`)
     for (const entry of meta.entries) {
+      if (entry.level === 'log' || entry.level === 'info' || entry.level === 'debug') {
+        continue
+      }
       if (entry.level === 'warn') {
         const logLine = `[warn] [runtime] ${entry.text}`
         process.stderr.write(`${logLine}\n`)
-        appendIdeReportEvent({
-          source: 'runtime',
-          kind: 'message',
-          project: meta.project,
-          level: 'warn',
-          channel: 'runtime',
-          text: entry.text,
-        })
         continue
       }
       if (entry.level === 'error') {
         const logLine = `[error] [runtime] ${entry.text}`
         process.stderr.write(`${logLine}\n`)
-        appendIdeReportEvent({
-          source: 'runtime',
-          kind: 'message',
-          project: meta.project,
-          level: 'error',
-          channel: 'runtime',
-          text: entry.text,
-        })
         continue
       }
       const logLine = `[error] [runtime:exception] ${entry.text}`
       process.stderr.write(`${logLine}\n`)
-      appendIdeReportEvent({
-        source: 'runtime',
-        kind: 'message',
-        project: meta.project,
-        level: 'exception',
-        channel: 'exception',
-        text: entry.text,
-      })
     }
     return
   }
   process.stdout.write(`${summary}\n`)
+  if (runtimeLogCount > 0) {
+    process.stdout.write(`[e2e-runtime-logs] log=${meta.stats.log} info=${meta.stats.info} debug=${meta.stats.debug}\n`)
+  }
 }
 
 function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {

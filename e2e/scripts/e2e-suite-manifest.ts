@@ -16,6 +16,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue297-302.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
   'ide/github-issues.runtime.issue558.test.ts',
+  'ide/github-issues.runtime.issue615.test.ts',
   'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.props.test.ts',
@@ -49,6 +50,9 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ]
+const IDE_HELPER_TEST_PATTERNS = new Set([
+  'ide/runtimeErrors.test.ts',
+])
 const IDE_DIRECT_LAUNCH_PATTERNS = new Set([
   'ide/app-lifecycle.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
@@ -128,6 +132,10 @@ function createIdeVitestTask(filePath: string) {
   return task
 }
 
+function isIdeHelperTest(label: string) {
+  return IDE_HELPER_TEST_PATTERNS.has(label)
+}
+
 function createHeadlessVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
   const targetFile = toRelativeLabel(filePath)
   return {
@@ -179,6 +187,7 @@ export function getIdeTasks() {
     onlyFiles: true,
   })
     .sort()
+    .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {

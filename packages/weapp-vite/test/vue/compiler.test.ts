@@ -312,7 +312,7 @@ describe('Vue Template Compiler', () => {
         '<slot :data="slotProps"></slot>',
         'test.vue',
       )
-      expect(result.code).toContain('<slot')
+      expect(result.code).not.toContain('<slot')
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('__wvSlotProps')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
@@ -325,7 +325,7 @@ describe('Vue Template Compiler', () => {
       )
 
       expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-      expect(result.code).toContain('<slot />')
+      expect(result.code).not.toContain('<slot />')
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('__wvSlotProps="{{[\'data\',slotProps]}}"')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')

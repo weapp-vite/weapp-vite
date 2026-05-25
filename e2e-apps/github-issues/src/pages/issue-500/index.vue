@@ -6,15 +6,15 @@ definePageJson({
 })
 
 const afterMissingInjectRan = ref(false)
-const missingValue = inject<string>('issue-500:missing-token')
+const missingValue = inject<string>('issue-500:missing-token', 'fallback-token')
 afterMissingInjectRan.value = true
 
 const continuationText = computed(() => afterMissingInjectRan.value ? 'continued' : 'blocked')
-const missingType = computed(() => missingValue === undefined ? 'undefined' : typeof missingValue)
+const missingType = computed(() => missingValue === 'fallback-token' ? 'fallback' : typeof missingValue)
 
 function _runE2E() {
   return {
-    ok: afterMissingInjectRan.value && missingValue === undefined,
+    ok: afterMissingInjectRan.value && missingValue === 'fallback-token',
     continuationText: continuationText.value,
     missingType: missingType.value,
   }

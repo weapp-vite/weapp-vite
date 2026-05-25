@@ -6,7 +6,7 @@ defineComponentJson({
 
 <template>
   <view class="issue521-scoped-flex-host" data-issue521-host="true">
-    <slot :xyz="0" />
+    <slot xyz="zero" />
   </view>
 </template>
 

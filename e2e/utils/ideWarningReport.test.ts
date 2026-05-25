@@ -77,10 +77,40 @@ describe('ideWarningReport', () => {
         source: 'runtime',
         kind: 'stats',
         project: 'e2e-apps/github-issues',
+        log: 1,
+        info: 1,
         warn: 2,
         error: 0,
         exception: 0,
         total: 2,
+      },
+      {
+        source: 'runtime',
+        kind: 'message',
+        project: 'e2e-apps/github-issues',
+        level: 'log',
+        channel: 'runtime',
+        text: 'ordinary runtime log after launch',
+      },
+      {
+        source: 'runtime',
+        kind: 'message',
+        project: 'e2e-apps/github-issues',
+        level: 'info',
+        channel: 'runtime',
+        text: 'route ready info',
+      },
+      {
+        source: 'runtime',
+        kind: 'page-snapshot',
+        project: 'e2e-apps/github-issues',
+        channel: 'github-issues:ready-timeout',
+        route: '/pages/issue-615/index',
+        readyText: 'issue-615 scoped slot v-for owner list',
+        currentPage: 'pages/issue-615/index',
+        wxmlLength: 13,
+        empty: true,
+        text: '<text></text>',
       },
       {
         source: 'runtime',
@@ -121,6 +151,8 @@ describe('ideWarningReport', () => {
 
       expect(payload.summary.projectCount).toBe(2)
       expect(payload.summary.typeUncompatibleCount).toBe(3)
+      expect(payload.summary.totalRuntimeLogs).toBe(2)
+      expect(payload.summary.pageSnapshotCount).toBe(1)
 
       const indexMarkdown = fs.readFileSync(paths.reportMarkdownPath, 'utf8')
       const indexJson = fs.readFileSync(paths.reportJsonPath, 'utf8')
@@ -133,6 +165,9 @@ describe('ideWarningReport', () => {
       expect(indexJson).toContain('"project": "e2e-apps/github-issues"')
       expect(githubMarkdown).toContain('type-uncompatible value')
       expect(githubMarkdown).toContain('got non-object value')
+      expect(githubMarkdown).toContain('ordinary runtime log after launch')
+      expect(githubMarkdown).toContain('route=`/pages/issue-615/index`')
+      expect(githubMarkdown).toContain('<text></text>')
       expect(indexMarkdown).not.toContain(tempRoot)
       expect(indexMarkdown).not.toContain(process.cwd())
       expect(githubMarkdown).not.toContain(tempRoot)
@@ -168,7 +203,7 @@ describe('ideWarningReport', () => {
     process.env.WEAPP_VITE_E2E_REPORT_MARKERS = '1'
     writeIdeWarningReport(paths, new Date('2026-03-11T00:00:00.000Z'))
     expect(stdoutWrite).toHaveBeenCalledWith(
-      expect.stringContaining('[ide-warning-report] index='),
+      expect.stringMatching(/\[ide-warning-report\] index=.* logs=0 pageSnapshots=0\n/),
     )
   })
 })

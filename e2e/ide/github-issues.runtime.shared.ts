@@ -5,6 +5,7 @@ import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
@@ -57,6 +58,7 @@ const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const PAGE_WXML_PROTOCOL_TIMEOUT = 4_000
+const PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH = 1_200
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 
 function isRecord(value: unknown): value is Record<string, any> {
@@ -290,6 +292,51 @@ function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
 }
 
+function compactWxmlSnippet(wxml: string) {
+  const compact = wxml.replace(WHITESPACE_RE, ' ').trim()
+  return compact.length > PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH
+    ? `${compact.slice(0, PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH)}...`
+    : compact
+}
+
+function isEmptyRuntimeWxml(wxml: string) {
+  const normalized = wxml.trim()
+  return !normalized || normalized === '<text></text>'
+}
+
+function recordPageWxmlSnapshot(options: {
+  channel: string
+  route: string
+  readyText?: string
+  currentPage?: string
+  wxml?: string
+  error?: unknown
+}) {
+  const wxml = options.wxml ?? ''
+  const errorText = options.error instanceof Error
+    ? options.error.message
+    : options.error == null
+      ? ''
+      : String(options.error)
+  const snippet = wxml
+    ? compactWxmlSnippet(wxml)
+    : errorText
+      ? `readPageWxml failed: ${errorText}`
+      : '<empty>'
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'page-snapshot',
+    project: resolveReportProjectPath(APP_ROOT),
+    channel: options.channel,
+    route: options.route,
+    readyText: options.readyText || '<none>',
+    currentPage: options.currentPage || '<none>',
+    wxmlLength: wxml.length,
+    empty: isEmptyRuntimeWxml(wxml),
+    text: snippet,
+  })
+}
+
 export async function readPageWxml(page: any) {
   return await runAutomatorOp('read page wxml', async () => {
     const element = await page.$('page')
@@ -310,20 +357,31 @@ export async function readPageWxml(page: any) {
 
 async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000) {
   const start = Date.now()
+  let lastWxml = ''
+  let lastError: unknown
   while (Date.now() - start <= timeoutMs) {
     try {
       const wxml = await readPageWxml(page)
+      lastWxml = wxml
+      lastError = undefined
       const normalized = wxml.trim()
       if (readyText) {
         if (normalized.includes(readyText)) {
-          return true
+          return {
+            ready: true,
+            wxml,
+          }
         }
       }
       else if (normalized && normalized !== '<text></text>') {
-        return true
+        return {
+          ready: true,
+          wxml,
+        }
       }
     }
-    catch {
+    catch (error) {
+      lastError = error
     }
 
     if (typeof page?.waitFor === 'function') {
@@ -336,7 +394,11 @@ async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000
     }
     await delay(220)
   }
-  return false
+  return {
+    ready: false,
+    wxml: lastWxml,
+    error: lastError,
+  }
 }
 
 export async function readClassName(page: any, selector: string) {
@@ -396,7 +458,7 @@ async function ensureGithubIssuesWarmupPage(miniProgram: any) {
     return null
   }
   const warmupReady = await waitForPageWxml(page, undefined, 15_000)
-  return warmupReady ? page : null
+  return warmupReady.ready ? page : null
 }
 
 function isGithubIssuesLaunchRetryableError(error: unknown) {
@@ -529,13 +591,21 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
         Math.min(timeoutMs, 4_000),
       )
       const targetPage = currentPage ?? page
-      const ready = targetPage
+      const readyResult = targetPage
         ? await waitForPageWxml(targetPage, readyText, timeoutMs)
-        : false
-      if (ready) {
+        : { ready: false, wxml: '' }
+      if (readyResult.ready) {
         return targetPage
       }
       process.stdout.write(`[github-issues:relaunch] ready-timeout route=${route} readyText=${readyText || '<none>'} currentPage=${currentPage?.path || '<none>'} fallback=returned-page\n`)
+      recordPageWxmlSnapshot({
+        channel: 'github-issues:ready-timeout',
+        route,
+        readyText,
+        currentPage: currentPage?.path,
+        wxml: readyResult.wxml,
+        error: readyResult.error,
+      })
       return targetPage
     }
 

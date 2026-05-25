@@ -222,6 +222,7 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/index.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
+    expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
     expect(ideHeadlessSmokeLabels).toEqual([
       'ide/index.test.ts',
       'ide/template-weapp-vite-template.test.ts',
@@ -253,10 +254,11 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue558.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue615.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(10)
+    expect(ideGithubIssuesTasks.length).toBe(11)
     expect(ideGithubIssuesTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBe(true)
   })
 

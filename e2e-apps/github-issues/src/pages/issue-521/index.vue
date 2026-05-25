@@ -21,8 +21,8 @@ function _runE2E() {
     </view>
 
     <ScopedFlexHost v-slot="io">
-      <FlexItem label="A" :val="io.xyz" />
-      <FlexItem label="B" :val="io.xyz" />
+      <FlexItem label="A" :value="io.xyz" />
+      <FlexItem label="B" :value="io.xyz" />
     </ScopedFlexHost>
   </view>
 </template>

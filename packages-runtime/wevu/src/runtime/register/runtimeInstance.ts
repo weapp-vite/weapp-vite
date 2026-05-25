@@ -210,6 +210,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       writable: false,
     })
   }
+  if (setup) {
+    Object.defineProperty(baseMountAdapter, '__wevu_deferInitialSnapshot', {
+      configurable: true,
+      enumerable: false,
+      value: true,
+      writable: false,
+    })
+  }
   const runtime = runtimeApp.mount(baseMountAdapter)
   runtimeRef = runtime
   attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)

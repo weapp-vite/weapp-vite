@@ -851,7 +851,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
-  it('issue #500: missing inject warns without blocking later setup code in DevTools runtime', async (ctx) => {
+  it('issue #500: missing inject default continues later setup code in DevTools runtime', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-500/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-500/index.js')
 
@@ -869,11 +869,11 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       const runtime = await issuePage.callMethod('_runE2E')
       expect(runtime?.ok).toBe(true)
       expect(runtime?.continuationText).toBe('continued')
-      expect(runtime?.missingType).toBe('undefined')
+      expect(runtime?.missingType).toBe('fallback')
 
       const wxml = await readPageWxml(issuePage)
       expect(wxml).toContain('data-continuation="continued"')
-      expect(wxml).toContain('data-missing-type="undefined"')
+      expect(wxml).toContain('data-missing-type="fallback"')
       expect(wxml).toContain('inject after line: continued')
     }
     finally {

@@ -378,6 +378,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     return slotTag
   }
 
+  const hasScopeBindings = Boolean(slotPropsExp)
   const slotKey = resolveSlotKey(context, slotNameInfo)
   const genericKey = `scoped-slots-${slotKey}`
   context.componentGenerics[genericKey] = true
@@ -393,7 +394,9 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`
-  const projectedContent = `${slotTag}${scopedTag}`
+  const projectedContent = hasScopeBindings
+    ? scopedTag
+    : `${scopedTag}${context.platform.wrapElse(slotTag)}`
 
   if (fallbackContent && slotPresentExp) {
     return `${context.platform.wrapIf(slotPresentExp, projectedContent, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`

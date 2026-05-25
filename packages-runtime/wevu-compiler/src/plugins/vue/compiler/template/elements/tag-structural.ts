@@ -1,6 +1,7 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { transformBindDirective } from '../directives/bind'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
@@ -21,7 +22,7 @@ function resolveConditionExpression(rawExpValue: string, context: TransformConte
 }
 
 function resolveListExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
+  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue))
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
   return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
@@ -125,18 +126,23 @@ export function transformForElement(node: ElementNode, context: TransformContext
       : []
 
     if (elementWithoutFor.tag === 'slot') {
+      const keyDirective = elementWithoutFor.props.find((prop): prop is DirectiveNode => {
+        return prop.type === NodeTypes.DIRECTIVE
+          && prop.name === 'bind'
+          && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+          && prop.arg.content === 'key'
+      })
       const slotElementWithoutForKey: ElementNode = {
         ...elementWithoutFor,
         props: elementWithoutFor.props.filter((prop) => {
-          return !(
-            prop.type === NodeTypes.DIRECTIVE
-            && prop.name === 'bind'
-            && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
-            && prop.arg.content === 'key'
-          )
+          return prop !== keyDirective
         }),
       }
       const content = transformSlotElement(slotElementWithoutForKey, context, transformNode)
+      const keyAttr = keyDirective ? transformBindDirective(keyDirective, context, forInfo) : null
+      if (keyAttr) {
+        extraAttrs.push(keyAttr)
+      }
       const attrString = extraAttrs.length ? ` ${extraAttrs.join(' ')}` : ''
       return attrString ? `<block${attrString}>${content}</block>` : content
     }

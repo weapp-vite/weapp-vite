@@ -17,6 +17,36 @@ beforeEach(() => {
 })
 
 describe('runtime: setup method used by computed binding', () => {
+  it('defers initial computed snapshot until setup methods are injected', async () => {
+    defineComponent({
+      data: () => ({}),
+      computed: {
+        __wv_bind_0(this: any) {
+          return this.getCase()
+        },
+      },
+      setup() {
+        const getCase = () => '123'
+        return {
+          getCase,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    expect(() => opts.lifetimes.attached.call(inst)).not.toThrow()
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ __wv_bind_0: '123' }))
+    expect(setData).toHaveBeenCalledTimes(1)
+
+    await flushJobs()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.__wv_bind_0).toBe('123')
+    expect(setData).toHaveBeenCalledTimes(1)
+  })
+
   it('re-evaluates computed value after setup methods are injected', async () => {
     defineComponent({
       data: () => ({}),

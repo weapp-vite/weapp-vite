@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { extractDevtoolsCliLoginState, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
+import { extractDevtoolsCliLoginState, formatRuntimeStatsLine, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -53,6 +53,18 @@ describe('automator', () => {
     const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
 
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it('keeps legacy runtime issue totals while exposing ordinary log counts', () => {
+    expect(formatRuntimeStatsLine({
+      debug: 1,
+      info: 2,
+      log: 3,
+      warn: 4,
+      error: 5,
+      exception: 6,
+      total: 21,
+    })).toBe('[e2e-runtime-stats] warn=4 error=5 exception=6 total=15 log=3 info=2 debug=1 all=21')
   })
 
   it('terminates detached bridge cli processes', async () => {
