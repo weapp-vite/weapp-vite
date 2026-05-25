@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { OutputExtensions } from '../../platforms/types'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import process from 'node:process'
 import { defu, removeExtensionDeep } from '@weapp-core/shared'
@@ -137,6 +138,13 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     return normalizedRelative
   }
 
+  const resolveExternalOutputPath = (filePath: string) => {
+    const normalizedPath = normalizeComparablePath(filePath)
+    const normalizedDir = path.dirname(normalizedPath)
+    const dirHash = createHash('sha256').update(normalizedDir).digest('hex').slice(0, 10)
+    return normalizeRelativePath(path.join('__weapp_vite_external__', dirHash, path.basename(normalizedPath)))
+  }
+
   function setOptions(value: LoadConfigResult) {
     options = value
     configState.options = value
@@ -239,6 +247,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       configFilePath: undefined,
       currentSubPackageRoot: undefined,
       weappWeb: undefined,
+      configFileDependencies: [],
     })
 
     setOptions(resolvedConfig)
@@ -378,6 +387,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     get configFilePath() {
       return options.configFilePath
     },
+    get configFileDependencies() {
+      return options.configFileDependencies
+    },
     get weappWebConfig() {
       return options.weappWeb
     },
@@ -422,6 +434,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       const relative = this.relativeAbsoluteSrcRoot(p)
       if (!relative) {
         return relative
+      }
+      if (relative.startsWith('..') || relative === 'node_modules' || relative.startsWith('node_modules/')) {
+        return resolveExternalOutputPath(p)
       }
       const libOutputMap = options.weappLibOutputMap
       if (libOutputMap && libOutputMap.size > 0) {

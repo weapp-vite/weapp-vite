@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWatchChangeHook } from './watch'
+import { createBuildStartHook, createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
 const invalidateEntryForSidecarMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -71,6 +71,8 @@ function createState(overrides: Record<string, any> = {}) {
         relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         relativeCwd: (id: string) => id.replace('/project/', ''),
         weappViteConfig: {},
+        isDev: true,
+        configFileDependencies: [],
       },
       wxmlService: {
         scan: vi.fn(async () => null),
@@ -96,6 +98,7 @@ function createState(overrides: Record<string, any> = {}) {
     loadEntry: {
       invalidateResolveCache: vi.fn(),
     },
+    emitDirtyEntries: vi.fn(async () => {}),
     loadedEntrySet: new Set<string>(),
     entriesMap: new Map<string, { type: string }>(),
     layoutEntryDependents: new Map<string, Set<string>>(),
@@ -122,6 +125,21 @@ describe('core lifecycle watch hook', () => {
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
+  })
+
+  it('adds loaded config dependencies to dev build watch files', async () => {
+    const state = createState()
+    state.ctx.configService.configFileDependencies = [
+      '/project/vite.config.mts',
+      '/project/config/shared.ts',
+    ]
+    const addWatchFile = vi.fn()
+    const buildStart = createBuildStartHook(state)
+
+    await buildStart.call({ addWatchFile })
+
+    expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
+    expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
   })
 
   afterEach(() => {

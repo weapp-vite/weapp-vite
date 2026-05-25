@@ -49,6 +49,39 @@ export function shouldReuseLoadedWeappConfig(
   return path.resolve(loadedPath) === path.resolve(weappConfigFilePath)
 }
 
+function collectConfigFileDependencies(
+  cwd: string,
+  ...entries: Array<{
+    path?: string
+    dependencies?: string[]
+  } | string | null | undefined>
+) {
+  const dependencySet = new Set<string>()
+
+  const add = (filePath: string | undefined) => {
+    if (!filePath) {
+      return
+    }
+    dependencySet.add(path.isAbsolute(filePath) ? path.normalize(filePath) : path.resolve(cwd, filePath))
+  }
+
+  for (const entry of entries) {
+    if (!entry) {
+      continue
+    }
+    if (typeof entry === 'string') {
+      add(entry)
+      continue
+    }
+    add(entry.path)
+    for (const dependency of entry.dependencies ?? []) {
+      add(dependency)
+    }
+  }
+
+  return Array.from(dependencySet)
+}
+
 function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: string) {
   if (!srcRoot) {
     return
@@ -415,6 +448,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const configFilePath = weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile
+    const configFileDependencies = collectConfigFileDependencies(
+      cwd,
+      loaded,
+      weappLoaded,
+      resolvedConfigFile,
+    )
     const configMergeInfo = loaded?.path && weappLoaded?.path && !shouldReuseLoadedWeappConfig(weappLoaded.path, loaded.path)
       ? {
           merged: true,
@@ -458,6 +497,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       srcRoot,
       pluginOnly,
       configFilePath,
+      configFileDependencies,
       currentSubPackageRoot: undefined,
       weappWeb: resolvedWebConfig,
       weappLib: resolvedLibConfig,

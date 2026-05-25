@@ -113,6 +113,7 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
       targets: ALL_MP_PLATFORMS,
     },
     configFilePath: '/project/weapp-vite.config.ts',
+    configFileDependencies: [],
     weappWeb: undefined,
     weappLib: undefined,
     weappLibOutputMap: undefined,
@@ -350,6 +351,31 @@ describe('createConfigService', () => {
 
     expect(service.relativeAbsoluteSrcRoot('/project/src/pages/index.ts')).toBe('pages/index.ts')
     expect(service.relativeAbsoluteSrcRoot('/project/other/file.ts')).toBe('other/file.ts')
+  })
+
+  it('maps node_modules and cwd-external output paths into a generated external namespace', () => {
+    const service = createConfigService(createCtx())
+
+    expect(service.relativeOutputPath('/project/node_modules/ui-lib/card/index.vue')).toMatch(
+      /^__weapp_vite_external__\/[a-f0-9]{10}\/index\.vue$/,
+    )
+    expect(service.relativeOutputPath('/workspace/packages/ui/card/index.vue')).toMatch(
+      /^__weapp_vite_external__\/[a-f0-9]{10}\/index\.vue$/,
+    )
+  })
+
+  it('exposes config file dependencies from loaded options', () => {
+    const service = createConfigService(createCtx({
+      configFileDependencies: [
+        '/project/vite.config.mts',
+        '/project/config/shared.ts',
+      ],
+    }))
+
+    expect(service.configFileDependencies).toEqual([
+      '/project/vite.config.mts',
+      '/project/config/shared.ts',
+    ])
   })
 
   it('normalizes symlinked temp paths before computing src-relative output names', () => {

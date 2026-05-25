@@ -84,6 +84,7 @@ describe('runtime config merge miniprogram', () => {
         cwd: '/project',
         srcRoot: 'src',
         mpDistRoot: 'custom-dist',
+        configFileDependencies: [],
         packageJson: {
           dependencies: {
             '@scope/pkg': '^1.0.0',
@@ -168,6 +169,7 @@ describe('runtime config merge miniprogram', () => {
         } as any,
         cwd: '/project',
         srcRoot: 'src',
+        configFileDependencies: [],
         packageJson: undefined,
         isDev: true,
         applyRuntimePlatform: vi.fn(),
@@ -209,6 +211,7 @@ describe('runtime config merge miniprogram', () => {
         } as any,
         cwd: '/project',
         srcRoot: 'src',
+        configFileDependencies: [],
         packageJson: undefined,
         isDev: true,
         applyRuntimePlatform: vi.fn(),
@@ -241,6 +244,7 @@ describe('runtime config merge miniprogram', () => {
           build: {
             watch: {
               buildDelay: 500,
+              include: ['/workspace/packages/ui/**'],
               watcher: {
                 useDebounce: false,
               },
@@ -249,6 +253,7 @@ describe('runtime config merge miniprogram', () => {
         } as any,
         cwd: '/project',
         srcRoot: 'src',
+        configFileDependencies: ['/project/vite.config.mts'],
         packageJson: undefined,
         isDev: true,
         applyRuntimePlatform: vi.fn(),
@@ -262,7 +267,11 @@ describe('runtime config merge miniprogram', () => {
 
     expect(result.build?.watch?.buildDelay).toBe(500)
     expect(result.build?.watch?.watcher?.useDebounce).toBe(false)
-    expect(result.build?.watch?.include).toEqual(['/project/src/**'])
+    expect(result.build?.watch?.include).toEqual([
+      '/workspace/packages/ui/**',
+      '/project/src/**',
+      '/project/vite.config.mts',
+    ])
   })
 
   it('builds production inline config and sets current subpackage root', () => {

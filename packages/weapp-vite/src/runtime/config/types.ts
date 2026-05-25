@@ -44,6 +44,7 @@ export interface LoadConfigResult {
   srcRoot: string
   pluginOnly?: boolean
   configFilePath?: string
+  configFileDependencies: string[]
   currentSubPackageRoot?: string
   weappWeb?: ResolvedWeappWebConfig
   configMergeInfo?: ResolvedConfigMergeInfo
@@ -114,6 +115,7 @@ export interface ConfigService {
   readonly aliasEntries: ResolvedAlias[]
   readonly platform: MpPlatform
   readonly configFilePath?: string
+  readonly configFileDependencies: string[]
   readonly weappWebConfig?: ResolvedWeappWebConfig
   readonly weappLibConfig?: ResolvedWeappLibConfig
   readonly weappLibOutputMap?: Map<string, string>

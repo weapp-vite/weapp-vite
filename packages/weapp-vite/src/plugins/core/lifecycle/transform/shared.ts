@@ -22,7 +22,13 @@ export function resolveInjectWeapiOptions(configService: CorePluginState['ctx'][
   }
 }
 
-export function shouldTransformId(id: string, absoluteSrcRoot: string) {
+export function shouldTransformId(
+  id: string,
+  options: {
+    absoluteSrcRoot: string
+    isEntry?: (sourceId: string) => boolean
+  },
+) {
   if (isCSSRequest(id)) {
     return false
   }
@@ -33,11 +39,14 @@ export function shouldTransformId(id: string, absoluteSrcRoot: string) {
   }
 
   const sourceId = normalizeFsResolvedId(id)
-  if (!sourceId || sourceId.includes('/node_modules/')) {
+  if (!sourceId) {
     return false
   }
-  if (sourceId === absoluteSrcRoot) {
+  if (sourceId === options.absoluteSrcRoot) {
     return true
   }
-  return sourceId.startsWith(`${absoluteSrcRoot}/`)
+  if (sourceId.startsWith(`${options.absoluteSrcRoot}/`)) {
+    return true
+  }
+  return options.isEntry?.(sourceId) === true
 }
