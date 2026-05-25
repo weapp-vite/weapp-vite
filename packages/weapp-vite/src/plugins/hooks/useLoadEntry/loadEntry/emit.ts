@@ -88,7 +88,11 @@ interface EmitEntryOutputOptions {
   pluginResolvedRecords?: ResolvedEntryRecord[]
   pluginJsonPathForRegistration?: string
   pluginJsonForRegistration?: any
-  resolveEntriesWithCache: (pluginCtx: PluginContext, entries: string[], absoluteRoot: string) => Promise<ResolvedEntryRecord[]>
+  resolveEntriesWithCache: (pluginCtx: PluginContext, entries: string[], absoluteRoot: string, options?: {
+    fallbackRoots?: string[]
+    resolveMappedEntry?: (entry: string) => string | undefined
+  }) => Promise<ResolvedEntryRecord[]>
+  resolveMappedEntry?: (entry: string) => string | undefined
   configService: CompilerContext['configService']
   wxmlService?: CompilerContext['wxmlService']
   resolvedEntryMap: Map<string, ResolvedId>
@@ -122,6 +126,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     pluginJsonPathForRegistration,
     pluginJsonForRegistration,
     resolveEntriesWithCache,
+    resolveMappedEntry,
     entryResolveRoot,
     configService,
     wxmlService,
@@ -242,6 +247,10 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
           pluginCtx,
           normalizedEntries,
           entryResolveRoot,
+          {
+            fallbackRoots: [configService.cwd],
+            resolveMappedEntry,
+          },
         )
       : []
 

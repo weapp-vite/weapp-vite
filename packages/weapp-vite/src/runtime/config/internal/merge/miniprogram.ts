@@ -16,6 +16,7 @@ import { arrangePlugins } from './plugins'
 
 const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
 const PATH_SEPARATOR_SPLIT_REGEX = /[/\\]+/
+type WatchIncludePattern = string | RegExp
 
 function escapeRegex(value: string) {
   return value.replace(PACKAGE_NAME_REGEX, '\\$&')
@@ -65,6 +66,7 @@ interface MergeMiniprogramOptions {
   cwd: string
   srcRoot: string
   mpDistRoot?: string
+  configFileDependencies?: string[]
   packageJson: { dependencies?: Record<string, string> } | undefined
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
@@ -79,9 +81,11 @@ export function resolveMiniprogramWatchInclude(options: {
   srcRoot: string
   pluginRoot?: string
   buildScope?: ReturnType<typeof resolveBuildScope>
+  userInclude?: WatchIncludePattern | WatchIncludePattern[]
+  configFileDependencies?: string[]
 }) {
   const srcRoot = path.join(options.cwd, options.srcRoot)
-  const watchInclude: string[] = options.buildScope?.enabled
+  const watchInclude: WatchIncludePattern[] = options.buildScope?.enabled
     ? [
         ...options.buildScope.includeMainPackage ? [path.join(srcRoot, 'pages', '**')] : [],
         ...options.buildScope.subPackageRoots.map(root => path.join(srcRoot, root, '**')),
@@ -90,21 +94,39 @@ export function resolveMiniprogramWatchInclude(options: {
         path.join(srcRoot, '**'),
       ]
 
-  if (!options.pluginRoot) {
-    return watchInclude
+  if (options.pluginRoot) {
+    const absolutePluginRoot = path.resolve(options.cwd, options.pluginRoot)
+    const relativeToSrc = path.relative(
+      path.resolve(options.cwd, options.srcRoot),
+      absolutePluginRoot,
+    )
+    const pluginPatternBase = relativeToSrc.startsWith('..')
+      ? absolutePluginRoot
+      : path.join(options.cwd, options.srcRoot, relativeToSrc)
+
+    watchInclude.push(path.join(pluginPatternBase, '**'))
   }
 
-  const absolutePluginRoot = path.resolve(options.cwd, options.pluginRoot)
-  const relativeToSrc = path.relative(
-    path.resolve(options.cwd, options.srcRoot),
-    absolutePluginRoot,
-  )
-  const pluginPatternBase = relativeToSrc.startsWith('..')
-    ? absolutePluginRoot
-    : path.join(options.cwd, options.srcRoot, relativeToSrc)
+  for (const dependency of options.configFileDependencies ?? []) {
+    watchInclude.push(dependency)
+  }
 
-  watchInclude.push(path.join(pluginPatternBase, '**'))
-  return watchInclude
+  const userInclude = Array.isArray(options.userInclude)
+    ? options.userInclude
+    : options.userInclude
+      ? [options.userInclude]
+      : []
+  const seen = new Set<string>()
+  return [...userInclude, ...watchInclude].filter((item) => {
+    if (typeof item !== 'string') {
+      return true
+    }
+    if (seen.has(item)) {
+      return false
+    }
+    seen.add(item)
+    return true
+  })
 }
 
 export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: Partial<InlineConfig | undefined>[]) {
@@ -115,6 +137,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     cwd,
     srcRoot,
     mpDistRoot,
+    configFileDependencies = [],
     packageJson,
     isDev,
     applyRuntimePlatform,
@@ -172,6 +195,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       srcRoot,
       pluginRoot: config.weapp?.pluginRoot,
       buildScope: resolveBuildScope(config.weapp?.buildScope),
+      configFileDependencies,
     })
 
     const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(

@@ -54,6 +54,7 @@ export async function applyScriptSetupUsingComponents(options: {
   configService: CompilerContext['configService']
   wxmlService?: CompilerContext['wxmlService']
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  externalComponentEntryMap?: Map<string, string>
 }) {
   const {
     pluginCtx,
@@ -63,6 +64,7 @@ export async function applyScriptSetupUsingComponents(options: {
     configService,
     wxmlService,
     reExportResolutionCache,
+    externalComponentEntryMap,
   } = options
 
   try {
@@ -94,7 +96,7 @@ export async function applyScriptSetupUsingComponents(options: {
           )
 
           for (const { localName, importSource, importedName, kind } of imports) {
-            let { from } = await resolveUsingComponentReference(
+            const resolved = await resolveUsingComponentReference(
               pluginCtx,
               configService,
               reExportResolutionCache,
@@ -107,6 +109,7 @@ export async function applyScriptSetupUsingComponents(options: {
                 fallbackRelativeImporterDir: true,
               },
             )
+            let { from } = resolved
 
             if (!from && importSource.startsWith('/')) {
               from = removeExtensionDeep(importSource)
@@ -123,6 +126,9 @@ export async function applyScriptSetupUsingComponents(options: {
             }
 
             usingComponents[localName] = from
+            if (resolved.resolvedId) {
+              externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolved.resolvedId)
+            }
           }
 
           json.usingComponents = usingComponents

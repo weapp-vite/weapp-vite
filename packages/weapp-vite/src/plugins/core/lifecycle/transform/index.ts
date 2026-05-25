@@ -77,7 +77,11 @@ export function createTransformHook(state: CorePluginState) {
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
     const injectOptions = resolveInjectWeapiOptions(configService)
-    if (!shouldTransformId(id, configService.absoluteSrcRoot)) {
+    if (!shouldTransformId(id, {
+      absoluteSrcRoot: configService.absoluteSrcRoot,
+      isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true
+        || state.resolvedEntryMap?.has(sourceId) === true,
+    })) {
       return null
     }
     const startedAt = performance.now()

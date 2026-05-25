@@ -53,6 +53,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     platform: DEFAULT_MP_PLATFORM,
     srcRoot: '',
     configFilePath: undefined,
+    configFileDependencies: [],
     weappWeb: undefined,
     configMergeInfo: undefined,
   }
@@ -108,6 +109,7 @@ export interface RuntimeState {
       dirtyEntrySet: Set<string>
       dirtyEntryReasons: Map<string, 'direct' | 'dependency' | 'metadata'>
       resolvedEntryMap: Map<string, ResolvedId>
+      externalComponentEntryMap: Map<string, string>
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
@@ -241,6 +243,7 @@ export function createRuntimeState(): RuntimeState {
         dirtyEntrySet: new Set<string>(),
         dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
         resolvedEntryMap: new Map<string, ResolvedId>(),
+        externalComponentEntryMap: new Map<string, string>(),
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),

@@ -48,17 +48,39 @@ export function createEntryResolver(configService?: { isDev?: boolean }) {
     pluginCtx: PluginContext,
     entries: string[],
     absoluteRoot: string,
+    options?: {
+      fallbackRoots?: string[]
+      resolveMappedEntry?: (entry: string) => string | undefined
+    },
   ): Promise<ResolvedEntryRecord[]> {
     return Promise.all(
       entries
         .filter(entry => !entry.includes(':'))
         .map(async (entry) => {
+          const cleanedEntry = entry.replace(LEADING_ROOT_SLASH_RE, '')
+          const mappedEntry = options?.resolveMappedEntry?.(cleanedEntry)
+          if (mappedEntry) {
+            return {
+              entry,
+              resolvedId: await resolveEntryWithCache(pluginCtx, mappedEntry),
+            }
+          }
+
           const absPath = path.isAbsolute(entry) && await fs.pathExists(entry)
             ? entry
-            : path.resolve(absoluteRoot, entry.replace(LEADING_ROOT_SLASH_RE, ''))
+            : path.resolve(absoluteRoot, cleanedEntry)
+          let resolvedId = await resolveEntryWithCache(pluginCtx, absPath)
+          if (!resolvedId) {
+            for (const fallbackRoot of options?.fallbackRoots ?? []) {
+              resolvedId = await resolveEntryWithCache(pluginCtx, path.resolve(fallbackRoot, cleanedEntry))
+              if (resolvedId) {
+                break
+              }
+            }
+          }
           return {
             entry,
-            resolvedId: await resolveEntryWithCache(pluginCtx, absPath),
+            resolvedId,
           }
         }),
     )

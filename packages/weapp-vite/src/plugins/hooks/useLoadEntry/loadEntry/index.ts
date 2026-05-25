@@ -354,6 +354,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           configService,
           wxmlService,
           reExportResolutionCache,
+          externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,
         })
 
         if (type === 'page') {
@@ -466,6 +467,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       pluginJsonPathForRegistration,
       pluginJsonForRegistration,
       resolveEntriesWithCache: entryResolver.resolveEntriesWithCache,
+      resolveMappedEntry: entry => ctx.runtimeState.build.hmr.externalComponentEntryMap.get(entry),
       entryResolveRoot,
       configService,
       wxmlService,

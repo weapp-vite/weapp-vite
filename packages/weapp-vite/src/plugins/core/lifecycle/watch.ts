@@ -19,6 +19,7 @@ import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/inv
 import { collectAffectedScriptsAndImporters } from '../../utils/invalidateEntry/cssGraph'
 import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
+import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '../helpers'
 
@@ -86,6 +87,7 @@ export function createBuildStartHook(state: CorePluginState) {
   return async function buildStart(this: any) {
     resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
     if (configService.isDev) {
+      addNormalizedWatchFiles(this, configService.configFileDependencies)
       if (isPluginBuild) {
         if (configService.absolutePluginRoot) {
           ensureSidecarWatcher(ctx, configService.absolutePluginRoot)

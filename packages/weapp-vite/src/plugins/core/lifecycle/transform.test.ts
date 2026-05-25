@@ -331,6 +331,28 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(result).toBeNull()
   })
 
+  it('rewrites resolved entry files outside src root', async () => {
+    const externalEntry = '/project/node_modules/pkg/index.js'
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock({
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        }),
+      },
+      resolvedEntryMap: new Map([[externalEntry, { id: externalEntry }]]),
+    } as any)
+
+    const result = await transform('export const a = wx.showToast({ title: "ok" })', externalEntry)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('__weappViteInjectedApi__.showToast')
+  })
+
   it('skips style requests under src root', async () => {
     const transform = createTransformHook({
       ctx: {

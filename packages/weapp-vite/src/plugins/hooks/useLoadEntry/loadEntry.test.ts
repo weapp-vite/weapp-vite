@@ -1170,6 +1170,65 @@ import FooBar from '../../components/foo-bar/index.vue'
     })
   })
 
+  it('tracks external <script setup> component output mapping for compile flow', async () => {
+    const pageScript = '/project/src/pages/external/index.js'
+    const vueEntryPath = '/project/src/pages/external/index.vue'
+    const externalComponent = '/workspace/packages/ui/card/index.vue'
+
+    mockFindVueEntry.mockResolvedValue(vueEntryPath)
+    mockExtractConfigFromVue.mockResolvedValue({
+      navigationBarTitleText: 'External',
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === vueEntryPath) {
+        return `
+<template>
+  <UiCard />
+</template>
+<script setup lang="ts">
+import UiCard from '@workspace/ui/card'
+</script>
+        `.trim()
+      }
+      return 'console.log("noop")'
+    })
+
+    const { loader, registerJsonAsset, runtimeState, configService, emitEntriesChunks } = createLoader()
+    configService.relativeOutputPath = vi.fn((id: string) => {
+      if (id.startsWith('/workspace/packages/ui/card')) {
+        return '__weapp_vite_external__/card/index'
+      }
+      return id.replace('/project/src/', '')
+    })
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string, importer?: string) => {
+      if (source === '@workspace/ui/card') {
+        return { id: externalComponent } as any
+      }
+      if (!importer) {
+        return { id: source } as any
+      }
+      if (source.startsWith('.')) {
+        return { id: path.resolve(path.dirname(importer), source) } as any
+      }
+      return { id: source } as any
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      return target === externalComponent
+    })
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalled()
+    const payload = registerJsonAsset.mock.calls[0][0]
+    expect(payload.json.usingComponents.UiCard).toBe('/__weapp_vite_external__/card/index')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/card/index')).toBe(externalComponent)
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toContain(externalComponent)
+  })
+
   it('suppresses transient ENOENT warnings while deleted vue entries are being removed during dev hmr', async () => {
     const pageScript = '/project/src/pages/auto-delete/index.js'
     const vueEntryPath = '/project/src/pages/auto-delete/index.vue'

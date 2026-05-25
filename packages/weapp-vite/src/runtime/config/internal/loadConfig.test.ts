@@ -419,6 +419,10 @@ describe('runtime config internal loadConfig', () => {
           },
         },
         path: '/project/vite.config.ts',
+        dependencies: [
+          '/project/vite.config.ts',
+          './config/shared.ts',
+        ],
       })
       .mockResolvedValueOnce({
         config: {
@@ -448,6 +452,10 @@ describe('runtime config internal loadConfig', () => {
           },
         },
         path: '/project/weapp-vite.config.ts',
+        dependencies: [
+          '/project/config/shared.ts',
+          '/project/weapp-vite.config.ts',
+        ],
       })
     resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
 
@@ -495,6 +503,11 @@ describe('runtime config internal loadConfig', () => {
       },
     ])
     expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
+    expect(result.configFileDependencies).toEqual([
+      '/project/vite.config.ts',
+      '/project/config/shared.ts',
+      '/project/weapp-vite.config.ts',
+    ])
     expect(result.configMergeInfo).toEqual({
       merged: true,
       viteConfigPath: '/project/vite.config.ts',
