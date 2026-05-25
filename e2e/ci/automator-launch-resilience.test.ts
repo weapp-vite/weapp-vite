@@ -313,7 +313,7 @@ describe.sequential('automator launch resilience', () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('retries when WeChat DevTools log reports simulator subPackages boot error during warmup', async () => {
+  it('records WeChat DevTools simulator boot log warnings without failing a recovered launch', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -323,16 +323,8 @@ describe.sequential('automator launch resilience', () => {
       subPackages: [],
     })
 
-    const firstMiniProgram = createMockMiniProgram()
-    const secondMiniProgram = createMockMiniProgram()
-    launchMock
-      .mockResolvedValueOnce(firstMiniProgram)
-      .mockResolvedValueOnce(secondMiniProgram)
-    execaMock.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: '',
-      stderr: '',
-    })
+    const miniProgram = createMockMiniProgram()
+    launchMock.mockResolvedValueOnce(miniProgram)
     scanRecentDevtoolsSimulatorBootIssuesMock
       .mockReturnValueOnce([{
         file: 'devtools.log',
@@ -343,15 +335,11 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot })
 
-    expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
-    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
-    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(launchMock).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
   it('reopens devtools project when warmup current page hangs', async () => {

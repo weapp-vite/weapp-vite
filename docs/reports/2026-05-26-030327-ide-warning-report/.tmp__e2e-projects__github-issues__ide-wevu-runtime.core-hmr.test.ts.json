@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-05-25T19:06:45.640Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": ".tmp/e2e-projects/github-issues/ide-wevu-runtime.core-hmr.test.ts",
+  "markdownFile": ".tmp__e2e-projects__github-issues__ide-wevu-runtime.core-hmr.test.ts.md",
+  "jsonFile": ".tmp__e2e-projects__github-issues__ide-wevu-runtime.core-hmr.test.ts.json",
+  "summary": {
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 0,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 1,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 0,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [],
+  "runtimeStatsSamples": [],
+  "pageSnapshots": [
+    {
+      "channel": "github-issues:ready-timeout",
+      "route": "/pages/layouts/index",
+      "readyText": "HMR-IDE-CORE-LAYOUT-PAGE-TEMPLATE-WEAPP",
+      "currentPage": "pages/layouts/index",
+      "wxmlLength": 740,
+      "empty": false,
+      "snippet": "document.addEventListener(\"generateFuncReady\", function(){ setTimeout(function() { // https://stackoverflow.com/questions/43717316/google-chrome-document-body-scrolltop-always-returns-0 // 不巧某个基础库有用到，要 fixed 它 Object.defineProperty(document.body, 'scrollTop', { get() { return document.documentElement.scrollTop }, set(value) { document.documentElement.scrollTop = value }, configurable: true, }) }, 100) }) if (document.readyState === 'complete') { window.__global.alert(\"DOCUMENT_READY\") } else { const fn = () => { window.__global.alert(\"DOCUMENT_READY\") window.removeEventListener('load', fn) } window.addEventListener('load', fn) }",
+      "count": 1
+    }
+  ],
+  "issues": [],
+  "typeUncompatibleIssues": []
+}

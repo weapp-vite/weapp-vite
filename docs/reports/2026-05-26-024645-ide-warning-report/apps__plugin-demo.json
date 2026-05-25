@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-05-25T18:47:02.997Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "apps/plugin-demo",
+  "markdownFile": "apps__plugin-demo.md",
+  "jsonFile": "apps__plugin-demo.json",
+  "summary": {
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 0,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 0,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:plugin-demo",
+      "warn": 0,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [],
+  "typeUncompatibleIssues": []
+}

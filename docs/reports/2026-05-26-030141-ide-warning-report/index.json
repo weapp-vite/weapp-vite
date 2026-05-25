@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-05-25T19:02:13.314Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-030141-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 1,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 3,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 3,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": "apps/wevu-runtime-demo",
+      "markdownFile": "apps__wevu-runtime-demo.md",
+      "jsonFile": "apps__wevu-runtime-demo.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 1,
+        "runtimeWarn": 0,
+        "runtimeError": 3,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 3,
+        "totalRuntimeLogs": 1,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

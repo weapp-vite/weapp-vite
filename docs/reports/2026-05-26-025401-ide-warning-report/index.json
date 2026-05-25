@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-05-25T18:54:02.462Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-025401-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 0,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 0,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 0,
+    "typeUncompatibleCount": 0
+  },
+  "projects": []
+}

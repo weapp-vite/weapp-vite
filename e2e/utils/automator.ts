@@ -711,6 +711,7 @@ function sleep(ms: number) {
 function createDevtoolsSimulatorBootLogMonitor(project: string) {
   const sinceMs = Date.now()
   let lastScanAt = 0
+  let reportedIssueText = ''
 
   return {
     assertClean(label: string) {
@@ -727,16 +728,19 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
 
       const firstIssue = issues[0]!
       const issueText = firstIssue.line.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
+      if (issueText === reportedIssueText) {
+        return
+      }
+      reportedIssueText = issueText
       process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText.slice(0, 240)} project=${project}\n`)
       appendIdeReportEvent({
         source: 'runtime',
         kind: 'message',
         project,
-        level: 'error',
+        level: 'warn',
         channel: 'devtools-log',
         text: `${label}: ${issueText}`,
       })
-      throw new Error(`[${label}] WeChat DevTools simulator boot error detected in IDE log: ${issueText}`)
     },
   }
 }

@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-05-25T18:31:30.043Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-023035-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 3,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 0,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 0,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": "e2e-apps/app-lifecycle-native",
+      "markdownFile": "e2e-apps__app-lifecycle-native.md",
+      "jsonFile": "e2e-apps__app-lifecycle-native.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 0,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 0,
+        "typeUncompatibleCount": 0
+      }
+    },
+    {
+      "project": "e2e-apps/app-lifecycle-wevu-ts",
+      "markdownFile": "e2e-apps__app-lifecycle-wevu-ts.md",
+      "jsonFile": "e2e-apps__app-lifecycle-wevu-ts.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 0,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 0,
+        "typeUncompatibleCount": 0
+      }
+    },
+    {
+      "project": "e2e-apps/app-lifecycle-wevu-vue",
+      "markdownFile": "e2e-apps__app-lifecycle-wevu-vue.md",
+      "jsonFile": "e2e-apps__app-lifecycle-wevu-vue.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 0,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 0,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

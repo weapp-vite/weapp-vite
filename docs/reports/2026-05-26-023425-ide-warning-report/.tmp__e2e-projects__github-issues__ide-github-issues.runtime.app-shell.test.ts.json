@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-05-25T18:34:49.627Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": ".tmp/e2e-projects/github-issues/ide-github-issues.runtime.app-shell.test.ts",
+  "markdownFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.app-shell.test.ts.md",
+  "jsonFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.app-shell.test.ts.json",
+  "summary": {
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 0,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 1,
+    "totalRuntimeLogs": 0,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:github-issues",
+      "warn": 1,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "build",
+      "channel": "build",
+      "level": "warn",
+      "message": "[warn] 检测到本地组件 `src/components/issue-429/list-view/index` 与微信内置组件 `list-view` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。",
+      "count": 1,
+      "rawLines": [
+        "[warn] [build:build] [warn] 检测到本地组件 `src/components/issue-429/list-view/index` 与微信内置组件 `list-view` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

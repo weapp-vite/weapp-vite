@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-05-25T18:51:28.123Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "apps/tdesign-miniprogram-starter-retail",
+  "markdownFile": "apps__tdesign-miniprogram-starter-retail.md",
+  "jsonFile": "apps__tdesign-miniprogram-starter-retail.json",
+  "summary": {
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 2,
+    "runtimeInfo": 1,
+    "runtimeWarn": 2,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 3,
+    "totalRuntimeLogs": 3,
+    "typeUncompatibleCount": 2
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:tdesign-retail-runtime",
+      "warn": 1,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 2,
+      "info": 0,
+      "warn": 2,
+      "error": 0,
+      "exception": 0,
+      "total": 2
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "warn",
+      "message": "[Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead.",
+      "count": 2,
+      "rawLines": [
+        "[warn] [runtime:runtime] [Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead.",
+        "[warn] [runtime:runtime] [Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead."
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "版本信息 {\"hasUpdate\":false}",
+      "count": 2,
+      "rawLines": [
+        "[log] [runtime:runtime] 版本信息 {\"hasUpdate\":false}",
+        "[log] [runtime:runtime] 版本信息 {\"hasUpdate\":false}"
+      ]
+    },
+    {
+      "source": "build",
+      "channel": "build",
+      "level": "warn",
+      "message": "[warn] [分包] 模块 pages/order/common.js 同时被主包引用，因此仍保留在主包 common.js，并复制到 pages/goods，请确认是否需要将源代码移动到主包或公共目录。",
+      "count": 1,
+      "rawLines": [
+        "[warn] [build:build] [warn] [分包] 模块 pages/order/common.js 同时被主包引用，因此仍保留在主包 common.js，并复制到 pages/goods，请确认是否需要将源代码移动到主包或公共目录。"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:56205",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:56205"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": [
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "warn",
+      "message": "[Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead.",
+      "expectedType": "String",
+      "actualValue": "get null value. Use empty string instead.",
+      "count": 2,
+      "rawLines": [
+        "[warn] [runtime:runtime] [Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead.",
+        "[warn] [runtime:runtime] [Component] property \"label\" of \"miniprogram_npm/tdesign-miniprogram/tab-panel/tab-panel\" received type-uncompatible value: expected <String> but get null value. Use empty string instead."
+      ]
+    }
+  ]
+}

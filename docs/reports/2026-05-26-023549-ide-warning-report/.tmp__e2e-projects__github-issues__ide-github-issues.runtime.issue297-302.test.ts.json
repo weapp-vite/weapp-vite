@@ -1,0 +1,326 @@
+{
+  "generatedAt": "2026-05-25T18:36:14.903Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": ".tmp/e2e-projects/github-issues/ide-github-issues.runtime.issue297-302.test.ts",
+  "markdownFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.issue297-302.test.ts.md",
+  "jsonFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.issue297-302.test.ts.json",
+  "summary": {
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 30,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 31,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:github-issues",
+      "warn": 1,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 1,
+      "warn": 0,
+      "error": 30,
+      "exception": 0,
+      "total": 30
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_4 {}",
+      "count": 3,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_4 {}",
+        "[error] [runtime:runtime] [wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_4 {}",
+        "[error] [runtime:runtime] [wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_4 {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_7 {}",
+      "count": 2,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_7 {}",
+        "[error] [runtime:runtime] [wevu] 模板 v-for 数据源表达式执行失败: __wv_bind_7 {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_0 = getRows().length {}",
+      "count": 2,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_0 = getRows().length {}",
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_0 = getRows().length {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "info",
+      "message": "[issue-297-setup-method-calls] toggleOptionalInvoker disabled {\"activeRow\":\"row-0\",\"rowsCount\":2,\"showCase\":true,\"showLoop\":true,\"optionalEnabled\":false}",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:runtime] [issue-297-setup-method-calls] toggleOptionalInvoker disabled {\"activeRow\":\"row-0\",\"rowsCount\":2,\"showCase\":true,\"showLoop\":true,\"optionalEnabled\":false}"
+      ]
+    },
+    {
+      "source": "build",
+      "channel": "build",
+      "level": "warn",
+      "message": "[warn] 检测到本地组件 `src/components/issue-429/list-view/index` 与微信内置组件 `list-view` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。",
+      "count": 1,
+      "rawLines": [
+        "[warn] [build:build] [warn] 检测到本地组件 `src/components/issue-429/list-view/index` 与微信内置组件 `list-view` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_1 = getCase() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_1 = getCase() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_1 = sayHello(1, 'root', dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_1 = sayHello(1, 'root', dasd) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_10 = sayHello(1, activeRowLabel, dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_10 = sayHello(1, activeRowLabel, dasd) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_10 = shouldShowLoop() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_10 = shouldShowLoop() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_11 = sayCase('loop-hidden', activeRowId, suffix) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_11 = sayCase('loop-hidden', activeRowId, suffix) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_11 = sayHello(1, `${activeRowId}-meta`, dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_11 = sayHello(1, `${activeRowId}-meta`, dasd) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_12 = shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_12 = shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_13 = helpers.upper(sayCase('member', activeRowLabel, suffix)) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_13 = helpers.upper(sayCase('member', activeRowLabel, suffix)) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_14 = `${helpers.prefix()}-${getCase()}` {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_14 = `${helpers.prefix()}-${getCase()}` {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_15 = shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_15 = shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_16 = helpers.wrap(sayCase('wrap', activeRowId, suffix)) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_16 = helpers.wrap(sayCase('wrap', activeRowId, suffix)) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_17 = getOptionalInvoker()?.(activeRowId) ?? 'none' {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_17 = getOptionalInvoker()?.(activeRowId) ?? 'none' {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_2 = getCase() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_2 = getCase() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_2 = sayHello(1, 'bind', dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_2 = sayHello(1, 'bind', dasd) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_3 = sayHello(1, 'root', dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_3 = sayHello(1, 'root', dasd) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_3 = shouldShowCase() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_3 = shouldShowCase() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_4 = getCase() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_4 = getCase() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_4 = getRows() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_4 = getRows() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_5 = sayCase('bind', activeRowLabel, 'dasd') {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_5 = sayCase('bind', activeRowLabel, 'dasd') {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_6 = sayCase('bind', activeRowLabel, 'dasd') {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_6 = sayCase('bind', activeRowLabel, 'dasd') {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_7 = getRows() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_7 = getRows() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_8 = shouldRenderList() {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_8 = shouldRenderList() {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_9 = sayHello(1, 'hidden', dasd) {}",
+      "count": 1,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_9 = sayHello(1, 'hidden', dasd) {}"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

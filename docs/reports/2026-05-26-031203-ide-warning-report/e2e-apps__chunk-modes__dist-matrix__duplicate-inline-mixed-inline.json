@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-05-25T19:15:00.675Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "e2e-apps/chunk-modes/dist-matrix/duplicate-inline-mixed-inline",
+  "markdownFile": "e2e-apps__chunk-modes__dist-matrix__duplicate-inline-mixed-inline.md",
+  "jsonFile": "e2e-apps__chunk-modes__dist-matrix__duplicate-inline-mixed-inline.json",
+  "summary": {
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:62412",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:62412"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

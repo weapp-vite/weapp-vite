@@ -86,7 +86,7 @@ function toRepoRelativePath(targetPath: string) {
 
 function renderRelativeMarkdownLink(reportDir: string, targetPath: string) {
   const absolute = toAbsoluteReportPath(targetPath)
-  const relative = normalizeSlash(path.relative(reportDir, absolute))
+  const relative = normalizeSlash(path.relative(toAbsoluteReportPath(reportDir), absolute))
   return `[${path.basename(targetPath)}](./${relative})`
 }
 
@@ -184,7 +184,10 @@ export function createSuiteReport(
   )
   fs.writeFileSync(
     path.join(reportDir, jsonFile),
-    `${JSON.stringify(payload, null, 2)}\n`,
+    `${JSON.stringify({
+      ...payload,
+      reportDir: toRepoRelativePath(payload.reportDir),
+    }, null, 2)}\n`,
     'utf8',
   )
 

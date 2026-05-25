@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-05-25T18:49:56.865Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-024920-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 2,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 2,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 2,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": "e2e-apps/subpackage-shared-strategy-complex-a",
+      "markdownFile": "e2e-apps__subpackage-shared-strategy-complex-a.md",
+      "jsonFile": "e2e-apps__subpackage-shared-strategy-complex-a.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 1,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 1,
+        "typeUncompatibleCount": 0
+      }
+    },
+    {
+      "project": "e2e-apps/subpackage-shared-strategy-complex-b",
+      "markdownFile": "e2e-apps__subpackage-shared-strategy-complex-b.md",
+      "jsonFile": "e2e-apps__subpackage-shared-strategy-complex-b.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 1,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 1,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-05-25T19:06:45.640Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-030327-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 2,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 4,
+    "runtimeWarn": 4,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 1,
+    "totalIssues": 4,
+    "totalRuntimeLogs": 4,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": ".tmp/e2e-projects/github-issues/ide-wevu-runtime.core-hmr.test.ts",
+      "markdownFile": ".tmp__e2e-projects__github-issues__ide-wevu-runtime.core-hmr.test.ts.md",
+      "jsonFile": ".tmp__e2e-projects__github-issues__ide-wevu-runtime.core-hmr.test.ts.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 0,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 1,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 0,
+        "typeUncompatibleCount": 0
+      }
+    },
+    {
+      "project": "e2e-apps/wevu-runtime-e2e",
+      "markdownFile": "e2e-apps__wevu-runtime-e2e.md",
+      "jsonFile": "e2e-apps__wevu-runtime-e2e.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 4,
+        "runtimeWarn": 4,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 4,
+        "totalRuntimeLogs": 4,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-05-25T19:15:23.220Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-031503-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 1,
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 0,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": "e2e-apps/chunk-modes/dist-matrix/path-root-shared",
+      "markdownFile": "e2e-apps__chunk-modes__dist-matrix__path-root-shared.md",
+      "jsonFile": "e2e-apps__chunk-modes__dist-matrix__path-root-shared.json",
+      "summary": {
+        "buildWarn": 0,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 1,
+        "runtimeWarn": 0,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 0,
+        "totalRuntimeLogs": 1,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

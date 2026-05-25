@@ -1,0 +1,144 @@
+{
+  "generatedAt": "2026-05-25T18:58:41.003Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "apps/vite-native-ts",
+  "markdownFile": "apps__vite-native-ts.md",
+  "jsonFile": "apps__vite-native-ts.json",
+  "summary": {
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 6,
+    "runtimeInfo": 3,
+    "runtimeWarn": 3,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 4,
+    "totalRuntimeLogs": 9,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:vite-native-ts-worker",
+      "warn": 1,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    },
+    {
+      "log": 6,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "{}",
+      "count": 4,
+      "rawLines": [
+        "[log] [runtime:runtime] {}",
+        "[log] [runtime:runtime] {}",
+        "[log] [runtime:runtime] {}",
+        "[log] [runtime:runtime] {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA=",
+      "count": 2,
+      "rawLines": [
+        "[log] [runtime:runtime] Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA=",
+        "[log] [runtime:runtime] Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA="
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "warn",
+      "message": "clean=compile",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:launch-recover] clean=compile"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "info",
+      "message": "cleaned=compile",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-recover] cleaned=compile"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "warn",
+      "message": "cleanup-devtools",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:launch-recover] cleanup-devtools"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "devtools-log",
+      "level": "warn",
+      "message": "connect bridge: [2026-05-26 02:58:07.478][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:devtools-log] connect bridge: [2026-05-26 02:58:07.478][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:63358",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:63358"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:63793",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:63793"
+      ]
+    },
+    {
+      "source": "build",
+      "channel": "build",
+      "level": "warn",
+      "message": "transforming...[warn] 检测到本地组件 `miniprogram/components/navigation-bar/navigation-bar` 与微信内置组件 `navigation-bar` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。",
+      "count": 1,
+      "rawLines": [
+        "[warn] [build:build] transforming...[warn] 检测到本地组件 `miniprogram/components/navigation-bar/navigation-bar` 与微信内置组件 `navigation-bar` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

@@ -1,0 +1,64 @@
+{
+  "generatedAt": "2026-05-25T19:02:13.314Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "apps/wevu-runtime-demo",
+  "markdownFile": "apps__wevu-runtime-demo.md",
+  "jsonFile": "apps__wevu-runtime-demo.json",
+  "summary": {
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 3,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 3,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:wevu-runtime-demo:cjs",
+      "warn": 0,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 3,
+      "exception": 0,
+      "total": 3
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "error",
+      "message": "[wevu] 模板运行时表达式执行失败: __wv_bind_0 = JSON.stringify(state.requestLog) {}",
+      "count": 3,
+      "rawLines": [
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_0 = JSON.stringify(state.requestLog) {}",
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_0 = JSON.stringify(state.requestLog) {}",
+        "[error] [runtime:runtime] [wevu] 模板运行时表达式执行失败: __wv_bind_0 = JSON.stringify(state.requestLog) {}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:50576",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:50576"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

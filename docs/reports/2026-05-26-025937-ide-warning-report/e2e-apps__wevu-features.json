@@ -1,0 +1,298 @@
+{
+  "generatedAt": "2026-05-25T19:01:19.182Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "project": "e2e-apps/wevu-features",
+  "markdownFile": "e2e-apps__wevu-features.md",
+  "jsonFile": "e2e-apps__wevu-features.json",
+  "summary": {
+    "buildWarn": 0,
+    "buildError": 0,
+    "runtimeLog": 10,
+    "runtimeInfo": 6,
+    "runtimeWarn": 9,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 9,
+    "totalRuntimeLogs": 16,
+    "typeUncompatibleCount": 0
+  },
+  "buildStatsSamples": [
+    {
+      "label": "ide:wevu-features",
+      "warn": 0,
+      "error": 0,
+      "exit": 0
+    }
+  ],
+  "runtimeStatsSamples": [
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    },
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    },
+    {
+      "log": 0,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    },
+    {
+      "log": 10,
+      "info": 0,
+      "warn": 0,
+      "error": 0,
+      "exception": 0,
+      "total": 0
+    }
+  ],
+  "pageSnapshots": [],
+  "issues": [
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "warn",
+      "message": "cleanup-devtools",
+      "count": 3,
+      "rawLines": [
+        "[warn] [runtime:launch-recover] cleanup-devtools",
+        "[warn] [runtime:launch-recover] cleanup-devtools",
+        "[warn] [runtime:launch-recover] cleanup-devtools"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] afterEach {\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"Forward navigation is not supported in mini-program router\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] afterEach {\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"Forward navigation is not supported in mini-program router\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] afterEach {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] afterEach {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] afterEach {\"to\":\"/router-guard/block\",\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"Navigation aborted by guard\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] afterEach {\"to\":\"/router-guard/block\",\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"Navigation aborted by guard\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] afterEach {\"to\":\"/router-guard/error\",\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"guard-fail-intentional\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] afterEach {\"to\":\"/router-guard/error\",\"from\":\"/\",\"failureType\":4,\"failureMessage\":\"guard-fail-intentional\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] beforeEach {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] beforeEach {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] beforeEach {\"to\":\"/router-guard/block\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] beforeEach {\"to\":\"/router-guard/block\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] beforeEach {\"to\":\"/router-guard/error\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] beforeEach {\"to\":\"/router-guard/error\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] beforeResolve {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] beforeResolve {\"to\":\"/pages/router-showcase/index#hash-only\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] beforeResolve {\"to\":\"/router-guard/error\",\"from\":\"/\"}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] beforeResolve {\"to\":\"/router-guard/error\",\"from\":\"/\"}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "runtime",
+      "level": "log",
+      "message": "[router-coverage] onError {\"error\":\"guard-fail-intentional\",\"mode\":\"push\",\"to\":\"/router-guard/error\",\"from\":\"/\",\"failureType\":4}",
+      "count": 1,
+      "rawLines": [
+        "[log] [runtime:runtime] [router-coverage] onError {\"error\":\"guard-fail-intentional\",\"mode\":\"push\",\"to\":\"/router-guard/error\",\"from\":\"/\",\"failureType\":4}"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-retry",
+      "level": "warn",
+      "message": "attempt=3/4 delay=1200ms reason=Timeout in read current page for route /pages/index/index after 12000ms",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:launch-retry] attempt=3/4 delay=1200ms reason=Timeout in read current page for route /pages/index/index after 12000ms"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "warn",
+      "message": "clean=all",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:launch-recover] clean=all"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "warn",
+      "message": "clean=compile",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:launch-recover] clean=compile"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "info",
+      "message": "cleaned=all",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-recover] cleaned=all"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-recover",
+      "level": "info",
+      "message": "cleaned=compile",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-recover] cleaned=compile"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "devtools-log",
+      "level": "warn",
+      "message": "connect bridge: [2026-05-26 02:59:47.204][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:devtools-log] connect bridge: [2026-05-26 02:59:47.204][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "devtools-log",
+      "level": "warn",
+      "message": "connect bridge: [2026-05-26 03:00:14.976][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:devtools-log] connect bridge: [2026-05-26 03:00:14.976][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "devtools-log",
+      "level": "warn",
+      "message": "connect bridge: [2026-05-26 03:00:42.703][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined",
+      "count": 1,
+      "rawLines": [
+        "[warn] [runtime:devtools-log] connect bridge: [2026-05-26 03:00:42.703][ERROR][unknow][/core.wxvpkg/aaf1281ae61d97fedb52fc70da3f8a2f.js] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:49472",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:49472"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:49900",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:49900"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:64958",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:64958"
+      ]
+    },
+    {
+      "source": "runtime",
+      "channel": "launch-bridge",
+      "level": "info",
+      "message": "connected=ws://127.0.0.1:65406",
+      "count": 1,
+      "rawLines": [
+        "[info] [runtime:launch-bridge] connected=ws://127.0.0.1:65406"
+      ]
+    }
+  ],
+  "typeUncompatibleIssues": []
+}

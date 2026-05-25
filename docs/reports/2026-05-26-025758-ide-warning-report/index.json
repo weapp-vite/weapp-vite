@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-05-25T18:58:41.003Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-025758-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 1,
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 6,
+    "runtimeInfo": 3,
+    "runtimeWarn": 3,
+    "runtimeError": 0,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 4,
+    "totalRuntimeLogs": 9,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": "apps/vite-native-ts",
+      "markdownFile": "apps__vite-native-ts.md",
+      "jsonFile": "apps__vite-native-ts.json",
+      "summary": {
+        "buildWarn": 1,
+        "buildError": 0,
+        "runtimeLog": 6,
+        "runtimeInfo": 3,
+        "runtimeWarn": 3,
+        "runtimeError": 0,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 4,
+        "totalRuntimeLogs": 9,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

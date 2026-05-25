@@ -1,0 +1,143 @@
+# e2e:ide-full 汇总报告
+
+- 生成时间：`2026-05-25T19:15:48.846Z`
+- 任务通过：`65/65`
+- 失败任务：`0`
+- 子报告：`65`
+
+## 1. 失败任务
+
+- 无失败任务。
+
+## 2. 全部任务
+
+- [pass] ide/app-lifecycle.test.ts：exit `0`，耗时 `57.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-023035-ide-warning-report/index.md)
+- [pass] ide/app-prelude-native.runtime.test.ts：exit `0`，耗时 `155.9s`
+  - ide-warning-report：[index.md](./../2026-05-26-023132-ide-warning-report/index.md)
+- [pass] ide/auto-routes-define-app-json.runtime.test.ts：exit `0`，耗时 `16.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-023408-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.app-shell.test.ts：exit `0`，耗时 `27.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-023425-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.import-meta.test.ts：exit `0`，耗时 `25.8s`
+  - ide-warning-report：[index.md](./../2026-05-26-023453-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue289.test.ts：exit `0`，耗时 `31.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-023518-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue297-302.test.ts：exit `0`，耗时 `28.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-023549-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue466.test.ts：exit `0`，耗时 `32.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-023617-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue547.test.ts：exit `0`，耗时 `25.9s`
+  - ide-warning-report：[index.md](./../2026-05-26-023650-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue553-555.test.ts：exit `0`，耗时 `34.3s`
+  - ide-warning-report：[index.md](./../2026-05-26-023715-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue554.test.ts：exit `0`，耗时 `25.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-023749-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue558.test.ts：exit `0`，耗时 `40.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-023815-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue564.test.ts：exit `0`，耗时 `25.6s`
+  - ide-warning-report：[index.md](./../2026-05-26-023856-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue581.test.ts：exit `0`，耗时 `26.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-023921-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.issue615.test.ts：exit `0`，耗时 `40.2s`
+  - ide-warning-report：[index.md](./../2026-05-26-023947-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.lifecycle.test.ts：exit `0`，耗时 `77.3s`
+  - ide-warning-report：[index.md](./../2026-05-26-024028-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.miniprogram-computed.test.ts：exit `0`，耗时 `26.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-024145-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.props.test.ts：exit `0`，耗时 `56.9s`
+  - ide-warning-report：[index.md](./../2026-05-26-024211-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.slot-fallback-compiler-off.test.ts：exit `0`，耗时 `68.6s`
+  - ide-warning-report：[index.md](./../2026-05-26-024308-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.slot-fallback.test.ts：exit `0`，耗时 `74.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-024417-ide-warning-report/index.md)
+- [pass] ide/github-issues.runtime.web-runtime.test.ts：exit `0`，耗时 `3.6s`
+  - ide-warning-report：[index.md](./../2026-05-26-024531-ide-warning-report/index.md)
+- [pass] ide/index.test.ts：exit `0`，耗时 `16.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-024534-ide-warning-report/index.md)
+- [pass] ide/issue-340-hoist.runtime.test.ts：exit `0`，耗时 `19.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-024551-ide-warning-report/index.md)
+- [pass] ide/lifecycle-compare.test.ts：exit `0`，耗时 `34.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-024611-ide-warning-report/index.md)
+- [pass] ide/plugin-demo.runtime.test.ts：exit `0`，耗时 `21.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-024645-ide-warning-report/index.md)
+- [pass] ide/request-clients-real-native.runtime.test.ts：exit `0`，耗时 `45.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-024706-ide-warning-report/index.md)
+- [pass] ide/request-clients-real.runtime.test.ts：exit `0`，耗时 `89.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-024751-ide-warning-report/index.md)
+- [pass] ide/subpackage-shared-strategy-complex.runtime.test.ts：exit `0`，耗时 `39.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-024920-ide-warning-report/index.md)
+- [pass] ide/tdesign-dialog-import.runtime.test.ts：exit `0`，耗时 `21.6s`
+  - ide-warning-report：[index.md](./../2026-05-26-025000-ide-warning-report/index.md)
+- [pass] ide/tdesign-miniprogram-starter-retail.runtime.test.ts：exit `0`，耗时 `69.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-025021-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts：exit `0`，耗时 `31.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025131-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-tailwindcss-template.test.ts：exit `0`，耗时 `19.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025202-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-tailwindcss-vant-template.test.ts：exit `0`，耗时 `19.2s`
+  - ide-warning-report：[index.md](./../2026-05-26-025222-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-template.test.ts：exit `0`，耗时 `28.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025241-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts：exit `0`，耗时 `52.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-025310-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts：exit `0`，耗时 `3.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-025401-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts：exit `0`，耗时 `22.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025405-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts：exit `0`，耗时 `22.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-025428-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts：exit `0`，耗时 `27.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025450-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts：exit `0`，耗时 `26.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025518-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts：exit `0`，耗时 `46.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025544-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts：exit `0`，耗时 `4.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-025631-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts：exit `0`，耗时 `17.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-025635-ide-warning-report/index.md)
+- [pass] ide/template-weapp-vite-wevu-template.test.ts：exit `0`，耗时 `28.8s`
+  - ide-warning-report：[index.md](./../2026-05-26-025653-ide-warning-report/index.md)
+- [pass] ide/template-wevu-features-app.test.ts：exit `0`，耗时 `36.8s`
+  - ide-warning-report：[index.md](./../2026-05-26-025722-ide-warning-report/index.md)
+- [pass] ide/vite-native-ts.worker.runtime.test.ts：exit `0`，耗时 `45.3s`
+  - ide-warning-report：[index.md](./../2026-05-26-025758-ide-warning-report/index.md)
+- [pass] ide/wevu-composition-api.weapp.test.ts：exit `0`，耗时 `19.8s`
+  - ide-warning-report：[index.md](./../2026-05-26-025844-ide-warning-report/index.md)
+- [pass] ide/wevu-features.runtime.behavior.test.ts：exit `0`，耗时 `34.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-025904-ide-warning-report/index.md)
+- [pass] ide/wevu-features.runtime.router.test.ts：exit `0`，耗时 `104.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-025937-ide-warning-report/index.md)
+- [pass] ide/wevu-features.runtime.subpath.test.ts：exit `0`，耗时 `19.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-030122-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime-demo.request-globals.weapp.test.ts：exit `0`，耗时 `35.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-030141-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime-demo.vue-query.weapp.test.ts：exit `0`，耗时 `52.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-030216-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.class-computed.weapp.test.ts：exit `0`，耗时 `18.6s`
+  - ide-warning-report：[index.md](./../2026-05-26-030308-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.core-hmr.test.ts：exit `0`，耗时 `201.4s`
+  - ide-warning-report：[index.md](./../2026-05-26-030327-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.function-props.weapp.test.ts：exit `0`，耗时 `21.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-030648-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.inline-object-reactivity.weapp.test.ts：exit `0`，耗时 `27.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-030709-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts：exit `0`，耗时 `110.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-030736-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.shared-template-wxs.hmr.test.ts：exit `0`，耗时 `36.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-030926-ide-warning-report/index.md)
+- [pass] ide/wevu-runtime.weapp.test.ts：exit `0`，耗时 `59.3s`
+  - ide-warning-report：[index.md](./../2026-05-26-031002-ide-warning-report/index.md)
+- [pass] ide/wevu-subpackage-placement.runtime.test.ts：exit `0`，耗时 `22.0s`
+  - ide-warning-report：[index.md](./../2026-05-26-031102-ide-warning-report/index.md)
+- [pass] ide/wevu-vue-demo.script-setup.emit.runtime.test.ts：exit `0`，耗时 `22.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-031124-ide-warning-report/index.md)
+- [pass] ide/wevu-watch.test.ts：exit `0`，耗时 `17.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-031146-ide-warning-report/index.md)
+- [pass] ide/chunk-modes.runtime.duplicate.test.ts：exit `0`，耗时 `180.1s`
+  - ide-warning-report：[index.md](./../2026-05-26-031203-ide-warning-report/index.md)
+- [pass] ide/chunk-modes.runtime.extras.test.ts：exit `0`，耗时 `22.5s`
+  - ide-warning-report：[index.md](./../2026-05-26-031503-ide-warning-report/index.md)
+- [pass] ide/chunk-modes.runtime.hoist.test.ts：exit `0`，耗时 `22.7s`
+  - ide-warning-report：[index.md](./../2026-05-26-031526-ide-warning-report/index.md)

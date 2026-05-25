@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-05-25T18:36:14.903Z",
+  "command": "node node_modules/vitest/vitest.mjs run -c e2e/vitest.e2e.devtools.config.ts",
+  "reportSlug": "2026-05-26-023549-ide-warning-report",
+  "markdownFile": "index.md",
+  "jsonFile": "index.json",
+  "summary": {
+    "projectCount": 1,
+    "buildWarn": 1,
+    "buildError": 0,
+    "runtimeLog": 0,
+    "runtimeInfo": 1,
+    "runtimeWarn": 0,
+    "runtimeError": 30,
+    "runtimeException": 0,
+    "pageSnapshotCount": 0,
+    "totalIssues": 31,
+    "totalRuntimeLogs": 1,
+    "typeUncompatibleCount": 0
+  },
+  "projects": [
+    {
+      "project": ".tmp/e2e-projects/github-issues/ide-github-issues.runtime.issue297-302.test.ts",
+      "markdownFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.issue297-302.test.ts.md",
+      "jsonFile": ".tmp__e2e-projects__github-issues__ide-github-issues.runtime.issue297-302.test.ts.json",
+      "summary": {
+        "buildWarn": 1,
+        "buildError": 0,
+        "runtimeLog": 0,
+        "runtimeInfo": 1,
+        "runtimeWarn": 0,
+        "runtimeError": 30,
+        "runtimeException": 0,
+        "pageSnapshotCount": 0,
+        "totalIssues": 31,
+        "totalRuntimeLogs": 1,
+        "typeUncompatibleCount": 0
+      }
+    }
+  ]
+}

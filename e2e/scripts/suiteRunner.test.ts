@@ -311,7 +311,9 @@ describe('suiteRunner', () => {
   })
 
   it('writes a suite report that preserves child report links across tasks', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-report-'))
+    const tempParent = path.join(process.cwd(), '.tmp')
+    fs.mkdirSync(tempParent, { recursive: true })
+    const tempRoot = fs.mkdtempSync(path.join(tempParent, 'suite-report-'))
     const reportsRoot = path.join(tempRoot, 'docs/reports')
     const report = createSuiteReport([
       {
@@ -346,6 +348,7 @@ describe('suiteRunner', () => {
     expect(markdown).toContain('child-b/index.md')
     expect(json).toContain('"failedCount": 1')
     expect(json).toContain('"artifactCount": 2')
+    expect(JSON.parse(json).reportDir).toBe(path.relative(process.cwd(), report.reportDir).replaceAll('\\', '/'))
   })
 
   it('enables shell mode for Windows task commands so pnpm resolves correctly', () => {
