@@ -18,10 +18,10 @@ export function addNormalizedWatchFiles(
   pluginCtx: {
     addWatchFile?: (id: string) => void
   },
-  files: Iterable<string | undefined>,
+  files: Iterable<string | undefined> | undefined,
 ) {
   let count = 0
-  for (const file of files) {
+  for (const file of files ?? []) {
     if (addNormalizedWatchFile(pluginCtx, file)) {
       count += 1
     }

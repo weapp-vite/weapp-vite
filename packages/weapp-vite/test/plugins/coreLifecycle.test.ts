@@ -70,6 +70,7 @@ describe('core plugin watchChange', () => {
           targets: ['weapp'],
         },
         absoluteSrcRoot: '/project/src',
+        configFileDependencies: [],
         relativeAbsoluteSrcRoot: (p: string) => path.relative('/project/src', p) || '.',
         relativeCwd: (p: string) => path.relative('/project', p) || '.',
       },
