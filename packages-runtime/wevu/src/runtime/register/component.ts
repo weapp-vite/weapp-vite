@@ -131,7 +131,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...(userOptions as any),
   }
 
-  const { attachWevuPropKeys, syncWevuPropsFromInstance, syncWevuPropsFromValues, finalObservers } = createPropsSync({
+  const { attachWevuPropKeys, directPropsDerivedKeys, syncWevuPropsFromInstance, syncWevuPropsFromValues, finalObservers } = createPropsSync({
     restOptions,
     propsAliases,
     propsDerivedKeys,
@@ -199,6 +199,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     setupLifecycle,
     syncWevuPropsFromInstance,
     syncWevuPropsFromValues,
+    directPropsDerivedKeys,
     isPage,
     legacyCreated,
     getRuntimeOwnerLabel,

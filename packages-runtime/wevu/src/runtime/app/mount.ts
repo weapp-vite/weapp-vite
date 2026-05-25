@@ -11,6 +11,7 @@ import type {
 } from '../types'
 import {
   WEVU_ATTRS_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_SETUP_STATE_KEY,
 } from '@weapp-core/constants'
@@ -91,6 +92,14 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
     const state = reactive(rawState)
     const setupState = reactive(Object.create(null))
+    const adapterSnapshotOmitKeys = (adapter as any)?.__wevu_snapshotOmitKeys
+    const snapshotOmitKeys = new Set<string>(
+      adapterSnapshotOmitKeys instanceof Set
+        ? adapterSnapshotOmitKeys
+        : Array.isArray(adapterSnapshotOmitKeys)
+          ? adapterSnapshotOmitKeys
+          : [],
+    )
     if (rawState && typeof rawState === 'object' && !hasOwn(rawState as object, WEVU_SETUP_STATE_KEY)) {
       try {
         Object.defineProperty(rawState as object, WEVU_SETUP_STATE_KEY, {
@@ -179,6 +188,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const scheduler = createSetDataScheduler({
       state: state as any,
       setupState: setupState as any,
+      snapshotOmitKeys,
       computedRefs,
       dirtyComputedKeys,
       includeComputed,
@@ -361,6 +371,18 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_trackSetupReactiveKey = (key: string) => {
         trackedSetupReactiveKeys.add(key)
       }
+    }
+
+    try {
+      Object.defineProperty(runtimeInstance, WEVU_PROPS_DERIVED_KEYS_KEY, {
+        value: snapshotOmitKeys,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(runtimeInstance as any)[WEVU_PROPS_DERIVED_KEYS_KEY] = snapshotOmitKeys
     }
 
     return runtimeInstance

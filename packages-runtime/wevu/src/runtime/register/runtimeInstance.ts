@@ -88,7 +88,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { deferSetData?: boolean },
+  options?: { deferSetData?: boolean, snapshotOmitKeys?: string[] },
 ) {
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
@@ -199,9 +199,18 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     },
   }
 
-  const runtime = runtimeApp.mount({
+  const baseMountAdapter = {
     ...(adapter as any),
-  })
+  }
+  if (Array.isArray(options?.snapshotOmitKeys) && options.snapshotOmitKeys.length) {
+    Object.defineProperty(baseMountAdapter, '__wevu_snapshotOmitKeys', {
+      configurable: true,
+      enumerable: false,
+      value: options.snapshotOmitKeys,
+      writable: false,
+    })
+  }
+  const runtime = runtimeApp.mount(baseMountAdapter)
   runtimeRef = runtime
   attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)
   const runtimeProxy = runtime?.proxy ?? {}
