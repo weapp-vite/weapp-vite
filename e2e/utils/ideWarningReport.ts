@@ -25,8 +25,8 @@ const INVALID_FILE_STEM_PATTERN = /[^\w.-]/g
 const NEWLINE_PATTERN = /\r?\n/
 
 export type IdeReportSource = 'build' | 'runtime'
-export type IdeReportKind = 'message' | 'stats'
-export type IdeReportLevel = 'warn' | 'error' | 'exception'
+export type IdeReportKind = 'message' | 'page-snapshot' | 'stats'
+export type IdeReportLevel = 'debug' | 'info' | 'log' | 'warn' | 'error' | 'exception'
 
 export interface IdeWarningReportPaths {
   reportSlug: string
@@ -43,10 +43,17 @@ export interface IdeReportEvent {
   level?: IdeReportLevel
   channel?: string
   label?: string
+  route?: string
+  readyText?: string
+  currentPage?: string
+  wxmlLength?: number
+  empty?: boolean
   text?: string
   warn?: number
   error?: number
   exception?: number
+  log?: number
+  info?: number
   total?: number
   exit?: number
 }
@@ -79,19 +86,36 @@ interface BuildStatsSample {
 }
 
 interface RuntimeStatsSample {
+  log: number
+  info: number
   warn: number
   error: number
   exception: number
   total: number
 }
 
+interface PageSnapshotSample {
+  channel: string
+  route: string
+  readyText: string
+  currentPage: string
+  wxmlLength: number
+  empty: boolean
+  snippet: string
+  count: number
+}
+
 interface ProjectReportSummary {
   buildWarn: number
   buildError: number
+  runtimeLog: number
+  runtimeInfo: number
   runtimeWarn: number
   runtimeError: number
   runtimeException: number
+  pageSnapshotCount: number
   totalIssues: number
+  totalRuntimeLogs: number
   typeUncompatibleCount: number
 }
 
@@ -104,6 +128,7 @@ export interface ProjectReportPayload {
   summary: ProjectReportSummary
   buildStatsSamples: BuildStatsSample[]
   runtimeStatsSamples: RuntimeStatsSample[]
+  pageSnapshots: PageSnapshotSample[]
   issues: IssueGroup[]
   typeUncompatibleIssues: TypeUncompatibleGroup[]
 }
@@ -125,10 +150,14 @@ export interface IdeReportIndexPayload {
     projectCount: number
     buildWarn: number
     buildError: number
+    runtimeLog: number
+    runtimeInfo: number
     runtimeWarn: number
     runtimeError: number
     runtimeException: number
+    pageSnapshotCount: number
     totalIssues: number
+    totalRuntimeLogs: number
     typeUncompatibleCount: number
   }
   projects: IdeReportIndexProject[]
@@ -290,6 +319,9 @@ function readReportEvents(paths: IdeWarningReportPaths) {
           project: sanitizeReportText(parsed.project) || '<unknown-project>',
           channel: typeof parsed.channel === 'string' ? sanitizeReportText(parsed.channel) : parsed.channel,
           label: typeof parsed.label === 'string' ? sanitizeReportText(parsed.label) : parsed.label,
+          route: typeof parsed.route === 'string' ? sanitizeReportText(parsed.route) : parsed.route,
+          readyText: typeof parsed.readyText === 'string' ? sanitizeReportText(parsed.readyText) : parsed.readyText,
+          currentPage: typeof parsed.currentPage === 'string' ? sanitizeReportText(parsed.currentPage) : parsed.currentPage,
           text: typeof parsed.text === 'string' ? sanitizeReportText(parsed.text) : parsed.text,
         })
       }
@@ -309,20 +341,23 @@ function renderProjectMarkdown(payload: ProjectReportPayload) {
     '',
     `- 命令：\`${payload.command}\``,
     `- build warn/error：\`${payload.summary.buildWarn}/${payload.summary.buildError}\``,
-    `- runtime warn/error/exception：\`${payload.summary.runtimeWarn}/${payload.summary.runtimeError}/${payload.summary.runtimeException}\``,
+    `- runtime log/info/warn/error/exception：\`${payload.summary.runtimeLog}/${payload.summary.runtimeInfo}/${payload.summary.runtimeWarn}/${payload.summary.runtimeError}/${payload.summary.runtimeException}\``,
+    `- 页面快照：\`${payload.summary.pageSnapshotCount}\``,
     `- 总问题数：\`${payload.summary.totalIssues}\``,
+    `- 普通运行时日志：\`${payload.summary.totalRuntimeLogs}\``,
     `- type-uncompatible 命中数：\`${payload.summary.typeUncompatibleCount}\``,
     '',
     '## 2. 所有 Warning/Error',
     '',
   ]
 
-  if (payload.issues.length === 0) {
+  const warningIssues = payload.issues.filter(issue => issue.level !== 'log' && issue.level !== 'info' && issue.level !== 'debug')
+  if (warningIssues.length === 0) {
     lines.push('- 未采集到 warning/error/exception。')
     lines.push('')
   }
   else {
-    payload.issues.forEach((issue, index) => {
+    warningIssues.forEach((issue, index) => {
       lines.push(`${index + 1}. \`${issue.count}\` 次：\`[${issue.source}/${issue.channel}/${issue.level}] ${issue.message}\``)
       lines.push(`   - 示例原始行：\`${issue.rawLines[0]}\``)
       lines.push('')
@@ -366,9 +401,39 @@ function renderProjectMarkdown(payload: ProjectReportPayload) {
   }
   else {
     payload.runtimeStatsSamples.forEach((sample, index) => {
-      lines.push(`${index + 1}. \`warn=${sample.warn} error=${sample.error} exception=${sample.exception} total=${sample.total}\``)
+      lines.push(`${index + 1}. \`log=${sample.log} info=${sample.info} warn=${sample.warn} error=${sample.error} exception=${sample.exception} total=${sample.total}\``)
     })
     lines.push('')
+  }
+
+  lines.push('## 6. 普通 Runtime Logs')
+  lines.push('')
+  const runtimeLogIssues = payload.issues.filter(issue => issue.source === 'runtime' && (issue.level === 'log' || issue.level === 'info' || issue.level === 'debug'))
+  if (runtimeLogIssues.length === 0) {
+    lines.push('- 未采集到普通 runtime log。')
+    lines.push('')
+  }
+  else {
+    runtimeLogIssues.forEach((issue, index) => {
+      lines.push(`${index + 1}. \`${issue.count}\` 次：\`[${issue.source}/${issue.channel}/${issue.level}] ${issue.message}\``)
+      lines.push(`   - 示例原始行：\`${issue.rawLines[0]}\``)
+      lines.push('')
+    })
+  }
+
+  lines.push('## 7. 页面内容快照')
+  lines.push('')
+  if (payload.pageSnapshots.length === 0) {
+    lines.push('- 未采集到页面内容快照。')
+    lines.push('')
+  }
+  else {
+    payload.pageSnapshots.forEach((snapshot, index) => {
+      lines.push(`${index + 1}. \`${snapshot.count}\` 次：route=\`${snapshot.route}\` current=\`${snapshot.currentPage}\` readyText=\`${snapshot.readyText}\` empty=\`${snapshot.empty}\` wxmlLength=\`${snapshot.wxmlLength}\``)
+      lines.push(`   - channel：\`${snapshot.channel}\``)
+      lines.push(`   - snippet：\`${snapshot.snippet}\``)
+      lines.push('')
+    })
   }
 
   return `${lines.join('\n').trimEnd()}\n`
@@ -387,8 +452,10 @@ function renderIndexMarkdown(payload: IdeReportIndexPayload) {
     '',
     `- 项目数：\`${payload.summary.projectCount}\``,
     `- build warn/error：\`${payload.summary.buildWarn}/${payload.summary.buildError}\``,
-    `- runtime warn/error/exception：\`${payload.summary.runtimeWarn}/${payload.summary.runtimeError}/${payload.summary.runtimeException}\``,
+    `- runtime log/info/warn/error/exception：\`${payload.summary.runtimeLog}/${payload.summary.runtimeInfo}/${payload.summary.runtimeWarn}/${payload.summary.runtimeError}/${payload.summary.runtimeException}\``,
+    `- 页面快照：\`${payload.summary.pageSnapshotCount}\``,
     `- 总问题数：\`${payload.summary.totalIssues}\``,
+    `- 普通运行时日志：\`${payload.summary.totalRuntimeLogs}\``,
     `- type-uncompatible 命中数：\`${payload.summary.typeUncompatibleCount}\``,
     '',
     '## 3. 项目报告',
@@ -403,7 +470,8 @@ function renderIndexMarkdown(payload: IdeReportIndexPayload) {
     payload.projects.forEach((project, index) => {
       lines.push(`${index + 1}. ${renderRelativeMarkdownLink(project.project, project.markdownFile)}`)
       lines.push(`   - build warn/error：\`${project.summary.buildWarn}/${project.summary.buildError}\``)
-      lines.push(`   - runtime warn/error/exception：\`${project.summary.runtimeWarn}/${project.summary.runtimeError}/${project.summary.runtimeException}\``)
+      lines.push(`   - runtime log/info/warn/error/exception：\`${project.summary.runtimeLog}/${project.summary.runtimeInfo}/${project.summary.runtimeWarn}/${project.summary.runtimeError}/${project.summary.runtimeException}\``)
+      lines.push(`   - 页面快照：\`${project.summary.pageSnapshotCount}\``)
       lines.push(`   - type-uncompatible：\`${project.summary.typeUncompatibleCount}\``)
       lines.push(`   - JSON：${renderRelativeMarkdownLink(path.basename(project.jsonFile), project.jsonFile)}`)
       lines.push('')
@@ -499,6 +567,9 @@ export function appendIdeReportEvent(event: IdeReportEvent) {
     project: sanitizeReportText(event.project) || '<unknown-project>',
     channel: typeof event.channel === 'string' ? sanitizeReportText(event.channel) : event.channel,
     label: typeof event.label === 'string' ? sanitizeReportText(event.label) : event.label,
+    route: typeof event.route === 'string' ? sanitizeReportText(event.route) : event.route,
+    readyText: typeof event.readyText === 'string' ? sanitizeReportText(event.readyText) : event.readyText,
+    currentPage: typeof event.currentPage === 'string' ? sanitizeReportText(event.currentPage) : event.currentPage,
     text: typeof event.text === 'string' ? sanitizeReportText(event.text) : event.text,
   }
 
@@ -510,10 +581,14 @@ function createEmptyProjectSummary(): ProjectReportSummary {
   return {
     buildWarn: 0,
     buildError: 0,
+    runtimeLog: 0,
+    runtimeInfo: 0,
     runtimeWarn: 0,
     runtimeError: 0,
     runtimeException: 0,
+    pageSnapshotCount: 0,
     totalIssues: 0,
+    totalRuntimeLogs: 0,
     typeUncompatibleCount: 0,
   }
 }
@@ -524,6 +599,7 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
     summary: ProjectReportSummary
     buildStatsSamples: BuildStatsSample[]
     runtimeStatsSamples: RuntimeStatsSample[]
+    pageSnapshots: Map<string, PageSnapshotSample>
     issues: Map<string, IssueGroup>
     typeUncompatibleIssues: Map<string, TypeUncompatibleGroup>
   }>()
@@ -537,6 +613,7 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
         summary: createEmptyProjectSummary(),
         buildStatsSamples: [],
         runtimeStatsSamples: [],
+        pageSnapshots: new Map(),
         issues: new Map(),
         typeUncompatibleIssues: new Map(),
       }
@@ -554,12 +631,42 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
       }
       else {
         projectState.runtimeStatsSamples.push({
+          log: event.log ?? 0,
+          info: event.info ?? 0,
           warn: event.warn ?? 0,
           error: event.error ?? 0,
           exception: event.exception ?? 0,
           total: event.total ?? 0,
         })
       }
+      continue
+    }
+
+    if (event.kind === 'page-snapshot') {
+      projectState.summary.pageSnapshotCount += 1
+      const channel = event.channel || 'page-snapshot'
+      const route = event.route || '<unknown-route>'
+      const readyText = event.readyText || '<none>'
+      const currentPage = event.currentPage || '<none>'
+      const snippet = event.text || ''
+      const wxmlLength = event.wxmlLength ?? snippet.length
+      const empty = event.empty ?? false
+      const snapshotKey = `${channel}|${route}|${readyText}|${currentPage}|${empty}|${snippet}`
+      const existingSnapshot = projectState.pageSnapshots.get(snapshotKey)
+      if (existingSnapshot) {
+        existingSnapshot.count += 1
+        continue
+      }
+      projectState.pageSnapshots.set(snapshotKey, {
+        channel,
+        route,
+        readyText,
+        currentPage,
+        wxmlLength,
+        empty,
+        snippet,
+        count: 1,
+      })
       continue
     }
 
@@ -586,7 +693,13 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
       })
     }
 
-    projectState.summary.totalIssues += 1
+    const isRuntimeLog = event.source === 'runtime' && (event.level === 'log' || event.level === 'info' || event.level === 'debug')
+    if (isRuntimeLog) {
+      projectState.summary.totalRuntimeLogs += 1
+    }
+    else {
+      projectState.summary.totalIssues += 1
+    }
     if (event.source === 'build') {
       if (event.level === 'warn') {
         projectState.summary.buildWarn += 1
@@ -596,6 +709,12 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
       }
     }
     else {
+      if (event.level === 'log' || event.level === 'debug') {
+        projectState.summary.runtimeLog += 1
+      }
+      if (event.level === 'info') {
+        projectState.summary.runtimeInfo += 1
+      }
       if (event.level === 'warn') {
         projectState.summary.runtimeWarn += 1
       }
@@ -649,6 +768,12 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
         summary: projectState.summary,
         buildStatsSamples: projectState.buildStatsSamples,
         runtimeStatsSamples: projectState.runtimeStatsSamples,
+        pageSnapshots: Array.from(projectState.pageSnapshots.values()).sort((left, right) => {
+          if (right.count !== left.count) {
+            return right.count - left.count
+          }
+          return left.route.localeCompare(right.route)
+        }),
         issues: Array.from(projectState.issues.values()).sort(sortIssues),
         typeUncompatibleIssues: Array.from(projectState.typeUncompatibleIssues.values()).sort((left, right) => {
           if (right.count !== left.count) {
@@ -673,10 +798,14 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
         summary.projectCount += 1
         summary.buildWarn += project.summary.buildWarn
         summary.buildError += project.summary.buildError
+        summary.runtimeLog += project.summary.runtimeLog
+        summary.runtimeInfo += project.summary.runtimeInfo
         summary.runtimeWarn += project.summary.runtimeWarn
         summary.runtimeError += project.summary.runtimeError
         summary.runtimeException += project.summary.runtimeException
+        summary.pageSnapshotCount += project.summary.pageSnapshotCount
         summary.totalIssues += project.summary.totalIssues
+        summary.totalRuntimeLogs += project.summary.totalRuntimeLogs
         summary.typeUncompatibleCount += project.summary.typeUncompatibleCount
         return summary
       },
@@ -684,10 +813,14 @@ function buildProjectReports(paths: IdeWarningReportPaths, events: IdeReportEven
         projectCount: 0,
         buildWarn: 0,
         buildError: 0,
+        runtimeLog: 0,
+        runtimeInfo: 0,
         runtimeWarn: 0,
         runtimeError: 0,
         runtimeException: 0,
+        pageSnapshotCount: 0,
         totalIssues: 0,
+        totalRuntimeLogs: 0,
         typeUncompatibleCount: 0,
       },
     ),
@@ -710,7 +843,7 @@ export function writeIdeWarningReport(paths: IdeWarningReportPaths, now = new Da
   fs.writeFileSync(paths.reportMarkdownPath, renderIndexMarkdown(indexPayload), 'utf8')
   if (shouldEmitReportMarkers()) {
     process.stdout.write(
-      `[ide-warning-report] index=${toRepoRelativePath(paths.reportMarkdownPath)} projects=${indexPayload.summary.projectCount} issues=${indexPayload.summary.totalIssues}\n`,
+      `[ide-warning-report] index=${toRepoRelativePath(paths.reportMarkdownPath)} projects=${indexPayload.summary.projectCount} issues=${indexPayload.summary.totalIssues} logs=${indexPayload.summary.totalRuntimeLogs} pageSnapshots=${indexPayload.summary.pageSnapshotCount}\n`,
     )
   }
 

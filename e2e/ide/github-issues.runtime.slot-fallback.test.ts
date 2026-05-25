@@ -71,8 +71,8 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
         throw new Error('Failed to query issue-521 flex items')
       }
 
-      expect(await firstItem.text()).toContain('A: 0')
-      expect(await secondItem.text()).toContain('B: 0')
+      expect(await firstItem.text()).toContain('A: zero')
+      expect(await secondItem.text()).toContain('B: zero')
 
       const firstOffset = await firstItem.offset()
       const secondOffset = await secondItem.offset()

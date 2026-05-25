@@ -1,8 +1,16 @@
 <script setup lang="ts">
-defineProps<{
-  val: number
-  label: string
-}>()
+const props = defineProps({
+  value: {
+    type: null,
+    value: null,
+  },
+  label: {
+    type: String,
+    value: '',
+  },
+})
+
+const displayValue = props.value ?? 'zero'
 
 defineComponentJson({
   component: true,
@@ -10,8 +18,8 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="issue521-flex-item" :data-label="label" :data-val="val">
-    {{ label }}: {{ val }}
+  <view class="issue521-flex-item" :data-label="label" :data-value="displayValue">
+    {{ label }}: {{ displayValue }}
   </view>
 </template>
 

@@ -227,6 +227,30 @@ async function runIssue595ScopedBuild() {
   distVariant = null
 }
 
+async function runIssue615AugmentedBuild() {
+  await fs.remove(DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_615_AUGMENTED: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 interface AppJsonWithSubPackages {
   pages?: string[]
   subPackages?: Array<{ root?: string, pages?: string[] }>
@@ -423,8 +447,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(providedProbe!).toContain('vue-slots=')
     expect(providedProbe!).toContain('generic:scoped-slots-default=')
     expect(componentWxml).toContain('<block wx:if="{{vueSlots&&vueSlots.default}}">')
-    expect(componentWxml).toContain('<slot />')
-    expect(componentWxml).toContain('<scoped-slots-default')
+    expect(componentWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(componentWxml).toContain('<block wx:else><text class="issue530-fallback-default">issue-530 fallback default</text><text class="issue530-scoped-fallback-default">issue-530 scoped fallback default</text></block>')
     expect(componentWxml).not.toContain('vueSlots[')
   })
@@ -508,6 +531,29 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('wx:key="key"')
     expect(pageWxml).toContain(`vue-slots="{{__wv_bind_0[__wv_index_1]}}"`)
     expect(pageWxml).toContain('<image class="issue554-image" src="{{__wv_item_0.src}}" mode="aspectFit" />')
+  })
+
+  it('issue #615: compiles scoped slot v-for owner list through a safe runtime binding', async () => {
+    await runIssue615AugmentedBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-615/index.wxml')
+    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-615/index.__scoped-slot-default-0.wxml')
+    const nestedScopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-615/index.__scoped-slot-default-1.wxml')
+    const scopedSlotJsPath = path.join(DIST_ROOT, 'pages/issue-615/index.__scoped-slot-default-0.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const nestedScopedSlotWxml = await fs.readFile(nestedScopedSlotWxmlPath, 'utf-8')
+    const scopedSlotJs = await fs.readFile(scopedSlotJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(scopedSlotWxml).toContain('TabbarItem wx:for="{{__wv_bind_0}}"')
+    expect(scopedSlotWxml).not.toContain('wx:for="{{__wvOwner.list}}"')
+    expect(nestedScopedSlotWxml).toContain('data-issue615-label="{{__wvSlotPropsData.item.label}}"')
+    expect(nestedScopedSlotWxml).toContain('{{__wvSlotPropsData.item.label}}')
+    expect(scopedSlotJs).toContain('__wvOwnerProxy')
+    expect(scopedSlotJs).toContain('list')
+    expect(scopedSlotJs).not.toContain('模板 v-for 数据源表达式执行失败: __wv_bind_0')
+    expect(scopedSlotJs).not.toContain('模板运行时表达式执行失败: __wv_bind_0 = list')
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
@@ -891,9 +937,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-502 slot condition outlet')
-    expect(pageWxml).toContain('<block wx:if="{{abc}}"><slot />')
-    expect(pageWxml).toContain('<block wx:elif="{{efg}}"><slot />')
-    expect(pageWxml).toContain('<block wx:else><slot />')
+    expect(pageWxml).toContain('<block wx:if="{{abc}}"><scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+    expect(pageWxml).toContain('<block wx:elif="{{efg}}"><scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+    expect(pageWxml).toContain('<block wx:else><scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+    expect(pageWxml).toContain('<block wx:else><slot /></block></block><block wx:elif="{{efg}}">')
+    expect(pageWxml).toContain('<block wx:else><slot /></block></block><block wx:else>')
+    expect(pageWxml).toContain('<block wx:else><slot /></block></block><view class="issue502-action"')
     expect(pageWxml).not.toContain('<slot /><slot /><slot />')
     expect(pageJs).toContain('toggleBranch')
     expect(pageJs).toContain('_runE2E')
@@ -931,7 +980,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
       component: true,
       styleIsolation: 'apply-shared',
     })
-    expect(scopedSlotWxml).toContain('<FlexItem label="A" val="{{__wvSlotPropsData.xyz}}" /><FlexItem label="B" val="{{__wvSlotPropsData.xyz}}" />')
+    expect(scopedSlotWxml).toContain('<FlexItem label="A" value="{{__wvSlotPropsData.xyz}}" /><FlexItem label="B" value="{{__wvSlotPropsData.xyz}}" />')
     expect(await fs.readFile(scopedSlotWxmlPath.replace(/\.wxml$/, '.js'), 'utf-8')).toContain('createWevuScopedSlotComponent()')
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(runtime.code).toContain('virtualHost')
@@ -1108,7 +1157,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-564/index.__scoped-slot-default-0')
     expect(Object.values(pageJson.usingComponents ?? {})).not.toContain('/pages/issue-564/index.__scoped-slot-default-1')
-    expect(scopedSlotWxml).toContain('<issue-564-native-tabbar-item wx:for="{{__wvOwner.tabItems}}"')
+    expect(scopedSlotWxml).toContain('<issue-564-native-tabbar-item wx:for="{{__wv_bind_0}}"')
+    expect(scopedSlotWxml).not.toContain('wx:for="{{__wvOwner.tabItems}}"')
     expect(scopedSlotWxml).toContain('>{{__wv_item_0.label}}</issue-564-native-tabbar-item>')
     expect(scopedSlotWxml).not.toContain('generic:scoped-slots-default')
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).toContain('/components/issue-564/native-tabbar-item/index')

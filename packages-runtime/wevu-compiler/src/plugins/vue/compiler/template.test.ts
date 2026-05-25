@@ -843,9 +843,10 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/components/ListScopedCell/index.vue',
     )
 
-    expect(code).toContain('<block wx:for="{{rows}}" wx:for-item="item" wx:for-index="index">')
+    expect(code).toContain('<block wx:for="{{rows}}" wx:for-item="item" wx:for-index="index" wx:key="id">')
     expect(code).toContain(`__wvSlotProps="{{['item',item,'index',index]}}"`)
     expect(code).toContain('__wvSlotScope="{{__wvSlotScope}}"')
+    expect(code).not.toContain('<block wx:else><slot /></block>')
     expect(code).not.toContain(`'key',item.id`)
   })
 
@@ -1211,9 +1212,15 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.id).toBe('default-0')
     expect(scopedSlotComponents?.[0]?.hostComponentName).toBe('native-tabbar')
-    expect(scopedSlotComponents?.[0]?.template).toContain('<native-tabbar-item wx:for="{{__wvOwner.tabItems}}"')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<native-tabbar-item wx:for="{{__wv_bind_0}}"')
     expect(scopedSlotComponents?.[0]?.template).toContain('>{{__wv_item_0.label}}</native-tabbar-item>')
     expect(scopedSlotComponents?.[0]?.template).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents?.[0]?.classStyleBindings?.[0]).toMatchObject({
+      name: '__wv_bind_0',
+      type: 'bind',
+      exp: 'tabItems',
+      forStack: [],
+    })
     expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
   })
 
@@ -1438,7 +1445,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-    expect(code).toContain(`<slot />`)
+    expect(code).not.toContain(`<block wx:else><slot /></block>`)
     expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{['item',card.item,'index',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />`)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')

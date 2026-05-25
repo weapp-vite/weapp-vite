@@ -38,24 +38,34 @@ function normalizeConsoleText(entry: any) {
   }
 }
 
-function isErrorConsoleEntry(entry: any) {
+function resolveConsoleLevel(entry: any): 'debug' | 'info' | 'log' | 'warn' | 'error' {
   const payload = resolveConsolePayload(entry)
   const level = String(payload?.level ?? '').toLowerCase()
+  if (level === 'debug') {
+    return 'debug'
+  }
+  if (level === 'info') {
+    return 'info'
+  }
+  if (level === 'warn' || level === 'warning') {
+    return 'warn'
+  }
   if (level === 'error' || level === 'fatal') {
-    return true
+    return 'error'
   }
   const text = normalizeConsoleText(entry)
-  return /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/.test(text)
+  if (/\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/.test(text)) {
+    return 'error'
+  }
+  return 'log'
 }
 
-function formatRuntimeEntry(kind: 'console' | 'exception', entry: any) {
+function formatRuntimeEntry(kind: 'console' | 'exception', entry: any, level?: string) {
   const text = kind === 'exception' && typeof entry?.exceptionDetails?.text === 'string'
     ? entry.exceptionDetails.text
     : normalizeConsoleText(entry)
   if (kind === 'console') {
-    const payload = resolveConsolePayload(entry)
-    const level = String(payload?.level ?? 'unknown').toLowerCase()
-    return `[console:${level}] ${text}`
+    return `[console:${level ?? resolveConsoleLevel(entry)}] ${text}`
   }
   return `[exception] ${text}`
 }
@@ -63,19 +73,30 @@ function formatRuntimeEntry(kind: 'console' | 'exception', entry: any) {
 export interface RuntimeErrorCollector {
   mark: () => number
   getSince: (marker: number) => string[]
+  getLogsSince: (marker: number) => string[]
   getAll: () => string[]
+  getAllLogs: () => string[]
   dispose: () => void
 }
 
 export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorCollector {
-  const runtimeEvents: string[] = []
+  const runtimeEvents: Array<{ seq: number, text: string }> = []
+  const runtimeLogs: Array<{ seq: number, text: string }> = []
+  let seq = 0
   const onConsole = (entry: any) => {
-    if (isErrorConsoleEntry(entry)) {
-      runtimeEvents.push(formatRuntimeEntry('console', entry))
+    seq += 1
+    const level = resolveConsoleLevel(entry)
+    const formatted = formatRuntimeEntry('console', entry, level)
+    runtimeLogs.push({ seq, text: formatted })
+    if (level === 'error') {
+      runtimeEvents.push({ seq, text: formatted })
     }
   }
   const onException = (entry: any) => {
-    runtimeEvents.push(formatRuntimeEntry('exception', entry))
+    seq += 1
+    const formatted = formatRuntimeEntry('exception', entry)
+    runtimeEvents.push({ seq, text: formatted })
+    runtimeLogs.push({ seq, text: formatted })
   }
 
   miniProgram.on('console', onConsole)
@@ -83,13 +104,23 @@ export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorColle
 
   return {
     mark() {
-      return runtimeEvents.length
+      return seq
     },
     getSince(marker) {
-      return runtimeEvents.slice(marker)
+      return runtimeEvents
+        .filter(entry => entry.seq > marker)
+        .map(entry => entry.text)
+    },
+    getLogsSince(marker) {
+      return runtimeLogs
+        .filter(entry => entry.seq > marker)
+        .map(entry => entry.text)
     },
     getAll() {
-      return runtimeEvents.slice()
+      return runtimeEvents.map(entry => entry.text)
+    },
+    getAllLogs() {
+      return runtimeLogs.map(entry => entry.text)
     },
     dispose() {
       miniProgram.removeListener('console', onConsole)

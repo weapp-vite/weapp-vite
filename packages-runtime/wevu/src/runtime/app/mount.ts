@@ -93,6 +93,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const state = reactive(rawState)
     const setupState = reactive(Object.create(null))
     const adapterSnapshotOmitKeys = (adapter as any)?.__wevu_snapshotOmitKeys
+    const deferInitialSnapshot = Boolean((adapter as any)?.__wevu_deferInitialSnapshot)
     const snapshotOmitKeys = new Set<string>(
       adapterSnapshotOmitKeys instanceof Set
         ? adapterSnapshotOmitKeys
@@ -247,7 +248,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       },
     )
 
-    job()
+    if (!deferInitialSnapshot) {
+      job()
+    }
 
     stopHandles.push(createWatchStopHandle(() => stop(tracker)))
     if (setDataStrategy === 'patch') {

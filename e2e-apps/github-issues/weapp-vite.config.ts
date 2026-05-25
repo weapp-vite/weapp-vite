@@ -6,6 +6,7 @@ const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED ==
 const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED === 'true'
 const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
+const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
@@ -13,6 +14,7 @@ const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_CO
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
+const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue615.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.app-shell.test.ts': [
@@ -47,6 +49,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue564.test.ts': [
     'pages/issue-564/**',
     'components/issue-564/**',
+  ],
+  'github-issues.runtime.issue615.test.ts': [
+    'pages/issue-615/**',
+    'components/issue-615/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -133,6 +139,14 @@ function resolveGithubIssuesAutoRoutes() {
       include: [
         'pages/issue-564/**',
         'components/issue-564/**',
+      ],
+    }
+  }
+  if (issue615AugmentedEnvEnabled) {
+    return {
+      include: [
+        'pages/issue-615/**',
+        'components/issue-615/**',
       ],
     }
   }
@@ -273,7 +287,7 @@ export default defineConfig({
           ? {
               scopedSlotsCompiler: 'off',
             } as const
-          : issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled
+          : issue510AugmentedEnabled || issue547AugmentedEnabled || issue558AugmentedEnabled || issue564AugmentedEnabled || issue615AugmentedEnabled
             ? {
                 scopedSlotsCompiler: 'augmented',
                 scopedSlotsRequireProps: false,

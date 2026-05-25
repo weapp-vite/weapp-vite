@@ -3,6 +3,8 @@ import type { ClassStyleHelperIds } from './classStyleComputed'
 import {
   WEVU_EXPRESSION_ERROR_IDENTIFIER,
   WEVU_PROPS_KEY,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
@@ -54,13 +56,59 @@ function buildRuntimeExpressionErrorGuard(binding: ClassStyleBinding, errorId: t
   )
 }
 
+function isScopedSlotOwnerBinding(exp: t.Expression | undefined): boolean {
+  if (!exp) {
+    return false
+  }
+  const seen = new WeakSet<object>()
+  const visit = (node: unknown): boolean => {
+    if (!node || typeof node !== 'object') {
+      return false
+    }
+    if (seen.has(node)) {
+      return false
+    }
+    seen.add(node)
+    if ((node as { type?: string }).type === 'MemberExpression') {
+      const member = node as {
+        computed?: boolean
+        object?: { type?: string }
+        property?: { type?: string, name?: string }
+      }
+      const property = member.property
+      if (
+        !member.computed
+        && member.object?.type === 'ThisExpression'
+        && property?.type === 'Identifier'
+        && (property.name === WEVU_SLOT_OWNER_PROXY_KEY || property.name === WEVU_SLOT_OWNER_KEY)
+      ) {
+        return true
+      }
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        if (value.some(item => visit(item))) {
+          return true
+        }
+      }
+      else if (visit(value)) {
+        return true
+      }
+    }
+    return false
+  }
+  return visit(exp)
+}
+
 function shouldReportRuntimeExpressionError(binding: ClassStyleBinding) {
-  return binding.type === 'bind'
+  return binding.type === 'bind' && !isScopedSlotOwnerBinding(binding.expAst)
 }
 
 function shouldReportForSourceError(info: ForParseResult) {
   const listExp = info.listExp?.trim() ?? ''
   return !listExp.startsWith(`${WEVU_SLOT_PROPS_DATA_KEY}.`)
+    && !listExp.startsWith(`${WEVU_SLOT_OWNER_KEY}.`)
+    && !isScopedSlotOwnerBinding(info.listExpAst)
 }
 
 function createDataPropsFallbackExpression(fallback: t.Expression) {
@@ -185,7 +233,9 @@ function buildNormalizedExpression(
             t.catchClause(
               t.cloneNode(errorId),
               t.blockStatement([
-                buildRuntimeExpressionErrorGuard(binding, errorId),
+                ...shouldReportRuntimeExpressionError(binding)
+                  ? [buildRuntimeExpressionErrorGuard(binding, errorId)]
+                  : [],
                 t.returnStatement(t.identifier('undefined')),
               ]),
             ),
