@@ -1,6 +1,6 @@
 import type { LoadConfigOptions } from '../src/context'
 import { existsSync } from 'node:fs'
-import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink } from 'node:fs/promises'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { resetCompilerContext } from '../src/context/getInstance'
@@ -224,10 +224,6 @@ export async function createTempFixtureProject(
     tempDir,
     cleanup: async () => {
       await rm(tempDir, { recursive: true, force: true })
-      const remaining = await readdir(tempRoot).catch(() => null)
-      if (remaining && remaining.length === 0) {
-        await rm(tempRoot, { recursive: true, force: true })
-      }
     },
   }
 }
