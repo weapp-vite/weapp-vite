@@ -1,0 +1,10 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "projectArchitecture": "multiPlatform",
+  "miniprogramRoot": "dist",
+  "setting": {
+    "minifyWXML": true,
+    "es6": true
+  },
+  "libVersion": "3.15.0"
+}

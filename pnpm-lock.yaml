@@ -1345,6 +1345,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  e2e-apps/donut-multi-end:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   e2e-apps/github-issues:
     dependencies:
       '@wevu/web-apis':

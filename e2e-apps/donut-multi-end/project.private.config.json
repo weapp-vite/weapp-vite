@@ -1,0 +1,26 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "multi-end index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "multi-end profile",
+          "pathName": "pages/profile/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true
+  },
+  "libVersion": "3.15.0"
+}

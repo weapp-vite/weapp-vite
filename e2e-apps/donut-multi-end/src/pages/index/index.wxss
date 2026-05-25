@@ -1,0 +1,17 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  color: #1f2937;
+  background: #f7f8fa;
+}
+
+.title {
+  margin-bottom: 20rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.row {
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+}

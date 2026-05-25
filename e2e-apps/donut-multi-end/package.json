@@ -1,0 +1,13 @@
+{
+  "name": "e2e-donut-multi-end",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  }
+}

@@ -1,0 +1,6 @@
+<view class="page">
+  <view class="title">Donut Multi-End Fixture</view>
+  <view class="row">Status: {{__e2eResult.status}}</view>
+  <view class="row">Architecture: {{__e2eResult.projectArchitecture}}</view>
+  <button bind:tap="openProfile">Open profile</button>
+</view>
