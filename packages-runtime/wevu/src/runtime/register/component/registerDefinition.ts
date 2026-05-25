@@ -41,6 +41,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   setupLifecycle: 'created' | 'attached'
   syncWevuPropsFromInstance: (instance: InternalRuntimeState) => void
   syncWevuPropsFromValues: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
+  directPropsDerivedKeys: string[]
   isPage: boolean
   legacyCreated: unknown
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string
@@ -62,6 +63,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     attachWevuPropKeys,
     setupLifecycle,
     syncWevuPropsFromInstance,
+    directPropsDerivedKeys,
     isPage,
     legacyCreated,
     getRuntimeOwnerLabel,
@@ -130,7 +132,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
         attachWevuPropKeys(this)
         if (setupLifecycle === 'created') {
           try {
-            mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+            mountRuntimeInstance(this, runtimeApp, watch, setup, {
+              deferSetData: true,
+              snapshotOmitKeys: directPropsDerivedKeys,
+            })
           }
           catch (error) {
             const label = getRuntimeOwnerLabel(this)
@@ -166,7 +171,9 @@ export function registerComponentDefinition<D extends object, C extends Computed
         attachWevuPropKeys(this)
         if (setupLifecycle !== 'created' || !(this as any).__wevu) {
           try {
-            mountRuntimeInstance(this, runtimeApp, watch, setup)
+            mountRuntimeInstance(this, runtimeApp, watch, setup, {
+              snapshotOmitKeys: directPropsDerivedKeys,
+            })
           }
           catch (error) {
             const label = getRuntimeOwnerLabel(this)

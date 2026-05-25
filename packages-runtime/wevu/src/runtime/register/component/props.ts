@@ -3,6 +3,7 @@ import {
   WEVU_ATTRS_KEY,
   WEVU_PENDING_PROP_VALUES_KEY,
   WEVU_PROP_KEYS_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
@@ -22,7 +23,29 @@ export function createPropsSync(options: {
   const propsDerivedKeySet = new Set(propsDerivedKeys ?? [])
   const aliasEntries = Object.entries(propsAliases ?? {})
     .filter(([alias, propName]) => alias && propName)
+  const aliasKeySet = new Set(aliasEntries.map(([alias]) => alias))
+  const directPropsDerivedKeys = [...propsDerivedKeySet]
+    .filter(key => propKeySet.has(key) && !aliasKeySet.has(key))
   const syncedAliases = new WeakMap<InternalRuntimeState, Set<string>>()
+
+  const updateSnapshotOmitKeys = (instance: InternalRuntimeState) => {
+    const runtime = (instance as any).__wevu
+    const snapshotOmitKeys = runtime?.[WEVU_PROPS_DERIVED_KEYS_KEY]
+    if (!(snapshotOmitKeys instanceof Set)) {
+      return
+    }
+    for (const key of directPropsDerivedKeys) {
+      snapshotOmitKeys.add(key)
+    }
+  }
+
+  const setIfChanged = (target: Record<string, unknown>, key: string, value: unknown) => {
+    if (hasOwn(target, key) && Object.is(target[key], value)) {
+      return false
+    }
+    target[key] = value
+    return true
+  }
 
   const syncSetupStatePropsAliases = (instance: InternalRuntimeState, propsProxy: Record<string, unknown>) => {
     if (!aliasEntries.length) {
@@ -34,6 +57,7 @@ export function createPropsSync(options: {
     if (!setupState || typeof setupState !== 'object') {
       return
     }
+    updateSnapshotOmitKeys(instance)
     const aliases = syncedAliases.get(instance) ?? new Set<string>()
     syncedAliases.set(instance, aliases)
     for (const [alias, propName] of aliasEntries) {
@@ -42,7 +66,7 @@ export function createPropsSync(options: {
       }
       const value = propsProxy[propName]
       try {
-        ;(setupState as any)[alias] = value
+        setIfChanged(setupState as Record<string, unknown>, alias, value)
         aliases.add(alias)
       }
       catch {
@@ -50,7 +74,7 @@ export function createPropsSync(options: {
       }
       if (state && typeof state === 'object' && (!hasOwn(state, alias) || aliases.has(alias))) {
         try {
-          ;(state as any)[alias] = value
+          setIfChanged(state as Record<string, unknown>, alias, value)
         }
         catch {
           // 旧兼容 state 写入失败时不阻断运行时。
@@ -68,6 +92,7 @@ export function createPropsSync(options: {
     if (!setupState || typeof setupState !== 'object') {
       return
     }
+    updateSnapshotOmitKeys(instance)
     const aliasToPropName = new Map<string, string>(aliasEntries)
     for (const key of propsDerivedKeySet) {
       const propName = aliasToPropName.get(key) ?? key
@@ -75,7 +100,7 @@ export function createPropsSync(options: {
         continue
       }
       try {
-        ;(setupState as any)[key] = propsProxy[propName]
+        setIfChanged(setupState as Record<string, unknown>, key, propsProxy[propName])
       }
       catch {
         // 忽略 props-derived 同步失败，保持主 props 链路可用。
@@ -289,6 +314,7 @@ export function createPropsSync(options: {
 
   return {
     attachWevuPropKeys,
+    directPropsDerivedKeys,
     syncWevuPropsFromInstance,
     syncWevuPropsFromValues,
     finalObservers,

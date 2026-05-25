@@ -10,6 +10,7 @@ import { collectSnapshot } from './snapshot'
 export function createSetDataScheduler(options: {
   state: Record<string, any>
   setupState?: Record<string, any>
+  snapshotOmitKeys?: Set<string>
   computedRefs: Record<string, { value: any }>
   dirtyComputedKeys: Set<string>
   includeComputed: boolean
@@ -39,6 +40,7 @@ export function createSetDataScheduler(options: {
   const {
     state,
     setupState,
+    snapshotOmitKeys,
     computedRefs,
     dirtyComputedKeys,
     includeComputed,
@@ -153,13 +155,15 @@ export function createSetDataScheduler(options: {
     return (left as any).raw === (right as any).raw && (left as any).version === (right as any).version
   }
 
+  const shouldIncludeSnapshotKey = (key: string) => shouldIncludeKey(key) && !snapshotOmitKeys?.has(key)
+
   const resolveTopKeysByRoot = (root: object) => {
     const matches: string[] = []
     const rawSetupState = setupState && typeof setupState === 'object'
       ? (isReactive(setupState) ? toRaw(setupState as any) : setupState)
       : undefined
     for (const key of new Set([...Object.keys(state), ...(rawSetupState ? Object.keys(rawSetupState) : [])])) {
-      if (!shouldIncludeKey(key)) {
+      if (!shouldIncludeSnapshotKey(key)) {
         continue
       }
       const value = rawSetupState && hasOwn(rawSetupState, key) ? rawSetupState[key] : state[key]
@@ -198,7 +202,7 @@ export function createSetDataScheduler(options: {
     setupState,
     computedRefs,
     includeComputed,
-    shouldIncludeKey,
+    shouldIncludeKey: shouldIncludeSnapshotKey,
     plainCache,
     toPlainMaxDepth,
     toPlainMaxKeys,
@@ -218,7 +222,7 @@ export function createSetDataScheduler(options: {
     const replacedTopLevelKeys = new Set<string>()
 
     for (const key of new Set([...Object.keys(rawState), ...(rawSetupState ? Object.keys(rawSetupState) : [])])) {
-      if (!shouldIncludeKey(key)) {
+      if (!shouldIncludeSnapshotKey(key)) {
         continue
       }
       includedStateKeys.add(key)
@@ -271,7 +275,7 @@ export function createSetDataScheduler(options: {
     }
 
     for (const key of Object.keys(computedRefs)) {
-      if (!shouldIncludeKey(key)) {
+      if (!shouldIncludeSnapshotKey(key)) {
         continue
       }
       includedComputedKeys.add(key)
@@ -293,7 +297,7 @@ export function createSetDataScheduler(options: {
     for (const key of Object.keys(latestComputedTokens)) {
       if (!includedComputedKeys.has(key)) {
         delete latestComputedTokens[key]
-        if (!hasOwn(rawState, key) || !shouldIncludeKey(key)) {
+        if (!hasOwn(rawState, key) || !shouldIncludeSnapshotKey(key)) {
           delete nextSnapshot[key]
         }
       }
@@ -329,7 +333,7 @@ export function createSetDataScheduler(options: {
     if (setDataStrategy === 'patch' && includeComputed) {
       latestComputedSnapshot = Object.create(null)
       for (const key of Object.keys(computedRefs)) {
-        if (!shouldIncludeKey(key)) {
+        if (!shouldIncludeSnapshotKey(key)) {
           continue
         }
         latestComputedSnapshot[key] = snapshot[key]
@@ -378,7 +382,7 @@ export function createSetDataScheduler(options: {
       return
     }
     const topKey = record.path.split('.', 1)[0]
-    if (!shouldIncludeKey(topKey)) {
+    if (!shouldIncludeSnapshotKey(topKey)) {
       return
     }
     pendingPatches.set(record.path, { kind: record.kind, op: record.op })
@@ -409,7 +413,7 @@ export function createSetDataScheduler(options: {
         computedCompareMaxDepth,
         computedCompareMaxKeys,
         currentAdapter,
-        shouldIncludeKey,
+        shouldIncludeKey: shouldIncludeSnapshotKey,
         maxPatchKeys,
         maxPayloadBytes,
         mergeSiblingThreshold,

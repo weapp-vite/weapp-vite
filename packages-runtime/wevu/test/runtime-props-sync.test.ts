@@ -1,4 +1,4 @@
-import { WEVU_PROPS_ALIASES_KEY, WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
+import { WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY, WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
 import { resolvePropValue } from '@/runtime'
@@ -455,5 +455,80 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.callback).toBe(callback)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.callback()).toBe('ok')
     expect(callback).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not emit direct prop-derived setup keys as top-level setData fields', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      [WEVU_PROPS_DERIVED_KEYS_KEY]: ['title'],
+      setup(props: any) {
+        const { title } = props as any
+        return { title, props }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    let observerFeedbackCount = 0
+    const inst: any = {
+      setData: vi.fn((payload: Record<string, any>) => {
+        if (!Object.hasOwn(payload, 'title')) {
+          return
+        }
+        observerFeedbackCount += 1
+        if (observerFeedbackCount < 5) {
+          opts.observers.title.call(inst, payload.title, inst.properties.title)
+        }
+      }),
+      triggerEvent: vi.fn(),
+      properties: { title: 'initial' },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+    observerFeedbackCount = 0
+
+    inst.properties.title = 'Hello'
+    opts.observers.title.call(inst, 'Hello', 'initial')
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
+
+    const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
+    expect(payloads.some((payload: any) => Object.hasOwn(payload, 'title'))).toBe(false)
+    expect(observerFeedbackCount).toBe(0)
+  })
+
+  it('keeps alias-derived setup keys visible to template setData output', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      [WEVU_PROPS_ALIASES_KEY]: {
+        aliasTitle: 'title',
+      },
+      [WEVU_PROPS_DERIVED_KEYS_KEY]: ['aliasTitle'],
+      setup() {
+        return {}
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: 'initial' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    inst.properties.title = 'Hello'
+    opts.observers.title.call(inst, 'Hello', 'initial')
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.aliasTitle).toBe('Hello')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ aliasTitle: 'Hello' }))
   })
 })
