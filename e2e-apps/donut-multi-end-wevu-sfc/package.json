@@ -1,0 +1,19 @@
+{
+  "name": "e2e-donut-multi-end-wevu-sfc",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

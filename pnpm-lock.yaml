@@ -1351,6 +1351,27 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  e2e-apps/donut-multi-end-wevu-sfc:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.1
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.1(typescript@6.0.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   e2e-apps/github-issues:
     dependencies:
       '@wevu/web-apis':

@@ -1,0 +1,110 @@
+{
+  "miniVersion": "v2",
+  "name": "Weapp Vite Wevu 多端 E2E",
+  "version": "0.0.1",
+  "versionCode": 1,
+  "i18nFilePath": "i18n",
+  "mini-ohos": {
+    "sdkVersion": "0.5.4",
+    "enableDebug": true,
+    "icons": {
+      "foreground": "",
+      "background": ""
+    },
+    "splashscreen": {
+      "startWindowIcon": "",
+      "startWindowBackground": "#ffffff"
+    },
+    "privateDescriptions": {
+      "CAMERA": "用于 wevu SFC 多端 fixture 验证权限描述字段保留"
+    }
+  },
+  "mini-android": {
+    "resourcePath": "miniapp/android/nativeResources",
+    "sdkVersion": "1.5.2",
+    "toolkitVersion": "0.11.0",
+    "useExtendedSdk": {
+      "media": false,
+      "bluetooth": false,
+      "network": false,
+      "scanner": false,
+      "xweb": false,
+      "open": false,
+      "nfc": false
+    },
+    "icons": {
+      "hdpi": "",
+      "xhdpi": "",
+      "xxhdpi": "",
+      "xxxhdpi": ""
+    },
+    "splashscreen": {
+      "hdpi": "",
+      "xhdpi": "",
+      "xxhdpi": ""
+    },
+    "enableVConsole": "open",
+    "privacy": {
+      "enable": false,
+      "template": "assets/privacy/android.html",
+      "contentViewImage": "",
+      "cancelButtonImage": "",
+      "confirmButtonImage": "",
+      "enableViewOnly": false
+    },
+    "usePluginSdk": {
+      "map": ""
+    },
+    "privateDescriptions": {
+      "CAMERA": "用于 wevu SFC 多端 fixture 验证权限描述字段保留"
+    }
+  },
+  "mini-ios": {
+    "sdkVersion": "1.6.8",
+    "toolkitVersion": "0.0.9",
+    "useExtendedSdk": {
+      "WeAppOpenFuns": true,
+      "WeAppNetwork": false,
+      "WeAppBluetooth": false,
+      "WeAppMedia": false,
+      "WeAppLBS": false,
+      "WeAppOthers": false,
+      "WeAppLive": false
+    },
+    "enableVConsole": "open",
+    "icons": {
+      "mainIcon120": "",
+      "mainIcon180": "",
+      "spotlightIcon80": "",
+      "spotlightIcon120": "",
+      "settingsIcon58": "",
+      "settingsIcon87": "",
+      "notificationIcon40": "",
+      "notificationIcon60": "",
+      "appStore1024": ""
+    },
+    "splashScreen": {
+      "customImage": ""
+    },
+    "privacy": {
+      "enable": false,
+      "template": "assets/privacy/ios.html",
+      "contentViewImage": "",
+      "cancelButtonImage": "",
+      "confirmButtonImage": "",
+      "enableViewOnly": false
+    },
+    "enableOpenUrlNavigate": true,
+    "privateDescriptions": {
+      "NSCameraUsageDescription": "用于 wevu SFC 多端 fixture 验证权限描述字段保留"
+    },
+    "officialPlugins": {
+      "imPush": {
+        "enable": false
+      }
+    },
+    "buildCloud": {
+      "useRemote": false
+    }
+  }
+}

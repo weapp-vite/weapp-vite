@@ -1,0 +1,33 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "wevu sfc index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc profile",
+          "pathName": "pages/profile/index",
+          "query": "from=condition",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc status",
+          "pathName": "pages/status/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true
+  },
+  "libVersion": "3.15.0"
+}
