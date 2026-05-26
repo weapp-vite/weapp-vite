@@ -75,10 +75,25 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toMatch(/__wv-ref-\d+/)
+      expect(result.code).toContain('id="__wv-ref-id-0"')
       expect(result.code).not.toContain('ref=')
       expect(result.templateRefs?.length).toBe(2)
       expect(result.templateRefs?.[0].name).toBe('cell')
+      expect(result.templateRefs?.[0].id).toBe('#__wv-ref-id-0')
       expect(result.templateRefs?.[1].expAst).toBeTruthy()
+    })
+
+    it('should reuse static id for template ref metadata', () => {
+      const result = compileVueTemplateToWxml(
+        '<view id="sentinel" ref="sentinelRef" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('id="sentinel"')
+      expect(result.templateRefs?.[0]).toMatchObject({
+        selector: '.__wv-ref-0',
+        id: '#sentinel',
+        name: 'sentinelRef',
+      })
     })
 
     it('should mark v-for template refs as inFor', () => {

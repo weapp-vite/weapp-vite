@@ -44,6 +44,7 @@ expectError(header.value = { title: 'next' })
 const view = useTemplateRef('viewRef')
 expectType<TemplateRefValue | null>(view.value)
 expectType<MiniProgramTemplateRefValue | null>(view.value)
+expectType<string | undefined>(view.value?.id)
 
 const child = useTemplateRef('childRef')
 expectType<(() => void) | undefined>(child.value?.open)
