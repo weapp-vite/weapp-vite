@@ -263,7 +263,6 @@ export interface ClassStyleBinding {
  */
 export interface TemplateRefBinding {
   selector: string
-  id?: string
   inFor: boolean
   name?: string
   expAst?: Expression
