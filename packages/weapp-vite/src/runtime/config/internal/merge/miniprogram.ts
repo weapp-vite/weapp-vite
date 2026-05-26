@@ -32,22 +32,29 @@ function createAbsolutePathPattern(value: string) {
 function normalizeInlineConfigAfterDefu(
   inline: InlineConfig,
   options: {
+    cwd: string
     ctx: MutableCompilerContext
     platform: WeappVitePlatform | undefined
     rolldownOptions: Record<string, unknown>
     subPackageMeta: SubPackageMetaValue | undefined
   },
 ) {
-  const { ctx, platform, rolldownOptions, subPackageMeta } = options
+  const { cwd, ctx, platform, rolldownOptions, subPackageMeta } = options
   const build = inline.build ?? (inline.build = {})
   const userRolldownOptions = build.rolldownOptions as Record<string, any> | undefined
-  const mergedRolldownOptions = {
+  const mergedRolldownOptions: Record<string, any> = {
     ...(userRolldownOptions ?? {}),
     ...rolldownOptions,
     output: {
       ...(rolldownOptions.output as Record<string, unknown> | undefined),
       ...(userRolldownOptions?.output ?? {}),
     },
+  }
+  if (
+    !Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')
+    && !(mergedRolldownOptions.resolve as { tsconfigFilename?: unknown } | undefined)?.tsconfigFilename
+  ) {
+    mergedRolldownOptions.tsconfig = path.resolve(cwd, 'tsconfig.json')
   }
   build.rolldownOptions = mergedRolldownOptions
   inline.define = {
@@ -235,6 +242,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       },
     )
     normalizeInlineConfigAfterDefu(inline, {
+      cwd,
       ctx,
       platform,
       rolldownOptions,
@@ -263,6 +271,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     },
   )
   normalizeInlineConfigAfterDefu(inlineConfig, {
+    cwd,
     ctx,
     platform,
     rolldownOptions,

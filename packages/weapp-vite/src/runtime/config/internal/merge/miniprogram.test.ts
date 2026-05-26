@@ -152,6 +152,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.watch?.buildDelay).toBe(60)
     expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
+    expect((result.build as any).rolldownOptions.tsconfig).toBe('/project/tsconfig.json')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
       configService: {
@@ -212,6 +213,77 @@ describe('runtime config merge miniprogram', () => {
       entryFileNames: '[name].js',
       minifyInternalExports: false,
     })
+  })
+
+  it('preserves explicit rolldown tsconfig options', () => {
+    const explicitTsconfig = '/workspace/custom-tsconfig.json'
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            rolldownOptions: {
+              tsconfig: explicitTsconfig,
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        configFileDependencies: [],
+        packageJson: undefined,
+        isDev: true,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(explicitTsconfig)
+  })
+
+  it('preserves deprecated resolve tsconfig filename for user compatibility', () => {
+    const explicitTsconfig = '/workspace/resolve-tsconfig.json'
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            rolldownOptions: {
+              resolve: {
+                tsconfigFilename: explicitTsconfig,
+              },
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        configFileDependencies: [],
+        packageJson: undefined,
+        isDev: true,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBeUndefined()
+    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(explicitTsconfig)
   })
 
   it('builds development watch with plugin root inside src and default dist exclusion', () => {
