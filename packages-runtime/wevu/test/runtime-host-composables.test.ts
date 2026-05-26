@@ -3,6 +3,8 @@ import { ref } from '@/reactivity'
 import { getCurrentPageStackSnapshot, getNavigationBarMetrics, useAsyncPullDownRefresh, useBoundingClientRect, useElementIntersectionObserver, useNavigationBarMetrics, usePageStack } from '@/runtime'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { callHookList } from '@/runtime/hooks/base'
+import { updateTemplateRefs } from '@/runtime/templateRefs'
+import { useTemplateRef } from '@/runtime/vueCompat'
 
 type QueryResolver = (selector: string, multiple: boolean) => any
 
@@ -98,6 +100,50 @@ describe('runtime host composables', () => {
     callHookList(instance, 'onUnload')
     expect(disconnect).toHaveBeenCalled()
     expect(controller.observer).toBeNull()
+  })
+
+  it('observes a template ref id with the intersection observer helper', () => {
+    const disconnect = vi.fn()
+    const observe = vi.fn()
+    const relativeToViewport = vi.fn(() => ({
+      disconnect,
+      observe,
+      relativeToViewport,
+    }))
+    const instance = {
+      createIntersectionObserver: vi.fn(() => ({
+        disconnect,
+        observe,
+        relativeToViewport,
+      })),
+      __wevuReadyCalled: true,
+      __wevu: { state: {}, proxy: {} },
+      createSelectorQuery: createSelectorQueryFactory(selector => (
+        selector === '.sentinel' ? { id: 'sentinel-node' } : null
+      )),
+      __wevuTemplateRefs: [
+        { selector: '.sentinel', id: '#sentinel', inFor: false, name: 'sentinel' },
+      ],
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance })
+
+    const sentinelRef = useTemplateRef('sentinel')
+    updateTemplateRefs(instance)
+
+    const controller = useElementIntersectionObserver({
+      selector: () => sentinelRef.value?.id ?? null,
+      onObserve: vi.fn(),
+    })
+
+    callHookList(instance, 'onReady')
+
+    expect(sentinelRef.value?.selector).toBe('.sentinel')
+    expect(sentinelRef.value?.id).toBe('#sentinel')
+    expect(instance.createIntersectionObserver).toHaveBeenCalled()
+    expect(observe).toHaveBeenCalledWith('#sentinel', expect.any(Function))
+    expect(controller.observer).toBeTruthy()
   })
 
   it('tracks current page stack through setup helpers', () => {
