@@ -141,19 +141,21 @@ export default defineConfig({
 </IssueCard>
 ```
 
-`slot-wrapper-<slotName>` 覆盖指定具名插槽。例如 `slot-wrapper-footer` 只覆盖 `footer`：
+`slot-wrapper-<slotName>` 覆盖指定具名插槽。单个 slot 的覆盖更推荐直接写在对应的 `<template #xxx>` 上：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper="cover-view" slot-wrapper-footer="view">
+  <IssueCard slot-wrapper="cover-view">
     <template #header>
       <slot />
     </template>
-    <template #footer>
+    <template #footer slot-wrapper="view">
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -169,7 +171,7 @@ export default defineConfig({
 </IssueCard>
 ```
 
-也可以把单个 slot 的覆盖配置写在对应的 `<template #xxx>` 上：
+也可以把单个 slot 的覆盖配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，也更适合单个 slot 的局部策略：
 
 ```vue
 <!-- eslint-disable vue/no-useless-template-attributes -->
@@ -191,23 +193,23 @@ export default defineConfig({
 组件内还可以把 class/style 加到生成的 wrapper 上：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard
-    slot-wrapper="cover-view"
-    slot-wrapper-class="slot-default"
-    slot-wrapper-style="padding: 8px"
-    slot-wrapper-footer="view"
-    slot-wrapper-footer-class="slot-footer"
-    slot-wrapper-footer-style="margin-top: 12px"
-  >
-    <template #header>
+  <IssueCard slot-wrapper="cover-view">
+    <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
       <slot />
     </template>
-    <template #footer>
+    <template
+      #footer
+      slot-wrapper="view"
+      slot-wrapper-class="slot-footer"
+      slot-wrapper-style="margin-top: 12px"
+    >
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml
@@ -221,7 +223,7 @@ export default defineConfig({
 </IssueCard>
 ```
 
-也支持 `:slot-wrapper-class="headerClass"`、`:slot-wrapper-style="headerStyle"`、`:slot-wrapper-footer-class="footerClass"` 这类动态绑定，但参数名必须是静态的。
+也支持 `:slot-wrapper-class="headerClass"` / `:slot-wrapper-style="headerStyle"` 这类动态绑定；单个 slot 更推荐写成 `<template #footer :slot-wrapper-class="footerClass">` 这种就近覆盖。参数名必须是静态的。
 
 `slot-single-root-no-wrapper-<slotName>` 可以让指定插槽在单根真实节点场景下尽量下推 `slot="..."`：
 
@@ -256,13 +258,15 @@ export default defineConfig({
 `block` 不允许作为 wrapper，会回退到 `view` 并输出 warning。自定义 wrapper 必须是目标小程序运行时可渲染、并且能承载当前 slot 内容的真实节点或组件。例如下面的写法会生成 `text` 包裹 `view`，这不适合真实运行时：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper-header="text">
-    <template #header>
+  <IssueCard>
+    <template #header slot-wrapper="text">
       <view>Header</view>
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml

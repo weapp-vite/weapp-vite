@@ -119,22 +119,24 @@
 </IssueCard>
 ```
 
-`slot-wrapper-<slotName>` 只覆盖指定具名插槽，例如 `slot-wrapper-footer`：
+`slot-wrapper-<slotName>` 只覆盖指定具名插槽；单个 slot 的覆盖更推荐直接写在对应的 `<template #xxx>` 上：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper="cover-view" slot-wrapper-footer="view">
+  <IssueCard slot-wrapper="cover-view">
     <template #header>
       <slot />
     </template>
-    <template #footer>
+    <template #footer slot-wrapper="view">
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
-产物中 `header` 使用 `slot-wrapper="cover-view"`，`footer` 使用 `slot-wrapper-footer="view"` 覆盖：
+产物中 `header` 使用 `slot-wrapper="cover-view"`，`footer` 在对应的 `<template #footer>` 上覆盖：
 
 ```wxml
 <IssueCard>
@@ -147,7 +149,7 @@
 </IssueCard>
 ```
 
-只覆盖单个 slot 时，也可以把配置写在对应的 `<template #xxx>` 上。这个写法更靠近 slot 内容，优先级高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
+只覆盖单个 slot 时，更推荐把配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，优先级高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
 
 ```vue
 <!-- eslint-disable vue/no-useless-template-attributes -->
@@ -182,23 +184,23 @@
 也可以把 class/style 加到生成的 wrapper 上，而不是加到组件本身：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard
-    slot-wrapper="cover-view"
-    slot-wrapper-class="slot-default"
-    slot-wrapper-style="padding: 8px"
-    slot-wrapper-footer="view"
-    slot-wrapper-footer-class="slot-footer"
-    slot-wrapper-footer-style="margin-top: 12px"
-  >
-    <template #header>
+  <IssueCard slot-wrapper="cover-view">
+    <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
       <slot />
     </template>
-    <template #footer>
+    <template
+      #footer
+      slot-wrapper="view"
+      slot-wrapper-class="slot-footer"
+      slot-wrapper-style="margin-top: 12px"
+    >
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -214,7 +216,7 @@
 </IssueCard>
 ```
 
-动态绑定也支持，例如 `:slot-wrapper-class="headerClass"`、`:slot-wrapper-style="headerStyle"`、`:slot-wrapper-footer-class="footerClass"`。
+动态绑定也支持，例如父组件标签上的 `:slot-wrapper-class="headerClass"` / `:slot-wrapper-style="headerStyle"`，以及 `<template #footer :slot-wrapper-class="footerClass">` 这种单 slot 就近覆盖。
 
 `slot-single-root-no-wrapper-<slotName>` 可以让指定插槽在单根真实节点场景下尽量下推 `slot="..."`：
 
@@ -271,13 +273,15 @@
 你选择的 wrapper 必须能承载实际内容。比如下面的写法会让 `text` 包裹 `view`，这不适合真实运行时：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper-header="text">
-    <template #header>
+  <IssueCard>
+    <template #header slot-wrapper="text">
       <view>Header</view>
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml
