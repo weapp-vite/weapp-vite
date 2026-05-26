@@ -2099,6 +2099,9 @@ describe('compileVueTemplateToWxml', () => {
   <template #header>
     <slot />
   </template>
+  <template #footer>
+    <slot name="footer" />
+  </template>
 </Child>
     `.trim()
 
@@ -2109,7 +2112,9 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).toContain('<view slot="footer"><slot name="footer" /></view>')
     expect(code).not.toContain('<slot slot="header"')
+    expect(code).not.toContain('<slot slot="footer"')
     expect(code).not.toContain('<scoped-slots-default slot="header"')
   })
 
