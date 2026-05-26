@@ -1,0 +1,5 @@
+<view class="issue613-card-native">
+  <view class="issue613-card-native__header" data-issue613-host="native-card-header">
+    <slot name="header"></slot>
+  </view>
+</view>

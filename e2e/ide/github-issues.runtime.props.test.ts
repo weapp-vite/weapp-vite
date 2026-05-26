@@ -167,6 +167,49 @@ describe.sequential('e2e app: github-issues / props', () => {
     }
   })
 
+  it('issue #613: compares forwarded slot outlets with view and native block wrappers in DevTools runtime', async (ctx) => {
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-613/index.wxml')
+    const viewForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
+    const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-613/index.js')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const viewForwarderWxml = await fs.readFile(viewForwarderWxmlPath, 'utf-8')
+    const blockForwarderWxml = await fs.readFile(blockForwarderWxmlPath, 'utf-8')
+    expect(pageWxml).toContain('data-issue613-case="compiled-view"')
+    expect(pageWxml).toContain('data-issue613-case="native-block"')
+    expect(viewForwarderWxml).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(viewForwarderWxml).toContain('<view slot="footer"><slot name="footer" /></view>')
+    expect(viewForwarderWxml).not.toContain('slot-wrapper=')
+    expect(viewForwarderWxml).not.toContain('<slot slot="header"')
+    expect(viewForwarderWxml).not.toContain('<scoped-slots-default')
+    expect(blockForwarderWxml).toContain('<block slot="header">')
+    expect(blockForwarderWxml).toContain('<slot></slot>')
+    expect(await fs.readFile(pageJsPath, 'utf-8')).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-613/index', 'issue-613 forwarded via compiled view')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-613 page')
+      }
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('data-issue613-host="vue-card-header"')
+      expect(renderedWxml).toContain('data-issue613-forwarded="compiled-view"')
+      expect(renderedWxml).toContain('issue-613 forwarded via compiled view')
+      expect(renderedWxml).toContain('data-issue613-host="vue-card-footer"')
+      expect(renderedWxml).toContain('data-issue613-forwarded="compiled-footer"')
+      expect(renderedWxml).toContain('issue-613 forwarded via compiled footer')
+      expect(renderedWxml).toContain('data-issue613-host="native-card-header"')
+      expect(renderedWxml).not.toContain('data-issue613-forwarded="native-block"')
+      expect(renderedWxml).not.toContain('issue-613 forwarded via native block')
+      expect(renderedWxml).not.toContain('slot="header"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #599: renders props named data in computed style bindings', async (ctx) => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')

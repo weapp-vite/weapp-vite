@@ -53,4 +53,49 @@ defineOptions({
     expect(result.script).toContain('behaviors: [FooBehavior]')
     expect(result.script).toContain('createWevuComponent')
   })
+
+  it('matches slot fallback wrapper rules by imported component defineOptions name', async () => {
+    const projectDir = await createTempProject()
+    const childFile = path.join(projectDir, 'child-alias.vue')
+    const filename = path.join(projectDir, 'consumer.vue')
+    const source = `
+<script setup lang="ts">
+import LocalChild from './child-alias.vue'
+</script>
+<template>
+  <local-child>
+    <template #header>
+      <slot />
+    </template>
+  </local-child>
+</template>
+    `.trim()
+
+    await fs.writeFile(
+      childFile,
+      `
+<script setup lang="ts">
+defineOptions({
+  name: 'HelloWorld',
+})
+</script>
+<template><slot name="header" /></template>
+      `.trim(),
+      'utf8',
+    )
+
+    const result = await compileVueFile(source, filename, {
+      template: {
+        slotFallbackWrapper: {
+          tag: 'view',
+          rules: [
+            { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+          ],
+        },
+      },
+    })
+
+    expect(result.template).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(result.template).not.toContain('<view slot="header"><slot /></view>')
+  })
 })

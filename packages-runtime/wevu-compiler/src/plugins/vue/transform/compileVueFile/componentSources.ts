@@ -1,9 +1,12 @@
-import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath } from './types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
+import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 
@@ -13,6 +16,7 @@ export interface ComponentSourceInfo {
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
   wevuComponentTags: Set<string>
+  componentNameMap: Record<string, string>
 }
 
 interface ScriptSetupImportComponent {
@@ -47,6 +51,83 @@ function pascalToKebab(name: string) {
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .toLowerCase()
+}
+
+function extractStringPropertyFromObject(node: ObjectExpression, keyName: string) {
+  for (const property of node.properties) {
+    if (!t.isObjectProperty(property)) {
+      continue
+    }
+    const key = property.key
+    const matched = t.isIdentifier(key)
+      ? key.name === keyName
+      : t.isStringLiteral(key)
+        ? key.value === keyName
+        : false
+    if (!matched || !t.isStringLiteral(property.value)) {
+      continue
+    }
+    return property.value.value
+  }
+  return undefined
+}
+
+function extractStaticDefineOptionsName(scriptSetupContent: string) {
+  let ast: BabelFile
+  try {
+    ast = babelParse(scriptSetupContent, BABEL_TS_MODULE_PARSER_OPTIONS)
+  }
+  catch {
+    return undefined
+  }
+
+  let componentName: string | undefined
+  traverse(ast, {
+    CallExpression(path) {
+      if (componentName) {
+        return
+      }
+      const callee = path.node.callee
+      if (!t.isIdentifier(callee, { name: 'defineOptions' })) {
+        return
+      }
+      const arg = path.node.arguments[0]
+      if (!t.isObjectExpression(arg)) {
+        return
+      }
+      componentName = extractStringPropertyFromObject(arg, 'name')
+    },
+  })
+  return componentName
+}
+
+async function resolveVueSfcComponentName(resolvedId: string | undefined, warn?: (message: string) => void) {
+  if (!resolvedId?.endsWith('.vue')) {
+    return undefined
+  }
+  try {
+    const source = await fs.readFile(resolvedId, 'utf8')
+    const { descriptor, errors } = parseSfc(source, {
+      filename: resolvedId,
+    })
+    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
+      return undefined
+    }
+    return extractStaticDefineOptionsName(descriptor.scriptSetup.content)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    warn?.(`[Vue 编译] 解析 ${resolvedId} 的 defineOptions.name 失败：${message}`)
+    return undefined
+  }
+}
+
+function registerComponentName(result: ComponentSourceInfo, tag: string, componentName: string | undefined) {
+  if (!componentName) {
+    return
+  }
+  result.componentNameMap[tag] = componentName
+  result.componentNameMap[pascalToKebab(tag)] = componentName
 }
 
 export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
@@ -147,6 +228,12 @@ async function collectScriptSetupUsingComponents(options: {
       if (!resolved?.from && importSource.startsWith('/')) {
         resolved = { from: removeExtensionDeep(importSource), resolvedId: importSource }
       }
+      if (!resolved?.resolvedId && isVueSfcSource(importSource) && importSource.startsWith('.')) {
+        resolved = {
+          ...(resolved ?? {}),
+          resolvedId: path.resolve(path.dirname(filename), importSource),
+        }
+      }
       if (resolved?.from) {
         result.autoUsingComponentsMap[localName] = resolved.from
         result.autoComponentMeta[localName] = resolved.from
@@ -155,6 +242,8 @@ async function collectScriptSetupUsingComponents(options: {
         result.wevuComponentTags.add(localName)
         result.wevuComponentTags.add(pascalToKebab(localName))
       }
+      const componentName = await resolveVueSfcComponentName(resolved?.resolvedId, autoUsingComponents?.warn ?? compileOptions?.warn)
+      registerComponentName(result, localName, componentName)
     }
   }
   catch (error) {
@@ -205,6 +294,11 @@ async function collectAutoImportWevuComponents(options: {
         result.wevuComponentTags.add(resolved.name)
       }
     }
+    const componentName = await resolveVueSfcComponentName(resolved.resolvedId, autoImportTags.warn ?? warn)
+    registerComponentName(result, tag, componentName)
+    if (resolved.name) {
+      registerComponentName(result, resolved.name, componentName)
+    }
   }
 }
 
@@ -220,6 +314,7 @@ export async function collectComponentSourceInfo(options: {
     autoUsingComponentsMap: {},
     autoComponentMeta: {},
     wevuComponentTags: new Set(),
+    componentNameMap: {},
   }
 
   await collectScriptSetupUsingComponents({

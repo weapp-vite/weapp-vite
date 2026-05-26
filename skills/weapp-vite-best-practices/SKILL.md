@@ -42,6 +42,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.autoImportComponents`
    - `weapp.routeRules`
    - `weapp.typescript`
+   - `weapp.vue.template.slotFallbackWrapper`：普通具名插槽 fallback 的真实 wrapper，可用全局默认、按模板标签名 `component`、子组件静态 `defineOptions({ name })` 的 `componentName`、slot 规则和组件内 `slot-wrapper` / `slot-wrapper-footer` / `slot-wrapper-class` / `slot-wrapper-footer-class` 静态覆盖；不要把 `block` 当作转发 `<slot />` 的 wrapper
 3. 按目标启用能力：
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`

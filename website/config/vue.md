@@ -36,6 +36,20 @@ keywords:
     htmlTagToWxmlTagClass?: boolean
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
+    slotSingleRootNoWrapper?: boolean
+    slotFallbackWrapper?: string | {
+      tag?: string
+      attrs?: Record<string, string>
+      singleRootNoWrapper?: boolean
+      rules?: Array<{
+        component?: string | RegExp | Array<string | RegExp>
+        componentName?: string | RegExp | Array<string | RegExp>
+        slot?: string | RegExp | Array<string | RegExp>
+        tag?: string
+        attrs?: Record<string, string>
+        singleRootNoWrapper?: boolean
+      }>
+    }
     slotMultipleInstance?: boolean
     classStyleRuntime?: 'auto' | 'wxs' | 'js'
     objectLiteralBindMode?: 'runtime' | 'inline'
@@ -59,6 +73,25 @@ export default defineConfig({
         formatWxml: 'auto',
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: false,
+        slotSingleRootNoWrapper: false,
+        slotFallbackWrapper: {
+          tag: 'view',
+          attrs: {
+            class: 'slot-wrapper',
+          },
+          rules: [
+            { component: 'IssueCard', slot: 'header', tag: 'cover-view' },
+            { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+            {
+              component: 'IssueCard',
+              slot: 'footer',
+              attrs: {
+                class: 'slot-footer',
+              },
+            },
+            { component: /^Van/, slot: ['title', 'label'], tag: 'view' },
+          ],
+        },
         slotMultipleInstance: true,
         classStyleRuntime: 'js',
         objectLiteralBindMode: 'runtime',
@@ -91,6 +124,18 @@ export default defineConfig({
   - `augmented`：强制使用增强方案。
   - `off`：关闭 scoped slot（仅保留原生 slot，不支持 slot props）。
 - `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认 `false`，普通插槽内容也会走增强 scoped slot 组件，以便 slot 投影下的运行时父子关系可被 `provide()` / `inject()` 正确解析；设为 `true` 可保留普通插槽的原生 slot 输出。
+- `slotSingleRootNoWrapper`：普通具名插槽内容只有一个可投影根节点时，是否把 `slot="..."` 直接下推到该根节点，避免额外生成 wrapper。
+  - 默认 `false`，保持稳定的真实节点 wrapper。
+  - 开启后只影响“单个可投影根节点”；多节点、空内容、转发 `<slot />` 等场景仍会保留真实 wrapper。
+- `slotFallbackWrapper`：配置普通具名插槽 fallback wrapper 的真实标签。
+  - 默认 `view`。
+  - 字符串形式等价于 `{ tag: '...' }`。
+  - 对象形式支持全局默认 `tag`、全局默认 `attrs`、全局默认 `singleRootNoWrapper`，以及按组件 / 插槽匹配的 `rules`。
+  - `rules[].component` 匹配模板里的组件标签名，例如 `<IssueCard>` 对应 `IssueCard`，`<issue-card>` 对应 `issue-card`。
+  - `rules[].componentName` 匹配被引用 Vue SFC 的组件名，也就是子组件里静态 `defineOptions({ name: 'HelloWorld' })` 的 `name`。这个字段需要编译器能解析到该子组件的 `.vue` 文件；原生组件或第三方小程序组件通常没有这个信息，应继续用 `component`。
+  - `rules[].component`、`rules[].componentName` 与 `rules[].slot` 都支持字符串、正则或数组；同一条规则里写了多个匹配条件时需要同时命中。规则按顺序匹配，后匹配到的字段可覆盖前面的字段。
+  - `attrs` 是追加到 fallback wrapper 上的静态属性，适合项目级 class、style 或 `data-*`；组件使用处可用 `slot-wrapper-class` / `slot-wrapper-style` 继续覆盖。
+  - `block` 不能作为 wrapper。`<block slot="header"><slot /></block>` 在转发 slot 场景会在真实 DevTools 运行时丢内容；如果配置成 `block`，编译器会回退到 `view` 并输出 warning。
 - `slotMultipleInstance`：`v-for` 下 scoped slot 多实例模式（默认 `true`）。
 - `classStyleRuntime`：class/style 绑定运行时。
   - `js`：强制 JS（默认）。
@@ -189,6 +234,385 @@ export default defineConfig({
 > `htmlTagToWxmlTagClass` 只在“标签名确实发生了 HTML -> WXML 映射”时生效；像 `button -> button` 这类未改名场景，不会额外注入 `.button`。
 >
 > `removeComments` / `simplifyWhitespace` 当前仍是兼容性预留位，尚未接入实际编译流程；其余字段已经参与模板编译输出。
+
+### 自定义具名插槽 wrapper {#slot-fallback-wrapper}
+
+当普通具名插槽内容是转发的 `<slot />` 时，小程序不能直接接收 `<slot slot="header" />`，也不能稳定接收 `<block slot="header"><slot /></block>`。编译器默认会生成真实节点 wrapper：
+
+```wxml
+<view slot="header">
+  <slot />
+</view>
+```
+
+如果某些组件的某些具名插槽需要用其他真实节点承载，可以用 `slotFallbackWrapper` 全局配置：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        slotFallbackWrapper: {
+          tag: 'view',
+          attrs: {
+            class: 'slot-wrapper',
+          },
+          rules: [
+            { component: 'IssueCard', slot: 'header', tag: 'cover-view' },
+            { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+            {
+              component: 'IssueCard',
+              slot: 'footer',
+              attrs: {
+                class: 'slot-footer-global',
+              },
+            },
+            { component: /^Van/, slot: ['title', 'label'], tag: 'view' },
+          ],
+        },
+      },
+    },
+  },
+})
+```
+
+`component` 匹配的是使用处模板标签名，不是子组件声明名。比如下面这个模板里，`component: 'issue-card'` 会命中，`component: 'HelloWorld'` 不会命中：
+
+```vue
+<template>
+  <issue-card>
+    <template #header>
+      <slot />
+    </template>
+  </issue-card>
+</template>
+
+<script setup lang="ts">
+import IssueCard from '@/components/IssueCard.vue'
+</script>
+```
+
+如果你希望按子组件自己的名字匹配，需要让子组件声明静态 `defineOptions({ name })`，然后在规则里使用 `componentName`：
+
+```vue
+<!-- components/IssueCard.vue -->
+<script setup lang="ts">
+defineOptions({
+  name: 'HelloWorld',
+})
+</script>
+```
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        slotFallbackWrapper: {
+          rules: [
+            { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+          ],
+        },
+      },
+    },
+  },
+})
+```
+
+`componentName` 只在编译器能解析到被引用的 Vue SFC 时可用，包括 `<script setup>` 直接 import 的组件和自动导入 resolver 标记为 `wevu-sfc` 的组件。原生小程序组件、没有静态 `defineOptions({ name: '...' })` 的组件，继续使用 `component` 匹配模板标签名更明确。
+
+也可以直接在组件使用处用静态属性覆盖当前组件的 wrapper。组件内配置推荐使用普通 kebab-case 静态属性，避免和 Vue 指令参数语法混淆。
+
+#### `slot-wrapper`：当前组件所有普通具名插槽的默认 wrapper {#slot-wrapper-default}
+
+`slot-wrapper` 会作为当前组件所有普通具名插槽的默认 wrapper。下面的 `header` 和 `footer` 都会使用 `cover-view`：
+
+```vue
+<template>
+  <IssueCard slot-wrapper="cover-view">
+    <template #header>
+      <slot />
+    </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物：
+
+```wxml
+<IssueCard>
+  <cover-view slot="header">
+    <slot />
+  </cover-view>
+  <cover-view slot="footer">
+    <slot name="footer" />
+  </cover-view>
+</IssueCard>
+```
+
+#### `slot-wrapper-<slotName>`：覆盖指定具名插槽 {#slot-wrapper-named}
+
+如果同一个组件的不同具名插槽需要不同 wrapper，可以继续保留 `slot-wrapper` 作为默认值，再用 `slot-wrapper-footer` 覆盖 `footer` 插槽：
+
+```vue
+<template>
+  <IssueCard slot-wrapper="cover-view" slot-wrapper-footer="view">
+    <template #header>
+      <slot />
+    </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物：
+
+```wxml
+<IssueCard>
+  <cover-view slot="header">
+    <slot />
+  </cover-view>
+  <view slot="footer">
+    <slot name="footer" />
+  </view>
+</IssueCard>
+```
+
+这里 `header` 继承 `slot-wrapper="cover-view"`，`footer` 使用 `slot-wrapper-footer="view"` 覆盖。
+
+如果只想覆盖某一个 `<template #xxx>`，也可以把配置直接写在对应的 slot template 上。这个写法更靠近 slot 内容，优先级也高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
+
+```vue
+<template>
+  <IssueCard slot-wrapper="cover-view" slot-wrapper-header="view">
+    <template
+      #header
+      slot-wrapper="text"
+      slot-wrapper-class="slot-header"
+      slot-wrapper-style="margin-top: 12px"
+    >
+      <slot />
+    </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物：
+
+```wxml
+<IssueCard>
+  <text slot="header" class="slot-header" style="margin-top: 12px">
+    <slot />
+  </text>
+  <cover-view slot="footer">
+    <slot name="footer" />
+  </cover-view>
+</IssueCard>
+```
+
+在 `<template #header>` 上写时，已经知道目标 slot 名，属性仍写 `slot-wrapper` / `slot-wrapper-class` / `slot-wrapper-style` / `slot-single-root-no-wrapper`，不需要再写 `slot-wrapper-header`。
+
+#### `slot-wrapper-class/style`：给生成的 wrapper 加属性 {#slot-wrapper-attrs}
+
+普通 `class` / `style` 仍然属于组件本身，不会被转移到编译器生成的 slot wrapper 上。如果要给 wrapper 加样式，需要使用 wrapper 虚拟属性：
+
+```vue
+<template>
+  <IssueCard
+    slot-wrapper="cover-view"
+    slot-wrapper-class="slot-default"
+    slot-wrapper-style="padding: 8px"
+    slot-wrapper-footer="view"
+    slot-wrapper-footer-class="slot-footer"
+    slot-wrapper-footer-style="margin-top: 12px"
+  >
+    <template #header>
+      <slot />
+    </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物：
+
+```wxml
+<IssueCard>
+  <cover-view slot="header" class="slot-default" style="padding: 8px">
+    <slot />
+  </cover-view>
+  <view slot="footer" class="slot-footer" style="margin-top: 12px">
+    <slot name="footer" />
+  </view>
+</IssueCard>
+```
+
+也支持动态绑定，仍然使用静态参数名：
+
+```vue
+<IssueCard
+  :slot-wrapper-class="headerClass"
+  :slot-wrapper-style="headerStyle"
+  :slot-wrapper-footer-class="footerClass"
+>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot name="footer" />
+  </template>
+</IssueCard>
+```
+
+指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
+
+局部配置优先级高于全局配置。整体优先级为：`<template #slot>` 上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > 父组件标签上的 `slot-wrapper-<slotName>` / `slot-wrapper-<slotName>-class/style` / `slot-single-root-no-wrapper-<slotName>` > 父组件标签上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > `slotFallbackWrapper.rules` > `slotFallbackWrapper.tag` / `slotFallbackWrapper.attrs` > 默认 `view`。
+
+#### `slot-single-root-no-wrapper-<slotName>`：单根真实节点下推 `slot` {#slot-single-root-no-wrapper-named}
+
+如果要按插槽开启单根下推，也可以用全局规则：
+
+```ts
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        slotFallbackWrapper: {
+          tag: 'view',
+          rules: [
+            { component: 'IssueCard', slot: 'icon', singleRootNoWrapper: true },
+          ],
+        },
+      },
+    },
+  },
+})
+```
+
+或在组件使用处写静态属性：
+
+```vue
+<template>
+  <IssueCard slot-single-root-no-wrapper-icon>
+    <template #icon>
+      <image src="/assets/icon.png" />
+    </template>
+  </IssueCard>
+</template>
+```
+
+当 `icon` 插槽内容是单个真实节点时，会尽量把 `slot="icon"` 下推到这个节点：
+
+```wxml
+<IssueCard>
+  <image slot="icon" src="/assets/icon.png" />
+</IssueCard>
+```
+
+这个策略只适用于“单根真实节点”。如果插槽内容是转发 `<slot />`、多个根节点、空内容，编译器仍会保留 wrapper：
+
+```vue
+<template>
+  <IssueCard slot-single-root-no-wrapper-header>
+    <template #header>
+      <slot />
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物仍是：
+
+```wxml
+<IssueCard>
+  <view slot="header">
+    <slot />
+  </view>
+</IssueCard>
+```
+
+#### `block`：会被拒绝并回退到 `view` {#slot-wrapper-block}
+
+不要把 `block` 配成 fallback wrapper：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        slotFallbackWrapper: 'block',
+      },
+    },
+  },
+})
+```
+
+下面的 Vue 写法：
+
+```vue
+<template>
+  <IssueCard>
+    <template #header>
+      <slot />
+    </template>
+  </IssueCard>
+</template>
+```
+
+不会生成 `<block slot="header"><slot /></block>`，而是回退成：
+
+```wxml
+<IssueCard>
+  <view slot="header">
+    <slot />
+  </view>
+</IssueCard>
+```
+
+原因是 issue #613 的真实 WeChat DevTools e2e 已验证：`<block slot="header"><slot></slot></block>` 在转发 `<slot />` 的场景会丢失内容。编译器会输出 warning：`slot fallback wrapper 不支持配置为 block，已回退为 view。`
+
+#### wrapper 必须能承载实际内容 {#slot-wrapper-content}
+
+编译器只负责按配置生成标签，目标小程序运行时是否允许该标签承载子节点，仍取决于宿主规则和实际内容。比如下面的配置会让 `header` 使用 `text`：
+
+```vue
+<template>
+  <IssueCard slot-wrapper-header="text">
+    <template #header>
+      <view>Header</view>
+    </template>
+  </IssueCard>
+</template>
+```
+
+产物会是：
+
+```wxml
+<IssueCard>
+  <text slot="header">
+    <view>Header</view>
+  </text>
+</IssueCard>
+```
+
+> [!WARNING]
+> `text` 不适合包裹 `<view>` 子内容。需要包裹视图节点时，使用 `view`、`cover-view` 或经过目标小程序运行时验证的自定义组件；`block` 不是可渲染 wrapper，不能用于转发 `<slot />` 的命名插槽容器。
 
 ## `weapp.vue.autoImport` {#weapp-vue-autoimport}
 - **类型**：`boolean`

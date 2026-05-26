@@ -60,6 +60,8 @@ export default defineConfig({
   把 `div/span/img/a/h1...` 等常见 HTML 标签映射成小程序内置标签。
 - `weapp.vue.template.htmlTagToWxmlTagClass`
   默认开启。在映射发生时追加原标签名 class，例如 `h3 -> <view class="h3">`、`br -> <view class="br" />`，便于你自己写 CSS 低成本恢复默认外观；不需要时可设为 `false`。
+- `weapp.vue.template.slotFallbackWrapper`
+  配置普通具名插槽 fallback 的真实 wrapper，支持全局默认、按模板标签名 `component` / 子组件静态 `defineOptions({ name })` 的 `componentName` / slot 规则，以及组件内 `slot-wrapper` / `slot-wrapper-footer` / `slot-wrapper-class` / `slot-wrapper-footer-class` 静态覆盖。转发 `<slot />` 时不要使用 `<block slot="...">` 作为 wrapper，真实 DevTools 运行时会丢内容。
 
 ```vue
 <!-- App.vue -->

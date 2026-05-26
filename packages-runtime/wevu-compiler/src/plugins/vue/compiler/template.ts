@@ -1,4 +1,4 @@
-import type { TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
+import type { ResolvedSlotFallbackWrapperConfig, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
   parse,
 } from '@vue/compiler-dom'
@@ -41,6 +41,21 @@ export {
 export type { TemplateCompileResult } from './template/types'
 export type { TemplateCompileOptions } from './template/types'
 
+function resolveSlotFallbackWrapperConfig(config: TemplateCompileOptions['slotFallbackWrapper']): ResolvedSlotFallbackWrapperConfig {
+  if (typeof config === 'string') {
+    return {
+      tag: config || 'view',
+      rules: [],
+    }
+  }
+  return {
+    tag: config?.tag || 'view',
+    attrs: config?.attrs,
+    singleRootNoWrapper: config?.singleRootNoWrapper,
+    rules: config?.rules ?? [],
+  }
+}
+
 /**
  * 将 Vue 模板编译为 WXML。
  */
@@ -63,6 +78,7 @@ export function compileVueTemplateToWxml(
   const scopedSlotsRequireProps = options?.scopedSlotsRequireProps
     ?? (options?.scopedSlotsCompiler !== 'augmented')
   const slotSingleRootNoWrapper = options?.slotSingleRootNoWrapper ?? false
+  const slotFallbackWrapper = resolveSlotFallbackWrapperConfig(options?.slotFallbackWrapper)
   const htmlTagToWxmlMap = resolveHtmlTagToWxmlMap(options?.htmlTagToWxml)
 
   try {
@@ -86,9 +102,11 @@ export function compileVueTemplateToWxml(
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
       slotSingleRootNoWrapper,
+      slotFallbackWrapper,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,
       scopedSlotComponents: [],
       componentGenerics: {},
+      componentNameMap: options?.componentNameMap,
       scopeStack: [],
       slotPropStack: [],
       rewriteScopedSlot: false,

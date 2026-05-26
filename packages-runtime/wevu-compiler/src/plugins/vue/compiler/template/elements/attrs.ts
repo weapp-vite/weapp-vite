@@ -71,6 +71,16 @@ export function collectElementAttributes(
         }
         continue
       }
+      if (
+        prop.name === 'slot-wrapper'
+        || prop.name.startsWith('slot-wrapper-')
+        || prop.name.startsWith('slot-wrapper:')
+        || prop.name === 'slot-single-root-no-wrapper'
+        || prop.name.startsWith('slot-single-root-no-wrapper-')
+        || prop.name.startsWith('slot-single-root-no-wrapper:')
+      ) {
+        continue
+      }
       if (prop.name === 'ref') {
         if (prop.value?.type === NodeTypes.TEXT) {
           const name = prop.value.content.trim()
@@ -129,6 +139,29 @@ export function collectElementAttributes(
         && prop.arg.content === 'layout-host'
       ) {
         context.warnings.push('暂不支持动态 layout-host，已忽略该绑定。')
+        continue
+      }
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && (
+          prop.arg.content === 'slot-wrapper'
+          || prop.arg.content.startsWith('slot-wrapper-')
+          || prop.arg.content.startsWith('slot-wrapper:')
+          || prop.arg.content === 'slot-single-root-no-wrapper'
+          || prop.arg.content.startsWith('slot-single-root-no-wrapper-')
+          || prop.arg.content.startsWith('slot-single-root-no-wrapper:')
+        )
+      ) {
+        if (
+          prop.arg.content.endsWith('-class')
+          || prop.arg.content.endsWith(':class')
+          || prop.arg.content.endsWith('-style')
+          || prop.arg.content.endsWith(':style')
+        ) {
+          continue
+        }
+        context.warnings.push(`暂不支持动态 ${prop.arg.content}，已忽略该绑定。`)
         continue
       }
       if (

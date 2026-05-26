@@ -141,6 +141,22 @@ describe('resolveVueTemplatePlatformOptions', () => {
               htmlTagToWxmlTagClass: false,
               scopedSlotsCompiler: 'augmented',
               slotSingleRootNoWrapper: true,
+              slotFallbackWrapper: {
+                tag: 'cover-view',
+                attrs: {
+                  class: 'slot-wrapper',
+                },
+                rules: [
+                  {
+                    component: 'IssueCard',
+                    slot: 'header',
+                    tag: 'custom-header',
+                    attrs: {
+                      class: 'slot-header',
+                    },
+                  },
+                ],
+              },
               classStyleRuntime: 'auto',
               functionPropNames: ['handler', /^on[A-Z]/],
             },
@@ -165,6 +181,22 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')
     expect(options.template.scopedSlotsRequireProps).toBe(false)
     expect(options.template.slotSingleRootNoWrapper).toBe(true)
+    expect(options.template.slotFallbackWrapper).toEqual({
+      tag: 'cover-view',
+      attrs: {
+        class: 'slot-wrapper',
+      },
+      rules: [
+        {
+          component: 'IssueCard',
+          slot: 'header',
+          tag: 'custom-header',
+          attrs: {
+            class: 'slot-header',
+          },
+        },
+      ],
+    })
     expect(options.json).toEqual({
       kind: 'page',
       defaults: {

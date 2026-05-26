@@ -894,6 +894,35 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentWxml).toContain('<slot name="header" />')
   })
 
+  it('issue #613: wraps forwarded slot outlets inside plain named slot content', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-613/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-613/index.js')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613Card/index.wxml')
+    const forwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
+    const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+    const forwarderWxml = await fs.readFile(forwarderWxmlPath, 'utf-8')
+    const blockForwarderWxml = await fs.readFile(blockForwarderWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('<view slot="header"><slot /></view>')
+    expect(pageWxml).not.toContain('<slot slot="header"')
+    expect(pageWxml).toContain('issue613-block-forwarder')
+    expect(forwarderWxml).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(forwarderWxml).toContain('<view slot="footer"><slot name="footer" /></view>')
+    expect(forwarderWxml).not.toContain('slot-wrapper=')
+    expect(forwarderWxml).not.toContain('<slot slot="header"')
+    expect(forwarderWxml).not.toContain('<scoped-slots-default')
+    expect(blockForwarderWxml).toContain('<block slot="header">')
+    expect(blockForwarderWxml).toContain('<slot></slot>')
+    expect(pageJs).toContain('_runE2E')
+    expect(componentWxml).toContain('<slot name="header" />')
+    expect(componentWxml).toContain('<slot name="footer" />')
+  })
+
   it('issue #595: builds scoped main package and selected subpackage only', async () => {
     await runIssue595ScopedBuild()
 

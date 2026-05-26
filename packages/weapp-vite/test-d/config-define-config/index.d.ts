@@ -48,6 +48,19 @@ export interface WeappViteConfig {
       htmlTagToWxmlTagClass?: boolean
       formatWxml?: boolean | 'auto'
       slotSingleRootNoWrapper?: boolean
+      slotFallbackWrapper?: string | {
+        tag?: string
+        attrs?: Record<string, string>
+        singleRootNoWrapper?: boolean
+        rules?: Array<{
+          component?: string | RegExp | Array<string | RegExp>
+          componentName?: string | RegExp | Array<string | RegExp>
+          slot?: string | RegExp | Array<string | RegExp>
+          tag?: string
+          attrs?: Record<string, string>
+          singleRootNoWrapper?: boolean
+        }>
+      }
     }
   }
 }

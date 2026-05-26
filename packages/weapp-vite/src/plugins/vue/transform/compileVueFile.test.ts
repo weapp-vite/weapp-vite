@@ -158,6 +158,64 @@ import MyCard from './my-card.vue'
     expect(result.script).toContain('__wv_bind_0')
   })
 
+  it('matches fallback wrapper rules by auto-imported component defineOptions name', async () => {
+    const projectDir = await createTempProject()
+    const childFile = path.join(projectDir, 'resolver-card.vue')
+    await fs.writeFile(
+      childFile,
+      `
+<script setup lang="ts">
+defineOptions({
+  name: 'HelloWorld',
+})
+</script>
+<template><slot name="header" /></template>
+      `.trim(),
+      'utf8',
+    )
+
+    const result = await compileVueFile(
+      `
+<template>
+  <resolver-card>
+    <template #header>
+      <slot />
+    </template>
+  </resolver-card>
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      path.join(projectDir, 'index.vue'),
+      {
+        autoImportTags: {
+          enabled: true,
+          resolveUsingComponent: async (tag) => {
+            if (tag === 'resolver-card') {
+              return {
+                name: tag,
+                from: '/components/resolver-card',
+                resolvedId: childFile,
+                sourceType: 'wevu-sfc',
+              }
+            }
+            return undefined
+          },
+        },
+        template: {
+          slotFallbackWrapper: {
+            tag: 'view',
+            rules: [
+              { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+            ],
+          },
+        },
+      },
+    )
+
+    expect(result.template).toContain('<cover-view slot="header"><slot /></cover-view>')
+  })
+
   it('injects inline expression map for template handlers', async () => {
     const result = await compileVueFile(
       `
