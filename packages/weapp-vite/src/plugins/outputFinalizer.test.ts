@@ -2,6 +2,15 @@ import type { OutputBundle } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets } from './outputFinalizer'
 
+function createBundleAssetEmitter(bundle: OutputBundle) {
+  return (asset: any) => {
+    bundle[asset.fileName] = {
+      ...asset,
+      fileName: asset.fileName,
+    }
+  }
+}
+
 describe('weapp-vite output finalizer', () => {
   it('drops duplicate preprocessor style assets', () => {
     const bundle = {
@@ -17,7 +26,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizePreprocessorStyleAssets(bundle, 'wxss')
+    normalizePreprocessorStyleAssets(bundle, 'wxss', createBundleAssetEmitter(bundle))
 
     expect(bundle['app.scss']).toBeUndefined()
     expect(bundle['app.wxss']).toMatchObject({
@@ -36,7 +45,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizePreprocessorStyleAssets(bundle, 'acss')
+    normalizePreprocessorStyleAssets(bundle, 'acss', createBundleAssetEmitter(bundle))
 
     expect(bundle['pages/index/index.scss']).toBeUndefined()
     expect(bundle['pages/index/index.acss']).toMatchObject({
@@ -44,6 +53,33 @@ describe('weapp-vite output finalizer', () => {
       fileName: 'pages/index/index.acss',
       source: '.page{color:red}',
     })
+  })
+
+  it('emits renamed preprocessor style assets without assigning to bundle', () => {
+    const emitted: any[] = []
+    const bundle = {
+      'pages/index/index.scss': {
+        type: 'asset',
+        fileName: 'pages/index/index.scss',
+        names: ['index.scss'],
+        originalFileNames: ['/project/src/pages/index/index.scss'],
+        source: '.page{color:red}',
+      },
+    } as unknown as OutputBundle
+
+    normalizePreprocessorStyleAssets(bundle, 'wxss', asset => emitted.push(asset))
+
+    expect(bundle['pages/index/index.scss']).toBeUndefined()
+    expect(bundle['pages/index/index.wxss']).toBeUndefined()
+    expect(emitted).toEqual([
+      {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        name: 'index.scss',
+        originalFileName: '/project/src/pages/index/index.scss',
+        source: '.page{color:red}',
+      },
+    ])
   })
 
   it('runs as a post generateBundle plugin', () => {
@@ -62,7 +98,9 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({} as any, {} as any, bundle, false)
+    plugin.generateBundle?.call({
+      emitFile: createBundleAssetEmitter(bundle),
+    } as any, {} as any, bundle, false)
 
     expect(plugin.enforce).toBe('post')
     expect(bundle['app.scss']).toBeUndefined()

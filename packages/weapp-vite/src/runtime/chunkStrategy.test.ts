@@ -1164,7 +1164,7 @@ describe('applySharedChunkStrategy', () => {
       [`${sharedFileName}.map`]: {
         type: 'asset',
         source: sharedMapSource,
-        name: undefined,
+        names: [],
         needsCodeReference: false,
       } as any,
     }
@@ -1280,7 +1280,7 @@ describe('applySharedChunkStrategy', () => {
       [`${sharedFileName}.map`]: {
         type: 'asset',
         source: '{"version":3,"sources":["common.ts"],"mappings":""}',
-        name: undefined,
+        names: [],
         needsCodeReference: false,
       } as any,
     }
@@ -1538,7 +1538,7 @@ describe('applySharedChunkStrategy', () => {
       [`${sharedFileName}.map`]: {
         type: 'asset',
         source: mapSource,
-        name: undefined,
+        names: [],
         needsCodeReference: false,
       } as any,
       [importerAFile]: {

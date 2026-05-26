@@ -1,13 +1,15 @@
-import type { OutputBundle } from 'rolldown'
+import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import { changeFileExtension } from '../utils'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
+type EmitAsset = (asset: EmittedAsset) => void
 
 export function normalizePreprocessorStyleAssets(
   bundle: OutputBundle,
   styleExtension: string | undefined,
+  emitAsset: EmitAsset,
 ) {
   if (!styleExtension) {
     return
@@ -34,7 +36,15 @@ export function normalizePreprocessorStyleAssets(
     }
 
     output.fileName = outputFileName
-    bundle[outputFileName] = output
+    const [name] = output.names ?? []
+    const [originalFileName] = output.originalFileNames ?? []
+    emitAsset({
+      type: 'asset',
+      fileName: outputFileName,
+      ...(name ? { name } : {}),
+      ...(originalFileName ? { originalFileName } : {}),
+      source: output.source,
+    })
   }
 }
 
@@ -46,6 +56,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
       normalizePreprocessorStyleAssets(
         bundle as unknown as OutputBundle,
         ctx.configService.outputExtensions?.wxss,
+        asset => this.emitFile(asset),
       )
     },
   }

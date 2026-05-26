@@ -9,10 +9,8 @@ describe('asset plugin bundled source collection', () => {
       'goods-1-abc123.png': {
         type: 'asset',
         fileName: 'goods-1-abc123.png',
-        name: 'goods-1.png',
         names: ['goods-1.png'],
         needsCodeReference: false,
-        originalFileName: '/project/src/assets/images/home/goods-1.png',
         originalFileNames: [
           '/project/src/assets/images/home/goods-1.png',
           'C:\\project\\src\\assets\\images\\home\\banner-1.jpg',
@@ -44,10 +42,8 @@ describe('asset plugin bundled source collection', () => {
       'app.wxss': {
         type: 'asset',
         fileName: 'app.wxss',
-        name: 'app.wxss',
         names: ['app.wxss'],
         needsCodeReference: false,
-        originalFileName: undefined,
         originalFileNames: [],
         source: '.root{}',
       },
