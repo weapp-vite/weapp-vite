@@ -60,7 +60,7 @@
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",
-    "dayjs": "^1.11.20",
+    "dayjs": "catalog:",
     "magic-string": "^0.30.21",
     "miniprogram-api-typings": "catalog:",
     "miniprogram-simulate": "^1.6.1",

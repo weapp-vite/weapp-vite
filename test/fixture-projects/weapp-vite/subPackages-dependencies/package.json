@@ -25,7 +25,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.21",
     "gm-crypto": "^0.1.12"
   },
   "devDependencies": {
