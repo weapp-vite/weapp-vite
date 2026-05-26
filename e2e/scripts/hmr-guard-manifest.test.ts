@@ -44,6 +44,7 @@ describe('hmr-guard manifest', () => {
       'ci/hmr-*.test.ts',
       'ci/auto-import-vue-sfc.test.ts',
       'ci/auto-routes-hmr.test.ts',
+      'ci/external-linked-vue-component.hmr.test.ts',
       'ci/issue-340-comment.hmr.test.ts',
       'ci/style-import-vue.test.ts',
       'ci/wevu-runtime.hmr.test.ts',

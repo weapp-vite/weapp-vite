@@ -85,7 +85,7 @@ export function resolveMiniprogramWatchInclude(options: {
   configFileDependencies?: string[]
 }) {
   const srcRoot = path.join(options.cwd, options.srcRoot)
-  const watchInclude: WatchIncludePattern[] = options.buildScope?.enabled
+  const startupWatchInclude: WatchIncludePattern[] = options.buildScope?.enabled
     ? [
         ...options.buildScope.includeMainPackage ? [path.join(srcRoot, 'pages', '**')] : [],
         ...options.buildScope.subPackageRoots.map(root => path.join(srcRoot, root, '**')),
@@ -93,6 +93,12 @@ export function resolveMiniprogramWatchInclude(options: {
     : [
         path.join(srcRoot, '**'),
       ]
+  const watchInclude: WatchIncludePattern[] = [
+    // Rolldown 的 include 会过滤已发现的依赖图模块。保留一个全量兜底，
+    // 避免 link / monorepo 中 srcRoot 外部模块通过 addWatchFile 进入图后被过滤。
+    '**',
+    ...startupWatchInclude,
+  ]
 
   if (options.pluginRoot) {
     const absolutePluginRoot = path.resolve(options.cwd, options.pluginRoot)

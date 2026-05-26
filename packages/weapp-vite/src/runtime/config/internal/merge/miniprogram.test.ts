@@ -25,6 +25,7 @@ describe('runtime config merge miniprogram', () => {
       cwd: '/project',
       srcRoot: 'src',
     })).toEqual([
+      '**',
       '/project/src/**',
     ])
 
@@ -33,6 +34,7 @@ describe('runtime config merge miniprogram', () => {
       srcRoot: 'src',
       pluginRoot: '../plugin-root',
     })).toEqual([
+      '**',
       '/project/src/**',
       '/plugin-root/**',
     ])
@@ -42,6 +44,7 @@ describe('runtime config merge miniprogram', () => {
       srcRoot: 'src',
       pluginRoot: 'src/plugin',
     })).toEqual([
+      '**',
       '/project/src/**',
       '/project/src/plugin/**',
     ])
@@ -58,8 +61,23 @@ describe('runtime config merge miniprogram', () => {
         source: 'config',
       },
     })).toEqual([
+      '**',
       '/project/src/pages/**',
       '/project/src/packages/order/**',
+    ])
+  })
+
+  it('keeps dependency graph files outside srcRoot eligible for dev watch', () => {
+    expect(resolveMiniprogramWatchInclude({
+      cwd: '/project',
+      srcRoot: 'src',
+      userInclude: ['/workspace/packages/ui/**'],
+      configFileDependencies: ['/project/vite.config.mts'],
+    })).toEqual([
+      '/workspace/packages/ui/**',
+      '**',
+      '/project/src/**',
+      '/project/vite.config.mts',
     ])
   })
 
@@ -127,6 +145,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.sourcemap).toBe(false)
     expect((result.build as any).rollupOptions).toBeUndefined()
     expect(result.build?.watch?.include).toEqual([
+      '**',
       '/project/src/**',
       '/plugin-root/**',
     ])
@@ -224,6 +243,7 @@ describe('runtime config merge miniprogram', () => {
     )
 
     expect(result.build?.watch?.include).toEqual([
+      '**',
       '/project/src/**',
       '/project/src/plugin/**',
     ])
@@ -269,6 +289,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.watch?.watcher?.useDebounce).toBe(false)
     expect(result.build?.watch?.include).toEqual([
       '/workspace/packages/ui/**',
+      '**',
       '/project/src/**',
       '/project/vite.config.mts',
     ])

@@ -28,6 +28,7 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-shared-runtime-deps.test.ts',
   ]),
   derivedOutputSync: resolveCiTests([
+    'external-linked-vue-component.hmr.test.ts',
     'style-import-vue.test.ts',
     'wevu-runtime.hmr.test.ts',
   ]),
