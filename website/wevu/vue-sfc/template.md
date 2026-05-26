@@ -128,7 +128,6 @@ flowchart TB
 `slot-wrapper-footer` 只覆盖 `footer`，其他插槽继续使用 `slot-wrapper`。如果是在单个 slot 上临时覆盖，更推荐直接写在对应的 `<template #footer>` 上：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header>
@@ -139,7 +138,6 @@ flowchart TB
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -158,7 +156,6 @@ flowchart TB
 如果只想覆盖单个 slot，更推荐把配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，也最容易在模板里读懂：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template
@@ -174,7 +171,6 @@ flowchart TB
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -197,7 +193,6 @@ flowchart TB
 普通 `class` / `style` 仍然属于组件本身，不会被转移到编译器生成的 slot wrapper 上。如果要给 wrapper 加样式，需要使用 wrapper 虚拟属性：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
@@ -213,7 +208,6 @@ flowchart TB
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -366,7 +360,6 @@ export default defineConfig({
 你选择的 wrapper 还必须能承载实际内容。比如：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard>
     <template #header slot-wrapper="text">
@@ -374,7 +367,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 会生成：

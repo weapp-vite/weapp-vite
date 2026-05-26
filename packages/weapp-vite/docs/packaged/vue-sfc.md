@@ -122,7 +122,6 @@
 `slot-wrapper-<slotName>` 只覆盖指定具名插槽；单个 slot 的覆盖更推荐直接写在对应的 `<template #xxx>` 上：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header>
@@ -133,7 +132,6 @@
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物中 `header` 使用 `slot-wrapper="cover-view"`，`footer` 在对应的 `<template #footer>` 上覆盖：
@@ -152,7 +150,6 @@
 只覆盖单个 slot 时，更推荐把配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，优先级高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="text" slot-wrapper-class="slot-header">
@@ -163,7 +160,6 @@
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -184,7 +180,6 @@
 也可以把 class/style 加到生成的 wrapper 上，而不是加到组件本身：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
@@ -200,7 +195,6 @@
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -273,7 +267,6 @@
 你选择的 wrapper 必须能承载实际内容。比如下面的写法会让 `text` 包裹 `view`，这不适合真实运行时：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard>
     <template #header slot-wrapper="text">
@@ -281,7 +274,6 @@
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml

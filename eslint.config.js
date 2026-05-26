@@ -56,6 +56,10 @@ export default await defineEslintConfig({
       '.changeset/**',
     ],
     configs: [{
+      rules: {
+        'vue/no-useless-template-attributes': 'off',
+      },
+    }, {
       files: ['**/*.vue'],
       rules: {
         'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],
