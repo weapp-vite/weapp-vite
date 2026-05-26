@@ -1,3 +1,4 @@
+import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import {
   mergeMiniprogram,
@@ -152,7 +153,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.watch?.buildDelay).toBe(60)
     expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
-    expect((result.build as any).rolldownOptions.tsconfig).toBe('/project/tsconfig.json')
+    expect((result.build as any).rolldownOptions.tsconfig).toBeUndefined()
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
       configService: {
@@ -160,6 +161,35 @@ describe('runtime config merge miniprogram', () => {
       },
     }), undefined)
     expect(setOptions).not.toHaveBeenCalled()
+  })
+
+  it('pins default rolldown tsconfig only when project tsconfig exists', () => {
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {} as any,
+        cwd: path.resolve(import.meta.dirname, '../../../../../../..'),
+        srcRoot: 'src',
+        configFileDependencies: [],
+        packageJson: undefined,
+        isDev: true,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(
+      path.resolve(import.meta.dirname, '../../../../../../..', 'tsconfig.json'),
+    )
   })
 
   it('preserves shared output options when merging user rolldown options', () => {
