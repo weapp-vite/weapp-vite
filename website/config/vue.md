@@ -392,7 +392,6 @@ export default defineConfig({
 如果只想覆盖某一个 `<template #xxx>`，更推荐把配置直接写在对应的 slot template 上。这个写法最贴近 slot 内容，优先级也高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="text" slot-wrapper-class="slot-header">
@@ -403,7 +402,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -426,7 +424,6 @@ export default defineConfig({
 普通 `class` / `style` 仍然属于组件本身，不会被转移到编译器生成的 slot wrapper 上。如果要给 wrapper 加样式，需要使用 wrapper 虚拟属性：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
@@ -442,7 +439,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -588,7 +584,6 @@ export default defineConfig({
 编译器只负责按配置生成标签，目标小程序运行时是否允许该标签承载子节点，仍取决于宿主规则和实际内容。比如下面的配置会让 `header` 使用 `text`：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard>
     <template #header slot-wrapper="text">
@@ -596,7 +591,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物会是：

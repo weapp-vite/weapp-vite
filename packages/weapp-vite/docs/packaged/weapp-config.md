@@ -144,7 +144,6 @@ export default defineConfig({
 `slot-wrapper-<slotName>` 覆盖指定具名插槽。单个 slot 的覆盖更推荐直接写在对应的 `<template #xxx>` 上：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header>
@@ -155,7 +154,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -174,7 +172,6 @@ export default defineConfig({
 也可以把单个 slot 的覆盖配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，也更适合单个 slot 的局部策略：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="text" slot-wrapper-class="slot-header">
@@ -185,7 +182,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 `<template #header>` 上的 `slot-wrapper` / `slot-wrapper-class` / `slot-wrapper-style` / `slot-single-root-no-wrapper` 是该 slot 的就近覆盖，优先级高于父组件标签上的默认值和 `slot-wrapper-header`。
@@ -193,7 +189,6 @@ export default defineConfig({
 组件内还可以把 class/style 加到生成的 wrapper 上：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard slot-wrapper="cover-view">
     <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
@@ -209,7 +204,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml
@@ -258,7 +252,6 @@ export default defineConfig({
 `block` 不允许作为 wrapper，会回退到 `view` 并输出 warning。自定义 wrapper 必须是目标小程序运行时可渲染、并且能承载当前 slot 内容的真实节点或组件。例如下面的写法会生成 `text` 包裹 `view`，这不适合真实运行时：
 
 ```vue
-<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
   <IssueCard>
     <template #header slot-wrapper="text">
@@ -266,7 +259,6 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
-<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 ```wxml
