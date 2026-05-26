@@ -152,6 +152,15 @@ function createState(overrides: Record<string, any> = {}) {
   }
 }
 
+function createBundleAssetEmitter(bundle: Record<string, any>) {
+  return (asset: any) => {
+    bundle[asset.fileName] = {
+      ...asset,
+      fileName: asset.fileName,
+    }
+  }
+}
+
 describe('core lifecycle emit hook extra branches', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -1166,7 +1175,7 @@ describe('core lifecycle emit hook extra branches', () => {
       },
     } as any
 
-    await hook.call({}, {}, bundle)
+    await hook.call({ emitFile: createBundleAssetEmitter(bundle) }, {}, bundle)
 
     expect(bundle['app.scss']).toBeUndefined()
     expect(bundle['app.wxss']).toMatchObject({
@@ -1202,7 +1211,7 @@ describe('core lifecycle emit hook extra branches', () => {
       },
     } as any
 
-    await hook.call({}, {}, bundle)
+    await hook.call({ emitFile: createBundleAssetEmitter(bundle) }, {}, bundle)
 
     expect(bundle['pages/index/index.scss']).toBeUndefined()
     expect(bundle['pages/index/index.acss']).toMatchObject({
@@ -1237,7 +1246,7 @@ describe('core lifecycle emit hook extra branches', () => {
       },
     } as any
 
-    await hook.call({}, {}, bundle)
+    await hook.call({ emitFile: createBundleAssetEmitter(bundle) }, {}, bundle)
 
     expect(bundle['components/card/index.scss']).toBeUndefined()
     expect(bundle['components/card/index.wxss']).toMatchObject({

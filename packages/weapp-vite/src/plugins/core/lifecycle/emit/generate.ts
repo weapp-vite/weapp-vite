@@ -140,7 +140,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         }
         rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd)
       }
-      normalizePreprocessorStyleAssets(rolldownBundle, state.ctx.configService.outputExtensions?.wxss)
+      normalizePreprocessorStyleAssets(
+        rolldownBundle,
+        state.ctx.configService.outputExtensions?.wxss,
+        asset => this.emitFile(asset),
+      )
       return
     }
 
@@ -448,7 +452,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     stabilizeWevuRuntimeChunkAccess(rolldownBundle)
     syncChunkImportsFromRequireCalls(rolldownBundle)
     prunePartialHmrStableSharedChunks(rolldownBundle, state)
-    normalizePreprocessorStyleAssets(rolldownBundle, state.ctx.configService.outputExtensions?.wxss)
+    normalizePreprocessorStyleAssets(
+      rolldownBundle,
+      state.ctx.configService.outputExtensions?.wxss,
+      asset => this.emitFile(asset),
+    )
 
     refreshModuleGraph(this, state)
 

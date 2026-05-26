@@ -8,6 +8,17 @@ export interface SourceMapAssetInfo {
   key: string
 }
 
+function isSourceLike(source: unknown): source is SourceLike {
+  return typeof source === 'string' || source instanceof Uint8Array || Buffer.isBuffer(source)
+}
+
+export function cloneSourceLike(source: SourceLike): SourceLike {
+  if (typeof source === 'string') {
+    return source
+  }
+  return Buffer.from(source)
+}
+
 export function collectSourceMapKeys(fileName: string, chunk: OutputChunk): Set<string> {
   const keys = new Set<string>()
   if (fileName) {
@@ -67,11 +78,12 @@ export function emitSourceMapAsset(
   }
 
   if (sourceMapAssetInfo?.asset && isSourceLike(sourceMapAssetInfo.asset.source)) {
+    const [name] = sourceMapAssetInfo.asset.names ?? []
     ctx.emitFile({
       type: 'asset',
       fileName: targetFileName,
       source: cloneSourceLike(sourceMapAssetInfo.asset.source),
-      name: sourceMapAssetInfo.asset.name,
+      ...(name ? { name } : {}),
     })
     return
   }
@@ -83,15 +95,4 @@ export function emitSourceMapAsset(
       source: cloneSourceLike(fallbackSource),
     })
   }
-}
-
-function isSourceLike(source: unknown): source is SourceLike {
-  return typeof source === 'string' || source instanceof Uint8Array || Buffer.isBuffer(source)
-}
-
-export function cloneSourceLike(source: SourceLike): SourceLike {
-  if (typeof source === 'string') {
-    return source
-  }
-  return Buffer.from(source)
 }
