@@ -59,13 +59,14 @@ describe('transform.ts - Script Transformation', () => {
       const source = `export default {}`
       const result = transformScript(source, {
         templateRefs: [
-          { selector: '.__wv-ref-0', inFor: false, name: 'cell' },
+          { selector: '.__wv-ref-0', id: '#__wv-ref-id-0', inFor: false, name: 'cell' },
         ],
       })
 
       expect(result.transformed).toBe(true)
       expect(result.code).toContain('__wevuTemplateRefs')
       expect(result.code).toContain('.__wv-ref-0')
+      expect(result.code).toContain('#__wv-ref-id-0')
       expect(result.code).toContain('cell')
     })
 

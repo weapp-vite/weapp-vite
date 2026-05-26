@@ -10,6 +10,10 @@ function buildTemplateRefEntry(binding: TemplateRefBinding): t.ObjectExpression 
     t.objectProperty(t.identifier('inFor'), t.booleanLiteral(binding.inFor)),
   ]
 
+  if (binding.id) {
+    props.push(t.objectProperty(t.identifier('id'), t.stringLiteral(binding.id)))
+  }
+
   if (binding.name) {
     props.push(t.objectProperty(t.identifier('name'), t.stringLiteral(binding.name)))
   }

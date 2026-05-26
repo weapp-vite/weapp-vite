@@ -5,6 +5,8 @@ import { NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_LAYOUT_HOST_ID_PREFIX,
   WEVU_LAYOUT_HOST_REF_PREFIX,
+  WEVU_TEMPLATE_REF_CLASS_PREFIX,
+  WEVU_TEMPLATE_REF_ID_PREFIX,
 } from '@weapp-core/constants'
 import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
@@ -204,10 +206,14 @@ export function collectElementAttributes(
   }
 
   if (templateRef) {
-    const className = `__wv-ref-${context.templateRefIndexSeed++}`
+    const refIndex = context.templateRefIndexSeed++
+    const className = `${WEVU_TEMPLATE_REF_CLASS_PREFIX}${refIndex}`
+    const refId = staticId || `${WEVU_TEMPLATE_REF_ID_PREFIX}${refIndex}`
+    staticId = refId
     staticClass = staticClass ? `${staticClass} ${className}` : className
     context.templateRefs.push({
       selector: `.${className}`,
+      id: `#${refId}`,
       inFor,
       name: templateRef.name,
       expAst: templateRef.expAst,

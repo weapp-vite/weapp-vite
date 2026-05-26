@@ -1,3 +1,4 @@
+import type { TemplateRefValue } from '@/runtime/types'
 import {
   WEVU_EXPOSED_KEY,
   WEVU_READY_CALLED_KEY,
@@ -67,15 +68,15 @@ describe('runtime: template refs', () => {
       __wevu: { state: {}, proxy: {} },
       createSelectorQuery: createSelectorQueryFactory(resolver),
       __wevuTemplateRefs: [
-        { selector: '.single', inFor: false, name: 'single' },
-        { selector: '.list', inFor: true, name: 'list' },
+        { selector: '.single', id: '#single-ref', inFor: false, name: 'single' },
+        { selector: '.list', id: '#list-ref', inFor: true, name: 'list' },
       ],
     }
 
     setCurrentInstance(instance)
-    const singleRef = useTemplateRef(' single ')
+    const singleRef = useTemplateRef<TemplateRefValue>(' single ')
     const sameRef = useTemplateRef('single')
-    const listRef = useTemplateRef('list')
+    const listRef = useTemplateRef<TemplateRefValue[]>('list')
 
     expect(singleRef).toBe(sameRef)
 
@@ -83,9 +84,12 @@ describe('runtime: template refs', () => {
 
     const refs = instance.__wevu.state.$refs
     expect(refs.single).toBe(singleRef.value)
+    expect(singleRef.value?.selector).toBe('.single')
+    expect(singleRef.value?.id).toBe('#single-ref')
     expect(Array.isArray(listRef.value)).toBe(true)
     expect((listRef.value as any[]).length).toBe(2)
     expect((listRef.value as any[])[0].selector).toBe('.list')
+    expect((listRef.value as any[])[0].id).toBe('#list-ref')
 
     const wrappers = listRef.value as any[]
     let cbValue: any
@@ -303,6 +307,7 @@ describe('runtime: template refs', () => {
 
     expect(instance[WEVU_TEMPLATE_REFS_PENDING_KEY]).toBe(false)
     expect(instance.__wevu.state.$refs.batched).toBeTruthy()
+    expect(instance.__wevu.state.$refs.batched.id).toBe('.batched')
   })
 
   it('falls back to wx selector query when instance lacks one', () => {

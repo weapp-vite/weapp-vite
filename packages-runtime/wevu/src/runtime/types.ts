@@ -175,6 +175,7 @@ export interface TemplateRefs {}
 
 export interface TemplateRefValue {
   selector: string
+  id: string
   boundingClientRect: (cb?: (value: MiniProgramBoundingClientRectResult | null) => void) => Promise<MiniProgramBoundingClientRectResult | null>
   scrollOffset: (cb?: (value: MiniProgramScrollOffsetResult | null) => void) => Promise<MiniProgramScrollOffsetResult | null>
   fields: (fields: MiniProgramNodesRefFields, cb?: (value: any) => void) => Promise<any | null>
