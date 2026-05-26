@@ -14,7 +14,6 @@ describe('injectTemplateRefs', () => {
     const changed = injectTemplateRefs(optionsObject, [
       {
         selector: '.card',
-        id: '#card',
         inFor: false,
         name: 'cardRef',
       },
@@ -24,7 +23,6 @@ describe('injectTemplateRefs', () => {
     const code = generate(optionsObject).code
     expect(code).toContain('__wevuTemplateRefs')
     expect(code).toContain('selector: ".card"')
-    expect(code).toContain('id: "#card"')
     expect(code).toContain('name: "cardRef"')
   })
 

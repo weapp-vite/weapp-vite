@@ -261,11 +261,10 @@ function runQuery<T>(
 function createTemplateRefWrapper(
   target: InternalRuntimeState,
   selector: string,
-  options: { multiple: boolean, index?: number, id?: string },
+  options: { multiple: boolean, index?: number },
 ) {
   const wrapper = {
     selector,
-    id: options.id ?? selector,
     boundingClientRect: (cb?: (value: any) => void) => {
       return runQuery(target, selector, options, ref => ref.boundingClientRect(), cb)
     },
@@ -295,14 +294,14 @@ export function resolveComponentRefValue(
       const result = instance.selectAllComponents(binding.selector)
       const items = Array.isArray(result) ? result : []
       const merged = items.map((item, index) => {
-        const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index, id: binding.id })
+        const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index })
         return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item))
       })
       return markNoSetData(merged)
     }
     return markNoSetData([])
   }
-  const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: false, id: binding.id })
+  const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: false })
   if (typeof instance.selectComponent !== 'function') {
     return wrapper
   }
@@ -317,11 +316,11 @@ export function buildTemplateRefValue(
 ) {
   if (binding.inFor) {
     const items = Array.isArray(result) ? result : []
-    const wrappers = items.map((_, index) => createTemplateRefWrapper(target, binding.selector, { multiple: true, index, id: binding.id }))
+    const wrappers = items.map((_, index) => createTemplateRefWrapper(target, binding.selector, { multiple: true, index }))
     return markNoSetData(wrappers)
   }
   if (!result) {
     return null
   }
-  return createTemplateRefWrapper(target, binding.selector, { multiple: false, id: binding.id })
+  return createTemplateRefWrapper(target, binding.selector, { multiple: false })
 }

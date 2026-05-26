@@ -1,3 +1,4 @@
+import type { TemplateRefValue } from '@/runtime/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from '@/reactivity'
 import { getCurrentPageStackSnapshot, getNavigationBarMetrics, useAsyncPullDownRefresh, useBoundingClientRect, useElementIntersectionObserver, useNavigationBarMetrics, usePageStack } from '@/runtime'
@@ -102,7 +103,7 @@ describe('runtime host composables', () => {
     expect(controller.observer).toBeNull()
   })
 
-  it('observes a template ref id with the intersection observer helper', () => {
+  it('observes a template ref selector with the intersection observer helper', () => {
     const disconnect = vi.fn()
     const observe = vi.fn()
     const relativeToViewport = vi.fn(() => ({
@@ -122,27 +123,26 @@ describe('runtime host composables', () => {
         selector === '.sentinel' ? { id: 'sentinel-node' } : null
       )),
       __wevuTemplateRefs: [
-        { selector: '.sentinel', id: '#sentinel', inFor: false, name: 'sentinel' },
+        { selector: '.sentinel', inFor: false, name: 'sentinel' },
       ],
     } as any
 
     setCurrentInstance(instance)
     setCurrentSetupContext({ instance })
 
-    const sentinelRef = useTemplateRef('sentinel')
+    const sentinelRef = useTemplateRef<TemplateRefValue>('sentinel')
     updateTemplateRefs(instance)
 
     const controller = useElementIntersectionObserver({
-      selector: () => sentinelRef.value?.id ?? null,
+      selector: () => sentinelRef.value?.selector ?? null,
       onObserve: vi.fn(),
     })
 
     callHookList(instance, 'onReady')
 
     expect(sentinelRef.value?.selector).toBe('.sentinel')
-    expect(sentinelRef.value?.id).toBe('#sentinel')
     expect(instance.createIntersectionObserver).toHaveBeenCalled()
-    expect(observe).toHaveBeenCalledWith('#sentinel', expect.any(Function))
+    expect(observe).toHaveBeenCalledWith('.sentinel', expect.any(Function))
     expect(controller.observer).toBeTruthy()
   })
 

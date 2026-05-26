@@ -1,7 +1,6 @@
 ---
 "@wevu/compiler": patch
 "wevu": patch
-"@weapp-core/constants": patch
 ---
 
-为 `useTemplateRef()` 生成并暴露稳定的模板节点 `id`，在保留原有 class selector 的同时，让 `useElementIntersectionObserver()` 等依赖 id selector 的小程序 API 可以直接复用模板 ref 元数据。
+调整 `useTemplateRef()` 的模板 ref 元数据，仅保留基于 class 的 `selector` 作为节点定位入口，不再为普通模板 ref 自动生成或暴露额外 `id`。
