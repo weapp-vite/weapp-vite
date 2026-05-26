@@ -48,6 +48,24 @@ const objectConfig = defineConfig({
         htmlTagToWxmlTagClass: false,
         formatWxml: 'auto',
         slotSingleRootNoWrapper: true,
+        slotFallbackWrapper: {
+          tag: 'cover-view',
+          attrs: {
+            class: 'slot-wrapper',
+          },
+          rules: [
+            {
+              component: ['Card', /^Van/],
+              componentName: 'HelloWorld',
+              slot: 'header',
+              tag: 'custom-header',
+              attrs: {
+                class: 'slot-header',
+              },
+              singleRootNoWrapper: false,
+            },
+          ],
+        },
       },
     },
     autoImportComponents: {
@@ -107,6 +125,19 @@ expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weap
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSingleRootNoWrapper)
+expectAssignable<string | {
+  tag?: string
+  attrs?: Record<string, string>
+  singleRootNoWrapper?: boolean
+  rules?: Array<{
+    component?: string | RegExp | Array<string | RegExp>
+    componentName?: string | RegExp | Array<string | RegExp>
+    slot?: string | RegExp | Array<string | RegExp>
+    tag?: string
+    attrs?: Record<string, string>
+    singleRootNoWrapper?: boolean
+  }>
+} | undefined>(objectConfig.weapp?.vue?.template?.slotFallbackWrapper)
 
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {

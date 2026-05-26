@@ -1554,6 +1554,438 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['icon']:true}`)).toBe(true)
   })
 
+  it('keeps forwarded slot outlet plain inside wrapped named slot content', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+    )
+
+    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).not.toContain('<slot slot="header"')
+    expect(code).not.toContain('<scoped-slots-default')
+  })
+
+  it('uses configured global slot fallback wrapper tag', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'cover-view',
+      },
+    )
+
+    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(code).not.toContain('<view slot="header"><slot /></view>')
+  })
+
+  it('uses component and slot matched fallback wrapper rules for multiple named slots', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+<Other>
+  <template #header>
+    <slot />
+  </template>
+</Other>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: {
+          tag: 'view',
+          rules: [
+            { component: 'Child', slot: 'header', tag: 'cover-view' },
+            { component: 'Child', slot: 'footer', tag: 'text' },
+            { component: 'Other', slot: 'header', tag: 'custom-header' },
+          ],
+        },
+      },
+    )
+
+    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(code).toContain('<text slot="footer"><slot /></text>')
+    expect(code).toContain('<custom-header slot="header"><slot /></custom-header>')
+  })
+
+  it('uses resolved defineOptions component name for fallback wrapper rules', () => {
+    const template = `
+<child-alias>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</child-alias>
+<OtherAlias>
+  <template #header>
+    <slot />
+  </template>
+</OtherAlias>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        componentNameMap: {
+          'child-alias': 'HelloWorld',
+          'OtherAlias': 'HelloWorld',
+        },
+        slotFallbackWrapper: {
+          tag: 'view',
+          rules: [
+            { componentName: 'HelloWorld', slot: 'header', tag: 'cover-view' },
+            { component: 'child-alias', componentName: 'HelloWorld', slot: 'footer', tag: 'text' },
+          ],
+        },
+      },
+    )
+
+    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(code).toContain('<text slot="footer"><slot /></text>')
+    expect(code).toContain('<OtherAlias vue-slots="{{__wv_bind_0}}"><cover-view slot="header"><slot /></cover-view></OtherAlias>')
+  })
+
+  it('uses component-level and slot-specific local fallback wrapper config', () => {
+    const template = `
+<Child slot-wrapper="cover-view" slot-wrapper-footer="text">
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<Child')
+    expect(code).not.toContain('slot-wrapper=')
+    expect(code).not.toContain('slot-wrapper-footer=')
+    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(code).toContain('<text slot="footer"><slot /></text>')
+  })
+
+  it('passes configured attrs to slot fallback wrappers', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: {
+          tag: 'view',
+          attrs: {
+            'class': 'slot-wrapper',
+            'data-role': 'fallback',
+          },
+          rules: [
+            {
+              component: 'Child',
+              slot: 'footer',
+              attrs: {
+                class: 'footer-wrapper',
+              },
+            },
+          ],
+        },
+      },
+    )
+
+    expect(code).toContain('<view slot="header" class="slot-wrapper" data-role="fallback"><slot /></view>')
+    expect(code).toContain('<view slot="footer" class="footer-wrapper" data-role="fallback"><slot /></view>')
+  })
+
+  it('uses component-level and slot-specific local fallback wrapper class and style', () => {
+    const template = `
+<Child
+  slot-wrapper="cover-view"
+  slot-wrapper-class="slot-default"
+  slot-wrapper-style="padding: 8px"
+  slot-wrapper-footer="view"
+  slot-wrapper-footer-class="slot-footer"
+  slot-wrapper-footer-style="margin-top: 12px"
+>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<cover-view slot="header" class="slot-default" style="padding: 8px"><slot /></cover-view>')
+    expect(code).toContain('<view slot="footer" class="slot-footer" style="margin-top: 12px"><slot /></view>')
+  })
+
+  it('uses template-level fallback wrapper config as nearest slot override', () => {
+    const template = `
+<Child
+  slot-wrapper="cover-view"
+  slot-wrapper-class="slot-default"
+  slot-wrapper-style="padding: 8px"
+  slot-wrapper-header="view"
+  slot-wrapper-header-class="slot-header-owner"
+>
+  <template
+    #header
+    slot-wrapper="text"
+    slot-wrapper-class="slot-header-template"
+    slot-wrapper-style="margin-top: 12px"
+  >
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<text slot="header" class="slot-header-template" style="margin-top: 12px"><slot /></text>')
+    expect(code).toContain('<cover-view slot="footer" class="slot-default" style="padding: 8px"><slot /></cover-view>')
+    expect(code).not.toContain('slot-wrapper=')
+    expect(code).not.toContain('slot-wrapper-header=')
+  })
+
+  it('supports dynamic template-level fallback wrapper class and style', () => {
+    const template = `
+<Child :slot-wrapper-class="ownerClass">
+  <template
+    #header
+    slot-wrapper="cover-view"
+    :slot-wrapper-class="headerClass"
+    :slot-wrapper-style="headerStyle"
+  >
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<cover-view slot="header" class="{{__wv_cls_0}}" style="{{__wv_style_0}}"><slot /></cover-view>')
+    expect(code).toContain('<view slot="footer" class="{{__wv_cls_1}}"><slot /></view>')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_0' && binding.exp.includes('headerClass'))).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_0' && binding.exp.includes('headerStyle'))).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_1' && binding.exp.includes('ownerClass'))).toBe(true)
+  })
+
+  it('supports dynamic local fallback wrapper class and style', () => {
+    const template = `
+<Child
+  :slot-wrapper-class="headerClass"
+  :slot-wrapper-style="headerStyle"
+  :slot-wrapper-footer-class="footerClass"
+>
+  <template #header>
+    <slot />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<view slot="header" class="{{__wv_cls_0}}" style="{{__wv_style_0}}"><slot /></view>')
+    expect(code).toContain('<view slot="footer" class="{{__wv_cls_1}}" style="{{__wv_style_1}}"><slot /></view>')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_0' && binding.exp.includes('headerClass'))).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_0' && binding.exp.includes('headerStyle'))).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_1' && binding.exp.includes('footerClass'))).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_1' && binding.exp.includes('headerStyle'))).toBe(true)
+  })
+
+  it('supports colon-style local fallback wrapper config for compatibility', () => {
+    const template = `
+<Child slot-wrapper:footer="text">
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).not.toContain('slot-wrapper:footer=')
+    expect(code).toContain('<text slot="footer"><slot /></text>')
+  })
+
+  it('uses configured single-root no-wrapper strategy per component slot', () => {
+    const template = `
+<Child>
+  <template #header>
+    <image src="/cover.png" />
+  </template>
+  <template #footer>
+    <image src="/footer.png" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        slotFallbackWrapper: {
+          tag: 'view',
+          rules: [
+            { component: 'Child', slot: 'header', singleRootNoWrapper: true },
+            { component: 'Child', slot: 'footer', tag: 'cover-view' },
+          ],
+        },
+      },
+    )
+
+    expect(code).toContain('<image slot="header" src="/cover.png" />')
+    expect(code).toContain('<cover-view slot="footer"><image src="/footer.png" /></cover-view>')
+  })
+
+  it('projects fallback wrapper attrs when single-root no-wrapper succeeds', () => {
+    const template = `
+<Child slot-wrapper-class="slot-icon" slot-single-root-no-wrapper-icon>
+  <template #icon>
+    <image src="/cover.png" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<image slot="icon" class="slot-icon" src="/cover.png" />')
+  })
+
+  it('projects template-level fallback wrapper attrs when single-root no-wrapper succeeds', () => {
+    const template = `
+<Child slot-wrapper-class="owner-icon">
+  <template #icon slot-wrapper-class="template-icon" slot-single-root-no-wrapper>
+    <image src="/cover.png" />
+  </template>
+  <template #footer>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<image slot="icon" class="template-icon" src="/cover.png" />')
+    expect(code).toContain('<view slot="footer" class="owner-icon"><slot /></view>')
+  })
+
+  it('falls back from block slot fallback wrapper to view with a warning', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, warnings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapper: 'block',
+      },
+    )
+
+    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).not.toContain('<block slot="header">')
+    expect(warnings).toContain('slot fallback wrapper 不支持配置为 block，已回退为 view。')
+  })
+
   it('emits slot presence metadata for implicit default slots', () => {
     const template = `
 <Child>
@@ -1659,6 +2091,26 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('<image slot="icon" class="img probe" src="/cover.png" />')
     expect(code).not.toContain('<view slot="icon">')
+  })
+
+  it('keeps forwarded slot outlet wrapped inside plain named slot when default slot augmentation is enabled', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).not.toContain('<slot slot="header"')
+    expect(code).not.toContain('<scoped-slots-default slot="header"')
   })
 
   it('projects plain named slot v-if single child without putting slot on block when enabled', () => {

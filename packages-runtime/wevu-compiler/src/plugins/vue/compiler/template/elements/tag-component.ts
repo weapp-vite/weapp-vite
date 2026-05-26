@@ -1,5 +1,5 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
-import type { ForParseResult, TransformContext, TransformNode } from '../types'
+import type { ForParseResult, LocalSlotFallbackWrapperConfig, TransformContext, TransformNode } from '../types'
 import type { ScopedSlotDeclaration } from './tag-slot'
 import { NodeTypes } from '@vue/compiler-core'
 import {
@@ -162,10 +162,121 @@ function shouldExposePlainSlotPresence(node: ElementNode) {
   return node.tag === 'component'
 }
 
+function normalizeBooleanAttributeValue(value: string | undefined) {
+  if (value === undefined || value === '') {
+    return true
+  }
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+  return undefined
+}
+
+function isSlotFallbackWrapperName(name: string, baseName: string, slotName: string | undefined) {
+  return name === baseName || (
+    slotName !== undefined
+    && (name === `${baseName}-${slotName}` || name === `${baseName}:${slotName}`)
+  )
+}
+
+function isSlotFallbackWrapperAttr(name: string, baseName: string, slotName: string | undefined, attrName?: string) {
+  if (!attrName) {
+    return isSlotFallbackWrapperName(name, baseName, slotName)
+  }
+  return name === `${baseName}-${attrName}` || (
+    slotName !== undefined
+    && (name === `${baseName}-${slotName}-${attrName}` || name === `${baseName}:${slotName}:${attrName}`)
+  )
+}
+
+function resolveLocalSlotFallbackWrapperConfig(node: ElementNode, context: TransformContext, slotName?: string) {
+  const wrapper: LocalSlotFallbackWrapperConfig = {}
+  let hasConfig = false
+
+  for (const prop of node.props) {
+    if (prop.type === NodeTypes.ATTRIBUTE) {
+      if (isSlotFallbackWrapperAttr(prop.name, 'slot-wrapper', slotName)) {
+        const tag = prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : ''
+        if (tag) {
+          wrapper.tag = tag
+          hasConfig = true
+        }
+        else {
+          context.warnings.push('slot-wrapper 需要提供非空标签名，已忽略该配置。')
+        }
+      }
+      else if (isSlotFallbackWrapperAttr(prop.name, 'slot-single-root-no-wrapper', slotName)) {
+        const value = normalizeBooleanAttributeValue(prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : undefined)
+        if (value === undefined) {
+          context.warnings.push('slot-single-root-no-wrapper 仅支持 true / false 静态值，已忽略该配置。')
+        }
+        else {
+          wrapper.singleRootNoWrapper = value
+          hasConfig = true
+        }
+      }
+      else if (isSlotFallbackWrapperAttr(prop.name, 'slot-wrapper', slotName, 'class')) {
+        const value = prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : ''
+        if (value) {
+          wrapper.staticClass = value
+          hasConfig = true
+        }
+      }
+      else if (isSlotFallbackWrapperAttr(prop.name, 'slot-wrapper', slotName, 'style')) {
+        const value = prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : ''
+        if (value) {
+          wrapper.staticStyle = value
+          hasConfig = true
+        }
+      }
+    }
+    else if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind' && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
+      if (isSlotFallbackWrapperAttr(prop.arg.content, 'slot-wrapper', slotName, 'class')) {
+        const exp = getBindDirectiveExpression(prop)
+        if (exp) {
+          wrapper.dynamicClassExp = exp
+          hasConfig = true
+        }
+      }
+      else if (isSlotFallbackWrapperAttr(prop.arg.content, 'slot-wrapper', slotName, 'style')) {
+        const exp = getBindDirectiveExpression(prop)
+        if (exp) {
+          wrapper.dynamicStyleExp = exp
+          hasConfig = true
+        }
+      }
+    }
+  }
+
+  return hasConfig ? wrapper : undefined
+}
+
+function mergeLocalSlotFallbackWrapperConfig(
+  base: LocalSlotFallbackWrapperConfig | undefined,
+  override: LocalSlotFallbackWrapperConfig | undefined,
+) {
+  if (!base) {
+    return override
+  }
+  if (!override) {
+    return base
+  }
+  return {
+    ...base,
+    ...override,
+  }
+}
+
 function renderPlainSlotContentInSourceOrder(
   renderItems: SlotContentRenderItem[],
   plainSlotDeclarations: ScopedSlotDeclaration[],
   implicitDefaultDeclaration: ScopedSlotDeclaration | undefined,
+  ownerComponent: string | undefined,
+  ownerComponentName: string | undefined,
+  ownerWrapper: LocalSlotFallbackWrapperConfig | undefined,
   context: TransformContext,
   transformNode: TransformNode,
 ) {
@@ -178,7 +289,11 @@ function renderPlainSlotContentInSourceOrder(
     .map((item) => {
       if (item.type === 'declaration') {
         return plainSlots.has(item.declaration)
-          ? renderSlotFallback(item.declaration, context, transformNode)
+          ? renderSlotFallback(item.declaration, context, transformNode, {
+              component: ownerComponent,
+              componentName: ownerComponentName,
+              wrapper: ownerWrapper,
+            })
           : ''
       }
       return shouldRenderImplicitDefault
@@ -215,6 +330,7 @@ export function transformComponentWithSlots(
   const extraAttrs = options?.extraAttrs ?? []
   const slotDeclarations: ScopedSlotDeclaration[] = []
   const slotDirective = findSlotDirective(node)
+  const ownerWrapper = resolveLocalSlotFallbackWrapperConfig(node, context)
 
   const nonTemplateChildren: any[] = []
   const renderItems: SlotContentRenderItem[] = []
@@ -229,7 +345,13 @@ export function transformComponentWithSlots(
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
           (child as ElementNode).children,
           context,
-          templateSlotCondition,
+          {
+            ...templateSlotCondition,
+            wrapper: mergeLocalSlotFallbackWrapperConfig(
+              resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
+              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+            ),
+          },
         )
         slotDeclarations.push(declaration)
         renderItems.push({ type: 'declaration', declaration })
@@ -256,6 +378,7 @@ export function transformComponentWithSlots(
         slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
         node.children,
         context,
+        { wrapper: ownerWrapper },
       ),
     )
   }
@@ -311,6 +434,7 @@ export function transformComponentWithSlots(
 
   const slotNames: Array<{ name: string, condition?: string }> = []
   const slotGenericAttrs: string[] = []
+  const ownerComponentName = context.componentNameMap?.[node.tag]
   for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode, {
@@ -347,12 +471,19 @@ export function transformComponentWithSlots(
   const { tag } = node
   const plainSlotContent = slotDirective
     ? plainSlotDeclarations
-        .map(decl => renderSlotFallback(decl, context, transformNode))
+        .map(decl => renderSlotFallback(decl, context, transformNode, {
+          component: node.tag,
+          componentName: ownerComponentName,
+          wrapper: ownerWrapper,
+        }))
         .join('')
     : renderPlainSlotContentInSourceOrder(
         renderItems,
         plainSlotDeclarations,
         implicitDefaultDeclaration,
+        node.tag,
+        ownerComponentName,
+        ownerWrapper,
         context,
         transformNode,
       )
@@ -370,6 +501,7 @@ export function transformComponentWithSlotsFallback(
   const extraAttrs = options?.extraAttrs ?? []
   const slotDeclarations: ScopedSlotDeclaration[] = []
   const slotDirective = findSlotDirective(node)
+  const ownerWrapper = resolveLocalSlotFallbackWrapperConfig(node, context)
   const nonTemplateChildren: any[] = []
   const renderItems: SlotContentRenderItem[] = []
 
@@ -384,7 +516,13 @@ export function transformComponentWithSlotsFallback(
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
           (child as ElementNode).children,
           context,
-          templateSlotCondition,
+          {
+            ...templateSlotCondition,
+            wrapper: mergeLocalSlotFallbackWrapperConfig(
+              resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
+              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+            ),
+          },
         )
         slotDeclarations.push(declaration)
         renderItems.push({ type: 'declaration', declaration })
@@ -411,6 +549,7 @@ export function transformComponentWithSlotsFallback(
         slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
         node.children,
         context,
+        { wrapper: ownerWrapper },
       ),
     )
   }
@@ -454,12 +593,19 @@ export function transformComponentWithSlotsFallback(
 
   const renderedSlots = slotDirective
     ? slotDeclarations
-        .map(decl => renderSlotFallback(decl, context, transformNode))
+        .map(decl => renderSlotFallback(decl, context, transformNode, {
+          component: node.tag,
+          componentName: context.componentNameMap?.[node.tag],
+          wrapper: ownerWrapper,
+        }))
         .join('')
     : renderPlainSlotContentInSourceOrder(
         renderItems,
         slotDeclarations,
         implicitDefaultDeclaration,
+        node.tag,
+        context.componentNameMap?.[node.tag],
+        ownerWrapper,
         context,
         transformNode,
       )

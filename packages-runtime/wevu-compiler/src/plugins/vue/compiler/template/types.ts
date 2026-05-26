@@ -80,9 +80,11 @@ export interface TransformContext {
   scopedSlotsCompiler: ScopedSlotsCompilerMode
   scopedSlotsRequireProps: boolean
   slotSingleRootNoWrapper: boolean
+  slotFallbackWrapper: ResolvedSlotFallbackWrapperConfig
   slotMultipleInstance: boolean
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
+  componentNameMap?: Record<string, string>
   scopeStack: Array<Set<string>>
   slotPropStack: Array<Record<string, string>>
   rewriteScopedSlot: boolean
@@ -139,6 +141,7 @@ export interface TemplateCompileOptions {
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
   scopedSlotsRequireProps?: boolean
   slotSingleRootNoWrapper?: boolean
+  slotFallbackWrapper?: SlotFallbackWrapperConfig
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode
@@ -148,12 +151,85 @@ export interface TemplateCompileOptions {
   classStyleWxsSrc?: string
   functionPropNames?: Iterable<FunctionPropNameMatcher>
   wevuComponentTags?: Iterable<string>
+  componentNameMap?: Record<string, string>
 }
 
 /**
  * 作用域插槽编译模式。
  */
 export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'
+
+/**
+ * 命名插槽 fallback 容器策略匹配器。
+ */
+export type SlotFallbackWrapperMatcher = string | RegExp | Array<string | RegExp>
+
+/**
+ * 命名插槽 fallback 容器规则。
+ */
+export interface SlotFallbackWrapperRule {
+  component?: SlotFallbackWrapperMatcher
+  componentName?: SlotFallbackWrapperMatcher
+  slot?: SlotFallbackWrapperMatcher
+  tag?: string
+  attrs?: Record<string, string>
+  singleRootNoWrapper?: boolean
+}
+
+/**
+ * 命名插槽 fallback 容器配置。
+ */
+export type SlotFallbackWrapperConfig = string | {
+  tag?: string
+  attrs?: Record<string, string>
+  singleRootNoWrapper?: boolean
+  rules?: SlotFallbackWrapperRule[]
+}
+
+/**
+ * 已解析的命名插槽 fallback 容器配置。
+ */
+export interface ResolvedSlotFallbackWrapperConfig {
+  tag: string
+  attrs?: Record<string, string>
+  singleRootNoWrapper?: boolean
+  rules: SlotFallbackWrapperRule[]
+}
+
+/**
+ * 局部命名插槽 fallback 容器配置。
+ */
+export interface LocalSlotFallbackWrapperConfig {
+  tag?: string
+  staticClass?: string
+  dynamicClassExp?: string
+  staticStyle?: string
+  dynamicStyleExp?: string
+  singleRootNoWrapper?: boolean
+}
+
+/**
+ * 命名插槽 fallback 容器解析上下文。
+ */
+export interface SlotFallbackWrapperResolveContext {
+  component?: string
+  componentName?: string
+  slot?: string
+  local?: LocalSlotFallbackWrapperConfig
+}
+
+/**
+ * 已解析的命名插槽 fallback 容器策略。
+ */
+export interface ResolvedSlotFallbackWrapper {
+  tag: string
+  attrs?: Record<string, string>
+  staticClass?: string
+  dynamicClassExp?: string
+  staticStyle?: string
+  dynamicStyleExp?: string
+  singleRootNoWrapper?: boolean
+}
 
 /**
  * class/style 运行时模式。

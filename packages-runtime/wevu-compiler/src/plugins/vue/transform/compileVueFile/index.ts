@@ -86,10 +86,12 @@ export async function compileVueFile(
     ? {
         ...baseTemplateOptions,
         wevuComponentTags: componentSourceInfo.wevuComponentTags,
+        componentNameMap: componentSourceInfo.componentNameMap,
       }
     : {
         ...baseTemplateOptions,
         wevuComponentTags: [],
+        componentNameMap: componentSourceInfo.componentNameMap,
       }
 
   const templateCompiled = compileTemplatePhase(

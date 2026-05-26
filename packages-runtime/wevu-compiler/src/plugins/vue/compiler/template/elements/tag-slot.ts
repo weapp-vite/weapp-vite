@@ -1,5 +1,12 @@
 import type { AttributeNode, DirectiveNode, ElementNode } from '@vue/compiler-core'
-import type { ScopedSlotComponentAsset, TransformContext, TransformNode } from '../types'
+import type {
+  ResolvedSlotFallbackWrapper,
+  ScopedSlotComponentAsset,
+  SlotFallbackWrapperMatcher,
+  SlotFallbackWrapperResolveContext,
+  TransformContext,
+  TransformNode,
+} from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_SLOT_NAMES_PROP,
@@ -9,6 +16,7 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
@@ -31,6 +39,7 @@ export interface ScopedSlotDeclaration {
   implicitDefault?: boolean
   conditionKind?: 'if' | 'else-if' | 'else'
   condition?: string
+  wrapper?: SlotFallbackWrapperResolveContext['local']
 }
 
 export function renderSlotNameAttribute(
@@ -134,6 +143,7 @@ export function buildSlotDeclaration(
     implicitDefault?: boolean
     conditionKind?: 'if' | 'else-if' | 'else'
     condition?: string
+    wrapper?: SlotFallbackWrapperResolveContext['local']
   },
 ): ScopedSlotDeclaration {
   const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
@@ -144,6 +154,7 @@ export function buildSlotDeclaration(
     implicitDefault: options?.implicitDefault,
     conditionKind: options?.conditionKind,
     condition: options?.condition,
+    wrapper: options?.wrapper,
   }
 }
 
@@ -206,7 +217,10 @@ export function createScopedSlotComponent(
   return { componentName, slotKey }
 }
 
-function injectAttributeIntoOpeningTag(source: string, attr: string): string | null {
+function injectAttributesIntoOpeningTag(source: string, attrs: string[]): string | null {
+  if (!attrs.length) {
+    return source
+  }
   if (!source.startsWith('<') || source.startsWith('</') || source.startsWith('<!--')) {
     return null
   }
@@ -224,7 +238,7 @@ function injectAttributeIntoOpeningTag(source: string, attr: string): string | n
     return null
   }
 
-  return `${source.slice(0, tagNameEnd)} ${attr}${source.slice(tagNameEnd)}`
+  return `${source.slice(0, tagNameEnd)} ${attrs.join(' ')}${source.slice(tagNameEnd)}`
 }
 
 function createSlotAttributeNode(sourceNode: ElementNode, attr: string): AttributeNode | null {
@@ -248,6 +262,7 @@ function createSlotAttributeNode(sourceNode: ElementNode, attr: string): Attribu
 function injectSlotAttributeIntoElementNode(
   child: any,
   slotAttr: string,
+  extraAttrs: string[],
   transformNode: TransformNode,
   context: TransformContext,
 ): string | null {
@@ -263,7 +278,8 @@ function injectSlotAttributeIntoElementNode(
     ...sourceNode,
     props: [slotAttribute, ...sourceNode.props],
   }
-  return transformNode(projectedNode, context)
+  const transformed = transformNode(projectedNode, context)
+  return injectAttributesIntoOpeningTag(transformed, extraAttrs)
 }
 
 function isRenderableFallbackChild(child: any): boolean {
@@ -276,10 +292,192 @@ function isRenderableFallbackChild(child: any): boolean {
   return true
 }
 
+function canInjectSlotAttributeIntoFallbackChild(child: any): boolean {
+  if (child.type !== NodeTypes.ELEMENT) {
+    return true
+  }
+  return (child as ElementNode).tag !== 'slot'
+}
+
+function matchesSlotFallbackWrapperMatcher(matcher: SlotFallbackWrapperMatcher | undefined, value: string | undefined): boolean {
+  if (!matcher) {
+    return true
+  }
+  if (!value) {
+    return false
+  }
+  if (Array.isArray(matcher)) {
+    return matcher.some(item => matchesSlotFallbackWrapperMatcher(item, value))
+  }
+  return typeof matcher === 'string'
+    ? matcher === value
+    : matcher.test(value)
+}
+
+function normalizeSlotFallbackWrapperTag(tag: string | undefined, context: TransformContext) {
+  const normalized = tag?.trim() || 'view'
+  if (normalized === 'block') {
+    context.warnings.push('slot fallback wrapper 不支持配置为 block，已回退为 view。')
+    return 'view'
+  }
+  return normalized
+}
+
+function mergeSlotFallbackWrapperAttrs(
+  base: Record<string, string> | undefined,
+  override: Record<string, string> | undefined,
+) {
+  if (!base) {
+    return override
+  }
+  if (!override) {
+    return base
+  }
+  return {
+    ...base,
+    ...override,
+  }
+}
+
+function resolveSlotFallbackWrapper(
+  context: TransformContext,
+  info: SlotFallbackWrapperResolveContext,
+): ResolvedSlotFallbackWrapper {
+  const resolved: ResolvedSlotFallbackWrapper = {
+    tag: normalizeSlotFallbackWrapperTag(context.slotFallbackWrapper.tag, context),
+    attrs: context.slotFallbackWrapper.attrs,
+    singleRootNoWrapper: context.slotFallbackWrapper.singleRootNoWrapper ?? context.slotSingleRootNoWrapper,
+  }
+
+  for (const rule of context.slotFallbackWrapper.rules) {
+    if (
+      matchesSlotFallbackWrapperMatcher(rule.component, info.component)
+      && matchesSlotFallbackWrapperMatcher(rule.componentName, info.componentName)
+      && matchesSlotFallbackWrapperMatcher(rule.slot, info.slot)
+    ) {
+      if (rule.tag) {
+        resolved.tag = normalizeSlotFallbackWrapperTag(rule.tag, context)
+      }
+      if (rule.attrs) {
+        resolved.attrs = mergeSlotFallbackWrapperAttrs(resolved.attrs, rule.attrs)
+      }
+      if (rule.singleRootNoWrapper !== undefined) {
+        resolved.singleRootNoWrapper = rule.singleRootNoWrapper
+      }
+    }
+  }
+
+  if (info.local?.tag) {
+    resolved.tag = normalizeSlotFallbackWrapperTag(info.local.tag, context)
+  }
+  if (info.local?.staticClass !== undefined) {
+    resolved.staticClass = info.local.staticClass
+  }
+  if (info.local?.dynamicClassExp !== undefined) {
+    resolved.dynamicClassExp = info.local.dynamicClassExp
+  }
+  if (info.local?.staticStyle !== undefined) {
+    resolved.staticStyle = info.local.staticStyle
+  }
+  if (info.local?.dynamicStyleExp !== undefined) {
+    resolved.dynamicStyleExp = info.local.dynamicStyleExp
+  }
+  if (info.local?.singleRootNoWrapper !== undefined) {
+    resolved.singleRootNoWrapper = info.local.singleRootNoWrapper
+  }
+
+  return resolved
+}
+
+function createStaticAttributeNode(name: string, value: string): AttributeNode {
+  return {
+    type: NodeTypes.ATTRIBUTE,
+    name,
+    nameLoc: undefined as any,
+    value: {
+      type: NodeTypes.TEXT,
+      content: value,
+      loc: undefined as any,
+    },
+    loc: undefined as any,
+  }
+}
+
+function renderSlotFallbackWrapperAttrs(wrapper: ResolvedSlotFallbackWrapper, context: TransformContext): string[] {
+  const attrs: string[] = []
+  for (const [name, value] of Object.entries(wrapper.attrs ?? {})) {
+    if (name === 'class' && (wrapper.staticClass !== undefined || wrapper.dynamicClassExp !== undefined)) {
+      continue
+    }
+    if (name === 'style' && (wrapper.staticStyle !== undefined || wrapper.dynamicStyleExp !== undefined)) {
+      continue
+    }
+    const attr = transformAttribute(createStaticAttributeNode(name, value), context)
+    if (attr) {
+      attrs.push(attr)
+    }
+  }
+  const classAttr = renderClassAttribute(wrapper.staticClass, wrapper.dynamicClassExp, context)
+  if (classAttr) {
+    attrs.push(classAttr)
+  }
+  const styleAttr = renderStyleAttribute(wrapper.staticStyle, wrapper.dynamicStyleExp, undefined, context)
+  if (styleAttr) {
+    attrs.push(styleAttr)
+  }
+  return attrs
+}
+
+function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const slotNameInfo = resolveSlotNameFromSlotElement(node)
+  const hasScopeBindings = node.props.some((prop) => {
+    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
+      return prop.arg?.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
+    }
+    return false
+  })
+  if (hasScopeBindings) {
+    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
+  }
+
+  const fallbackContent = node.children
+    .map(child => transformNode(child, context))
+    .join('')
+
+  const slotAttrs: string[] = []
+  const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
+  if (nameAttr) {
+    slotAttrs.push(nameAttr)
+  }
+  const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
+  if (!hasScopeBindings && fallbackContent) {
+    const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
+    if (slotPresentExp) {
+      const slotTag = `<slot${slotAttrString} />`
+      return `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
+    }
+  }
+  return fallbackContent
+    ? `<slot${slotAttrString}>${fallbackContent}</slot>`
+    : `<slot${slotAttrString} />`
+}
+
+function transformFallbackChild(child: any, context: TransformContext, transformNode: TransformNode): string {
+  if (child.type === NodeTypes.ELEMENT && (child as ElementNode).tag === 'slot') {
+    return renderPlainSlotOutlet(child as ElementNode, context, transformNode)
+  }
+  return transformNode(child, context)
+}
+
 export function renderSlotFallback(
   decl: ScopedSlotDeclaration,
   context: TransformContext,
   transformNode: TransformNode,
+  options?: {
+    component?: string
+    componentName?: string
+    wrapper?: SlotFallbackWrapperResolveContext['local']
+  },
 ): string {
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
   const wrapCondition = (content: string) => {
@@ -309,35 +507,50 @@ export function renderSlotFallback(
   if (!renderableChildren.length) {
     return ''
   }
+  const staticSlotName = resolveSlotStaticName(decl.name)
+  const wrapper = resolveSlotFallbackWrapper(context, {
+    component: options?.component,
+    componentName: options?.componentName,
+    slot: staticSlotName,
+    local: {
+      ...options?.wrapper,
+      ...decl.wrapper,
+    },
+  })
+  const wrapperAttrs = renderSlotFallbackWrapperAttrs(wrapper, context)
+  const wrapperAttrString = wrapperAttrs.length ? ` ${wrapperAttrs.join(' ')}` : ''
 
-  if (!context.slotSingleRootNoWrapper) {
+  if (!wrapper.singleRootNoWrapper) {
     const rawContent = decl.children
-      .map(child => transformNode(child, context))
+      .map(child => transformFallbackChild(child, context, transformNode))
       .join('')
     if (!rawContent) {
       return ''
     }
-    return wrapCondition(`<view ${slotAttr}>${rawContent}</view>`)
+    return wrapCondition(`<${wrapper.tag} ${slotAttr}${wrapperAttrString}>${rawContent}</${wrapper.tag}>`)
   }
 
   if (renderableChildren.length === 1) {
     const child = renderableChildren[0]!
-    const projected = child.type === NodeTypes.ELEMENT && isStructuralDirective(child as ElementNode).type
-      ? injectSlotAttributeIntoElementNode(child, slotAttr, transformNode, context)
-      : injectAttributeIntoOpeningTag(transformNode(child, context), slotAttr)
+    let projected: string | null = null
+    if (canInjectSlotAttributeIntoFallbackChild(child)) {
+      projected = child.type === NodeTypes.ELEMENT && isStructuralDirective(child as ElementNode).type
+        ? injectSlotAttributeIntoElementNode(child, slotAttr, wrapperAttrs, transformNode, context)
+        : injectAttributesIntoOpeningTag(transformNode(child, context), [slotAttr, ...wrapperAttrs])
+    }
     if (projected) {
       return wrapCondition(projected)
     }
   }
 
   const content = renderableChildren
-    .map(child => transformNode(child, context))
+    .map(child => transformFallbackChild(child, context, transformNode))
     .join('')
 
   // 真机 / DevTools 运行时里，多节点 fallback 通过 `<block slot="...">` 投影并不稳定，
   // 某些布局场景（尤其父级是 flex）会直接丢失整组内容，因此这里只对“单根节点”做无包裹下推；
   // 只要出现多节点，就退回真实 `<view>` 容器，优先保证投影可见性和兼容性。
-  return wrapCondition(`<view ${slotAttr}>${content}</view>`)
+  return wrapCondition(`<${wrapper.tag} ${slotAttr}${wrapperAttrString}>${content}</${wrapper.tag}>`)
 }
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -406,35 +619,5 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 }
 
 export function transformSlotElementPlain(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  const slotNameInfo = resolveSlotNameFromSlotElement(node)
-  const hasScopeBindings = node.props.some((prop) => {
-    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
-      return prop.arg?.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
-    }
-    return false
-  })
-  if (hasScopeBindings) {
-    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
-  }
-
-  const fallbackContent = node.children
-    .map(child => transformNode(child, context))
-    .join('')
-
-  const slotAttrs: string[] = []
-  const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
-  if (nameAttr) {
-    slotAttrs.push(nameAttr)
-  }
-  const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
-  if (!hasScopeBindings && fallbackContent) {
-    const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
-    if (slotPresentExp) {
-      const slotTag = `<slot${slotAttrString} />`
-      return `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
-    }
-  }
-  return fallbackContent
-    ? `<slot${slotAttrString}>${fallbackContent}</slot>`
-    : `<slot${slotAttrString} />`
+  return renderPlainSlotOutlet(node, context, transformNode)
 }

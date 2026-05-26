@@ -1,0 +1,5 @@
+.issue613-card-native {
+  min-height: 64rpx;
+  padding: 24rpx;
+  border: 1px solid #d7dde8;
+}

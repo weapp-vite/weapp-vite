@@ -1,0 +1,5 @@
+<issue613-card-native>
+  <block slot="header">
+    <slot></slot>
+  </block>
+</issue613-card-native>
