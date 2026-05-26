@@ -3,6 +3,7 @@ import type { InlineConfig, Logger } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { WeappVitePlatform } from '../../../../runtimeTarget'
 import type { SubPackageMetaValue } from '../../../../types'
+import { existsSync } from 'node:fs'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import { createLogger } from 'vite'
@@ -50,11 +51,13 @@ function normalizeInlineConfigAfterDefu(
       ...(userRolldownOptions?.output ?? {}),
     },
   }
+  const rootTsconfig = path.resolve(cwd, 'tsconfig.json')
   if (
     !Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')
     && !(mergedRolldownOptions.resolve as { tsconfigFilename?: unknown } | undefined)?.tsconfigFilename
+    && existsSync(rootTsconfig)
   ) {
-    mergedRolldownOptions.tsconfig = path.resolve(cwd, 'tsconfig.json')
+    mergedRolldownOptions.tsconfig = rootTsconfig
   }
   build.rolldownOptions = mergedRolldownOptions
   inline.define = {
