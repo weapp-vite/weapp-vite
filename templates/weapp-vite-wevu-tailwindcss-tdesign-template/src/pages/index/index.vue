@@ -8,6 +8,10 @@ definePageJson({
 
 const count = ref(0)
 const buttonText = computed(() => `已点击 ${count.value} 次`)
+
+function handleCountTap() {
+  count.value += 1
+}
 </script>
 
 <template>
@@ -29,7 +33,7 @@ const buttonText = computed(() => `已点击 ${count.value} 次`)
         </text>
       </view>
 
-      <t-button class="mt-[24rpx]" theme="primary" block @tap="count += 1">
+      <t-button class="mt-[24rpx]" theme="primary" block @tap="handleCountTap">
         点一下
       </t-button>
     </view>
