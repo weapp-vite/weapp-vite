@@ -199,6 +199,7 @@ describe('runtime: template refs', () => {
     const refs = instance.__wevu.state.$refs
     expect(refs.header.headerKey).toBe('hello')
     expect(typeof refs.header.setHeaderKey).toBe('function')
+    expect(refs.header.id).toBe('.header')
     refs.header.setHeaderKey('world')
     expect(setHeaderKey).toHaveBeenCalledWith('world')
   })
