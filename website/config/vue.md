@@ -359,15 +359,15 @@ export default defineConfig({
 
 #### `slot-wrapper-<slotName>`：覆盖指定具名插槽 {#slot-wrapper-named}
 
-如果同一个组件的不同具名插槽需要不同 wrapper，可以继续保留 `slot-wrapper` 作为默认值，再用 `slot-wrapper-footer` 覆盖 `footer` 插槽：
+如果同一个组件的不同具名插槽需要不同 wrapper，可以继续保留 `slot-wrapper` 作为默认值；单个 slot 的覆盖更推荐直接写在对应的 `<template #xxx>` 上：
 
 ```vue
 <template>
-  <IssueCard slot-wrapper="cover-view" slot-wrapper-footer="view">
+  <IssueCard slot-wrapper="cover-view">
     <template #header>
       <slot />
     </template>
-    <template #footer>
+    <template #footer slot-wrapper="view">
       <slot name="footer" />
     </template>
   </IssueCard>
@@ -387,19 +387,15 @@ export default defineConfig({
 </IssueCard>
 ```
 
-这里 `header` 继承 `slot-wrapper="cover-view"`，`footer` 使用 `slot-wrapper-footer="view"` 覆盖。
+这里 `header` 继承 `slot-wrapper="cover-view"`，`footer` 在对应的 `<template #footer>` 上覆盖。
 
-如果只想覆盖某一个 `<template #xxx>`，也可以把配置直接写在对应的 slot template 上。这个写法更靠近 slot 内容，优先级也高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
+如果只想覆盖某一个 `<template #xxx>`，更推荐把配置直接写在对应的 slot template 上。这个写法最贴近 slot 内容，优先级也高于父组件标签上的默认值和 `slot-wrapper-<slotName>`：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper="cover-view" slot-wrapper-header="view">
-    <template
-      #header
-      slot-wrapper="text"
-      slot-wrapper-class="slot-header"
-      slot-wrapper-style="margin-top: 12px"
-    >
+  <IssueCard slot-wrapper="cover-view">
+    <template #header slot-wrapper="text" slot-wrapper-class="slot-header">
       <slot />
     </template>
     <template #footer>
@@ -407,6 +403,7 @@ export default defineConfig({
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -422,30 +419,30 @@ export default defineConfig({
 </IssueCard>
 ```
 
-在 `<template #header>` 上写时，已经知道目标 slot 名，属性仍写 `slot-wrapper` / `slot-wrapper-class` / `slot-wrapper-style` / `slot-single-root-no-wrapper`，不需要再写 `slot-wrapper-header`。
+在 `<template #header>` 上写时，已经知道目标 slot 名，属性仍写 `slot-wrapper` / `slot-wrapper-class` / `slot-wrapper-style` / `slot-single-root-no-wrapper`，不需要再写 `slot-wrapper-header`。如果只是改单个 slot，优先把配置写在 `<template #header>` 上。
 
 #### `slot-wrapper-class/style`：给生成的 wrapper 加属性 {#slot-wrapper-attrs}
 
 普通 `class` / `style` 仍然属于组件本身，不会被转移到编译器生成的 slot wrapper 上。如果要给 wrapper 加样式，需要使用 wrapper 虚拟属性：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard
-    slot-wrapper="cover-view"
-    slot-wrapper-class="slot-default"
-    slot-wrapper-style="padding: 8px"
-    slot-wrapper-footer="view"
-    slot-wrapper-footer-class="slot-footer"
-    slot-wrapper-footer-style="margin-top: 12px"
-  >
-    <template #header>
+  <IssueCard slot-wrapper="cover-view">
+    <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
       <slot />
     </template>
-    <template #footer>
+    <template
+      #footer
+      slot-wrapper="view"
+      slot-wrapper-class="slot-footer"
+      slot-wrapper-style="margin-top: 12px"
+    >
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -467,18 +464,17 @@ export default defineConfig({
 <IssueCard
   :slot-wrapper-class="headerClass"
   :slot-wrapper-style="headerStyle"
-  :slot-wrapper-footer-class="footerClass"
 >
   <template #header>
     <slot />
   </template>
-  <template #footer>
+  <template #footer :slot-wrapper-class="footerClass">
     <slot name="footer" />
   </template>
 </IssueCard>
 ```
 
-指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
+指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 在 `<template #footer>` 上覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
 
 局部配置优先级高于全局配置。整体优先级为：`<template #slot>` 上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > 父组件标签上的 `slot-wrapper-<slotName>` / `slot-wrapper-<slotName>-class/style` / `slot-single-root-no-wrapper-<slotName>` > 父组件标签上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > `slotFallbackWrapper.rules` > `slotFallbackWrapper.tag` / `slotFallbackWrapper.attrs` > 默认 `view`。
 
@@ -592,13 +588,15 @@ export default defineConfig({
 编译器只负责按配置生成标签，目标小程序运行时是否允许该标签承载子节点，仍取决于宿主规则和实际内容。比如下面的配置会让 `header` 使用 `text`：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper-header="text">
-    <template #header>
+  <IssueCard>
+    <template #header slot-wrapper="text">
       <view>Header</view>
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物会是：

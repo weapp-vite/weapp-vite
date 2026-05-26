@@ -125,19 +125,21 @@ flowchart TB
 
 ### 覆盖指定具名插槽
 
-`slot-wrapper-footer` 只覆盖 `footer`，其他插槽继续使用 `slot-wrapper`：
+`slot-wrapper-footer` 只覆盖 `footer`，其他插槽继续使用 `slot-wrapper`。如果是在单个 slot 上临时覆盖，更推荐直接写在对应的 `<template #footer>` 上：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper="cover-view" slot-wrapper-footer="view">
+  <IssueCard slot-wrapper="cover-view">
     <template #header>
       <slot />
     </template>
-    <template #footer>
+    <template #footer slot-wrapper="view">
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -153,7 +155,7 @@ flowchart TB
 </IssueCard>
 ```
 
-如果只想覆盖单个 slot，更推荐把配置写在对应的 `<template #xxx>` 上：
+如果只想覆盖单个 slot，更推荐把配置写在对应的 `<template #xxx>` 上。这个写法最靠近 slot 内容，也最容易在模板里读懂：
 
 ```vue
 <!-- eslint-disable vue/no-useless-template-attributes -->
@@ -195,23 +197,23 @@ flowchart TB
 普通 `class` / `style` 仍然属于组件本身，不会被转移到编译器生成的 slot wrapper 上。如果要给 wrapper 加样式，需要使用 wrapper 虚拟属性：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard
-    slot-wrapper="cover-view"
-    slot-wrapper-class="slot-default"
-    slot-wrapper-style="padding: 8px"
-    slot-wrapper-footer="view"
-    slot-wrapper-footer-class="slot-footer"
-    slot-wrapper-footer-style="margin-top: 12px"
-  >
-    <template #header>
+  <IssueCard slot-wrapper="cover-view">
+    <template #header slot-wrapper="cover-view" slot-wrapper-class="slot-default" slot-wrapper-style="padding: 8px">
       <slot />
     </template>
-    <template #footer>
+    <template
+      #footer
+      slot-wrapper="view"
+      slot-wrapper-class="slot-footer"
+      slot-wrapper-style="margin-top: 12px"
+    >
       <slot name="footer" />
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 产物：
@@ -233,18 +235,17 @@ flowchart TB
 <IssueCard
   :slot-wrapper-class="headerClass"
   :slot-wrapper-style="headerStyle"
-  :slot-wrapper-footer-class="footerClass"
 >
   <template #header>
     <slot />
   </template>
-  <template #footer>
+  <template #footer :slot-wrapper-class="footerClass">
     <slot name="footer" />
   </template>
 </IssueCard>
 ```
 
-指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
+指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 在 `<template #footer>` 上覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
 
 也可以用全局配置按组件和 slot 匹配：
 
@@ -365,13 +366,15 @@ export default defineConfig({
 你选择的 wrapper 还必须能承载实际内容。比如：
 
 ```vue
+<!-- eslint-disable vue/no-useless-template-attributes -->
 <template>
-  <IssueCard slot-wrapper-header="text">
-    <template #header>
+  <IssueCard>
+    <template #header slot-wrapper="text">
       <view>Header</view>
     </template>
   </IssueCard>
 </template>
+<!-- eslint-enable vue/no-useless-template-attributes -->
 ```
 
 会生成：
