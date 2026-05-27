@@ -84,5 +84,6 @@ describe('runtime/jsonPlugin', () => {
       pages: ['pages/home/index'],
       subPackages: [],
     })
+    expect(await fs.pathExists(path.join(srcRoot, '.app.json.auto-routes-inline.ts'))).toBe(false)
   })
 })

@@ -6,6 +6,7 @@ import { rolldown } from 'rolldown'
 import { collectReferencedModules } from './collect'
 import { createExternalizeDepsPlugin } from './externalize'
 import { getModuleSyncConditionEnabled } from './module-sync'
+import { safeRealpathSync } from './utils'
 
 const JS_TS_EXT_RE = /\.[cm]?[jt]s$/
 
@@ -81,6 +82,10 @@ export async function bundleFile(
       // disable treeshake to include files that is not sideeffectful to `moduleIds`
       treeshake: false,
       plugins: [
+        createEntrySourcePlugin({
+          fileName,
+          source: options.source,
+        }),
         createExternalizeDepsPlugin({
           entryFile: fileName,
           isESM,
@@ -143,6 +148,37 @@ function resolveSourcemapOutput(
     return 'inline'
   }
   return requested ?? false
+}
+
+function createEntrySourcePlugin({
+  fileName,
+  source,
+}: {
+  fileName: string
+  source?: string
+}) {
+  const entryFileNames = collectEntryFileNames(fileName)
+  return {
+    name: 'entry-source',
+    transform: source === undefined
+      ? undefined
+      : {
+          filter: { id: JS_TS_EXT_RE },
+          async handler(_code: string, id: string) {
+            return entryFileNames.has(path.resolve(id)) ? { code: source, map: null } : null
+          },
+        },
+  }
+}
+
+function collectEntryFileNames(fileName: string) {
+  const fileNames = new Set([path.resolve(fileName)])
+  try {
+    fileNames.add(safeRealpathSync(fileName))
+  }
+  catch {
+  }
+  return fileNames
 }
 
 function createFileScopeVariablesPlugin({

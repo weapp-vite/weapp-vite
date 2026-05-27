@@ -76,27 +76,32 @@ export async function loadFromBundledFile(
     // letters (e.g. "C:\") while the Node.js loader uses lowercase volume letters.
     // See https://github.com/vitejs/vite/issues/12923
     const realFileName = await promisifiedRealpath(fileName)
-    const loaderExt = extension in _require.extensions ? extension : '.js'
-    const defaultLoader = _require.extensions[loaderExt]!
+    const originalLoader = _require.extensions[extension]
+    const fallbackLoader = originalLoader ?? _require.extensions['.js']!
     // Swap in a temporary loader so we can compile the bundled source on demand.
     const compileLoader = (module: NodeModule, filename: string) => {
       if (filename === realFileName) {
         ; (module as NodeModuleWithCompile)._compile(bundledCode, filename)
       }
       else {
-        defaultLoader(module, filename)
+        fallbackLoader(module, filename)
       }
     }
     let raw: any
     try {
-      _require.extensions[loaderExt] = compileLoader
+      _require.extensions[extension] = compileLoader
       // clear cache in case of server restart
       delete _require.cache[_require.resolve(fileName)]
       raw = _require(fileName)
       return raw.__esModule ? raw.default : raw
     }
     finally {
-      _require.extensions[loaderExt] = defaultLoader
+      if (originalLoader) {
+        _require.extensions[extension] = originalLoader
+      }
+      else {
+        delete _require.extensions[extension]
+      }
       if (cacheConfig.enabled && raw !== undefined) {
         const cachedPath = await storeCacheOutput(
           cacheConfig,

@@ -121,6 +121,27 @@ it.skip('custom readFile', async () => {
   assert.equal(mod.default, '/tmp/foo.ts')
 })
 
+it('loads overridden entry source without changing filepath semantics', async () => {
+  const entry = path.join(__dirname, './fixture/input.ts')
+  const { mod } = await bundleRequire({
+    filepath: entry,
+    source: [
+      `import * as a from './a'`,
+      '',
+      'export default {',
+      '  a,',
+      '  filename: __filename,',
+      '  dirname: __dirname,',
+      '}',
+      '',
+    ].join('\n'),
+  })
+
+  expect(mod.default.a.filename.endsWith('a.ts')).toBe(true)
+  expect(mod.default.filename.replaceAll('\\', '/')).toBe(entry.replaceAll('\\', '/'))
+  expect(mod.default.dirname.replaceAll('\\', '/')).toBe(path.dirname(entry).replaceAll('\\', '/'))
+})
+
 it('does not mutate the caller options object', async () => {
   const options = {
     filepath: './fixture/input.ts',

@@ -3,7 +3,6 @@ import type { MutableCompilerContext } from '../context'
 import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
 import { fs } from '@weapp-core/shared/fs'
-import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
 import { inlineAutoRoutesImports, parseCommentJson, resolveJson } from '../utils'
@@ -72,39 +71,27 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
         const inlinedContent = isAppConfig
           ? inlineAutoRoutesImports(scriptContent, fallbackRoutes)
           : scriptContent
-        const tempFilepath = inlinedContent === scriptContent
-          ? filepath
-          : path.join(path.dirname(filepath), `.${path.basename(filepath, path.extname(filepath))}.auto-routes-inline${path.extname(filepath)}`)
-        try {
-          if (tempFilepath !== filepath) {
-            await fs.writeFile(tempFilepath, inlinedContent, 'utf8')
-          }
-          const { mod } = await bundleRequire({
-            filepath: tempFilepath,
-            cwd: configService.options.cwd,
-            preserveTemporaryFile: true,
-            rolldownOptions: {
-              input: {
-                // @ts-ignore
-                define: configService.importMetaDefineEntries,
-              },
-              output: {
-                exports: 'named',
-              },
+        const { mod } = await bundleRequire({
+          filepath,
+          cwd: configService.options.cwd,
+          preserveTemporaryFile: true,
+          ...(inlinedContent === scriptContent ? {} : { source: inlinedContent }),
+          rolldownOptions: {
+            input: {
+              // @ts-ignore
+              define: configService.importMetaDefineEntries,
             },
-          })
-          const exportedConfig = hasOwn(mod, 'default')
-            ? mod.default
-            : mod
-          resultJson = typeof exportedConfig === 'function'
-            ? await exportedConfig(ctx)
-            : exportedConfig
-        }
-        finally {
-          if (tempFilepath !== filepath) {
-            await fs.remove(tempFilepath)
-          }
-        }
+            output: {
+              exports: 'named',
+            },
+          },
+        })
+        const exportedConfig = hasOwn(mod, 'default')
+          ? mod.default
+          : mod
+        resultJson = typeof exportedConfig === 'function'
+          ? await exportedConfig(ctx)
+          : exportedConfig
       }
       else {
         resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))

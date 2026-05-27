@@ -52,6 +52,10 @@ export interface Options {
    */
   filepath: string
   /**
+   * 覆盖入口文件源码，同时保留入口文件路径用于相对路径解析。
+   */
+  source?: string
+  /**
    * 用于加载输出文件的 `require` 方法。
    * 默认为全局 `require`。
    * 可为异步函数（返回 Promise）。
@@ -121,7 +125,6 @@ export interface Options {
    */
   cache?: boolean | CacheOptions
 
-  // readFile?: ReadFile
 }
 
 export interface InternalOptions extends Omit<Options, 'cwd' | 'filepath'> {

@@ -80,6 +80,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
       format: options.format,
       isESM: options.isESM,
       tsconfig: options.tsconfig ?? 'auto',
+      source: hashEntrySource(options.source),
       node: process.versions.node,
       rolldown: hashRolldownOptions(options.rolldownOptions),
     }),
@@ -281,5 +282,15 @@ function hashRolldownOptions(options: InternalOptions['rolldownOptions']) {
         return value
       }),
     )
+    .digest('hex')
+}
+
+function hashEntrySource(source: InternalOptions['source']) {
+  if (source === undefined) {
+    return 'none'
+  }
+  return crypto
+    .createHash('sha1')
+    .update(source)
     .digest('hex')
 }

@@ -108,4 +108,28 @@ describe('persistent cache', () => {
 
     await fsp.rm(root, { recursive: true, force: true })
   })
+
+  it('keys overridden entry source separately from the entry file', async () => {
+    const root = await tmpRoot()
+    const cacheDir = path.join(root, '.cache')
+    const entry = path.join(root, 'entry.ts')
+    await fsp.writeFile(entry, 'export const label = "file"', 'utf8')
+
+    const run = async (source: string) => {
+      const { mod } = await bundleRequire({
+        filepath: entry,
+        source,
+        cache: { enabled: true, dir: cacheDir },
+      })
+      return mod
+    }
+
+    const first = await run('export const label = "inline-a"')
+    expect(first.label).toBe('inline-a')
+
+    const second = await run('export const label = "inline-b"')
+    expect(second.label).toBe('inline-b')
+
+    await fsp.rm(root, { recursive: true, force: true })
+  })
 })
