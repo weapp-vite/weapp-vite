@@ -54,9 +54,32 @@ async function writeFixtureProject() {
     },
     devDependencies: {},
   }, { spaces: 2 })
+  await fs.writeJson(path.join(PROJECT_ROOT, 'tsconfig.json'), {
+    extends: './.weapp-vite/tsconfig.shared.json',
+    compilerOptions: {
+      types: [
+        'miniprogram-api-typings',
+      ],
+    },
+    include: [
+      'src/**/*',
+      '../packages/**/*.vue',
+    ],
+  }, { spaces: 2 })
+  await fs.writeJson(path.join(TEMP_ROOT, 'tsconfig.json'), {
+    extends: './app/.weapp-vite/tsconfig.shared.json',
+    include: [
+      'app/src/**/*',
+      'packages/**/*.vue',
+    ],
+  }, { spaces: 2 })
 
   await fs.writeFile(path.join(PROJECT_ROOT, 'weapp-vite.config.ts'), [
+    'import path from \'node:path\'',
+    'import { fileURLToPath } from \'node:url\'',
     'import { defineConfig } from \'weapp-vite\'',
+    '',
+    'const projectRoot = path.dirname(fileURLToPath(import.meta.url))',
     '',
     'export default defineConfig({',
     '  weapp: {',
@@ -67,6 +90,9 @@ async function writeFixtureProject() {
     '  },',
     '  build: {',
     '    minify: false,',
+    '    rolldownOptions: {',
+    '      tsconfig: path.join(projectRoot, \'tsconfig.json\'),',
+    '    },',
     '  },',
     '})',
     '',
@@ -167,7 +193,8 @@ describe.sequential('external linked Vue component HMR', () => {
     await fs.remove(DIST_ROOT)
 
     // @ts-expect-error execa v9 overload resolution
-    const dev = startDevProcess('node', [CLI_PATH, 'dev', PROJECT_ROOT, '--platform', 'weapp', '--skipNpm'], {
+    const dev = startDevProcess('node', [CLI_PATH, 'dev', '.', '--platform', 'weapp', '--skipNpm'], {
+      cwd: PROJECT_ROOT,
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
