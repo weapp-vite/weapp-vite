@@ -7,6 +7,7 @@ import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
+import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
@@ -34,6 +35,19 @@ function isOutputFileChange(state: CorePluginState, normalizedId: string) {
   }
   const normalizedOutDir = normalizeFsResolvedId(outDir)
   return normalizedId === normalizedOutDir || normalizedId.startsWith(`${normalizedOutDir}/`)
+}
+
+function isAutoRoutesGeneratedFileChange(state: CorePluginState, normalizedId: string) {
+  const configService = state.ctx.configService
+  if (!configService) {
+    return false
+  }
+
+  return isAutoRoutesGeneratedPath(normalizedId, {
+    cwd: configService.cwd,
+    absoluteSrcRoot: configService.absoluteSrcRoot,
+    managedOutputPaths: resolveAutoRoutesManagedOutputPaths(state.ctx),
+  })
 }
 
 function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackageMetaValue | null | undefined) {
@@ -541,6 +555,9 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     if (isOutputFileChange(state, normalizedId)) {
+      return
+    }
+    if (isAutoRoutesGeneratedFileChange(state, normalizedId)) {
       return
     }
     const event = await normalizeWatchEvent(normalizedId, change.event, {

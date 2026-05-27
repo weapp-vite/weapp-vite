@@ -71,6 +71,7 @@ function createState(overrides: Record<string, any> = {}) {
         relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         relativeCwd: (id: string) => id.replace('/project/', ''),
         weappViteConfig: {},
+        cwd: '/project',
         isDev: true,
         configFileDependencies: [],
       },
@@ -294,6 +295,23 @@ describe('core lifecycle watch hook', () => {
 
     await hook('/project/dist/pages/hmr/index.wxml', { event: 'update' })
 
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile).toEqual({})
+  })
+
+  it('ignores auto-routes generated file changes under src roots', async () => {
+    const state = createState()
+    state.ctx.configService.weappViteConfig = {
+      autoRoutes: {
+        persistentCache: 'src/pages/hmr/auto-routes.cache.json',
+      },
+    }
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/pages/hmr/.app.json.auto-routes-inline.ts', { event: 'create' })
+    await hook('/project/src/pages/hmr/auto-routes.cache.json', { event: 'update' })
+
+    expect(invalidateFileCacheMock).not.toHaveBeenCalled()
     expect(state.markEntryDirty).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile).toEqual({})
   })

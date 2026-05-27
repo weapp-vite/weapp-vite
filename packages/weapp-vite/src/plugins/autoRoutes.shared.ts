@@ -1,5 +1,6 @@
 import type { ConfigService } from '../runtime/config/types'
 import path from 'pathe'
+import { isAutoRoutesGeneratedFileName } from '../runtime/autoRoutesPlugin/generatedPaths'
 import { normalizeWatchPath } from '../utils/path'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
@@ -43,7 +44,9 @@ export function isAutoRoutesWatchFile(
   allowedExtensions: ReadonlySet<string>,
   isPagesRelatedPath: (id: string) => boolean,
 ) {
-  return allowedExtensions.has(path.extname(filePath)) && isPagesRelatedPath(filePath)
+  return !isAutoRoutesGeneratedFileName(path.basename(filePath))
+    && allowedExtensions.has(path.extname(filePath))
+    && isPagesRelatedPath(filePath)
 }
 
 /**

@@ -3,6 +3,7 @@ import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
+import { resolveAutoRoutesManagedOutputPaths } from '../runtime/autoRoutesPlugin/generatedPaths'
 import {
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
@@ -50,6 +51,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       cwd: configService.cwd,
       absoluteSrcRoot: configService.absoluteSrcRoot,
       include: autoRoutesConfig.include,
+      managedOutputPaths: resolveAutoRoutesManagedOutputPaths(ctx),
       subPackageRoots,
     })
   }

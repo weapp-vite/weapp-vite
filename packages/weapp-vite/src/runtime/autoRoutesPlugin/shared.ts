@@ -7,6 +7,7 @@ import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { normalizePath, toPosixPath } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { areSetsEqual } from './candidates'
+import { isAutoRoutesGeneratedPath } from './generatedPaths'
 import { createAutoRoutesMatcher } from './matcher'
 import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 
@@ -17,6 +18,7 @@ interface AutoRoutesPathOptions {
 
 interface AutoRoutesPagesPathOptions extends AutoRoutesPathOptions {
   include?: Parameters<typeof createAutoRoutesMatcher>[0]
+  managedOutputPaths?: Iterable<string>
   subPackageRoots?: Parameters<typeof createAutoRoutesMatcher>[1]
 }
 
@@ -134,6 +136,10 @@ export function isAutoRoutesPagesRelatedPath(
   candidate: string,
   options: AutoRoutesPagesPathOptions,
 ) {
+  if (isAutoRoutesGeneratedPath(candidate, options)) {
+    return false
+  }
+
   const resolvedPath = resolveAutoRoutesPath(candidate, options)
   if (!resolvedPath) {
     return false

@@ -6,6 +6,7 @@ import { createAutoRoutesService } from './service'
 const outputFileMock = vi.hoisted(() => vi.fn())
 const outputJsonMock = vi.hoisted(() => vi.fn())
 const pathExistsMock = vi.hoisted(() => vi.fn())
+const readFileMock = vi.hoisted(() => vi.fn())
 const readJsonMock = vi.hoisted(() => vi.fn())
 const removeMock = vi.hoisted(() => vi.fn())
 const statMock = vi.hoisted(() => vi.fn())
@@ -58,6 +59,7 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
       outputFile: outputFileMock,
       outputJson: outputJsonMock,
       pathExists: pathExistsMock,
+      readFile: readFileMock,
       readJson: readJsonMock,
       remove: removeMock,
       stat: statMock,
@@ -129,6 +131,7 @@ describe('createAutoRoutesService branch coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pathExistsMock.mockResolvedValue(false)
+    readFileMock.mockResolvedValue(undefined)
     readJsonMock.mockResolvedValue(undefined)
     removeMock.mockResolvedValue(undefined)
     outputFileMock.mockResolvedValue(undefined)
@@ -156,6 +159,18 @@ describe('createAutoRoutesService branch coverage', () => {
 
     expect(scanRoutesMock).toHaveBeenCalledTimes(1)
     expect(outputFileMock).toHaveBeenCalledWith('/project/.weapp-vite/typed-router.d.ts', 'type TypedRouter = []', 'utf8')
+  })
+
+  it('does not rewrite typed definition when disk content is already current', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('typed-router.d.ts'))
+    readFileMock.mockResolvedValue('type TypedRouter = []')
+    const ctx = createContext({ autoRoutes: true })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(readFileMock).toHaveBeenCalledWith('/project/.weapp-vite/typed-router.d.ts', 'utf8')
+    expect(outputFileMock).not.toHaveBeenCalled()
   })
 
   it('logs an error when writing typed router definition fails', async () => {
@@ -331,6 +346,39 @@ describe('createAutoRoutesService branch coverage', () => {
       expect.any(Object),
       { spaces: 2 },
     )
+  })
+
+  it('does not rewrite persistent cache when payload is already current', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    readJsonMock.mockResolvedValue({
+      version: 1,
+      snapshot: {
+        pages: [],
+        entries: [],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: [],
+        entries: [],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default []',
+      typedDefinition: 'type TypedRouter = []',
+      watchFiles: [],
+      watchDirs: [],
+      fileMtims: {},
+    })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(outputJsonMock).not.toHaveBeenCalled()
   })
 
   it('falls back to a full scan when persistent cache mtimes do not match', async () => {

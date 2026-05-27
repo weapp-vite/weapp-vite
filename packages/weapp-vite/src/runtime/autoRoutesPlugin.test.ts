@@ -401,6 +401,30 @@ describe('createAutoRoutesService', () => {
     expect(service.isRouteFile(utilPath)).toBe(false)
   })
 
+  it('ignores auto-routes generated file changes under route roots', async () => {
+    const ctx = createContext({
+      enabled: true,
+      persistentCache: 'src/pages/index/auto-routes.cache.json',
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const before = service.getSnapshot()
+    const inlineTempPath = path.join(srcRoot, 'pages', 'index', '.app.json.auto-routes-inline.ts')
+    const customCachePath = path.join(srcRoot, 'pages', 'index', 'auto-routes.cache.json')
+    await fs.writeFile(inlineTempPath, 'export default {}', 'utf8')
+    await fs.writeFile(customCachePath, '{}', 'utf8')
+
+    expect(service.isRouteFile(inlineTempPath)).toBe(false)
+    expect(service.isRouteFile(customCachePath)).toBe(false)
+
+    await service.handleFileChange(inlineTempPath, 'create')
+    await service.handleFileChange(customCachePath, 'create')
+
+    expect(service.getSnapshot()).toEqual(before)
+  })
+
   it('no-ops when feature is disabled', async () => {
     const ctx = createContext(false)
     const service = createAutoRoutesService(ctx)

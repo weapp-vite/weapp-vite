@@ -166,6 +166,19 @@ describe('auto routes shared helpers', () => {
     })).toBe(false)
   })
 
+  it('does not match generated auto-routes paths under pages roots', () => {
+    expect(isAutoRoutesPagesRelatedPath('/project/src/pages/home/.app.json.auto-routes-inline.ts', {
+      cwd: '/project',
+      absoluteSrcRoot: '/project/src',
+    })).toBe(false)
+
+    expect(isAutoRoutesPagesRelatedPath('/project/src/pages/home/auto-routes.cache.json', {
+      cwd: '/project',
+      absoluteSrcRoot: '/project/src',
+      managedOutputPaths: ['/project/src/pages/home/auto-routes.cache.json'],
+    })).toBe(false)
+  })
+
   it('marks only rename events for full rescan', () => {
     expect(shouldAutoRoutesFullRescan('create')).toBe(false)
     expect(shouldAutoRoutesFullRescan('delete')).toBe(false)

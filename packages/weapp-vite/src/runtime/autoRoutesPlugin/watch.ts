@@ -10,6 +10,7 @@ import {
   isTemplateFile,
   isVueFile,
 } from './candidates'
+import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from './generatedPaths'
 import { resolveRoute } from './routes'
 import {
   isAutoRoutesCandidateUnchanged,
@@ -28,6 +29,14 @@ export function matchesRouteFile(
 ) {
   const configService = ctx.configService
   if (!configService) {
+    return false
+  }
+
+  if (isAutoRoutesGeneratedPath(candidate, {
+    cwd: configService.cwd,
+    absoluteSrcRoot: configService.absoluteSrcRoot,
+    managedOutputPaths: resolveAutoRoutesManagedOutputPaths(ctx),
+  })) {
     return false
   }
 
@@ -121,6 +130,14 @@ export async function updateCandidateFromFile(
   markNeedsFullRescan?: () => void,
 ): Promise<boolean> {
   if (!ctx.configService) {
+    return false
+  }
+
+  if (isAutoRoutesGeneratedPath(filePath, {
+    cwd: ctx.configService.cwd,
+    absoluteSrcRoot: ctx.configService.absoluteSrcRoot,
+    managedOutputPaths: resolveAutoRoutesManagedOutputPaths(ctx),
+  })) {
     return false
   }
 

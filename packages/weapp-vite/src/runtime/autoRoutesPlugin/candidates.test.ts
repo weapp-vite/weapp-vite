@@ -127,6 +127,11 @@ describe('auto routes candidates helpers', () => {
     expect(resolveCandidateEntryPath('/project/src', '/project/components/card/index.vue')).toBeUndefined()
   })
 
+  it('does not resolve generated auto-routes files as candidate entries', () => {
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/home/.app.json.auto-routes-inline.ts')).toBeUndefined()
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/.weapp-vite/typed-router.d.ts')).toBeUndefined()
+  })
+
   it('checks whether a resolved entry should be collected by matcher', () => {
     const matcher = createAutoRoutesMatcher(['pages/**'])
     expect(shouldCollectCandidateEntry(matcher, {

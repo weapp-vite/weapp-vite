@@ -5,6 +5,7 @@ import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
 import { toPosixPath } from '../../utils/path'
+import { isAutoRoutesGeneratedDirectoryName, isAutoRoutesGeneratedRelativePath } from './generatedPaths'
 import { createAutoRoutesMatcher } from './matcher'
 
 export interface CandidateEntry {
@@ -20,7 +21,7 @@ const TEMPLATE_EXTENSIONS = new Set(templateExtensions.map(ext => `.${ext}`))
 const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
 const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
-const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', '.weapp-vite', 'dist'])
+const SKIPPED_DIRECTORIES = new Set(['.git', '.husky', '.idea', '.turbo'])
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
 const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
 
@@ -49,7 +50,7 @@ function classifyPagesRootEntry(
     return undefined
   }
 
-  if (SKIPPED_DIRECTORIES.has(entry.name)) {
+  if (SKIPPED_DIRECTORIES.has(entry.name) || isAutoRoutesGeneratedDirectoryName(entry.name)) {
     return undefined
   }
 
@@ -232,6 +233,10 @@ function resolveCandidateEntryPath(
     return undefined
   }
 
+  if (isAutoRoutesGeneratedRelativePath(normalizedRelative)) {
+    return undefined
+  }
+
   return {
     normalizedRelative,
     relativeBase: removeExtensionDeep(normalizedRelative),
@@ -300,7 +305,7 @@ export async function collectCandidates(
     excludeSymlinks: true,
     suppressErrors: true,
     exclude(dirName) {
-      return SKIPPED_DIRECTORIES.has(dirName)
+      return SKIPPED_DIRECTORIES.has(dirName) || isAutoRoutesGeneratedDirectoryName(dirName)
     },
   }).withFullPaths()
 

@@ -39,6 +39,28 @@ function resolveDefaultPersistentCachePath(ctx: MutableCompilerContext) {
   return path.resolve(baseDir, AUTO_ROUTES_CACHE_FILE)
 }
 
+async function hasSameTextContent(filePath: string, content: string) {
+  try {
+    return await fs.pathExists(filePath) && await fs.readFile(filePath, 'utf8') === content
+  }
+  catch {
+    return false
+  }
+}
+
+async function hasSamePersistentCachePayload(filePath: string, payload: AutoRoutesPersistentCache) {
+  try {
+    if (!await fs.pathExists(filePath)) {
+      return false
+    }
+    const current = await fs.readJson(filePath) as AutoRoutesPersistentCache
+    return JSON.stringify(current) === JSON.stringify(payload)
+  }
+  catch {
+    return false
+  }
+}
+
 export async function restorePersistentCache(ctx: MutableCompilerContext, state: RuntimeState['autoRoutes']) {
   if (!getResolvedConfig(ctx).persistentCache) {
     return false
@@ -101,7 +123,11 @@ export async function writePersistentCache(ctx: MutableCompilerContext, state: R
   }
 
   try {
-    await fs.outputJson(cachePath, createPersistentCachePayload(state, fileMtims), { spaces: 2 })
+    const payload = createPersistentCachePayload(state, fileMtims)
+    if (await hasSamePersistentCachePayload(cachePath, payload)) {
+      return
+    }
+    await fs.outputJson(cachePath, payload, { spaces: 2 })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -166,6 +192,9 @@ export async function writeTypedRouterDefinition(
   }
 
   try {
+    if (await hasSameTextContent(outputPath, typedDefinition)) {
+      return typedDefinition
+    }
     await fs.outputFile(outputPath, typedDefinition, 'utf8')
     return typedDefinition
   }

@@ -50,6 +50,7 @@ describe('auto routes plugin shared helpers', () => {
     expect(isAutoRoutesWatchFile('C:\\project\\src\\pages\\home\\index.ts', allowedExtensions, isPagesRelatedPath)).toBe(true)
     expect(isAutoRoutesWatchFile('/project/src/pages/home/index.scss', allowedExtensions, isPagesRelatedPath)).toBe(false)
     expect(isAutoRoutesWatchFile('/project/src/components/card/index.vue', allowedExtensions, isPagesRelatedPath)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/.app.json.auto-routes-inline.ts', allowedExtensions, isPagesRelatedPath)).toBe(false)
   })
 
   it('checks watcher startup preconditions', () => {
