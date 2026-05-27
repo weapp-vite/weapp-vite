@@ -254,6 +254,13 @@ function isValueMemberObject(node: t.MemberExpression, parent: t.Node | undefine
   )
 }
 
+function isCallTarget(node: t.MemberExpression, parent: t.Node | undefined) {
+  return (
+    (t.isCallExpression(parent) || t.isOptionalCallExpression(parent) || t.isNewExpression(parent))
+    && parent.callee === node
+  )
+}
+
 function rewriteTopLevelRefLikeAccess(ast: t.File, context: TransformContext) {
   traverse(ast, {
     AssignmentExpression(path) {
@@ -292,6 +299,9 @@ function rewriteTopLevelRefLikeAccess(ast: t.File, context: TransformContext) {
         return
       }
       if (isValueMemberObject(path.node, path.parentPath?.node)) {
+        return
+      }
+      if (isCallTarget(path.node, path.parentPath?.node)) {
         return
       }
       path.replaceWith(buildCtxValueAccess(path.node))

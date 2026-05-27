@@ -267,6 +267,7 @@ function handle(value: number, state: { count: number }) {
     expect(result.script).toContain('++ctx.count.value')
     expect(result.script).toContain('ctx.count.value > 1 ? ctx.count.value = ctx.count.value - 1 : ctx.count.value = ctx.count.value + 1')
     expect(result.script).toContain('ctx.handle(ctx.count.value, { count: ctx.count.value })')
+    expect(result.script).not.toContain('ctx.handle.value')
     expect(result.script).not.toContain('ctx.count.value.value')
   })
 
