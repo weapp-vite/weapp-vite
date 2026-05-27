@@ -104,14 +104,16 @@ export function evaluateWorkspaceHmrThresholds(
     .filter((value): value is number => typeof value === 'number')
   const scenarioP95Ms = percentile(measuredScenarioMs, 0.95)
   const globalThresholds = mergeThresholds(DEFAULT_BASELINE_THRESHOLDS, options.baseline?.thresholds, options.overrides)
+  const baselineScenarioP95Ms = percentile(collectBaselineScenarioTimes(results, options.baseline), 0.95)
 
   if (scenarioP95Ms != null && globalThresholds.maxScenarioP95Ms != null && scenarioP95Ms > globalThresholds.maxScenarioP95Ms) {
-    issues.push({
+    checkAbsoluteLimit(issues, {
       project: '<workspace>',
       metric: 'scenarioP95Ms',
       actual: scenarioP95Ms,
-      limit: globalThresholds.maxScenarioP95Ms,
-      message: `HMR P95 ${formatNumber(scenarioP95Ms)}ms exceeds ${formatNumber(globalThresholds.maxScenarioP95Ms)}ms`,
+      limit: resolveBaselineAwareLimit(globalThresholds.maxScenarioP95Ms, baselineScenarioP95Ms, globalThresholds),
+      baseline: baselineScenarioP95Ms,
+      message: limit => `HMR P95 ${formatNumber(scenarioP95Ms)}ms exceeds ${formatNumber(limit)}ms`,
     })
   }
 
@@ -166,11 +168,8 @@ function checkScenarioTime(
   }
   const regressionLimit = baseline?.totalMs == null
     ? undefined
-    : baseline.totalMs + Math.max(
-      thresholds.maxRegressionMs ?? 0,
-      baseline.totalMs * (thresholds.maxRegressionRatio ?? 0),
-    )
-  const limit = minDefined(thresholds.maxScenarioMs, regressionLimit)
+    : createRegressionLimit(baseline.totalMs, thresholds)
+  const limit = resolveBaselineAwareLimit(thresholds.maxScenarioMs, baseline?.totalMs, thresholds, regressionLimit)
   checkAbsoluteLimit(issues, {
     project,
     scenario: scenario.id,
@@ -217,6 +216,7 @@ function checkAbsoluteLimit(
     actual: number
     limit?: number
     baseline?: number
+    message?: (limit: number) => string
   },
 ) {
   if (input.limit == null || input.actual <= input.limit) {
@@ -229,8 +229,39 @@ function checkAbsoluteLimit(
     actual: input.actual,
     limit: input.limit,
     baseline: input.baseline,
-    message: `${input.metric} ${formatNumber(input.actual)} exceeds ${formatNumber(input.limit)}`,
+    message: input.message?.(input.limit) ?? `${input.metric} ${formatNumber(input.actual)} exceeds ${formatNumber(input.limit)}`,
   })
+}
+
+function collectBaselineScenarioTimes(results: ProjectResult[], baseline: WorkspaceHmrBaseline | undefined) {
+  if (!baseline) {
+    return []
+  }
+  return results
+    .flatMap((project) => {
+      const baselineProject = baseline.projects[project.baselineId ?? project.id]
+      return project.scenarios.map(scenario => baselineProject?.scenarios[scenario.id]?.totalMs)
+    })
+    .filter((value): value is number => typeof value === 'number')
+}
+
+function resolveBaselineAwareLimit(
+  absoluteLimit: number | undefined,
+  baselineValue: number | undefined,
+  thresholds: WorkspaceHmrThresholds,
+  regressionLimit = baselineValue == null ? undefined : createRegressionLimit(baselineValue, thresholds),
+) {
+  if (baselineValue != null && absoluteLimit != null && baselineValue > absoluteLimit) {
+    return regressionLimit
+  }
+  return minDefined(absoluteLimit, regressionLimit)
+}
+
+function createRegressionLimit(baselineValue: number, thresholds: WorkspaceHmrThresholds) {
+  return baselineValue + Math.max(
+    thresholds.maxRegressionMs ?? 0,
+    baselineValue * (thresholds.maxRegressionRatio ?? 0),
+  )
 }
 
 function createMissingBaselineIssue(project: string, scenario: string): ThresholdIssue {

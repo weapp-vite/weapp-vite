@@ -229,6 +229,65 @@ describe('workspace HMR baseline thresholds', () => {
     ])
   })
 
+  it('uses baseline regression budgets when baseline scenario time exceeds the absolute limit', () => {
+    const baseline = createWorkspaceHmrBaseline([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 3_000,
+          },
+        ],
+      },
+    ], {
+      generatedAt: '2026-04-29T00:00:00.000Z',
+      mode: 'templates-baseline',
+      thresholds: {
+        maxScenarioMs: 1_000,
+        maxRegressionMs: 1_000,
+        maxRegressionRatio: 0,
+      },
+    })
+
+    const stable = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 3_900,
+          },
+        ],
+      },
+    ], { baseline })
+
+    expect(stable.issues).toHaveLength(0)
+
+    const regressed = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 4_100,
+          },
+        ],
+      },
+    ], { baseline })
+
+    expect(regressed.issues).toMatchObject([
+      {
+        project: 'templates/weapp-vite-template',
+        scenario: 'native-template',
+        metric: 'totalMs',
+        actual: 4_100,
+        limit: 4_000,
+        baseline: 3_000,
+      },
+    ])
+  })
+
   it('fails when scenario P95 is above 1000ms', () => {
     const evaluation = evaluateWorkspaceHmrThresholds([
       {
@@ -263,6 +322,56 @@ describe('workspace HMR baseline thresholds', () => {
       },
     ])
     expect(renderThresholdMarkdown(evaluation)).toContain('| <workspace> | - | scenarioP95Ms | 1001 | 1000 | - |')
+  })
+
+  it('uses baseline regression budgets when baseline scenario P95 exceeds the absolute limit', () => {
+    const baseline = createWorkspaceHmrBaseline([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-template',
+            totalMs: 900,
+          },
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-script',
+            totalMs: 3_000,
+          },
+        ],
+      },
+    ], {
+      generatedAt: '2026-04-29T00:00:00.000Z',
+      mode: 'templates-baseline',
+      thresholds: {
+        maxScenarioMs: 5_000,
+        maxScenarioP95Ms: 1_000,
+        maxRegressionMs: 1_000,
+        maxRegressionRatio: 0,
+      },
+    })
+
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-template',
+            totalMs: 900,
+          },
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-script',
+            totalMs: 3_900,
+          },
+        ],
+      },
+    ], { baseline })
+
+    expect(evaluation.scenarioP95Ms).toBe(3_900)
+    expect(evaluation.issues).toHaveLength(0)
   })
 
   it('uses baseline scenario budgets when no env overrides are provided', () => {
