@@ -256,7 +256,7 @@ function createLoader(options?: CreateLoaderOptions) {
 
   const registerJsonAsset = vi.fn()
   const scanTemplateEntry = vi.fn()
-  const applyAutoImports = vi.fn()
+  const applyAutoImports = vi.fn(() => [])
   const normalizeEntry = vi.fn(options?.normalizeEntry ?? ((entry: string) => entry))
   const runtimeState = createRuntimeState()
   const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
@@ -519,6 +519,35 @@ describe('createEntryLoader', () => {
 
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
     expect(runtimeState.autoImport.pendingEntriesByImporter.has('/project/src/pages/home')).toBe(false)
+  })
+
+  it('force emits auto-import entries injected during the current load', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, loadedEntrySet, applyAutoImports } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    jsonService.read.mockResolvedValue({})
+    applyAutoImports.mockImplementation((_baseName, json) => {
+      json.usingComponents = {
+        HotCard: '/components/HotCard/index',
+      }
+      return ['/components/HotCard/index']
+    })
+    loadedEntrySet.add('/project/src/components/HotCard/index')
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+
+    expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
   })
 
   it('marks custom tab bar and app bar app entries as components', async () => {

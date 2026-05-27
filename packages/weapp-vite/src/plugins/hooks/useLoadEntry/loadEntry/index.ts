@@ -41,7 +41,7 @@ interface EntryLoaderOptions {
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
-  applyAutoImports: (baseName: string, json: any) => void
+  applyAutoImports: (baseName: string, json: any) => string[]
   extendedLibManager: ExtendedLibManager
   buildTarget?: BuildTarget
   debug?: (...args: any[]) => void
@@ -400,7 +400,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       }
 
       await ctx.autoImportService?.awaitPendingRegistrations?.()
-      applyAutoImports(baseName, json)
+      const injectedAutoImportEntries = applyAutoImports(baseName, json) ?? []
       const componentEntries = analyzeCommonJson(json)
       const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
       const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined
@@ -422,7 +422,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       for (const componentEntry of mergedComponentEntries) {
         const normalizedComponentEntry = normalizeEntry(componentEntry, jsonPath)
         explicitEntryTypes.set(normalizedComponentEntry, 'component')
-        if (pendingAutoImportEntries.includes(componentEntry)) {
+        if (pendingAutoImportEntries.includes(componentEntry) || injectedAutoImportEntries.includes(componentEntry)) {
           forceEmitEntrySet.add(normalizedComponentEntry)
         }
       }

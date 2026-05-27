@@ -24,12 +24,13 @@ describe('createAutoImportAugmenter', () => {
     )
 
     const json: Record<string, any> = {}
-    applyAutoImports('/project/src/pages/index/index', json)
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
 
     expect(resolve).toHaveBeenCalledWith('Navbar', '/project/src/pages/index/index')
     expect(json.usingComponents).toEqual({
       Navbar: '/components/Navbar/index',
     })
+    expect(injectedEntries).toEqual(['/components/Navbar/index'])
   })
 
   it('does not inject usingComponents when tag name case mismatches', () => {
@@ -54,10 +55,11 @@ describe('createAutoImportAugmenter', () => {
     )
 
     const json: Record<string, any> = {}
-    applyAutoImports('/project/src/pages/index/index', json)
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
 
     expect(resolve).toHaveBeenCalledWith('Navbar', '/project/src/pages/index/index')
     expect(json.usingComponents).toBeUndefined()
+    expect(injectedEntries).toEqual([])
   })
 
   it('injects usingComponents from imported template components', () => {

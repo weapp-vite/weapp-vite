@@ -264,4 +264,34 @@ describe('workspace HMR baseline thresholds', () => {
     ])
     expect(renderThresholdMarkdown(evaluation)).toContain('| <workspace> | - | scenarioP95Ms | 1001 | 1000 | - |')
   })
+
+  it('uses baseline scenario budgets when no env overrides are provided', () => {
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'native-template',
+            totalMs: 1_500,
+          },
+        ],
+      },
+    ], {
+      baseline: {
+        version: 1,
+        scope: 'templates',
+        generatedAt: '2026-01-01T00:00:00.000Z',
+        mode: 'templates-baseline',
+        thresholds: {
+          maxScenarioMs: 12_000,
+          maxScenarioP95Ms: 12_000,
+        },
+        projects: {},
+      },
+    })
+
+    expect(evaluation.issues).toHaveLength(2)
+    expect(evaluation.issues.every(issue => issue.metric === 'baseline')).toBe(true)
+  })
 })

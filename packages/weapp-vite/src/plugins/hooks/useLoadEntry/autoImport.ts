@@ -15,7 +15,7 @@ export function createAutoImportAugmenter(
     const hit = wxmlService.getAggregatedAutoImportComponents?.(baseName)
       ?? wxmlService.getAggregatedComponents(baseName)
     if (!hit) {
-      return
+      return []
     }
 
     const version = autoImportService.getVersion()
@@ -40,6 +40,7 @@ export function createAutoImportAugmenter(
           return usingComponents
         })()
 
+    const injectedEntries: string[] = []
     for (const [name, from] of Object.entries(resolvedUsingComponents)) {
       const usingComponents = get(json, 'usingComponents')
       if (isObject(usingComponents) && Reflect.has(usingComponents, name)) {
@@ -47,6 +48,9 @@ export function createAutoImportAugmenter(
       }
 
       set(json, `usingComponents.${name}`, from)
+      injectedEntries.push(from)
     }
+
+    return injectedEntries
   }
 }
