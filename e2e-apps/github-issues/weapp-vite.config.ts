@@ -104,6 +104,8 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-521/**',
     'pages/issue-528/**',
     'pages/issue-530/**',
+    'pages/scoped-slot-outlet-fallback/**',
+    'components/scoped-slot-outlet-fallback/**',
   ],
   'github-issues.runtime.slot-fallback-compiler-off.test.ts': [
     'pages/slot-fallback-compiler-off/**',

@@ -608,7 +608,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`
   const projectedContent = hasScopeBindings
-    ? scopedTag
+    ? `${slotTag}${scopedTag}`
     : `${scopedTag}${context.platform.wrapElse(slotTag)}`
 
   if (fallbackContent && slotPresentExp) {

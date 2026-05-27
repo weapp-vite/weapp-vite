@@ -476,6 +476,24 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentWxml).not.toContain('vueSlots[')
   })
 
+  it('scoped slot outlet fallback: keeps native named slot projection beside scoped generic outlet', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/scoped-slot-outlet-fallback/index.wxml')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/scoped-slot-outlet-fallback/BackList/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('BackList class="scoped-slot-outlet-fallback-card"')
+    expect(pageWxml).toContain('slot="main"')
+    expect(pageWxml).toContain('slot="footer"')
+    expect(pageWxml).not.toContain('generic:scoped-slots-main=')
+    expect(componentWxml).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
+    expect(componentWxml).not.toContain('<block wx:else><slot name="main" /></block>')
+  })
+
   it('slot fallback compiler off: keeps plain fallback guards independent from scoped slot compiler', async () => {
     await runSlotFallbackCompilerOffBuild()
 

@@ -824,8 +824,23 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
+    expect(code).toContain('<slot name="item" /><scoped-slots-item')
     expect(code).toContain(`__wvSlotProps="{{['item',card.item,'index',card.index]}}"`)
     expect(code).not.toContain(`__wvSlotProps="{{{`)
+  })
+
+  it('keeps native slot outlet fallback for scoped named slot props', () => {
+    const template = `
+<slot name="main" :list="back.state.list" />
+<slot name="footer" :list="back.state.list" />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/components/BackList/index.vue')
+
+    expect(code).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
+    expect(code).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).not.toContain('<block wx:else><slot name="main" /></block>')
   })
 
   it('preserves v-for on scoped slot outlets', () => {

@@ -141,4 +141,35 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('scoped slot outlet fallback: renders native named slot projection in DevTools', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(
+        miniProgram,
+        '/pages/scoped-slot-outlet-fallback/index',
+        'scoped slot outlet native main fallback',
+      )
+      if (!issuePage) {
+        throw new Error('Failed to launch scoped-slot-outlet-fallback page')
+      }
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('scoped slot outlet native main fallback')
+      expect(renderedWxml).toContain('scoped slot outlet native footer fallback')
+      expect(countToken(renderedWxml, 'data-scoped-slot-outlet-fallback="main"')).toBe(1)
+      expect(countToken(renderedWxml, 'data-scoped-slot-outlet-fallback="footer"')).toBe(1)
+
+      const mainFallback = await issuePage.$('[data-scoped-slot-outlet-fallback="main"]')
+      const footerFallback = await issuePage.$('[data-scoped-slot-outlet-fallback="footer"]')
+      if (!mainFallback || !footerFallback) {
+        throw new Error('Failed to query scoped-slot-outlet-fallback probes')
+      }
+      expect((await mainFallback.text()).trim()).toBe('scoped slot outlet native main fallback')
+      expect((await footerFallback.text()).trim()).toBe('scoped slot outlet native footer fallback')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })
