@@ -1,5 +1,11 @@
 # @weapp-core/constants
 
+## 0.1.10
+
+### Patch Changes
+
+- 🐛 **调整 `useTemplateRef()` 的模板 ref 元数据，仅保留基于 class 的 `selector` 作为节点定位入口，不再为普通模板 ref 自动生成或暴露额外 `id`，并同步收敛共享常量导出。** [#620](https://github.com/weapp-vite/weapp-vite/pull/620) by @sonofmagic
+
 ## 0.1.9
 
 ### Patch Changes

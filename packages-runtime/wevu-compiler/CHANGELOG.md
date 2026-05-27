@@ -1,5 +1,19 @@
 # @wevu/compiler
 
+## 6.16.25
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 内联事件表达式中 `<script setup>` 顶层 ref 赋值没有写回 `.value` 的问题，覆盖自增、自减、复合赋值、普通赋值、三元表达式、逗号表达式、函数参数和对象简写等 Vue 3 常见写法，避免小程序运行时点击事件无法正确更新响应式状态。** [#622](https://github.com/weapp-vite/weapp-vite/pull/622) by @sonofmagic
+
+- 🐛 **修复增强作用域插槽中 `v-for` 读取父级数据时的初始化报错，避免 `__wvOwner` 尚未绑定时输出模板数据源执行失败。同时延后 `setup` 方法注入前的首次模板快照，减少 IDE 真实运行时中的模板表达式和插槽投影告警。** [#617](https://github.com/weapp-vite/weapp-vite/pull/617) by @sonofmagic
+
+- 🐛 **调整 `useTemplateRef()` 的模板 ref 元数据，仅保留基于 class 的 `selector` 作为节点定位入口，不再为普通模板 ref 自动生成或暴露额外 `id`，并同步收敛共享常量导出。** [#620](https://github.com/weapp-vite/weapp-vite/pull/620) by @sonofmagic
+
+- 🐛 **修复命名插槽中透传默认 `<slot />` 时生成无效 `<slot slot="...">` 的问题，改为保留可被微信小程序识别的容器投影结构，并支持通过全局配置或组件内静态属性为不同组件、不同具名插槽自定义 fallback wrapper。全局规则里的 `component` 匹配模板标签名，`componentName` 可匹配子组件静态 `defineOptions({ name })`，单个 slot 也可以把 `slot-wrapper` 写在 `<template #xxx>` 上就近覆盖。** [#618](https://github.com/weapp-vite/weapp-vite/pull/618) by @sonofmagic
+- 📦 **Dependencies** [`492e5ee`](https://github.com/weapp-vite/weapp-vite/commit/492e5ee9465456992d6ff248077436f8a4dba710)
+  → `@weapp-core/constants@0.1.10`, `@weapp-vite/ast@6.16.25`
+
 ## 6.16.24
 
 ### Patch Changes

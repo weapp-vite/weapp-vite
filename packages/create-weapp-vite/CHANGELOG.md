@@ -1,5 +1,23 @@
 # create-weapp-vite
 
+## 2.3.36
+
+### Patch Changes
+
+- 🐛 **修复预处理样式产物在 `generateBundle` 阶段重命名时直接写入 `bundle` 导致 Rolldown 输出兼容性警告的问题，改为通过插件 `emitFile` 重新发射目标样式资产。** [#618](https://github.com/weapp-vite/weapp-vite/pull/618) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 内联事件表达式中 `<script setup>` 顶层 ref 赋值没有写回 `.value` 的问题，覆盖自增、自减、复合赋值、普通赋值、三元表达式、逗号表达式、函数参数和对象简写等 Vue 3 常见写法，避免小程序运行时点击事件无法正确更新响应式状态。** [#622](https://github.com/weapp-vite/weapp-vite/pull/622) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 首页按钮点击时使用内联表达式更新 `count` 触发的运行时报错，改为显式方法处理点击事件。** [#620](https://github.com/weapp-vite/weapp-vite/pull/620) by @sonofmagic
+
+- 🐛 **修复小程序构建处理 `srcRoot` 外部链接 Vue 组件时可能向上误读 monorepo 根 `tsconfig.json` 的问题，默认将 Rolldown 的 `tsconfig` 收敛到当前项目目录，同时保留用户显式配置。** [#620](https://github.com/weapp-vite/weapp-vite/pull/620) by @sonofmagic
+
+- 🐛 **开发态现在会保留并监听 `build.watch.include` 的外部路径，同时把配置文件依赖纳入重建；`srcRoot` 之外的已解析组件也会进入编译与 HMR 流程。** [#614](https://github.com/weapp-vite/weapp-vite/pull/614) by @sonofmagic
+
+- 🐛 **修复增强作用域插槽中 `v-for` 读取父级数据时的初始化报错，避免 `__wvOwner` 尚未绑定时输出模板数据源执行失败。同时延后 `setup` 方法注入前的首次模板快照，减少 IDE 真实运行时中的模板表达式和插槽投影告警。** [#617](https://github.com/weapp-vite/weapp-vite/pull/617) by @sonofmagic
+
+- 🐛 **修复命名插槽中透传默认 `<slot />` 时生成无效 `<slot slot="...">` 的问题，改为保留可被微信小程序识别的容器投影结构，并支持通过全局配置或组件内静态属性为不同组件、不同具名插槽自定义 fallback wrapper。全局规则里的 `component` 匹配模板标签名，`componentName` 可匹配子组件静态 `defineOptions({ name })`，单个 slot 也可以把 `slot-wrapper` 写在 `<template #xxx>` 上就近覆盖。** [#618](https://github.com/weapp-vite/weapp-vite/pull/618) by @sonofmagic
+
 ## 2.3.35
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # wevu
 
+## 6.16.25
+
+### Patch Changes
+
+- 🐛 **修复增强作用域插槽中 `v-for` 读取父级数据时的初始化报错，避免 `__wvOwner` 尚未绑定时输出模板数据源执行失败。同时延后 `setup` 方法注入前的首次模板快照，减少 IDE 真实运行时中的模板表达式和插槽投影告警。** [#617](https://github.com/weapp-vite/weapp-vite/pull/617) by @sonofmagic
+
+- 🐛 **调整 `useTemplateRef()` 的模板 ref 元数据，仅保留基于 class 的 `selector` 作为节点定位入口，不再为普通模板 ref 自动生成或暴露额外 `id`，并同步收敛共享常量导出。** [#620](https://github.com/weapp-vite/weapp-vite/pull/620) by @sonofmagic
+- 📦 **Dependencies** [`6162bd9`](https://github.com/weapp-vite/weapp-vite/commit/6162bd9529e6005ed7b5b2392d92647a70fd177c)
+  → `@wevu/compiler@6.16.25`, `@weapp-core/constants@0.1.10`, `@wevu/web-apis@1.2.17`
+
 ## 6.16.24
 
 ### Patch Changes
