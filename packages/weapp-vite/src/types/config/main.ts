@@ -190,7 +190,7 @@ export interface WeappViteConfig {
    * 局部构建范围。默认不启用，启用后只构建主包和指定分包。
    */
   buildScope?: WeappBuildScopeConfig
-  jsonAlias?: AliasOptions
+  jsonAlias?: AliasOptions | false
   npm?: WeappNpmConfig
   generate?: GenerateOptions
   tsconfigPaths?: TsconfigPathsOptions | false

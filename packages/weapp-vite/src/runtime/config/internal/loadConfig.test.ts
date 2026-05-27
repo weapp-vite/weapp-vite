@@ -40,6 +40,7 @@ const inspectTsconfigPathsUsageMock = vi.hoisted(() => vi.fn(async () => ({
   enabled: false,
   root: false,
   references: false,
+  aliases: [],
   referenceAliases: [],
 })))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -132,6 +133,7 @@ beforeEach(() => {
     enabled: false,
     root: false,
     references: false,
+    aliases: [],
     referenceAliases: [],
   })
   loadViteConfigFileMock.mockResolvedValue({
@@ -642,6 +644,7 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: true,
       references: false,
+      aliases: [],
       referenceAliases: [],
     })
     loadViteConfigFileMock.mockResolvedValueOnce({
@@ -711,6 +714,7 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: true,
       references: false,
+      aliases: [],
       referenceAliases: [],
     })
     loadViteConfigFileMock.mockResolvedValueOnce({
@@ -769,6 +773,12 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: false,
       references: true,
+      aliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
       referenceAliases: [
         {
           find: '@',
@@ -811,6 +821,12 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: false,
       references: true,
+      aliases: [
+        {
+          find: '@',
+          replacement: '/project/miniprogram',
+        },
+      ],
       referenceAliases: [
         {
           find: '@',
@@ -858,6 +874,166 @@ describe('runtime config internal loadConfig', () => {
         replacement: '/project/shared',
       }),
     ]))
+  })
+
+  it('uses tsconfig paths as default json aliases', async () => {
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: true,
+      references: false,
+      aliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
+      referenceAliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
+    })
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.aliasEntries).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+    ]))
+  })
+
+  it('keeps explicit json aliases before tsconfig path defaults', async () => {
+    getAliasEntriesMock.mockReturnValueOnce([
+      {
+        find: '@',
+        replacement: '/project/custom-components',
+      },
+    ])
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: true,
+      references: false,
+      aliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+        {
+          find: '@shared',
+          replacement: '/project/shared',
+        },
+      ],
+      referenceAliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+        {
+          find: '@shared',
+          replacement: '/project/shared',
+        },
+      ],
+    })
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          jsonAlias: {
+            entries: {
+              '@': '/project/custom-components',
+            },
+          },
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.aliasEntries).toEqual([
+      {
+        find: '@',
+        replacement: '/project/custom-components',
+      },
+      {
+        find: '@shared',
+        replacement: '/project/shared',
+      },
+    ])
+  })
+
+  it('disables all json aliases when weapp.jsonAlias is false', async () => {
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: true,
+      references: false,
+      aliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
+      referenceAliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
+    })
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          jsonAlias: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(getAliasEntriesMock).not.toHaveBeenCalled()
+    expect(result.aliasEntries).toEqual([])
   })
 
   it('throws when es5 is enabled but jsFormat is not cjs', async () => {

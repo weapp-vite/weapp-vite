@@ -25,7 +25,7 @@ keywords:
 
 ## JS/TS 别名
 
-项目默认会在检测到 `tsconfig.json` / `jsconfig.json` 中存在 `baseUrl` 或 `paths` 时启用 Vite 8 原生的 `resolve.tsconfigPaths`，所以你只要完成这些配置，就能在代码中直接使用别名。
+项目默认会在检测到 `tsconfig.json` / `jsconfig.json` 中存在 `baseUrl` 或 `paths` 时启用 Vite 8 原生的 `resolve.tsconfigPaths`，所以你只要完成这些配置，就能在代码中直接使用别名。`paths` 不再强依赖 `baseUrl`；没有 `baseUrl` 时会相对当前 tsconfig 所在目录解析。
 
 例如：
 
@@ -101,6 +101,8 @@ import utils from '@/utils'
 这些注释不会触发构建错误，并会在产物阶段被剔除。
 
 要启用 JSON 别名，可在 `vite.config.ts` 或 `weapp-vite.config.ts` 中配置 [`weapp.jsonAlias.entries`](/config/json.md#weapp-jsonalias)。语法与 Vite 的 `resolve.alias` 完全一致：
+
+如果项目已经配置了 `compilerOptions.paths`，这部分映射会默认用于 JSON / JSONC 的 `usingComponents`，通常不需要重复配置 `weapp.jsonAlias`。只有需要覆盖或补充 JSON 专用别名时，再配置 `weapp.jsonAlias.entries`；如果需要完全关闭 JSON 别名，设置 `weapp.jsonAlias=false`。
 
 > `weapp.jsonAlias.entries` 配置项传入的参数，同原先 `vite` 的 `resolve.alias` 配置项，[详见地址](https://vite.dev/config/shared-options.html#resolve-alias)
 

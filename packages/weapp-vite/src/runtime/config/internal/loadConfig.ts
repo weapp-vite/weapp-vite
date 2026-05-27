@@ -1,5 +1,6 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
+import type { AliasOptions, ResolvedAlias } from '../../../types'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
@@ -138,6 +139,26 @@ function injectResolvedAliases(
   }
 
   resolve.alias = aliasArray
+}
+
+function mergeJsonAliasEntries(userAlias: AliasOptions | false | undefined, defaultAliases: ResolvedAlias[]) {
+  if (userAlias === false) {
+    return []
+  }
+
+  const userEntries = getAliasEntries(userAlias)
+  if (defaultAliases.length === 0) {
+    return userEntries
+  }
+
+  const merged = [...userEntries]
+  for (const entry of defaultAliases) {
+    if (merged.some(existing => typeof existing.find === 'string' && existing.find === entry.find)) {
+      continue
+    }
+    merged.push(entry)
+  }
+  return merged
 }
 
 function normalizeManagedPathAliasKey(key: string) {
@@ -359,11 +380,16 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const managedTsconfigAliases = collectManagedTsconfigAliases(config, cwd)
     injectResolvedAliases(config, managedTsconfigAliases)
     const tsconfigPathsUsage = await inspectTsconfigPathsUsage(cwd)
+    const tsconfigUsageAliases = tsconfigPathsUsage.aliases ?? []
+    const tsconfigReferenceAliases = tsconfigPathsUsage.referenceAliases ?? []
+    const tsconfigAliases = tsconfigUsageAliases.length > 0
+      ? tsconfigUsageAliases
+      : tsconfigReferenceAliases
     if (!tsconfigPathsUsage.enabled) {
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
     else if (tsconfigPathsUsage.references && !tsconfigPathsUsage.root) {
-      injectResolvedAliases(config, tsconfigPathsUsage.referenceAliases)
+      injectResolvedAliases(config, tsconfigAliases)
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
     const resolvedLibConfig = libEntryConfigured
@@ -432,7 +458,10 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     if (pluginOnly && buildConfig.outDir) {
       mpDistRoot = buildConfig.outDir
     }
-    const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
+    const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias, [
+      ...managedTsconfigAliases,
+      ...tsconfigAliases,
+    ])
 
     config.plugins ??= []
     const tsconfigPathsOptions = config.weapp?.tsconfigPaths

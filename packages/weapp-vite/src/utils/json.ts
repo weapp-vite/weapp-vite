@@ -57,7 +57,12 @@ export function matches(pattern: string | RegExp, importee: string) {
   return importee.startsWith(pattern + '/')
 }
 
-export function getAliasEntries({ entries }: AliasOptions = {}): ResolvedAlias[] {
+export function getAliasEntries(options: AliasOptions | false = {}): ResolvedAlias[] {
+  if (options === false) {
+    return []
+  }
+
+  const { entries } = options
   if (!entries) {
     return []
   }

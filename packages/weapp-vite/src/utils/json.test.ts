@@ -25,6 +25,7 @@ describe('utils/json resolveJson', () => {
 
   it('normalizes alias entries and resolves importee with and without matches', () => {
     expect(getAliasEntries()).toEqual([])
+    expect(getAliasEntries(false)).toEqual([])
     expect(getAliasEntries({
       entries: {
         '@': '/project/src',
@@ -51,6 +52,13 @@ describe('utils/json resolveJson', () => {
         [{ find: '@', replacement: '/project/src' }],
       ),
     ).toBe('../../components/card')
+    expect(
+      resolveImportee(
+        '@/components/card',
+        '/project/src/subpkg/pages/index/index.json',
+        [{ find: '@', replacement: '/project/src' }],
+      ),
+    ).toBe('../../../components/card')
     expect(
       resolveImportee(
         'plain/id',

@@ -19,9 +19,25 @@ keywords:
 [[toc]]
 
 ## `weapp.jsonAlias` {#weapp-jsonalias}
-- **类型**：`{ entries?: Record<string, string> | { find: string | RegExp; replacement: string }[] }`
-- **默认值**：`undefined`
+- **类型**：`false | { entries?: Record<string, string> | { find: string | RegExp; replacement: string }[] }`
+- **默认值**：从 `tsconfig.json` / `jsconfig.json` 的 `compilerOptions.paths` 自动派生，显式 `entries` 会优先生效
 - **作用范围**：**仅作用于 `usingComponents`**（其他字段保持原样）。
+
+默认情况下，`compilerOptions.paths` 会同时作为 JS/TS 构建别名和 JSON 别名使用。例如源码页面 `src/pages/index/index.json` 中写 `@/components/foo`，并配置 `paths: { "@/*": ["src/*"] }` 时，最终产物会写成相对当前 JSON 的 `../../components/foo`。即使没有配置 `baseUrl`，`paths` 也会按所在 tsconfig 目录解析；配置了 `baseUrl` 时则按 TypeScript 语义相对 `baseUrl` 解析。
+
+如果你配置了 `weapp.jsonAlias.entries`，显式 JSON 别名会优先于自动派生的 `paths` 别名；没有冲突的 `paths` 别名仍会作为默认值补上。
+
+如果需要完全关闭 JSON 别名，包括 `compilerOptions.paths` 自动派生的默认别名，可以设置 `jsonAlias: false`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    jsonAlias: false,
+  },
+})
+```
 
 ```ts
 import path from 'node:path'

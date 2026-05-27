@@ -24,6 +24,7 @@ describe('tsconfigPaths', () => {
       enabled: false,
       root: false,
       references: false,
+      aliases: [],
       referenceAliases: [],
     })
     await expect(shouldEnableTsconfigPathsPlugin(tempRoot)).resolves.toBe(false)
@@ -45,9 +46,58 @@ describe('tsconfigPaths', () => {
       enabled: true,
       root: true,
       references: false,
+      aliases: [
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
+        { find: '@shared', replacement: normalizePath(path.join(tempRoot, 'shared/index.ts')) },
+      ],
       referenceAliases: [
         { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
         { find: '@shared', replacement: normalizePath(path.join(tempRoot, 'shared/index.ts')) },
+      ],
+    })
+  })
+
+  it('resolves paths relative to config directory when baseUrl is omitted', async () => {
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '@/*': ['src/*'],
+        },
+      },
+    }, null, 2))
+
+    await expect(inspectTsconfigPathsUsage(tempRoot)).resolves.toEqual({
+      enabled: true,
+      root: true,
+      references: false,
+      aliases: [
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
+      ],
+      referenceAliases: [
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
+      ],
+    })
+  })
+
+  it('resolves paths relative to baseUrl when baseUrl is provided', async () => {
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify({
+      compilerOptions: {
+        baseUrl: './src',
+        paths: {
+          '@/*': ['*'],
+        },
+      },
+    }, null, 2))
+
+    await expect(inspectTsconfigPathsUsage(tempRoot)).resolves.toEqual({
+      enabled: true,
+      root: true,
+      references: false,
+      aliases: [
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
+      ],
+      referenceAliases: [
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
       ],
     })
   })
@@ -69,6 +119,9 @@ describe('tsconfigPaths', () => {
       enabled: true,
       root: true,
       references: false,
+      aliases: [
+        { find: '@base', replacement: normalizePath(path.join(tempRoot, 'configs/base-src')) },
+      ],
       referenceAliases: [
         { find: '@base', replacement: normalizePath(path.join(tempRoot, 'configs/base-src')) },
       ],
@@ -94,6 +147,9 @@ describe('tsconfigPaths', () => {
       enabled: true,
       root: false,
       references: true,
+      aliases: [
+        { find: '@pkg-a', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/src')) },
+      ],
       referenceAliases: [
         { find: '@pkg-a', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/src')) },
       ],
@@ -134,6 +190,10 @@ describe('tsconfigPaths', () => {
       enabled: true,
       root: true,
       references: true,
+      aliases: [
+        { find: '@dup', replacement: normalizePath(path.join(tempRoot, 'root-src')) },
+        { find: '@ref', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/ref-only')) },
+      ],
       referenceAliases: [
         { find: '@dup', replacement: normalizePath(path.join(tempRoot, 'root-src')) },
         { find: '@ref', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/ref-only')) },
@@ -165,6 +225,9 @@ describe('tsconfigPaths', () => {
       enabled: true,
       root: false,
       references: true,
+      aliases: [
+        { find: '@b', replacement: normalizePath(path.join(tempRoot, 'b/src')) },
+      ],
       referenceAliases: [
         { find: '@b', replacement: normalizePath(path.join(tempRoot, 'b/src')) },
       ],

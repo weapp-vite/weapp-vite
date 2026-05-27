@@ -34,6 +34,7 @@ export interface TsconfigPathsUsage {
   enabled: boolean
   root: boolean
   references: boolean
+  aliases: Array<{ find: string, replacement: string }>
   referenceAliases: Array<{ find: string, replacement: string }>
 }
 
@@ -45,24 +46,35 @@ function normalizePathAliasKey(key: string) {
 }
 
 function normalizePathAliasTarget(target: string) {
-  if (!target || (target.includes('*') && !target.endsWith('/*'))) {
+  if (!target || (target.includes('*') && !(target === '*' || target.endsWith('/*')))) {
     return undefined
+  }
+  if (target === '*') {
+    return ''
   }
   return target.endsWith('/*') ? target.slice(0, -2) : target
 }
 
-function extractPathAliases(baseDir: string, compilerOptions: any) {
+function resolvePathAliasBaseDir(configDir: string, compilerOptions: any) {
+  const baseUrl = compilerOptions?.baseUrl
+  return typeof baseUrl === 'string' && baseUrl
+    ? path.resolve(configDir, baseUrl)
+    : configDir
+}
+
+function extractPathAliases(configDir: string, compilerOptions: any) {
   const aliases: Array<{ find: string, replacement: string }> = []
   const paths = compilerOptions?.paths
   if (!paths || typeof paths !== 'object') {
     return aliases
   }
 
+  const baseDir = resolvePathAliasBaseDir(configDir, compilerOptions)
   for (const [key, value] of Object.entries(paths)) {
     const find = normalizePathAliasKey(key)
     const target = Array.isArray(value) ? value.find(item => typeof item === 'string') : undefined
     const normalizedTarget = typeof target === 'string' ? normalizePathAliasTarget(target) : undefined
-    if (!find || !normalizedTarget) {
+    if (!find || normalizedTarget === undefined) {
       continue
     }
     aliases.push({
@@ -202,6 +214,7 @@ export async function inspectTsconfigPathsUsage(cwd: string): Promise<TsconfigPa
     enabled: root || references,
     root,
     references,
+    aliases: referenceAliases,
     referenceAliases,
   }
 }
