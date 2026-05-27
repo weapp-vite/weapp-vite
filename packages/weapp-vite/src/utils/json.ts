@@ -16,6 +16,10 @@ export interface JsonResolvableEntry {
   type?: 'app' | 'page' | 'component' | 'plugin'
 }
 
+type AppJsonSubPackage = Record<string, any> & {
+  pages?: any
+}
+
 interface ResolveJsonOptions {
   dependencies?: Record<string, string>
   alipayNpmMode?: string
@@ -41,6 +45,28 @@ export function stringifyJson(value: object, replacer?: (
   (key: string, value: unknown) => unknown
 ) | Array<number | string> | null) {
   return stringify(value, replacer, 2)
+}
+
+export function normalizeAppJson(json: any) {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    return json
+  }
+
+  const subPackages: AppJsonSubPackage[] = Array.isArray(json.subPackages)
+    ? json.subPackages
+    : Array.isArray(json.subpackages)
+      ? json.subpackages
+      : []
+
+  const { subpackages: _subpackages, ...rest } = json
+
+  return {
+    ...rest,
+    subPackages: subPackages.map(subPackage => ({
+      ...subPackage,
+      pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
+    })),
+  }
 }
 
 export function matches(pattern: string | RegExp, importee: string) {
@@ -183,7 +209,9 @@ function normalizeComponentGenericsByPlatform(
 
 export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform, options?: ResolveJsonOptions) {
   if (entry.json) {
-    const json = structuredClone(entry.json)
+    const json = entry.type === 'app'
+      ? normalizeAppJson(structuredClone(entry.json))
+      : structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {
       const usingComponents: Record<string, string> = get(json, 'usingComponents')
       if (isObject(usingComponents)) {

@@ -1,6 +1,6 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
-import type { AliasOptions, ResolvedAlias } from '../../../types'
+import type { AliasOptions } from '../../../types'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
@@ -141,24 +141,12 @@ function injectResolvedAliases(
   resolve.alias = aliasArray
 }
 
-function mergeJsonAliasEntries(userAlias: AliasOptions | false | undefined, defaultAliases: ResolvedAlias[]) {
+function mergeJsonAliasEntries(userAlias: AliasOptions | false | undefined) {
   if (userAlias === false) {
     return []
   }
 
-  const userEntries = getAliasEntries(userAlias)
-  if (defaultAliases.length === 0) {
-    return userEntries
-  }
-
-  const merged = [...userEntries]
-  for (const entry of defaultAliases) {
-    if (merged.some(existing => typeof existing.find === 'string' && existing.find === entry.find)) {
-      continue
-    }
-    merged.push(entry)
-  }
-  return merged
+  return getAliasEntries(userAlias)
 }
 
 function normalizeManagedPathAliasKey(key: string) {
@@ -458,10 +446,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     if (pluginOnly && buildConfig.outDir) {
       mpDistRoot = buildConfig.outDir
     }
-    const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias, [
-      ...managedTsconfigAliases,
-      ...tsconfigAliases,
-    ])
+    const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []
     const tsconfigPathsOptions = config.weapp?.tsconfigPaths

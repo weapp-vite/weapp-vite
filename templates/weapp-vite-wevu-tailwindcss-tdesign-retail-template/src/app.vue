@@ -77,16 +77,6 @@ defineAppJson({
   },
   requiredPrivateInfos: ['chooseAddress'],
   lazyCodeLoading: 'requiredComponents',
-  renderer: 'skyline',
-  rendererOptions: {
-    skyline: {
-      defaultDisplayBlock: true,
-      disableABTest: true,
-      sdkVersionBegin: '3.0.0',
-      sdkVersionEnd: '15.255.255',
-    },
-  },
-  componentFramework: 'glass-easel',
   usingComponents: {},
   window: {
     backgroundTextStyle: 'light',

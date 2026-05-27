@@ -6,7 +6,7 @@ import { isObject } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { jsExtensions } from '../../../constants'
-import { findJsEntry, findJsonEntry, findVueEntry } from '../../../utils'
+import { findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
 import { applyBuildScopeToAppConfig, resolveBuildScope } from '../../buildScope'
 import { createWarnOnce, mergeAutoRoutePages } from './shared'
 
@@ -106,16 +106,15 @@ function mergeAutoRouteSubPackages(
 function normalizeAppConfigSubPackages(
   config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
 ) {
-  const subPackages = Array.isArray(config.subPackages)
-    ? config.subPackages
-    : Array.isArray(config.subpackages)
-      ? config.subpackages
-      : []
+  const normalized = normalizeAppJson(config)
+  if (!isObject(normalized)) {
+    return config
+  }
 
-  ;(config as any).subPackages = subPackages.map(subPackage => ({
-    ...subPackage,
-    pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
-  }))
+  for (const key of Object.keys(config)) {
+    delete (config as any)[key]
+  }
+  Object.assign(config, normalized)
 
   return config
 }

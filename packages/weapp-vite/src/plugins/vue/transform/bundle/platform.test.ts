@@ -138,6 +138,77 @@ describe('bundle platform helpers', () => {
     expect(resolveJsonMock).toHaveBeenCalledTimes(1)
   })
 
+  it('normalizes app vue config even on weapp platform', () => {
+    const config = JSON.stringify({
+      pages: ['pages/index/index'],
+      subpackages: [
+        { root: 'pkg', pages: ['detail/index'] },
+      ],
+    })
+
+    const result = normalizeVueConfigForPlatform(config, {
+      platform: 'weapp',
+      kind: 'app',
+    })!
+
+    expect(JSON.parse(result)).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [
+        { root: 'pkg', pages: ['detail/index'] },
+      ],
+    })
+    expect(resolveJsonMock).toHaveBeenCalledWith(
+      {
+        json: {
+          pages: ['pages/index/index'],
+          subPackages: [
+            { root: 'pkg', pages: ['detail/index'] },
+          ],
+        },
+        type: 'app',
+      },
+      undefined,
+      'weapp',
+      {
+        dependencies: undefined,
+        alipayNpmMode: undefined,
+      },
+    )
+  })
+
+  it('passes json kind when preparing platform config assets', () => {
+    const config = JSON.stringify({ pages: ['pages/index/index'] })
+
+    preparePlatformConfigAsset({}, {
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'app',
+      config,
+      kind: 'app',
+      outputExtensions: {
+        wxml: 'wxml',
+        json: 'json',
+        js: 'js',
+      } as any,
+      platform: 'weapp',
+    })
+
+    expect(resolveJsonMock).toHaveBeenCalledWith(
+      {
+        json: {
+          pages: ['pages/index/index'],
+          subPackages: [],
+        },
+        type: 'app',
+      },
+      undefined,
+      'weapp',
+      {
+        dependencies: undefined,
+        alipayNpmMode: undefined,
+      },
+    )
+  })
+
   it('falls back to original vue config when normalization input is invalid', () => {
     expect(normalizeVueConfigForPlatform('{', {
       platform: 'alipay',

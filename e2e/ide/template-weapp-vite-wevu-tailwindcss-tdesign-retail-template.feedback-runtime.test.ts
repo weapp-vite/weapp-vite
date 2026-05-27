@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { readPageWxml } from './github-issues.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -193,12 +194,10 @@ async function ensureHomePage(miniProgram: any) {
     return currentPage
   }
   try {
-    const page = await miniProgram.currentPage({
-      timeout: CURRENT_PAGE_READ_TIMEOUT,
-      retries: CURRENT_PAGE_READ_RETRIES,
-    })
-    if (page) {
-      return page
+    await miniProgram.reLaunch(HOME_ROUTE)
+    const relaunchedPage = await waitForCurrentPagePath(miniProgram, HOME_ROUTE, 8_000)
+    if (relaunchedPage) {
+      return relaunchedPage
     }
   }
   catch {
@@ -210,6 +209,30 @@ async function ensureHomePage(miniProgram: any) {
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
+  })
+
+  it('renders the home page in WeChat DevTools', async () => {
+    await runWithRetailSessionRetry('home-render', async (miniProgram) => {
+      const collector = attachRuntimeErrorCollector(miniProgram)
+
+      try {
+        const marker = collector.mark()
+        const page = await ensureHomePage(miniProgram)
+        const goodsList = await waitForHomeGoodsReady(page)
+        if (!goodsList) {
+          throw new Error('Failed to render home goods list in WeChat DevTools')
+        }
+
+        const wxml = await readPageWxml(page)
+        expect(page.path).toBe(HOME_ROUTE.slice(1))
+        expect(wxml).toContain('home-page-header')
+        expect(wxml).toContain('goods-list-container')
+        expect(collector.getSince(marker)).toEqual([])
+      }
+      finally {
+        collector.dispose()
+      }
+    })
   })
 
   it('does not emit runtime warnings when layout toast is triggered from home page', async (ctx) => {

@@ -371,6 +371,27 @@ describe('createEntryLoader', () => {
     expect(readFileMock).toHaveBeenCalledWith('/project/src/app.js', { checkMtime: undefined })
   })
 
+  it('registers normalized app json from app entry', async () => {
+    const { loader, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      subpackages: [{ root: 'pages/goods', pages: ['details/index'] }],
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/app.vue',
+      type: 'app',
+      json: {
+        pages: ['pages/home/home'],
+        subPackages: [{ root: 'pages/goods', pages: ['details/index'] }],
+      },
+    })
+  })
+
   it('prepends style imports once when sidecar styles exist', async () => {
     existsMock.mockImplementation(async (target: string) => {
       if (target === '/project/src/app.wxss') {

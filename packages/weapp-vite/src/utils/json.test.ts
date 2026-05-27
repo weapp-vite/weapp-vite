@@ -319,7 +319,27 @@ describe('utils/json resolveJson', () => {
     expect(normalized.$schema).toBeUndefined()
     expect(normalized.usingComponents['t-button']).toBe('components/TButton')
     expect(normalized.subPackages[0].entry).toBe('workers/task.js')
-    expect(normalized.subpackages[0].entry).toBe('workers/legacy.js')
+    expect(normalized.subpackages).toBeUndefined()
+  })
+
+  it('normalizes legacy app subpackages to subPackages during json resolve', () => {
+    const source = resolveJson({
+      type: 'app',
+      json: {
+        pages: ['pages/index/index'],
+        subpackages: [
+          { root: 'pkg', pages: ['detail/index'] },
+        ],
+      },
+    })!
+
+    const normalized = JSON.parse(source)
+    expect(normalized).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [
+        { root: 'pkg', pages: ['detail/index'] },
+      ],
+    })
   })
 
   it('keeps already-normalized npm prefix and ignores unmatched dependencies', () => {

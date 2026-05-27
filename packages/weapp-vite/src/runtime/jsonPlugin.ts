@@ -5,7 +5,7 @@ import type { FileCache } from '@/cache'
 import { fs } from '@weapp-core/shared/fs'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
-import { inlineAutoRoutesImports, parseCommentJson, resolveJson } from '../utils'
+import { inlineAutoRoutesImports, normalizeAppJson, parseCommentJson, resolveJson } from '../utils'
 import { hasOwn } from './utils/object'
 import { requireConfigService } from './utils/requireConfigService'
 
@@ -16,30 +16,6 @@ export interface JsonService {
   read: (filepath: string) => Promise<any>
   resolve: (entry: JsonResolvableEntry) => string | undefined
   cache: FileCache<any>
-}
-
-type AppConfigSubPackage = Record<string, any> & {
-  pages?: any
-}
-
-function normalizeAppConfigJson(config: any) {
-  if (!config || typeof config !== 'object' || Array.isArray(config)) {
-    return config
-  }
-
-  const subPackages: AppConfigSubPackage[] = Array.isArray(config.subPackages)
-    ? config.subPackages
-    : Array.isArray(config.subpackages)
-      ? config.subpackages
-      : []
-
-  return {
-    ...config,
-    subPackages: subPackages.map(subPackage => ({
-      ...subPackage,
-      pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
-    })),
-  }
 }
 
 function createJsonService(ctx: MutableCompilerContext): JsonService {
@@ -97,7 +73,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
         resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))
       }
       if (isAppConfig) {
-        resultJson = normalizeAppConfigJson(resultJson)
+        resultJson = normalizeAppJson(resultJson)
       }
       cache.set(filepath, resultJson)
       return resultJson

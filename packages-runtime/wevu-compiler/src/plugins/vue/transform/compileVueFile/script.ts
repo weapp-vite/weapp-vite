@@ -56,7 +56,23 @@ export function resolveScriptSetupPropsDerivedKeys(bindings: Record<string, any>
 function collectScriptSetupReturnInfo(scriptCode: string) {
   const keys = new Set<string>()
   const propsObjectAliases = new Set<string>(['__props'])
+  const propsRefsAliases = new Set<string>()
   const destructuredPropsKeys = new Set<string>()
+
+  const addObjectPatternKeys = (pattern: t.ObjectPattern) => {
+    for (const property of pattern.properties) {
+      if (!t.isObjectProperty(property)) {
+        continue
+      }
+      if (t.isIdentifier(property.value)) {
+        destructuredPropsKeys.add(property.value.name)
+      }
+      else if (t.isAssignmentPattern(property.value) && t.isIdentifier(property.value.left)) {
+        destructuredPropsKeys.add(property.value.left.name)
+      }
+    }
+  }
+
   try {
     const ast = parseJsLike(scriptCode)
     traverse(ast, {
@@ -66,19 +82,39 @@ function collectScriptSetupReturnInfo(scriptCode: string) {
           propsObjectAliases.add(path.node.id.name)
           return
         }
-        if (!t.isObjectPattern(path.node.id) || !t.isIdentifier(init) || !propsObjectAliases.has(init.name)) {
+        if (
+          t.isIdentifier(path.node.id)
+          && t.isCallExpression(init)
+          && t.isIdentifier(init.callee, { name: 'toRefs' })
+          && init.arguments.length === 1
+          && t.isIdentifier(init.arguments[0])
+          && propsObjectAliases.has(init.arguments[0].name)
+        ) {
+          propsRefsAliases.add(path.node.id.name)
           return
         }
-        for (const property of path.node.id.properties) {
-          if (!t.isObjectProperty(property)) {
-            continue
-          }
-          if (t.isIdentifier(property.value)) {
-            destructuredPropsKeys.add(property.value.name)
-          }
-          else if (t.isAssignmentPattern(property.value) && t.isIdentifier(property.value.left)) {
-            destructuredPropsKeys.add(property.value.left.name)
-          }
+        if (!t.isObjectPattern(path.node.id)) {
+          return
+        }
+        if (t.isIdentifier(init) && propsObjectAliases.has(init.name)) {
+          addObjectPatternKeys(path.node.id)
+          return
+        }
+        if (
+          t.isIdentifier(init)
+          && propsRefsAliases.has(init.name)
+        ) {
+          addObjectPatternKeys(path.node.id)
+          return
+        }
+        if (
+          t.isCallExpression(init)
+          && t.isIdentifier(init.callee, { name: 'toRefs' })
+          && init.arguments.length === 1
+          && t.isIdentifier(init.arguments[0])
+          && propsObjectAliases.has(init.arguments[0].name)
+        ) {
+          addObjectPatternKeys(path.node.id)
         }
       },
       ObjectProperty(path) {

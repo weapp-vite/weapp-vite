@@ -102,7 +102,7 @@ import utils from '@/utils'
 
 要启用 JSON 别名，可在 `vite.config.ts` 或 `weapp-vite.config.ts` 中配置 [`weapp.jsonAlias.entries`](/config/json.md#weapp-jsonalias)。语法与 Vite 的 `resolve.alias` 完全一致：
 
-如果项目已经配置了 `compilerOptions.paths`，这部分映射会默认用于 JSON / JSONC 的 `usingComponents`，通常不需要重复配置 `weapp.jsonAlias`。只有需要覆盖或补充 JSON 专用别名时，再配置 `weapp.jsonAlias.entries`；如果需要完全关闭 JSON 别名，设置 `weapp.jsonAlias=false`。
+`compilerOptions.paths` 只负责 JS/TS 模块解析，不会默认用于 JSON / JSONC 的 `usingComponents`。如果需要在 JSON 中使用别名，请显式配置 `weapp.jsonAlias.entries`；如果需要完全关闭 JSON 别名，设置 `weapp.jsonAlias=false`。
 
 > `weapp.jsonAlias.entries` 配置项传入的参数，同原先 `vite` 的 `resolve.alias` 配置项，[详见地址](https://vite.dev/config/shared-options.html#resolve-alias)
 

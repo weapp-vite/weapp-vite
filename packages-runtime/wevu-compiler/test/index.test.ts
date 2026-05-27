@@ -28,6 +28,23 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
     expect(result.script).toContain('String(__wevuUnref(')
   })
 
+  it('treats toRefs(props) destructure as props-derived setup bindings', async () => {
+    const source = `
+<script setup lang="ts">
+import { toRefs } from 'wevu'
+const props = defineProps<{ goodsList: unknown[]; thresholds: number[] }>()
+const { goodsList, thresholds } = toRefs(props)
+</script>
+<template>
+  <view>{{ goodsList.length }} {{ thresholds.length }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/components/goods-list/index.vue')
+
+    expect(result.script).toContain('__wevuPropsDerivedKeys: ["goodsList", "thresholds"]')
+  })
+
   it('resolves renamed defineProps destructure aliases in template runtime bindings', async () => {
     const source = `
 <script setup lang="ts">

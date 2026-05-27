@@ -14,6 +14,24 @@ vi.mock('../../utils', () => ({
   findJsonEntry: findJsonEntryMock,
   findJsEntry: findJsEntryMock,
   findVueEntry: findVueEntryMock,
+  normalizeAppJson(json: any) {
+    if (!json || typeof json !== 'object' || Array.isArray(json)) {
+      return json
+    }
+    const subPackages = Array.isArray(json.subPackages)
+      ? json.subPackages
+      : Array.isArray(json.subpackages)
+        ? json.subpackages
+        : []
+    const { subpackages: _subpackages, ...rest } = json
+    return {
+      ...rest,
+      subPackages: subPackages.map((subPackage: any) => ({
+        ...subPackage,
+        pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
+      })),
+    }
+  },
 }))
 
 vi.mock('../../utils/file', () => ({
@@ -303,6 +321,10 @@ describe('scanPlugin service', () => {
 
     expect(entry.path).toBe('/project/src/app.vue')
     expect(entry.jsonPath).toBe('/project/src/app.vue')
+    expect(entry.json).toEqual({
+      pages: ['pages/home/index'],
+      subPackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+    })
     expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 

@@ -5,7 +5,7 @@ import {
   shouldEmitGenericPlaceholderAsset,
   shouldNormalizeVueTemplateForPlatform,
 } from '../../../../platform'
-import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
+import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, normalizeAppJson, resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
@@ -94,6 +94,7 @@ export function normalizeVueConfigForPlatform(
   config: string | undefined,
   options: {
     platform: string
+    kind?: 'app' | 'page' | 'component'
     dependencies?: Record<string, string>
     alipayNpmMode?: string
   },
@@ -116,7 +117,11 @@ export function normalizeVueConfigForPlatform(
 
   try {
     const parsed = JSON.parse(config)
+    const normalized = options.kind === 'app'
+      ? normalizeAppJson(parsed)
+      : parsed
     const shouldNormalizeConfig = jsonPlatformOptions.normalizeUsingComponents
+      || options.kind === 'app'
       || (options.platform === 'weapp' && shouldNormalizeWeappScopedSlotGenericPlaceholder(parsed))
     if (!shouldNormalizeConfig) {
       return config
@@ -124,7 +129,8 @@ export function normalizeVueConfigForPlatform(
 
     return resolveJson(
       {
-        json: parsed,
+        json: normalized,
+        type: options.kind,
       },
       undefined,
       options.platform as any,
@@ -371,11 +377,13 @@ export function emitAlipayGenericPlaceholderAssets(
 export function prepareNormalizedVueConfigForPlatform(options: {
   config: string | undefined
   platform: string
+  kind?: 'app' | 'page' | 'component'
   dependencies?: Record<string, string>
   alipayNpmMode?: string
 }) {
   return normalizeVueConfigForPlatform(options.config, {
     platform: options.platform,
+    kind: options.kind,
     dependencies: options.dependencies,
     alipayNpmMode: options.alipayNpmMode,
   })
@@ -384,6 +392,7 @@ export function prepareNormalizedVueConfigForPlatform(options: {
 export function resolvePlatformConfigAssetState(options: {
   relativeBase: string
   config: string | undefined
+  kind?: 'app' | 'page' | 'component'
   platform: string
   dependencies?: Record<string, string>
   alipayNpmMode?: string
@@ -391,6 +400,7 @@ export function resolvePlatformConfigAssetState(options: {
   const normalizedConfig = prepareNormalizedVueConfigForPlatform({
     config: options.config,
     platform: options.platform,
+    kind: options.kind,
     dependencies: options.dependencies,
     alipayNpmMode: options.alipayNpmMode,
   })
@@ -448,6 +458,7 @@ export function preparePlatformConfigAsset(
     pluginCtx: any
     relativeBase: string
     config: string | undefined
+    kind?: 'app' | 'page' | 'component'
     outputExtensions: OutputExtensions | undefined
     platform: string
     dependencies?: Record<string, string>
@@ -460,6 +471,7 @@ export function preparePlatformConfigAsset(
   } = resolvePlatformConfigAssetState({
     relativeBase: options.relativeBase,
     config: options.config,
+    kind: options.kind,
     platform: options.platform,
     dependencies: options.dependencies,
     alipayNpmMode: options.alipayNpmMode,

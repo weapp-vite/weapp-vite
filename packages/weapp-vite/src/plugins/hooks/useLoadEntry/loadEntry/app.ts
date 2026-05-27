@@ -7,6 +7,7 @@ import type { ResolvedEntryRecord } from './resolve'
 import { createHash } from 'node:crypto'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { normalizeAppJson } from '../../../../utils'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles } from './watch'
@@ -133,7 +134,13 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   }
 
   if (!isPluginBuild) {
-    entries.push(...analyzeAppJson(json))
+    const appJson = normalizeAppJson(json)
+    registerJsonAsset({
+      json: appJson,
+      jsonPath: id,
+      type: 'app',
+    })
+    entries.push(...analyzeAppJson(appJson))
   }
 
   if (isPluginBuild && pluginJsonForRegistration && pluginJsonPathForRegistration) {

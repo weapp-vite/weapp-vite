@@ -1,4 +1,5 @@
 import type { CompilerContext } from '../../../context'
+import { normalizeAppJson } from '../../../utils'
 import { resolveRelativeJsonOutputFileName } from '../../utils/outputFileName'
 
 export interface JsonEmitFileEntry {
@@ -10,30 +11,6 @@ export interface JsonEmitFileEntry {
 export interface JsonEmitRecord {
   fileName: string
   entry: Required<JsonEmitFileEntry>
-}
-
-type AppJsonSubPackage = Record<string, any> & {
-  pages?: any
-}
-
-function normalizeAppJson(json: any) {
-  if (!json || typeof json !== 'object' || Array.isArray(json)) {
-    return json
-  }
-
-  const subPackages: AppJsonSubPackage[] = Array.isArray(json.subPackages)
-    ? json.subPackages
-    : Array.isArray(json.subpackages)
-      ? json.subpackages
-      : []
-
-  return {
-    ...json,
-    subPackages: subPackages.map(subPackage => ({
-      ...subPackage,
-      pages: Array.isArray(subPackage?.pages) ? subPackage.pages : [],
-    })),
-  }
 }
 
 export function createJsonEmitManager(

@@ -61,6 +61,30 @@ describe('runtime/jsonPlugin', () => {
     })
   })
 
+  it('normalizes legacy app.json subpackages without keeping both fields', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
+    tempRoots.push(root)
+    const srcRoot = path.join(root, 'src')
+    await fs.ensureDir(srcRoot)
+    const entry = path.join(srcRoot, 'app.json')
+    await fs.writeFile(entry, JSON.stringify({
+      pages: ['pages/index/index'],
+      subpackages: [
+        { root: 'pkg', pages: ['detail/index'] },
+      ],
+    }), 'utf8')
+
+    const ctx = createTestContext(root)
+    const result = await ctx.jsonService.read(entry)
+
+    expect(result).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [
+        { root: 'pkg', pages: ['detail/index'] },
+      ],
+    })
+  })
+
   it('inlines weapp-vite/auto-routes imports before executing app.json.ts', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
     tempRoots.push(root)

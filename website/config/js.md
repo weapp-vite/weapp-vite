@@ -14,7 +14,7 @@ keywords:
 
 # JS 配置 {#js-config}
 
-`weapp-vite` 默认使用 Vite 8 原生的 `resolve.tsconfigPaths` 读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite / Rolldown 流程中；`paths` 同时会作为默认 JSON 别名，用于解析 `usingComponents`。只有在你传入高级选项对象时，才会回退到 `vite-tsconfig-paths` 插件。
+`weapp-vite` 默认使用 Vite 8 原生的 `resolve.tsconfigPaths` 读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite / Rolldown 流程中。JSON / JSONC 的 `usingComponents` 不会默认继承 `paths`，需要别名时请显式配置 `weapp.jsonAlias`。只有在你传入高级选项对象时，才会回退到 `vite-tsconfig-paths` 插件。
 
 [[toc]]
 
@@ -60,7 +60,7 @@ export default defineConfig({
 ### 与 `resolve.alias` 的关系
 
 - `weapp.tsconfigPaths` / `resolve.tsconfigPaths` 负责把 **tsconfig 的 paths/baseUrl** 转成 Vite alias。
-- `compilerOptions.paths` 也会默认转成 `weapp.jsonAlias`，用于 JSON / JSONC 的 `usingComponents`。
+- JSON / JSONC 的 `usingComponents` 不会默认继承 `compilerOptions.paths`；需要别名时请显式配置 `weapp.jsonAlias`。
 - 你仍然可以在 `resolve.alias` 中补充或覆盖特定映射，两者可共存。
 
 ```ts
@@ -81,7 +81,7 @@ export default defineConfig({
 ### 常见问题
 
 - **修改 `paths` 没生效？** 需要重启 `pnpm dev`，并确认 tsconfig 在 `projects` 列表内。
-- **JSON 别名怎么配？** `compilerOptions.paths` 会作为默认 JSON 别名；需要覆盖或补充时，再配置 `weapp.jsonAlias`。如需完全关闭 JSON 别名，设置 `weapp.jsonAlias=false`（见 [JSON 配置](/config/json.md#weapp-jsonalias)）。
+- **JSON 别名怎么配？** JSON 别名需要显式配置 `weapp.jsonAlias`；它不会默认继承 `compilerOptions.paths`（见 [JSON 配置](/config/json.md#weapp-jsonalias)）。
 
 ## `weapp.ast` {#weapp-ast}
 - **类型**：`{ engine?: 'babel' | 'oxc' }`

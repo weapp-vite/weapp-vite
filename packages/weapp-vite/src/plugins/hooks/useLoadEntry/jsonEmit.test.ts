@@ -59,6 +59,28 @@ describe('createJsonEmitManager', () => {
     })
   })
 
+  it('drops legacy subpackages after normalizing app json', () => {
+    const manager = createJsonEmitManager({
+      relativeOutputPath(filePath: string) {
+        return filePath.replace('/project/src/', '')
+      },
+    } as any)
+
+    manager.register({
+      type: 'app',
+      json: {
+        pages: ['pages/index/index'],
+        subpackages: [{ root: 'pkg', pages: ['detail/index'] }],
+      },
+      jsonPath: '/project/src/app.json',
+    })
+
+    expect(Array.from(manager.map.values())[0]?.entry.json).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [{ root: 'pkg', pages: ['detail/index'] }],
+    })
+  })
+
   it('does not normalize app side json files as app config', () => {
     const manager = createJsonEmitManager({
       relativeOutputPath(filePath: string) {

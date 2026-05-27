@@ -876,7 +876,7 @@ describe('runtime config internal loadConfig', () => {
     ]))
   })
 
-  it('uses tsconfig paths as default json aliases', async () => {
+  it('does not use tsconfig paths as default json aliases', async () => {
     inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
       enabled: true,
       root: true,
@@ -915,15 +915,11 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.aliasEntries).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        find: '@',
-        replacement: '/project/src',
-      }),
-    ]))
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.aliasEntries).toEqual([])
   })
 
-  it('keeps explicit json aliases before tsconfig path defaults', async () => {
+  it('uses only explicit json aliases when tsconfig paths are enabled', async () => {
     getAliasEntriesMock.mockReturnValueOnce([
       {
         find: '@',
@@ -980,14 +976,11 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
     expect(result.aliasEntries).toEqual([
       {
         find: '@',
         replacement: '/project/custom-components',
-      },
-      {
-        find: '@shared',
-        replacement: '/project/shared',
       },
     ])
   })

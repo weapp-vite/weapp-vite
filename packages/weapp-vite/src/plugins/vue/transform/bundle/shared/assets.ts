@@ -54,6 +54,7 @@ export function emitSharedVueEntryJsonAsset(options: {
     pluginCtx: options.pluginCtx,
     relativeBase: options.relativeBase,
     config: options.config,
+    kind: options.jsonOptions.kind,
     outputExtensions: options.outputExtensions,
     ...options.platformAssetOptions,
   })
