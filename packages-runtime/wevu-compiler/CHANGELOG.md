@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.27
+
+### Patch Changes
+
+- 🐛 **修复带作用域参数的 `<slot name="...">` 输出只保留泛型作用域插槽、丢失原生命名 slot 投影兜底的问题，确保微信开发者工具中没有作用域 owner 时仍能显示默认 fallback 内容。** [`ad06bcd`](https://github.com/weapp-vite/weapp-vite/commit/ad06bcd846fe3f5b38152622f73cd190409b74a3) by @sonofmagic
+
+- 🐛 **修复 `toRefs(props)` 解构出的 props 绑定未被识别为 props 派生字段的问题，避免组件把大 props 误当成本地 setup 状态回写；同时将 TDesign retail 模板默认切回 WebView 渲染，提升微信开发者工具预览和 IDE e2e 的稳定性。** [`8bd76d0`](https://github.com/weapp-vite/weapp-vite/commit/8bd76d03b575e01f6ae7f7322c3782a0b8df98b2) by @sonofmagic
+- 📦 **Dependencies** [`3a15fb1`](https://github.com/weapp-vite/weapp-vite/commit/3a15fb1fc0263577e01594f4886ca943c77428b0)
+  → `rolldown-require@2.0.18`, `@weapp-vite/ast@6.16.27`
+
 ## 6.16.26
 
 ### Patch Changes

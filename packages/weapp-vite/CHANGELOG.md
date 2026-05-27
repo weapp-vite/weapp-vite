@@ -1,5 +1,27 @@
 # weapp-vite
 
+## 6.16.27
+
+### Patch Changes
+
+- 🐛 **修复 `sitemap.json` 与 `theme.json` 这类 app 侧边 JSON 被误按 `app.json` 归一化的问题，避免输出中额外写入空的 `subPackages` 字段。** [`a8e5e7c`](https://github.com/weapp-vite/weapp-vite/commit/a8e5e7c1a5e0898427e52d2cf41a1dfe9075ef22) by @sonofmagic
+
+- 🐛 **修复开发模式下新增自动导入 Vue SFC 组件时，页面 `usingComponents` 已更新但组件自身模板产物可能未在同轮 HMR 中输出的问题。** [`b26544e`](https://github.com/weapp-vite/weapp-vite/commit/b26544e6099dffd587a226b48ed9ae7a8d2fd1ca) by @sonofmagic
+
+- 🐛 **修复自动路由内联执行 `app.json.ts` 时会在源目录旁生成 `.auto-routes-inline` 临时文件的问题，改为通过 `rolldown-require` 的入口源码覆盖能力执行内联内容，并保留原始文件路径的相对导入、`__filename` 和 `__dirname` 语义。** [`3a15fb1`](https://github.com/weapp-vite/weapp-vite/commit/3a15fb1fc0263577e01594f4886ca943c77428b0) by @sonofmagic
+
+- 🐛 **修复 auto-routes 生成文件可能被 watch/HMR 误判为页面变更的问题，避免 `.auto-routes-*` 临时文件、typed-router 和持久缓存输出触发无限热更新。** [`ce1deb5`](https://github.com/weapp-vite/weapp-vite/commit/ce1deb5d7df07d6086c74a75bbc9ca221bed56ea) by @sonofmagic
+
+- 🐛 **修复带作用域参数的 `<slot name="...">` 输出只保留泛型作用域插槽、丢失原生命名 slot 投影兜底的问题，确保微信开发者工具中没有作用域 owner 时仍能显示默认 fallback 内容。** [`ad06bcd`](https://github.com/weapp-vite/weapp-vite/commit/ad06bcd846fe3f5b38152622f73cd190409b74a3) by @sonofmagic
+
+- 🐛 **修复 `compilerOptions.paths` 的默认解析链路：即使项目没有配置 `baseUrl`，也会按 tsconfig 所在目录解析别名。JSON `usingComponents` 不再默认继承 tsconfig paths，仍需通过 `weapp.jsonAlias.entries` 显式配置，避免 JS/TS 解析别名误影响小程序组件路径。** [`b850f18`](https://github.com/weapp-vite/weapp-vite/commit/b850f189122a087b0b98c9cd12b20d698d053249) by @sonofmagic
+- 📦 Updated 4 dependencies [`3a15fb1`](https://github.com/weapp-vite/weapp-vite/commit/3a15fb1fc0263577e01594f4886ca943c77428b0)
+  <details><summary>Details</summary>
+
+  `rolldown-require@2.0.18`, `wevu@6.16.27`, `@weapp-vite/web@1.3.27`, `@weapp-vite/ast@6.16.27`
+
+  </details>
+
 ## 6.16.26
 
 ### Patch Changes
