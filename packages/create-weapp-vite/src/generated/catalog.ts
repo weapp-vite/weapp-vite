@@ -9,7 +9,7 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^7.29.7',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^5.0.2',
+  '@icebreakers/eslint-config': '^5.0.3',
   '@icebreakers/stylelint-config': '^4.0.2',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
@@ -19,8 +19,8 @@ export const TEMPLATE_CATALOG = {
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.7',
-  '@vue/compiler-core': '^3.5.34',
-  '@vue/compiler-dom': '^3.5.34',
+  '@vue/compiler-core': '^3.5.35',
+  '@vue/compiler-dom': '^3.5.35',
   '@vue/language-core': '^3.3.2',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -31,7 +31,7 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.5.0',
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.2.1',
-  'oxc-parser': '^0.132.0',
+  'oxc-parser': '^0.133.0',
   'oxc-walker': '^1.0.0',
   'pkg-types': '^2.3.1',
   'sass-embedded': '^1.100.0',
@@ -62,7 +62,7 @@ export const TEMPLATE_CATALOG = {
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.0.14',
-  vue: '^3.5.34',
+  vue: '^3.5.35',
   zod: '^4.4.3'
 } as const
 
