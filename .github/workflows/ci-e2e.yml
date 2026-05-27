@@ -43,7 +43,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 35
-      build_command: pnpm build:pkgs:ci
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
       main_command: pnpm e2e:ci
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true
@@ -89,7 +89,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 35
-      build_command: pnpm build:pkgs:ci
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
       main_command: pnpm e2e:ci
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true

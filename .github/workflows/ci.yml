@@ -45,7 +45,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
-      build_command: pnpm build:pkgs:ci
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
       main_command: |
         pnpm lint
         pnpm ${{ matrix.os == 'macos-latest' && 'build:ci:macos' || 'build:ci' }}
@@ -93,7 +93,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 25
-      build_command: pnpm build:pkgs:ci
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
       main_command: |
         pnpm lint
         pnpm ${{ matrix.os == 'macos-latest' && 'build:ci:macos' || 'build:ci' }}
