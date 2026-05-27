@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 6.16.26
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.16.26`, `@weapp-vite/ast@6.16.26`
+
 ## 6.16.25
 
 ### Patch Changes
