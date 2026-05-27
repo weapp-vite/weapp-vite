@@ -7,6 +7,7 @@ const issue547AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_547_AUGMENTED
 const issue558AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_558_AUGMENTED === 'true'
 const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED === 'true'
 const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED === 'true'
+const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
@@ -53,6 +54,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue615.test.ts': [
     'pages/issue-615/**',
     'components/issue-615/**',
+  ],
+  'github-issues.runtime.issue621.test.ts': [
+    'pages/issue-621/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -149,6 +153,13 @@ function resolveGithubIssuesAutoRoutes() {
       include: [
         'pages/issue-615/**',
         'components/issue-615/**',
+      ],
+    }
+  }
+  if (issue621AugmentedEnvEnabled) {
+    return {
+      include: [
+        'pages/issue-621/**',
       ],
     }
   }

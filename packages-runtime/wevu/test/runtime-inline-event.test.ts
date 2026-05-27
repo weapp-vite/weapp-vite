@@ -513,6 +513,58 @@ describe('runtime: inline event handler', () => {
     expect(result).toBe(3)
   })
 
+  it('executes inline assignment expressions against setup refs', () => {
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: [],
+        fn: (ctx: any) => {
+          ctx.count.value += 1
+          return ctx.count.value
+        },
+      },
+    }
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        __weapp_vite_inline_map: inlineMap,
+      } as any,
+      setup() {
+        const count = ref(0)
+        function readCount() {
+          return count.value
+        }
+        return {
+          count,
+          readCount,
+        }
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const event = {
+      type: 'tap',
+      currentTarget: {
+        dataset: {
+          wvInlineIdTap: '__wv_inline_0',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+
+    expect(result).toBe(1)
+    expect(inst.readCount()).toBe(1)
+  })
+
   it('executes inline map from options methods after mount', () => {
     const handle = vi.fn((value: string) => value)
     const inlineMap = {

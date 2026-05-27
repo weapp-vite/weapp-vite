@@ -24,6 +24,7 @@ declare module 'weapp-vite/auto-routes' {
         "pages/issue-318/index",
         "pages/issue-320/index",
         "pages/issue-322/index",
+        "pages/issue-621/index",
         "pages/issue-328/index"
     ];
     export type AutoRoutesEntries = [
@@ -44,6 +45,7 @@ declare module 'weapp-vite/auto-routes' {
         "pages/issue-318/index",
         "pages/issue-320/index",
         "pages/issue-322/index",
+        "pages/issue-621/index",
         "pages/issue-328/index"
     ];
     export type AutoRoutesSubPackages = [];

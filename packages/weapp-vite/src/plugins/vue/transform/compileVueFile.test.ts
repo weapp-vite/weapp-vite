@@ -234,6 +234,67 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
+  it('rewrites inline event assignments to script setup ref values', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view @tap="count += 1" />
+  <view @longpress="count.value += 1" />
+  <view @touchstart="count++" />
+  <view @touchmove="count = count + 1" />
+  <view @touchend="++count" />
+  <view @touchcancel="count > 1 ? count = count - 1 : count = count + 1" />
+  <view @animationend="handle(count, { count })" />
+</template>
+<script setup lang="ts">
+import { ref } from 'wevu'
+
+const count = ref(0)
+function handle(value: number, state: { count: number }) {
+  return value + state.count
+}
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.template).toContain('bindtap="__weapp_vite_inline"')
+    expect(result.template).toContain('bindlongpress="__weapp_vite_inline"')
+    expect(result.template).toContain('bindtouchstart="__weapp_vite_inline"')
+    expect(result.script).toContain('ctx.count.value += 1')
+    expect(result.script).toContain('ctx.count.value++')
+    expect(result.script).toContain('ctx.count.value = ctx.count.value + 1')
+    expect(result.script).toContain('++ctx.count.value')
+    expect(result.script).toContain('ctx.count.value > 1 ? ctx.count.value = ctx.count.value - 1 : ctx.count.value = ctx.count.value + 1')
+    expect(result.script).toContain('ctx.handle(ctx.count.value, { count: ctx.count.value })')
+    expect(result.script).not.toContain('ctx.count.value.value')
+  })
+
+  it('does not rewrite non-top-level or non-ref inline event targets as ref values', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view @tap="plain = plain + 1" />
+  <view @longpress="nested.count = nested.count + 1" />
+</template>
+<script setup lang="ts">
+import { ref } from 'wevu'
+
+let plain = 0
+const nested = {
+  count: ref(0),
+}
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.script).toContain('ctx.plain = ctx.plain + 1')
+    expect(result.script).toContain('ctx.nested.count = ctx.nested.count + 1')
+    expect(result.script).not.toContain('ctx.plain.value')
+    expect(result.script).not.toContain('ctx.nested.count.value')
+  })
+
   it('applies htmlTagToWxml mapping in final compiled vue template output', async () => {
     const result = await compileVueFile(
       `
