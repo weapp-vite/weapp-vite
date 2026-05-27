@@ -75,6 +75,7 @@ export interface TransformContext {
    */
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
+  scriptSetupBindings?: Record<string, unknown>
   htmlTagToWxmlMap?: Record<string, string>
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
@@ -136,6 +137,7 @@ export interface TemplateCompileOptions {
    */
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
+  scriptSetupBindings?: Record<string, unknown>
   htmlTagToWxml?: boolean | Record<string, string>
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode

@@ -74,12 +74,14 @@ export async function compileVueFile(
         ...options?.template,
         propsAliases,
         propsDerivedKeys,
+        scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
         scopedSlotsRequireProps: true,
       }
     : {
         ...options?.template,
         propsAliases,
         propsDerivedKeys,
+        scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
       }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size

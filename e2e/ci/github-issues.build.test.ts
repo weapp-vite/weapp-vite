@@ -251,6 +251,30 @@ async function runIssue615AugmentedBuild() {
   distVariant = null
 }
 
+async function runIssue621AugmentedBuild() {
+  await fs.remove(DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_621_AUGMENTED: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 interface AppJsonWithSubPackages {
   pages?: string[]
   subPackages?: Array<{ root?: string, pages?: string[] }>
@@ -554,6 +578,33 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(scopedSlotJs).toContain('list')
     expect(scopedSlotJs).not.toContain('模板 v-for 数据源表达式执行失败: __wv_bind_0')
     expect(scopedSlotJs).not.toContain('模板运行时表达式执行失败: __wv_bind_0 = list')
+  })
+
+  it('issue #621: compiles inline assignment events against setup ref values', async () => {
+    await runIssue621AugmentedBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-621/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-621/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-621 inline assignment event')
+    expect(pageWxml).toContain('data-wi-tap="i0"')
+    expect(pageWxml).toContain('data-wi-tap="i1"')
+    expect(pageWxml).toContain('bindtap="__weapp_vite_inline"')
+    expect(pageJs).toContain('__weapp_vite_inline_map')
+    expect(pageJs).toContain('ctx.count.value += 1')
+    expect(pageJs).toContain('ctx.explicitCount.value += 1')
+    expect(pageJs).toContain('ctx.derivedCount.value = ctx.derivedCount.value + 1')
+    expect(pageJs).toContain('++ctx.prefixCount.value')
+    expect(pageJs).toContain('ctx.conditionalCount.value > 0 ? ctx.conditionalCount.value = ctx.conditionalCount.value + 2 : ctx.conditionalCount.value = ctx.conditionalCount.value + 1')
+    expect(pageJs).toContain('ctx.sequenceCount.value = ctx.sequenceCount.value + 1, ctx.sequenceCount.value++')
+    expect(pageJs).toContain('ctx.assignArgument(ctx.argumentCount.value)')
+    expect(pageJs).toContain('ctx.assignShorthand({ shorthandCount: ctx.shorthandCount.value })')
+    expect(pageJs).toContain('ctx.nestedState.count.value += 1')
+    expect(pageJs).not.toContain('ReferenceError')
+    expect(pageJs).not.toContain('ctx.explicitCount.value.value')
+    expect(pageJs).not.toContain('ctx.nestedState.count.value.value')
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
