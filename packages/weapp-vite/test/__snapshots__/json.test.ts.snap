@@ -75,27 +75,6 @@ exports[`json > resolveJson > resolveJson case 6 1`] = `
       "entry": "index.js",
       "independent": true
     }
-  ],
-  "subpackages": [
-    {
-      "root": "packageA",
-      "name": "pack1",
-      "pages": [
-        "pages/cat",
-        "pages/dog"
-      ],
-      "entry": "index.js"
-    },
-    {
-      "root": "packageB",
-      "name": "pack2",
-      "pages": [
-        "pages/apple",
-        "pages/banana"
-      ],
-      "entry": "index.js",
-      "independent": true
-    }
   ]
 }"
 `;

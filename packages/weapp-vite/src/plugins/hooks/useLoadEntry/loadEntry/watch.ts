@@ -78,7 +78,7 @@ export async function collectAppSideFiles(
     registerJsonAsset({
       json: content,
       jsonPath,
-      type: 'app',
+      type: 'page',
     })
   }
 

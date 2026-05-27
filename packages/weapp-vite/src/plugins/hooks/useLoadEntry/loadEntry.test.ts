@@ -392,6 +392,62 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('registers app side json files without app config normalization', async () => {
+    const { loader, jsonService, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: [],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return { rules: [{ action: 'allow', page: '*' }] }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return { light: {}, dark: {} }
+      }
+      return {}
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/sitemap.json',
+      type: 'page',
+      json: {
+        rules: [{ action: 'allow', page: '*' }],
+      },
+    })
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/theme.json',
+      type: 'page',
+      json: {
+        light: {},
+        dark: {},
+      },
+    })
+  })
+
   it('prepends style imports once when sidecar styles exist', async () => {
     existsMock.mockImplementation(async (target: string) => {
       if (target === '/project/src/app.wxss') {

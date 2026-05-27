@@ -255,6 +255,7 @@ defineAppJson({
       expect(JSON.parse(String(bundle['app.json'].source))).toEqual({
         style: 'v3',
         pages: ['pages/home/index'],
+        subPackages: [],
       })
     }
     finally {
