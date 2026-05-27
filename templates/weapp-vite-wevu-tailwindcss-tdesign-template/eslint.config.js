@@ -8,10 +8,6 @@ export default icebreaker({
   },
   ignores: ['CHANGELOG.md', 'README.md', '.turbo/**', 'dist/**', '.weapp-vite/**'],
 }, {
-  rules: {
-    'vue/no-deprecated-slot-attribute': 'off',
-  },
-}, {
   files: ['src/**/*.{ts,vue}'],
   rules: {
     'better-tailwindcss/enforce-canonical-classes': 'off',

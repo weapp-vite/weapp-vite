@@ -57,7 +57,6 @@ export default await defineEslintConfig({
     ],
     configs: [{
       rules: {
-        'vue/no-deprecated-slot-attribute': 'off',
         'vue/no-useless-template-attributes': 'off',
       },
     }, {

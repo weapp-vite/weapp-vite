@@ -17,11 +17,6 @@ export default icebreaker(
     ],
   },
   {
-    rules: {
-      'vue/no-deprecated-slot-attribute': 'off',
-    },
-  },
-  {
     files: ['src/**/*.{ts,vue,md}'],
     rules: {
       'no-console': 'off',
