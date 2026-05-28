@@ -74,6 +74,151 @@ const local = 'ok'
     expect(resolveUsingComponentPath).toHaveBeenCalled()
   })
 
+  it('warns when type-only defineProps declares id', async () => {
+    const sfc = parse(`
+<template>
+  <view>{{ props.id }}</view>
+</template>
+<script setup lang="ts">
+const props = defineProps<{ id: string; title: string }>()
+</script>
+    `.trim(), { filename: '/project/src/components/id-prop.vue' })
+    const warn = vi.fn()
+
+    await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/id-prop.vue',
+      { warn },
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id'))
+  })
+
+  it('warns when runtime defineProps declares id', async () => {
+    const cases = [
+      `defineProps({ id: String, title: String })`,
+      `defineProps(['id', 'title'])`,
+    ]
+
+    for (const setupCode of cases) {
+      const sfc = parse(`
+<template>
+  <view />
+</template>
+<script setup lang="ts">
+${setupCode}
+</script>
+      `.trim(), { filename: '/project/src/components/runtime-id-prop.vue' })
+      const warn = vi.fn()
+
+      await compileScriptPhase(
+        sfc.descriptor as any,
+        sfc.descriptor as any,
+        '/project/src/components/runtime-id-prop.vue',
+        { warn },
+        undefined,
+        undefined,
+        false,
+      )
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id'))
+    }
+  })
+
+  it('warns when defineProps references a local type with id', async () => {
+    const sfc = parse(`
+<template>
+  <view />
+</template>
+<script setup lang="ts">
+interface BaseProps {
+  id: string
+}
+
+type Props = BaseProps & {
+  title: string
+}
+
+withDefaults(defineProps<Props>(), {
+  title: 'hello',
+})
+</script>
+    `.trim(), { filename: '/project/src/components/typed-id-prop.vue' })
+    const warn = vi.fn()
+
+    await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/typed-id-prop.vue',
+      { warn },
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id'))
+  })
+
+  it('does not warn for local id bindings outside defineProps', async () => {
+    const sfc = parse(`
+<template>
+  <view>{{ id }}</view>
+</template>
+<script setup lang="ts">
+const id = 'local'
+const props = defineProps<{ title: string }>()
+</script>
+    `.trim(), { filename: '/project/src/components/local-id.vue' })
+    const warn = vi.fn()
+
+    await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/local-id.vue',
+      { warn },
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id'))
+  })
+
+  it('does not warn when id only comes from normal script options', async () => {
+    const sfc = parse(`
+<template>
+  <view />
+</template>
+<script lang="ts">
+export default {
+  props: {
+    id: String,
+  },
+}
+</script>
+<script setup lang="ts">
+const props = defineProps<{ title: string }>()
+</script>
+    `.trim(), { filename: '/project/src/components/options-id-prop.vue' })
+    const warn = vi.fn()
+
+    await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/options-id-prop.vue',
+      { warn },
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id'))
+  })
+
   it('marks kebab-case template usage of imported vue components as wevu components', async () => {
     const sfc = parse(`
 <template>

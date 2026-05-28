@@ -9,6 +9,7 @@ import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { transformScript } from '../script'
+import { warnReservedScriptSetupProps } from './reservedProps'
 
 const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
 
@@ -215,6 +216,7 @@ export async function compileScriptPhase(
       id: filename,
       isProd: false,
     })
+    warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn)
     propsAliases ??= resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
 
     scriptCode = scriptCompiled.content
