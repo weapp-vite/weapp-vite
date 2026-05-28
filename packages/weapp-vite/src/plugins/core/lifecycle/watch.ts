@@ -50,6 +50,11 @@ function isAutoRoutesGeneratedFileChange(state: CorePluginState, normalizedId: s
   })
 }
 
+function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
+  return state.ctx.configService.configFileDependencies
+    .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
+}
+
 function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackageMetaValue | null | undefined) {
   const root = subPackageMeta?.subPackage.root
   return !root || relativeSrc === root || relativeSrc.startsWith(`${root}/`)
@@ -497,6 +502,16 @@ async function processChangedFile(
   const relativeCwd = configService.relativeCwd(normalizedId)
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
+  const isConfigDependency = isConfigFileDependencyChange(state, normalizedId)
+
+  if (isConfigDependency) {
+    ;(loadEntry as any)?.invalidateResolveCache?.()
+    scanService.markDirty()
+    buildService.requestConfigRestart?.(state.buildTarget)
+    for (const entryId of resolvedEntryMap.keys()) {
+      markEntryDirtyWithCause(entryId, 'direct', 'config-restart')
+    }
+  }
 
   if (event === 'create' || event === 'delete') {
     ;(loadEntry as any)?.invalidateResolveCache?.()
@@ -515,7 +530,7 @@ async function processChangedFile(
       shouldMarkProjectConfigDirty = relativeCwd.startsWith(platformConfigPrefix)
     }
 
-    if (relativeSrc === 'app.json' || shouldMarkProjectConfigDirty) {
+    if (!isConfigDependency && (relativeSrc === 'app.json' || shouldMarkProjectConfigDirty)) {
       scanService.markDirty()
     }
 

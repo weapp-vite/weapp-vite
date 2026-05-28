@@ -54,6 +54,11 @@ function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
   const hasLayoutFallback = dirtyReasonSummary.some(item => item.startsWith('layout-fallback-full:'))
   const hasLayoutPropagation = dirtyReasonSummary.some(item => item.startsWith('layout-self:') || item.startsWith('layout-dependent:'))
   const hasAutoRoutesTopology = dirtyReasonSummary.some(item => item.startsWith('auto-routes-topology:'))
+  const hasConfigRestart = dirtyReasonSummary.some(item => item.startsWith('config-restart:'))
+
+  if (hasConfigRestart) {
+    pendingReasonSummary.push('config-restart')
+  }
 
   if (hasLayoutFallback) {
     pendingReasonSummary.push('layout-fallback-full')

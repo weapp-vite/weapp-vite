@@ -34,6 +34,12 @@ interface LibEntryState {
 function createDefaultLoadConfigResult(): LoadConfigResult {
   return {
     config: {},
+    loadOptions: {
+      cwd: process.cwd(),
+      isDev: false,
+      mode: 'development',
+      emitDefaultAutoImportOutputs: true,
+    },
     aliasEntries: [],
     outputExtensions: getOutputExtensions(DEFAULT_MP_PLATFORM),
     packageJson: {},

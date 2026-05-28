@@ -241,6 +241,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       emitDefaultAutoImportOutputs: true,
       projectConfig: {},
       config: {},
+      loadOptions: input,
       packageJson: {},
       platform: 'weapp',
       multiPlatform: resolveMultiPlatformConfig(false),
@@ -341,6 +342,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get inlineConfig() {
       return options.config
+    },
+    get loadOptions() {
+      return options.loadOptions
     },
     get weappViteConfig() {
       return options.config.weapp!

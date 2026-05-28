@@ -58,6 +58,7 @@ function createState(overrides: Record<string, any> = {}) {
       },
       buildService: {
         invalidateIndependentOutput: vi.fn(),
+        requestConfigRestart: vi.fn(),
       },
       configService: {
         platform: 'weapp',
@@ -100,6 +101,7 @@ function createState(overrides: Record<string, any> = {}) {
       invalidateResolveCache: vi.fn(),
     },
     emitDirtyEntries: vi.fn(async () => {}),
+    buildTarget: 'app',
     loadedEntrySet: new Set<string>(),
     entriesMap: new Map<string, { type: string }>(),
     layoutEntryDependents: new Map<string, Set<string>>(),
@@ -287,6 +289,31 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('treats config dependency updates as full dev rebuild triggers', async () => {
+    const entryA = '/project/src/pages/a/index.ts'
+    const entryB = '/project/src/components/card/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [entryA, { id: entryA }],
+        [entryB, { id: entryB }],
+      ]),
+    })
+    state.ctx.configService.configFileDependencies = [
+      '/project/vite.config.mts',
+      '/project/config/shared.ts',
+    ]
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/vite.config.mts', { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(state.ctx.scanService.markDirty).toHaveBeenCalledTimes(1)
+    expect(state.ctx.buildService.requestConfigRestart).toHaveBeenCalledWith('app')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryA, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryB, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['config-restart:2'])
   })
 
   it('ignores generated output changes inside outDir', async () => {

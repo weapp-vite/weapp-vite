@@ -29,6 +29,7 @@ import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
+import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createSidecarWatchOptions } from '../watch/options'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
@@ -44,6 +45,7 @@ export interface BuildOptions {
 export interface BuildService {
   queue: PQueue
   build: (options?: BuildOptions) => Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
+  requestConfigRestart: (target?: BuildTarget) => void
   buildIndependentBundle: (root: string, meta: SubPackageMetaValue) => Promise<RolldownOutput>
   getIndependentOutput: (root: string) => RolldownOutput | undefined
   invalidateIndependentOutput: (root: string) => void
@@ -489,6 +491,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
+  const requestedConfigRestartBuilds = new Set<BuildTarget>()
   let autoTouchResolved = false
   let autoTouchChecked = false
 
@@ -522,6 +525,26 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const normalizedOutDir = normalizeFsResolvedId(configService.outDir)
     const normalizedFile = normalizeFsResolvedId(filePath)
     return normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)
+  }
+
+  function shouldRestartDevBuild(target: BuildTarget) {
+    if (!configService.isDev) {
+      return false
+    }
+    return requestedConfigRestartBuilds.delete(target)
+  }
+
+  function resetRuntimeStateForConfigRestart() {
+    const fresh = createRuntimeState()
+    ctx.runtimeState.autoRoutes = fresh.autoRoutes
+    ctx.runtimeState.autoImport = fresh.autoImport
+    ctx.runtimeState.build.hmr = fresh.build.hmr
+    ctx.runtimeState.json = fresh.json
+    ctx.runtimeState.asset = fresh.asset
+    ctx.runtimeState.css = fresh.css
+    ctx.runtimeState.wxml = fresh.wxml
+    ctx.runtimeState.scan = fresh.scan
+    ctx.runtimeState.lib = fresh.lib
   }
 
   async function runDev(target: BuildTarget) {
@@ -709,6 +732,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             void touch(appWxssPath).catch(() => {})
           }
           resolveWatcher(e)
+          if (shouldRestartDevBuild(target)) {
+            await watcher.close()
+            logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+            resetRuntimeStateForConfigRestart()
+            await configService.load(configService.loadOptions)
+            await scanService.loadAppEntry().catch(() => {})
+            logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+            await runDev(target)
+          }
         })().catch((error) => {
           resetHmrProfile()
           rejectWatcher(error)
@@ -909,6 +941,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   async function runBuildTarget(target: BuildTarget) {
     ctx.currentBuildTarget = target
     if (configService.isDev) {
+      requestedConfigRestartBuilds.delete(target)
       return await runDev(target)
     }
     return await runProd(target)
@@ -966,6 +999,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   return {
     queue,
     build: buildEntry,
+    requestConfigRestart(target: BuildTarget = 'app') {
+      requestedConfigRestartBuilds.add(target)
+    },
     buildIndependentBundle,
     getIndependentOutput,
     invalidateIndependentOutput,

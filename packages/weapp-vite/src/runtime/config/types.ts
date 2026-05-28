@@ -22,6 +22,7 @@ export interface LoadConfigOptions {
 }
 
 export interface LoadConfigResult {
+  loadOptions: LoadConfigOptions
   config: InlineConfig
   aliasEntries: ResolvedAlias[]
   outputExtensions: OutputExtensions
@@ -78,6 +79,7 @@ export interface PackageInfo {
 
 export interface ConfigService {
   options: LoadConfigResult
+  readonly loadOptions: LoadConfigOptions
   outputExtensions: OutputExtensions
   defineEnv: Record<string, any>
   packageManager: DetectResult

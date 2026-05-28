@@ -464,6 +464,38 @@ describe('runtime config merge miniprogram', () => {
     })
   })
 
+  it('removes user build.watch from production inline config', () => {
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            platform: 'weapp',
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            watch: {
+              include: ['/workspace/packages/ui/**'],
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: undefined,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect(result.build?.watch).toBeUndefined()
+  })
+
   it('externalizes explicit npm build candidates and matching builtin alias paths', () => {
     resolveBuiltinPackageAliasesMock.mockReturnValue([
       {
