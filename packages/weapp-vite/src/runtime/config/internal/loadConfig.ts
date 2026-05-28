@@ -492,6 +492,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     return {
       config,
+      loadOptions: opts,
       aliasEntries,
       outputExtensions,
       packageJson,

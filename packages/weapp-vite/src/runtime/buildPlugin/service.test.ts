@@ -186,6 +186,12 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
     configService: {
       weappViteConfig: {},
       weappLibConfig: undefined,
+      loadOptions: {
+        cwd: '/project',
+        isDev: true,
+        mode: 'development',
+      },
+      load: vi.fn(async () => {}),
       merge: vi.fn((_meta: any, _inline: any, next: any) => next ?? {}),
       outDir: '/project/dist',
       outputExtensions: { wxss: 'wxss' },
@@ -563,6 +569,43 @@ describe('runtime buildPlugin service', () => {
     expect(sidecarWatcher.close).toHaveBeenCalledTimes(1)
     expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
     expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+  })
+
+  it('restarts the dev watcher after config dependency changes request a restart', async () => {
+    const watcher = createManualWatcher()
+    const restartedWatcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const restartedSidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock
+      .mockReturnValueOnce(sidecarWatcher)
+      .mockReturnValueOnce(restartedSidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce(restartedWatcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    service.requestConfigRestart('app')
+    watcher.emit('START')
+    watcher.emit('END')
+
+    await restartedWatcher.subscribed
+    restartedWatcher.emit('START')
+    restartedWatcher.emit('END')
+    await flushAsyncTasks()
+
+    expect(sidecarWatcher.close).toHaveBeenCalledTimes(1)
+    expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(restartedWatcher)
+    expect(loggerInfoMock).toHaveBeenCalledWith('检测到 Vite 配置变更，正在重启小程序开发构建...')
   })
 
   it('narrows snapshot sidecar watcher to sidecar globs and ignores generated roots', async () => {

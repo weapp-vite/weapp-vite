@@ -132,8 +132,9 @@ export function resolveMiniprogramWatchInclude(options: {
     : options.userInclude
       ? [options.userInclude]
       : []
+  const include = [...userInclude, ...watchInclude]
   const seen = new Set<string>()
-  return [...userInclude, ...watchInclude].filter((item) => {
+  return include.filter((item) => {
     if (typeof item !== 'string') {
       return true
     }
@@ -206,6 +207,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   if (isDev) {
     const hmrWatchBuildDelay = 60
+    const userBuildWatch = config.build?.watch
     const watchInclude = resolveMiniprogramWatchInclude({
       cwd,
       srcRoot,
@@ -226,6 +228,9 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
           modulePreload: false,
           watch: {
             buildDelay: hmrWatchBuildDelay,
+            ...(typeof userBuildWatch === 'object' && userBuildWatch
+              ? userBuildWatch
+              : {}),
             exclude: [
               ...defaultExcluded,
               mpDistRoot
@@ -244,6 +249,14 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
         },
       },
     )
+    inline.build!.watch!.include = resolveMiniprogramWatchInclude({
+      cwd,
+      srcRoot,
+      pluginRoot: config.weapp?.pluginRoot,
+      buildScope: resolveBuildScope(config.weapp?.buildScope),
+      userInclude: inline.build?.watch?.include,
+      configFileDependencies,
+    })
     normalizeInlineConfigAfterDefu(inline, {
       cwd,
       ctx,
@@ -273,6 +286,9 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       },
     },
   )
+  if (inlineConfig.build) {
+    delete inlineConfig.build.watch
+  }
   normalizeInlineConfigAfterDefu(inlineConfig, {
     cwd,
     ctx,

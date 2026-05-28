@@ -862,6 +862,28 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['full-rebuild'])
   })
 
+  it('records config restart explanation for config dependency updates', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['config-restart:2'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0], 'direct')
+    hook.markEntryDirty(ids[1], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['config-restart'])
+  })
+
   it('derives layout propagation explanation from upstream dirty causes', async () => {
     const ctx = createContext()
     ctx.runtimeState.build.hmr.profile = {
