@@ -15,7 +15,7 @@ export function collectAffectedEntries(state: CorePluginState, startId: string) 
     }
     visited.add(current)
 
-    if (state.entryModuleIds.has(current)) {
+    if (state.entryModuleIds.has(current) || state.resolvedEntryMap.has(current)) {
       affected.add(current)
       continue
     }

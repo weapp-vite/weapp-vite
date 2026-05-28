@@ -13,6 +13,7 @@ import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
+import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
   defaultIgnoredDirNames,
@@ -84,17 +85,70 @@ interface SnapshotBuildReason {
   file?: string
 }
 
-function shouldHandleSnapshotSidecarFile(filePath: string) {
-  return isSidecarFile(filePath)
+type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
+
+function shouldHandleSnapshotSidecarFile(filePath: string, configService: ActiveConfigService) {
+  if (isSidecarFile(filePath)) {
+    return true
+  }
+  const normalizedFile = normalizeFsResolvedId(filePath)
+  const normalizedSrcRoot = normalizeFsResolvedId(configService.absoluteSrcRoot)
+  if (normalizedFile === normalizedSrcRoot || normalizedFile.startsWith(`${normalizedSrcRoot}/`)) {
+    return false
+  }
+  return path.extname(filePath) !== ''
 }
 
-function createSnapshotSidecarWatchPatterns(root: string) {
-  return [
+function isGeneratedMiniprogramWatchInclude(pattern: string, configService: ActiveConfigService) {
+  if (pattern === '**') {
+    return true
+  }
+  const normalizedPattern = normalizeFsResolvedId(
+    path.isAbsolute(pattern) ? pattern : path.resolve(configService.cwd, pattern),
+  )
+  const normalizedSrcRoot = normalizeFsResolvedId(configService.absoluteSrcRoot)
+  if (normalizedPattern === normalizedSrcRoot || normalizedPattern.startsWith(`${normalizedSrcRoot}/`)) {
+    return true
+  }
+  if (configService.absolutePluginRoot) {
+    const normalizedPluginRoot = normalizeFsResolvedId(configService.absolutePluginRoot)
+    if (normalizedPattern === normalizedPluginRoot || normalizedPattern.startsWith(`${normalizedPluginRoot}/`)) {
+      return true
+    }
+  }
+  return (configService.configFileDependencies ?? []).some((dependency) => {
+    const normalizedDependency = normalizeFsResolvedId(dependency)
+    return normalizedPattern === normalizedDependency
+  })
+}
+
+function resolveUserBuildWatchInclude(configService: ActiveConfigService, inlineConfig?: InlineConfig) {
+  const buildWatch = inlineConfig?.build?.watch ?? configService?.inlineConfig?.build?.watch
+  if (!buildWatch || typeof buildWatch !== 'object') {
+    return []
+  }
+  const include = buildWatch.include
+  const includeList = Array.isArray(include)
+    ? include
+    : include ? [include] : []
+  return includeList
+    .filter((pattern): pattern is string => typeof pattern === 'string')
+    .filter(pattern => !isGeneratedMiniprogramWatchInclude(pattern, configService))
+    .map(pattern => path.normalize(path.isAbsolute(pattern) ? pattern : path.resolve(configService.cwd, pattern)))
+}
+
+function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, inlineConfig?: InlineConfig) {
+  const root = configService.absoluteSrcRoot
+  const patterns: string[] = [
     ...configSuffixes.map(suffix => path.join(root, `**/*${suffix}`)),
     ...Array.from(watchedCssExts).map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedTemplateExts).map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedScriptModuleExts).map(ext => path.join(root, `**/*${ext}`)),
   ]
+  for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
+    patterns.push(include)
+  }
+  return patterns
 }
 
 function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
@@ -642,6 +696,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         if (reason?.event || reason?.file) {
+          if (reason.file) {
+            invalidateFileCache(reason.file)
+          }
           ctx.runtimeState.build.hmr.profile = {
             ...ctx.runtimeState.build.hmr.profile,
             eventId: createHmrProfileEventId(),
@@ -758,7 +815,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        createSnapshotSidecarWatchPatterns(configService.absoluteSrcRoot),
+        createSnapshotSidecarWatchPatterns(configService, buildOptions),
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
@@ -772,7 +829,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!shouldHandleSnapshotSidecarFile(id)) {
+        if (!shouldHandleSnapshotSidecarFile(id, configService)) {
           return
         }
         const sidecarStartedAt = performance.now()

@@ -292,7 +292,11 @@ export function useLoadEntry(
       await loadEntry.call(this, resolvedId.id, entryType)
     },
   )
-  const applyAutoImports = createAutoImportAugmenter(ctx.autoImportService, ctx.wxmlService)
+  const applyAutoImports = createAutoImportAugmenter(
+    ctx.autoImportService,
+    ctx.wxmlService,
+    ctx.runtimeState.build.hmr.externalComponentEntryMap,
+  )
   const extendedLibManager = createExtendedLibManager()
 
   loadEntry = createEntryLoader({

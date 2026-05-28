@@ -92,6 +92,42 @@ describe('createAutoImportAugmenter', () => {
     })
   })
 
+  it('tracks resolver resolvedId so external Vue components join the compile flow', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'ResolverBadge') {
+        return {
+          value: {
+            name: 'ResolverBadge',
+            from: '/__weapp_vite_external__/resolver-ui/ResolverBadge',
+            resolvedId: '/workspace/packages/resolver-ui/ResolverBadge.vue',
+          },
+        }
+      }
+      return undefined
+    })
+    const externalComponentEntryMap = new Map<string, string>()
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: vi.fn(() => 0) } as any,
+      {
+        getAggregatedAutoImportComponents: vi.fn(() => ({ ResolverBadge: [{ start: 0, end: 0 }] })),
+        getAggregatedComponents: vi.fn(() => ({ ResolverBadge: [{ start: 0, end: 0 }] })),
+      } as any,
+      externalComponentEntryMap,
+    )
+
+    const json: Record<string, any> = {}
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(json.usingComponents).toEqual({
+      ResolverBadge: '/__weapp_vite_external__/resolver-ui/ResolverBadge',
+    })
+    expect(injectedEntries).toEqual(['/__weapp_vite_external__/resolver-ui/ResolverBadge'])
+    expect(externalComponentEntryMap.get('__weapp_vite_external__/resolver-ui/ResolverBadge')).toBe(
+      '/workspace/packages/resolver-ui/ResolverBadge.vue',
+    )
+  })
+
   it('reuses resolved auto imports when aggregated template graph and version are unchanged', () => {
     const hit = { 'van-button': [{ start: 0, end: 0 }] }
     const resolve = vi.fn(() => {
