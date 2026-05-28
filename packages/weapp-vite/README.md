@@ -61,7 +61,7 @@ export default defineConfig({
 - `weapp.vue.template.htmlTagToWxmlTagClass`
   默认开启。在映射发生时追加原标签名 class，例如 `h3 -> <view class="h3">`、`br -> <view class="br" />`，便于你自己写 CSS 低成本恢复默认外观；不需要时可设为 `false`。
 - `weapp.vue.template.slotFallbackWrapper`
-  配置普通具名插槽 fallback 的真实 wrapper，支持全局默认、按模板标签名 `component` / 子组件静态 `defineOptions({ name })` 的 `componentName` / slot 规则，以及组件内 `slot-wrapper` / `slot-wrapper-class` 静态覆盖。单个 slot 的局部策略更推荐写在对应的 `<template #xxx>` 上，例如 `<template #header slot-wrapper="cover-view">`。转发 `<slot />` 时不要使用 `<block slot="...">` 作为 wrapper，真实 DevTools 运行时会丢内容。
+  微信平台默认会用内部 `virtualHost` 组件承载普通具名插槽 fallback，减少 `view` wrapper 的布局影响；需要回到旧行为可配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'` 或显式 `slotFallbackWrapper: 'view'`。`slotFallbackWrapper` 仍支持全局默认、按模板标签名 `component` / 子组件静态 `defineOptions({ name })` 的 `componentName` / slot 规则，以及组件内 `slot-wrapper` / `slot-wrapper-class` 静态覆盖。单个 slot 的局部策略更推荐写在对应的 `<template #xxx>` 上，例如 `<template #header slot-wrapper="cover-view">`。转发 `<slot />` 时不要使用 `<block slot="...">` 作为 wrapper，真实 DevTools 运行时会丢内容。
 
 ```vue
 <!-- App.vue -->

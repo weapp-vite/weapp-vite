@@ -1588,6 +1588,80 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<scoped-slots-default')
   })
 
+  it('uses virtual-host slot fallback wrapper strategy when enabled', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, slotFallbackWrapperComponent } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapperStrategy: 'virtual-host',
+      },
+    )
+
+    expect(code).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
+    expect(slotFallbackWrapperComponent).toEqual({
+      tagName: 'weapp-slot-wrapper',
+      componentBase: '__weapp_vite_slot_wrapper',
+      template: '<slot></slot>',
+      script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
+      config: {
+        component: true,
+      },
+    })
+  })
+
+  it('keeps legacy view wrapper when virtual-host strategy is disabled', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, slotFallbackWrapperComponent } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapperStrategy: 'view',
+      },
+    )
+
+    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).not.toContain('<weapp-slot-wrapper')
+    expect(slotFallbackWrapperComponent).toBeUndefined()
+  })
+
+  it('lets explicit slot fallback wrapper override virtual-host strategy', () => {
+    const template = `
+<Child>
+  <template #header>
+    <slot />
+  </template>
+</Child>
+    `.trim()
+
+    const { code, slotFallbackWrapperComponent } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-613/index.vue',
+      {
+        slotFallbackWrapperStrategy: 'virtual-host',
+        slotFallbackWrapper: 'view',
+      },
+    )
+
+    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(code).not.toContain('<weapp-slot-wrapper')
+    expect(slotFallbackWrapperComponent).toBeUndefined()
+  })
+
   it('uses configured global slot fallback wrapper tag', () => {
     const template = `
 <Child>

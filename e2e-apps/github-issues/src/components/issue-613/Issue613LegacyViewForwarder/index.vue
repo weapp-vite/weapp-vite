@@ -1,11 +1,11 @@
 <script setup lang="ts">
 defineOptions({
-  name: 'Issue613ViewForwarder',
+  name: 'Issue613LegacyViewForwarder',
 })
 </script>
 
 <template>
-  <Issue613Card>
+  <Issue613Card slot-wrapper="view" slot-wrapper-footer="view">
     <template #header>
       <slot />
     </template>

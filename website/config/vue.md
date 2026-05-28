@@ -37,6 +37,7 @@ keywords:
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
     slotSingleRootNoWrapper?: boolean
+    slotFallbackWrapperStrategy?: 'view' | 'virtual-host'
     slotFallbackWrapper?: string | {
       tag?: string
       attrs?: Record<string, string>
@@ -74,6 +75,7 @@ export default defineConfig({
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: false,
         slotSingleRootNoWrapper: false,
+        slotFallbackWrapperStrategy: 'virtual-host',
         slotFallbackWrapper: {
           tag: 'view',
           attrs: {
@@ -127,9 +129,14 @@ export default defineConfig({
 - `slotSingleRootNoWrapper`：普通具名插槽内容只有一个可投影根节点时，是否把 `slot="..."` 直接下推到该根节点，避免额外生成 wrapper。
   - 默认 `false`，保持稳定的真实节点 wrapper。
   - 开启后只影响“单个可投影根节点”；多节点、空内容、转发 `<slot />` 等场景仍会保留真实 wrapper。
+- `slotFallbackWrapperStrategy`：配置普通具名插槽 fallback wrapper 的默认策略。
+  - 微信平台默认 `virtual-host`，会自动生成内部 `virtualHost` 组件作为 wrapper，减少 `view` 带来的布局影响。
+  - 其他平台默认 `view`。
+  - 如果需要回到旧行为，可显式配置为 `view`，或继续显式配置 `slotFallbackWrapper: 'view'`。
 - `slotFallbackWrapper`：配置普通具名插槽 fallback wrapper 的真实标签。
-  - 默认 `view`。
+  - 微信平台默认由 `slotFallbackWrapperStrategy: 'virtual-host'` 生成内部 `virtualHost` wrapper；其他平台默认 `view`。
   - 字符串形式等价于 `{ tag: '...' }`。
+  - 显式配置该字段后，会优先使用这里指定的真实标签，并保持旧版 `view` / 自定义标签行为。
   - 对象形式支持全局默认 `tag`、全局默认 `attrs`、全局默认 `singleRootNoWrapper`，以及按组件 / 插槽匹配的 `rules`。
   - `rules[].component` 匹配模板里的组件标签名，例如 `<IssueCard>` 对应 `IssueCard`，`<issue-card>` 对应 `issue-card`。
   - `rules[].componentName` 匹配被引用 Vue SFC 的组件名，也就是子组件里静态 `defineOptions({ name: 'HelloWorld' })` 的 `name`。这个字段需要编译器能解析到该子组件的 `.vue` 文件；原生组件或第三方小程序组件通常没有这个信息，应继续用 `component`。
@@ -237,13 +244,15 @@ export default defineConfig({
 
 ### 自定义具名插槽 wrapper {#slot-fallback-wrapper}
 
-当普通具名插槽内容是转发的 `<slot />` 时，小程序不能直接接收 `<slot slot="header" />`，也不能稳定接收 `<block slot="header"><slot /></block>`。编译器默认会生成真实节点 wrapper：
+当普通具名插槽内容是转发的 `<slot />` 时，小程序不能直接接收 `<slot slot="header" />`，也不能稳定接收 `<block slot="header"><slot /></block>`。微信平台默认会生成一个内部 `virtualHost` 组件作为 wrapper：
 
 ```wxml
-<view slot="header">
+<weapp-slot-wrapper slot="header">
   <slot />
-</view>
+</weapp-slot-wrapper>
 ```
+
+同时会在当前入口 JSON 中自动注入内部组件引用。若需要回到旧版 `view` 行为，可配置 `slotFallbackWrapperStrategy: 'view'`，或显式配置 `slotFallbackWrapper: 'view'`。
 
 如果某些组件的某些具名插槽需要用其他真实节点承载，可以用 `slotFallbackWrapper` 全局配置：
 
@@ -472,7 +481,7 @@ export default defineConfig({
 
 指定插槽的 class/style 只覆盖对应属性。上例中 `footer` 在 `<template #footer>` 上覆盖了 class，但仍会继承默认的 `slot-wrapper-style`。
 
-局部配置优先级高于全局配置。整体优先级为：`<template #slot>` 上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > 父组件标签上的 `slot-wrapper-<slotName>` / `slot-wrapper-<slotName>-class/style` / `slot-single-root-no-wrapper-<slotName>` > 父组件标签上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > `slotFallbackWrapper.rules` > `slotFallbackWrapper.tag` / `slotFallbackWrapper.attrs` > 默认 `view`。
+局部配置优先级高于全局配置。整体优先级为：`<template #slot>` 上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > 父组件标签上的 `slot-wrapper-<slotName>` / `slot-wrapper-<slotName>-class/style` / `slot-single-root-no-wrapper-<slotName>` > 父组件标签上的 `slot-wrapper` / `slot-wrapper-class/style` / `slot-single-root-no-wrapper` > `slotFallbackWrapper.rules` > `slotFallbackWrapper.tag` / `slotFallbackWrapper.attrs` > `slotFallbackWrapperStrategy` 默认策略。
 
 #### `slot-single-root-no-wrapper-<slotName>`：单根真实节点下推 `slot` {#slot-single-root-no-wrapper-named}
 
@@ -531,9 +540,9 @@ export default defineConfig({
 
 ```wxml
 <IssueCard>
-  <view slot="header">
+  <weapp-slot-wrapper slot="header">
     <slot />
-  </view>
+  </weapp-slot-wrapper>
 </IssueCard>
 ```
 
@@ -567,7 +576,7 @@ export default defineConfig({
 </template>
 ```
 
-不会生成 `<block slot="header"><slot /></block>`，而是回退成：
+不会生成 `<block slot="header"><slot /></block>`，而是回退成 `view`：
 
 ```wxml
 <IssueCard>

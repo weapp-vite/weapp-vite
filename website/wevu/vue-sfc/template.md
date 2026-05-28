@@ -85,15 +85,15 @@ flowchart TB
 
 编译器不能生成 `<slot slot="header" />`，也不能用 `<block slot="header"><slot /></block>` 作为替代。真实 WeChat DevTools 运行时里，`block` 路径会出现宿主 header，但转发进去的内容不会渲染。
 
-默认产物会使用真实节点 wrapper：
+微信平台默认产物会使用内部 `virtualHost` 组件作为 wrapper：
 
 ```wxml
-<view slot="header">
+<weapp-slot-wrapper slot="header">
   <slot />
-</view>
+</weapp-slot-wrapper>
 ```
 
-如果某个组件或某个具名插槽需要换成其他真实节点，可以在组件使用处声明静态 wrapper。组件内配置推荐使用普通 kebab-case 静态属性，避免和 Vue 指令参数语法混淆。
+如果需要回到旧版 `view` wrapper，可配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'`，或显式配置 `slotFallbackWrapper: 'view'`。如果某个组件或某个具名插槽需要换成其他真实节点，可以在组件使用处声明静态 wrapper。组件内配置推荐使用普通 kebab-case 静态属性，避免和 Vue 指令参数语法混淆。
 
 ### 当前组件默认 wrapper
 
@@ -337,9 +337,9 @@ export default defineConfig({
 
 ```wxml
 <IssueCard>
-  <view slot="header">
+  <weapp-slot-wrapper slot="header">
     <slot />
-  </view>
+  </weapp-slot-wrapper>
 </IssueCard>
 ```
 
