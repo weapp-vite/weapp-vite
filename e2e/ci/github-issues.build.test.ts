@@ -987,6 +987,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(forwarderWxml).not.toContain('<slot slot="header"')
     expect(forwarderWxml).not.toContain('<slot slot="footer"')
     expect(forwarderWxml).not.toContain('slot-wrapper=')
+    expect(forwarderWxml).not.toContain('slot-wrapper-footer=')
     expect(blockForwarderWxml).toContain('<block slot="header">')
     expect(blockForwarderWxml).toContain('<slot></slot>')
     expect(pageJs).toContain('_runE2E')
