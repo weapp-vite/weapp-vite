@@ -74,14 +74,14 @@ export default defineConfig({
 
 ### `vue.template.slotFallbackWrapper`
 
-用于配置普通具名插槽 fallback 的真实 wrapper。默认是 `view`。
+用于配置普通具名插槽 fallback 的真实 wrapper。微信平台默认使用内部 `virtualHost` 组件；需要回到旧版 `view` 行为时，可配置 `vue.template.slotFallbackWrapperStrategy: 'view'` 或显式 `slotFallbackWrapper: 'view'`。
 
-当组件把自己的默认 `<slot />` 继续透传到子组件的具名插槽时，编译器不能生成 `<slot slot="header" />`，也不能稳定使用 `<block slot="header"><slot /></block>`。真实 WeChat DevTools 运行时中，`block` 路径会丢失转发内容。因此默认产物是：
+当组件把自己的默认 `<slot />` 继续透传到子组件的具名插槽时，编译器不能生成 `<slot slot="header" />`，也不能稳定使用 `<block slot="header"><slot /></block>`。真实 WeChat DevTools 运行时中，`block` 路径会丢失转发内容。因此微信平台默认产物是：
 
 ```wxml
-<view slot="header">
+<weapp-slot-wrapper slot="header">
   <slot />
-</view>
+</weapp-slot-wrapper>
 ```
 
 全局配置示例：

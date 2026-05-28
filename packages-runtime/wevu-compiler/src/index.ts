@@ -50,6 +50,8 @@ export type {
   ForParseResult,
   InlineExpressionAsset,
   ScopedSlotComponentAsset,
+  SlotFallbackWrapperComponentAsset,
+  SlotFallbackWrapperStrategy,
   TemplateRefBinding,
 } from './plugins/vue/compiler/template/types'
 

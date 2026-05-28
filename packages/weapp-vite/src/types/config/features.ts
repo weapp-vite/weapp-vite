@@ -299,6 +299,7 @@ export interface WeappVueTemplateConfig {
   scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
   scopedSlotsRequireProps?: boolean
   slotSingleRootNoWrapper?: boolean
+  slotFallbackWrapperStrategy?: 'view' | 'virtual-host'
   slotFallbackWrapper?: string | {
     tag?: string
     attrs?: Record<string, string>

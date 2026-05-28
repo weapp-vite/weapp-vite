@@ -180,6 +180,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.wxsExtension).toBe('sjs')
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')
     expect(options.template.scopedSlotsRequireProps).toBe(false)
+    expect(options.template.slotFallbackWrapperStrategy).toBe('view')
     expect(options.template.slotSingleRootNoWrapper).toBe(true)
     expect(options.template.slotFallbackWrapper).toEqual({
       tag: 'cover-view',
@@ -250,11 +251,84 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.wxsExtension).toBeUndefined()
     expect(options.template.classStyleWxsSrc).toBeUndefined()
     expect(options.template.slotSingleRootNoWrapper).toBe(false)
+    expect(options.template.slotFallbackWrapperStrategy).toBe('virtual-host')
     expect(options.json.kind).toBe('component')
     expect(await options.autoImportTags.resolveUsingComponent('Missing')).toBeUndefined()
     expect(await options.sfcSrc.resolveId('./source.vue', '/project/src/components/card.vue')).toBeUndefined()
     expect(state.value).toBe(true)
     expect(loggerWarnMock).toHaveBeenCalled()
+  })
+
+  it('uses virtual-host slot fallback wrapper by default only on weapp platform', () => {
+    const weappOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: false,
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    const alipayOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'alipay',
+        isDev: false,
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(weappOptions.template.slotFallbackWrapperStrategy).toBe('virtual-host')
+    expect(alipayOptions.template.slotFallbackWrapperStrategy).toBe('view')
+  })
+
+  it('allows slot fallback wrapper strategy to fall back to legacy view output', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: false,
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              slotFallbackWrapperStrategy: 'view',
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.template.slotFallbackWrapperStrategy).toBe('view')
   })
 
   it('marks resolver auto-imports that point at local vue sfc files', async () => {

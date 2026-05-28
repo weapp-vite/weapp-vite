@@ -48,6 +48,7 @@ export interface WeappViteConfig {
       htmlTagToWxmlTagClass?: boolean
       formatWxml?: boolean | 'auto'
       slotSingleRootNoWrapper?: boolean
+      slotFallbackWrapperStrategy?: 'view' | 'virtual-host'
       slotFallbackWrapper?: string | {
         tag?: string
         attrs?: Record<string, string>

@@ -74,6 +74,8 @@ function buildCompileVueFileOptions(
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? false
   const slotSingleRootNoWrapper = configService.weappViteConfig?.vue?.template?.slotSingleRootNoWrapper ?? false
   const slotFallbackWrapper = configService.weappViteConfig?.vue?.template?.slotFallbackWrapper
+  const slotFallbackWrapperStrategy = configService.weappViteConfig?.vue?.template?.slotFallbackWrapperStrategy
+    ?? (configService.platform === 'weapp' && slotFallbackWrapper === undefined ? 'virtual-host' : 'view')
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const htmlTagToWxml = configService.weappViteConfig?.vue?.template?.htmlTagToWxml
   const htmlTagToWxmlTagClass = configService.weappViteConfig?.vue?.template?.htmlTagToWxmlTagClass ?? true
@@ -198,6 +200,7 @@ function buildCompileVueFileOptions(
       scopedSlotsRequireProps,
       slotSingleRootNoWrapper,
       slotFallbackWrapper,
+      slotFallbackWrapperStrategy,
       slotMultipleInstance,
       classStyleRuntime: templatePlatformOptions.classStyleRuntime,
       objectLiteralBindMode,

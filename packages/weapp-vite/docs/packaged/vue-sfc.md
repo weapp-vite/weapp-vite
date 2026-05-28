@@ -232,7 +232,7 @@
 </IssueCard>
 ```
 
-这个下推策略不适用于转发 `<slot />`。转发内容仍会保留真实 wrapper：
+这个下推策略不适用于转发 `<slot />`。微信平台默认会使用内部 `virtualHost` wrapper：
 
 ```vue
 <template>
@@ -246,11 +246,13 @@
 
 ```wxml
 <IssueCard>
-  <view slot="header">
+  <weapp-slot-wrapper slot="header">
     <slot />
-  </view>
+  </weapp-slot-wrapper>
 </IssueCard>
 ```
+
+如果需要回到旧版 `view` wrapper，可配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'`，或显式配置 `slotFallbackWrapper: 'view'`。
 
 `block` 会被编译器拒绝并回退到 `view`。例如全局配置 `slotFallbackWrapper: 'block'` 后，转发 `<slot />` 的场景仍会生成：
 
@@ -284,7 +286,7 @@
 </IssueCard>
 ```
 
-也可以通过 `weapp.vue.template.slotFallbackWrapper` 全局配置，按组件和具名插槽匹配。`rules[].component` 匹配使用处模板标签名；`rules[].componentName` 匹配子组件里的静态 `defineOptions({ name: 'HelloWorld' })`。`componentName` 需要编译器能解析到被引用的 Vue SFC，原生小程序组件继续用 `component`。
+也可以通过 `weapp.vue.template.slotFallbackWrapper` 全局配置，按组件和具名插槽匹配。显式配置 `slotFallbackWrapper` 后会优先于默认 `virtualHost` 策略。`rules[].component` 匹配使用处模板标签名；`rules[].componentName` 匹配子组件里的静态 `defineOptions({ name: 'HelloWorld' })`。`componentName` 需要编译器能解析到被引用的 Vue SFC，原生小程序组件继续用 `component`。
 
 ## 何时继续看其他文档
 
