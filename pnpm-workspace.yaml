@@ -55,7 +55,7 @@ catalog:
   gm-crypto: ^0.1.12
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
-  lru-cache: ^11.5.0
+  lru-cache: ^11.5.1
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
@@ -65,7 +65,7 @@ catalog:
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.15
-  rolldown: 1.0.2
+  rolldown: 1.0.3
   sass: ^1.100.0
   sass-embedded: ^1.100.0
   stylelint: ^17.12.0
