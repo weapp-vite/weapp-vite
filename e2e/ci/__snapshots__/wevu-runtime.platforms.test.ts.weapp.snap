@@ -16,7 +16,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
       latitude="39.9100"
       longitude="116.4000"
       scale="13">
-      <view slot="callout">
+      <weapp-slot-wrapper slot="callout">
         <cover-view
           class="{{__wv_cls_1[index]}}"
           wx:for="{{events}}"
@@ -26,7 +26,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
           marker-id="{{index}}">
           callout-{{index}}
         </cover-view>
-      </view>
+      </weapp-slot-wrapper>
     </map>
     <block wx:if="{{root}}">
       <view class="{{__wv_cls_2}}" id="guard-root-class">root-guard-class</view>
