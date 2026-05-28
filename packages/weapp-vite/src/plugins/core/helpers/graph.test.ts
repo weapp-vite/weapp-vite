@@ -52,14 +52,17 @@ describe('core helpers graph', () => {
   it('collects affected entries through importer graph traversal', () => {
     const state = createState()
     state.entryModuleIds = new Set(['/src/app.ts', '/src/admin.ts'])
+    state.resolvedEntryMap.set('/src/components/card.vue', { id: '/src/components/card.vue' })
     state.moduleImporters = new Map<string, Set<string>>([
       ['/src/shared.ts', new Set(['/src/mid.ts'])],
       ['/src/mid.ts', new Set(['/src/app.ts', '/src/loop-a.ts'])],
       ['/src/loop-a.ts', new Set(['/src/loop-b.ts'])],
       ['/src/loop-b.ts', new Set(['/src/loop-a.ts'])],
+      ['/src/external-state.ts', new Set(['/src/components/card.vue'])],
     ])
 
     expect(collectAffectedEntries(state, '/src/shared.ts')).toEqual(new Set(['/src/app.ts']))
+    expect(collectAffectedEntries(state, '/src/external-state.ts')).toEqual(new Set(['/src/components/card.vue']))
     expect(collectAffectedEntries(state, '/src/unknown.ts')).toEqual(new Set())
   })
 

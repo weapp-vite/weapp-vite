@@ -4,11 +4,12 @@ import { get, isObject, set } from '@weapp-core/shared'
 export function createAutoImportAugmenter(
   autoImportService: CompilerContext['autoImportService'],
   wxmlService: CompilerContext['wxmlService'],
+  externalComponentEntryMap?: Map<string, string>,
 ) {
   const cache = new Map<string, {
     hit: Record<string, unknown>
     version: number
-    usingComponents: Record<string, string>
+    resolvedComponents: Record<string, { from: string, resolvedId?: string }>
   }>()
 
   return function applyAutoImports(baseName: string, json: any) {
@@ -20,35 +21,41 @@ export function createAutoImportAugmenter(
 
     const version = autoImportService.getVersion()
     const cached = cache.get(baseName)
-    const resolvedUsingComponents = cached && cached.hit === hit && cached.version === version
-      ? cached.usingComponents
+    const resolvedComponents = cached && cached.hit === hit && cached.version === version
+      ? cached.resolvedComponents
       : (() => {
-          const usingComponents: Record<string, string> = {}
+          const resolvedComponents: Record<string, { from: string, resolvedId?: string }> = {}
           for (const depComponentName of Object.keys(hit)) {
             const match = autoImportService.resolve(depComponentName, baseName)
             if (!match) {
               continue
             }
 
-            usingComponents[match.value.name] = match.value.from
+            resolvedComponents[match.value.name] = {
+              from: match.value.from,
+              resolvedId: match.value.resolvedId,
+            }
           }
           cache.set(baseName, {
             hit,
             version,
-            usingComponents,
+            resolvedComponents,
           })
-          return usingComponents
+          return resolvedComponents
         })()
 
     const injectedEntries: string[] = []
-    for (const [name, from] of Object.entries(resolvedUsingComponents)) {
+    for (const [name, resolved] of Object.entries(resolvedComponents)) {
       const usingComponents = get(json, 'usingComponents')
       if (isObject(usingComponents) && Reflect.has(usingComponents, name)) {
         continue
       }
 
-      set(json, `usingComponents.${name}`, from)
-      injectedEntries.push(from)
+      set(json, `usingComponents.${name}`, resolved.from)
+      injectedEntries.push(resolved.from)
+      if (resolved.resolvedId) {
+        externalComponentEntryMap?.set(resolved.from.replace(/^\/+/, ''), resolved.resolvedId)
+      }
     }
 
     return injectedEntries

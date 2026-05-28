@@ -210,6 +210,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       projectConfigPath: '/project/project.config.json',
       projectPrivateConfigPath: '/project/project.private.config.json',
       isDev: true,
+      configFileDependencies: [],
     },
     watcherService: {
       rollupWatcherMap,
@@ -522,6 +523,43 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).not.toHaveBeenCalled()
+  })
+
+  it('watches user build.watch.include entries with snapshot sidecar watcher', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    ctx.configService.inlineConfig = {
+      build: {
+        watch: {
+          include: ['/workspace/packages/shared/**'],
+        },
+      },
+    }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    const [patterns] = chokidarWatchMock.mock.calls[0]!
+    expect(patterns).toContain('/workspace/packages/shared/**')
+
+    sidecarWatcher.emit('change', '/workspace/packages/shared/message.ts')
+    await waitForMockCalls(buildMock, 2)
+
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([
+      '/project/src/pages/logs/index.ts',
+    ]))
   })
 
   it('ignores generated output updates in snapshot sidecar watcher', async () => {
