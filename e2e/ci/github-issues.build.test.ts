@@ -944,6 +944,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('__wevuPropsDerivedKeys: ["data"]')
   })
 
+  it('issue #627: compiles class/style defineProps probe', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-627/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-627/index.json')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-627/ReservedPropsProbe/index.wxml')
+    const componentJsPath = path.join(DIST_ROOT, 'components/issue-627/ReservedPropsProbe/index.js')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJSON(pageJsonPath) as {
+      usingComponents?: Record<string, string>
+    }
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-627 reserved props')
+    expect(pageJson.usingComponents?.ReservedPropsProbe).toBe('/components/issue-627/ReservedPropsProbe/index')
+    expect(pageWxml).toContain('class="issue-627-class-prop"')
+    expect(pageWxml).toContain('style="color: rgb(22, 119, 255);"')
+    expect(componentWxml).toContain('data-issue627-class="{{props.class}}"')
+    expect(componentWxml).toContain('data-issue627-style="{{props.style}}"')
+    expect(componentJs).toContain('props: {')
+    expect(componentJs).toContain('class: {')
+    expect(componentJs).toContain('style: {')
+  })
+
   it('issue #597: preserves same-name conditional slot branches', async () => {
     await runBuild()
 
