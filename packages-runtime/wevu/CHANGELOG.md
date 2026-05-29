@@ -1,5 +1,12 @@
 # wevu
 
+## 6.16.28
+
+### Patch Changes
+
+- 📦 **Dependencies** [`578fed1`](https://github.com/weapp-vite/weapp-vite/commit/578fed1b2a1f140eaf6bda433405a97cce49c20d)
+  → `@weapp-core/constants@0.1.11`, `@wevu/compiler@6.16.28`, `@wevu/web-apis@1.2.18`
+
 ## 6.16.27
 
 ### Patch Changes

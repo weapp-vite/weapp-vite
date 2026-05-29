@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.28
+
+### Patch Changes
+
+- 🐛 **微信平台普通具名插槽转发 `<slot />` 时，默认改用内部 `virtualHost` 组件作为 fallback wrapper，减少旧版 `view` wrapper 对布局的影响；同时新增 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'` 作为回退选项，显式 `slotFallbackWrapper` 配置仍保持原有行为。** [#631](https://github.com/weapp-vite/weapp-vite/pull/631) by @sonofmagic
+
+- 🐛 **在 `<script setup>` 的 `defineProps` 中声明 `id`、`class` 或 `slot` 时发出编译期提示，提醒迁移用户避开小程序 properties 中可能无法正确取值的保留属性名；`style`、`hidden`、`data-*`、`mark:*` 经真实 IDE e2e 验证可作为 prop 传入，不纳入提示范围。** [#629](https://github.com/weapp-vite/weapp-vite/pull/629) by @sonofmagic
+- 📦 **Dependencies** [`578fed1`](https://github.com/weapp-vite/weapp-vite/commit/578fed1b2a1f140eaf6bda433405a97cce49c20d)
+  → `@weapp-core/constants@0.1.11`, `@weapp-vite/ast@6.16.28`
+
 ## 6.16.27
 
 ### Patch Changes
