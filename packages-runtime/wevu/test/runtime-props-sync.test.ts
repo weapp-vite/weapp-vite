@@ -13,6 +13,51 @@ beforeEach(() => {
 })
 
 describe('runtime: props sync', () => {
+  it('keeps class and style available on setup props', async () => {
+    defineComponent({
+      props: {
+        class: { type: String, default: '' },
+        style: { type: String, default: '' },
+      } as any,
+      setup(props, _ctx) {
+        return { props }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    expect(opts.properties.class.type).toBe(String)
+    expect(opts.properties.style.type).toBe(String)
+
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        class: 'issue-627-class-prop',
+        style: 'color: rgb(22, 119, 255);',
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.class).toBe('issue-627-class-prop')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.style).toBe('color: rgb(22, 119, 255);')
+
+    inst.properties.class = 'issue-627-updated-class'
+    inst.properties.style = 'font-size: 32rpx;'
+    opts.observers.class.call(inst, 'issue-627-updated-class', 'issue-627-class-prop')
+    opts.observers.style.call(inst, 'font-size: 32rpx;', 'color: rgb(22, 119, 255);')
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.class).toBe('issue-627-updated-class')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.style).toBe('font-size: 32rpx;')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      'props.class': 'issue-627-updated-class',
+      'props.style': 'font-size: 32rpx;',
+    }))
+  })
+
   it('syncs mp properties changes into setup returned props binding', async () => {
     defineComponent({
       props: {

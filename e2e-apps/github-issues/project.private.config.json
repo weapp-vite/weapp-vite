@@ -449,6 +449,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-627-native/index",
+          "pathName": "pages/issue-627-native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-627-sfc-host/index",
+          "pathName": "pages/issue-627-sfc-host/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-528/index",
           "pathName": "pages/issue-528/index",
           "query": "",

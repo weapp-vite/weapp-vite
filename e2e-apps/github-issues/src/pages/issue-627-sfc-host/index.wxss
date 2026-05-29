@@ -1,0 +1,13 @@
+.issue627-sfc-host-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f8fafc;
+}
+
+.issue627-sfc-host-title {
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f172a;
+}

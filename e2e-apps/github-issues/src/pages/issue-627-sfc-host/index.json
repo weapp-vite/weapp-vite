@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "issue-627-sfc-host",
+  "usingComponents": {
+    "ReservedPropsProbe": "/components/issue-627/ReservedPropsProbe/index"
+  }
+}

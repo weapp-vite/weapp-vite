@@ -1,0 +1,15 @@
+<view class="issue627-sfc-host-page">
+  <view class="issue627-sfc-host-title">
+    {{title}}
+  </view>
+  <ReservedPropsProbe
+    id="issue627-sfc-host-literal"
+    class="issue-627-sfc-host-class-prop"
+    style="color: rgb(22, 119, 255);"
+  />
+  <ReservedPropsProbe
+    id="issue627-sfc-host-dynamic"
+    class="issue-627-sfc-host-dynamic-class"
+    style="font-size: 32rpx;"
+  />
+</view>

@@ -3408,6 +3408,60 @@ Component({
     expect(page.data.summary).toContain('"size":1')
   })
 
+  it('passes class and style host attributes into component properties', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'props-probe': '../../components/props-probe/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    snapshot: ''
+  },
+  inspect() {
+    const probe = this.selectComponent('#props-probe')
+    this.setData({
+      snapshot: JSON.stringify(probe?.snapshot?.() ?? null)
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<props-probe id="props-probe" class="native-class-prop" style="color: rgb(22, 119, 255);" />'],
+      ['components/props-probe/index.json', '{}'],
+      ['components/props-probe/index.js', `
+Component({
+  properties: {
+    class: String,
+    style: String
+  },
+  methods: {
+    snapshot() {
+      return {
+        class: this.properties.class ?? '',
+        style: this.properties.style ?? ''
+      }
+    }
+  }
+})
+`],
+      ['components/props-probe/index.wxml', '<view>{{class}}|{{style}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspect()
+
+    expect(page.data.snapshot).toBe(JSON.stringify({
+      class: 'native-class-prop',
+      style: 'color: rgb(22, 119, 255);',
+    }))
+  })
+
   it('supports selecting component instances by data attribute selector', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

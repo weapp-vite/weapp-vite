@@ -14,6 +14,10 @@ function _runE2E() {
     customStyle: props.customStyle ?? '',
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>
