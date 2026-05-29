@@ -1,6 +1,6 @@
 ---
 title: 从旧项目迁移过来
-description: 从原生小程序或旧工程结构迁移到 Weapp-vite、Vue SFC、Wevu 时，推荐采用分阶段、可回滚的迁移路线。
+description: 从原生小程序或旧工程结构迁移到 Weapp-vite + 原生，或继续迁移到 Weapp-vite + Wevu + Vue SFC 时，推荐采用分阶段、可回滚的迁移路线。
 keywords:
   - handbook
   - migration
@@ -17,6 +17,15 @@ keywords:
 
 更稳的思路是：**按阶段迁移，每一阶段都能独立验证。**
 
+## 先决定迁移终点
+
+迁移不一定等于“全量改成 Vue SFC”。常见有两种终点：
+
+- `weapp-vite + 原生`：继续保留 `Page/Component + WXML/WXSS/JSON`，先获得 Vite 构建、TS、别名、资源处理、DevTools、截图日志和 AI 协作能力。
+- `weapp-vite + Wevu + Vue SFC`：在前一条路线稳定后，继续把新页面或目标页面族迁到 `.vue`，使用响应式状态和更明确的组件契约。
+
+如果当前项目里有很多复杂插件、`wxs/sjs`、云开发、地图、直播、支付或老旧 Behavior，优先把 `weapp-vite + 原生` 做稳，再挑低风险页面试点 SFC。
+
 ## 一条推荐的迁移路线
 
 ### 第 1 阶段：先接入 Weapp-vite
@@ -27,6 +36,7 @@ keywords:
 - 让项目能通过 Weapp-vite 正常产出 `dist`
 
 这一步完成后，你就已经有了更好的工程化基础。
+如果团队只想保留原生开发方式，这一步可以继续收口成明确的阶段性交付，不必强行进入 SFC 迁移。
 
 ### 第 2 阶段：整理目录和配置
 
@@ -37,7 +47,7 @@ keywords:
 - 环境变量
 - 构建输出
 
-### 第 3 阶段：挑一个页面试点 SFC
+### 第 3 阶段：选择是否试点 SFC
 
 不要一开始就全站改 Vue SFC。
 先挑一个低风险、结构清晰的页面。

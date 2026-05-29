@@ -126,7 +126,7 @@ pnpm skills:score:json
 
 ### D. native-to-weapp-vite-wevu-migration
 
-1. 提问：我们想把原生 `Page/Component` 迁到 Vue SFC，怎么分批做且可回滚？
+1. 提问：我们只想把原生小程序先接入 `weapp-vite + 原生`，暂时不引入 wevu，怎么分批做且可回滚？
    预期 skill：`native-to-weapp-vite-wevu-migration`
 
 2. 提问：原来大量 `setData` 的页面迁移到 `ref/reactive`，有没有分阶段改造策略？
@@ -135,7 +135,7 @@ pnpm skills:score:json
 3. 提问：`properties/observers/triggerEvent` 到 `defineProps/watch/defineEmits` 的映射怎么落地？
    预期 skill：`native-to-weapp-vite-wevu-migration`
 
-4. 提问：迁移期间如何设计 e2e，既抓运行时报错又保留回滚点？
+4. 提问：我们想把原生 `Page/Component` 继续迁到 Vue SFC，迁移期间如何设计 e2e，既抓运行时报错又保留回滚点？
    预期 skill：`native-to-weapp-vite-wevu-migration`
 
 5. 边界提问：我们现在不是迁移，只是优化现有 weapp-vite 的分包配置。

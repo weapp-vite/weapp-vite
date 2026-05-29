@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-19T08:57:27.373Z",
+  "generatedAt": "2026-05-29T11:00:10.282Z",
   "site": "https://vite.icebreaker.top",
   "count": 263,
   "items": [
@@ -492,15 +492,15 @@
         "weapp.platform {#weapp-platform}",
         "weapp.multiPlatform {#weapp-multiplatform}",
         "weapp.cleanOutputsInDev {#weapp-cleanoutputsindev}",
+        "weapp.buildScope {#weapp-buildscope}",
         "weapp.packageSizeWarningBytes {#weapp-packagesizewarningbytes}",
         "weapp.jsFormat {#weapp-jsformat}",
         "weapp.es5 {#weapp-es5}",
         "顶层 build.* 该怎么配",
         "常见组合",
-        "多平台项目",
-        "保守兼容输出"
+        "多平台项目"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-21",
       "source": "config/build-and-output.md"
     },
     {
@@ -618,7 +618,7 @@
         "配置改了但编辑器没提示",
         "不知道一个字段到底归谁管"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-05-21",
       "source": "config/index.md"
     },
     {
@@ -643,7 +643,7 @@
         "常见问题",
         "weapp.ast {#weapp-ast}"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-28",
       "source": "config/js.md"
     },
     {
@@ -667,7 +667,7 @@
         "weapp.json.defaults {#weapp-json-defaults}",
         "weapp.json.mergeStrategy {#weapp-json-merge-strategy}"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-28",
       "source": "config/json.md"
     },
     {
@@ -911,9 +911,16 @@
         "Vue SFC 配置 {#vue-config}",
         "weapp.vue.enable {#weapp-vue-enable}",
         "weapp.vue.template {#weapp-vue-template}",
+        "自定义具名插槽 wrapper {#slot-fallback-wrapper}",
+        "slot-wrapper：当前组件所有普通具名插槽的默认 wrapper {#slot-wrapper-default}",
+        "slot-wrapper-：覆盖指定具名插槽 {#slot-wrapper-named}",
+        "slot-wrapper-class/style：给生成的 wrapper 加属性 {#slot-wrapper-attrs}",
+        "slot-single-root-no-wrapper-：单根真实节点下推 slot {#slot-single-root-no-wrapper-named}",
+        "block：会被拒绝并回退到 view {#slot-wrapper-block}",
+        "wrapper 必须能承载实际内容 {#slot-wrapper-content}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-05-19",
+      "updatedAt": "2026-05-29",
       "source": "config/vue.md"
     },
     {
@@ -1238,7 +1245,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-05-29",
       "source": "guide/ai.md"
     },
     {
@@ -1262,7 +1269,7 @@
         "JSON / JSONC 别名",
         "常见问题排查"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-05-28",
       "source": "guide/alias.md"
     },
     {
@@ -1413,7 +1420,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-05-21",
       "source": "guide/cli.md"
     },
     {
@@ -2373,12 +2380,12 @@
         "何时选 duplicate / hoist",
         "精细化参数（按需开启）",
         "独立分包",
+        "只构建主包和指定分包",
         "单独开发某个分包（把它当成独立分包）",
         "分包样式共享",
-        "调试建议",
-        "分析产物布局"
+        "调试建议"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-05-21",
       "source": "guide/subpackage.md"
     },
     {
@@ -2839,7 +2846,7 @@
     {
       "id": "doc-5e3dd6d779",
       "title": "从旧项目迁移过来",
-      "summary": "从原生小程序或旧工程结构迁移到 Weapp-vite、Vue SFC、Wevu 时，推荐采用分阶段、可回滚的迁移路线。",
+      "summary": "从原生小程序或旧工程结构迁移到 Weapp-vite + 原生，或继续迁移到 Weapp-vite + Wevu + Vue SFC 时，推荐采用分阶段、可回滚的迁移路线。",
       "url": "/handbook/migration",
       "canonical": "https://vite.icebreaker.top/handbook/migration",
       "keywords": [
@@ -2854,10 +2861,11 @@
       ],
       "headings": [
         "从旧项目迁移过来",
+        "先决定迁移终点",
         "一条推荐的迁移路线",
         "第 1 阶段：先接入 Weapp-vite",
         "第 2 阶段：整理目录和配置",
-        "第 3 阶段：挑一个页面试点 SFC",
+        "第 3 阶段：选择是否试点 SFC",
         "第 4 阶段：抽公共组件、service、store",
         "第 5 阶段：逐模块推进",
         "一个很实用的迁移判断标准",
@@ -2865,7 +2873,7 @@
         "什么叫“可回滚迁移”",
         "一份迁移清单"
       ],
-      "updatedAt": "2026-04-14",
+      "updatedAt": "2026-05-29",
       "source": "handbook/migration.md"
     },
     {
@@ -3606,7 +3614,7 @@
     {
       "id": "doc-fc485b2137",
       "title": "迁移",
-      "summary": "汇总从原生小程序迁移到 weapp-vite / wevu，以及历史大版本升级的迁移入口与阅读顺序。",
+      "summary": "汇总从原生小程序迁移到 weapp-vite + 原生 / weapp-vite + wevu，以及历史大版本升级的迁移入口与阅读顺序。",
       "url": "/migration/",
       "canonical": "https://vite.icebreaker.top/migration/",
       "keywords": [
@@ -3619,7 +3627,7 @@
       "headings": [
         "迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-29",
       "source": "migration/index.md"
     },
     {
@@ -6383,8 +6391,8 @@
     },
     {
       "id": "doc-e341d32955",
-      "title": "从原生小程序迁移到 Vue SFC",
-      "summary": "这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 Weapp-vite + Wevu + Vue SFC。",
+      "title": "从原生小程序迁移到 Weapp-vite / Wevu",
+      "summary": "这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在不重写业务的前提下，按需迁移到 Weapp-vite + 原生，或继续升级到 Weapp-vite + Wevu + Vue SFC。",
       "url": "/wevu/migration/from-native-to-vue-sfc",
       "canonical": "https://vite.icebreaker.top/wevu/migration/from-native-to-vue-sfc",
       "keywords": [
@@ -6398,20 +6406,20 @@
         "to"
       ],
       "headings": [
-        "从原生小程序迁移到 Vue SFC（详细指南）",
+        "从原生小程序迁移到 Weapp-vite / Wevu（详细指南）",
+        "先选迁移目标",
         "迁移目标与验收标准",
         "迁移前准备（必须做）",
         "1. 版本与工程基线",
         "2. 冻结阶段策略",
         "3. 建立对照样本",
-        "总体迁移路线（推荐 4 阶段）",
-        "阶段 0：只替构建链路，不改业务行为",
-        "阶段 1：机械迁移（重点是“等价”）",
-        "阶段 2：语义迁移（重点是“可维护”）",
-        "阶段 3：收口（重点是“可持续”）",
-        "原生到 Vue SFC 映射表（高频）"
+        "总体迁移路线（推荐 5 阶段）",
+        "阶段 0：原生项目体检",
+        "阶段 1：只替构建链路，不改业务行为",
+        "阶段 2A：路线 A 收口（继续原生）",
+        "阶段 2B：路线 B 试点（原生与 Vue SFC 共存）"
       ],
-      "updatedAt": "2026-04-14",
+      "updatedAt": "2026-05-29",
       "source": "wevu/migration/from-native-to-vue-sfc.md"
     },
     {
@@ -6663,12 +6671,12 @@
         "心智模型",
         "章节导航"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-29",
       "source": "wevu/vue-sfc/index.md"
     },
     {
       "id": "doc-2f44e2f598",
-      "title": "从原生小程序迁移到 Vue SFC",
+      "title": "从原生小程序迁移到 Weapp-vite / Wevu",
       "summary": "本章节已迁移为独立迁移指南，不再归属到“Vue SFC 开发”子章节。",
       "url": "/wevu/vue-sfc/migrate-from-native",
       "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/migrate-from-native",
@@ -6685,7 +6693,7 @@
       "headings": [
         "章节已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-29",
       "source": "wevu/vue-sfc/migrate-from-native.md"
     },
     {
@@ -6709,9 +6717,15 @@
         "页面事件与生命周期：怎么触发",
         "v-model 支持范围与限制",
         "v-bind 限制",
+        "具名插槽透传 wrapper",
+        "当前组件默认 wrapper",
+        "覆盖指定具名插槽",
+        "给生成的 wrapper 加 class/style",
+        "单根真实节点下推",
+        "block 和内容承载限制",
         "延伸阅读"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-05-29",
       "source": "wevu/vue-sfc/template.md"
     },
     {

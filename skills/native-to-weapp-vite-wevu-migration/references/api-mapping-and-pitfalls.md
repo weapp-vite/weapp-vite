@@ -3,16 +3,18 @@
 ## 注册层
 
 - 原生：`Page({...})` / `Component({...})`
-- 迁移后：`<script setup>` + JSON 宏 + wevu hooks / API
+- 路线 A：继续保留 `Page({...})` / `Component({...})`，由 `weapp-vite` 负责构建和工程链路
+- 路线 B：`<script setup>` + JSON 宏 + wevu hooks / API
 
-重点：迁移后不再直接写原生构造器，生命周期通过 `wevu` hooks 注册。
+重点：只有路线 B 才要求不再直接写原生构造器，生命周期通过 `wevu` hooks 注册。路线 A 的目标是保留原生模型，不应为了“看起来迁移了”而改写页面。
 
 渐进迁移时允许原生页面和 Vue SFC 页面共存。不要因为接入 `weapp-vite` 就立刻删除所有 `Page/Component` 文件；先用路由和构建验证证明两类页面能同时工作。
 
 ## 状态层
 
 - 原生：`this.data` + `this.setData({ ... })`
-- 迁移后：`ref/reactive` + 直接赋值
+- 路线 A：继续使用原生 `data/setData`，但可以通过类型、工具函数和更小 payload 收敛维护成本
+- 路线 B：`ref/reactive` + 直接赋值
 
 重点：
 
@@ -22,7 +24,8 @@
 ## 组件契约层
 
 - 原生：`properties` / `observers` / `triggerEvent`
-- 迁移后：`defineProps` / `watch` / `defineEmits`
+- 路线 A：继续使用 `properties` / `observers` / `triggerEvent`
+- 路线 B：`defineProps` / `watch` / `defineEmits`
 
 示例：
 
@@ -60,6 +63,7 @@ if (import.meta.env.PLATFORM === 'weapp') {
 ## 高频坑位
 
 - 把“工具链接入”做成“一次性全量重写”，导致无法定位问题和回滚
+- 用户只想要路线 A，却额外引入 `wevu` 和 `.vue`，扩大迁移面
 - 试点页夹带全局状态、请求层或视觉系统重构，行为漂移无法归因
 - 列表字段未兜底，导致 `map/forEach of undefined`
 - `usingComponents` 未迁移到 JSON 宏，组件不渲染

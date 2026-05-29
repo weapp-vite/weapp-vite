@@ -47,7 +47,7 @@ $native-to-weapp-vite-wevu-migration
 5. WeChat DevTools runtime e2e、automator 复用、`reLaunch` 方案优先用 `weapp-devtools-e2e-best-practices`。
 6. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
 7. `wevu` 生命周期、状态、事件、store，以及卡顿、掉帧、白屏、内存告警这类运行时治理优先用 `wevu-best-practices`。
-8. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
+8. 原生小程序迁移到 `weapp-vite + 原生`，或继续迁移到 `weapp-vite + wevu + Vue SFC`，优先用 `native-to-weapp-vite-wevu-migration`。
 9. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-vite-best-practices`。
 10. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 

@@ -18,15 +18,15 @@ date: 2026-05-03
 
 ## 工作流总览
 
-| 任务                      | 主 skill                                | 事实源                                                      | 验收信号                                |
-| ------------------------- | --------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
-| 同步网站和 skills 文档    | `$docs-and-website-sync`                | 源码、CLI、类型定义、随包 docs、VitePress 配置              | 相关入口一致，`seo-quality-check` 通过  |
-| 修 GitHub issue           | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，changeset 判定清楚    |
-| 调整项目配置或 CLI        | `$weapp-vite-best-practices`            | `vite.config.ts`、`packages/weapp-vite/src/**`、`dist/docs` | 目标包先 build，下游窄范围验证通过      |
-| 排查 Vue SFC 编译或模板   | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致           |
-| 排查 wevu 运行时行为      | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定        |
-| 新增 DevTools e2e         | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景 |
-| 原生迁移到 Wevu / Vue SFC | `$native-to-weapp-vite-wevu-migration`  | 原生页面、迁移映射、回滚点、截图日志                        | 分波次迁移，每波有可回滚验收            |
+| 任务                         | 主 skill                                | 事实源                                                      | 验收信号                                |
+| ---------------------------- | --------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
+| 同步网站和 skills 文档       | `$docs-and-website-sync`                | 源码、CLI、类型定义、随包 docs、VitePress 配置              | 相关入口一致，`seo-quality-check` 通过  |
+| 修 GitHub issue              | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，changeset 判定清楚    |
+| 调整项目配置或 CLI           | `$weapp-vite-best-practices`            | `vite.config.ts`、`packages/weapp-vite/src/**`、`dist/docs` | 目标包先 build，下游窄范围验证通过      |
+| 排查 Vue SFC 编译或模板      | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致           |
+| 排查 wevu 运行时行为         | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定        |
+| 新增 DevTools e2e            | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景 |
+| 原生迁移到 Weapp-vite / Wevu | `$native-to-weapp-vite-wevu-migration`  | 原生页面、路线选择、迁移映射、回滚点、截图日志              | 分波次迁移，每波有可回滚验收            |
 
 ## 文档同步
 
@@ -125,17 +125,20 @@ wv ide logs --open
 
 适用场景：
 
-1. 原生 `Page/Component` 要逐步迁移到 Vue SFC。
-2. 迁移期间必须可回滚。
-3. 迁移后需要 AI 能继续稳定维护项目。
+1. 原生项目要先迁移到 `weapp-vite + 原生`。
+2. 原生 `Page/Component` 要进一步逐步迁移到 Vue SFC。
+3. 迁移期间必须可回滚。
+4. 迁移后需要 AI 能继续稳定维护项目。
 
 推荐流程：
 
 1. 使用 `$native-to-weapp-vite-wevu-migration`。
-2. 先拆波次，不把机械迁移和语义升级混在同一轮。
-3. 每波迁移前记录页面入口、原生 API、事件契约和回滚点。
-4. `properties/observers/triggerEvent` 分别映射到 `defineProps/watch/defineEmits`。
-5. 迁移后补截图、日志或 e2e 验收，并更新项目 AI 指引。
+2. 先判断路线 A（`weapp-vite + 原生`）还是路线 B（`weapp-vite + wevu + Vue SFC`）。
+3. 先拆波次，不把工具链接入、机械迁移和语义升级混在同一轮。
+4. 每波迁移前记录页面入口、原生 API、事件契约和回滚点。
+5. 路线 A 只收口构建、TS、路径、资源、DevTools、截图日志和 AI 指引。
+6. 路线 B 再把 `properties/observers/triggerEvent` 分别映射到 `defineProps/watch/defineEmits`。
+7. 迁移后补截图、日志或 e2e 验收，并更新项目 AI 指引。
 
 ## 给 AI 的统一交付格式
 

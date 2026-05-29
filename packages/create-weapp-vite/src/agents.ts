@@ -85,13 +85,13 @@ export function createAgentsGuidelines(templateName: TemplateName) {
 
   if (supportsNativePages(templateName)) {
     lines.push(
-      '  - `$native-to-weapp-vite-wevu-migration` when migrating native mini-program pages/components toward Vue SFC or wevu.',
+      '  - `$native-to-weapp-vite-wevu-migration` when migrating native mini-program projects to `weapp-vite + native`, or further toward Vue SFC / wevu.',
       '',
       '## Native Mini-program Authoring',
       '',
       '- Keep native page/component structure consistent with the template unless there is a clear migration goal.',
       '- Prefer `weapp-vite generate` or `wv generate` for new app/page/component scaffolds.',
-      '- If migrating this project toward Vue SFC or `wevu`, keep the migration explicit and prefer the official weapp-vite / wevu guidance first.',
+      '- If migrating this project, first decide whether the target is `weapp-vite + native` or a further Vue SFC / `wevu` migration, then keep each migration wave explicit.',
     )
   }
 

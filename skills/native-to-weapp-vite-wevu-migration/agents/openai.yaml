@@ -1,11 +1,12 @@
 interface:
   display_name: 渐进式小程序迁移
-  short_description: 原生小程序渐进接入 `weapp-vite` 工具链并分批迁移到 `wevu + Vue SFC`
+  short_description: 原生小程序渐进接入 `weapp-vite + 原生`，并按需继续迁移到 `wevu + Vue SFC`
   default_prompt: >-
-    当任务主轴是把原生微信/支付宝/抖音小程序渐进迁移到 `weapp-vite + wevu + Vue SFC`，
-    或者用户想先保留原生页面、只接入 Vite 构建、受管 TS、DevTools 调试、截图日志和 AI 维护能力时，
-    使用 $native-to-weapp-vite-wevu-migration。按波次推进，先建立工具链闭环和原生/Vue 共存边界，
-    再处理 `Page/Component` 改造、`setData` 响应式迁移、事件契约改写与页面元信息迁移。
+    当任务主轴是把原生微信/支付宝/抖音小程序迁移到 `weapp-vite + 原生`，或者在此基础上继续迁移到
+    `weapp-vite + wevu + Vue SFC` 时，使用 $native-to-weapp-vite-wevu-migration。先判断路线 A
+    是否只保留原生页面并接入 Vite 构建、受管 TS、DevTools 调试、截图日志和 AI 维护能力；只有用户明确要
+    继续升级页面/组件模型时，才进入路线 B，建立原生/Vue 共存边界，再处理 `Page/Component` 改造、
+    `setData` 响应式迁移、事件契约改写与页面元信息迁移。
 
 policy:
   allow_implicit_invocation: true

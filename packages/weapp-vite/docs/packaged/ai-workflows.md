@@ -89,6 +89,15 @@ wv mcp doctor codex
 
 如果目标明确是 Web runtime，而不是微信开发者工具中的小程序运行时，才改用普通浏览器截图或 Web E2E 工具。
 
+## 原生小程序迁移路线
+
+当用户要求迁移存量原生小程序时，先判断迁移终点：
+
+- 路线 A：`weapp-vite + 原生`。保留 `Page/Component + WXML/WXSS/JSON`，只升级构建、TypeScript、路径别名、资源处理、DevTools、截图日志、AI 协作和 CI。
+- 路线 B：`weapp-vite + wevu + Vue SFC`。在路线 A 稳定后，按新页面、低风险页面或页面族继续迁到 `.vue`、响应式状态和类型化组件契约。
+
+不要把“接入 `weapp-vite`”自动解释为“必须引入 `wevu` 或改成 `.vue`”。如果用户只要求路线 A，迁移输出应包含原生保留区、工具链改动、验证命令和未来进入路线 B 的触发条件。
+
 ## 推荐阅读顺序
 
 - 项目初始化、命令和 AI 使用入口：[`getting-started.md`](./getting-started.md)

@@ -73,4 +73,4 @@ flowchart LR
 - [调试与排错](/wevu/vue-sfc/troubleshoot)：常见问题定位与建议
 - [Vue 3 写法对比](/wevu/vue-sfc/vue3-vs-weapp-sfc)：与 Vue 3 SFC 写法的相同点/不同点
 
-迁移相关内容已独立成章节，请阅读：[从原生小程序迁移到 Vue SFC（详细指南）](/wevu/migration/from-native-to-vue-sfc)。
+迁移相关内容已独立成章节，请阅读：[从原生小程序迁移到 Weapp-vite / Wevu（详细指南）](/wevu/migration/from-native-to-vue-sfc)。如果你只想先保留原生页面并接入 `weapp-vite` 工具链，也从这篇开始判断路线。

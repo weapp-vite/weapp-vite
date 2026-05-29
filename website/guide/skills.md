@@ -39,19 +39,19 @@ npx skills add sonofmagic/skills
 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                               |
 | `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                          |
 | `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                          |
-| `$native-to-weapp-vite-wevu-migration`  | 原生 `Page/Component` 迁移到 `weapp-vite + wevu + Vue SFC`                          | 迁移清单、API 映射、回滚与验收计划                                          |
+| `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                |
 
 ## 任务路由建议
 
-| 用户意图                                     | 主 skill                                | 常见次 skill                                           |
-| -------------------------------------------- | --------------------------------------- | ------------------------------------------------------ |
-| “帮我调分包、chunk、自动路由或 CLI”          | `$weapp-vite-best-practices`            | `$weapp-vite-vue-sfc-best-practices`                   |
-| “根据当前实现更新 website / skills / README” | `$docs-and-website-sync`                | `$weapp-vite-best-practices`                           |
-| “这个 issue 要按仓库流程修完并开 PR”         | `$release-and-changeset-best-practices` | `$wevu-best-practices` 或 `$weapp-vite-best-practices` |
-| “新增 DevTools runtime e2e 或截图验收”       | `$weapp-devtools-e2e-best-practices`    | `$weapp-vite-best-practices`                           |
-| “`.vue` 宏、模板或 `usingComponents` 不生效” | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
-| “wevu 生命周期、store 或页面切换行为异常”    | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
-| “原生页面逐步迁移到 Vue SFC / wevu”          | `$native-to-weapp-vite-wevu-migration`  | `$wevu-best-practices`                                 |
+| 用户意图                                                 | 主 skill                                | 常见次 skill                                           |
+| -------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| “帮我调分包、chunk、自动路由或 CLI”                      | `$weapp-vite-best-practices`            | `$weapp-vite-vue-sfc-best-practices`                   |
+| “根据当前实现更新 website / skills / README”             | `$docs-and-website-sync`                | `$weapp-vite-best-practices`                           |
+| “这个 issue 要按仓库流程修完并开 PR”                     | `$release-and-changeset-best-practices` | `$wevu-best-practices` 或 `$weapp-vite-best-practices` |
+| “新增 DevTools runtime e2e 或截图验收”                   | `$weapp-devtools-e2e-best-practices`    | `$weapp-vite-best-practices`                           |
+| “`.vue` 宏、模板或 `usingComponents` 不生效”             | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
+| “wevu 生命周期、store 或页面切换行为异常”                | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
+| “原生项目先接入 weapp-vite，或逐步迁移到 Vue SFC / wevu” | `$native-to-weapp-vite-wevu-migration`  | `$weapp-vite-best-practices` 或 `$wevu-best-practices` |
 
 ## 给 AI 的推荐提示词
 
