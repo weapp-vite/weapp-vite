@@ -1,0 +1,12 @@
+<view class="issue627-native-page">
+  <view class="issue627-native-title">
+    {{title}}
+  </view>
+  <native-props-probe
+    id="issue627-native-probe"
+    class="issue-627-native-class-prop"
+    style="color: rgb(22, 119, 255);"
+    custom-class="issue-627-native-custom-class"
+    custom-style="font-size: 32rpx;"
+  />
+</view>

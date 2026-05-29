@@ -1,0 +1,9 @@
+<view
+  class="issue627-native-probe"
+  data-issue627-native-class="{{class}}"
+  data-issue627-native-style="{{style}}"
+  data-issue627-native-custom-class="{{customClass}}"
+  data-issue627-native-custom-style="{{customStyle}}"
+>
+  issue-627 native reserved props probe
+</view>

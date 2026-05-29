@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "issue-627-native",
+  "usingComponents": {
+    "native-props-probe": "/components/issue-627/native-props-probe/index"
+  }
+}
