@@ -48,6 +48,9 @@ export function createAutoImportAugmenter(
     for (const [name, resolved] of Object.entries(resolvedComponents)) {
       const usingComponents = get(json, 'usingComponents')
       if (isObject(usingComponents) && Reflect.has(usingComponents, name)) {
+        if (usingComponents[name] === resolved.from) {
+          injectedEntries.push(resolved.from)
+        }
         continue
       }
 

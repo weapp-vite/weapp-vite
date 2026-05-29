@@ -92,6 +92,76 @@ describe('createAutoImportAugmenter', () => {
     })
   })
 
+  it('returns matching existing auto-import entries for force emit', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'HotCard') {
+        return {
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+          },
+        }
+      }
+      return undefined
+    })
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: vi.fn(() => 0) } as any,
+      {
+        getAggregatedAutoImportComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+        getAggregatedComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+      } as any,
+    )
+
+    const json: Record<string, any> = {
+      usingComponents: {
+        HotCard: '/components/HotCard/index',
+      },
+    }
+
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(json.usingComponents).toEqual({
+      HotCard: '/components/HotCard/index',
+    })
+    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+  })
+
+  it('does not return entries when explicit usingComponents points elsewhere', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'HotCard') {
+        return {
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+          },
+        }
+      }
+      return undefined
+    })
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: vi.fn(() => 0) } as any,
+      {
+        getAggregatedAutoImportComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+        getAggregatedComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+      } as any,
+    )
+
+    const json: Record<string, any> = {
+      usingComponents: {
+        HotCard: '/components/ExplicitHotCard/index',
+      },
+    }
+
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(json.usingComponents).toEqual({
+      HotCard: '/components/ExplicitHotCard/index',
+    })
+    expect(injectedEntries).toEqual([])
+  })
+
   it('tracks resolver resolvedId so external Vue components join the compile flow', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'ResolverBadge') {
