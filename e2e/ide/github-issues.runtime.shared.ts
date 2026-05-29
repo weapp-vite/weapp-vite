@@ -51,7 +51,7 @@ function resolveGithubIssuesDistDir() {
   return 'dist'
 }
 
-const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
+export const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
 export const DIST_ROOT = path.join(APP_ROOT, resolveGithubIssuesDistDir())
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2

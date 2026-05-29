@@ -58,6 +58,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue621.test.ts': [
     'pages/issue-621/**',
   ],
+  'github-issues.runtime.issue627.test.ts': [
+    'pages/issue-627-native/**',
+  ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
   ],
@@ -180,6 +183,12 @@ function resolveGithubIssuesAutoRoutes() {
 
   if (!matchedRoutes) {
     return true
+  }
+
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue627.test.ts') {
+    return {
+      include: matchedRoutes,
+    }
   }
 
   return {
