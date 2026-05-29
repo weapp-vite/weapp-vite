@@ -1,9 +1,19 @@
 <view
   class="issue627-native-probe"
+  data-issue627-native-id="{{id}}"
   data-issue627-native-class="{{class}}"
   data-issue627-native-style="{{style}}"
+  data-issue627-native-hidden="{{hidden}}"
+  data-issue627-native-data-foo="{{dataFoo}}"
+  data-issue627-native-data-dash-foo="{{properties['data-foo']}}"
+  data-issue627-native-mark-foo="{{markFoo}}"
+  data-issue627-native-mark-colon-foo="{{properties['mark:foo']}}"
+  data-issue627-native-slot="{{slot}}"
+  data-issue627-native-wx-if="{{properties['wx:if']}}"
   data-issue627-native-custom-class="{{customClass}}"
   data-issue627-native-custom-style="{{customStyle}}"
+  data-issue627-native-custom-hidden="{{customHidden}}"
+  data-issue627-native-custom-data-foo="{{customDataFoo}}"
 >
   issue-627 native reserved props probe
 </view>

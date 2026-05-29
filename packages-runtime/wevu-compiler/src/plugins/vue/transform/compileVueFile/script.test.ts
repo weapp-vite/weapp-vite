@@ -74,13 +74,13 @@ const local = 'ok'
     expect(resolveUsingComponentPath).toHaveBeenCalled()
   })
 
-  it('warns when type-only defineProps declares id or class', async () => {
+  it('warns when type-only defineProps declares id, class, or slot', async () => {
     const sfc = parse(`
 <template>
   <view>{{ props.id }}</view>
 </template>
 <script setup lang="ts">
-const props = defineProps<{ id: string; class: string; style: string; title: string }>()
+const props = defineProps<{ id: string; class: string; slot: string; style: string; title: string }>()
 </script>
     `.trim(), { filename: '/project/src/components/id-prop.vue' })
     const warn = vi.fn()
@@ -95,15 +95,17 @@ const props = defineProps<{ id: string; class: string; style: string; title: str
       false,
     )
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
-  it('warns when runtime defineProps declares id or class', async () => {
+  it('warns when runtime defineProps declares id, class, or slot', async () => {
     const cases = [
       `defineProps({ id: String, title: String })`,
       `defineProps({ class: String, style: String, title: String })`,
+      `defineProps({ slot: String, hidden: Boolean, title: String })`,
       `defineProps(['id', 'title'])`,
       `defineProps(['class', 'style', 'title'])`,
+      `defineProps(['slot', 'hidden', 'title'])`,
     ]
 
     for (const setupCode of cases) {
@@ -127,7 +129,7 @@ ${setupCode}
         false,
       )
 
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
     }
   })
 
@@ -162,7 +164,7 @@ withDefaults(defineProps<Props>(), {
       false,
     )
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
   it('does not warn for local id bindings outside defineProps', async () => {
@@ -187,7 +189,7 @@ const props = defineProps<{ title: string }>()
       false,
     )
 
-    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
   it('does not warn when id only comes from normal script options', async () => {
@@ -218,16 +220,16 @@ const props = defineProps<{ title: string }>()
       false,
     )
 
-    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
-  it('does not warn when defineProps only declares style', async () => {
+  it('does not warn when defineProps only declares props verified as readable in DevTools', async () => {
     const sfc = parse(`
 <template>
-  <view>{{ props.style }}</view>
+  <view>{{ props.style }}{{ props.hidden }}{{ props.dataFoo }}{{ props.markFoo }}</view>
 </template>
 <script setup lang="ts">
-const props = defineProps<{ style: string; title: string }>()
+const props = defineProps<{ style: string; hidden: boolean; dataFoo: string; markFoo: string; title: string }>()
 </script>
     `.trim(), { filename: '/project/src/components/style-prop.vue' })
     const warn = vi.fn()
@@ -242,7 +244,7 @@ const props = defineProps<{ style: string; title: string }>()
       false,
     )
 
-    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class'))
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
   it('marks kebab-case template usage of imported vue components as wevu components', async () => {

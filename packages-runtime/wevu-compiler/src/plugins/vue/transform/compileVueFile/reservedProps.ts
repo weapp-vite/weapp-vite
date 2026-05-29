@@ -2,8 +2,8 @@ import type { TSInterfaceBody, TSType } from '@weapp-vite/ast/babelTypes'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 
-const RESERVED_SCRIPT_SETUP_PROPS = new Set(['id', 'class'])
-const RESERVED_PROPS_WARNING = 'defineProps 中声明 id/class 可能无法在小程序 properties 中正确取值，请改用其他 prop 名称。'
+const RESERVED_SCRIPT_SETUP_PROPS = new Set(['id', 'class', 'slot'])
+const RESERVED_PROPS_WARNING = 'defineProps 中声明 id/class/slot 可能无法在小程序 properties 中正确取值，请改用其他 prop 名称。'
 
 type PropsTypeNode = TSInterfaceBody | TSType
 
