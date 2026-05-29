@@ -14,6 +14,7 @@ import type {
 import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
+import { resolveNativeInitialData } from './define/initialComputed'
 import { normalizeProps } from './define/props'
 import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
@@ -195,7 +196,6 @@ export function defineComponent(
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   } as any)
 
-  // 对 setup 的包装：注入 props/context 后应用到 runtime/state/methods
   const setupWrapper = typeof setup === 'function'
     ? ((props, ctx) => {
       const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
@@ -209,15 +209,15 @@ export function defineComponent(
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
     : undefined
 
-  // 保存供手动注册使用的选项
   const nativeData = typeof data === 'function'
     ? data()
     : data
+  const nativeInitialData = resolveNativeInitialData(nativeData, computed as ComputedDefinitions, resolvedSetData)
   const mpOptionsWithProps = normalizeProps(
-    nativeData !== undefined
+    nativeInitialData !== undefined
       ? {
           ...mpOptions,
-          data: nativeData,
+          data: nativeInitialData,
         }
       : mpOptions,
     props,
@@ -280,7 +280,6 @@ export function createWevuComponent<
   // 将 properties 合并到 mpOptions，保持小程序属性定义
   const finalOptions = normalizeProps(baseOptions, props, properties)
 
-  // 调用 defineComponent 完成注册
   defineComponent(finalOptions)
 }
 

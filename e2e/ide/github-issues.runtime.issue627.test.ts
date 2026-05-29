@@ -1,35 +1,14 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import {
-  APP_ROOT,
   closeSharedMiniProgram,
   DIST_ROOT,
+  getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
+  relaunchPage,
 } from './github-issues.runtime.shared'
-
-async function waitForCurrentIssue627Page(miniProgram: any, timeoutMs = 45_000) {
-  const start = Date.now()
-  let lastPage: any = null
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const page = await miniProgram.currentPage()
-      lastPage = page
-      if (page?.path === 'pages/issue-627-native/index') {
-        const root = await page.$('page').catch(() => null)
-        if (root) {
-          return page
-        }
-      }
-    }
-    catch {
-    }
-    await new Promise(resolve => setTimeout(resolve, 220))
-  }
-  throw new Error(`Failed to read issue-627 startup page; current=${lastPage?.path ?? '<none>'}`)
-}
 
 describe.sequential('e2e app: github-issues / issue #627', () => {
   let miniProgram: any = null
@@ -45,33 +24,8 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
   })
 
   async function ensureMiniProgram(ctx: { skip: (message?: string) => void }) {
-    try {
-      miniProgram ??= await launchAutomator({
-        projectConfig: {
-          condition: {
-            miniprogram: {
-              current: -1,
-              list: [{
-                launchMode: 'default',
-                name: 'pages/issue-627-native/index',
-                pathName: 'pages/issue-627-native/index',
-                query: '',
-                scene: null,
-              }],
-            },
-          },
-        },
-        projectPath: APP_ROOT,
-        skipWarmup: true,
-      })
-      return miniProgram
-    }
-    catch (error) {
-      if (isDevtoolsHttpPortError(error)) {
-        ctx.skip('WeChat DevTools 服务端口未开启，跳过 issue #627 IDE 自动化用例。')
-      }
-      throw error
-    }
+    miniProgram ??= await getSharedMiniProgram(ctx)
+    return miniProgram
   }
 
   it('checks which host attributes are available as native and Vue SFC component props in DevTools', async (ctx) => {
@@ -95,7 +49,10 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('style: {')
 
     const miniProgram = await ensureMiniProgram(ctx)
-    const issuePage = await waitForCurrentIssue627Page(miniProgram)
+    const issuePage = await relaunchPage(miniProgram, '/pages/issue-627-native/index', 'issue-627 native reserved props')
+    if (!issuePage) {
+      throw new Error('Failed to launch issue-627-native page')
+    }
     const snapshot = await issuePage.callMethod('_runE2E')
 
     expect(snapshot).toMatchObject({

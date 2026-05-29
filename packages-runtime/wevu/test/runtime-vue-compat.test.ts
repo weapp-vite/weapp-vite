@@ -74,6 +74,37 @@ describe('runtime: vue compat helpers', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'beta' })
   })
 
+  it('useAttrs filters compiler internal template binding keys', () => {
+    defineComponent({
+      setup() {
+        const attrs = useAttrs()
+        return { attrs }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {
+        __wv_cls_0: 'internal-class',
+        __wv_style_0: 'color: red',
+        extra: 'alpha',
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'alpha' })
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs.__wv_cls_0).toBeUndefined()
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs.__wv_style_0).toBeUndefined()
+
+    inst.properties.extra = 'beta'
+    inst.properties.__wv_cls_1 = 'next-internal-class'
+    opts.observers['**'].call(inst)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'beta' })
+    expect(Object.keys(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs)).toEqual(['extra'])
+  })
+
   it('useModel supports tuple destructuring, modifiers, and get/set transforms', () => {
     const triggerEvent = vi.fn()
     defineComponent({

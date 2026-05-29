@@ -44,6 +44,65 @@ import {
 import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { registerWatches } from './watch'
 
+function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, unknown>()): unknown {
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+  if (cache.has(value as object)) {
+    return cache.get(value as object)
+  }
+  if (Array.isArray(value)) {
+    const next: unknown[] = []
+    cache.set(value, next)
+    for (const item of value) {
+      next.push(cloneInitialSnapshotValue(item, cache))
+    }
+    return next
+  }
+  const next: Record<string, unknown> = {}
+  cache.set(value as object, next)
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    next[key] = cloneInitialSnapshotValue(child, cache)
+  }
+  return next
+}
+
+function resolveInitialSnapshotFromNativeData(
+  target: InternalRuntimeState,
+  omitKeys?: string[],
+  extraEntries?: Record<string, unknown>,
+) {
+  const data = (target as any).data
+  if ((!data || typeof data !== 'object') && (!extraEntries || !Object.keys(extraEntries).length)) {
+    return undefined
+  }
+  const omitSet = Array.isArray(omitKeys) && omitKeys.length
+    ? new Set(omitKeys)
+    : undefined
+  const snapshot: Record<string, any> = {}
+  if (data && typeof data === 'object') {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (omitSet?.has(key)) {
+        continue
+      }
+      snapshot[key] = cloneInitialSnapshotValue(value)
+    }
+  }
+  if (extraEntries) {
+    for (const [key, value] of Object.entries(extraEntries)) {
+      if (omitSet?.has(key)) {
+        continue
+      }
+      snapshot[key] = cloneInitialSnapshotValue(value)
+    }
+  }
+  return snapshot
+}
+
+function hasTemplateRuntimeBindings(runtimeApp: RuntimeApp<any, any, any>) {
+  return Boolean((runtimeApp as any)?.__wevuHasTemplateRuntimeBindings)
+}
+
 type RuntimeSetupFunction<
   D extends object,
   C extends ComputedDefinitions,
@@ -210,7 +269,25 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       writable: false,
     })
   }
-  if (setup) {
+  const initialSnapshot = resolveInitialSnapshotFromNativeData(
+    target,
+    options?.snapshotOmitKeys,
+    hasTemplateRuntimeBindings(runtimeApp)
+      ? undefined
+      : { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
+  )
+  if (initialSnapshot && Object.keys(initialSnapshot).length) {
+    Object.defineProperty(baseMountAdapter, '__wevu_initialSnapshot', {
+      configurable: true,
+      enumerable: false,
+      value: initialSnapshot,
+      writable: false,
+    })
+  }
+  const targetProperties = (target as any).properties
+  const shouldDeferInitialSnapshot = Boolean(setup)
+    || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)
+  if (shouldDeferInitialSnapshot) {
     Object.defineProperty(baseMountAdapter, '__wevu_deferInitialSnapshot', {
       configurable: true,
       enumerable: false,
@@ -299,7 +376,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       runtimeProxy: runtimeProxy as Record<string, any>,
       setup,
     })
-    runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    if (!options?.deferSetData) {
+      runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    }
     refreshOwnerSnapshot()
   }
   else if (
@@ -317,8 +396,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   return runtime
 }
 
+function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
+  const runtimeState = target.__wevu?.state as Record<string, any> | undefined
+  const nativeData = (target as any).data as Record<string, any> | undefined
+  if (!runtimeState || typeof runtimeState !== 'object' || !nativeData || typeof nativeData !== 'object') {
+    return
+  }
+  for (const [key, value] of Object.entries(nativeData)) {
+    if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
+      runtimeState[key] = value
+    }
+  }
+}
+
 export function enableDeferredSetData(target: InternalRuntimeState) {
   const adapter = (target as any).__wevu?.adapter
+  syncRuntimeStateFromNativeData(target)
+  ;(target as any).__wevu?.__wevu_flushSetupSnapshotSync?.()
   if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
     ;(adapter as any).__wevu_enableSetData()
   }

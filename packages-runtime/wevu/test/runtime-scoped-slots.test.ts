@@ -1,6 +1,6 @@
 import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWevuScopedSlotComponent, defineComponent } from '@/index'
+import { createWevuScopedSlotComponent, defineComponent, nextTick } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const registeredComponents: Record<string, any>[] = []
@@ -111,6 +111,35 @@ describe('runtime: scoped slots', () => {
     }))
     expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_ID_KEY]: ownerId,
+    }))
+  })
+
+  it('keeps regular component owner id available for template runtime bindings', async () => {
+    defineComponent({
+      data: () => ({
+        title: 'slot owner host',
+      }),
+      computed: {
+        __wv_bind_0() {
+          return { default: true }
+        },
+      },
+    })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      [WEVU_SLOT_OWNER_ID_KEY]: expect.any(String),
+    }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: { default: true },
     }))
   })
 

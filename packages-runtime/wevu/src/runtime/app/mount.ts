@@ -94,6 +94,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const setupState = reactive(Object.create(null))
     const adapterSnapshotOmitKeys = (adapter as any)?.__wevu_snapshotOmitKeys
     const deferInitialSnapshot = Boolean((adapter as any)?.__wevu_deferInitialSnapshot)
+    const adapterInitialSnapshot = (adapter as any)?.__wevu_initialSnapshot
     const snapshotOmitKeys = new Set<string>(
       adapterSnapshotOmitKeys instanceof Set
         ? adapterSnapshotOmitKeys
@@ -215,6 +216,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       debugSampleRate,
       runTracker: () => tracker?.(),
       isMounted: () => mounted,
+      initialSnapshot: adapterInitialSnapshot && typeof adapterInitialSnapshot === 'object'
+        ? adapterInitialSnapshot
+        : undefined,
     })
     const job = () => scheduler.job(stateRootRaw)
     const mutationRecorder = (record: MutationRecord) => scheduler.mutationRecorder(record, stateRootRaw)

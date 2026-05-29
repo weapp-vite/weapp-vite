@@ -16,7 +16,7 @@ export default defineConfig({
   sourcemap: true,
   hash: false,
   unbundle: true,
-  shims: true,
+  shims: false,
   tsconfig: './tsconfig.build.json',
   outExtensions() {
     return {
