@@ -102,9 +102,17 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       enumerable: false,
       writable: false,
     })
+    Object.defineProperty(runtimeApp as Record<string, any>, '__wevuHasTemplateRuntimeBindings', {
+      value: Object.keys(resolvedComputed as Record<string, unknown>).some(key => key.startsWith('__wv_bind_')),
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
   }
   catch {
     ;(runtimeApp as any).__wevuSetDataOptions = setDataOptions
+    ;(runtimeApp as any).__wevuHasTemplateRuntimeBindings = Object.keys(resolvedComputed as Record<string, unknown>)
+      .some(key => key.startsWith('__wv_bind_'))
   }
 
   if (hasGlobalApp) {

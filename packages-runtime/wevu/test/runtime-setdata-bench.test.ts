@@ -1,6 +1,6 @@
 import type { CreateAppOptions, SetDataDebugInfo } from '@/index'
-import { describe, expect, it } from 'vitest'
-import { createApp, nextTick } from '@/index'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, nextTick } from '@/index'
 
 interface BenchSummary {
   instances: number
@@ -9,6 +9,19 @@ interface BenchSummary {
   payloadBytes: number
   debugEvents: SetDataDebugInfo[]
 }
+
+const registeredComponents: Record<string, any>[] = []
+
+beforeEach(() => {
+  registeredComponents.length = 0
+  ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
+    registeredComponents.push(options)
+  })
+})
+
+afterEach(() => {
+  delete (globalThis as any).Component
+})
 
 function createCard(seed: number, index: number) {
   const rank = seed * 13 + index * 7
@@ -126,6 +139,60 @@ async function mountSinglePageLikeInstance(options: {
   return summary
 }
 
+async function mountManyNativeComponentLikeInstances(options: {
+  instances: number
+  withSetupComputed?: boolean
+  setData?: CreateAppOptions<any, any, any>['setData']
+}) {
+  const summary = createBenchSummary(options.instances)
+  for (let index = 0; index < options.instances; index += 1) {
+    defineComponent({
+      data: () => ({
+        card: createCard(1, index),
+        selected: index % 3 === 0,
+        localCount: index,
+      }),
+      setup: options.withSetupComputed
+        ? () => ({
+            extraText: `extra-${index}`,
+          })
+        : undefined,
+      computed: {
+        titleText(this: any) {
+          return `${this.card.title}:${this.card.score}`
+        },
+        statusText(this: any) {
+          return this.selected ? 'selected' : 'normal'
+        },
+        classMap(this: any) {
+          return {
+            active: this.card.active,
+            selected: this.selected,
+          }
+        },
+      },
+      setData: {
+        ...(options.setData ?? {}),
+        debugWhen: 'always',
+        debug: info => summary.debugEvents.push(info),
+      },
+    })
+    const opts = registeredComponents[index]!
+    const initialData = typeof opts.data === 'function' ? opts.data() : opts.data
+    const inst: any = {
+      data: initialData,
+      setData(payload: Record<string, unknown>) {
+        summary.setDataCalls += 1
+        summary.payloadKeys += Object.keys(payload).length
+        summary.payloadBytes += JSON.stringify(payload).length
+      },
+    }
+    opts.lifetimes.attached.call(inst)
+  }
+  await nextTick()
+  return summary
+}
+
 describe('runtime: setData bench baseline', () => {
   it('captures initial setData calls for many component instances versus one page instance', async () => {
     const componentSummary = await mountManyComponentLikeInstances({ instances: 120 })
@@ -176,5 +243,94 @@ describe('runtime: setData bench baseline', () => {
     expect(withoutComputed.payloadKeys).toBe(120 * 3)
     expect(picked.payloadBytes).toBeLessThan(baseline.payloadBytes)
     expect(withoutComputed.payloadBytes).toBeLessThan(baseline.payloadBytes)
+  })
+
+  it('skips native initial data fields that are already present on component instances', async () => {
+    const summary = await mountManyNativeComponentLikeInstances({ instances: 120 })
+
+    expect(summary.setDataCalls).toBe(0)
+    expect(summary.payloadKeys).toBe(0)
+    expect(summary.debugEvents).toHaveLength(0)
+  })
+
+  it('still flushes setup returned fields that are not covered by native initial data', async () => {
+    const summary = await mountManyNativeComponentLikeInstances({
+      instances: 120,
+      withSetupComputed: true,
+    })
+
+    expect(summary.setDataCalls).toBe(120)
+    expect(summary.payloadKeys).toBe(120)
+    expect(summary.debugEvents).toHaveLength(120)
+    expect(summary.debugEvents.every(info => info.payloadKeys === 1)).toBe(true)
+  })
+
+  it('filters native initial snapshot with setData.pick before diffing', async () => {
+    const summary = await mountManyNativeComponentLikeInstances({
+      instances: 120,
+      setData: {
+        pick: ['card'],
+      },
+    })
+
+    expect(summary.setDataCalls).toBe(0)
+    expect(summary.payloadKeys).toBe(0)
+    expect(summary.debugEvents).toHaveLength(0)
+  })
+
+  it('keeps computed out of native initial data when includeComputed is disabled', async () => {
+    defineComponent({
+      data: () => ({ count: 1 }),
+      computed: {
+        doubled(this: any) {
+          return this.count * 2
+        },
+      },
+      setData: {
+        includeComputed: false,
+      },
+    })
+
+    const opts = registeredComponents[0]!
+    const initialData = typeof opts.data === 'function' ? opts.data() : opts.data
+
+    expect(initialData).toEqual({ count: 1 })
+  })
+
+  it('falls back to runtime setData for computed values that need props', async () => {
+    defineComponent({
+      props: {
+        label: String,
+      },
+      data: () => ({ suffix: '!' }),
+      computed: {
+        labelText(this: any) {
+          return `${this.props.label}${this.suffix}`
+        },
+      },
+      setData: {
+        debugWhen: 'always',
+      },
+    })
+
+    const opts = registeredComponents[0]!
+    const initialData = typeof opts.data === 'function' ? opts.data() : opts.data
+    const payloads: Record<string, unknown>[] = []
+    const inst: any = {
+      data: initialData,
+      properties: {
+        label: 'hello',
+      },
+      setData(payload: Record<string, unknown>) {
+        payloads.push(payload)
+      },
+    }
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(initialData.suffix).toBe('!')
+    expect(initialData).not.toHaveProperty('labelText')
+    expect(payloads).toHaveLength(1)
+    expect(payloads[0]).toEqual({ labelText: 'hello!' })
   })
 })

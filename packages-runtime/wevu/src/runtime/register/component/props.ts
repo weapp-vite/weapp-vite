@@ -28,6 +28,8 @@ export function createPropsSync(options: {
     .filter(key => propKeySet.has(key) && !aliasKeySet.has(key))
   const syncedAliases = new WeakMap<InternalRuntimeState, Set<string>>()
 
+  const isInternalAttrKey = (key: string) => key.startsWith('__wv_')
+
   const updateSnapshotOmitKeys = (instance: InternalRuntimeState) => {
     const runtime = (instance as any).__wevu
     const snapshotOmitKeys = runtime?.[WEVU_PROPS_DERIVED_KEYS_KEY]
@@ -144,6 +146,7 @@ export function createPropsSync(options: {
       if (
         !next
         || !hasOwn(next, existingKey)
+        || isInternalAttrKey(existingKey)
         || propKeySet.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -162,7 +165,7 @@ export function createPropsSync(options: {
     }
 
     for (const [key, value] of Object.entries(next)) {
-      if (propKeySet.has(key) || hasRuntimeStateKey(key)) {
+      if (isInternalAttrKey(key) || propKeySet.has(key) || hasRuntimeStateKey(key)) {
         continue
       }
       try {

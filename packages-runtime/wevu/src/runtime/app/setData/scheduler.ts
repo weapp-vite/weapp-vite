@@ -36,6 +36,7 @@ export function createSetDataScheduler(options: {
   debugSampleRate: number
   runTracker: () => void
   isMounted: () => boolean
+  initialSnapshot?: Record<string, any>
 }) {
   const {
     state,
@@ -66,6 +67,7 @@ export function createSetDataScheduler(options: {
     debugSampleRate,
     runTracker,
     isMounted,
+    initialSnapshot,
   } = options
 
   const plainCache = new WeakMap<object, { version: number, value: any }>()
@@ -157,6 +159,38 @@ export function createSetDataScheduler(options: {
 
   const shouldIncludeSnapshotKey = (key: string) => shouldIncludeKey(key) && !snapshotOmitKeys?.has(key)
 
+  if (initialSnapshot) {
+    for (const [key, value] of Object.entries(initialSnapshot)) {
+      if (shouldIncludeSnapshotKey(key)) {
+        latestSnapshot[key] = value
+      }
+    }
+  }
+
+  const syncInitialSnapshotTokens = () => {
+    if (!initialSnapshot) {
+      return
+    }
+    const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
+    const rawSetupState = setupState && typeof setupState === 'object'
+      ? (isReactive(setupState) ? toRaw(setupState as any) : setupState)
+      : undefined
+
+    for (const key of Object.keys(initialSnapshot)) {
+      if (!shouldIncludeSnapshotKey(key)) {
+        continue
+      }
+      if (rawSetupState && hasOwn(rawSetupState, key)) {
+        latestStateTokens[key] = createValueToken(rawSetupState[key])
+        continue
+      }
+      if (hasOwn(rawState, key)) {
+        rawState[key] = initialSnapshot[key]
+        latestStateTokens[key] = createValueToken(rawState[key])
+      }
+    }
+  }
+
   const resolveTopKeysByRoot = (root: object) => {
     const matches: string[] = []
     const rawSetupState = setupState && typeof setupState === 'object'
@@ -209,6 +243,8 @@ export function createSetDataScheduler(options: {
     includeFunctions,
     functionPaths,
   })
+
+  syncInitialSnapshotTokens()
 
   const collectDiffSnapshot = () => {
     const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>

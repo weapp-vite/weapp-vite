@@ -246,6 +246,52 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
   })
 
+  it('keeps created lifecycle native data updates when deferred setData is enabled', async () => {
+    defineComponent({
+      data: () => ({
+        logs: [] as string[],
+      }),
+      setupLifecycle: 'created',
+      setup() {
+        return {
+          count: 1,
+        }
+      },
+      lifetimes: {
+        created(this: any) {
+          const logs = [...(this.data.logs ?? []), 'created']
+          this.data.logs = logs
+          this.setData({ logs })
+        },
+      },
+    })
+    const opts = registeredComponents[0]
+    const setData = vi.fn(function setData(this: any, payload: Record<string, any>) {
+      this.data = {
+        ...(this.data ?? {}),
+        ...payload,
+      }
+    })
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      setData,
+    }
+
+    opts.lifetimes.created.call(inst)
+    await Promise.resolve()
+    expect(setData).toHaveBeenCalledWith({ logs: ['created'] })
+    expect(inst.data.logs).toEqual(['created'])
+    setData.mockClear()
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({
+      count: 1,
+      logs: ['created'],
+    }))
+    expect(inst.data.logs).toEqual(['created'])
+  })
+
   it('drops __typeProps before registering component options', () => {
     defineComponent({
       __typeProps: {} as { label: string },

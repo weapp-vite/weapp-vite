@@ -37,6 +37,10 @@ function normalizeEmitEventName(eventName: string) {
   return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
 }
 
+function isInternalAttrKey(key: string) {
+  return key.startsWith('__wv_')
+}
+
 export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   target: InternalRuntimeState
   runtime: RuntimeInstance<D, C, M>
@@ -81,6 +85,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
       if (
         !next
         || !hasOwn(next, existingKey)
+        || isInternalAttrKey(existingKey)
         || declaredPropKeys.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -93,7 +98,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
 
     for (const [key, value] of Object.entries(next)) {
-      if (declaredPropKeys.has(key) || hasRuntimeStateKey(key)) {
+      if (isInternalAttrKey(key) || declaredPropKeys.has(key) || hasRuntimeStateKey(key)) {
         continue
       }
       attrs[key] = value
