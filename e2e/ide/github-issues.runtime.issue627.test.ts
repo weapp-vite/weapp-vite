@@ -74,36 +74,72 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
     }
   }
 
-  it('keeps class empty while passing style into native and Vue SFC component props in DevTools', async (ctx) => {
+  it('checks which host attributes are available as native and Vue SFC component props in DevTools', async (ctx) => {
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-627-native/index.js')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-627/native-props-probe/index.js')
     const sfcComponentJsPath = path.join(DIST_ROOT, 'components/issue-627/ReservedPropsProbe/index.js')
 
     expect(await fs.readFile(pageJsPath, 'utf-8')).toContain('selectComponent?.("#issue627-native-probe")')
     expect(await fs.readFile(pageJsPath, 'utf-8')).toContain('selectComponent?.("#issue627-sfc-host-literal")')
-    expect(await fs.readFile(componentJsPath, 'utf-8')).toContain('class: String')
-    expect(await fs.readFile(componentJsPath, 'utf-8')).toContain('style: String')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+    expect(componentJs).toContain('"class": String')
+    expect(componentJs).toContain('"style": String')
+    expect(componentJs).toContain('"hidden": Boolean')
+    expect(componentJs).toContain('"dataFoo": String')
+    expect(componentJs).toContain('"data-foo": String')
+    expect(componentJs).toContain('"markFoo": String')
+    expect(componentJs).toContain('"mark:foo": String')
+    expect(componentJs).toContain('"slot": String')
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('props: {')
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('class: {')
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('style: {')
 
     const miniProgram = await ensureMiniProgram(ctx)
     const issuePage = await waitForCurrentIssue627Page(miniProgram)
+    const snapshot = await issuePage.callMethod('_runE2E')
 
-    expect(await issuePage.callMethod('_runE2E')).toMatchObject({
+    expect(snapshot).toMatchObject({
       native: {
+        id: '',
         class: '',
         style: 'color: rgb(22, 119, 255);',
+        hidden: false,
+        dataFoo: 'issue-627-native-dataFoo',
+        dataDashFoo: 'issue-627-native-data-foo',
+        markFoo: 'issue-627-native-markFoo',
+        markColonFoo: 'issue-627-native-mark-colon-foo',
+        slot: '',
+        wxIf: false,
         customClass: 'issue-627-native-custom-class',
         customStyle: 'font-size: 32rpx;',
+        customHidden: true,
+        customDataFoo: 'issue-627-native-custom-data-foo',
       },
       sfcLiteral: {
+        id: '',
         class: '',
         style: 'color: rgb(22, 119, 255);',
+        hidden: false,
+        dataFoo: 'issue-627-sfc-host-dataFoo',
+        markFoo: 'issue-627-sfc-host-markFoo',
+        slot: '',
+        customClass: 'issue-627-sfc-host-custom-class',
+        customStyle: 'font-size: 32rpx;',
+        customHidden: true,
+        customDataFoo: 'issue-627-sfc-host-custom-data-foo',
       },
       sfcDynamic: {
+        id: '',
         class: '',
         style: 'font-size: 32rpx;',
+        hidden: false,
+        dataFoo: 'issue-627-sfc-host-dynamic-dataFoo',
+        markFoo: 'issue-627-sfc-host-dynamic-markFoo',
+        slot: '',
+        customClass: 'issue-627-sfc-host-dynamic-custom-class',
+        customStyle: 'color: rgb(22, 119, 255);',
+        customHidden: false,
+        customDataFoo: 'issue-627-sfc-host-dynamic-custom-data-foo',
       },
     })
   })
