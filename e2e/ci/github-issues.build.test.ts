@@ -986,7 +986,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('readProbe("#issue627-sfc-probe-literal")')
     expect(pageJs).toContain('readProbe("#issue627-sfc-probe-dynamic")')
     expect(pageWxml).toContain('class="issue-627-class-prop"')
-    expect(pageWxml).toContain('style="color: rgb(22, 119, 255);"')
+    expect(pageWxml).toContain('style="color: rgb(22 119 255);"')
     expect(pageWxml).toContain('id="issue627-sfc-probe-literal"')
     expect(pageWxml).toContain('id="issue627-sfc-probe-dynamic"')
     expect(componentWxml).toContain('data-issue627-class="{{props.class}}"')

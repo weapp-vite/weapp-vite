@@ -13,7 +13,7 @@ beforeEach(() => {
 })
 
 describe('runtime: props sync', () => {
-  it('keeps class and style available on setup props', async () => {
+  it('keeps style available on setup props and mirrors host-provided class when present', async () => {
     defineComponent({
       props: {
         class: { type: String, default: '' },
