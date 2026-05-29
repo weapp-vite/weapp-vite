@@ -1,7 +1,11 @@
-import type { ResolvedSlotFallbackWrapperConfig, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
+import type { ResolvedSlotFallbackWrapperConfig, SlotFallbackWrapperComponentAsset, SlotFallbackWrapperStrategy, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
   parse,
 } from '@vue/compiler-dom'
+import {
+  WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
+  WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
+} from '@weapp-core/constants'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
@@ -38,10 +42,32 @@ export {
   ttPlatform,
   wechatPlatform,
 } from './template/platforms'
-export type { TemplateCompileResult } from './template/types'
-export type { TemplateCompileOptions } from './template/types'
+export type {
+  SlotFallbackWrapperComponentAsset,
+  SlotFallbackWrapperStrategy,
+  TemplateCompileOptions,
+  TemplateCompileResult,
+} from './template/types'
 
-function resolveSlotFallbackWrapperConfig(config: TemplateCompileOptions['slotFallbackWrapper']): ResolvedSlotFallbackWrapperConfig {
+function resolveSlotFallbackWrapperComponent(strategy: SlotFallbackWrapperStrategy): SlotFallbackWrapperComponentAsset | undefined {
+  if (strategy !== 'virtual-host') {
+    return undefined
+  }
+  return {
+    tagName: WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
+    componentBase: WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
+    template: '<slot></slot>',
+    script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
+    config: {
+      component: true,
+    },
+  }
+}
+
+function resolveSlotFallbackWrapperConfig(
+  config: TemplateCompileOptions['slotFallbackWrapper'],
+  strategy: SlotFallbackWrapperStrategy,
+): ResolvedSlotFallbackWrapperConfig {
   if (typeof config === 'string') {
     return {
       tag: config || 'view',
@@ -49,7 +75,7 @@ function resolveSlotFallbackWrapperConfig(config: TemplateCompileOptions['slotFa
     }
   }
   return {
-    tag: config?.tag || 'view',
+    tag: config?.tag || (strategy === 'virtual-host' ? WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME : 'view'),
     attrs: config?.attrs,
     singleRootNoWrapper: config?.singleRootNoWrapper,
     rules: config?.rules ?? [],
@@ -78,7 +104,11 @@ export function compileVueTemplateToWxml(
   const scopedSlotsRequireProps = options?.scopedSlotsRequireProps
     ?? (options?.scopedSlotsCompiler !== 'augmented')
   const slotSingleRootNoWrapper = options?.slotSingleRootNoWrapper ?? false
-  const slotFallbackWrapper = resolveSlotFallbackWrapperConfig(options?.slotFallbackWrapper)
+  const slotFallbackWrapperStrategy = options?.slotFallbackWrapperStrategy ?? 'view'
+  const slotFallbackWrapper = resolveSlotFallbackWrapperConfig(options?.slotFallbackWrapper, slotFallbackWrapperStrategy)
+  const slotFallbackWrapperComponent = slotFallbackWrapper.tag === WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME
+    ? resolveSlotFallbackWrapperComponent(slotFallbackWrapperStrategy)
+    : undefined
   const htmlTagToWxmlMap = resolveHtmlTagToWxmlMap(options?.htmlTagToWxml)
 
   try {
@@ -104,6 +134,7 @@ export function compileVueTemplateToWxml(
       scopedSlotsRequireProps,
       slotSingleRootNoWrapper,
       slotFallbackWrapper,
+      slotFallbackWrapperComponent,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,
       scopedSlotComponents: [],
       componentGenerics: {},
@@ -153,6 +184,9 @@ export function compileVueTemplateToWxml(
 
     if (context.scopedSlotComponents.length) {
       result.scopedSlotComponents = context.scopedSlotComponents
+    }
+    if (context.slotFallbackWrapperComponent && wxml.includes(`<${context.slotFallbackWrapperComponent.tagName}`)) {
+      result.slotFallbackWrapperComponent = context.slotFallbackWrapperComponent
     }
     if (Object.keys(context.componentGenerics).length) {
       result.componentGenerics = context.componentGenerics

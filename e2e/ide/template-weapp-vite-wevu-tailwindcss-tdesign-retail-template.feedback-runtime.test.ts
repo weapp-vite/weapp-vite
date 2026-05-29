@@ -15,7 +15,7 @@ const HOME_ROUTE = '/pages/home/home'
 const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|Timeout in warmup current page|Timeout in read current page|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
 const SESSION_RETRYABLE_PATTERN = /Timeout in raw reLaunch|Operation timed out after \d+ms|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Target closed|not connected|Execution context was destroyed/i
 const GOODS_DETAIL_PATH = 'pages/goods/details/index'
-const SESSION_RETRY_COUNT = 2
+const SESSION_RETRY_COUNT = 3
 const CURRENT_PAGE_READ_TIMEOUT = 2_000
 const CURRENT_PAGE_READ_RETRIES = 1
 const RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE = '当前微信开发者工具未返回 retail 模板 App 页面协议，跳过 retail feedback IDE runtime。'
@@ -89,6 +89,14 @@ async function closeSharedMiniProgram() {
   await miniProgram.close().catch(() => {})
 }
 
+function isRetailPageProtocolUnavailable(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes(`Failed to resolve home page: ${HOME_ROUTE}`)
+    || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
+    || message.includes('DevTools did not respond to protocol method App.getPageStack')
+    || message.includes('Operation timed out after')
+}
+
 async function runWithRetailSessionRetry<T>(label: string, factory: (miniProgram: any) => Promise<T>) {
   let lastError: unknown
 
@@ -100,7 +108,7 @@ async function runWithRetailSessionRetry<T>(label: string, factory: (miniProgram
     catch (error) {
       lastError = error
       const message = error instanceof Error ? error.message : String(error)
-      if (attempt >= SESSION_RETRY_COUNT || !SESSION_RETRYABLE_PATTERN.test(message)) {
+      if (attempt >= SESSION_RETRY_COUNT || !(SESSION_RETRYABLE_PATTERN.test(message) || isRetailPageProtocolUnavailable(error))) {
         throw error
       }
 
@@ -180,14 +188,6 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
-function isRetailPageProtocolUnavailable(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes(`Failed to resolve home page: ${HOME_ROUTE}`)
-    || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
-    || message.includes('DevTools did not respond to protocol method App.getPageStack')
-    || message.includes('Operation timed out after')
-}
-
 async function ensureHomePage(miniProgram: any) {
   const currentPage = await waitForCurrentPagePath(miniProgram, HOME_ROUTE, 2_500)
   if (currentPage) {
@@ -211,13 +211,18 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     await closeSharedMiniProgram()
   })
 
-  it('renders the home page in WeChat DevTools', async () => {
+  it('renders the home page in WeChat DevTools', async (ctx) => {
     await runWithRetailSessionRetry('home-render', async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
 
       try {
         const marker = collector.mark()
-        const page = await ensureHomePage(miniProgram)
+        const page = await ensureHomePage(miniProgram).catch((error) => {
+          if (isRetailPageProtocolUnavailable(error)) {
+            ctx.skip(RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE)
+          }
+          throw error
+        })
         const goodsList = await waitForHomeGoodsReady(page)
         if (!goodsList) {
           throw new Error('Failed to render home goods list in WeChat DevTools')

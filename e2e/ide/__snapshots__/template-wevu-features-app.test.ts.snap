@@ -692,7 +692,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
         slots: ["default","header"]
       </view>
       <view class="index--use-slots-feature__content">
-        <view><view class="use-slots-page__header">header slot content</view></view>
+        <view class="use-slots-page__header">header slot content</view>
         <view class="use-slots-page__body">default slot content 1</view>
       </view>
     </view>

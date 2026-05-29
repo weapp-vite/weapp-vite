@@ -25,6 +25,7 @@ export interface VueTransformResult {
   config?: string
   cssModules?: Record<string, Record<string, string>>
   scopedSlotComponents?: TemplateCompileResult['scopedSlotComponents']
+  slotFallbackWrapperComponent?: TemplateCompileResult['slotFallbackWrapperComponent']
   componentGenerics?: TemplateCompileResult['componentGenerics']
   classStyleWxs?: boolean
   meta?: {

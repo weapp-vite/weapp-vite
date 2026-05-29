@@ -22,6 +22,9 @@ export function compileTemplatePhase(
   if (templateCompiled.scopedSlotComponents?.length) {
     result.scopedSlotComponents = templateCompiled.scopedSlotComponents
   }
+  if (templateCompiled.slotFallbackWrapperComponent) {
+    result.slotFallbackWrapperComponent = templateCompiled.slotFallbackWrapperComponent
+  }
   if (templateCompiled.componentGenerics && Object.keys(templateCompiled.componentGenerics).length) {
     result.componentGenerics = templateCompiled.componentGenerics
   }

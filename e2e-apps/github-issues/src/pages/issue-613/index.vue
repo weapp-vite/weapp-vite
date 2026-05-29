@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Issue613LegacyViewForwarder from '../../components/issue-613/Issue613LegacyViewForwarder/index.vue'
 import Issue613ViewForwarder from '../../components/issue-613/Issue613ViewForwarder/index.vue'
 
 definePageJson({
@@ -22,13 +23,13 @@ function _runE2E() {
       issue-613 forwarded slot outlet
     </view>
 
-    <view class="issue613-section" data-issue613-case="compiled-view">
+    <view class="issue613-section" data-issue613-case="compiled-virtual-host">
       <view class="issue613-section-title">
-        compiled view wrapper
+        compiled virtual host wrapper
       </view>
       <Issue613ViewForwarder>
-        <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-view">
-          issue-613 forwarded via compiled view
+        <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-virtual-host">
+          issue-613 forwarded via compiled virtual host
         </view>
         <template #footer>
           <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-footer">
@@ -36,6 +37,17 @@ function _runE2E() {
           </view>
         </template>
       </Issue613ViewForwarder>
+    </view>
+
+    <view class="issue613-section" data-issue613-case="compiled-view">
+      <view class="issue613-section-title">
+        compiled view fallback wrapper
+      </view>
+      <Issue613LegacyViewForwarder>
+        <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-view">
+          issue-613 forwarded via compiled view
+        </view>
+      </Issue613LegacyViewForwarder>
     </view>
 
     <view class="issue613-section" data-issue613-case="native-block">

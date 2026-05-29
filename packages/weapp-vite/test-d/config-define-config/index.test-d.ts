@@ -48,6 +48,7 @@ const objectConfig = defineConfig({
         htmlTagToWxmlTagClass: false,
         formatWxml: 'auto',
         slotSingleRootNoWrapper: true,
+        slotFallbackWrapperStrategy: 'virtual-host',
         slotFallbackWrapper: {
           tag: 'cover-view',
           attrs: {
@@ -125,6 +126,7 @@ expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weap
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSingleRootNoWrapper)
+expectAssignable<'view' | 'virtual-host' | undefined>(objectConfig.weapp?.vue?.template?.slotFallbackWrapperStrategy)
 expectAssignable<string | {
   tag?: string
   attrs?: Record<string, string>

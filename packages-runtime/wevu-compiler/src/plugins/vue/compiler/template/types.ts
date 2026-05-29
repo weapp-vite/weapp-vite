@@ -52,6 +52,7 @@ export interface TemplateCompileResult {
   code: string
   warnings: string[]
   scopedSlotComponents?: ScopedSlotComponentAsset[]
+  slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset
   componentGenerics?: Record<string, true>
   classStyleRuntime?: ClassStyleRuntime
   classStyleBindings?: ClassStyleBinding[]
@@ -82,6 +83,7 @@ export interface TransformContext {
   scopedSlotsRequireProps: boolean
   slotSingleRootNoWrapper: boolean
   slotFallbackWrapper: ResolvedSlotFallbackWrapperConfig
+  slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset
   slotMultipleInstance: boolean
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
@@ -144,6 +146,7 @@ export interface TemplateCompileOptions {
   scopedSlotsRequireProps?: boolean
   slotSingleRootNoWrapper?: boolean
   slotFallbackWrapper?: SlotFallbackWrapperConfig
+  slotFallbackWrapperStrategy?: SlotFallbackWrapperStrategy
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode
@@ -160,6 +163,22 @@ export interface TemplateCompileOptions {
  * 作用域插槽编译模式。
  */
 export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'
+
+/**
+ * 命名插槽 fallback 容器默认策略。
+ */
+export type SlotFallbackWrapperStrategy = 'view' | 'virtual-host'
+
+/**
+ * 命名插槽 fallback 虚拟宿主组件资源描述。
+ */
+export interface SlotFallbackWrapperComponentAsset {
+  tagName: string
+  componentBase: string
+  template: string
+  script: string
+  config: Record<string, any>
+}
 
 /**
  * 命名插槽 fallback 容器策略匹配器。
