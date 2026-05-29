@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.3.38
+
+### Patch Changes
+
+- 🐛 **修复小程序 dev/build 的 watch 行为：dev 模式会继承 `build.watch.include` 并响应配置依赖变更，生产 build 不再因为用户配置 `build.watch` 而进入监听模式。** [#626](https://github.com/weapp-vite/weapp-vite/pull/626) by @sonofmagic
+
+- 🐛 **微信平台普通具名插槽转发 `<slot />` 时，默认改用内部 `virtualHost` 组件作为 fallback wrapper，减少旧版 `view` wrapper 对布局的影响；同时新增 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'` 作为回退选项，显式 `slotFallbackWrapper` 配置仍保持原有行为。** [#631](https://github.com/weapp-vite/weapp-vite/pull/631) by @sonofmagic
+
+- 🐛 **修复 dev watch 中自动导入组件已存在于 `usingComponents` 时没有参与强制 emit 的问题，避免新增 Vue SFC 组件在部分平台下只更新引用配置但漏写组件产物。** [#631](https://github.com/weapp-vite/weapp-vite/pull/631) by @sonofmagic
+
 ## 2.3.37
 
 ### Patch Changes
