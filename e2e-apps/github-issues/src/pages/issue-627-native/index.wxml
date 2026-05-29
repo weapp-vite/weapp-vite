@@ -2,6 +2,28 @@
   <view class="issue627-native-title">
     {{title}}
   </view>
+  <view class="issue627-native-summary">
+    {{summary}}
+  </view>
+  <view class="issue627-native-matrix">
+    <view class="issue627-native-row issue627-native-row-head">
+      <text>prop</text>
+      <text>native</text>
+      <text>sfc</text>
+      <text>result</text>
+    </view>
+    <view
+      wx:for="{{matrix}}"
+      wx:key="key"
+      class="issue627-native-row"
+      data-result="{{item.result}}"
+    >
+      <text>{{item.key}}</text>
+      <text>{{item.native}}</text>
+      <text>{{item.sfc}}</text>
+      <text>{{item.result}}</text>
+    </view>
+  </view>
   <native-props-probe
     id="issue627-native-probe"
     class="issue-627-native-class-prop"

@@ -11,3 +11,33 @@
   font-weight: 700;
   color: #0f172a;
 }
+
+.issue627-native-summary {
+  margin-bottom: 16rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #166534;
+}
+
+.issue627-native-matrix {
+  margin-bottom: 24rpx;
+  border: 1rpx solid #cbd5e1;
+}
+
+.issue627-native-row {
+  display: grid;
+  grid-template-columns: 150rpx 1fr 1fr 100rpx;
+  column-gap: 12rpx;
+  align-items: center;
+  min-height: 56rpx;
+  padding: 8rpx 12rpx;
+  border-top: 1rpx solid #e2e8f0;
+  font-size: 22rpx;
+  color: #0f172a;
+}
+
+.issue627-native-row-head {
+  border-top: 0;
+  font-weight: 700;
+  background: #e2e8f0;
+}
