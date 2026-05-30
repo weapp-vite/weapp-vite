@@ -314,13 +314,8 @@ function matchesSlotFallbackWrapperMatcher(matcher: SlotFallbackWrapperMatcher |
     : matcher.test(value)
 }
 
-function normalizeSlotFallbackWrapperTag(tag: string | undefined, context: TransformContext) {
-  const normalized = tag?.trim() || 'view'
-  if (normalized === 'block') {
-    context.warnings.push('slot fallback wrapper 不支持配置为 block，已回退为 view。')
-    return 'view'
-  }
-  return normalized
+function normalizeSlotFallbackWrapperTag(tag: string | undefined) {
+  return tag?.trim() || 'view'
 }
 
 function mergeSlotFallbackWrapperAttrs(
@@ -344,7 +339,7 @@ function resolveSlotFallbackWrapper(
   info: SlotFallbackWrapperResolveContext,
 ): ResolvedSlotFallbackWrapper {
   const resolved: ResolvedSlotFallbackWrapper = {
-    tag: normalizeSlotFallbackWrapperTag(context.slotFallbackWrapper.tag, context),
+    tag: normalizeSlotFallbackWrapperTag(context.slotFallbackWrapper.tag),
     attrs: context.slotFallbackWrapper.attrs,
     singleRootNoWrapper: context.slotFallbackWrapper.singleRootNoWrapper ?? context.slotSingleRootNoWrapper,
   }
@@ -356,7 +351,7 @@ function resolveSlotFallbackWrapper(
       && matchesSlotFallbackWrapperMatcher(rule.slot, info.slot)
     ) {
       if (rule.tag) {
-        resolved.tag = normalizeSlotFallbackWrapperTag(rule.tag, context)
+        resolved.tag = normalizeSlotFallbackWrapperTag(rule.tag)
       }
       if (rule.attrs) {
         resolved.attrs = mergeSlotFallbackWrapperAttrs(resolved.attrs, rule.attrs)
@@ -368,7 +363,7 @@ function resolveSlotFallbackWrapper(
   }
 
   if (info.local?.tag) {
-    resolved.tag = normalizeSlotFallbackWrapperTag(info.local.tag, context)
+    resolved.tag = normalizeSlotFallbackWrapperTag(info.local.tag)
   }
   if (info.local?.staticClass !== undefined) {
     resolved.staticClass = info.local.staticClass

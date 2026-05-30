@@ -169,15 +169,17 @@ describe.sequential('e2e app: github-issues / props', () => {
 
   it('issue #613: compares forwarded slot outlets with view and native block wrappers in DevTools runtime', async (ctx) => {
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-613/index.wxml')
+    const appJsonPath = path.join(DIST_ROOT, 'app.json')
     const viewForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
     const viewForwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.json')
-    const wrapperJsPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper.js')
+    const wrapperJsPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.js')
     const legacyForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.wxml')
     const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-613/index.js')
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const viewForwarderWxml = await fs.readFile(viewForwarderWxmlPath, 'utf-8')
+    const appJson = await fs.readJSON(appJsonPath) as { usingComponents?: Record<string, string> }
     const viewForwarderJson = await fs.readJSON(viewForwarderJsonPath) as { usingComponents?: Record<string, string> }
     const wrapperJs = await fs.readFile(wrapperJsPath, 'utf-8')
     const legacyForwarderWxml = await fs.readFile(legacyForwarderWxmlPath, 'utf-8')
@@ -187,7 +189,8 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(pageWxml).toContain('data-issue613-case="native-block"')
     expect(viewForwarderWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(viewForwarderWxml).toContain('<weapp-slot-wrapper slot="footer"><slot name="footer" /></weapp-slot-wrapper>')
-    expect(viewForwarderJson.usingComponents?.['weapp-slot-wrapper']).toBe('/components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper')
+    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
+    expect(viewForwarderJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
     expect(wrapperJs).toContain('virtualHost:true')
     expect(legacyForwarderWxml).toContain('<view slot="header"><slot /></view>')
     expect(viewForwarderWxml).not.toContain('slot-wrapper=')

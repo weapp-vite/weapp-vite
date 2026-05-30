@@ -11,6 +11,7 @@ import {
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SETUP_STATE_KEY,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
+  WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
   WEVU_SLOT_NAMES_ATTR,
   WEVU_SLOT_NAMES_PROP,
@@ -33,5 +34,6 @@ describe('@weapp-core/constants', () => {
     expect(WEVU_SLOT_NAMES_ATTR).toBe('vue-slots')
     expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME).toBe('weapp-slot-wrapper')
     expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE).toBe('__weapp_vite_slot_wrapper')
+    expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH).toBe('/__weapp_vite_slot_wrapper')
   })
 })

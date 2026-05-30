@@ -345,17 +345,17 @@ export default defineConfig({
 
 ### `block` 和内容承载限制
 
-`block` 会被编译器拒绝并回退到 `view`。例如配置 `slotFallbackWrapper: 'block'` 后，上面的转发 `<slot />` 场景仍会生成：
+默认策略不会使用 `block`。如果显式配置 `slotFallbackWrapper: 'block'`，编译器会按原样输出：
 
 ```wxml
 <IssueCard>
-  <view slot="header">
+  <block slot="header">
     <slot />
-  </view>
+  </block>
 </IssueCard>
 ```
 
-编译器会输出 warning：`slot fallback wrapper 不支持配置为 block，已回退为 view。`
+注意：`block` 在转发 `<slot />` 的部分 WeChat DevTools 运行时场景中会丢失内容，因此不作为默认值。显式启用时需要自行确认目标运行时和具体插槽内容可用。
 
 你选择的 wrapper 还必须能承载实际内容。比如：
 

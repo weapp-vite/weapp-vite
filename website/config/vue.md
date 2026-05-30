@@ -546,9 +546,9 @@ export default defineConfig({
 </IssueCard>
 ```
 
-#### `block`：会被拒绝并回退到 `view` {#slot-wrapper-block}
+#### `block`：显式配置后按原样输出 {#slot-wrapper-block}
 
-不要把 `block` 配成 fallback wrapper：
+默认策略不会把 `block` 作为 fallback wrapper。你可以显式配置 `block`，编译器会按原样输出，但这需要自行承担宿主运行时兼容性风险：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -576,17 +576,17 @@ export default defineConfig({
 </template>
 ```
 
-不会生成 `<block slot="header"><slot /></block>`，而是回退成 `view`：
+会生成 `<block slot="header"><slot /></block>`：
 
 ```wxml
 <IssueCard>
-  <view slot="header">
+  <block slot="header">
     <slot />
-  </view>
+  </block>
 </IssueCard>
 ```
 
-原因是 issue #613 的真实 WeChat DevTools e2e 已验证：`<block slot="header"><slot></slot></block>` 在转发 `<slot />` 的场景会丢失内容。编译器会输出 warning：`slot fallback wrapper 不支持配置为 block，已回退为 view。`
+注意：issue #613 的真实 WeChat DevTools e2e 已验证，`<block slot="header"><slot></slot></block>` 在转发 `<slot />` 的部分场景会丢失内容。因此 `block` 不作为默认值，只建议在你确认目标运行时和具体插槽内容可用时显式启用。
 
 #### wrapper 必须能承载实际内容 {#slot-wrapper-content}
 

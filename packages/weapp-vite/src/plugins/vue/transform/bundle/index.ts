@@ -1,6 +1,7 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { hasAppShellTemplate, isAppVueFile, resolveAppShellLayout } from '../appShell'
+import { injectGlobalSlotFallbackWrapperUsingComponent } from '../slotFallbackWrapper'
 import { emitCompiledVueEntryAssets } from './emitCompiledEntry'
 import { emitFallbackPageAssets } from './emitFallbackPage'
 
@@ -68,4 +69,9 @@ export async function emitVueBundleAssets(
   await emitFallbackPageAssets(bundle, state, {
     emittedEntryIds: emitState.emittedEntryIds,
   })
+  injectGlobalSlotFallbackWrapperUsingComponent(
+    bundle,
+    state.ctx,
+    state.ctx.configService.outputExtensions,
+  )
 }

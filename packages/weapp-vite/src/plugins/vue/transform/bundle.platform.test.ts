@@ -87,6 +87,194 @@ describe('emitVueBundleAssets platform output', () => {
     return dir
   }
 
+  it('registers emitted slot fallback wrapper globally when app json is available', async () => {
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => p.replace('/project/src/', ''),
+      absoluteSrcRoot: '/project/src',
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const filePath = '/project/src/components/Forwarder/index.vue'
+    const compilationCache = new Map([
+      [
+        filePath,
+        {
+          result: {
+            template: '<Child><weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper></Child>',
+            config: JSON.stringify({
+              component: true,
+            }),
+            script: 'Component({})',
+            slotFallbackWrapperComponent: {
+              tagName: 'weapp-slot-wrapper',
+              componentBase: '__weapp_vite_slot_wrapper',
+              template: '<slot></slot>',
+              script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
+              config: {
+                component: true,
+              },
+            },
+          },
+          isPage: false,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {
+      'app.json': {
+        type: 'asset',
+        fileName: 'app.json',
+        source: JSON.stringify({
+          pages: ['pages/index/index'],
+        }),
+      },
+    }
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const emittedAssets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      emittedAssets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(JSON.parse(bundle['app.json'].source)).toEqual({
+      pages: ['pages/index/index'],
+      usingComponents: {
+        'weapp-slot-wrapper': '/__weapp_vite_slot_wrapper',
+      },
+    })
+    expect(emittedAssets.get('__weapp_vite_slot_wrapper.wxml')).toBe('<slot></slot>')
+    expect(JSON.parse(emittedAssets.get('__weapp_vite_slot_wrapper.json')!)).toEqual({
+      component: true,
+    })
+    expect(emittedAssets.get('__weapp_vite_slot_wrapper.js')).toContain('virtualHost:true')
+
+    const componentJson = JSON.parse(emittedAssets.get('components/Forwarder/index.json')!)
+    expect(componentJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+  })
+
+  it('registers emitted slot fallback wrapper locally when app json is unavailable', async () => {
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => p.replace('/project/src/', ''),
+      absoluteSrcRoot: '/project/src',
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const compilationCache = new Map([
+      [
+        '/project/src/components/ForwarderA/index.vue',
+        {
+          result: {
+            template: '<Child><weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper></Child>',
+            config: JSON.stringify({
+              component: true,
+            }),
+            script: 'Component({})',
+            slotFallbackWrapperComponent: {
+              tagName: 'weapp-slot-wrapper',
+              componentBase: '__weapp_vite_slot_wrapper',
+              template: '<slot></slot>',
+              script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
+              config: {
+                component: true,
+              },
+            },
+          },
+          isPage: false,
+        },
+      ],
+      [
+        '/project/src/components/ForwarderB/index.vue',
+        {
+          result: {
+            template: '<Child><weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper></Child>',
+            config: JSON.stringify({
+              component: true,
+            }),
+            script: 'Component({})',
+            slotFallbackWrapperComponent: {
+              tagName: 'weapp-slot-wrapper',
+              componentBase: '__weapp_vite_slot_wrapper',
+              template: '<slot></slot>',
+              script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
+              config: {
+                component: true,
+              },
+            },
+          },
+          isPage: false,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const emittedAssets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      emittedAssets.set(asset.fileName, String(asset.source))
+    }
+
+    const forwarderAJson = JSON.parse(emittedAssets.get('components/ForwarderA/index.json')!)
+    const forwarderBJson = JSON.parse(emittedAssets.get('components/ForwarderB/index.json')!)
+    expect(forwarderAJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
+    expect(forwarderBJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
+    expect(emitFile.mock.calls.filter(call => call[0]?.fileName === '__weapp_vite_slot_wrapper.js')).toHaveLength(1)
+  })
+
   it('returns original config/template when direct platform helpers hit fallback branches', () => {
     expect(resolveVueBundlePlatformAssetOptions({
       configService: undefined,

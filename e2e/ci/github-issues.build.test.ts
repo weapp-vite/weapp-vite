@@ -1049,9 +1049,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613Card/index.wxml')
     const forwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
     const forwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.json')
-    const wrapperWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper.wxml')
-    const wrapperJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper.json')
-    const wrapperJsPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper.js')
+    const appJsonPath = path.join(DIST_ROOT, 'app.json')
+    const wrapperWxmlPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.wxml')
+    const wrapperJsonPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.json')
+    const wrapperJsPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.js')
     const legacyForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.wxml')
     const legacyForwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.json')
     const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
@@ -1059,6 +1060,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const forwarderWxml = await fs.readFile(forwarderWxmlPath, 'utf-8')
+    const appJson = await fs.readJSON(appJsonPath) as { usingComponents?: Record<string, string> }
     const forwarderJson = await fs.readJSON(forwarderJsonPath) as { usingComponents?: Record<string, string> }
     const wrapperWxml = await fs.readFile(wrapperWxmlPath, 'utf-8')
     const wrapperJson = await fs.readJSON(wrapperJsonPath) as { component?: boolean }
@@ -1074,7 +1076,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(forwarderWxml).toContain('<Issue613Card vue-slots="{{__wv_bind_0}}"')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="footer"><slot name="footer" /></weapp-slot-wrapper>')
-    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBe('/components/issue-613/Issue613ViewForwarder/index.__weapp_vite_slot_wrapper')
+    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
+    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
     expect(wrapperWxml).toBe('<slot></slot>')
     expect(wrapperJson.component).toBe(true)
     expect(wrapperJs).toContain('virtualHost:true')

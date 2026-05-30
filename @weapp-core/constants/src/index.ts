@@ -56,6 +56,7 @@ export const WEVU_SCOPED_SLOT_OWNER_STORE_KEY = '__wevuScopedSlotOwnerStore'
 export const WEVU_SCOPED_SLOT_OWNER_SEED_KEY = '__wevuScopedSlotOwnerSeed'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME = 'weapp-slot-wrapper'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE = '__weapp_vite_slot_wrapper'
+export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH = `/${WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE}`
 
 export const WEVU_CLASS_STYLE_RUNTIME_MODULE = '__weapp_vite'
 export const WEVU_CLASS_STYLE_RUNTIME_FILE = '__weapp_vite_class_style'
