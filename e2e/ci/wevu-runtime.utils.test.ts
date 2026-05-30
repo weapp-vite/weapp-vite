@@ -10,4 +10,14 @@ describe('normalizeAutomatorWxml', () => {
     expect(normalizeAutomatorWxml(legacy)).toBe(expected)
     expect(normalizeAutomatorWxml(localized)).toBe(expected)
   })
+
+  it('normalizes class and style attribute order across DevTools versions', () => {
+    const current = '<view class="base active" id="target" style="color:red;">target</view>'
+    const shifted = '<view id="target" style="color:red;" class="base active">target</view>'
+    const expected = '<view class="base active" id="target" style="color:red;">target</view>'
+
+    expect(normalizeAutomatorWxml(current)).toBe(expected)
+    expect(normalizeAutomatorWxml(shifted)).toBe(expected)
+    expect(normalizeAutomatorWxml(expected)).toBe(expected)
+  })
 })

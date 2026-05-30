@@ -485,7 +485,7 @@ async function runE2E() {
     useSlots: typeof slots === 'object',
     useNativeInstance: Boolean(nativeInstance),
     useTemplateRef: templateReady && templateRef.value != null,
-    useBindModel: form.title === 'bind-model-value-vue-2' && bindModel.value('form.title') === 'bind-model-value-vue-2',
+    useBindModel: form.title === 'bind-model-value-vue-2' && target?.data?.form?.title === 'bind-model-value-vue-2' && bindModel.value('form.title') === 'bind-model-value-vue-2',
     useModel: modelEvents.some(item => item.event === 'update:titleModel' && item.value === 'emit-next-vue') && modelRef.value === 'from-props-vue',
     mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
     normalizeClass: normalizedClass === 'a b',

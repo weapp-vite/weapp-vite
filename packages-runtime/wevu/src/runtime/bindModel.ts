@@ -22,6 +22,7 @@ function setWithSegments(
 
 function setByPath(
   state: Record<string, any>,
+  setupState: Record<string, any> | undefined,
   computedRefs: Record<string, ComputedRef<any>>,
   computedSetters: Record<string, (value: any) => void>,
   segments: string[],
@@ -36,12 +37,15 @@ function setByPath(
       setComputedValue(computedSetters, head, value)
     }
     else {
-      const current = state[head]
+      const target = setupState && Object.prototype.hasOwnProperty.call(setupState, head)
+        ? setupState
+        : state
+      const current = target[head]
       if (isRef(current)) {
         current.value = value
       }
       else {
-        state[head] = value
+        target[head] = value
       }
     }
     return
@@ -50,10 +54,13 @@ function setByPath(
     setComputedValue(computedSetters, head, value)
     return
   }
-  if (state[head] == null || typeof state[head] !== 'object') {
-    state[head] = {}
+  const target = setupState && Object.prototype.hasOwnProperty.call(setupState, head)
+    ? setupState
+    : state
+  if (target[head] == null || typeof target[head] !== 'object') {
+    target[head] = {}
   }
-  setWithSegments(state[head], rest, value)
+  setWithSegments(target[head], rest, value)
 }
 
 function getFromPath(target: any, segments: string[]) {
@@ -74,6 +81,7 @@ export function createBindModel(
   state: Record<string, any>,
   computedRefs: Record<string, ComputedRef<any>>,
   computedSetters: Record<string, (value: any) => void>,
+  setupState?: Record<string, any>,
 ) {
   const bindModel = <T = any>(path: string, bindingOptions?: ModelBindingOptions<T>): ModelBinding<T> => {
     const segments = toPathSegments(path)
@@ -82,7 +90,7 @@ export function createBindModel(
     }
     const resolveValue = () => getFromPath(publicInstance, segments)
     const assignValue = (value: T) => {
-      setByPath(state as Record<string, any>, computedRefs, computedSetters, segments, value)
+      setByPath(state as Record<string, any>, setupState, computedRefs, computedSetters, segments, value)
     }
     const defaultOptions: Required<ModelBindingOptions<T>> = {
       event: 'input',

@@ -317,6 +317,38 @@ describe('bindModel helpers', () => {
     ;(payload as any).onChange({ target: { value: 9 } })
     expect(state.deep).toEqual({ value: 9 })
   })
+
+  it('writes to setup state when public instance resolves a shadowed data path from setup', () => {
+    const state: any = {
+      form: {
+        name: 'data-name',
+      },
+    }
+    const setupState: any = {
+      form: {
+        name: 'setup-name',
+      },
+    }
+    const publicInstance: any = new Proxy(state, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && Object.hasOwn(setupState, key)) {
+          return Reflect.get(setupState, key, receiver)
+        }
+        return Reflect.get(target, key, receiver)
+      },
+    })
+
+    const bindModel = createBindModel(publicInstance, state, {}, {}, setupState)
+    const binding = bindModel<string>('form.name')
+
+    expect(binding.value).toBe('setup-name')
+
+    binding.update('setup-next')
+
+    expect(setupState.form.name).toBe('setup-next')
+    expect(state.form.name).toBe('data-name')
+    expect(binding.value).toBe('setup-next')
+  })
 })
 
 describe('hook aliases', () => {

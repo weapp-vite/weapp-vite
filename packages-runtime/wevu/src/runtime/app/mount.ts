@@ -285,6 +285,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       state as any,
       computedRefs,
       computedSetters,
+      setupState as Record<string, any>,
     )
 
     const unmount = () => {

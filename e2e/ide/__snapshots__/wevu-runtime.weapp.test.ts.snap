@@ -12,6 +12,7 @@ exports[`wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML > we
       <view class="title">Class Style</view>
       <view class="summary">ok: true</view>
       <view
+        class="base state-ready root-a nested-a nested-b active ready"
         id="class-style-target"
         style="
           background-color: #f0f9ff;
@@ -23,8 +24,7 @@ exports[`wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML > we
           font-size: 14px;
           line-height: 1.6;
           --tokenColor: #0f62fe;
-        "
-        class="base state-ready root-a nested-a nested-b active ready">
+        ">
         class-style-target
       </view>
       <map
@@ -464,6 +464,7 @@ exports[`wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML > we
       <view class="title">Class Style</view>
       <view class="summary">ok: true</view>
       <view
+        class="base state-ready root-a nested-a nested-b active ready"
         id="class-style-target"
         style="
           background-color: #f0f9ff;
@@ -475,8 +476,7 @@ exports[`wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML > we
           font-size: 14px;
           line-height: 1.6;
           --tokenColor: #0f62fe;
-        "
-        class="base state-ready root-a nested-a nested-b active ready">
+        ">
         class-style-target
       </view>
       <map

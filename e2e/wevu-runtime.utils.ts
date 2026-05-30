@@ -35,6 +35,8 @@ const OWNER_ID_PATTERN = /\bwv\d+\b/g
 const MAP_COPYRIGHT_PATTERN = /©\d{4}\s+Tencent\s+-\s+GS粤?\(\d{4}\)\d+号地图/g
 const MAP_NATIVE_TEXT_PATTERN = /(<map\b[^>]*>\s*)(?:©TENCENT-MAP-LICENSE|地图)(\s*<)/g
 const X_SCOPED_HOST_WRAPPER_PATTERN = /<x-scoped\b[^>]*>\s*(<view\s+class="scoped-index--scoped">scoped:\s*wv_OWNER<\/view>)\s*<\/x-scoped>/g
+const OPEN_TAG_PATTERN = /<([a-z][\w-]*)(\s[^<>]*)>/gi
+const ATTRIBUTE_PATTERN = /([:@\w-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>/]+))?/g
 
 async function pathExists(filePath: string) {
   try {
@@ -74,6 +76,58 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   }
   seen.add(value)
   list.push(value)
+}
+
+function parseAttributes(rawAttrs: string) {
+  const trimmedAttrs = rawAttrs.trim()
+  const hasTrailingSlash = trimmedAttrs.endsWith('/')
+  const attrsBody = hasTrailingSlash ? trimmedAttrs.slice(0, -1).trimEnd() : trimmedAttrs
+  const tokens: Array<{ name: string, raw: string }> = []
+  let lastIndex = 0
+
+  ATTRIBUTE_PATTERN.lastIndex = 0
+  for (const match of attrsBody.matchAll(ATTRIBUTE_PATTERN)) {
+    const index = match.index ?? 0
+    if (attrsBody.slice(lastIndex, index).trim()) {
+      return null
+    }
+    tokens.push({
+      name: match[1],
+      raw: match[0],
+    })
+    lastIndex = index + match[0].length
+  }
+
+  if (attrsBody.slice(lastIndex).trim()) {
+    return null
+  }
+
+  return {
+    hasTrailingSlash,
+    tokens,
+  }
+}
+
+function normalizeClassStyleAttributeOrder(wxml: string) {
+  return wxml.replace(OPEN_TAG_PATTERN, (fullMatch, tagName: string, rawAttrs: string) => {
+    const parsedAttrs = parseAttributes(rawAttrs)
+    if (!parsedAttrs) {
+      return fullMatch
+    }
+
+    const classIndex = parsedAttrs.tokens.findIndex(token => token.name === 'class')
+    const styleIndex = parsedAttrs.tokens.findIndex(token => token.name === 'style')
+    if (classIndex < 0 || styleIndex < 0 || classIndex === 0) {
+      return fullMatch
+    }
+
+    const tokens = parsedAttrs.tokens.slice()
+    const [classToken] = tokens.splice(classIndex, 1)
+    tokens.unshift(classToken)
+
+    const suffix = parsedAttrs.hasTrailingSlash ? ' /' : ''
+    return `<${tagName} ${tokens.map(token => token.raw).join(' ')}${suffix}>`
+  })
 }
 
 export function resolvePages(config: Record<string, any>) {
@@ -126,7 +180,7 @@ export function filterSnapshotPages(pages: string[]) {
 }
 
 export function normalizeAutomatorWxml(wxml: string) {
-  return wxml
+  return normalizeClassStyleAttributeOrder(wxml)
     .replace(LUNA_DOM_HIGHLIGHTER_PATTERN, '')
     .replace(DUPLICATE_ROUTE_DONE_PATTERN, '"onRouteDone"')
     .replace(OWNER_ID_PATTERN, 'wv_OWNER')
