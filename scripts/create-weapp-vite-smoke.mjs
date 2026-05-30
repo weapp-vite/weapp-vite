@@ -25,6 +25,7 @@ const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS |
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
 const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
+const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '10.33.3'
 const REPORT_FILE = process.env.CREATE_WEAPP_VITE_REPORT_FILE?.trim()
 const REPORT_META = {
   os: process.env.CREATE_WEAPP_VITE_REPORT_OS?.trim() || process.platform,
@@ -224,32 +225,31 @@ function getCreatePackageSpecifier(packageManager, packageSpec) {
   return `${CREATE_PACKAGE_NAME}@${packageSpec}`
 }
 
+function createPnpmCommand(args, pnpmVersion = DEFAULT_PNPM_VERSION) {
+  return {
+    command: 'corepack',
+    args: [`pnpm@${pnpmVersion}`, ...args],
+  }
+}
+
+function createPnpmInstallCommand(pnpmVersion = DEFAULT_PNPM_VERSION) {
+  return createPnpmCommand(['install', '--config.dangerouslyAllowAllBuilds=true'], pnpmVersion)
+}
+
 const SCENARIOS = [
   {
     name: 'pnpm',
     createCommand(projectName, templateName, packageSpec) {
-      return {
-        command: 'pnpm',
-        args: ['create', getCreatePackageSpecifier('pnpm', packageSpec), projectName, templateName],
-      }
+      return createPnpmCommand(['create', getCreatePackageSpecifier('pnpm', packageSpec), projectName, templateName])
     },
     installCommand() {
-      return {
-        command: 'pnpm',
-        args: ['install'],
-      }
+      return createPnpmInstallCommand()
     },
     buildCommand() {
-      return {
-        command: 'pnpm',
-        args: ['build'],
-      }
+      return createPnpmCommand(['build'])
     },
     devCommand() {
-      return {
-        command: 'pnpm',
-        args: ['dev'],
-      }
+      return createPnpmCommand(['dev'])
     },
   },
   {
@@ -781,6 +781,8 @@ if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
 
 export {
   cleanupChildProcessHandles,
+  createPnpmCommand,
+  createPnpmInstallCommand,
   hasSuccessfulRebuildSince,
   waitForChildClose,
   waitForFileChange,

@@ -202,6 +202,7 @@ jobs:
           print_version node node -v
           print_version npm npm -v
           print_version pnpm pnpm -v
+          print_version "smoke pnpm" corepack pnpm@10.33.3 -v
           print_version yarn yarn -v
 
       - name: Run create-weapp-vite smoke matrix

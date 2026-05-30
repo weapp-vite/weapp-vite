@@ -8,12 +8,28 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   cleanupChildProcessHandles,
+  createPnpmCommand,
+  createPnpmInstallCommand,
   hasSuccessfulRebuildSince,
   waitForChildClose,
   waitForFileChangeOrSuccessfulRebuild,
 } from '../../../scripts/create-weapp-vite-smoke.mjs'
 
 describe('create-weapp-vite smoke helpers', () => {
+  it('pins pnpm smoke commands through corepack', () => {
+    expect(createPnpmCommand(['create', 'weapp-vite@latest', 'pnpm-default', 'default'])).toEqual({
+      command: 'corepack',
+      args: ['pnpm@10.33.3', 'create', 'weapp-vite@latest', 'pnpm-default', 'default'],
+    })
+  })
+
+  it('allows dependency build scripts during pnpm smoke installs', () => {
+    expect(createPnpmInstallCommand()).toEqual({
+      command: 'corepack',
+      args: ['pnpm@10.33.3', 'install', '--config.dangerouslyAllowAllBuilds=true'],
+    })
+  })
+
   it('detects rebuild logs only from newly appended output', () => {
     const previousOutput = '[success] 小程序初次构建完成，耗时：879ms\n'
     const nextOutput = `${previousOutput}[success] 小程序已重新构建（89.92 ms）\n`
