@@ -2053,7 +2053,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<view slot="footer" class="owner-icon"><slot /></view>')
   })
 
-  it('falls back from block slot fallback wrapper to view with a warning', () => {
+  it('allows explicit block slot fallback wrapper', () => {
     const template = `
 <Child>
   <template #header>
@@ -2070,9 +2070,9 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<view slot="header"><slot /></view>')
-    expect(code).not.toContain('<block slot="header">')
-    expect(warnings).toContain('slot fallback wrapper 不支持配置为 block，已回退为 view。')
+    expect(code).toContain('<block slot="header"><slot /></block>')
+    expect(code).not.toContain('<view slot="header"><slot /></view>')
+    expect(warnings).toEqual([])
   })
 
   it('emits slot presence metadata for implicit default slots', () => {

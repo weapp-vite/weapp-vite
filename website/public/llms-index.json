@@ -916,7 +916,7 @@
         "slot-wrapper-：覆盖指定具名插槽 {#slot-wrapper-named}",
         "slot-wrapper-class/style：给生成的 wrapper 加属性 {#slot-wrapper-attrs}",
         "slot-single-root-no-wrapper-：单根真实节点下推 slot {#slot-single-root-no-wrapper-named}",
-        "block：会被拒绝并回退到 view {#slot-wrapper-block}",
+        "block：显式配置后按原样输出 {#slot-wrapper-block}",
         "wrapper 必须能承载实际内容 {#slot-wrapper-content}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],

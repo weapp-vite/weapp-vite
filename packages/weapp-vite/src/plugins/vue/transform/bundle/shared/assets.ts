@@ -6,7 +6,7 @@ import { getClassStyleWxsSource } from 'wevu/compiler'
 import { resolveClassStyleWxsLocationForBase } from '../../classStyle'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../../emitAssets'
 import { emitScopedSlotAssets } from '../../scopedSlot'
-import { emitSlotFallbackWrapperComponentAsset, injectSlotFallbackWrapperUsingComponent } from '../../slotFallbackWrapper'
+import { emitSlotFallbackWrapperComponentAsset, injectLocalSlotFallbackWrapperUsingComponentIfNeeded } from '../../slotFallbackWrapper'
 import { resolveBundleOutputExtensions } from '../outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from '../platform'
 
@@ -210,6 +210,12 @@ export function emitSharedVueEntryAssets(options: {
     defaults: scopedSlotDefaults,
     mergeStrategy: scopedSlotMergeStrategy,
   })
+  injectLocalSlotFallbackWrapperUsingComponentIfNeeded({
+    bundle,
+    result,
+    compilerCtx: ctx,
+    outputExtensions,
+  })
   emitSlotFallbackWrapperComponentAsset({
     ctx: pluginCtx,
     bundle,
@@ -222,7 +228,6 @@ export function emitSharedVueEntryAssets(options: {
       mergeStrategy: scopedSlotMergeStrategy,
     },
   })
-  injectSlotFallbackWrapperUsingComponent(result, relativeBase, ctx)
 
   return {
     classStyleWxs,
