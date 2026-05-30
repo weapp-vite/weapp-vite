@@ -1,5 +1,13 @@
 # wevu
 
+## 6.16.30
+
+### Patch Changes
+
+- 🐛 **修复 `useBindModel` 在 Vue SFC 中遇到 setup state 与 data 同名路径时写入目标不一致的问题，确保读取和更新都落在同一个响应式来源上。** [`4a4c4fd`](https://github.com/weapp-vite/weapp-vite/commit/4a4c4fd57698feb0ac238259edcad9c7ab9ba46e) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.16.30`
+
 ## 6.16.29
 
 ### Patch Changes
