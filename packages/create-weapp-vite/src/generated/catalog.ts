@@ -47,7 +47,7 @@ export const TEMPLATE_CATALOG = {
   dayjs: '^1.11.21',
   echarts: '^6.1.0',
   esbuild: '^0.28.0',
-  eslint: '^10.4.0',
+  eslint: '^10.4.1',
   fdir: '^6.5.0',
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
