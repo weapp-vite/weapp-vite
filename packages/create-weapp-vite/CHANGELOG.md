@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.3.39
+
+### Patch Changes
+
+- 🐛 **更新脚手架生成的 AI 迁移指引，明确区分 `weapp-vite + 原生` 与继续升级到 `weapp-vite + wevu + Vue SFC` 两条路线，避免存量原生项目在只需要工程化迁移时被误引导为立即引入 Wevu 或 Vue SFC。** [`ef39058`](https://github.com/weapp-vite/weapp-vite/commit/ef39058635a1852baff7f960d5518488c79766e3) by @sonofmagic
+
+- 🐛 **优化 Vue SFC 具名插槽 fallback wrapper 的产物稳定性：微信平台内部 `virtualHost` wrapper 改为固定输出到根级内部组件路径，并优先通过 `app.json` 全局注册，减少页面和组件 JSON 的重复变更；同时允许显式配置 `slot-wrapper="block"`，默认策略仍保持更稳妥的内部 wrapper。** [#636](https://github.com/weapp-vite/weapp-vite/pull/636) by @sonofmagic
+
+- 🐛 **优化 wevu 组件首屏挂载时的初始 `setData` 同步：运行时会把小程序原生实例已有的初始 `data` 与内部 owner id 作为首轮快照基线，并在注册组件时把可安全同步求值的 computed 初值合并进原生初始数据，避免已经进入原生首屏渲染的数据再次重复下发；依赖 props 的 computed 会延后到 props 初始化完成后再首轮同步，减少首屏错误值与重复 payload。** [#634](https://github.com/weapp-vite/weapp-vite/pull/634) by @sonofmagic
+
 ## 2.3.38
 
 ### Patch Changes
