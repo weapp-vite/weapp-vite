@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.16.29
+
+### Patch Changes
+
+- 🐛 **优化 Vue SFC 具名插槽 fallback wrapper 的产物稳定性：微信平台内部 `virtualHost` wrapper 改为固定输出到根级内部组件路径，并优先通过 `app.json` 全局注册，减少页面和组件 JSON 的重复变更；同时允许显式配置 `slot-wrapper="block"`，默认策略仍保持更稳妥的内部 wrapper。** [#636](https://github.com/weapp-vite/weapp-vite/pull/636) by @sonofmagic
+- 📦 Updated 5 dependencies [`6e5604f`](https://github.com/weapp-vite/weapp-vite/commit/6e5604fd86e11a6921b5eca4722d145dab1c8a1d)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.12`, `wevu@6.16.29`, `@weapp-vite/web@1.3.29`, `@wevu/web-apis@1.2.19`, `@weapp-vite/ast@6.16.29`
+
+  </details>
+
 ## 6.16.28
 
 ### Patch Changes

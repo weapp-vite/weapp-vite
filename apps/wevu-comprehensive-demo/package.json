@@ -1,6 +1,6 @@
 {
   "name": "wevu-comprehensive-demo",
-  "version": "0.0.132",
+  "version": "0.0.133",
   "private": true,
   "packageManager": "pnpm@10.26.0",
   "description": "WeVu comprehensive demo showcasing all features",
