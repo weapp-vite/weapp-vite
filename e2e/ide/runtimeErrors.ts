@@ -2,7 +2,48 @@ function resolveConsolePayload(entry: any) {
   if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
     return entry.entry
   }
+  if (entry && typeof entry === 'object' && entry.message && typeof entry.message === 'object') {
+    return entry.message
+  }
+  if (entry && typeof entry === 'object' && entry.params && typeof entry.params === 'object') {
+    return entry.params
+  }
   return entry
+}
+
+function normalizeConsoleArg(raw: any) {
+  if (typeof raw === 'string') {
+    return raw
+  }
+  if (raw && typeof raw === 'object') {
+    const description = typeof raw.description === 'string' ? raw.description : ''
+    const value = 'value' in raw ? raw.value : raw
+    if (value && typeof value === 'object') {
+      const name = typeof value.name === 'string' ? value.name : ''
+      const message = typeof value.message === 'string' ? value.message : ''
+      const stack = typeof value.stack === 'string' ? value.stack : ''
+      const errorText = [name, message].filter(Boolean).join(': ')
+      return [description || errorText, stack].filter(Boolean).join('\n')
+    }
+    if (typeof value === 'string') {
+      return value
+    }
+    if (description) {
+      return description
+    }
+    try {
+      return JSON.stringify(value)
+    }
+    catch {
+      return String(value)
+    }
+  }
+  try {
+    return JSON.stringify(raw)
+  }
+  catch {
+    return String(raw)
+  }
 }
 
 function normalizeConsoleText(entry: any) {
@@ -12,18 +53,7 @@ function normalizeConsoleText(entry: any) {
   }
   if (Array.isArray(payload?.args) && payload.args.length > 0) {
     const text = payload.args
-      .map((item: any) => {
-        const raw = item && typeof item === 'object' && 'value' in item ? item.value : item
-        if (typeof raw === 'string') {
-          return raw
-        }
-        try {
-          return JSON.stringify(raw)
-        }
-        catch {
-          return String(raw)
-        }
-      })
+      .map((item: any) => normalizeConsoleArg(item && typeof item === 'object' && 'value' in item ? item.value : item))
       .join(' ')
       .trim()
     if (text) {

@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
 
 const ROUTE = '/pages/vue-query/index'
@@ -70,8 +71,31 @@ async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...a
   }
 }
 
+function expectNoVueQueryRuntimeExpressionErrors(runtimeLogs: string[]) {
+  expect(runtimeLogs).toEqual([])
+  const joinedLogs = runtimeLogs.join('\n')
+  expect(joinedLogs).not.toContain('模板运行时表达式执行失败')
+  expect(joinedLogs).not.toContain('JSON.stringify(query.data')
+  expect(joinedLogs).not.toContain('JSON.stringify(queryKey')
+}
+
+async function expectNoVueQueryRuntimeExpressionErrorsAfterSettled(
+  page: any,
+  runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector>,
+  marker: number,
+) {
+  if (typeof page?.waitFor === 'function') {
+    await page.waitFor(350)
+  }
+  else {
+    await sleep(350)
+  }
+  expectNoVueQueryRuntimeExpressionErrors(runtimeErrors.getSince(marker))
+}
+
 describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
   let miniProgram: any
+  let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
 
   async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
     if (miniProgram) {
@@ -84,6 +108,7 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
       miniProgram = await launchAutomator({
         projectPath: APP_ROOT,
       })
+      runtimeErrors = attachRuntimeErrorCollector(miniProgram)
       return miniProgram
     }
     catch (error) {
@@ -95,6 +120,7 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
   }
 
   afterAll(async () => {
+    runtimeErrors?.dispose()
     if (!miniProgram) {
       return
     }
@@ -103,6 +129,10 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
 
   it('resolves pending query and keeps query state reactive across tab switch and key rotation', async (ctx) => {
     const miniProgram = await getMiniProgram(ctx)
+    if (!runtimeErrors) {
+      throw new Error('Runtime error collector is not attached.')
+    }
+    const initialMarker = runtimeErrors.mark()
     const page = await miniProgram.reLaunch(ROUTE)
     if (!page) {
       throw new Error(`Failed to launch route ${ROUTE}`)
@@ -121,7 +151,9 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
     ))
 
     expect(initialState.query.data.label).toBe('概览数据')
+    await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, initialMarker)
 
+    const switchMarker = runtimeErrors.mark()
     await invokeOrTap(page, 'switchTab', 1, 'detail')
     const switchedState = await waitForDataMatch(page, snapshot => (
       snapshot.selectedTab === 'detail'
@@ -133,7 +165,9 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
     ))
 
     expect(switchedState.query.data.label).toBe('详情数据')
+    await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, switchMarker)
 
+    const refreshMarker = runtimeErrors.mark()
     await invokeOrTap(page, 'resetCacheAndReload', 4)
     const refreshedState = await waitForDataMatch(page, snapshot => (
       snapshot.refreshSeed === 1
@@ -146,5 +180,6 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
 
     expect(refreshedState.queryKey[2]).toBe(1)
     expect(refreshedState.query.data.selectedTab).toBe('detail')
+    await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, refreshMarker)
   })
 })

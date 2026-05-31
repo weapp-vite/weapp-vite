@@ -67,4 +67,23 @@ describe('runtimeErrors', () => {
     expect(collector.getSince(marker)).toEqual(['[console:error] after marker error'])
     expect(collector.getLogsSince(marker)).toEqual(['[console:error] after marker error'])
   })
+
+  it('collects DevTools wrapped console errors', () => {
+    const miniProgram = createMiniProgramEmitter()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
+
+    miniProgram.emit('console', {
+      message: {
+        level: 'error',
+        args: [
+          { value: '[wevu] 模板运行时表达式执行失败: __wv_bind_0 = JSON.stringify(queryKey)' },
+          { value: { name: 'TypeError', message: 'Converting circular structure to JSON' } },
+        ],
+      },
+    })
+
+    expect(collector.getSince(marker)[0]).toContain('模板运行时表达式执行失败')
+    expect(collector.getSince(marker)[0]).toContain('TypeError: Converting circular structure to JSON')
+  })
 })
