@@ -78,4 +78,16 @@ describe('template expression globals', () => {
     expect(code).toContain('this.__wevuProps.data')
     expect(code).toContain('this.data')
   })
+
+  it('unrefs nested member results for runtime binding expressions', () => {
+    const context = createContext()
+    const result = normalizeJsExpressionWithContext('JSON.stringify(query.data, null, 2)', context, {
+      runtimePropAccess: 'helper',
+      unrefMemberAccess: true,
+    })
+    const code = result && generateExpression(result)
+
+    expect(code).toContain('JSON.stringify(')
+    expect(code).toContain('__wevuUnref(__wevuUnref(__wevuResolvePropValue(this,\'query\',this.query)).data)')
+  })
 })

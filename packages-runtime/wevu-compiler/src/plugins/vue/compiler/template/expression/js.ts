@@ -210,10 +210,45 @@ function collectForAliasMapping(context: TransformContext): Record<string, strin
   return mapping
 }
 
+function isThisMemberChain(node: t.Node | undefined): boolean {
+  if (!node) {
+    return false
+  }
+  if (t.isThisExpression(node)) {
+    return true
+  }
+  if (t.isMemberExpression(node)) {
+    return isThisMemberChain(node.object)
+  }
+  return false
+}
+
+function isUnrefCallArgument(node: t.MemberExpression, parent: t.Node | undefined) {
+  return (
+    t.isCallExpression(parent)
+    && t.isIdentifier(parent.callee, { name: '__wevuUnref' })
+    && parent.arguments.includes(node)
+  )
+}
+
+function isMemberCallTarget(node: t.MemberExpression, parent: t.Node | undefined) {
+  return (
+    (t.isCallExpression(parent) || t.isOptionalCallExpression(parent) || t.isNewExpression(parent))
+    && parent.callee === node
+  )
+}
+
+function shouldUnrefMemberAccess(node: t.MemberExpression, parent: t.Node | undefined) {
+  if (isThisMemberChain(node) || isUnrefCallArgument(node, parent) || isMemberCallTarget(node, parent)) {
+    return false
+  }
+  return true
+}
+
 export function normalizeJsExpressionWithContext(
   exp: string,
   context: TransformContext,
-  options?: { hint?: string, runtimePropAccess?: 'default' | 'helper' },
+  options?: { hint?: string, runtimePropAccess?: 'default' | 'helper', unrefMemberAccess?: boolean },
 ): t.Expression | null {
   const trimmed = exp.trim()
   if (!trimmed) {
@@ -302,6 +337,20 @@ export function normalizeJsExpressionWithContext(
       path.skip()
     },
   })
+
+  if (options?.unrefMemberAccess) {
+    traverse(ast, {
+      MemberExpression: {
+        exit(path) {
+          if (!shouldUnrefMemberAccess(path.node, path.parentPath?.node)) {
+            return
+          }
+          path.replaceWith(createUnrefCall(t.cloneNode(path.node, true)))
+          path.skip()
+        },
+      },
+    })
+  }
 
   const stmt = ast.program.body[0]
   const updated = (stmt && 'expression' in stmt) ? (stmt as any).expression as t.Expression : null
