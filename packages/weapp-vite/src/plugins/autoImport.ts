@@ -340,18 +340,26 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       },
     }))
 
-    watcher.on('add', (filePath) => {
+    const registerAndRefreshComponent = (filePath: string, action: '新增' | '变更') => {
       if (!getAutoImportCandidateKind(filePath)) {
         return
       }
       if (!matchesAutoImportGlobs(ctx, filePath)) {
         return
       }
-      logger.info(`[auto-import:watch] 新增组件文件 ${configService.relativeCwd(filePath)}`)
+      logger.info(`[auto-import:watch] ${action}组件文件 ${configService.relativeCwd(filePath)}`)
       void autoImportService.registerPotentialComponent(filePath)
         .then(async () => {
           await refreshAutoImportImporters(ctx, filePath)
         })
+    }
+
+    watcher.on('add', (filePath) => {
+      registerAndRefreshComponent(filePath, '新增')
+    })
+
+    watcher.on('change', (filePath) => {
+      registerAndRefreshComponent(filePath, '变更')
     })
 
     watcher.on('unlink', (filePath) => {
