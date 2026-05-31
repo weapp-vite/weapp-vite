@@ -2,7 +2,7 @@ import type { WevuPageHookName } from '../types'
 import type { ModuleAnalysis } from './types'
 import { parseJsLikeWithEngine } from '@weapp-vite/ast'
 import path from 'pathe'
-import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
+import { isWevuRuntimeModuleId, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
 import { getImportedSpecifierName, isOxcFunctionLike } from './shared'
 
 function resolveOxcParseFilename(id: string) {
@@ -61,7 +61,7 @@ export function createModuleAnalysisWithOxc(id: string, code: string): ModuleAna
           if (!importedName) {
             continue
           }
-          if (source === WE_VU_MODULE_ID) {
+          if (isWevuRuntimeModuleId(source)) {
             const matched = WE_VU_PAGE_HOOK_TO_FEATURE[importedName as WevuPageHookName]
             if (matched) {
               wevuNamedHookLocals.set(specifier.local.name, matched)
@@ -78,7 +78,7 @@ export function createModuleAnalysisWithOxc(id: string, code: string): ModuleAna
         }
         else if (specifier.type === 'ImportNamespaceSpecifier' && specifier.local?.type === 'Identifier') {
           importedBindings.set(specifier.local.name, { kind: 'namespace', source })
-          if (source === WE_VU_MODULE_ID) {
+          if (isWevuRuntimeModuleId(source)) {
             wevuNamespaceLocals.add(specifier.local.name)
           }
         }

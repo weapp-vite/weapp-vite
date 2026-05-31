@@ -10,6 +10,8 @@ describe('finalizeResult', () => {
 
     finalizeResult(result, {})
     expect(result.script).toContain('createWevuComponent')
+    expect(result.script).toContain('wevu/internal-runtime')
+    expect(result.script).not.toContain('wevu/internal-reactivity')
   })
 
   it('writes macro hashes into result meta', () => {
