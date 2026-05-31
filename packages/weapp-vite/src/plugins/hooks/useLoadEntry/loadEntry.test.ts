@@ -627,6 +627,38 @@ describe('createEntryLoader', () => {
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
   })
 
+  it('force emits auto-import entries through resolvedId mappings for newly registered Vue SFCs', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, applyAutoImports, runtimeState } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    jsonService.read.mockResolvedValue({})
+    applyAutoImports.mockImplementation((_baseName, json) => {
+      json.usingComponents = {
+        HotCard: '/components/HotCard/index',
+      }
+      runtimeState.build.hmr.externalComponentEntryMap.set(
+        'components/HotCard/index',
+        '/project/src/components/HotCard/index.vue',
+      )
+      return ['/components/HotCard/index']
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+
+    expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index.vue')
+  })
+
   it('reloads pending auto-import entries so generated template assets refresh', async () => {
     const pageScript = '/project/src/pages/home.js'
     mockFindJsonEntry.mockResolvedValue({

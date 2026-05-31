@@ -162,7 +162,7 @@ describe('createAutoImportAugmenter', () => {
     expect(injectedEntries).toEqual([])
   })
 
-  it('tracks resolver resolvedId so external Vue components join the compile flow', () => {
+  it('tracks resolvedId so matched Vue components join the compile flow', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'ResolverBadge') {
         return {
@@ -195,6 +195,42 @@ describe('createAutoImportAugmenter', () => {
     expect(injectedEntries).toEqual(['/__weapp_vite_external__/resolver-ui/ResolverBadge'])
     expect(externalComponentEntryMap.get('__weapp_vite_external__/resolver-ui/ResolverBadge')).toBe(
       '/workspace/packages/resolver-ui/ResolverBadge.vue',
+    )
+  })
+
+  it('tracks local resolvedId for newly registered Vue SFC components', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'HotCard') {
+        return {
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+            resolvedId: '/project/src/components/HotCard/index.vue',
+          },
+        }
+      }
+      return undefined
+    })
+    const componentEntryMap = new Map<string, string>()
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: vi.fn(() => 0) } as any,
+      {
+        getAggregatedAutoImportComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+        getAggregatedComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+      } as any,
+      componentEntryMap,
+    )
+
+    const json: Record<string, any> = {}
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(json.usingComponents).toEqual({
+      HotCard: '/components/HotCard/index',
+    })
+    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+    expect(componentEntryMap.get('components/HotCard/index')).toBe(
+      '/project/src/components/HotCard/index.vue',
     )
   })
 

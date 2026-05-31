@@ -451,6 +451,7 @@ describe('autoImport registry helpers', () => {
       value: {
         name: 'VueCard',
         from: '/components/vue-card/index',
+        resolvedId: '/project/src/components/vue-card/index.vue',
       },
     })
     expect(findVueEntryMock).not.toHaveBeenCalled()
