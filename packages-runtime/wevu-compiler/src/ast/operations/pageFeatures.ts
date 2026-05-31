@@ -1,7 +1,7 @@
 import type { WevuPageFeatureFlag, WevuPageHookName } from '../../plugins/wevu/pageFeatures/types'
 import type { AstEngineName } from '../types'
 import { collectFeatureFlagsFromCode } from '@weapp-vite/ast'
-import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../constants'
+import { WE_VU_PAGE_HOOK_TO_FEATURE, WE_VU_RUNTIME_MODULE_IDS } from '../../constants'
 import { collectWevuPageFeatureFlags } from '../../plugins/wevu/pageFeatures/flags'
 import { parseJsLike } from '../../utils/babel'
 
@@ -11,11 +11,18 @@ function collectWithBabel(code: string) {
 }
 
 function collectWithOxc(code: string) {
-  return collectFeatureFlagsFromCode(code, {
-    astEngine: 'oxc',
-    moduleId: WE_VU_MODULE_ID,
-    hookToFeature: WE_VU_PAGE_HOOK_TO_FEATURE as Record<WevuPageHookName, WevuPageFeatureFlag>,
-  })
+  const enabled = new Set<WevuPageFeatureFlag>()
+  for (const moduleId of WE_VU_RUNTIME_MODULE_IDS) {
+    const flags = collectFeatureFlagsFromCode(code, {
+      astEngine: 'oxc',
+      moduleId,
+      hookToFeature: WE_VU_PAGE_HOOK_TO_FEATURE as Record<WevuPageHookName, WevuPageFeatureFlag>,
+    })
+    for (const flag of flags) {
+      enabled.add(flag)
+    }
+  }
+  return enabled
 }
 
 /**

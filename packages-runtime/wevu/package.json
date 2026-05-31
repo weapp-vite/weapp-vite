@@ -43,6 +43,30 @@
         "default": "./dist/compiler.mjs"
       }
     },
+    "./internal-runtime": {
+      "types": "./dist/internal-runtime.d.mts",
+      "import": {
+        "types": "./dist/internal-runtime.d.mts",
+        "development": "./dist/dev/internal-runtime.mjs",
+        "default": "./dist/internal-runtime.mjs"
+      }
+    },
+    "./internal-reactivity": {
+      "types": "./dist/internal-reactivity.d.mts",
+      "import": {
+        "types": "./dist/internal-reactivity.d.mts",
+        "development": "./dist/dev/internal-reactivity.mjs",
+        "default": "./dist/internal-reactivity.mjs"
+      }
+    },
+    "./internal-template": {
+      "types": "./dist/internal-template.d.mts",
+      "import": {
+        "types": "./dist/internal-template.d.mts",
+        "development": "./dist/dev/internal-template.mjs",
+        "default": "./dist/internal-template.mjs"
+      }
+    },
     "./jsx-runtime": {
       "types": "./dist/jsx-runtime.d.mts",
       "import": {
@@ -111,6 +135,27 @@
       "import": {
         "types": "./dist/compiler.d.mts",
         "default": "./dist/dev/compiler.mjs"
+      }
+    },
+    "./dev/internal-runtime": {
+      "types": "./dist/internal-runtime.d.mts",
+      "import": {
+        "types": "./dist/internal-runtime.d.mts",
+        "default": "./dist/dev/internal-runtime.mjs"
+      }
+    },
+    "./dev/internal-reactivity": {
+      "types": "./dist/internal-reactivity.d.mts",
+      "import": {
+        "types": "./dist/internal-reactivity.d.mts",
+        "default": "./dist/dev/internal-reactivity.mjs"
+      }
+    },
+    "./dev/internal-template": {
+      "types": "./dist/internal-template.d.mts",
+      "import": {
+        "types": "./dist/internal-template.d.mts",
+        "default": "./dist/dev/internal-template.mjs"
       }
     },
     "./dev/jsx-runtime": {

@@ -1,7 +1,7 @@
 import type { WevuPageHookName } from '../types'
 import type { ModuleAnalysis } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
+import { isWevuRuntimeModuleId, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
 import { getFunctionLikeFromExpression } from './shared'
 
 export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
@@ -45,7 +45,7 @@ export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
       for (const specifier of stmt.specifiers) {
         if (t.isImportSpecifier(specifier)) {
           const imported = specifier.imported
-          if (source === WE_VU_MODULE_ID && t.isIdentifier(imported)) {
+          if (isWevuRuntimeModuleId(source) && t.isIdentifier(imported)) {
             const importedName = imported.name as WevuPageHookName
             const matched = WE_VU_PAGE_HOOK_TO_FEATURE[importedName]
             if (matched) {
@@ -63,7 +63,7 @@ export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
         }
         else if (t.isImportNamespaceSpecifier(specifier)) {
           importedBindings.set(specifier.local.name, { kind: 'namespace', source })
-          if (source === WE_VU_MODULE_ID) {
+          if (isWevuRuntimeModuleId(source)) {
             wevuNamespaceLocals.add(specifier.local.name)
           }
         }

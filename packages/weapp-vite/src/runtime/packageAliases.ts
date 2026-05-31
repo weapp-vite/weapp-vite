@@ -46,6 +46,27 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
+    find: 'wevu/internal-runtime',
+    packageName: 'wevu',
+    distEntry: 'dist/internal-runtime.mjs',
+    devDistEntry: 'dist/dev/internal-runtime.mjs',
+    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
+  },
+  {
+    find: 'wevu/internal-reactivity',
+    packageName: 'wevu',
+    distEntry: 'dist/internal-reactivity.mjs',
+    devDistEntry: 'dist/dev/internal-reactivity.mjs',
+    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
+  },
+  {
+    find: 'wevu/internal-template',
+    packageName: 'wevu',
+    distEntry: 'dist/internal-template.mjs',
+    devDistEntry: 'dist/dev/internal-template.mjs',
+    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
+  },
+  {
     find: 'wevu/jsx-runtime',
     packageName: 'wevu',
     distEntry: 'dist/jsx-runtime.mjs',

@@ -1,7 +1,7 @@
 import type { AstEngineName } from '../../../ast/types'
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../constants'
+import { isWevuRuntimeModuleId, WE_VU_RUNTIME_APIS } from '../../../constants'
 import { parseJsLike, traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
 import { createEmptyModuleAnalysis, createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
@@ -37,7 +37,7 @@ function mayContainNamespaceFactoryCall(code: string, namespaceName: string) {
 
 function mayCallWevuFactoryByText(code: string, module: ModuleAnalysis) {
   for (const [localName, binding] of module.importedBindings.entries()) {
-    if (binding.source !== WE_VU_MODULE_ID) {
+    if (!isWevuRuntimeModuleId(binding.source)) {
       continue
     }
     if (binding.kind === 'named' && WEVU_FACTORY_NAMES.has(binding.importedName as WevuFactoryName)) {
@@ -148,7 +148,7 @@ function collectTargetOptionsObjectsWithModule(
         : undefined
 
       if (t.isIdentifier(node.callee)) {
-        if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
+        if (binding?.kind !== 'named' || !isWevuRuntimeModuleId(binding.source)) {
           return
         }
         if (binding.importedName !== WE_VU_RUNTIME_APIS.defineComponent && binding.importedName !== WE_VU_RUNTIME_APIS.createWevuComponent) {
@@ -157,7 +157,7 @@ function collectTargetOptionsObjectsWithModule(
       }
       else if (t.isMemberExpression(node.callee) && !node.callee.computed && t.isIdentifier(node.callee.object) && t.isIdentifier(node.callee.property)) {
         const objectBinding = module.importedBindings.get(node.callee.object.name)
-        if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
+        if (objectBinding?.kind !== 'namespace' || !isWevuRuntimeModuleId(objectBinding.source)) {
           return
         }
         if (node.callee.property.name !== WE_VU_RUNTIME_APIS.defineComponent && node.callee.property.name !== WE_VU_RUNTIME_APIS.createWevuComponent) {
@@ -199,7 +199,7 @@ function collectTargetOptionsObjectsWithModule(
 
       if (t.isIdentifier(callee)) {
         const binding = module.importedBindings.get(callee.name)
-        if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
+        if (binding?.kind !== 'named' || !isWevuRuntimeModuleId(binding.source)) {
           return
         }
         if (binding.importedName !== WE_VU_RUNTIME_APIS.defineComponent && binding.importedName !== WE_VU_RUNTIME_APIS.createWevuComponent) {
@@ -208,7 +208,7 @@ function collectTargetOptionsObjectsWithModule(
       }
       else if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
         const objectBinding = module.importedBindings.get(callee.object.name)
-        if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
+        if (objectBinding?.kind !== 'namespace' || !isWevuRuntimeModuleId(objectBinding.source)) {
           return
         }
         if (callee.property.name !== WE_VU_RUNTIME_APIS.defineComponent && callee.property.name !== WE_VU_RUNTIME_APIS.createWevuComponent) {
@@ -261,7 +261,7 @@ export function collectTargetOptionsObjectsFromCode(
   },
 ): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
   if (options?.astEngine === 'oxc') {
-    const mayReferenceWevuFactory = code.includes(WE_VU_MODULE_ID)
+    const mayReferenceWevuFactory = code.includes('wevu')
       && (
         code.includes(WE_VU_RUNTIME_APIS.defineComponent)
         || code.includes(WE_VU_RUNTIME_APIS.createWevuComponent)
@@ -276,7 +276,7 @@ export function collectTargetOptionsObjectsFromCode(
 
     const module = createModuleAnalysisFromCode(moduleId, code, options)
     const mayCallWevuFactory = [...module.importedBindings.values()].some(binding => (
-      binding.source === WE_VU_MODULE_ID
+      isWevuRuntimeModuleId(binding.source)
       && (
         binding.kind === 'namespace'
         || (binding.kind === 'named'

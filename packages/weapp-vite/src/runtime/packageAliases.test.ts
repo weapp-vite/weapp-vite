@@ -33,7 +33,7 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(10)
+    expect(aliases).toHaveLength(13)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
@@ -46,6 +46,18 @@ describe('runtime package aliases', () => {
       {
         find: 'wevu/router',
         replacement: '/project/node_modules/wevu/dist/router.mjs',
+      },
+      {
+        find: 'wevu/internal-runtime',
+        replacement: '/project/node_modules/wevu/dist/internal-runtime.mjs',
+      },
+      {
+        find: 'wevu/internal-reactivity',
+        replacement: '/project/node_modules/wevu/dist/internal-reactivity.mjs',
+      },
+      {
+        find: 'wevu/internal-template',
+        replacement: '/project/node_modules/wevu/dist/internal-template.mjs',
       },
       {
         find: 'wevu/web-apis',
@@ -80,6 +92,18 @@ describe('runtime package aliases', () => {
       {
         find: 'wevu/compiler',
         replacement: '/project/node_modules/wevu/dist/dev/compiler.mjs',
+      },
+      {
+        find: 'wevu/internal-runtime',
+        replacement: '/project/node_modules/wevu/dist/dev/internal-runtime.mjs',
+      },
+      {
+        find: 'wevu/internal-reactivity',
+        replacement: '/project/node_modules/wevu/dist/dev/internal-reactivity.mjs',
+      },
+      {
+        find: 'wevu/internal-template',
+        replacement: '/project/node_modules/wevu/dist/dev/internal-template.mjs',
       },
       {
         find: 'wevu/router',
@@ -128,12 +152,12 @@ describe('runtime package aliases', () => {
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath === '/project/node_modules/class-variance-authority/dist/index.js'
       || filePath.endsWith('/pnpm-workspace.yaml')
-      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(10)
+    expect(aliases).toHaveLength(13)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
@@ -146,6 +170,18 @@ describe('runtime package aliases', () => {
       expect.objectContaining({
         find: 'wevu/api',
         replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/api\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-runtime',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/internal-runtime\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-reactivity',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/internal-reactivity\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-template',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/internal-template\.mjs$/),
       }),
       expect.objectContaining({
         find: 'wevu/web-apis',
@@ -162,7 +198,7 @@ describe('runtime package aliases', () => {
     getPackageInfoSyncMock.mockReturnValue(undefined)
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath.endsWith('/pnpm-workspace.yaml')
-      || /\/packages-runtime\/wevu\/dist\/dev\/(?:index|compiler|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/dev\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases({ isDev: true })
@@ -175,6 +211,18 @@ describe('runtime package aliases', () => {
       expect.objectContaining({
         find: 'wevu/api',
         replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/api\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-runtime',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/internal-runtime\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-reactivity',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/internal-reactivity\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/internal-template',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/dev\/internal-template\.mjs$/),
       }),
       expect.objectContaining({
         find: 'vue-demi',
