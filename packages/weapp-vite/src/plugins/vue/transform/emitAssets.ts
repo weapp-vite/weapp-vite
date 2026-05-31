@@ -6,14 +6,23 @@ interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
 }
 
-const emittedAssetSourceCache = new Map<string, string>()
+let emittedAssetSourceCacheByBundle = new WeakMap<Record<string, any>, Map<string, string>>()
 
 function hasOwn(source: object, key: PropertyKey) {
   return Object.prototype.hasOwnProperty.call(source, key)
 }
 
 export function resetEmittedAssetSourceCacheForTest() {
-  emittedAssetSourceCache.clear()
+  emittedAssetSourceCacheByBundle = new WeakMap()
+}
+
+function getEmittedAssetSourceCache(bundle: Record<string, any>) {
+  let cache = emittedAssetSourceCacheByBundle.get(bundle)
+  if (!cache) {
+    cache = new Map<string, string>()
+    emittedAssetSourceCacheByBundle.set(bundle, cache)
+  }
+  return cache
 }
 
 /**
@@ -47,6 +56,7 @@ export function emitSfcTemplateIfMissing(
 ) {
   const fileName = resolveSfcAssetFileName(relativeBase, extension)
   const cacheKey = `asset:${fileName}`
+  const emittedAssetSourceCache = getEmittedAssetSourceCache(bundle)
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
@@ -75,6 +85,7 @@ export function emitSfcStyleIfMissing(
 ) {
   const fileName = resolveSfcAssetFileName(relativeBase, extension)
   const cacheKey = `asset:${fileName}`
+  const emittedAssetSourceCache = getEmittedAssetSourceCache(bundle)
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     if (options?.updateExisting === false) {
@@ -113,6 +124,7 @@ export function emitSfcJsonAsset(
 ) {
   const jsonFileName = resolveSfcAssetFileName(relativeBase, options.extension ?? 'json')
   const cacheKey = `asset:${jsonFileName}`
+  const emittedAssetSourceCache = getEmittedAssetSourceCache(bundle)
   const existing = bundle[jsonFileName]
   const mergeJson = createJsonMerger(options.mergeStrategy, {
     filename: jsonFileName,
@@ -209,6 +221,7 @@ export function emitClassStyleWxsAssetIfMissing(
 ) {
   const existing = bundle[fileName]
   const cacheKey = `asset:${fileName}`
+  const emittedAssetSourceCache = getEmittedAssetSourceCache(bundle)
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== source) {
