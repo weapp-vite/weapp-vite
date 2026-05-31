@@ -14,6 +14,12 @@ function resolveComputedGetter(definition: unknown) {
   return typeof getter === 'function' ? getter : undefined
 }
 
+function isCompilerGeneratedTemplateComputedKey(key: string) {
+  return key.startsWith('__wv_bind_')
+    || key.startsWith('__wv_cls_')
+    || key.startsWith('__wv_style_')
+}
+
 export function resolveInitialComputedData(options: {
   data: Record<string, any>
   computed: ComputedDefinitions | undefined
@@ -117,6 +123,9 @@ export function resolveInitialComputedData(options: {
   })
 
   for (const key of computedKeys) {
+    if (isCompilerGeneratedTemplateComputedKey(key)) {
+      continue
+    }
     resolveComputedValue(key)
   }
 
