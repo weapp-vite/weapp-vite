@@ -627,6 +627,37 @@ describe('createEntryLoader', () => {
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
   })
 
+  it('reloads pending auto-import entries so generated template assets refresh', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, loadedEntrySet, runtimeState } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    runtimeState.autoImport.pendingEntriesByImporter.set(
+      '/project/src/pages/home',
+      new Set(['/components/HotCard/index']),
+    )
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        HotCard: '/components/HotCard/index',
+      },
+    })
+    loadedEntrySet.add('/project/src/components/HotCard/index')
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const hotCardEmitCall = emitEntriesChunks.mock.calls.find(([resolvedIds]) => {
+      return resolvedIds.some((resolvedId: any) => resolvedId?.id === '/project/src/components/HotCard/index')
+    })
+    expect(hotCardEmitCall).toBeTruthy()
+    expect(loadedEntrySet.has('/project/src/components/HotCard/index')).toBe(false)
+  })
+
   it('marks custom tab bar and app bar app entries as components', async () => {
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/app.json',

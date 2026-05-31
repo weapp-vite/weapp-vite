@@ -192,6 +192,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let appResult: Awaited<ReturnType<typeof collectAppEntries>> | undefined
     let shouldSkipAppEntries = false
     const forceEmitEntrySet = new Set<string>()
+    const forceReloadEntrySet = new Set<string>()
     const nativeLayoutScriptEntries = new Set<string>()
     let autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
@@ -422,8 +423,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       for (const componentEntry of mergedComponentEntries) {
         const normalizedComponentEntry = normalizeEntry(componentEntry, jsonPath)
         explicitEntryTypes.set(normalizedComponentEntry, 'component')
-        if (pendingAutoImportEntries.includes(componentEntry) || injectedAutoImportEntries.includes(componentEntry)) {
+        const isPendingAutoImportEntry = pendingAutoImportEntries.includes(componentEntry)
+        if (isPendingAutoImportEntry || injectedAutoImportEntries.includes(componentEntry)) {
           forceEmitEntrySet.add(normalizedComponentEntry)
+        }
+        if (isPendingAutoImportEntry) {
+          forceReloadEntrySet.add(normalizedComponentEntry)
         }
       }
     }
@@ -475,6 +480,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       loadedEntrySet,
       dirtyEntrySet,
       forceEmitEntrySet,
+      forceReloadEntrySet,
       replaceLayoutDependencies,
       emitEntriesChunks,
       registerJsonAsset,
