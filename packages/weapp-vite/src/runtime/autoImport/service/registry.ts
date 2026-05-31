@@ -212,6 +212,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       value: {
         name: componentName,
         from,
+        resolvedId: resolvedJsEntry,
       },
     })
 
