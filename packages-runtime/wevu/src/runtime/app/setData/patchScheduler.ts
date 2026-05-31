@@ -30,6 +30,7 @@ export function runPatchUpdate(options: {
   includeFunctions?: boolean
   functionPaths: string[]
   plainCache: WeakMap<object, { version: number, value: any }>
+  plainCacheEligibility?: WeakMap<object, boolean>
   pendingPatches: Map<string, PatchEntry>
   fallbackTopKeys: Set<string>
   latestSnapshot: Record<string, any>
@@ -60,6 +61,7 @@ export function runPatchUpdate(options: {
     includeFunctions = false,
     functionPaths,
     plainCache,
+    plainCacheEligibility,
     pendingPatches,
     fallbackTopKeys,
     latestSnapshot,
@@ -130,7 +132,7 @@ export function runPatchUpdate(options: {
       return plainByPath.get(path)
     }
     const value = normalizeSetDataValue(
-      toPlain(getStateValueByPath(path), seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: path }),
+      toPlain(getStateValueByPath(path), seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: path }),
     )
     plainByPath.set(path, value)
     return value
@@ -166,7 +168,7 @@ export function runPatchUpdate(options: {
       if (!shouldIncludeKey(key)) {
         continue
       }
-      const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: key })
+      const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: key })
       const prevValue = latestComputedSnapshot[key]
       const equal = computedCompare === 'deep'
         ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })

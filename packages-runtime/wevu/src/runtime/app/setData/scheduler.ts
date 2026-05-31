@@ -71,6 +71,7 @@ export function createSetDataScheduler(options: {
   } = options
 
   const plainCache = new WeakMap<object, { version: number, value: any }>()
+  const plainCacheEligibility = new WeakMap<object, boolean>()
   let latestSnapshot: Record<string, any> = {}
   let latestComputedSnapshot: Record<string, any> = Object.create(null)
   const latestStateTokens = Object.create(null) as Record<string, unknown>
@@ -116,6 +117,7 @@ export function createSetDataScheduler(options: {
     if (!isReactive(candidate) && hasTrackableSetupBinding(candidate)) {
       return {
         snapshot: toPlain(candidate, new WeakMap(), {
+          cacheEligibility: plainCacheEligibility,
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
@@ -238,6 +240,7 @@ export function createSetDataScheduler(options: {
     includeComputed,
     shouldIncludeKey: shouldIncludeSnapshotKey,
     plainCache,
+    plainCacheEligibility,
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions,
@@ -281,6 +284,7 @@ export function createSetDataScheduler(options: {
       if (!isSameToken(previousToken, token) || !hasOwn(latestSnapshot, key)) {
         nextSnapshot[key] = toPlain(source[key], seen, {
           cache: plainCache,
+          cacheEligibility: plainCacheEligibility,
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
@@ -320,6 +324,7 @@ export function createSetDataScheduler(options: {
       if (!isSameToken(latestComputedTokens[key], token) || !hasOwn(latestSnapshot, key)) {
         nextSnapshot[key] = toPlain(value, seen, {
           cache: plainCache,
+          cacheEligibility: plainCacheEligibility,
           maxDepth: toPlainMaxDepth,
           maxKeys: toPlainMaxKeys,
           includeFunctions,
@@ -462,6 +467,7 @@ export function createSetDataScheduler(options: {
         includeFunctions,
         functionPaths,
         plainCache,
+        plainCacheEligibility,
         pendingPatches,
         fallbackTopKeys,
         latestSnapshot,

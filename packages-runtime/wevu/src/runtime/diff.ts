@@ -13,6 +13,7 @@ function isPlainObject(value: unknown): value is Record<string, any> {
 
 export interface ToPlainOptions {
   cache?: WeakMap<object, { version: number, value: any }>
+  cacheEligibility?: WeakMap<object, boolean>
   maxDepth?: number
   maxKeys?: number
   includeFunctions?: boolean
@@ -27,6 +28,7 @@ function toPlainInternal(
   seen: WeakMap<object, any>,
   visiting: WeakSet<object>,
   cache: WeakMap<object, { version: number, value: any }> | undefined,
+  cacheEligibility: WeakMap<object, boolean> | undefined,
   depth: number,
   budget: { keys: number },
   includeFunctions: boolean,
@@ -50,8 +52,14 @@ function toPlainInternal(
   if (isNoSetData(unwrapped)) {
     return undefined
   }
-  const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
-  const canUseCache = Boolean(cache) && (isReactive(unwrapped) || !hasTrackableSetupBinding(raw))
+  const reactiveValue = isReactive(unwrapped)
+  const raw = reactiveValue ? toRaw(unwrapped) : unwrapped
+  let canUseCache = Boolean(cache) && reactiveValue
+  if (cache && !canUseCache) {
+    const cachedEligibility = cacheEligibility?.get(raw)
+    canUseCache = cachedEligibility ?? !hasTrackableSetupBinding(raw)
+    cacheEligibility?.set(raw, canUseCache)
+  }
   const cacheRef = canUseCache ? cache : undefined
 
   if (depth <= 0 || budget.keys <= 0) {
@@ -84,8 +92,8 @@ function toPlainInternal(
     visiting.add(raw)
     raw.forEach((mapValue, mapKey) => {
       entries.push([
-        toPlainInternal(mapKey, seen, visiting, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''),
-        toPlainInternal(mapValue, seen, visiting, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''),
+        toPlainInternal(mapKey, seen, visiting, undefined, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''),
+        toPlainInternal(mapValue, seen, visiting, undefined, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''),
       ])
     })
     visiting.delete(raw)
@@ -96,7 +104,7 @@ function toPlainInternal(
     seen.set(raw, values)
     visiting.add(raw)
     raw.forEach((setValue) => {
-      values.push(toPlainInternal(setValue, seen, visiting, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''))
+      values.push(toPlainInternal(setValue, seen, visiting, undefined, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''))
     })
     visiting.delete(raw)
     return values
@@ -111,7 +119,7 @@ function toPlainInternal(
       if (typeof iter === 'function') {
         const values = [...view]
         seen.set(raw, values)
-        return values.map(item => toPlainInternal(item, seen, visiting, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''))
+        return values.map(item => toPlainInternal(item, seen, visiting, undefined, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }, includeFunctions, undefined, ''))
       }
       const bytes = [...new Uint8Array(view.buffer, view.byteOffset, view.byteLength)]
       seen.set(raw, bytes)
@@ -131,7 +139,7 @@ function toPlainInternal(
     const nextDepth = depth - 1
     for (let index = 0; index < raw.length; index += 1) {
       const childPath = currentPath ? `${currentPath}.${index}` : String(index)
-      const next = toPlainInternal(raw[index], seen, visiting, cache, nextDepth, budget, includeFunctions, functionPathSet, childPath)
+      const next = toPlainInternal(raw[index], seen, visiting, cache, cacheEligibility, nextDepth, budget, includeFunctions, functionPathSet, childPath)
       arr[index] = next === undefined ? null : next
     }
     visiting.delete(raw)
@@ -150,7 +158,7 @@ function toPlainInternal(
       break
     }
     const childPath = currentPath ? `${currentPath}.${key}` : key
-    const next = toPlainInternal((raw as any)[key], seen, visiting, cache, nextDepth, budget, includeFunctions, functionPathSet, childPath)
+    const next = toPlainInternal((raw as any)[key], seen, visiting, cache, cacheEligibility, nextDepth, budget, includeFunctions, functionPathSet, childPath)
     if (next !== undefined) {
       output[key] = next
     }
@@ -168,7 +176,7 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
   const functionPathSet = Array.isArray(options?.functionPaths) && options.functionPaths.length
     ? new Set(options.functionPaths)
     : undefined
-  return toPlainInternal(value, seen, new WeakSet(), options?.cache, depth, budget, Boolean(options?.includeFunctions), functionPathSet, options?._path ?? '')
+  return toPlainInternal(value, seen, new WeakSet(), options?.cache, options?.cacheEligibility, depth, budget, Boolean(options?.includeFunctions), functionPathSet, options?._path ?? '')
 }
 
 type DeepEqualCompare = (a: any, b: any) => boolean

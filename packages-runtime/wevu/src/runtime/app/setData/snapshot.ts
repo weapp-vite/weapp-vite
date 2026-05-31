@@ -152,6 +152,7 @@ export function collectSnapshot(options: {
   includeComputed: boolean
   shouldIncludeKey: (key: string) => boolean
   plainCache: WeakMap<object, { version: number, value: any }>
+  plainCacheEligibility?: WeakMap<object, boolean>
   toPlainMaxDepth: number
   toPlainMaxKeys: number
   includeFunctions?: boolean
@@ -164,6 +165,7 @@ export function collectSnapshot(options: {
     includeComputed,
     shouldIncludeKey,
     plainCache,
+    plainCacheEligibility,
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions = false,
@@ -187,21 +189,21 @@ export function collectSnapshot(options: {
     if (!shouldIncludeKey(key)) {
       continue
     }
-    out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
+    out[key] = toPlain(rawState[key], seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
   }
 
   for (const key of setupStateKeys) {
     if (!shouldIncludeKey(key)) {
       continue
     }
-    out[key] = toPlain(rawSetupState![key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
+    out[key] = toPlain(rawSetupState![key], seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
   }
 
   for (const key of computedKeys) {
     if (!shouldIncludeKey(key)) {
       continue
     }
-    out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
+    out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, includeFunctions, functionPaths, _budget: budget, _path: key })
   }
 
   return out
