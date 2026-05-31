@@ -46,9 +46,15 @@ export function createAutoImportAugmenter(
 
     const injectedEntries: string[] = []
     for (const [name, resolved] of Object.entries(resolvedComponents)) {
+      const trackResolvedId = () => {
+        if (resolved.resolvedId) {
+          externalComponentEntryMap?.set(resolved.from.replace(/^\/+/, ''), resolved.resolvedId)
+        }
+      }
       const usingComponents = get(json, 'usingComponents')
       if (isObject(usingComponents) && Reflect.has(usingComponents, name)) {
         if (usingComponents[name] === resolved.from) {
+          trackResolvedId()
           injectedEntries.push(resolved.from)
         }
         continue
@@ -56,9 +62,7 @@ export function createAutoImportAugmenter(
 
       set(json, `usingComponents.${name}`, resolved.from)
       injectedEntries.push(resolved.from)
-      if (resolved.resolvedId) {
-        externalComponentEntryMap?.set(resolved.from.replace(/^\/+/, ''), resolved.resolvedId)
-      }
+      trackResolvedId()
     }
 
     return injectedEntries

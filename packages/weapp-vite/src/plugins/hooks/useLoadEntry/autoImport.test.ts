@@ -234,6 +234,46 @@ describe('createAutoImportAugmenter', () => {
     )
   })
 
+  it('tracks local resolvedId when matching usingComponents already exists', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'HotCard') {
+        return {
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+            resolvedId: '/project/src/components/HotCard/index.vue',
+          },
+        }
+      }
+      return undefined
+    })
+    const componentEntryMap = new Map<string, string>()
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: vi.fn(() => 0) } as any,
+      {
+        getAggregatedAutoImportComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+        getAggregatedComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+      } as any,
+      componentEntryMap,
+    )
+
+    const json: Record<string, any> = {
+      usingComponents: {
+        HotCard: '/components/HotCard/index',
+      },
+    }
+    const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(json.usingComponents).toEqual({
+      HotCard: '/components/HotCard/index',
+    })
+    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+    expect(componentEntryMap.get('components/HotCard/index')).toBe(
+      '/project/src/components/HotCard/index.vue',
+    )
+  })
+
   it('reuses resolved auto imports when aggregated template graph and version are unchanged', () => {
     const hit = { 'van-button': [{ start: 0, end: 0 }] }
     const resolve = vi.fn(() => {
