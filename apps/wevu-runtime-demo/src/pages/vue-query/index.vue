@@ -54,18 +54,6 @@ const generatedAtText = computed(() => {
   return query.data.value?.generatedAt ?? '--'
 })
 
-const queryKeyText = computed(() => {
-  return JSON.stringify(queryKey.value)
-})
-
-const queryPayloadText = computed(() => {
-  return JSON.stringify(query.data.value ?? null, null, 2)
-})
-
-const hasQueryData = computed(() => {
-  return query.data.value != null
-})
-
 async function refetchNow() {
   await query.refetch()
 }
@@ -109,7 +97,7 @@ function resetCacheAndReload() {
       <view class="row">
         <text class="label">queryKey</text>
         <text class="value mono">
-          {{ queryKeyText }}
+          {{ JSON.stringify(queryKey) }}
         </text>
       </view>
       <view class="row">
@@ -118,12 +106,12 @@ function resetCacheAndReload() {
           {{ generatedAtText }}
         </text>
       </view>
-      <view v-if="hasQueryData" class="payload">
+      <view v-if="query.data" class="payload">
         <text class="payload-title">
           最新数据
         </text>
         <text class="payload-text mono">
-          {{ queryPayloadText }}
+          {{ JSON.stringify(query.data, null, 2) }}
         </text>
       </view>
       <view v-if="query.isError" class="error-box">

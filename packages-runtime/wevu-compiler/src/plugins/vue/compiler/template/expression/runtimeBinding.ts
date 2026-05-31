@@ -52,6 +52,7 @@ export function registerRuntimeBindingExpression(
   const expAst = normalizeJsExpressionWithContext(exp, context, {
     ...options,
     runtimePropAccess: 'helper',
+    unrefMemberAccess: true,
   })
   if (!expAst) {
     return null
