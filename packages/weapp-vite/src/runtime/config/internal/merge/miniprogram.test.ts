@@ -507,6 +507,14 @@ describe('runtime config merge miniprogram', () => {
         replacement: '/project/node_modules/wevu/dist/router.mjs',
       },
       {
+        find: 'wevu/internal-reactivity',
+        replacement: '/project/node_modules/wevu/dist/internal-reactivity.mjs',
+      },
+      {
+        find: 'wevu/internal-template',
+        replacement: '/project/node_modules/wevu/dist/internal-template.mjs',
+      },
+      {
         find: '@vant/weapp',
         replacement: '/project/node_modules/@vant/weapp/dist/index.js',
       },
@@ -551,8 +559,12 @@ describe('runtime config merge miniprogram', () => {
 
     expect(external.some(pattern => pattern.test('wevu'))).toBe(true)
     expect(external.some(pattern => pattern.test('wevu/router'))).toBe(true)
+    expect(external.some(pattern => pattern.test('wevu/internal-reactivity'))).toBe(true)
+    expect(external.some(pattern => pattern.test('wevu/internal-template'))).toBe(true)
     expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/index.mjs'))).toBe(true)
     expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/router.mjs'))).toBe(true)
+    expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/internal-reactivity.mjs'))).toBe(true)
+    expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/internal-template.mjs'))).toBe(true)
     expect(external.some(pattern => pattern.test('@vant/weapp'))).toBe(false)
     expect(external.some(pattern => pattern.test('/project/node_modules/@vant/weapp/dist/index.js'))).toBe(false)
   })

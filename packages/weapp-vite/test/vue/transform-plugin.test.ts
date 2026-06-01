@@ -814,7 +814,9 @@ onPageScroll(() => {
     const virtualId = '\0weapp-vite:scoped-slot:page.__scoped-slot-default-0'
     const loaded = await plugin.load!.call({}, virtualId)
     expect(loaded).toEqual(expect.stringContaining('createWevuScopedSlotComponent'))
-    expect(loaded).toContain('from \'wevu\'')
+    expect(loaded).toContain('from \'wevu/internal-runtime\'')
+    expect(loaded).toContain('from \'wevu/internal-template\'')
+    expect(loaded).toContain('from \'wevu/internal-reactivity\'')
     expect(loaded).toContain('unref as __wevuUnref')
     expect(loaded).toContain('__wevuUnref(')
   })

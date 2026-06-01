@@ -1,6 +1,6 @@
 import type { InlineExpressionAsset } from 'wevu/compiler'
 import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
-import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
+import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_INTERNAL_REACTIVITY_MODULE_ID, WE_VU_INTERNAL_RUNTIME_MODULE_ID, WE_VU_INTERNAL_TEMPLATE_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
@@ -20,16 +20,18 @@ function buildInlineExpressionMapCode(inlineExpressions?: InlineExpressionAsset[
 function buildScopedSlotComponentModule(options?: { computedCode?: string, inlineMapCode?: string }): string {
   const computedCode = options?.computedCode
   const inlineMapCode = options?.inlineMapCode
-  const importSpecifiers = computedCode
-    ? `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent, normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle, unref as __wevuUnref`
-    : `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent`
-
   const lines = [
-    `import { ${importSpecifiers} } from '${WE_VU_MODULE_ID}';`,
+    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_INTERNAL_RUNTIME_MODULE_ID}';`,
+  ]
+  if (computedCode) {
+    lines.push(`import { normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle } from '${WE_VU_INTERNAL_TEMPLATE_MODULE_ID}';`)
+    lines.push(`import { unref as __wevuUnref } from '${WE_VU_INTERNAL_REACTIVITY_MODULE_ID}';`)
+  }
+  lines.push(
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
     `const createWevuScopedSlotComponent = globalObject?.${WEVU_SCOPED_SLOT_CREATOR_KEY}`,
     '  ?? _createWevuScopedSlotComponent;',
-  ]
+  )
 
   if (computedCode) {
     lines.push(`const __wevuComputed = ${computedCode};`)

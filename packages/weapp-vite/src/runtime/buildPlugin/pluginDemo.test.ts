@@ -13,9 +13,19 @@ async function readFile(filePath: string) {
 }
 
 async function resolvePluginWevuRuntimePath(pluginDistRoot: string) {
-  const stableRuntimePath = path.join(pluginDistRoot, 'weapp-vendors/wevu-src.js')
-  if (await fs.pathExists(stableRuntimePath)) {
-    return stableRuntimePath
+  const vendorRoot = path.join(pluginDistRoot, 'weapp-vendors')
+  if (await fs.pathExists(vendorRoot)) {
+    const vendorFiles = await fs.readdir(vendorRoot)
+    for (const file of vendorFiles) {
+      if (!file.endsWith('.js')) {
+        continue
+      }
+      const filePath = path.join(vendorRoot, file)
+      const code = await readFile(filePath)
+      if (code.includes('__wevu_runtime')) {
+        return filePath
+      }
+    }
   }
 
   const pluginFiles = await fs.readdir(pluginDistRoot)

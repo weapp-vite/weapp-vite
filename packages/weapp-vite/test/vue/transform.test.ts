@@ -253,7 +253,7 @@ export default /*@__PURE__*/_defineComponent({
 
       expect(result.transformed).toBe(true)
       expect(result.code).not.toMatch(/\bfrom\s+['"]vue['"]/)
-      expect(result.code).toMatch(/\bfrom\s+['"]wevu['"]/)
+      expect(result.code).toMatch(/\bfrom\s+['"]wevu\/internal-runtime['"]/)
       expect(result.code).toContain('createWevuComponent(__wevuOptions)')
     })
 

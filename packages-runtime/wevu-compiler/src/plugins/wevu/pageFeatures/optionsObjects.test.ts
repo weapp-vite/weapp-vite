@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
 import { parseJsLike } from '../../../utils/babel'
 import * as babelUtils from '../../../utils/babel'
 import { collectTargetOptionsObjects, collectTargetOptionsObjectsFromCode, getSetupFunctionFromOptionsObject } from './optionsObjects'
@@ -69,6 +70,39 @@ defineComponent(optionsRef)
 
     expect(optionsObjects).toHaveLength(1)
     expect(getSetupFunctionFromOptionsObject(optionsObjects[0])).toBeTruthy()
+  })
+
+  it('collects options objects from compiler internal runtime imports', () => {
+    const source = `
+import { createWevuComponent } from 'wevu/internal-runtime'
+const optionsRef = {
+  setup() {},
+}
+createWevuComponent(optionsRef)
+    `.trim()
+
+    const { optionsObjects } = collectTargetOptionsObjectsFromCode(source, '/project/src/page.ts', {
+      astEngine: 'oxc',
+    })
+
+    expect(optionsObjects).toHaveLength(1)
+    expect(getSetupFunctionFromOptionsObject(optionsObjects[0])).toBeTruthy()
+  })
+
+  it('collects page feature flags from compiler internal runtime imports', () => {
+    const source = `
+import { defineComponent, onPageScroll } from 'wevu/internal-runtime'
+
+defineComponent({
+  setup() {
+    onPageScroll(() => {})
+  },
+})
+    `.trim()
+
+    expect([...collectWevuPageFeatureFlagsFromCode(source, { astEngine: 'oxc' })]).toEqual([
+      'enableOnPageScroll',
+    ])
   })
 
   it('fast rejects unrelated files with oxc engine before babel parsing', () => {

@@ -3,6 +3,9 @@ import { defineConfig } from 'tsdown'
 const entry = {
   'index': './src/index.ts',
   'compiler': './src/compiler',
+  'internal-reactivity': './src/internal-reactivity',
+  'internal-runtime': './src/internal-runtime',
+  'internal-template': './src/internal-template',
   'jsx-runtime': './src/jsx-runtime',
   'store': './src/store',
   'api': './src/api',
