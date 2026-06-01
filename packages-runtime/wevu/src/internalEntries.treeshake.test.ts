@@ -1,21 +1,23 @@
+import { fileURLToPath } from 'node:url'
 import { rolldown } from 'rolldown'
 import { afterEach, describe, expect, it } from 'vitest'
 
+const virtualEntryId = fileURLToPath(new URL('./__virtual-entry__.js', import.meta.url))
 const openBundles: Array<{ close: () => Promise<void> }> = []
 
 async function bundleVirtualEntry(source: string) {
   const bundle = await rolldown({
-    input: 'entry.js',
+    input: virtualEntryId,
     plugins: [
       {
         name: 'virtual-entry',
         resolveId(id) {
-          if (id === 'entry.js') {
+          if (id === virtualEntryId) {
             return id
           }
         },
         load(id) {
-          if (id === 'entry.js') {
+          if (id === virtualEntryId) {
             return source
           }
         },
@@ -38,7 +40,7 @@ afterEach(async () => {
 describe('wevu internal entry tree-shaking', () => {
   it('keeps reactivity-only imports away from component runtime', async () => {
     const code = await bundleVirtualEntry(`
-import { nextTick, ref } from './packages-runtime/wevu/src/internal-reactivity.ts'
+import { nextTick, ref } from './internal-reactivity.ts'
 
 const count = ref(1)
 nextTick(() => {
@@ -55,7 +57,7 @@ nextTick(() => {
 
   it('keeps template helper imports away from component runtime', async () => {
     const code = await bundleVirtualEntry(`
-import { normalizeClass } from './packages-runtime/wevu/src/internal-template.ts'
+import { normalizeClass } from './internal-template.ts'
 
 console.log(normalizeClass({ active: true }))
     `.trim())
