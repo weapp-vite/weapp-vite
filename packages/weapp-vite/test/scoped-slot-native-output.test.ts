@@ -21,6 +21,9 @@ function normalizeOutputContent(file: string, content: string) {
       .replace(/require\("([^"]*wevu-(?:src|templateRef)(?:-[\w-]+)?\.js)"\)\.[A-Za-z_$][\w$]*\(\{/g, 'require("$1").__wevuCreatePage({')
       .replace(/require\("([^"]*wevu-(?:src|templateRef)(?:-[\w-]+)?\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
       .replace(/require_src\.[A-Za-z_$][\w$]*/g, 'require_src.__wevuScopedSlotCreator')
+      .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*/g, 'require_templateRef.__wevuScopedSlotCreator')
+      .replace(/(\bcreateWevuScopedSlotComponent = .*?\?\? require_templateRef\.)[A-Za-z_$][\w$]*(;)/g, '$1__wevuScopedSlotCreator$2')
+      .replace(/(var createWevuScopedSlotComponent = .*?\?\? require_templateRef\.)[A-Za-z_$][\w$]*(;)/g, '$1__wevuScopedSlotCreator$2')
   }
   return normalizeStableNames(content)
 }
