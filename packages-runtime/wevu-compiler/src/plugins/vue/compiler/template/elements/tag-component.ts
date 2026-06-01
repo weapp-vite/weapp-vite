@@ -79,6 +79,9 @@ function shouldAugmentPlainSlot(decl: ScopedSlotDeclaration, context: TransformC
   if (context.rewriteScopedSlot && !isWevuComponentTag(ownerNode, context)) {
     return false
   }
+  if (context.rewriteScopedSlot && !hasDirectComponentSlotChild(decl.children, context)) {
+    return false
+  }
   if (context.scopedSlotsCompiler === 'augmented') {
     return true
   }

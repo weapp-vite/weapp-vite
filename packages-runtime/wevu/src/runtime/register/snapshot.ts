@@ -3,7 +3,7 @@ import {
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
 } from '@weapp-core/constants'
-import { updateOwnerSnapshot } from '../scopedSlots'
+import { mergeOwnerSnapshotProps, updateOwnerSnapshot } from '../scopedSlots'
 
 export function refreshOwnerSnapshotFromInstance(instance: InternalRuntimeState) {
   const runtime = instance.__wevu
@@ -13,10 +13,6 @@ export function refreshOwnerSnapshotFromInstance(instance: InternalRuntimeState)
   }
   const snapshot = runtime.snapshot()
   const propsSource = (instance as any)[WEVU_PROPS_KEY] ?? (instance as any).properties
-  if (propsSource && typeof propsSource === 'object') {
-    for (const [key, value] of Object.entries(propsSource)) {
-      snapshot[key] = value
-    }
-  }
+  mergeOwnerSnapshotProps(snapshot, propsSource, runtime)
   updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
 }

@@ -1,5 +1,6 @@
 import type { ComponentPublicInstance, InternalRuntimeState, RuntimeInstance } from './types'
 import {
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_SCOPED_SLOT_OWNER_SEED_KEY,
   WEVU_SCOPED_SLOT_OWNER_STORE_KEY,
@@ -97,6 +98,27 @@ export function resolveOwnerSnapshot(runtime: RuntimeInstance<any, any, any>) {
   return typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
 }
 
+function shouldIncludeOwnerSnapshotProp(runtime: RuntimeInstance<any, any, any>, key: string) {
+  const snapshotOmitKeys = (runtime as any)[WEVU_PROPS_DERIVED_KEYS_KEY]
+  return !(snapshotOmitKeys instanceof Set && snapshotOmitKeys.has(key))
+}
+
+export function mergeOwnerSnapshotProps(
+  snapshot: Record<string, any>,
+  propsSource: unknown,
+  runtime: RuntimeInstance<any, any, any>,
+) {
+  if (!propsSource || typeof propsSource !== 'object') {
+    return
+  }
+  for (const [key, value] of Object.entries(propsSource as Record<string, any>)) {
+    if (!shouldIncludeOwnerSnapshotProp(runtime, key)) {
+      continue
+    }
+    snapshot[key] = value
+  }
+}
+
 export function attachOwnerSnapshot(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
@@ -125,10 +147,6 @@ export function attachOwnerSnapshot(
   }
   const snapshot = resolveOwnerSnapshot(runtime)
   const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-  if (propsSource && typeof propsSource === 'object') {
-    for (const [key, value] of Object.entries(propsSource)) {
-      snapshot[key] = value
-    }
-  }
+  mergeOwnerSnapshotProps(snapshot, propsSource, runtime)
   updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
 }

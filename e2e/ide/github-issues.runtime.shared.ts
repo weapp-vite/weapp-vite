@@ -475,6 +475,7 @@ async function launchGithubIssuesMiniProgramOnce() {
 
     const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      warmupRoute: GITHUB_ISSUES_WARMUP_ROUTE,
     })
 
     try {

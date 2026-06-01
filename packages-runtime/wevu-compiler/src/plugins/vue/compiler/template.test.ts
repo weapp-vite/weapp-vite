@@ -1112,7 +1112,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<Issue558NestedSlotCell>')
     expect(classStyleBindings?.some(binding => binding.exp === 'func(headerText)')).toBe(false)
     expect(classStyleBindings?.some(binding => binding.exp === 'func(defaultText)')).toBe(false)
-    expect(scopedSlotComponents).toHaveLength(8)
+    expect(scopedSlotComponents).toHaveLength(7)
 
     const defaultSlots = scopedSlotComponents?.filter(slot => slot.slotKey === 'default') ?? []
     const headerSlot = scopedSlotComponents?.find(slot => slot.slotKey === 'header')
@@ -1125,7 +1125,7 @@ describe('compileVueTemplateToWxml', () => {
     const defaultScoped = findDefaultSlotByBinding('func(label + \'-\' + count + \'-\' + text)')
     const listScoped = findDefaultSlotByBinding('func(item.label + \'-\' + index + \'-\' + text)')
     const nestedOuter = defaultSlots.find(slot => slot.template.includes('<Issue558NestedSlotCell generic:scoped-slots-default='))
-    const nestedInner = findDefaultSlotByBinding('func(nestedText)')
+    const nestedInline = findDefaultSlotByBinding('func(nestedText)')
 
     expect(implicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(headerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
@@ -1133,9 +1133,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(footerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
     expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
-    expect(nestedOuter?.template).toContain('<Issue558NestedSlotCell generic:scoped-slots-default=')
-    expect(nestedOuter?.template).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
-    expect(nestedInner?.template).toContain('<text>{{__wv_bind_0}}</text>')
+    expect(nestedOuter).toBeUndefined()
+    expect(nestedInline?.template).toContain('<Issue558NestedSlotCell vue-slots="{{__wv_bind_0}}"><text>{{__wv_bind_1}}</text></Issue558NestedSlotCell>')
 
     expectScopedSlotComputed(implicitDefault?.classStyleBindings, 'func(text)', [
       'this.__wvOwnerProxy.func',
@@ -1169,7 +1168,7 @@ describe('compileVueTemplateToWxml', () => {
       'this.__wvSlotPropsData.item',
       'this.__wvSlotPropsData.index',
     ])
-    expectScopedSlotComputed(nestedInner?.classStyleBindings, 'func(nestedText)', [
+    expectScopedSlotComputed(nestedInline?.classStyleBindings, 'func(nestedText)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.nestedText',
     ])
@@ -1236,6 +1235,37 @@ describe('compileVueTemplateToWxml', () => {
       exp: 'tabItems',
       forStack: [],
     })
+    expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
+  })
+
+  it('keeps native-only nested default content inline inside scoped slot components', () => {
+    const template = `
+<Tabbar>
+  <template #default="slotProps">
+    <TabbarItem
+      v-for="item in list"
+      :key="item.label"
+      :data-ready="slotProps ? 'ready' : 'missing'"
+    >
+      <text :data-label="item.label">{{ item.label }}</text>
+    </TabbarItem>
+  </template>
+</Tabbar>
+    `.trim()
+
+    const { scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/issue-615/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+      },
+    )
+
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.template).toContain('<TabbarItem wx:for="{{__wv_bind_0}}"')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<text data-label="{{item.label}}">{{item.label}}</text>')
+    expect(scopedSlotComponents?.[0]?.template).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
   })
 

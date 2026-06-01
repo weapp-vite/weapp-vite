@@ -3,6 +3,7 @@ import type { ComputedDefinitions } from '../types'
 import {
   WEVU_INLINE_MAP_KEY,
   WEVU_OWNER_HANDLER,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -15,6 +16,16 @@ import {
 import { hasOwn } from '../../utils'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
+
+const SCOPED_SLOT_SNAPSHOT_OMIT_KEYS = [
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_OWNER_PROXY_KEY,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_PROPS_KEY,
+  WEVU_SLOT_SCOPE_KEY,
+]
 
 const AMP_RE = /&amp;/g
 const QUOT_RE = /&quot;/g
@@ -256,8 +267,9 @@ export function createScopedSlotOptions(
       virtualHost: true,
     },
     setData: {
-      omit: [WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_OWNER_PROXY_KEY],
+      omit: SCOPED_SLOT_SNAPSHOT_OMIT_KEYS,
     },
+    [WEVU_PROPS_DERIVED_KEYS_KEY]: SCOPED_SLOT_SNAPSHOT_OMIT_KEYS,
     properties: {
       [WEVU_SLOT_OWNER_ID_PROP]: {
         type: String,

@@ -53,7 +53,6 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue615.test.ts': [
     'pages/issue-615/**',
-    'components/issue-615/**',
   ],
   'github-issues.runtime.issue621.test.ts': [
     'pages/issue-621/**',
@@ -160,8 +159,8 @@ function resolveGithubIssuesAutoRoutes() {
   if (issue615AugmentedEnvEnabled) {
     return {
       include: [
+        ...githubIssuesWarmupRoutes,
         'pages/issue-615/**',
-        'components/issue-615/**',
       ],
     }
   }

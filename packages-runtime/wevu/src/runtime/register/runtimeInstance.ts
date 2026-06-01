@@ -17,6 +17,7 @@ import {
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -24,7 +25,7 @@ import {
 } from '@weapp-core/constants'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
-import { allocateOwnerId, attachOwnerSnapshot, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
+import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
@@ -222,11 +223,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
     const snapshot = resolveOwnerSnapshot(runtimeRef)
     const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    if (propsSource && typeof propsSource === 'object') {
-      for (const [key, value] of Object.entries(propsSource)) {
-        snapshot[key] = value
-      }
-    }
+    mergeOwnerSnapshotProps(snapshot, propsSource, runtimeRef)
     updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
   }
   const adapter: AdapterWithSetData = {
@@ -335,6 +332,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
     __wevu_touchSetupMethodsVersion: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_touchSetupMethodsVersion,
     __wevu_trackSetupReactiveKey: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_trackSetupReactiveKey,
+    [WEVU_PROPS_DERIVED_KEYS_KEY]: (runtime as any)[WEVU_PROPS_DERIVED_KEYS_KEY],
   }
   for (const [key, value] of Object.entries(internalRuntimeFields)) {
     if (!value) {

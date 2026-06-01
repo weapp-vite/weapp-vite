@@ -1,4 +1,13 @@
-import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_OWNER_PROXY_KEY } from '@weapp-core/constants'
+import {
+  WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_PROPS_KEY,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWevuScopedSlotComponent, defineComponent, nextTick } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
@@ -627,5 +636,39 @@ describe('runtime: scoped slots', () => {
     })
     expect(Object.getPrototypeOf(snapshot)).toBe(Object.prototype)
     expect(Object.getPrototypeOf(snapshot?.nested)).toBe(Object.prototype)
+  })
+
+  it('does not publish scoped slot bridge state as nested owner snapshot', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const upstreamOwnerId = allocateOwnerId()
+    updateOwnerSnapshot(upstreamOwnerId, { list: [{ label: 'one' }] }, { list: [{ label: 'one' }] } as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        [WEVU_SLOT_OWNER_ID_PROP]: upstreamOwnerId,
+        [WEVU_SLOT_PROPS_KEY]: [],
+        [WEVU_SLOT_SCOPE_KEY]: ['item', { label: 'one' }],
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const snapshot = getOwnerSnapshot(inst[WEVU_SLOT_OWNER_ID_KEY])
+    expect(snapshot).toBeTruthy()
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_OWNER_ID_KEY)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_OWNER_ID_PROP)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_OWNER_KEY)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_OWNER_PROXY_KEY)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_PROPS_DATA_KEY)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_PROPS_KEY)
+    expect(snapshot).not.toHaveProperty(WEVU_SLOT_SCOPE_KEY)
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_OWNER_KEY]: { list: [{ label: 'one' }] } })
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_PROPS_DATA_KEY]: { item: { label: 'one' } } })
   })
 })
