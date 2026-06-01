@@ -41,11 +41,11 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
   ],
   'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,
@@ -67,6 +67,12 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
 
 function normalizeDistFile(file: string) {
   if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
+    return 'wevu-runtime.js'
+  }
+  if (/^weapp-vendors\/wevu-templateRef(?:-[\w-]+)?\.js$/.test(file)) {
+    return 'wevu-runtime.js'
+  }
+  if (/^weapp-vendors\/wevu-watch(?:-[\w-]+)?\.js$/.test(file)) {
     return 'wevu-runtime.js'
   }
   if (/^weapp-vendors\/wevu-[\w-]+\.js$/.test(file)) {

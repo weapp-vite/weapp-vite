@@ -1,5 +1,5 @@
 import type { TestJsFormat } from './utils/jsFormat'
-import { access, readFile, rm } from 'node:fs/promises'
+import { access, readdir, readFile, rm } from 'node:fs/promises'
 import path from 'pathe'
 import { formatWxml, formatWxss } from './template-e2e.utils'
 import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
@@ -220,4 +220,40 @@ export async function waitForFile(target: string, timeoutMs = 90_000) {
     await new Promise(resolve => setTimeout(resolve, 300))
   }
   throw new Error(`Timed out waiting for ${target}`)
+}
+
+export async function collectVendorFilesContaining(distRoot: string, marker: string) {
+  const vendorRoot = path.join(distRoot, 'weapp-vendors')
+  if (!(await pathExists(vendorRoot))) {
+    return []
+  }
+
+  const files = await readdir(vendorRoot, { recursive: true })
+  const matchedFiles: string[] = []
+
+  for (const file of files) {
+    if (typeof file !== 'string' || !file.endsWith('.js')) {
+      continue
+    }
+
+    const filePath = path.join(vendorRoot, file)
+    const code = await readFile(filePath, 'utf8')
+    if (code.includes(marker)) {
+      matchedFiles.push(path.relative(distRoot, filePath).replaceAll('\\', '/'))
+    }
+  }
+
+  return matchedFiles.sort()
+}
+
+export async function waitForVendorFileContains(distRoot: string, marker: string, timeoutMs = 90_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const matchedFiles = await collectVendorFilesContaining(distRoot, marker)
+    if (matchedFiles.length) {
+      return matchedFiles
+    }
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  throw new Error(`Timed out waiting for vendor file containing ${marker}`)
 }
