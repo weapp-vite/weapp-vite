@@ -216,7 +216,10 @@ export async function compileScriptPhase(
       id: filename,
       isProd: false,
     })
-    warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn)
+    warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
+      filename,
+      scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
+    })
     propsAliases ??= resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
 
     scriptCode = scriptCompiled.content

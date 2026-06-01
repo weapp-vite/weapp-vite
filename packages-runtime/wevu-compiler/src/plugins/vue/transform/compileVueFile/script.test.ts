@@ -95,7 +95,7 @@ const props = defineProps<{ id: string; class: string; slot: string; style: stri
       false,
     )
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('/project/src/components/id-prop.vue:5:15 defineProps 中声明 id/class/slot'))
   })
 
   it('warns when runtime defineProps declares id, class, or slot', async () => {
@@ -129,6 +129,7 @@ ${setupCode}
         false,
       )
 
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('/project/src/components/runtime-id-prop.vue'))
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
     }
   })
@@ -164,6 +165,7 @@ withDefaults(defineProps<Props>(), {
       false,
     )
 
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('/project/src/components/typed-id-prop.vue'))
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('defineProps 中声明 id/class/slot'))
   })
 
