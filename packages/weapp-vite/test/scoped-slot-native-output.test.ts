@@ -16,6 +16,7 @@ function normalizeOutputContent(file: string, content: string) {
     return normalizeStableNames(content)
       .replace(/^\/\/#region .*\/src\//gm, '//#region <fixture>/src/')
       .replace(/\brequire_src_\w+\b/g, 'require_src')
+      .replace(/\brequire_templateRef_\w+\b/g, 'require_templateRef')
       .replace(/require\("([^"]*wevu-(?:src|templateRef)(?:-[\w-]+)?\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
       .replace(/require\("([^"]*wevu-(?:src|templateRef)(?:-[\w-]+)?\.js)"\)\.[A-Za-z_$][\w$]*\(\{/g, 'require("$1").__wevuCreatePage({')
       .replace(/require\("([^"]*wevu-(?:src|templateRef)(?:-[\w-]+)?\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
