@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.16.32
+
+### Patch Changes
+
+- 🐛 **修复嵌套 scoped slot 中纯原生默认内容被额外编译为 generic slot 组件后在微信开发者工具中可能卡死的问题，并避免 scoped slot 桥接字段继续发布为嵌套 owner snapshot。同步发布 create-weapp-vite，保持脚手架模板依赖版本与本次修复一致。** [`41d4cc2`](https://github.com/weapp-vite/weapp-vite/commit/41d4cc2eeeb9c3f077d1584acb08c83c5a2868a9) by @sonofmagic
+
+- 🐛 **增强 `<script setup>` 中 `defineProps` 声明 `id/class/slot` 时的编译期提示，warning 现在会带上 SFC 文件路径与行列号，方便从终端或 IDE 日志一键定位到需要修改的位置。** [#646](https://github.com/weapp-vite/weapp-vite/pull/646) by @sonofmagic
+
+- 🐛 **优化 wevu 编译产物的内部运行时导入，将响应式 API 与模板 helper 分流到更小的内部入口，避免从 `wevu` 导入 `ref`、`nextTick`、`normalizeClass` 等轻量能力时固定拉入完整组件运行时 vendor。同步发布 create-weapp-vite，保持脚手架模板依赖版本与本次修复一致。** [#641](https://github.com/weapp-vite/weapp-vite/pull/641) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.32`
+
 ## 6.16.31
 
 ### Patch Changes
