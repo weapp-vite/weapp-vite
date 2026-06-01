@@ -1,4 +1,11 @@
-import { WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY, WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
+import {
+  WEVU_PROPS_ALIASES_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SLOT_NAMES_PROP,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
 import { resolvePropValue } from '@/runtime'
@@ -546,6 +553,90 @@ describe('runtime: props sync', () => {
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
     expect(payloads.some((payload: any) => Object.hasOwn(payload, 'title'))).toBe(false)
     expect(observerFeedbackCount).toBe(0)
+  })
+
+  it('mirrors compiled slot metadata prop to top-level data for fallback guards', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(props) {
+        return { props }
+      },
+      setData: {
+        pick: [WEVU_SLOT_NAMES_PROP],
+        strategy: 'patch',
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const nextSlots = { default: true, header: true }
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'initial',
+        [WEVU_SLOT_NAMES_PROP]: null,
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    inst.properties[WEVU_SLOT_NAMES_PROP] = nextSlots
+    opts.observers[WEVU_SLOT_NAMES_PROP].call(inst, nextSlots, null)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_NAMES_PROP]).toBe(nextSlots)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(nextSlots)
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: nextSlots })
+  })
+
+  it('mirrors scoped slot owner metadata props to top-level data for compiled outlets', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(props) {
+        return { props }
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY],
+        strategy: 'patch',
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const nextScope = ['io', 1234]
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'initial',
+        [WEVU_SLOT_OWNER_ID_PROP]: '',
+        [WEVU_SLOT_SCOPE_KEY]: null,
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    inst.properties[WEVU_SLOT_OWNER_ID_PROP] = 'wv-owner-1'
+    opts.observers[WEVU_SLOT_OWNER_ID_PROP].call(inst, 'wv-owner-1', '')
+    inst.properties[WEVU_SLOT_SCOPE_KEY] = nextScope
+    opts.observers[WEVU_SLOT_SCOPE_KEY].call(inst, nextScope, null)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_SCOPE_KEY]).toBe(nextScope)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_SCOPE_KEY]).toEqual(nextScope)
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
+      [WEVU_SLOT_SCOPE_KEY]: nextScope,
+    })
   })
 
   it('keeps alias-derived setup keys visible to template setData output', async () => {

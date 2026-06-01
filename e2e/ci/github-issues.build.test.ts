@@ -275,6 +275,25 @@ async function runIssue621AugmentedBuild() {
   distVariant = null
 }
 
+async function runIssue642Build() {
+  standardBuildPromise = null
+  await fs.remove(DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue642',
+    skipNpm: true,
+    env: {
+      WEAPP_VITE_E2E_TARGET_FILE: 'e2e/ide/github-issues.runtime.issue642.test.ts',
+    },
+  })
+
+  distVariant = null
+}
+
 interface AppJsonWithSubPackages {
   pages?: string[]
   subPackages?: Array<{ root?: string, pages?: string[] }>
@@ -623,6 +642,37 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).not.toContain('ReferenceError')
     expect(pageJs).not.toContain('ctx.explicitCount.value.value')
     expect(pageJs).not.toContain('ctx.nestedState.count.value.value')
+  })
+
+  it('issue #642: keeps slot bridge props available to performance setData pick', async () => {
+    await runIssue642Build()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-642/index.wxml')
+    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-642/index.__scoped-slot-default-0.wxml')
+    const slotProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-642/SlotProbe/index.wxml')
+    const slotProbeJsPath = path.join(DIST_ROOT, 'components/issue-642/SlotProbe/index.js')
+    const scopedProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.wxml')
+    const scopedProbeJsPath = path.join(DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const slotProbeWxml = await fs.readFile(slotProbeWxmlPath, 'utf-8')
+    const slotProbeJs = await fs.readFile(slotProbeJsPath, 'utf-8')
+    const scopedProbeWxml = await fs.readFile(scopedProbeWxmlPath, 'utf-8')
+    const scopedProbeJs = await fs.readFile(scopedProbeJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('Issue642SlotProbe')
+    expect(pageWxml).toContain('vue-slots="{{__wv_bind_')
+    expect(pageWxml).toContain('generic:scoped-slots-default=')
+    expect(scopedSlotWxml).toContain('data-issue642-slot-state="scoped-provided"')
+    expect(scopedSlotWxml).toContain('data-issue642-scoped-value="{{__wvSlotPropsData.io}}"')
+    expect(scopedSlotWxml).toContain('{{__wvSlotPropsData.io}}')
+    expect(slotProbeWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
+    expect(slotProbeWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
+    expect(slotProbeJs).toContain('"vueSlots"')
+    expect(scopedProbeWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
+    expect(scopedProbeWxml).toContain(`__wvSlotProps="{{['io',1234]}}"`)
+    expect(scopedProbeJs).toContain('"__wvSlotOwnerId"')
+    expect(scopedProbeJs).toContain('"__wvSlotScope"')
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
