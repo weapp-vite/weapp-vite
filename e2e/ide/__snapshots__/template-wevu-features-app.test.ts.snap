@@ -396,18 +396,18 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="use-attrs-page__title">wevu useAttrs 特性展示</view>
   <view class="use-attrs-page__subtitle">下面按钮控制的是组件的非 props 参数（attrs）</view>
   <view class="use-attrs-page__toolbar">
-    <view class="use-attrs-page__btn wevu-features-btn-cycle-tone tone-blue" id="ctrl-cycle-tone">
+    <view id="ctrl-cycle-tone" class="use-attrs-page__btn wevu-features-btn-cycle-tone tone-blue">
       切换 tone：tone-blue
     </view>
     <view
-      class="use-attrs-page__btn wevu-features-btn-toggle-visible ctrl-on"
-      id="ctrl-toggle-visible">
+      id="ctrl-toggle-visible"
+      class="use-attrs-page__btn wevu-features-btn-toggle-visible ctrl-on">
       切换 visible：true
     </view>
     <view
-      class="use-attrs-page__btn wevu-features-btn-toggle-border ctrl-dash"
       id="ctrl-toggle-border"
-      style="border: 1px dashed #64748b; padding: 4px 8px">
+      style="border: 1px dashed #64748b; padding: 4px 8px"
+      class="use-attrs-page__btn wevu-features-btn-toggle-border ctrl-dash">
       边框模式：dash
     </view>
     <view class="use-attrs-page__btn wevu-features-btn-bump-seed" id="ctrl-bump-seed">
@@ -418,12 +418,12 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="index--use-attrs-feature">
       <view class="index--use-attrs-feature__title">组件内 useAttrs()</view>
       <view
-        class="index--use-attrs-feature__badge index--tone-blue"
         id="attrs-badge"
-        style="border: 1px dashed #64748b; padding: 4px 8px">
+        style="border: 1px dashed #64748b; padding: 4px 8px"
+        class="index--use-attrs-feature__badge index--tone-blue">
         state-class = tone-blue
       </view>
-      <view class="index--use-attrs-feature__flag index--is-on" id="attrs-flag">
+      <view id="attrs-flag" class="index--use-attrs-feature__flag index--is-on">
         visible = true
       </view>
       <view class="index--use-attrs-feature__extra" id="attrs-extra">extra-label = seed-1</view>
@@ -500,7 +500,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       provider -&amp;gt; toggle theme
     </view>
   </view>
-  <view class="use-provide-inject-page__state theme-teal" id="provide-state">
+  <view id="provide-state" class="use-provide-inject-page__state theme-teal">
     provider theme = teal
   </view>
   <view class="use-provide-inject-page__line" id="provide-count">provider count = 1</view>
@@ -677,11 +677,11 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="use-slots-page__title">wevu useSlots 特性展示</view>
   <view class="use-slots-page__subtitle">控制 slot 展示和内容，查看 slots 键与 class 变化</view>
   <view class="use-slots-page__toolbar">
-    <view class="use-slots-page__btn ctrl-on" id="slots-ctrl-open">panel: open</view>
-    <view class="use-slots-page__btn ctrl-on" id="slots-ctrl-header">header slot: on</view>
+    <view id="slots-ctrl-open" class="use-slots-page__btn ctrl-on">panel: open</view>
+    <view id="slots-ctrl-header" class="use-slots-page__btn ctrl-on">header slot: on</view>
     <view class="use-slots-page__btn" id="slots-ctrl-count">count: 1</view>
   </view>
-  <view class="use-slots-page__state state-open" id="slots-open-state">open state: open</view>
+  <view id="slots-open-state" class="use-slots-page__state state-open">open state: open</view>
   <useslotsfeature is="components/use-slots-feature/index">
     <view class="index--use-slots-feature">
       <view class="index--use-slots-feature__title">组件内 useSlots()</view>

@@ -20,7 +20,7 @@ import {
   resolveSharedHmrPaths,
   resolveSharedHmrRelativeImports,
 } from '../utils/shared-hmr-fixture'
-import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
+import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
@@ -29,8 +29,7 @@ const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CO
 const TEMPLATE_EXT = 'wxml'
 const SCRIPT_MODULE_EXT = 'wxs'
 const COMMON_JS_OUTPUT_PATH = `${DIST_ROOT}/common.js`
-const WEVU_SRC_OUTPUT_PATH = `${DIST_ROOT}/weapp-vendors/wevu-src.js`
-const WEVU_RUNTIME_READY_MARKER = '"__wevuCreateWevuComponent"'
+const WEVU_RUNTIME_READY_MARKER = '__wevu_runtime'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
@@ -79,7 +78,7 @@ async function waitForIdeRecompileSettled(delayMs = 1200) {
 
 async function waitForInitialAppserviceReady() {
   await waitForFileContains(COMMON_JS_OUTPUT_PATH, 'useSetupStore', 90_000)
-  await waitForFileContains(WEVU_SRC_OUTPUT_PATH, WEVU_RUNTIME_READY_MARKER, 90_000)
+  await waitForVendorFileContains(DIST_ROOT, WEVU_RUNTIME_READY_MARKER, 90_000)
 }
 
 async function getSharedMiniProgram() {
