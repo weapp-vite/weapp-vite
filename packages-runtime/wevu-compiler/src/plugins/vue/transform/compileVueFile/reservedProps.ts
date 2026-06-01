@@ -6,6 +6,19 @@ const RESERVED_SCRIPT_SETUP_PROPS = new Set(['id', 'class', 'slot'])
 const RESERVED_PROPS_WARNING = 'defineProps 中声明 id/class/slot 可能无法在小程序 properties 中正确取值，请改用其他 prop 名称。'
 
 type PropsTypeNode = TSInterfaceBody | TSType
+interface SourcePosition {
+  line: number
+  column: number
+}
+
+interface ReservedPropsWarningContext {
+  filename?: string
+  scriptSetupStart?: SourcePosition
+}
+
+interface ReservedPropsWarningResult {
+  location?: SourcePosition
+}
 
 function getStaticKeyName(key: t.Expression | t.PrivateName) {
   if (t.isIdentifier(key)) {
@@ -86,8 +99,41 @@ function typePropsContainReservedName(typeNode: PropsTypeNode | null | undefined
   return false
 }
 
-function hasDefinePropsReservedName(scriptSetupCode: string) {
-  let hasReservedName = false
+function getDefinePropsLocation(node: t.CallExpression): SourcePosition | undefined {
+  const start = node.loc?.start
+  if (!start) {
+    return undefined
+  }
+  return {
+    line: start.line,
+    column: start.column,
+  }
+}
+
+function resolveSourceLocation(location: SourcePosition | undefined, scriptSetupStart: SourcePosition | undefined) {
+  if (!location) {
+    return undefined
+  }
+  if (!scriptSetupStart) {
+    return location
+  }
+  return {
+    line: scriptSetupStart.line + location.line - 1,
+    column: location.line === 1
+      ? scriptSetupStart.column + location.column
+      : location.column,
+  }
+}
+
+function createReservedPropsWarning(location: SourcePosition | undefined, filename: string | undefined) {
+  if (!location || !filename) {
+    return RESERVED_PROPS_WARNING
+  }
+  return `${filename}:${location.line}:${location.column + 1} ${RESERVED_PROPS_WARNING}`
+}
+
+function detectDefinePropsReservedName(scriptSetupCode: string): ReservedPropsWarningResult | undefined {
+  let result: ReservedPropsWarningResult | undefined
   try {
     const ast = parseJsLike(scriptSetupCode)
     const typeScope = createTypeScope(ast)
@@ -98,27 +144,40 @@ function hasDefinePropsReservedName(scriptSetupCode: string) {
           return
         }
         if (runtimePropsContainReservedName(path.node.arguments[0])) {
-          hasReservedName = true
+          result = {
+            location: getDefinePropsLocation(path.node),
+          }
           path.stop()
           return
         }
         const typeParam = path.node.typeParameters?.params?.[0]
         if (typePropsContainReservedName(typeParam, typeScope)) {
-          hasReservedName = true
+          result = {
+            location: getDefinePropsLocation(path.node),
+          }
           path.stop()
         }
       },
     })
   }
   catch {
-    return false
+    return undefined
   }
-  return hasReservedName
+  return result
 }
 
-export function warnReservedScriptSetupProps(scriptSetupCode: string | undefined, warn: ((message: string) => void) | undefined) {
-  if (!scriptSetupCode || !hasDefinePropsReservedName(scriptSetupCode)) {
+export function warnReservedScriptSetupProps(
+  scriptSetupCode: string | undefined,
+  warn: ((message: string) => void) | undefined,
+  context: ReservedPropsWarningContext = {},
+) {
+  if (!scriptSetupCode) {
     return
   }
-  warn?.(RESERVED_PROPS_WARNING)
+  const result = detectDefinePropsReservedName(scriptSetupCode)
+  if (!result) {
+    return
+  }
+  const location = resolveSourceLocation(result.location, context.scriptSetupStart)
+  warn?.(createReservedPropsWarning(location, context.filename))
 }
