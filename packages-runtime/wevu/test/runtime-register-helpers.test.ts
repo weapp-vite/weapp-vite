@@ -6,9 +6,13 @@ import { refreshOwnerSnapshotFromInstance } from '@/runtime/register/snapshot'
 import { createPathGetter, normalizeWatchDescriptor, registerWatches } from '@/runtime/register/watch'
 import { updateOwnerSnapshot } from '@/runtime/scopedSlots'
 
-vi.mock('@/runtime/scopedSlots', () => ({
-  updateOwnerSnapshot: vi.fn(),
-}))
+vi.mock('@/runtime/scopedSlots', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/runtime/scopedSlots')>()
+  return {
+    ...actual,
+    updateOwnerSnapshot: vi.fn(),
+  }
+})
 
 describe('runtime: register helpers', () => {
   it('runs inline expression with parsed args', () => {
@@ -96,7 +100,7 @@ describe('runtime: register helpers', () => {
     const instance: any = {
       __wevu: runtime,
       __wvOwnerId: 'owner-1',
-      __wevuProps: { foo: 'bar' },
+      properties: { foo: 'bar' },
     }
 
     refreshOwnerSnapshotFromInstance(instance)
