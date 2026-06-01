@@ -44,13 +44,21 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
           hasDefault: false,
           hasHeader: false,
         },
+        scoped: {
+          propsSlotOwnerId: expect.any(String),
+          dataSlotOwnerId: expect.any(String),
+        },
       })
+      expect(initialRuntime.scoped.propsSlotOwnerId).not.toBe('')
+      expect(initialRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.scoped.propsSlotOwnerId)
 
       const initialWxml = await readPageWxml(issuePage)
       expect(countToken(initialWxml, 'data-issue642-slot-state="provided-header"')).toBe(1)
       expect(countToken(initialWxml, 'data-issue642-slot-state="provided-default"')).toBe(1)
       expect(countToken(initialWxml, 'data-issue642-slot-state="fallback-header"')).toBe(1)
       expect(countToken(initialWxml, 'data-issue642-slot-state="fallback-default"')).toBe(1)
+      expect(countToken(initialWxml, 'data-issue642-slot-state="scoped-provided"')).toBe(1)
+      expect(initialWxml).toContain('data-issue642-scoped-value="1234"')
 
       const action = await issuePage.$('[data-issue642-action="bump"]')
       if (!action) {
@@ -69,6 +77,10 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
           hasDefault: true,
           hasHeader: true,
         },
+        scoped: {
+          dataSlotOwnerId: initialRuntime.scoped.dataSlotOwnerId,
+          propsSlotOwnerId: initialRuntime.scoped.propsSlotOwnerId,
+        },
       })
 
       const updatedWxml = await readPageWxml(issuePage)
@@ -76,6 +88,8 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
       expect(countToken(updatedWxml, 'data-issue642-slot-state="provided-default"')).toBe(1)
       expect(countToken(updatedWxml, 'data-issue642-slot-state="fallback-header"')).toBe(1)
       expect(countToken(updatedWxml, 'data-issue642-slot-state="fallback-default"')).toBe(1)
+      expect(countToken(updatedWxml, 'data-issue642-slot-state="scoped-provided"')).toBe(1)
+      expect(updatedWxml).toContain('data-issue642-scoped-value="1234"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

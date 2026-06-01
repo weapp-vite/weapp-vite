@@ -5,6 +5,9 @@ import {
   WEVU_PROP_KEYS_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
+  WEVU_SLOT_NAMES_PROP,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
@@ -26,6 +29,11 @@ export function createPropsSync(options: {
   const aliasKeySet = new Set(aliasEntries.map(([alias]) => alias))
   const directPropsDerivedKeys = [...propsDerivedKeySet]
     .filter(key => propKeySet.has(key) && !aliasKeySet.has(key))
+  const templateRuntimePropKeys = new Set([
+    WEVU_SLOT_NAMES_PROP,
+    WEVU_SLOT_OWNER_ID_PROP,
+    WEVU_SLOT_SCOPE_KEY,
+  ])
   const syncedAliases = new WeakMap<InternalRuntimeState, Set<string>>()
 
   const isInternalAttrKey = (key: string) => key.startsWith('__wv_')
@@ -47,6 +55,22 @@ export function createPropsSync(options: {
     }
     target[key] = value
     return true
+  }
+
+  const syncTemplateRuntimeProp = (instance: InternalRuntimeState, key: string, value: unknown) => {
+    if (!templateRuntimePropKeys.has(key)) {
+      return
+    }
+    const runtimeState = (instance as any).__wevu?.state
+    if (!runtimeState || typeof runtimeState !== 'object') {
+      return
+    }
+    try {
+      setIfChanged(runtimeState as Record<string, unknown>, key, value)
+    }
+    catch {
+      // 忽略模板运行时字段同步失败，保持 props 主链路可用。
+    }
   }
 
   const syncSetupStatePropsAliases = (instance: InternalRuntimeState, propsProxy: Record<string, unknown>) => {
@@ -207,6 +231,7 @@ export function createPropsSync(options: {
         catch {
           // 忽略异常
         }
+        syncTemplateRuntimeProp(instance, k, nextValue)
       }
       if (pendingPropValues) {
         for (const [k, v] of Object.entries(pendingPropValues)) {
@@ -217,6 +242,7 @@ export function createPropsSync(options: {
             catch {
               // 忽略异常
             }
+            syncTemplateRuntimeProp(instance, k, v)
           }
         }
       }
@@ -251,6 +277,7 @@ export function createPropsSync(options: {
       catch {
         // 忽略 query props 同步失败，保持页面生命周期主链路可用。
       }
+      syncTemplateRuntimeProp(instance, key, values[key])
     }
     if (!changed) {
       return
@@ -272,6 +299,7 @@ export function createPropsSync(options: {
     catch {
       // 忽略异常
     }
+    syncTemplateRuntimeProp(instance, key, value)
     const pendingPropValues = ((instance as any)[WEVU_PENDING_PROP_VALUES_KEY] ??= Object.create(null)) as Record<string, unknown>
     pendingPropValues[key] = value
     syncPropsDerivedKeys(instance, propsProxy as Record<string, unknown>)

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, useNativeInstance } from 'wevu'
+import Issue642ScopedSlotProbe from '../../components/issue-642/ScopedSlotProbe/index.vue'
 import Issue642SlotProbe from '../../components/issue-642/SlotProbe/index.vue'
 
 definePageJson({
@@ -23,6 +24,7 @@ function _runE2E() {
     base: base.value,
     provided: readProbe('#issue642-provided'),
     empty: readProbe('#issue642-empty'),
+    scoped: readProbe('#issue642-scoped'),
   }
 }
 
@@ -907,6 +909,20 @@ defineExpose({
         issue-642 provided default
       </text>
     </Issue642SlotProbe>
+    <Issue642ScopedSlotProbe
+      id="issue642-scoped"
+      class="issue642-scoped"
+    >
+      <template #default="{ io }">
+        <text
+          class="issue642-scoped-provided"
+          data-issue642-slot-state="scoped-provided"
+          :data-issue642-scoped-value="io"
+        >
+          {{ io }}
+        </text>
+      </template>
+    </Issue642ScopedSlotProbe>
   </view>
 </template>
 
