@@ -47,6 +47,7 @@ const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
 const TASK_HEARTBEAT_INTERVAL_MS = 30_000
 const TASK_STDIO_CLOSE_GRACE_MS = 200
+const PROGRESS_BAR_WIDTH = 24
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
@@ -139,8 +140,60 @@ function createOutputForwarder(
   }
 }
 
-function startTaskHeartbeat(suiteName: string, label: string, startedAt: number) {
+function formatProgressBar(completedCount: number, totalCount: number) {
+  if (totalCount <= 0) {
+    return `[${'='.repeat(PROGRESS_BAR_WIDTH)}]`
+  }
+
+  const ratio = Math.min(Math.max(completedCount / totalCount, 0), 1)
+  const filledWidth = completedCount > 0
+    ? Math.max(1, Math.round(ratio * PROGRESS_BAR_WIDTH))
+    : 0
+  return `[${'='.repeat(filledWidth)}${'-'.repeat(PROGRESS_BAR_WIDTH - filledWidth)}]`
+}
+
+export function formatSuiteProgress(
+  suiteName: string,
+  completedCount: number,
+  totalCount: number,
+  state: string,
+  taskLabel: string,
+  taskIndex: number,
+  durationMs?: number,
+) {
+  const safeTotalCount = Math.max(totalCount, 0)
+  const safeCompletedCount = safeTotalCount > 0
+    ? Math.min(Math.max(completedCount, 0), safeTotalCount)
+    : 0
+  const currentTaskPosition = safeTotalCount > 0
+    ? `${Math.min(Math.max(taskIndex + 1, 1), safeTotalCount)}/${safeTotalCount}`
+    : '0/0'
+  const percentage = safeTotalCount > 0
+    ? `${((safeCompletedCount / safeTotalCount) * 100).toFixed(1)}%`
+    : '100.0%'
+  const duration = durationMs == null ? '' : ` (${formatDuration(durationMs)})`
+
+  return `[${suiteName}] progress ${formatProgressBar(safeCompletedCount, safeTotalCount)} ${safeCompletedCount}/${safeTotalCount} ${percentage} ${state} ${currentTaskPosition} ${taskLabel}${duration}`
+}
+
+function startTaskHeartbeat(
+  suiteName: string,
+  label: string,
+  startedAt: number,
+  completedCount: number,
+  totalCount: number,
+  taskIndex: number,
+) {
   const timer = setInterval(() => {
+    console.log(formatSuiteProgress(
+      suiteName,
+      completedCount,
+      totalCount,
+      'still-running',
+      label,
+      taskIndex,
+      Date.now() - startedAt,
+    ))
     console.log(`[${suiteName}] still running ${label} (${formatDuration(Date.now() - startedAt)})`)
   }, TASK_HEARTBEAT_INTERVAL_MS)
 
@@ -319,10 +372,11 @@ export async function runTaskSuite(
   let devtoolsLoginPreflightPassed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
 
-  for (const task of tasks) {
+  for (const [taskIndex, task] of tasks.entries()) {
+    console.log(formatSuiteProgress(suiteName, results.length, tasks.length, 'running', task.label, taskIndex))
     console.log(`[${suiteName}] run ${task.label}`)
     const startedAt = Date.now()
-    const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt)
+    const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex)
     let exitCode = 1
 
     try {
@@ -353,6 +407,15 @@ export async function runTaskSuite(
     })
 
     const status = exitCode === 0 ? 'pass' : 'fail'
+    console.log(formatSuiteProgress(
+      suiteName,
+      results.length,
+      tasks.length,
+      status === 'pass' ? 'passed' : 'failed',
+      task.label,
+      taskIndex,
+      durationMs,
+    ))
     console.log(`[${suiteName}] ${status} ${task.label} (${formatDuration(durationMs)})`)
 
     if (exitCode === 0 && isDevtoolsVitestTask(task) && !task.devtoolsLaunchSkipped) {

@@ -8,6 +8,7 @@ import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { createSuiteReport } from './suiteReport'
 import {
   formatSuiteArtifactsSummary,
+  formatSuiteProgress,
   formatSuiteSummary,
   getTaskSpawnOptions,
   runTaskSuite,
@@ -22,6 +23,15 @@ describe('suiteRunner', () => {
 
     expect(summary).toContain('[e2e:ci] summary 1/2 passed')
     expect(summary).toContain('[e2e:ci] - task-b (exit 2, 3.4s)')
+  })
+
+  it('formats suite progress with a visible progress bar and task position', () => {
+    expect(formatSuiteProgress('e2e:ide-full', 12, 68, 'running', 'ide/index.test.ts', 12)).toBe(
+      '[e2e:ide-full] progress [====--------------------] 12/68 17.6% running 13/68 ide/index.test.ts',
+    )
+    expect(formatSuiteProgress('e2e:ide-full', 68, 68, 'passed', 'ide/chunk-modes.runtime.hoist.test.ts', 67, 22800)).toBe(
+      '[e2e:ide-full] progress [========================] 68/68 100.0% passed 68/68 ide/chunk-modes.runtime.hoist.test.ts (22.8s)',
+    )
   })
 
   it('formats artifact summary without duplicate report paths', () => {
@@ -136,6 +146,7 @@ describe('suiteRunner', () => {
 
     await vi.advanceTimersByTimeAsync(30_000)
 
+    expect(consoleLog).toHaveBeenCalledWith('[e2e:test] progress [------------------------] 0/1 0.0% still-running 1/1 slow-task (30.0s)')
     expect(consoleLog).toHaveBeenCalledWith('[e2e:test] still running slow-task (30.0s)')
 
     resolveTask(0)
