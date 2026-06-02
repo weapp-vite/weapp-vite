@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 5.3.3
+
+### Patch Changes
+
+- 🐛 **优化微信开发者工具缺少 engine build 接口时的错误处理，避免将 DevTools 返回的 HTML 404 原样暴露为构建失败，并在打开 IDE 时跳过不兼容的自动刷新步骤。** [#655](https://github.com/weapp-vite/weapp-vite/pull/655) by @sonofmagic
+
 ## 5.3.2
 
 ### Patch Changes
