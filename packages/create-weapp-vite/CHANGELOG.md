@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.43
+
+### Patch Changes
+
+- 🐛 **修复 performance 预设下极简 slot 场景仍可能误渲染 fallback 的问题。组件初始同步时会把 `vueSlots`、`__wvSlotOwnerId` 与 `__wvSlotScope` 同步到原生顶层 data，并且自动 `setData.pick` 会稳定保留这些 slot 桥接字段，避免普通插槽和作用域插槽在首轮渲染中读取到默认空值。** [#647](https://github.com/weapp-vite/weapp-vite/pull/647) by @sonofmagic
+
 ## 2.3.42
 
 ### Patch Changes
