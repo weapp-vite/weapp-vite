@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.16.34
+
+### Patch Changes
+
+- 🐛 **修复 custom resolver 返回 Vue SFC 组件时的入口识别问题。现在 `resolvedId` 即使省略 `.vue` 后缀，也会按真实 SFC 入口解析并注入 Vue slot 元数据，同时保持组件样式参与构建输出。** [#656](https://github.com/weapp-vite/weapp-vite/pull/656) by @sonofmagic
+
+- 🐛 **优化微信开发者工具缺少 engine build 接口时的错误处理，避免将 DevTools 返回的 HTML 404 原样暴露为构建失败，并在打开 IDE 时跳过不兼容的自动刷新步骤。** [#655](https://github.com/weapp-vite/weapp-vite/pull/655) by @sonofmagic
+
+- 🐛 **修复开发模式下配置文件变更触发重启时，入口扫描错误被分包扫描覆盖的问题。现在重启会重新加载应用入口和分包元数据，并保持 `app.vue`、`app.ts` 搭配 `app.json.ts` 等入口配置组合的扫描结果，避免被误报为缺少 `app.json`。** [#654](https://github.com/weapp-vite/weapp-vite/pull/654) by @sonofmagic
+- 📦 **Dependencies** [`7270058`](https://github.com/weapp-vite/weapp-vite/commit/7270058ab053d5ede8be9b8817bc655b076db419)
+  → `weapp-ide-cli@5.3.3`, `@weapp-vite/ast@6.16.34`, `wevu@6.16.34`
+
 ## 6.16.33
 
 ### Patch Changes
