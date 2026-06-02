@@ -1,3 +1,4 @@
+import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
 
@@ -9,6 +10,8 @@ const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED
 const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED === 'true'
 const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
+const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
+const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
@@ -303,6 +306,24 @@ export default defineConfig({
         {
           components: {
             Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+          },
+        },
+        {
+          resolve(componentName) {
+            if (componentName === 'Issue651ResolverNoExt') {
+              return {
+                name: componentName,
+                from: '/issue-fixtures/issue-651/ResolverNoExt/index',
+                resolvedId: issue651NoExtResolvedId,
+              }
+            }
+            if (componentName === 'Issue651ResolverWithExt') {
+              return {
+                name: componentName,
+                from: '/issue-fixtures/issue-651/ResolverWithExt/index',
+                resolvedId: issue651WithExtResolvedId,
+              }
+            }
           },
         },
       ],

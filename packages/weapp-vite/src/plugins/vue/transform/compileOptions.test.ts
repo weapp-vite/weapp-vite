@@ -16,6 +16,7 @@ const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
   src: '/virtual/__class_style__.wxs',
 })))
 const createUsingComponentPathResolverMock = vi.hoisted(() => vi.fn(() => 'resolved/path'))
+const resolveEntryPathMock = vi.hoisted(() => vi.fn(async () => undefined as string | undefined))
 const resolveWevuDefaultsWithPresetMock = vi.hoisted(() => vi.fn(() => ({
   preset: 'default',
 })))
@@ -35,6 +36,13 @@ vi.mock('./classStyle', () => ({
   resolveClassStyleWxsLocationForBase: resolveClassStyleWxsLocationForBaseMock,
 }))
 
+vi.mock('../../../utils/entryResolve', () => ({
+  createCachedEntryResolveOptions: vi.fn((_configService: any, options?: any) => ({
+    kind: options?.kind,
+  })),
+  resolveEntryPath: resolveEntryPathMock,
+}))
+
 vi.mock('./usingComponentResolver', () => ({
   createUsingComponentPathResolver: createUsingComponentPathResolverMock,
 }))
@@ -47,6 +55,8 @@ vi.mock('./wevuPreset', () => ({
 describe('resolveVueTemplatePlatformOptions', () => {
   beforeEach(() => {
     isWevuMinifyEnabledMock.mockClear()
+    resolveEntryPathMock.mockReset()
+    resolveEntryPathMock.mockResolvedValue(undefined)
   })
 
   it('resolves template platform and wxs runtime support', () => {
@@ -365,6 +375,52 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(await options.autoImportTags.resolveUsingComponent('Issue520ResolverSlotCard')).toEqual({
       name: 'Issue520ResolverSlotCard',
       from: '/components/issue-520/ResolverSlotCard/index.vue',
+      sourceType: 'wevu-sfc',
+    })
+  })
+
+  it('marks resolver auto-imports with extensionless resolvedId when entry resolution finds a vue sfc', async () => {
+    const resolvedVueEntry = '/workspace/packages/ui/ResolverCard/index.vue'
+    resolveEntryPathMock.mockImplementation(async (value: string) => {
+      return value === '/workspace/packages/ui/ResolverCard/index'
+        ? resolvedVueEntry
+        : undefined
+    })
+    const autoImportResolve = vi.fn(() => ({
+      kind: 'resolver',
+      value: {
+        name: 'ResolverCard',
+        from: '/issue-fixtures/issue-651/ResolverCard/index',
+        resolvedId: '/workspace/packages/ui/ResolverCard/index',
+      },
+    }))
+    const options = createCompileVueFileOptions(
+      {
+        autoImportService: {
+          resolve: autoImportResolve,
+        },
+      } as any,
+      {} as any,
+      '/project/src/pages/issue-651/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    await expect(options.autoImportTags.resolveUsingComponent('ResolverCard')).resolves.toEqual({
+      name: 'ResolverCard',
+      from: '/issue-fixtures/issue-651/ResolverCard/index',
+      resolvedId: resolvedVueEntry,
       sourceType: 'wevu-sfc',
     })
   })
