@@ -268,6 +268,38 @@ describe('scanPlugin service', () => {
     expect(entry.json.subPackages).toEqual([])
   })
 
+  it('uses app.json.ts as config source with app.ts entry', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json.ts' })
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue(undefined)
+
+    const ctx = createCtx({
+      jsonService: {
+        read: vi.fn(async () => ({
+          pages: ['pages/index/index'],
+          subpackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+        })),
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(entry.path).toBe('/project/src/app.ts')
+    expect(entry.jsonPath).toBe('/project/src/app.json.ts')
+    expect(entry.json).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+    })
+    expect(ctx.jsonService.read).toHaveBeenCalledWith('/project/src/app.json.ts')
+  })
+
   it('warns app/app config conflicts only once within the same scan context', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
     findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
@@ -577,7 +609,7 @@ describe('scanPlugin service', () => {
     const { createScanService } = await import('./service')
     const service = createScanService(ctx)
 
-    expect(() => service.loadSubPackages()).toThrow('没有找到 `app.json`')
+    expect(() => service.loadSubPackages()).toThrow('没有找到 `app.json`、`app.json.ts` 或 `app.vue`')
   })
 
   it('markDirty resets cached app/plugin states and ignores empty independent roots', async () => {
