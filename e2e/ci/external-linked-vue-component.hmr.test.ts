@@ -256,6 +256,32 @@ async function waitForExternalComponentContains(sourcePath: string, marker: stri
   throw new Error(`Timed out waiting for external component ${fileName} to contain marker: ${marker}`)
 }
 
+async function waitForTaskWithSourceHeartbeat<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+  timeoutMs = 90_000,
+  heartbeatMs = 2_000,
+) {
+  const deadline = Date.now() + timeoutMs
+  let nextTouchAt = Date.now() + heartbeatMs
+
+  while (Date.now() < deadline) {
+    try {
+      return await task()
+    }
+    catch {
+      if (Date.now() >= nextTouchAt) {
+        await replaceFileByRename(touchFilePath, touchContent)
+        nextTouchAt = Date.now() + heartbeatMs
+      }
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  return await task()
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
   await writeFixtureProject()
@@ -300,21 +326,36 @@ describe.sequential('external linked Vue component HMR', () => {
         'initial config dependency marker',
       )
 
-      await replaceFileByRename(MONOREPO_BADGE, createComponentSource('monorepo-badge', 'MONOREPO-BADGE-V2'))
+      const updatedMonorepoBadge = createComponentSource('monorepo-badge', 'MONOREPO-BADGE-V2')
+      await replaceFileByRename(MONOREPO_BADGE, updatedMonorepoBadge)
       await dev.waitFor(
-        waitForExternalComponentContains(MONOREPO_BADGE, 'MONOREPO-BADGE-V2'),
+        waitForTaskWithSourceHeartbeat(
+          () => waitForExternalComponentContains(MONOREPO_BADGE, 'MONOREPO-BADGE-V2', 1_000),
+          MONOREPO_BADGE,
+          updatedMonorepoBadge,
+        ),
         'updated monorepo component marker',
       )
 
-      await replaceFileByRename(LINK_BADGE, createComponentSource('linked-badge', 'LINKED-BADGE-V2'))
+      const updatedLinkedBadge = createComponentSource('linked-badge', 'LINKED-BADGE-V2')
+      await replaceFileByRename(LINK_BADGE, updatedLinkedBadge)
       await dev.waitFor(
-        waitForExternalComponentContains(LINK_BADGE, 'LINKED-BADGE-V2'),
+        waitForTaskWithSourceHeartbeat(
+          () => waitForExternalComponentContains(LINK_BADGE, 'LINKED-BADGE-V2', 1_000),
+          LINK_BADGE,
+          updatedLinkedBadge,
+        ),
         'updated linked component marker',
       )
 
-      await replaceFileByRename(RESOLVER_BADGE, createComponentSource('resolver-badge', 'RESOLVER-BADGE-V2'))
+      const updatedResolverBadge = createComponentSource('resolver-badge', 'RESOLVER-BADGE-V2')
+      await replaceFileByRename(RESOLVER_BADGE, updatedResolverBadge)
       await dev.waitFor(
-        waitForExternalComponentContains(RESOLVER_BADGE, 'RESOLVER-BADGE-V2'),
+        waitForTaskWithSourceHeartbeat(
+          () => waitForExternalComponentContains(RESOLVER_BADGE, 'RESOLVER-BADGE-V2', 1_000),
+          RESOLVER_BADGE,
+          updatedResolverBadge,
+        ),
         'updated resolver component marker',
       )
     }
