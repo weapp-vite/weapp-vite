@@ -37,6 +37,10 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
             default: true,
             header: true,
           },
+          propertyVueSlots: {
+            default: true,
+            header: true,
+          },
           hasDefault: true,
           hasHeader: true,
         },
@@ -49,6 +53,7 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
           dataSlotOwnerId: expect.any(String),
         },
       })
+      expect(initialRuntime.provided.dataVueSlots).toEqual(initialRuntime.provided.propertyVueSlots)
       expect(initialRuntime.scoped.propsSlotOwnerId).not.toBe('')
       expect(initialRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.scoped.propsSlotOwnerId)
 
@@ -74,6 +79,10 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
             default: true,
             header: true,
           },
+          propertyVueSlots: {
+            default: true,
+            header: true,
+          },
           hasDefault: true,
           hasHeader: true,
         },
@@ -82,6 +91,7 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
           propsSlotOwnerId: initialRuntime.scoped.propsSlotOwnerId,
         },
       })
+      expect(updatedRuntime.provided.dataVueSlots).toEqual(updatedRuntime.provided.propertyVueSlots)
 
       const updatedWxml = await readPageWxml(issuePage)
       expect(countToken(updatedWxml, 'data-issue642-slot-state="provided-header"')).toBe(1)
