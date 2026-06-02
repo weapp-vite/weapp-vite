@@ -641,9 +641,34 @@ describe('runtime buildPlugin service', () => {
     expect(sidecarWatcher.close).toHaveBeenCalledTimes(1)
     expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(restartedWatcher)
     expect(loggerInfoMock).toHaveBeenCalledWith('检测到 Vite 配置变更，正在重启小程序开发构建...')
+  })
+
+  it('keeps the app entry scan error when config restart cannot reload entries', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const appEntryError = new Error('在 /project/src 目录下没有找到 `app.json` 或 `app.vue`')
+    ctx.scanService.loadAppEntry.mockRejectedValueOnce(appEntryError)
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    service.requestConfigRestart('app')
+    watcher.emit('START')
+    watcher.emit('END')
+
+    await waitForMockCalls(ctx.scanService.loadAppEntry, 1)
+    await flushAsyncTasks()
+    expect(ctx.scanService.loadSubPackages).not.toHaveBeenCalled()
+    expect(buildMock).toHaveBeenCalledTimes(1)
   })
 
   it('narrows snapshot sidecar watcher to sidecar globs and ignores generated roots', async () => {

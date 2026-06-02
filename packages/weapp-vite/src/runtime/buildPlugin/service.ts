@@ -794,7 +794,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
             resetRuntimeStateForConfigRestart()
             await configService.load(configService.loadOptions)
-            await scanService.loadAppEntry().catch(() => {})
+            await scanService.loadAppEntry()
+            scanService.loadSubPackages()
             logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
             await runDev(target)
           }
