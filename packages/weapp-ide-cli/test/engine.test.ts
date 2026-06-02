@@ -144,6 +144,40 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     )
   })
 
+  it('can skip official cli fallback when http engine build endpoint is unavailable', async () => {
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+
+    await expect(runWechatIdeEngineBuild('/workspace/demo-app', {
+      fallbackToCli: false,
+    })).rejects.toMatchObject({
+      code: 'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING',
+      message: '当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。',
+    })
+
+    expect(execaMock).not.toHaveBeenCalled()
+  })
+
+  it('normalizes endpoint-missing errors returned by official cli fallback', async () => {
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const stderrWriteSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    execaMock.mockResolvedValueOnce({
+      exitCode: 1,
+      stderr: '[error] Fail to buil project:<!DOCTYPE html><pre>Cannot GET /engine/build</pre> - initialize',
+      stdout: '',
+    })
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+
+    await expect(runWechatIdeEngineBuild('/workspace/demo-app')).rejects.toMatchObject({
+      code: 'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING',
+      message: '当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。',
+    })
+
+    expect(stdoutWriteSpy).not.toHaveBeenCalled()
+    expect(stderrWriteSpy).not.toHaveBeenCalled()
+  })
+
   it('accepts cli engine build when devtools opens project but exits non-zero', async () => {
     vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))

@@ -5,6 +5,7 @@ import {
   bootstrapWechatDevtoolsSettings,
   formatAutomatorLoginError,
   isAutomatorLoginError,
+  isWechatIdeEngineBuildEndpointMissingError,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
@@ -122,11 +123,19 @@ async function stabilizeOpenedWechatIdeProject(projectPath: string, servicePortE
       onNonLoginError: error => logger.error(error),
       projectPath,
     })
-    await executeWechatIdeCliCommand(['engine', 'build', projectPath], {
-      httpMode: 'prefer',
-      onNonLoginError: error => logger.error(error),
-      projectPath,
-    })
+    try {
+      await executeWechatIdeCliCommand(['engine', 'build', projectPath], {
+        httpMode: 'prefer',
+        onNonLoginError: error => logger.error(error),
+        projectPath,
+      })
+    }
+    catch (error) {
+      if (!isWechatIdeEngineBuildEndpointMissingError(error)) {
+        throw error
+      }
+      logger.warn('当前微信开发者工具不支持自动 engine build 刷新，已跳过该步骤；如模拟器显示旧状态，可在开发者工具内手动编译。')
+    }
     try {
       await executeWechatIdeCliCommand(['compile'], {
         automatorMode: 'require',

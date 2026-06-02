@@ -4,6 +4,7 @@ const parseMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
+const isWechatIdeEngineBuildEndpointMissingErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
@@ -39,6 +40,7 @@ vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
   getConfig: getConfigMock,
   isAutomatorLoginError: isAutomatorLoginErrorMock,
+  isWechatIdeEngineBuildEndpointMissingError: isWechatIdeEngineBuildEndpointMissingErrorMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   launchAutomator: launchAutomatorMock,
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
@@ -74,6 +76,7 @@ describe('openIde', () => {
     closeWechatIdeProjectMock.mockReset()
     isAutomatorLoginErrorMock.mockReset()
     formatAutomatorLoginErrorMock.mockReset()
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
     promptRetryKeypressMock.mockReset()
@@ -104,6 +107,7 @@ describe('openIde', () => {
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
     runWechatIdeEngineBuildMock.mockResolvedValue(undefined)
     isAutomatorLoginErrorMock.mockReturnValue(false)
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     formatAutomatorLoginErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     getConfigMock.mockResolvedValue({
@@ -178,9 +182,29 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
       logPath: undefined,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('skips engine build refresh when devtools endpoint is missing', async () => {
+    const endpointMissingError = Object.assign(new Error('当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。'), {
+      code: 'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING',
+    })
+    runWechatIdeEngineBuildMock.mockRejectedValueOnce(endpointMissingError)
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockImplementation(error => error === endpointMissingError)
+    const { openIde } = await import('./openIde')
+
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
+      logPath: undefined,
+    })
+    expect(loggerMock.warn).toHaveBeenCalledWith('当前微信开发者工具不支持自动 engine build 刷新，已跳过该步骤；如模拟器显示旧状态，可在开发者工具内手动编译。')
+    expect(loggerMock.warn).not.toHaveBeenCalledWith('刷新微信开发者工具项目索引失败，已保留当前打开状态；如模拟器仍显示旧状态，可手动刷新一次。')
     expect(parseMock).not.toHaveBeenCalled()
   })
 
@@ -204,6 +228,7 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
       logPath: undefined,
     })
     expect(parseMock).not.toHaveBeenCalled()
@@ -234,6 +259,7 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
       logPath: undefined,
     })
   })
@@ -262,6 +288,7 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
       logPath: undefined,
     })
   })
@@ -282,6 +309,7 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: false,
       logPath: undefined,
     })
     expect(launchAutomatorMock).not.toHaveBeenCalled()

@@ -5,6 +5,7 @@ const clearWechatIdeCacheMock = vi.hoisted(() => vi.fn())
 const compileWechatIdeByAutomatorMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const parseMock = vi.hoisted(() => vi.fn())
+const isWechatIdeEngineBuildEndpointMissingErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
@@ -24,6 +25,7 @@ vi.mock('weapp-ide-cli', () => ({
   clearWechatIdeCache: clearWechatIdeCacheMock,
   compileWechatIdeByAutomator: compileWechatIdeByAutomatorMock,
   closeWechatIdeProject: closeWechatIdeProjectMock,
+  isWechatIdeEngineBuildEndpointMissingError: isWechatIdeEngineBuildEndpointMissingErrorMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   parse: parseMock,
@@ -46,6 +48,7 @@ describe('executeWechatIdeCliCommand', () => {
     compileWechatIdeByAutomatorMock.mockReset()
     closeWechatIdeProjectMock.mockReset()
     parseMock.mockReset()
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     openWechatIdeProjectByHttpMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
@@ -62,6 +65,7 @@ describe('executeWechatIdeCliCommand', () => {
     compileWechatIdeByAutomatorMock.mockResolvedValue(undefined)
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
     parseMock.mockResolvedValue(undefined)
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     openWechatIdeProjectByHttpMock.mockResolvedValue('OK')
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('OK')
@@ -184,8 +188,24 @@ describe('executeWechatIdeCliCommand', () => {
     })
 
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('/project/dist', {
+      fallbackToCli: false,
       logPath: undefined,
     })
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('throws engine endpoint missing errors without falling back to parse', async () => {
+    const endpointMissingError = Object.assign(new Error('当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。'), {
+      code: 'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING',
+    })
+    runWechatIdeEngineBuildMock.mockRejectedValueOnce(endpointMissingError)
+    isWechatIdeEngineBuildEndpointMissingErrorMock.mockReturnValue(true)
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await expect(executeWechatIdeCliCommand(['engine', 'build'], {
+      projectPath: '/project/dist',
+    })).rejects.toBe(endpointMissingError)
+
     expect(parseMock).not.toHaveBeenCalled()
   })
 

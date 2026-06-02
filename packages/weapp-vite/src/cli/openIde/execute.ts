@@ -3,6 +3,7 @@ import {
   clearWechatIdeCacheByAutomator,
   closeWechatIdeProject,
   compileWechatIdeByAutomator,
+  isWechatIdeEngineBuildEndpointMissingError,
   isWechatIdeLoginRequiredError,
   openWechatIdeProjectByHttp,
   parse,
@@ -18,6 +19,7 @@ import logger from '../../logger'
 export interface ExecuteWechatIdeCliCommandOptions {
   automatorMode?: 'prefer' | 'require'
   cancelLevel?: 'info' | 'warn'
+  engineBuildFallbackToCli?: boolean
   httpMode?: 'prefer' | 'require' | 'skip'
   onNonLoginError?: (error: unknown) => void
   onRetry?: () => void
@@ -70,7 +72,11 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
   return false
 }
 
-async function tryExecuteWechatIdeCliCommandByHttp(argv: readonly string[], projectPath?: string) {
+async function tryExecuteWechatIdeCliCommandByHttp(
+  argv: readonly string[],
+  projectPath?: string,
+  engineBuildFallbackToCli = false,
+) {
   const command = argv[0]
   if (!command) {
     return false
@@ -101,6 +107,7 @@ async function tryExecuteWechatIdeCliCommandByHttp(argv: readonly string[], proj
     }
 
     await runWechatIdeEngineBuild(engineProjectPath, {
+      fallbackToCli: engineBuildFallbackToCli,
       logPath: readArgOption(argv, '--logPath', '-l'),
     })
     return true
@@ -150,6 +157,7 @@ export async function executeWechatIdeCliCommand(
   const {
     automatorMode = 'prefer',
     cancelLevel = 'warn',
+    engineBuildFallbackToCli = false,
     httpMode = 'prefer',
     onNonLoginError,
     onRetry,
@@ -159,13 +167,13 @@ export async function executeWechatIdeCliCommand(
   await runWithSuspendedSharedInput(async () => {
     if (httpMode !== 'skip') {
       try {
-        const handledByHttp = await tryExecuteWechatIdeCliCommandByHttp(argv, projectPath)
+        const handledByHttp = await tryExecuteWechatIdeCliCommandByHttp(argv, projectPath, engineBuildFallbackToCli)
         if (handledByHttp) {
           return
         }
       }
       catch (error) {
-        if (httpMode === 'require') {
+        if (httpMode === 'require' || isWechatIdeEngineBuildEndpointMissingError(error)) {
           throw error
         }
       }
