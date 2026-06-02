@@ -20,6 +20,7 @@ export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttp
 }
 
 export interface RunWechatIdeEngineBuildOptions extends RunWechatIdeEngineBuildByHttpOptions {
+  fallbackToCli?: boolean
   logPath?: string
 }
 
@@ -33,6 +34,7 @@ const ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS = [
   /Cannot GET \/engine\/build\b/i,
   /Cannot GET \/engine\/buildResult\//i,
 ]
+const ENGINE_BUILD_ENDPOINT_MISSING_MESSAGE = '当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。'
 const ENGINE_BUILD_CLI_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 
@@ -85,6 +87,19 @@ function isEngineBuildEndpointMissingError(error: unknown) {
   return ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function createEngineBuildEndpointMissingError() {
+  return createEngineBuildError(
+    ENGINE_BUILD_ENDPOINT_MISSING_MESSAGE,
+    'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING',
+  )
+}
+
+export function isWechatIdeEngineBuildEndpointMissingError(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'WECHAT_DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING'
+}
+
 function compactOutput(value: string | undefined) {
   return typeof value === 'string'
     ? value.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
@@ -105,6 +120,10 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
   const stderr = typeof result.stderr === 'string' ? result.stderr : ''
   const output = [stdout, stderr].filter(Boolean).join('\n')
   await writeEngineBuildLog(options.logPath, output)
+
+  if (isEngineBuildEndpointMissingError(output)) {
+    throw createEngineBuildEndpointMissingError()
+  }
 
   if ((result.exitCode ?? 1) === 0) {
     if (stdout) {
@@ -197,6 +216,9 @@ export async function runWechatIdeEngineBuild(
   }
   catch (error) {
     if (isEngineBuildEndpointMissingError(error)) {
+      if (options.fallbackToCli === false) {
+        throw createEngineBuildEndpointMissingError()
+      }
       return await runWechatIdeEngineBuildByCli(projectPath, options)
     }
     logs.push(error instanceof Error ? error.message : String(error))
