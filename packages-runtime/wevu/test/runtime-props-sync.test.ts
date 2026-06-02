@@ -593,6 +593,44 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: nextSlots })
   })
 
+  it('mirrors initially provided slot metadata before the first performance snapshot flush', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(props) {
+        return { props }
+      },
+      setData: {
+        pick: [WEVU_SLOT_NAMES_PROP],
+        strategy: 'patch',
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const initialSlots = { default: true }
+    const inst: any = {
+      data: {
+        [WEVU_SLOT_NAMES_PROP]: null,
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'initial',
+        [WEVU_SLOT_NAMES_PROP]: initialSlots,
+      },
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.data[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(initialSlots)
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots })
+  })
+
   it('mirrors scoped slot owner metadata props to top-level data for compiled outlets', async () => {
     defineComponent({
       props: {
@@ -636,6 +674,50 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
       [WEVU_SLOT_SCOPE_KEY]: nextScope,
+    })
+  })
+
+  it('mirrors initially provided scoped slot owner metadata before the first performance snapshot flush', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(props) {
+        return { props }
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY],
+        strategy: 'patch',
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const initialScope = ['io', 1234]
+    const inst: any = {
+      data: {
+        [WEVU_SLOT_OWNER_ID_PROP]: '',
+        [WEVU_SLOT_SCOPE_KEY]: null,
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'initial',
+        [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
+        [WEVU_SLOT_SCOPE_KEY]: initialScope,
+      },
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.data[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst.data[WEVU_SLOT_SCOPE_KEY]).toBe(initialScope)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_SCOPE_KEY]).toBe(initialScope)
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
+      [WEVU_SLOT_SCOPE_KEY]: initialScope,
     })
   })
 

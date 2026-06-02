@@ -4,6 +4,7 @@ import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import {
+  WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
@@ -111,6 +112,19 @@ function createPickArrayExpression(keys: string[]): t.ArrayExpression {
     type: 'ArrayExpression',
     elements: keys.map(key => ({ type: 'StringLiteral', value: key })),
   }
+}
+
+function mergeStableKeys(keys: string[], stableKeys: string[]): string[] {
+  const merged: string[] = []
+  const seen = new Set<string>()
+  for (const key of [...keys, ...stableKeys]) {
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    merged.push(key)
+  }
+  return merged
 }
 
 function mergePickArrayExpression(
@@ -366,13 +380,18 @@ export function injectSetDataPickInJs(
   source: string,
   pickKeys: string[],
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
-  if (!pickKeys.length) {
+  const mergedPickKeys = mergeStableKeys(pickKeys, [
+    WEVU_SLOT_NAMES_PROP,
+    WEVU_SLOT_OWNER_ID_PROP,
+    WEVU_SLOT_SCOPE_KEY,
+  ])
+  if (!mergedPickKeys.length) {
     return { code: source, transformed: false }
   }
 
   return transformTargetWevuOptionsInJs(
     source,
-    optionsObject => injectPickIntoOptionsObject(optionsObject, pickKeys),
+    optionsObject => injectPickIntoOptionsObject(optionsObject, mergedPickKeys),
   )
 }
 

@@ -89,6 +89,14 @@ function createObjectPropertyPattern(property: string, value: string) {
   return new RegExp(`${escapeRegex(JSON.stringify(property))}\\s*:\\s*${escapeRegex(JSON.stringify(value))}`)
 }
 
+function expectSetDataPickKeys(code: string, keys: string[]) {
+  const match = code.match(/setData\s*:\s*\{\s*pick\s*:\s*\[([\s\S]*?)\]/)
+  expect(match?.[1]).toBeTruthy()
+  for (const key of keys) {
+    expect(match![1]).toContain(JSON.stringify(key))
+  }
+}
+
 function createSerializedJsonEntryPattern(key: string, value: string) {
   return new RegExp(escapeRegex(`\\"${key}\\":\\"${value}\\"`))
 }
@@ -671,10 +679,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(slotProbeWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
     expect(slotProbeWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
     expect(slotProbeJs).toContain('"vueSlots"')
+    expectSetDataPickKeys(slotProbeJs, ['vueSlots', '__wvSlotOwnerId', '__wvSlotScope'])
     expect(scopedProbeWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(scopedProbeWxml).toContain(`__wvSlotProps="{{['io',1234]}}"`)
     expect(scopedProbeJs).toContain('"__wvSlotOwnerId"')
     expect(scopedProbeJs).toContain('"__wvSlotScope"')
+    expectSetDataPickKeys(scopedProbeJs, ['vueSlots', '__wvSlotOwnerId', '__wvSlotScope'])
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {

@@ -1,3 +1,4 @@
+import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { getWxmlDirectivePrefix } from '../../../platform'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs } from './injectSetDataPick'
@@ -35,6 +36,24 @@ createWevuComponent(__wevuOptions)
     expect(injected.code).toContain('pick')
     expect(injected.code).toContain('"count"')
     expect(injected.code).toContain('"total"')
+  })
+
+  it('keeps slot bridge keys in injected setData.pick', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+defineComponent({
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectSetDataPickInJs(source, ['count'])
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('"count"')
+    expect(injected.code).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
   })
 
   it('detects whether js may need setData.pick injection', () => {
@@ -79,7 +98,10 @@ defineComponent({
     const injected = injectSetDataPickInJs(source, ['count'])
     expect(injected.transformed).toBe(true)
     expect(injected.code).toContain('setData: {')
-    expect(injected.code).toContain('pick: ["count"]')
+    expect(injected.code).toContain('"count"')
+    expect(injected.code).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
     expect(injected.code).toContain('...setDataOption')
   })
 

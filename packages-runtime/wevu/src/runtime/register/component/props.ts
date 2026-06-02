@@ -62,11 +62,14 @@ export function createPropsSync(options: {
       return
     }
     const runtimeState = (instance as any).__wevu?.state
-    if (!runtimeState || typeof runtimeState !== 'object') {
-      return
-    }
     try {
-      setIfChanged(runtimeState as Record<string, unknown>, key, value)
+      if (runtimeState && typeof runtimeState === 'object') {
+        setIfChanged(runtimeState as Record<string, unknown>, key, value)
+      }
+      const nativeData = (instance as any).data
+      if (nativeData && typeof nativeData === 'object') {
+        setIfChanged(nativeData as Record<string, unknown>, key, value)
+      }
     }
     catch {
       // 忽略模板运行时字段同步失败，保持 props 主链路可用。
