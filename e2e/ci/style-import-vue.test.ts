@@ -177,6 +177,8 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         'weapp hello.css hmr output',
       )
       expect(helloWxss).toContain(helloMarker)
+      expect(helloWxss).toContain('@import \'./keep-import.css\';')
+      expect(helloWxss).not.toContain('@wv-keep-import')
 
       await replaceFileByRename(SCSS_IMPORT_PATH, updatedScssImport)
       const scssWxss = await devProcess.waitFor(
@@ -188,6 +190,8 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         'weapp scss import hmr output',
       )
       expect(scssWxss).toContain(scssMarker)
+      expect(scssWxss).toContain('@import \'./keep-import.css\';')
+      expect(scssWxss).not.toContain('@wv-keep-import')
 
       await replaceFileByRename(EXTERNAL_CSS_PATH, updatedExternalCss)
       const externalWxss = await devProcess.waitFor(
@@ -199,6 +203,8 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         'weapp external style src hmr output',
       )
       expect(externalWxss).toContain(externalMarker)
+      expect(externalWxss).toContain('@import \'./keep-import.css\';')
+      expect(externalWxss).not.toContain('@wv-keep-import')
       expect(devProcess.getOutput()).not.toContain('Build failed')
     }
     finally {

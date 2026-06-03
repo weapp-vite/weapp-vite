@@ -481,6 +481,13 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
  * Vue SFC HMR 源文件路径
  */
 const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
+const SFC_KEEP_IMPORT_OUTPUT = '@import \'../hmr/index.wxss\';'
+const SFC_KEEP_IMPORT_DIRECTIVE = '@wv-keep-import'
+
+function expectSfcKeepImportResolved(content: string) {
+  expect(content).toContain(SFC_KEEP_IMPORT_OUTPUT)
+  expect(content).not.toContain(SFC_KEEP_IMPORT_DIRECTIVE)
+}
 
 describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
   it.each(PLATFORM_LIST)('修改 .vue SFC template 部分 (%s)', async (platform) => {
@@ -564,7 +571,8 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
         ),
         `${platform} app.json generated`,
       )
-      await dev.waitFor(waitForFileContains(distPath, 'hmr-sfc-page'), `${platform} initial SFC style`)
+      const initialStyle = await dev.waitFor(waitForFileContains(distPath, 'hmr-sfc-page'), `${platform} initial SFC style`)
+      expectSfcKeepImportResolved(initialStyle)
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)
 
@@ -584,6 +592,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
         )
       }
       expect(content).toContain(marker)
+      expectSfcKeepImportResolved(content)
     }
     finally {
       await dev.stop(5_000)
