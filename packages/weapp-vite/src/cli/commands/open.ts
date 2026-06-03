@@ -12,6 +12,9 @@ export function registerOpenCommand(cli: CAC) {
     .command('open [root]')
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
+    .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
+    .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
+    .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
     .action(async (root: string | undefined, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
@@ -33,6 +36,9 @@ export function registerOpenCommand(cli: CAC) {
       }
 
       await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()), {
+        loginRetry: options.loginRetry,
+        loginRetryTimeout: options.loginRetryTimeout,
+        nonInteractive: options.nonInteractive,
         trustProject: options.trustProject,
       })
     })

@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
+const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
+  info: vi.fn(),
   warn: vi.fn(),
 }))
 
@@ -20,14 +22,25 @@ vi.mock('../src/logger', () => ({
   default: loggerMock,
 }))
 
+vi.mock('../src/cli/retry', async () => {
+  const actual = await vi.importActual<typeof import('../src/cli/retry')>('../src/cli/retry')
+  return {
+    ...actual,
+    promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  }
+})
+
 describe('automator session diagnostics', () => {
   beforeEach(() => {
     vi.resetModules()
     launchAutomatorMock.mockReset()
     connectOpenedAutomatorMock.mockReset()
+    promptWechatIdeLoginRetryMock.mockReset()
     loggerMock.error.mockReset()
+    loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     connectOpenedAutomatorMock.mockRejectedValue(new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled'))
+    promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
   })
 
   it('maps websocket connect failures to a friendly diagnostic error', async () => {
@@ -85,6 +98,34 @@ describe('automator session diagnostics', () => {
     })
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
     expect(launchAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+  })
+
+  it('retries automator connection after login is restored', async () => {
+    const disconnectMock = vi.fn()
+    const loginError = new Error('code: 10 need re-login')
+    launchAutomatorMock
+      .mockRejectedValueOnce(loginError)
+      .mockResolvedValueOnce({
+        disconnect: disconnectMock,
+      })
+    promptWechatIdeLoginRetryMock.mockResolvedValueOnce('retry')
+
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+    const result = await connectMiniProgram({
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+    })
+
+    expect(result).toMatchObject({
+      disconnect: disconnectMock,
+    })
+    expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      error: loginError,
+      logger: loggerMock,
+      promptOpenIdeLogin: true,
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(launchAutomatorMock).toHaveBeenCalledTimes(2)
   })
 
   it('reuses shared miniProgram sessions for the same project path', async () => {

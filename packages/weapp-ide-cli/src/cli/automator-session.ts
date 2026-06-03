@@ -25,6 +25,8 @@ import {
   isDevtoolsHttpPortError,
   launchAutomator,
 } from './automator'
+import { createWechatIdeLoginRequiredExitError, promptWechatIdeLoginRetry } from './retry'
+import { runRetryableCommand } from './run-login-executor'
 
 export type {
   MiniProgramEventMap,
@@ -35,6 +37,14 @@ export type MiniProgramPage = AutomatorPage
 export type MiniProgramElement = AutomatorElement
 
 export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {}
+
+type AutomatorConnectionResult
+  = { kind: 'result', value: MiniProgramLike }
+    | { error: unknown, kind: 'retryable' }
+
+function unwrapAutomatorConnectionError(result: AutomatorConnectionResult) {
+  return result.kind === 'retryable' ? result.error : result.value
+}
 
 function normalizeMiniProgramConnectionError(error: unknown) {
   if (isAutomatorLoginError(error)) {
@@ -102,31 +112,76 @@ function normalizeMiniProgramConnectionError(error: unknown) {
  * @description 建立 automator 会话，并统一处理常见连接错误提示。
  */
 export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
-  if (options.preferOpenedSession === false) {
-    try {
-      return await launchAutomator(options) as MiniProgramLike
-    }
-    catch (error) {
-      throw normalizeMiniProgramConnectionError(error)
-    }
+  const result = await runRetryableCommand<AutomatorConnectionResult, 'retry' | 'cancel' | 'timeout'>({
+    createCancelError: result => createWechatIdeLoginRequiredExitError(
+      unwrapAutomatorConnectionError(result),
+      'cancelled',
+    ),
+    execute: async () => {
+      if (options.preferOpenedSession === false) {
+        try {
+          return {
+            kind: 'result',
+            value: await launchAutomator(options) as MiniProgramLike,
+          } as const
+        }
+        catch (error) {
+          if (!isAutomatorLoginError(error)) {
+            throw normalizeMiniProgramConnectionError(error)
+          }
+          return {
+            error,
+            kind: 'retryable',
+          } as const
+        }
+      }
+
+      try {
+        return {
+          kind: 'result',
+          value: await connectOpenedAutomator(options) as MiniProgramLike,
+        } as const
+      }
+      catch (error) {
+        const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
+        if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {
+          throw normalizedOpenSessionError
+        }
+
+        try {
+          return {
+            kind: 'result',
+            value: await launchAutomator(options) as MiniProgramLike,
+          } as const
+        }
+        catch (launchError) {
+          if (!isAutomatorLoginError(launchError)) {
+            throw normalizeMiniProgramConnectionError(launchError)
+          }
+          return {
+            error: launchError,
+            kind: 'retryable',
+          } as const
+        }
+      }
+    },
+    isRetryableResult: result => result.kind === 'retryable',
+    onRetry: () => {
+      logger.info(i18nText('正在重试连接微信开发者工具...', 'Retrying to connect Wechat DevTools...'))
+    },
+    promptRetry: async result => await promptWechatIdeLoginRetry({
+      error: unwrapAutomatorConnectionError(result),
+      logger,
+      promptOpenIdeLogin: true,
+    }),
+    shouldRetry: action => action === 'retry',
+  })
+
+  if (result.kind === 'retryable') {
+    throw createWechatIdeLoginRequiredExitError(result.error)
   }
 
-  try {
-    return await connectOpenedAutomator(options) as MiniProgramLike
-  }
-  catch (error) {
-    const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
-    if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {
-      throw normalizedOpenSessionError
-    }
-
-    try {
-      return await launchAutomator(options) as MiniProgramLike
-    }
-    catch (launchError) {
-      throw normalizeMiniProgramConnectionError(launchError)
-    }
-  }
+  return result.value
 }
 
 const runtimeHooks = {

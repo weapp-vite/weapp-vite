@@ -25,6 +25,9 @@ export interface GlobalCLIOptions {
   'projectConfig'?: string
   'ticket'?: string
   'trustProject'?: boolean
+  'loginRetry'?: string
+  'loginRetryTimeout'?: string
+  'nonInteractive'?: boolean
   'analyze'?: boolean
   'ui'?: boolean
   'scope'?: string

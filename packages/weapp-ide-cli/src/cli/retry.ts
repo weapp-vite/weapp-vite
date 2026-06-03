@@ -148,6 +148,25 @@ export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: s
 }
 
 /**
+ * @description 判断错误是否为登录失效专用退出错误。
+ */
+export function isWechatIdeLoginRequiredExitError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+
+  const candidate = error as {
+    code?: unknown
+    exitCode?: unknown
+    name?: unknown
+  }
+
+  return candidate.name === 'WechatIdeLoginRequiredError'
+    || candidate.code === 10
+    || candidate.exitCode === 10
+}
+
+/**
  * @description 交互等待用户按 y 重试，按 q 或 Ctrl+C 取消。
  */
 export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {

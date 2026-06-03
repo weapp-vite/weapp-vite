@@ -3,8 +3,10 @@ import {
   clearWechatIdeCacheByAutomator,
   closeWechatIdeProject,
   compileWechatIdeByAutomator,
+  createWechatIdeLoginRequiredExitError,
   isWechatIdeEngineBuildEndpointMissingError,
   isWechatIdeLoginRequiredError,
+  isWechatIdeLoginRequiredExitError,
   openWechatIdeProjectByHttp,
   parse,
   promptWechatIdeLoginRetry,
@@ -21,6 +23,7 @@ export interface ExecuteWechatIdeCliCommandOptions {
   cancelLevel?: 'info' | 'warn'
   engineBuildFallbackToCli?: boolean
   httpMode?: 'prefer' | 'require' | 'skip'
+  promptOpenIdeLogin?: boolean
   onNonLoginError?: (error: unknown) => void
   onRetry?: () => void
   projectPath?: string
@@ -159,6 +162,7 @@ export async function executeWechatIdeCliCommand(
     cancelLevel = 'warn',
     engineBuildFallbackToCli = false,
     httpMode = 'prefer',
+    promptOpenIdeLogin = true,
     onNonLoginError,
     onRetry,
     projectPath,
@@ -199,6 +203,9 @@ export async function executeWechatIdeCliCommand(
       }
     }
     catch (error) {
+      if (isWechatIdeLoginRequiredExitError(error)) {
+        throw error
+      }
       if (onNonLoginError) {
         onNonLoginError(error)
         return
@@ -207,13 +214,16 @@ export async function executeWechatIdeCliCommand(
     }
 
     await runRetryableCommand<null | unknown, 'retry' | 'cancel' | 'timeout'>({
-      createCancelError: () => new Error('cancelled'),
+      createCancelError: error => createWechatIdeLoginRequiredExitError(error, 'cancelled'),
       execute: async () => {
         try {
           await parse(argv)
           return null
         }
         catch (error) {
+          if (isWechatIdeLoginRequiredExitError(error)) {
+            throw error
+          }
           if (!isWechatIdeLoginRequiredError(error)) {
             if (onNonLoginError) {
               onNonLoginError(error)
@@ -233,8 +243,11 @@ export async function executeWechatIdeCliCommand(
         cancelLevel,
         error,
         logger,
+        promptOpenIdeLogin,
       }),
       shouldRetry: action => action === 'retry',
     })
   })
 }
+
+export { isWechatIdeLoginRequiredExitError }

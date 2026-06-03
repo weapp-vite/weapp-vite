@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
+const compileWechatIdeByAutomatorMock = vi.hoisted(() => vi.fn())
+const createWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
 const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeEngineBuildEndpointMissingErrorMock = vi.hoisted(() => vi.fn())
+const isWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
@@ -35,12 +38,15 @@ const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 vi.mock('weapp-ide-cli', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
   closeWechatIdeProject: closeWechatIdeProjectMock,
+  compileWechatIdeByAutomator: compileWechatIdeByAutomatorMock,
   connectOpenedAutomator: connectOpenedAutomatorMock,
+  createWechatIdeLoginRequiredExitError: createWechatIdeLoginRequiredExitErrorMock,
   formatAutomatorLoginError: formatAutomatorLoginErrorMock,
   parse: parseMock,
   getConfig: getConfigMock,
   isAutomatorLoginError: isAutomatorLoginErrorMock,
   isWechatIdeEngineBuildEndpointMissingError: isWechatIdeEngineBuildEndpointMissingErrorMock,
+  isWechatIdeLoginRequiredExitError: isWechatIdeLoginRequiredExitErrorMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   launchAutomator: launchAutomatorMock,
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
@@ -74,9 +80,12 @@ describe('openIde', () => {
   beforeEach(() => {
     parseMock.mockReset()
     closeWechatIdeProjectMock.mockReset()
+    compileWechatIdeByAutomatorMock.mockReset()
+    createWechatIdeLoginRequiredExitErrorMock.mockReset()
     isAutomatorLoginErrorMock.mockReset()
     formatAutomatorLoginErrorMock.mockReset()
     isWechatIdeEngineBuildEndpointMissingErrorMock.mockReset()
+    isWechatIdeLoginRequiredExitErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
     promptRetryKeypressMock.mockReset()
@@ -103,12 +112,23 @@ describe('openIde', () => {
 
     parseMock.mockResolvedValue(undefined)
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
+    compileWechatIdeByAutomatorMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockResolvedValue(undefined)
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
     runWechatIdeEngineBuildMock.mockResolvedValue(undefined)
     isAutomatorLoginErrorMock.mockReturnValue(false)
     isWechatIdeEngineBuildEndpointMissingErrorMock.mockReturnValue(false)
+    isWechatIdeLoginRequiredExitErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    createWechatIdeLoginRequiredExitErrorMock.mockImplementation((error: unknown, reason?: string) => Object.assign(
+      new Error(reason ?? 'login required'),
+      {
+        cause: error,
+        code: 10,
+        exitCode: 10,
+        name: 'WechatIdeLoginRequiredError',
+      },
+    ))
     formatAutomatorLoginErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     getConfigMock.mockResolvedValue({
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
@@ -555,6 +575,7 @@ describe('openIde', () => {
       cancelLevel: 'warn',
       error: loginRequiredError,
       logger: loggerMock,
+      promptOpenIdeLogin: true,
     })
     expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
@@ -575,6 +596,7 @@ describe('openIde', () => {
       cancelLevel: 'warn',
       error: loginRequiredError,
       logger: loggerMock,
+      promptOpenIdeLogin: true,
     })
   })
 

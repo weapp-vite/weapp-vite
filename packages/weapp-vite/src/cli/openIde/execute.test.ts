@@ -26,7 +26,17 @@ vi.mock('weapp-ide-cli', () => ({
   compileWechatIdeByAutomator: compileWechatIdeByAutomatorMock,
   closeWechatIdeProject: closeWechatIdeProjectMock,
   isWechatIdeEngineBuildEndpointMissingError: isWechatIdeEngineBuildEndpointMissingErrorMock,
+  isWechatIdeLoginRequiredExitError: (error: unknown) => error instanceof Error && error.name === 'WechatIdeLoginRequiredError',
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
+  createWechatIdeLoginRequiredExitError: (error: unknown, reason?: string) => Object.assign(
+    new Error(reason ?? 'login required'),
+    {
+      cause: error,
+      code: 10,
+      exitCode: 10,
+      name: 'WechatIdeLoginRequiredError',
+    },
+  ),
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   parse: parseMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
@@ -109,9 +119,26 @@ describe('executeWechatIdeCliCommand', () => {
       cancelLevel: 'warn',
       error: loginRequiredError,
       logger: loggerMock,
+      promptOpenIdeLogin: true,
     })
     expect(runWithSuspendedSharedInputMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+  })
+
+  it('does not wrap login-required exit errors from nested weapp-ide-cli parse retry', async () => {
+    const loginExitError = Object.assign(new Error('登录失效'), {
+      code: 10,
+      exitCode: 10,
+      name: 'WechatIdeLoginRequiredError',
+    })
+    parseMock.mockRejectedValueOnce(loginExitError)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await expect(executeWechatIdeCliCommand(['open'])).rejects.toBe(loginExitError)
+
+    expect(parseMock).toHaveBeenCalledTimes(1)
+    expect(promptWechatIdeLoginRetryMock).not.toHaveBeenCalled()
   })
 
   it('prefers http open for compile when projectPath is provided', async () => {

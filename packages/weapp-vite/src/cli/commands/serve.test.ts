@@ -348,12 +348,18 @@ describe('serve cli command', () => {
     const actionPromise = action('/project', {
       platform: 'weapp',
       open: true,
+      loginRetry: 'never',
+      loginRetryTimeout: '1000',
+      nonInteractive: true,
       trustProject: false,
     })
     fakeProcess.emit('SIGINT')
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      loginRetry: 'never',
+      loginRetryTimeout: '1000',
+      nonInteractive: true,
       reuseOpenedProject: false,
       trustProject: false,
     })

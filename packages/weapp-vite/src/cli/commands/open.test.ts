@@ -104,4 +104,22 @@ describe('open cli command', () => {
       trustProject: false,
     })
   })
+
+  it('forwards login retry controls to open ide', async () => {
+    const action = createOpenActionHandler()
+
+    await action(undefined, {
+      loginRetry: 'never',
+      loginRetryTimeout: '1000',
+      nonInteractive: true,
+      trustProject: false,
+    })
+
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/workspace/demo/dist/dev', {
+      loginRetry: 'never',
+      loginRetryTimeout: '1000',
+      nonInteractive: true,
+      trustProject: false,
+    })
+  })
 })

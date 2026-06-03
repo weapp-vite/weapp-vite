@@ -25,6 +25,9 @@ export function registerServeCommand(cli: CAC) {
     .option('-p, --platform <platform>', `[string] target platform (weapp | web | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
+    .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
+    .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
+    .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
@@ -87,6 +90,9 @@ export function registerServeCommand(cli: CAC) {
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath) => {
           await openIde(configService.platform, projectPath, {
+            loginRetry: options.loginRetry,
+            loginRetryTimeout: options.loginRetryTimeout,
+            nonInteractive: options.nonInteractive,
             reuseOpenedProject: false,
             trustProject: options.trustProject,
           })
