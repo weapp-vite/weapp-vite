@@ -14,7 +14,6 @@
     "typecheck:web": "vue-tsc --noEmit -p web/tsconfig.json"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "catalog:",
     "axios": "^1.16.1",
     "express": "^5.2.1",
     "graphql": "^16.14.1",
@@ -25,6 +24,7 @@
     "vue-router": "5.1.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
     "@types/express": "^5.0.6",
     "@tailwindcss/vite": "catalog:",
     "miniprogram-api-typings": "catalog:",
