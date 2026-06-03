@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { type ConversationInsight, loadConversationInsight } from '../api'
+import { loadConversationInsightWithGraphqlRequest } from '../api/graphqlRequest'
+import type { ConversationInsight } from '../api/types'
 
 const insight = ref<ConversationInsight>()
 const loading = ref(true)
@@ -14,7 +15,7 @@ async function refresh() {
   loading.value = true
   error.value = ''
   try {
-    insight.value = await loadConversationInsight()
+    insight.value = await loadConversationInsightWithGraphqlRequest()
   }
   catch (cause) {
     error.value = cause instanceof Error ? cause.message : '会话洞察加载失败'

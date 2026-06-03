@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { loadMoments, type Moment } from '../api'
+import { loadMomentsWithFetch } from '../api/fetch'
+import type { Moment } from '../api/types'
 
 const moments = ref<Moment[]>([])
 const refreshedAt = ref(0)
@@ -15,7 +16,7 @@ async function refresh() {
   loading.value = true
   error.value = ''
   try {
-    const response = await loadMoments()
+    const response = await loadMomentsWithFetch()
     moments.value = response.items
     refreshedAt.value = response.refreshedAt
   }

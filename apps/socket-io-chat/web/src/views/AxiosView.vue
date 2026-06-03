@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { type ContactProfile, loadContactProfile } from '../api'
+import { loadContactProfileWithAxios } from '../api/axios'
+import type { ContactProfile } from '../api/types'
 
 const profile = ref<ContactProfile>()
 const loading = ref(true)
@@ -14,7 +15,7 @@ async function refresh() {
   loading.value = true
   error.value = ''
   try {
-    profile.value = await loadContactProfile()
+    profile.value = await loadContactProfileWithAxios()
   }
   catch (cause) {
     error.value = cause instanceof Error ? cause.message : '联系人加载失败'
