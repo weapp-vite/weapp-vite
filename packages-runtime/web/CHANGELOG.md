@@ -1,5 +1,11 @@
 # @weapp-vite/web
 
+## 1.3.30
+
+### Patch Changes
+
+- 🐛 **补齐 Web runtime 对 `rolldown` 的直接依赖声明，确保消费 `rolldown-require` 时在严格依赖解析和 CI 测试环境中可以稳定加载其 peer 依赖。** [`8f7b0e5`](https://github.com/weapp-vite/weapp-vite/commit/8f7b0e58e4105d23df2c67e75eef771ec2f48907) by @sonofmagic
+
 ## 1.3.29
 
 ### Patch Changes

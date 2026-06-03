@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 6.16.37
+
+### Patch Changes
+
+- 📦 **Dependencies** [`8f7b0e5`](https://github.com/weapp-vite/weapp-vite/commit/8f7b0e58e4105d23df2c67e75eef771ec2f48907)
+  → `@weapp-vite/web@1.3.30`, `@weapp-vite/ast@6.16.37`, `wevu@6.16.37`
+
 ## 6.16.36
 
 ### Patch Changes
