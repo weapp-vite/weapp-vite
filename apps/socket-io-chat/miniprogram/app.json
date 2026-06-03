@@ -1,7 +1,10 @@
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
-    "pages/chat/index"
+    "pages/chat/index",
+    "pages/contact/index",
+    "pages/moments/index",
+    "pages/insights/index"
   ],
   "window": {
     "navigationBarTitleText": "微信聊天",

@@ -96,6 +96,21 @@ Page({
       draft: '',
     })
   },
+  goContact() {
+    void wx.navigateTo({
+      url: '/pages/contact/index',
+    })
+  },
+  goMoments() {
+    void wx.navigateTo({
+      url: '/pages/moments/index',
+    })
+  },
+  goInsights() {
+    void wx.navigateTo({
+      url: '/pages/insights/index',
+    })
+  },
   setMessages(messages: ChatMessage[] | ViewMessage[]) {
     const viewMessages = messages.map(toViewMessage)
     const latest = viewMessages.at(-1)

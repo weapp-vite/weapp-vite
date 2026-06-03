@@ -1,0 +1,287 @@
+.business-page {
+  padding: 0 16px 18px;
+  overflow-y: auto;
+}
+
+.business-page .page-header {
+  padding-right: 0;
+  padding-left: 0;
+  margin: 0 -16px 16px;
+}
+
+.loading-row,
+.error-row {
+  padding: 18px;
+  margin-top: 14px;
+  color: #666;
+  text-align: center;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.error-row {
+  color: #b42318;
+}
+
+.profile-hero {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.profile-avatar,
+.moment-avatar {
+  display: flex;
+  flex: 0 0 54px;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: #07c160;
+  border-radius: 6px;
+}
+
+.profile-main h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.profile-main p {
+  margin: 4px 0;
+  color: #666;
+}
+
+.profile-main span {
+  font-size: 13px;
+  color: #17803d;
+}
+
+.profile-signature {
+  padding: 16px;
+  margin: 12px 0;
+  line-height: 1.6;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tag-row span {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #31553a;
+  background: #dff5df;
+  border-radius: 999px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.metric-item {
+  padding: 14px 10px;
+  text-align: center;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.metric-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.metric-item span,
+.metric-item em {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  color: #777;
+}
+
+.timeline-block,
+.thread-list,
+.action-list {
+  padding: 16px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.timeline-block h3,
+.thread-list h3,
+.action-list h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.timeline-item,
+.thread-item,
+.action-item {
+  padding-top: 12px;
+  border-top: 1px solid rgb(0 0 0 / 6%);
+}
+
+.timeline-item:first-of-type,
+.thread-item:first-of-type,
+.action-item:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.timeline-item span {
+  font-size: 12px;
+  color: #999;
+}
+
+.timeline-item p,
+.thread-item p,
+.action-item p {
+  margin: 5px 0 12px;
+  line-height: 1.5;
+}
+
+.moments-cover {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 168px;
+  padding: 16px;
+  margin: 0 -16px 18px;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgb(0 0 0 / 16%), rgb(0 0 0 / 62%)),
+    #305c46;
+}
+
+.moments-cover .page-kicker,
+.moments-cover span {
+  color: rgb(255 255 255 / 78%);
+}
+
+.moment-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgb(0 0 0 / 8%);
+}
+
+.moment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.moment-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.moment-title span,
+.moment-social {
+  font-size: 12px;
+  color: #777;
+}
+
+.moment-body p {
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+.moment-image {
+  display: flex;
+  align-items: flex-end;
+  height: 132px;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #305c46;
+  border-radius: 6px;
+}
+
+.moment-image--blue {
+  background: #2f5d8c;
+}
+
+.comment-list {
+  padding: 10px;
+  margin-top: 8px;
+  background: rgb(0 0 0 / 5%);
+  border-radius: 6px;
+}
+
+.comment-list p {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.comment-list p:last-child {
+  margin-bottom: 0;
+}
+
+.insight-summary {
+  padding: 18px;
+  margin-bottom: 12px;
+  color: #fff;
+  background: #111;
+  border-radius: 6px;
+}
+
+.insight-summary span {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #07582f;
+  background: #95ec69;
+  border-radius: 999px;
+}
+
+.insight-summary h2 {
+  margin: 14px 0 8px;
+  font-size: 22px;
+}
+
+.insight-summary p {
+  margin: 0;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 74%);
+}
+
+.thread-list,
+.action-list {
+  margin-top: 12px;
+}
+
+.thread-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.thread-item span {
+  display: flex;
+  flex: 0 0 26px;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  color: #fff;
+  background: #07c160;
+  border-radius: 999px;
+}

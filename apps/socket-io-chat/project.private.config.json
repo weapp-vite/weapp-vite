@@ -13,6 +13,24 @@
           "pathName": "pages/chat/index",
           "query": "",
           "scene": null
+        },
+        {
+          "name": "Axios 联系人档案",
+          "pathName": "pages/contact/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "Fetch 朋友圈动态",
+          "pathName": "pages/moments/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "GraphQL 会话洞察",
+          "pathName": "pages/insights/index",
+          "query": "",
+          "scene": null
         }
       ]
     }

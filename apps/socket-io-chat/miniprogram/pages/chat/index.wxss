@@ -33,6 +33,30 @@
   background: #95ec69;
 }
 
+.client-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background: #f7f7f7;
+  border-bottom: 1rpx solid rgb(0 0 0 / 8%);
+}
+
+.client-links button {
+  height: 64rpx;
+  padding: 0;
+  margin: 0;
+  font-size: 26rpx;
+  line-height: 64rpx;
+  color: #111;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.client-links button::after {
+  border: 0;
+}
+
 .message-list {
   box-sizing: border-box;
   flex: 1;

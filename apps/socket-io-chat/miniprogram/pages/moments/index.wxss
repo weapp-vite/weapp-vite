@@ -1,0 +1,150 @@
+.moments-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 0 24rpx 32rpx;
+  background: #ededed;
+}
+
+.moments-cover {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 300rpx;
+  padding: 28rpx 24rpx;
+  margin: 0 -24rpx 24rpx;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgb(0 0 0 / 16%), rgb(0 0 0 / 62%)),
+    #305c46;
+}
+
+.moments-cover button {
+  width: 120rpx;
+  height: 64rpx;
+  padding: 0;
+  margin: 0;
+  font-size: 26rpx;
+  line-height: 64rpx;
+  color: #111;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.moments-cover button::after {
+  border: 0;
+}
+
+.page-kicker {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: rgb(255 255 255 / 78%);
+}
+
+.page-title {
+  margin-top: 4rpx;
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.moments-cover text {
+  font-size: 24rpx;
+  color: rgb(255 255 255 / 78%);
+}
+
+.loading-row,
+.error-row {
+  padding: 36rpx;
+  color: #666;
+  text-align: center;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.error-row {
+  color: #b42318;
+}
+
+.moment-card {
+  display: flex;
+  gap: 22rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid rgb(0 0 0 / 8%);
+}
+
+.moment-avatar {
+  display: flex;
+  flex: 0 0 76rpx;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  font-weight: 700;
+  color: #fff;
+  background: #07c160;
+  border-radius: 8rpx;
+}
+
+.moment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.moment-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.moment-title text:first-child {
+  font-weight: 700;
+}
+
+.moment-title text:last-child,
+.moment-social {
+  font-size: 24rpx;
+  color: #777;
+}
+
+.moment-content {
+  margin-bottom: 14rpx;
+  line-height: 1.55;
+}
+
+.moment-image {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  height: 220rpx;
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  font-weight: 700;
+  color: #fff;
+  background: #305c46;
+  border-radius: 12rpx;
+}
+
+.moment-image--blue {
+  background: #2f5d8c;
+}
+
+.comment-list {
+  padding: 18rpx;
+  margin-top: 12rpx;
+  background: rgb(0 0 0 / 5%);
+  border-radius: 12rpx;
+}
+
+.comment-list view {
+  margin-bottom: 10rpx;
+  font-size: 25rpx;
+  line-height: 1.45;
+}
+
+.comment-list view:last-child {
+  margin-bottom: 0;
+}
+
+.comment-list text {
+  font-weight: 700;
+}

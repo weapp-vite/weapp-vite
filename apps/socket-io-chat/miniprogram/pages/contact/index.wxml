@@ -1,0 +1,44 @@
+<view class="profile-page">
+  <view class="page-header">
+    <view>
+      <view class="page-kicker">Axios</view>
+      <view class="page-title">联系人档案</view>
+    </view>
+    <button bindtap="refresh">刷新</button>
+  </view>
+
+  <view class="loading-row" wx:if="{{loading}}">正在加载联系人...</view>
+  <view class="error-row" wx:elif="{{error}}">{{error}}</view>
+
+  <block wx:else>
+    <view class="profile-hero">
+      <view class="profile-avatar">{{profile.avatarText}}</view>
+      <view class="profile-main">
+        <view class="profile-name">{{profile.name}}</view>
+        <view class="profile-title">{{profile.title}} · {{profile.city}}</view>
+        <view class="profile-status">{{profile.status}}</view>
+      </view>
+    </view>
+
+    <view class="profile-signature">{{profile.signature}}</view>
+
+    <view class="tag-row">
+      <text wx:for="{{profile.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+
+    <view class="metric-grid">
+      <view class="metric-item" wx:for="{{profile.stats}}" wx:key="label">
+        <view>{{item.value}}</view>
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <view class="timeline-block">
+      <view class="section-title">最近互动</view>
+      <view class="timeline-item" wx:for="{{profile.recent}}" wx:key="title">
+        <text>{{item.title}}</text>
+        <view>{{item.detail}}</view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,35 @@
+<view class="moments-page">
+  <view class="moments-cover">
+    <button bindtap="refresh">刷新</button>
+    <view>
+      <view class="page-kicker">Fetch</view>
+      <view class="page-title">朋友圈动态</view>
+      <text wx:if="{{refreshedAtText}}">更新于 {{refreshedAtText}}</text>
+    </view>
+  </view>
+
+  <view class="loading-row" wx:if="{{loading}}">正在加载动态...</view>
+  <view class="error-row" wx:elif="{{error}}">{{error}}</view>
+
+  <block wx:else>
+    <view class="moment-card" wx:for="{{moments}}" wx:key="id">
+      <view class="moment-avatar">{{item.avatarText}}</view>
+      <view class="moment-body">
+        <view class="moment-title">
+          <text>{{item.author}}</text>
+          <text>{{item.time}}</text>
+        </view>
+        <view class="moment-content">{{item.content}}</view>
+        <view class="moment-image moment-image--{{item.cover}}">
+          <text>{{item.author}}</text>
+        </view>
+        <view class="moment-social">{{item.likes}} 人觉得有用</view>
+        <view class="comment-list">
+          <view wx:for="{{item.comments}}" wx:for-item="comment" wx:key="user">
+            <text>{{comment.user}}：</text>{{comment.text}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,180 @@
+.profile-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 0 24rpx 32rpx;
+  background: #ededed;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+}
+
+.page-header button {
+  width: 120rpx;
+  height: 64rpx;
+  padding: 0;
+  margin: 0;
+  font-size: 26rpx;
+  line-height: 64rpx;
+  color: #111;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.page-header button::after {
+  border: 0;
+}
+
+.page-kicker {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #07c160;
+}
+
+.page-title {
+  margin-top: 4rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.loading-row,
+.error-row {
+  padding: 36rpx;
+  color: #666;
+  text-align: center;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.error-row {
+  color: #b42318;
+}
+
+.profile-hero {
+  display: flex;
+  gap: 24rpx;
+  align-items: center;
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.profile-avatar {
+  display: flex;
+  flex: 0 0 108rpx;
+  align-items: center;
+  justify-content: center;
+  width: 108rpx;
+  height: 108rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #fff;
+  background: #07c160;
+  border-radius: 12rpx;
+}
+
+.profile-main {
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.profile-title {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.profile-status {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #17803d;
+}
+
+.profile-signature {
+  padding: 28rpx;
+  margin: 20rpx 0;
+  line-height: 1.6;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.tag-row text {
+  padding: 10rpx 18rpx;
+  font-size: 24rpx;
+  color: #31553a;
+  background: #dff5df;
+  border-radius: 999rpx;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.metric-item {
+  padding: 24rpx 12rpx;
+  text-align: center;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.metric-item view {
+  margin-bottom: 8rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.metric-item text {
+  font-size: 24rpx;
+  color: #777;
+}
+
+.timeline-block {
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 12rpx;
+}
+
+.section-title {
+  margin-bottom: 20rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.timeline-item {
+  padding-top: 20rpx;
+  margin-top: 20rpx;
+  border-top: 1rpx solid rgb(0 0 0 / 6%);
+}
+
+.timeline-item:first-of-type {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+
+.timeline-item text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.timeline-item view {
+  margin-top: 8rpx;
+  line-height: 1.5;
+}

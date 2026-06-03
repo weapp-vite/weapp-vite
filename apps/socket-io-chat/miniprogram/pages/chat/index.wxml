@@ -6,6 +6,12 @@
     </view>
   </view>
 
+  <view class="client-links">
+    <button bindtap="goContact">联系人</button>
+    <button bindtap="goMoments">朋友圈</button>
+    <button bindtap="goInsights">洞察</button>
+  </view>
+
   <scroll-view
     class="message-list"
     scroll-y

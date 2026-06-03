@@ -1,0 +1,47 @@
+<view class="insight-page">
+  <view class="page-header">
+    <view>
+      <view class="page-kicker">GraphQL</view>
+      <view class="page-title">会话洞察</view>
+    </view>
+    <button bindtap="refresh">同步</button>
+  </view>
+
+  <view class="loading-row" wx:if="{{loading}}">正在分析会话...</view>
+  <view class="error-row" wx:elif="{{error}}">{{error}}</view>
+
+  <block wx:else>
+    <view class="summary-card">
+      <text>{{insight.summary.health}}</text>
+      <view>{{insight.summary.title}}</view>
+      <text>{{insight.summary.description}}</text>
+    </view>
+
+    <view class="metric-grid">
+      <view class="metric-item" wx:for="{{insight.metrics}}" wx:key="label">
+        <view>{{item.value}}</view>
+        <text>{{item.label}}</text>
+        <text>{{item.trend}}</text>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">重点会话</view>
+      <view class="thread-item" wx:for="{{insight.threads}}" wx:key="id">
+        <view>
+          <text>{{item.name}}</text>
+          <view>{{item.lastMessage}}</view>
+        </view>
+        <text>{{item.unread}}</text>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">建议动作</view>
+      <view class="action-item" wx:for="{{insight.actions}}" wx:key="title">
+        <text>{{item.title}}</text>
+        <view>{{item.detail}}</view>
+      </view>
+    </view>
+  </block>
+</view>
