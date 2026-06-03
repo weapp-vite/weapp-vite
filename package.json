@@ -223,7 +223,7 @@
     "es-toolkit": "^1.47.0",
     "esbuild": "catalog:",
     "eslint": "catalog:",
-    "esrap": "^2.2.9",
+    "esrap": "^2.2.10",
     "estree-walker": "catalog:",
     "execa": "^9.6.1",
     "express": "^5.2.1",
