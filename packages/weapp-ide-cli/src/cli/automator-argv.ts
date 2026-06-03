@@ -3,6 +3,8 @@ import process from 'node:process'
 export interface ParsedAutomatorArgs {
   projectPath: string
   timeout?: number
+  port?: number
+  sessionId?: string
   json: boolean
   positionals: string[]
 }
@@ -20,6 +22,8 @@ function takesValue(optionName: string) {
     || optionName === '--project'
     || optionName === '-t'
     || optionName === '--timeout'
+    || optionName === '--port'
+    || optionName === '--session-id'
     || optionName === '-o'
     || optionName === '--output'
     || optionName === '--page'
@@ -42,6 +46,8 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
   const positionals: string[] = []
   let projectPath = process.cwd()
   let timeout: number | undefined
+  let port: number | undefined
+  let sessionId: string | undefined
   let json = false
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -81,6 +87,34 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
       continue
     }
 
+    if (token === '--port') {
+      const value = argv[index + 1]
+      if (typeof value === 'string') {
+        port = parsePositiveInt(value)
+        index += 1
+      }
+      continue
+    }
+
+    if (token.startsWith('--port=')) {
+      port = parsePositiveInt(token.slice('--port='.length))
+      continue
+    }
+
+    if (token === '--session-id') {
+      const value = argv[index + 1]
+      if (typeof value === 'string' && !value.startsWith('-')) {
+        sessionId = value.trim() || undefined
+        index += 1
+      }
+      continue
+    }
+
+    if (token.startsWith('--session-id=')) {
+      sessionId = token.slice('--session-id='.length).trim() || undefined
+      continue
+    }
+
     if (token === '--json') {
       json = true
       continue
@@ -102,7 +136,9 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
 
   return {
     projectPath,
-    timeout,
+    ...(timeout ? { timeout } : {}),
+    ...(port ? { port } : {}),
+    ...(sessionId ? { sessionId } : {}),
     json,
     positionals,
   }

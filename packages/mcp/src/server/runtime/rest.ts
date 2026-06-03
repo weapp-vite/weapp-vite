@@ -16,7 +16,9 @@ export const DEFAULT_RUNTIME_REST_ENDPOINT = '/api/weapp/devtools'
 const connectionSchema = z.object({
   projectPath: z.string().trim().min(1),
   timeout: z.number().int().positive().optional(),
+  port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  sessionId: z.string().trim().min(1).optional(),
 })
 
 const routeBodySchema = connectionSchema.extend({
@@ -124,7 +126,9 @@ function readConnectionFromQuery(url: URL): RuntimeConnectionInput {
   return connectionSchema.parse(compactObject({
     projectPath: url.searchParams.get('projectPath') ?? undefined,
     timeout: readNumberParam(url.searchParams.get('timeout')),
+    port: readNumberParam(url.searchParams.get('port')),
     preferOpenedSession: readBooleanParam(url.searchParams.get('preferOpenedSession')),
+    sessionId: url.searchParams.get('sessionId') ?? undefined,
   }))
 }
 

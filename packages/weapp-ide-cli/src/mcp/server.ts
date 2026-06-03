@@ -14,8 +14,10 @@ interface ToolRegistrar {
 export interface WeappIdeMcpRuntimeHooks {
   withMiniProgram: <T>(options: {
     preferOpenedSession?: boolean
+    port?: number
     projectPath: string
     sharedSession?: boolean
+    sessionId?: string
     timeout?: number
   }, runner: (miniProgram: MiniProgramLike) => Promise<T>) => Promise<T>
 }
@@ -32,7 +34,9 @@ export interface WeappIdeMcpServerHandle {
 interface ConnectionInput {
   projectPath: string
   timeout?: number
+  port?: number
   preferOpenedSession?: boolean
+  sessionId?: string
 }
 
 function createResolvedProjectPath(workspaceRoot: string | undefined, projectPath: string) {
@@ -55,7 +59,9 @@ async function withConnectedMiniProgram(
 ) {
   return await runtimeHooks.withMiniProgram({
     preferOpenedSession: input.preferOpenedSession,
+    port: input.port,
     projectPath: createResolvedProjectPath(workspaceRoot, input.projectPath),
+    sessionId: input.sessionId,
     sharedSession: true,
     timeout: input.timeout,
   }, runner)
@@ -77,7 +83,9 @@ function defineConnectionSchema() {
   return {
     projectPath: z.string().trim().min(1).describe('小程序项目路径，支持 workspaceRoot 相对路径'),
     timeout: z.number().int().positive().optional(),
+    port: z.number().int().positive().optional(),
     preferOpenedSession: z.boolean().optional(),
+    sessionId: z.string().trim().min(1).optional(),
   }
 }
 

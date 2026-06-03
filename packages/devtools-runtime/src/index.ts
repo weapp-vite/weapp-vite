@@ -41,6 +41,11 @@ function normalizeError(hooks: DevtoolsRuntimeHooks, error: unknown) {
   return normalized instanceof Error ? normalized : new Error(String(normalized))
 }
 
+export function resolveSharedMiniProgramSessionKey(options: Pick<DevtoolsRuntimeSessionOptions, 'port' | 'projectPath' | 'sessionId'>) {
+  const sessionSuffix = options.sessionId || (options.port ? `port:${options.port}` : 'default')
+  return `${options.projectPath}#${sessionSuffix}`
+}
+
 /**
  * @description 获取指定项目的共享 automator 会话；若不存在则自动创建。
  */
@@ -48,7 +53,8 @@ export async function acquireSharedMiniProgram(
   hooks: DevtoolsRuntimeHooks,
   options: DevtoolsRuntimeSessionOptions,
 ): Promise<AutomatorMiniProgram> {
-  const existing = sharedMiniProgramSessions.get(options.projectPath)
+  const sessionKey = resolveSharedMiniProgramSessionKey(options)
+  const existing = sharedMiniProgramSessions.get(sessionKey)
   if (existing) {
     existing.refs += 1
     return await existing.session
@@ -59,13 +65,13 @@ export async function acquireSharedMiniProgram(
     refs: 1,
     session,
   }
-  sharedMiniProgramSessions.set(options.projectPath, entry)
+  sharedMiniProgramSessions.set(sessionKey, entry)
 
   try {
     return await session
   }
   catch (error) {
-    sharedMiniProgramSessions.delete(options.projectPath)
+    sharedMiniProgramSessions.delete(sessionKey)
     throw normalizeError(hooks, error)
   }
 }
@@ -73,8 +79,12 @@ export async function acquireSharedMiniProgram(
 /**
  * @description 释放指定项目的共享会话引用；会话对象会继续缓存，直到显式关闭或重置。
  */
-export function releaseSharedMiniProgram(projectPath: string) {
-  const entry = sharedMiniProgramSessions.get(projectPath)
+export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number) {
+  const entry = sharedMiniProgramSessions.get(resolveSharedMiniProgramSessionKey({
+    projectPath,
+    ...(typeof sessionIdOrPort === 'number' ? { port: sessionIdOrPort } : {}),
+    ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
+  }))
   if (!entry) {
     return
   }
@@ -84,12 +94,17 @@ export function releaseSharedMiniProgram(projectPath: string) {
 /**
  * @description 关闭并移除指定项目的共享 automator 会话。
  */
-export async function closeSharedMiniProgram(projectPath: string) {
-  const entry = sharedMiniProgramSessions.get(projectPath)
+export async function closeSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number) {
+  const sessionKey = resolveSharedMiniProgramSessionKey({
+    projectPath,
+    ...(typeof sessionIdOrPort === 'number' ? { port: sessionIdOrPort } : {}),
+    ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
+  })
+  const entry = sharedMiniProgramSessions.get(sessionKey)
   if (!entry) {
     return
   }
-  sharedMiniProgramSessions.delete(projectPath)
+  sharedMiniProgramSessions.delete(sessionKey)
   const miniProgram = await entry.session.catch(() => null)
   miniProgram?.disconnect()
 }
@@ -120,11 +135,11 @@ export async function withMiniProgram<T>(
       return await runner(miniProgram)
     }
     catch (error) {
-      await closeSharedMiniProgram(options.projectPath)
+      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port)
       throw normalizeError(hooks, error)
     }
     finally {
-      releaseSharedMiniProgram(options.projectPath)
+      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
     }
   }
 

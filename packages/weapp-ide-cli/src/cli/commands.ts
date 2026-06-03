@@ -411,7 +411,13 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
       throw error
     }
 
-    await closeSharedMiniProgram(options.projectPath)
+    const sessionIdOrPort = options.sessionId || options.port
+    if (sessionIdOrPort) {
+      await closeSharedMiniProgram(options.projectPath, sessionIdOrPort)
+    }
+    else {
+      await closeSharedMiniProgram(options.projectPath)
+    }
     logger.warn(i18nText(
       '当前共享 DevTools 会话截图超时，正在改用全新自动化会话重试一次...',
       'The current shared DevTools session timed out while capturing screenshot. Retrying once with a fresh automation session...',

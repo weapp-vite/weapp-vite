@@ -11,12 +11,16 @@ export interface AutomatorOptions {
   projectPath: string
   timeout?: number
   cliPath?: string
+  port?: number
+  sessionId?: string
   trustProject?: boolean
   preferOpenedSession?: boolean
 }
 
 interface PersistedAutomatorSession {
+  port?: number
   projectPath: string
+  sessionId?: string
   updatedAt: string
   wsEndpoint: string
 }
@@ -74,31 +78,55 @@ function extractErrorText(error: unknown): string {
     .join('\n')
 }
 
-function resolveAutomatorSessionFilePath(projectPath: string) {
+function normalizeAutomatorSessionId(sessionId: string | undefined, port: number | undefined) {
+  if (sessionId?.trim()) {
+    return sessionId.trim()
+  }
+  return port ? `port-${port}` : 'default'
+}
+
+function resolveAutomatorSessionFilePath(projectPath: string, sessionId?: string, port?: number) {
   const normalizedProjectPath = path.resolve(projectPath)
-  const encodedProjectPath = Buffer.from(normalizedProjectPath).toString('base64url')
+  const normalizedSessionId = normalizeAutomatorSessionId(sessionId, port)
+  const sessionKey = normalizedSessionId === 'default'
+    ? normalizedProjectPath
+    : `${normalizedProjectPath}#${normalizedSessionId}`
+  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
   return path.join(AUTOMATOR_SESSION_DIR, `${encodedProjectPath}.json`)
 }
 
-async function persistAutomatorSession(projectPath: string, wsEndpoint: string) {
-  const filePath = resolveAutomatorSessionFilePath(projectPath)
+async function persistAutomatorSession(options: {
+  port?: number
+  projectPath: string
+  sessionId?: string
+  wsEndpoint: string
+}) {
+  const filePath = resolveAutomatorSessionFilePath(options.projectPath, options.sessionId, options.port)
   const payload: PersistedAutomatorSession = {
-    projectPath: path.resolve(projectPath),
+    ...(options.port ? { port: options.port } : {}),
+    projectPath: path.resolve(options.projectPath),
+    ...(options.sessionId ? { sessionId: options.sessionId } : {}),
     updatedAt: new Date().toISOString(),
-    wsEndpoint,
+    wsEndpoint: options.wsEndpoint,
   }
 
   await fs.mkdir(path.dirname(filePath), { recursive: true })
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8')
 }
 
-async function readPersistedAutomatorSession(projectPath: string) {
-  const filePath = resolveAutomatorSessionFilePath(projectPath)
+async function readPersistedAutomatorSession(projectPath: string, sessionId?: string, port?: number) {
+  const filePath = resolveAutomatorSessionFilePath(projectPath, sessionId, port)
 
   try {
     const raw = await fs.readFile(filePath, 'utf8')
     const payload = JSON.parse(raw) as Partial<PersistedAutomatorSession>
     if (payload.projectPath !== path.resolve(projectPath) || typeof payload.wsEndpoint !== 'string' || !payload.wsEndpoint.trim()) {
+      return null
+    }
+    if (sessionId && payload.sessionId !== sessionId) {
+      return null
+    }
+    if (port && payload.port !== port) {
       return null
     }
     return payload as PersistedAutomatorSession
@@ -108,8 +136,8 @@ async function readPersistedAutomatorSession(projectPath: string) {
   }
 }
 
-async function removePersistedAutomatorSession(projectPath: string) {
-  const filePath = resolveAutomatorSessionFilePath(projectPath)
+async function removePersistedAutomatorSession(projectPath: string, sessionId?: string, port?: number) {
+  const filePath = resolveAutomatorSessionFilePath(projectPath, sessionId, port)
 
   try {
     await fs.rm(filePath, { force: true })
@@ -239,7 +267,7 @@ export function formatAutomatorLoginError(error: unknown): string {
  * @description 基于当前配置解析 CLI 路径，并通过现代化 automator 入口启动会话。
  */
 export async function launchAutomator(options: AutomatorOptions) {
-  const { cliPath, projectPath, timeout = 30_000 } = options
+  const { cliPath, port, projectPath, sessionId, timeout = 30_000 } = options
   const resolvedCliPath = cliPath ?? (await resolveCliPath()).cliPath ?? undefined
   const config = await readCustomConfig()
   const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
@@ -262,13 +290,19 @@ export async function launchAutomator(options: AutomatorOptions) {
     try {
       const miniProgram = await launcher.launch({
         cliPath: resolvedCliPath,
+        ...(port ? { port } : {}),
         projectPath,
         timeout,
         trustProject: resolvedTrustProject,
       })
-      const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { wsEndpoint?: string } | undefined
+      const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
       if (typeof sessionMetadata?.wsEndpoint === 'string' && sessionMetadata.wsEndpoint) {
-        await persistAutomatorSession(projectPath, sessionMetadata.wsEndpoint)
+        await persistAutomatorSession({
+          port: sessionMetadata.port ?? port,
+          projectPath,
+          sessionId,
+          wsEndpoint: sessionMetadata.wsEndpoint,
+        })
       }
       return miniProgram
     }
@@ -287,17 +321,17 @@ export async function launchAutomator(options: AutomatorOptions) {
  * @description 连接当前项目已打开的开发者工具自动化会话，不触发新的 IDE 拉起。
  */
 export async function connectOpenedAutomator(options: AutomatorOptions) {
-  const { projectPath } = options
+  const { port, projectPath, sessionId } = options
   const launcher = new Launcher()
-  const persistedSession = await readPersistedAutomatorSession(projectPath)
-  const wsEndpoint = persistedSession?.wsEndpoint ?? DEFAULT_WECHAT_DEVTOOLS_WS_ENDPOINT
+  const persistedSession = await readPersistedAutomatorSession(projectPath, sessionId, port)
+  const wsEndpoint = persistedSession?.wsEndpoint ?? (port ? `ws://127.0.0.1:${port}` : DEFAULT_WECHAT_DEVTOOLS_WS_ENDPOINT)
 
   try {
     return await launcher.connect({ wsEndpoint })
   }
   catch (error) {
     if (persistedSession) {
-      await removePersistedAutomatorSession(projectPath)
+      await removePersistedAutomatorSession(projectPath, sessionId, port)
     }
     throw error
   }

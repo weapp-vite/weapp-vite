@@ -24,6 +24,10 @@ beforeEach(async () => {
   await Promise.all([
     closeSharedMiniProgram('/project-a'),
     closeSharedMiniProgram('/project-b'),
+    closeSharedMiniProgram('/project-a', 'worker-a'),
+    closeSharedMiniProgram('/project-a', 'worker-b'),
+    closeSharedMiniProgram('/project-a', 19_510),
+    closeSharedMiniProgram('/project-a', 19_511),
   ])
 })
 
@@ -48,6 +52,52 @@ describe('devtools runtime shared sessions', () => {
     await closeSharedMiniProgram('/project-a')
     expect(miniProgram.disconnect).toHaveBeenCalledTimes(1)
     expect(getSharedMiniProgramSessionCount()).toBe(0)
+  })
+
+  it('separates shared sessions by explicit session id', async () => {
+    const miniProgramA = createMiniProgram()
+    const miniProgramB = createMiniProgram()
+    const hooks = {
+      connectMiniProgram: vi.fn()
+        .mockResolvedValueOnce(miniProgramA)
+        .mockResolvedValueOnce(miniProgramB),
+    }
+
+    const first = await acquireSharedMiniProgram(hooks, {
+      projectPath: '/project-a',
+      sessionId: 'worker-a',
+    })
+    const second = await acquireSharedMiniProgram(hooks, {
+      projectPath: '/project-a',
+      sessionId: 'worker-b',
+    })
+
+    expect(first).toBe(miniProgramA)
+    expect(second).toBe(miniProgramB)
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    expect(getSharedMiniProgramSessionCount()).toBe(2)
+  })
+
+  it('separates shared sessions by explicit port', async () => {
+    const miniProgramA = createMiniProgram()
+    const miniProgramB = createMiniProgram()
+    const hooks = {
+      connectMiniProgram: vi.fn()
+        .mockResolvedValueOnce(miniProgramA)
+        .mockResolvedValueOnce(miniProgramB),
+    }
+
+    await acquireSharedMiniProgram(hooks, {
+      port: 19_510,
+      projectPath: '/project-a',
+    })
+    await acquireSharedMiniProgram(hooks, {
+      port: 19_511,
+      projectPath: '/project-a',
+    })
+
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    expect(getSharedMiniProgramSessionCount()).toBe(2)
   })
 
   it('normalizes shared session connection errors', async () => {
