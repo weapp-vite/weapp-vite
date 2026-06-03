@@ -36,9 +36,28 @@
     <button class="copy-prompt-btn" bind:tap="onCopyPrompt">复制提示词</button>
   </view>
 
-  <view class="panel">
+  <view id="mcp-runtime-root" class="panel mcp-runtime-root" data-role="runtime-root">
     <view class="section-title">交互探针</view>
-    <view class="probe-value">tapCounter = {{tapCounter}}</view>
-    <button class="probe-btn" bind:tap="onTapCounter">点击 +1</button>
+    <view id="mcp-tap-counter" class="probe-value">tapCounter = {{tapCounter}}</view>
+    <button id="mcp-tap-button" class="probe-btn" bind:tap="onTapCounter">点击 +1</button>
+    <input
+      id="mcp-input"
+      class="probe-input"
+      value="{{inputValue}}"
+      placeholder="MCP input"
+      bindinput="onProbeInput"
+    />
+    <view id="mcp-input-value" class="probe-value">inputValue = {{inputValue}}</view>
+    <view id="mcp-page-state" class="probe-value">mcpStatus = {{mcpStatus}}</view>
+    <scroll-view id="mcp-scroll" class="probe-scroll" scroll-y scroll-x>
+      <view class="probe-scroll-content">
+        <view wx:for="{{checkpoints}}" wx:key="key" class="probe-scroll-item">
+          {{item.title}}
+        </view>
+      </view>
+    </scroll-view>
+    <mcp-probe id="mcp-component" class="probe-component">
+      <view class="component-child">组件子节点</view>
+    </mcp-probe>
   </view>
 </view>

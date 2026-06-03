@@ -98,7 +98,7 @@ export function registerRuntimeNodeTools(
           innerSelector: innerSelector ?? null,
           method,
           args: toSerializableValue(callArgs),
-          result: toSerializableValue(await callRequiredMethod(element, method, ...callArgs)),
+          result: toSerializableValue(await callRequiredMethod(element, 'callMethod', method, ...callArgs)),
         }
       })
       return toToolResult(result)

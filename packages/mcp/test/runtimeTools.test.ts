@@ -57,6 +57,7 @@ function createElement(overrides: Record<string, unknown> = {}) {
     offset: vi.fn(async () => ({ left: 10, top: 12 })),
     tap: vi.fn(async () => {}),
     input: vi.fn(async () => {}),
+    callMethod: vi.fn(async (method: string, ...args: unknown[]) => ({ args, method })),
     ...overrides,
   }
 }
@@ -73,7 +74,7 @@ function createMiniProgram() {
     scrollTop: vi.fn(async () => 0),
     $: vi.fn(async () => createElement()),
     $$: vi.fn(async () => [createElement(), createElement()]),
-    onReadyProbe: vi.fn(async () => 'ok'),
+    callMethod: vi.fn(async (method: string, ...args: unknown[]) => ({ args, method })),
   }
   const miniProgram = {
     on: vi.fn((name: string, handler: (payload: unknown) => void) => {
@@ -218,6 +219,43 @@ describe('runtime MCP tools', () => {
       keys: ['title'],
       data: {
         title: 'home',
+      },
+    })
+  })
+
+  it('invokes page and component methods through automator callMethod', async () => {
+    const fixture = createMiniProgram()
+    const element = createElement({
+      callMethod: vi.fn(async (method: string, ...args: unknown[]) => ({ args, method })),
+    })
+    fixture.page.$.mockResolvedValue(element)
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    const pageResult = await getTool(tools, 'weapp_runtime_invoke_page')({
+      projectPath: 'apps/demo',
+      method: 'markPage',
+      args: ['page-arg'],
+    })
+    const componentResult = await getTool(tools, 'weapp_runtime_invoke_component')({
+      projectPath: 'apps/demo',
+      selector: '#probe',
+      method: 'markComponent',
+      args: ['component-arg'],
+    })
+
+    expect(fixture.page.callMethod).toHaveBeenCalledWith('markPage', 'page-arg')
+    expect(element.callMethod).toHaveBeenCalledWith('markComponent', 'component-arg')
+    expect(readStructuredResult(pageResult)).toMatchObject({
+      result: {
+        args: ['page-arg'],
+        method: 'markPage',
+      },
+    })
+    expect(readStructuredResult(componentResult)).toMatchObject({
+      result: {
+        args: ['component-arg'],
+        method: 'markComponent',
       },
     })
   })

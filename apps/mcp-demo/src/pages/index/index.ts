@@ -63,7 +63,12 @@ Page({
       '5. 汇总：执行过的工具、关键输出、最终结论（pass/fail）。',
     ].join('\n'),
     tapCounter: 0,
+    inputValue: '',
     lastActionAt: '',
+    mcpStatus: 'idle',
+    nested: {
+      value: 'initial',
+    },
   },
 
   onLoad() {
@@ -75,6 +80,21 @@ Page({
       tapCounter: this.data.tapCounter + 1,
     })
     this.updateActionTime('点击了计数按钮')
+  },
+
+  onProbeInput(event: WechatMiniprogram.Input) {
+    this.setData({
+      inputValue: event.detail.value,
+    })
+    this.updateActionTime('输入了探针文本')
+  },
+
+  markFromMcp(value = 'invoked') {
+    this.setData({
+      mcpStatus: value,
+    })
+    this.updateActionTime('MCP 调用了页面方法')
+    return `page:${value}`
   },
 
   async onCopyCommand(event: WechatMiniprogram.CustomEvent<{ command: string }>) {

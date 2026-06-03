@@ -1,0 +1,4 @@
+<view id="mcp-component-root" class="mcp-component-root">
+  <view class="component-label">{{label}}</view>
+  <slot />
+</view>

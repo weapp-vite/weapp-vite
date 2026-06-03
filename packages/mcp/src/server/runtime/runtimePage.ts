@@ -186,7 +186,7 @@ export function registerRuntimePageTools(
         return {
           method,
           args: toSerializableValue(callArgs),
-          result: toSerializableValue(await callRequiredMethod(page, method, ...callArgs)),
+          result: toSerializableValue(await callRequiredMethod(page, 'callMethod', method, ...callArgs)),
         }
       })
       return toToolResult(result)
