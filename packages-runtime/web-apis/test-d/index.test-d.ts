@@ -11,14 +11,17 @@ import type {
 } from '@wevu/web-apis/fetch'
 import {
   getMiniProgramNetworkDefaults,
+  HeadersPolyfill,
   installRequestGlobals,
   installWebRuntimeGlobals,
   RequestPolyfill,
   resetMiniProgramNetworkDefaults,
+  ResponsePolyfill,
   setMiniProgramNetworkDefaults,
   TextDecoderPolyfill,
   TextEncoderPolyfill,
   URLPolyfill,
+  URLSearchParamsPolyfill,
 } from '@wevu/web-apis'
 import { expectError, expectType } from 'tsd'
 
@@ -47,6 +50,13 @@ expectType<void>(installWebRuntimeGlobals())
 expectType<void>(installRequestGlobals(options))
 expectType<void>(installRequestGlobals())
 expectType<RequestPolyfill>(new RequestPolyfill(new URLPolyfill('https://request-globals.invalid')))
+expectType<URLPolyfill | null>(URLPolyfill.parse('/path', 'https://request-globals.invalid'))
+expectType<boolean>(URLPolyfill.canParse('/path', 'https://request-globals.invalid'))
+expectType<number>(new URLSearchParamsPolyfill('b=2&a=1').size)
+expectType<void>(new URLSearchParamsPolyfill('b=2&a=1').sort())
+expectType<string[]>(new HeadersPolyfill([['Set-Cookie', 'a=1']]).getSetCookie())
+expectType<ResponsePolyfill>(ResponsePolyfill.json({ ok: true }))
+expectType<ResponsePolyfill>(ResponsePolyfill.error())
 expectType<Uint8Array>(new TextEncoderPolyfill().encode('ok'))
 expectType<string>(new TextDecoderPolyfill().decode(new Uint8Array([111, 107])))
 

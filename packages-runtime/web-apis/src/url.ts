@@ -174,9 +174,26 @@ export class URLSearchParamsPolyfill {
     return this.entriesStore.some(([entryKey]) => entryKey === String(key))
   }
 
+  get size() {
+    return this.entriesStore.length
+  }
+
   set(key: string, value: string) {
     this.delete(key)
     this.append(key, value)
+  }
+
+  sort() {
+    this.entriesStore.sort(([leftKey], [rightKey]) => {
+      if (leftKey < rightKey) {
+        return -1
+      }
+      if (leftKey > rightKey) {
+        return 1
+      }
+      return 0
+    })
+    this.onChange?.()
   }
 
   forEach(callback: (value: string, key: string) => void) {
@@ -219,6 +236,19 @@ export class URLPolyfill {
   protocol = ''
   username = ''
   readonly searchParams: URLSearchParamsPolyfill
+
+  static canParse(input: string | URLPolyfill, base?: string | URLPolyfill) {
+    return URLPolyfill.parse(input, base) !== null
+  }
+
+  static parse(input: string | URLPolyfill, base?: string | URLPolyfill) {
+    try {
+      return new URLPolyfill(input, base)
+    }
+    catch {
+      return null
+    }
+  }
 
   constructor(input: string | URLPolyfill, base?: string | URLPolyfill) {
     const inputString = typeof input === 'string' ? input : input.toString()

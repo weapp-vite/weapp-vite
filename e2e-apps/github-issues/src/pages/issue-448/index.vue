@@ -19,6 +19,19 @@ const customEventType = new CustomEvent('payload', {
     ok: true,
   },
 }).type
+const parsedUrl = URL.parse('/next?b=2&a=1', 'https://issue-448.invalid/base/')
+const canParseUrl = URL.canParse('/next', 'https://issue-448.invalid')
+const searchParams = new URLSearchParams('b=2&a=1&a=0')
+const searchParamsSize = searchParams.size
+searchParams.sort()
+const sortedParams = searchParams.toString()
+const headers = new Headers()
+headers.append('Set-Cookie', 'session=issue-448')
+headers.append('Set-Cookie', 'theme=dark')
+const cookieCount = headers.getSetCookie().length
+const jsonResponse = Response.json({ ok: true })
+const jsonResponseContentType = jsonResponse.headers.get('content-type')
+const errorResponse = Response.error()
 const microtaskState = ref('pending')
 
 queueMicrotask(() => {
@@ -33,6 +46,14 @@ function _runE2E() {
     randomBytes,
     eventType,
     customEventType,
+    parsedUrl: parsedUrl?.href,
+    canParseUrl,
+    searchParamsSize,
+    sortedParams,
+    cookieCount,
+    jsonResponseContentType,
+    errorResponseStatus: errorResponse.status,
+    errorResponseType: errorResponse.type,
     microtaskState: microtaskState.value,
   }
 }
@@ -47,6 +68,12 @@ function _runE2E() {
     <text class="issue448-line">random = {{ randomBytes }}</text>
     <text class="issue448-line">event = {{ eventType }}</text>
     <text class="issue448-line">custom = {{ customEventType }}</text>
+    <text class="issue448-line">url = {{ parsedUrl?.href }}</text>
+    <text class="issue448-line">canParse = {{ canParseUrl }}</text>
+    <text class="issue448-line">params = {{ sortedParams }}</text>
+    <text class="issue448-line">cookies = {{ cookieCount }}</text>
+    <text class="issue448-line">json = {{ jsonResponseContentType }}</text>
+    <text class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
     <text class="issue448-line">microtask = {{ microtaskState }}</text>
   </view>
 </template>

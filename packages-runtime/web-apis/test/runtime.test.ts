@@ -529,6 +529,41 @@ describe('request globals runtime', () => {
     expect(searchParams.toString()).toBe('variables=%7B%22ok%22%3Atrue%7D')
   })
 
+  it('provides low-cost URL and URLSearchParams modern helpers', async () => {
+    const { URLPolyfill, URLSearchParamsPolyfill } = await import('../src/url')
+
+    const parsed = URLPolyfill.parse('/graphql?b=2&a=1', 'https://request-globals.invalid/base/')
+    const params = new URLSearchParamsPolyfill('b=2&a=1&a=0')
+    params.sort()
+
+    expect(parsed?.href).toBe('https://request-globals.invalid/graphql?b=2&a=1')
+    expect(URLPolyfill.parse('/graphql')).toBeNull()
+    expect(URLPolyfill.canParse('/graphql', 'https://request-globals.invalid')).toBe(true)
+    expect(URLPolyfill.canParse('/graphql')).toBe(false)
+    expect(params.size).toBe(3)
+    expect(params.toString()).toBe('a=1&a=0&b=2')
+  })
+
+  it('provides Headers.getSetCookie and static Response helpers', async () => {
+    const { HeadersPolyfill, ResponsePolyfill } = await import('../src')
+
+    const headers = new HeadersPolyfill()
+    headers.append('Set-Cookie', 'session=issue-448')
+    headers.append('Set-Cookie', 'theme=dark')
+
+    const jsonResponse = ResponsePolyfill.json({ ok: true })
+    const errorResponse = ResponsePolyfill.error()
+
+    expect(headers.get('set-cookie')).toBe('session=issue-448, theme=dark')
+    expect(headers.getSetCookie()).toEqual(['session=issue-448', 'theme=dark'])
+    expect(jsonResponse.status).toBe(200)
+    expect(jsonResponse.headers.get('content-type')).toBe('application/json')
+    expect(await jsonResponse.json()).toEqual({ ok: true })
+    expect(errorResponse.status).toBe(0)
+    expect(errorResponse.ok).toBe(false)
+    expect(errorResponse.type).toBe('error')
+  })
+
   it('keeps directly imported web-apis polyfills interoperable', async () => {
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       options.success?.({
@@ -627,6 +662,67 @@ describe('request globals runtime', () => {
     expect(event.type).toBe('tick')
     expect(customEvent.detail).toEqual({ ok: true })
     expect(customEvent.defaultPrevented).toBe(true)
+  })
+
+  it('patches incomplete host constructors before local bindings use newer helpers', async () => {
+    class HostURL extends URL {}
+    class HostURLSearchParams extends URLSearchParams {}
+    class HostHeaders {
+      private readonly headers = new Map<string, string>()
+
+      append(key: string, value: string) {
+        const normalizedKey = key.toLowerCase()
+        const current = this.headers.get(normalizedKey)
+        this.headers.set(normalizedKey, current ? `${current}, ${value}` : value)
+      }
+
+      get(key: string) {
+        return this.headers.get(key.toLowerCase()) ?? null
+      }
+    }
+
+    class HostResponse {
+      readonly headers: HostHeaders
+      readonly status: number
+
+      constructor(_body?: unknown, init: Record<string, any> = {}) {
+        this.headers = init.headers ?? new HostHeaders()
+        this.status = init.status ?? 200
+      }
+    }
+
+    ;(HostURL as Record<string, any>).parse = undefined
+    ;(HostURL as Record<string, any>).canParse = undefined
+    ;(HostURLSearchParams.prototype as Record<string, any>).sort = undefined
+    ;(HostHeaders.prototype as Record<string, any>).getSetCookie = undefined
+    ;(HostResponse as Record<string, any>).json = undefined
+    ;(HostResponse as Record<string, any>).error = undefined
+
+    setGlobalValue('URL', HostURL)
+    setGlobalValue('URLSearchParams', HostURLSearchParams)
+    setGlobalValue('Headers', HostHeaders)
+    setGlobalValue('Response', HostResponse)
+
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals({
+      targets: ['fetch', 'Headers', 'Response'],
+    })
+
+    const params = new globalThis.URLSearchParams('b=2&a=1&a=0')
+    params.sort()
+    const headers = new globalThis.Headers()
+    headers.append('Set-Cookie', 'session=issue-448')
+    const jsonResponse = globalThis.Response.json({ ok: true })
+    const errorResponse = globalThis.Response.error()
+
+    expect((globalThis.URL as any).parse('/next', 'https://issue-448.invalid')?.href).toBe('https://issue-448.invalid/next')
+    expect((globalThis.URL as any).canParse('/next', 'https://issue-448.invalid')).toBe(true)
+    expect(params.size).toBe(3)
+    expect(params.toString()).toBe('a=1&a=0&b=2')
+    expect((headers as any).getSetCookie()).toEqual(['session=issue-448'])
+    expect(await jsonResponse.json()).toEqual({ ok: true })
+    expect(errorResponse.status).toBe(0)
+    expect(errorResponse.type).toBe('error')
   })
 
   it('falls back to additional mini-program host getRandomValues implementations', async () => {
