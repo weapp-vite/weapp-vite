@@ -101,49 +101,67 @@ async function scrollToBottom() {
 </script>
 
 <template>
-  <section class="chat-panel">
-    <header class="chat-header">
+  <section class="flex min-h-0 flex-1 flex-col">
+    <header class="flex items-center justify-between border-b border-black/10 bg-[#ededed] px-4.5 py-3.5">
       <div>
-        <h1>Socket.IO 聊天室</h1>
-        <p>Web 与 weapp-vite 小程序实时互通</p>
+        <h1 class="m-0 text-[17px] leading-tight font-semibold">Socket.IO 聊天室</h1>
+        <p class="mt-1 text-xs text-[#777]">Web 与 weapp-vite 小程序实时互通</p>
       </div>
-      <span class="chat-status" :class="{ 'chat-status--online': connected }">
+      <span
+        class="rounded-full px-2.5 py-1 text-xs"
+        :class="connected ? 'bg-[#95ec69] text-[#07582f]' : 'bg-[#ddd] text-[#666]'"
+      >
         {{ connected ? '在线' : '离线' }}
       </span>
     </header>
 
-    <div ref="messageList" class="message-list">
+    <div ref="messageList" class="min-h-0 flex-1 overflow-y-auto px-3.5 pt-4.5 pb-6">
       <article
         v-for="message in messages"
         :key="message.id"
-        class="message"
+        class="mb-4 flex items-start gap-2.5"
         :class="{
-          'message--mine': isMine(message),
-          'message--system': message.platform === 'server',
+          'flex-row-reverse': isMine(message),
+          'justify-center': message.platform === 'server',
         }"
       >
-        <div v-if="message.platform !== 'server'" class="message__avatar">
+        <div
+          v-if="message.platform !== 'server'"
+          class="flex size-9.5 shrink-0 items-center justify-center rounded bg-[#07c160] font-bold text-white"
+          :class="{ 'bg-[#2f80ed]': isMine(message) }"
+        >
           {{ message.platform === 'mini' ? '小' : 'W' }}
         </div>
-        <div class="message__body">
-          <div v-if="message.platform !== 'server'" class="message__meta">
+        <div class="max-w-[286px]">
+          <div
+            v-if="message.platform !== 'server'"
+            class="mb-1 text-xs text-[#888]"
+            :class="{ 'text-right': isMine(message) }"
+          >
             {{ message.userName }} · {{ formatTime(message.createdAt) }}
           </div>
-          <div class="message__bubble">
+          <div
+            class="overflow-wrap-anywhere rounded px-3 py-2.5 leading-snug"
+            :class="message.platform === 'server'
+              ? 'max-w-[300px] rounded-full bg-black/8 px-3 py-1.5 text-center text-xs text-[#666]'
+              : isMine(message)
+                ? 'bg-[#95ec69]'
+                : 'bg-white'"
+          >
             {{ message.text }}
           </div>
         </div>
       </article>
     </div>
 
-    <form class="composer" @submit.prevent="sendMessage">
+    <form class="flex items-center gap-2.5 border-t border-black/10 bg-[#f7f7f7] p-3" @submit.prevent="sendMessage">
       <input
         v-model="draft"
-        class="composer__input"
+        class="h-10 min-w-0 flex-1 rounded border-0 bg-white px-3 outline-none focus:shadow-[inset_0_0_0_1px_#07c160]"
         autocomplete="off"
         placeholder="发消息"
       >
-      <button class="composer__button" type="submit">
+      <button class="h-10 rounded bg-[#07c160] px-4 text-white" type="submit">
         发送
       </button>
     </form>

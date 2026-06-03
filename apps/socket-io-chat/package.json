@@ -20,11 +20,14 @@
     "graphql-request": "^7.3.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "vue-router": "5.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@tailwindcss/vite": "catalog:",
     "miniprogram-api-typings": "catalog:",
+    "tailwindcss": "catalog:tailwind4",
     "tsx": "^4.22.4",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -1,59 +1,29 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import ChatRoom from './components/ChatRoom.vue'
-import ContactProfile from './components/ContactProfile.vue'
-import ConversationInsights from './components/ConversationInsights.vue'
-import MomentsFeed from './components/MomentsFeed.vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { routesMeta } from './router'
 
-const pages = [
-  {
-    id: 'chat',
-    label: '聊天',
-    title: 'Socket.IO 聊天室',
-  },
-  {
-    id: 'axios',
-    label: '联系人',
-    title: 'Axios 联系人档案',
-  },
-  {
-    id: 'fetch',
-    label: '朋友圈',
-    title: 'Fetch 朋友圈动态',
-  },
-  {
-    id: 'graphql',
-    label: '洞察',
-    title: 'GraphQL 会话洞察',
-  },
-] as const
-
-type PageId = typeof pages[number]['id']
-
-const activePage = ref<PageId>('chat')
-const activeTitle = computed(() => pages.find(page => page.id === activePage.value)?.title ?? pages[0].title)
+const route = useRoute()
 </script>
 
 <template>
-  <main class="app-shell">
-    <section class="app-window" :aria-label="activeTitle">
-      <nav class="app-nav" aria-label="示例页面">
-        <button
-          v-for="page in pages"
-          :key="page.id"
-          class="app-nav__item"
-          :class="{ 'app-nav__item--active': activePage === page.id }"
-          type="button"
-          @click="activePage = page.id"
+  <main class="flex min-h-dvh items-center justify-center bg-[#d8d8d8] bg-[linear-gradient(rgba(255,255,255,0.4),rgba(255,255,255,0.1))] p-6 max-[520px]:p-0">
+    <section
+      class="flex h-[min(780px,calc(100vh-48px))] min-h-[580px] w-[min(100%,430px)] flex-col overflow-hidden rounded-lg border border-black/10 bg-[#ededed] shadow-[0_18px_60px_rgba(0,0,0,0.18)] max-[520px]:h-dvh max-[520px]:min-h-dvh max-[520px]:w-full max-[520px]:rounded-none max-[520px]:border-0"
+      :aria-label="String(route.meta.title ?? 'Socket.IO 聊天示例')"
+    >
+      <nav class="grid grid-cols-4 gap-1.5 border-b border-black/10 bg-[#f7f7f7] p-2" aria-label="示例页面">
+        <RouterLink
+          v-for="item in routesMeta"
+          :key="item.path"
+          :to="item.path"
+          class="flex h-8.5 items-center justify-center rounded text-sm text-[#444] transition-colors"
+          :class="route.path === item.path ? 'bg-[#111] text-white' : 'hover:bg-white'"
         >
-          {{ page.label }}
-        </button>
+          {{ item.label }}
+        </RouterLink>
       </nav>
 
-      <ChatRoom v-if="activePage === 'chat'" />
-      <ContactProfile v-else-if="activePage === 'axios'" />
-      <MomentsFeed v-else-if="activePage === 'fetch'" />
-      <ConversationInsights v-else />
+      <RouterView />
     </section>
   </main>
 </template>
