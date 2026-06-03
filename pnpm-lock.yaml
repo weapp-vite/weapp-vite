@@ -837,6 +837,9 @@ importers:
       axios:
         specifier: ^1.16.1
         version: 1.16.1
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
       graphql-request:
         specifier: ^7.3.5
         version: 7.4.0(graphql@16.13.2)
@@ -850,6 +853,9 @@ importers:
         specifier: 'catalog:'
         version: 3.5.35(typescript@6.0.3)
     devDependencies:
+      '@types/express':
+        specifier: ^5.0.6
+        version: 5.0.6
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.1
