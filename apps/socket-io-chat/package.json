@@ -17,6 +17,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "axios": "^1.16.1",
     "express": "^5.2.1",
+    "graphql": "^16.14.1",
     "graphql-request": "^7.3.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
