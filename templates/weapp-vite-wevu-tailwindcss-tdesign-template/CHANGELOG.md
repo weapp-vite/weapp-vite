@@ -1,5 +1,11 @@
 # weapp-vite-wevu-template
 
+## 1.0.10
+
+### Patch Changes
+
+- 🐛 **修复 DevTools 自动化会话生命周期与截图恢复逻辑，为 wevu + Tailwind CSS + TDesign 模板补充稳定选择器，并把真实 IDE 打开、截图、DOM 操作与登录失效诊断流程纳入 e2e 覆盖。** [`574c130`](https://github.com/weapp-vite/weapp-vite/commit/574c130f8c18b40cb60af8c97e38cd2db46da1ad) by @sonofmagic
+
 ## 1.0.9
 
 ### Patch Changes

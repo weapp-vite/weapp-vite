@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.16.36
+
+### Patch Changes
+
+- 🐛 **修复微信开发者工具登录失效后 open 流程可能重复提示登录重试的问题，并让截图与 MCP/DOM 自动化连接在登录恢复后复用同一套重试流程。** [`56f4ecd`](https://github.com/weapp-vite/weapp-vite/commit/56f4ecd00bbfcebd3ad79958fd0e944c089d9b4d) by @sonofmagic
+- 📦 Updated 5 dependencies [`574c130`](https://github.com/weapp-vite/weapp-vite/commit/574c130f8c18b40cb60af8c97e38cd2db46da1ad)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/miniprogram-automator@1.2.1`, `weapp-ide-cli@5.4.1`, `@weapp-vite/mcp@1.4.1`, `@weapp-vite/ast@6.16.36`, `wevu@6.16.36`
+
+  </details>
+
 ## 6.16.35
 
 ### Patch Changes

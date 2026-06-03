@@ -1,5 +1,13 @@
 # @weapp-vite/mcp
 
+## 1.4.1
+
+### Patch Changes
+
+- 🐛 **修复 MCP runtime 工具调用页面和组件方法时未通过小程序 automator `callMethod` 桥接的问题，并补充真实微信开发者工具里的 MCP runtime/devtools 工具成功路径覆盖，确保登录连接、截图、DOM 查询与交互能力可被端到端验证。** [`629c4c2`](https://github.com/weapp-vite/weapp-vite/commit/629c4c2e4916a22c699fba2b844b665207031e3c) by @sonofmagic
+- 📦 **Dependencies** [`574c130`](https://github.com/weapp-vite/weapp-vite/commit/574c130f8c18b40cb60af8c97e38cd2db46da1ad)
+  → `@weapp-vite/devtools-runtime@0.4.1`
+
 ## 1.4.0
 
 ### Minor Changes
