@@ -1,5 +1,11 @@
 # @wevu/web-apis
 
+## 1.2.20
+
+### Patch Changes
+
+- 🐛 **补齐 Web Runtime 兼容层中的低成本 Web API 辅助能力：`URL.parse()`、`URL.canParse()`、`URLSearchParams.size`、`URLSearchParams.sort()`、`Headers.getSetCookie()`、`Response.json()` 与 `Response.error()` 现在可以通过 polyfill 和全局安装链路稳定使用。** [#660](https://github.com/weapp-vite/weapp-vite/pull/660) by @sonofmagic
+
 ## 1.2.19
 
 ### Patch Changes

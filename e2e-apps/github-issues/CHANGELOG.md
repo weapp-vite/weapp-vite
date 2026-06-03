@@ -1,5 +1,12 @@
 # e2e-app-github-issues
 
+## 0.0.14
+
+### Patch Changes
+
+- 📦 **Dependencies** [`58f2bf0`](https://github.com/weapp-vite/weapp-vite/commit/58f2bf07e0c0318c7f41a437788e369fab04168e)
+  → `@wevu/web-apis@1.2.20`
+
 ## 0.0.13
 
 ### Patch Changes
