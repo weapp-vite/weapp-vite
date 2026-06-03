@@ -77,7 +77,7 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
 
   applyAppShell(result, options.entryFilePath, options.appShell)
 
-  emitFallbackPageBundleAssets({
+  await emitFallbackPageBundleAssets({
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     ctx: options.ctx,

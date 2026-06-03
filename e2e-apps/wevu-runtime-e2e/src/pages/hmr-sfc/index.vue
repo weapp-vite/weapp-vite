@@ -22,6 +22,9 @@ export default defineComponent({
 
 <style>
 /* HMR-SFC-STYLE */
+/* stylelint-disable-next-line at-rule-no-unknown, scss/at-rule-no-unknown */
+@wv-keep-import '../hmr/index.wxss';
+
 .hmr-sfc-page {
   padding: 24rpx;
 }

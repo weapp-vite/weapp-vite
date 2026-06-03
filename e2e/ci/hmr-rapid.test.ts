@@ -17,6 +17,8 @@ const SRC_SCRIPT = path.join(HMR_SRC_DIR, 'index.ts')
  * Vue SFC HMR 源文件路径
  */
 const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
+const SFC_KEEP_IMPORT_OUTPUT = '@import \'../hmr/index.wxss\';'
+const SFC_KEEP_IMPORT_DIRECTIVE = '@wv-keep-import'
 
 const PLATFORM_LIST = resolvePlatforms()
 const RAPID_HMR_TIMEOUT = 180_000
@@ -33,6 +35,11 @@ async function retryWithSourceTouch<T>(
     await replaceFileByRename(touchFilePath, touchContent)
     return await task()
   }
+}
+
+function expectSfcKeepImportResolved(content: string) {
+  expect(content).toContain(SFC_KEEP_IMPORT_OUTPUT)
+  expect(content).not.toContain(SFC_KEEP_IMPORT_DIRECTIVE)
 }
 
 beforeEach(async () => {
@@ -196,6 +203,59 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       }
       expect(content).toContain(secondMarker)
       expect(content).not.toContain(firstMarker)
+    }
+    finally {
+      await dev.stop(5_000)
+      await fs.writeFile(SFC_SRC_PATH, originalSource, 'utf8')
+    }
+  })
+
+  it.each(PLATFORM_LIST)('连续快速修改 .vue SFC style 部分 (%s)', async (platform) => {
+    await fs.remove(DIST_ROOT)
+    const originalSource = await fs.readFile(SFC_SRC_PATH, 'utf8')
+    const ext = PLATFORM_EXT[platform]
+    const distPath = path.join(DIST_ROOT, `pages/hmr-sfc/index.${ext.style}`)
+    const firstMarker = createHmrMarker('RAPID-FIRST-SFC-STYLE', platform)
+    const secondMarker = createHmrMarker('RAPID-SECOND-SFC-STYLE', platform)
+
+    const firstUpdate = originalSource.replace('.marker {', `.marker {\n  --hmr-marker: '${firstMarker}';`)
+    const secondUpdate = originalSource.replace('.marker {', `.marker {\n  --hmr-marker: '${secondMarker}';`)
+    if (firstUpdate === originalSource || secondUpdate === originalSource) {
+      throw new Error('Failed to insert marker into .vue SFC style source.')
+    }
+
+    // @ts-expect-error execa v9 overload resolution
+    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
+    })
+
+    try {
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      const initialStyle = await dev.waitFor(waitForFileContains(distPath, 'hmr-sfc-page'), `${platform} initial SFC style`)
+      expectSfcKeepImportResolved(initialStyle)
+
+      await replaceFileByRename(SFC_SRC_PATH, firstUpdate)
+      await replaceFileByRename(SFC_SRC_PATH, secondUpdate)
+
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second SFC style marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(SFC_SRC_PATH, `${secondUpdate}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second SFC style marker (retry)`,
+        )
+      }
+      expect(content).toContain(secondMarker)
+      expect(content).not.toContain(firstMarker)
+      expectSfcKeepImportResolved(content)
+      expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)

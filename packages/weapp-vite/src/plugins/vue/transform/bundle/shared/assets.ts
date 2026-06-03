@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../../../context'
 import type { JsonMergeStrategy } from '../../../../../types'
 import type { ClassStyleWxsAsset } from './types'
 import { getClassStyleWxsSource } from 'wevu/compiler'
+import { processCssWithCache } from '../../../../css/shared/preprocessor'
 import { resolveClassStyleWxsLocationForBase } from '../../classStyle'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../../emitAssets'
 import { emitScopedSlotAssets } from '../../scopedSlot'
@@ -11,6 +12,16 @@ import { resolveBundleOutputExtensions } from '../outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from '../platform'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
+
+async function processVueResultStyle(
+  style: string,
+  configService: NonNullable<CompilerContext['configService']>,
+) {
+  if (!configService.platform) {
+    return style
+  }
+  return await processCssWithCache(style, configService)
+}
 
 export function resolveVueBundleAssetContext(
   configService: NonNullable<CompilerContext['configService']>,
@@ -69,9 +80,10 @@ export function emitSharedVueEntryJsonAsset(options: {
   )
 }
 
-export function emitSharedFallbackPageAssets(options: {
+export async function emitSharedFallbackPageAssets(options: {
   bundle: Record<string, any>
   pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
   relativeBase: string
   result: Pick<VueTransformResult, 'style' | 'config'>
   outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
@@ -90,6 +102,7 @@ export function emitSharedFallbackPageAssets(options: {
   const {
     bundle,
     pluginCtx,
+    configService,
     relativeBase,
     result,
     outputExtensions,
@@ -101,7 +114,8 @@ export function emitSharedFallbackPageAssets(options: {
   } = options
 
   if (result.style) {
-    emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
+    const style = await processVueResultStyle(result.style, configService)
+    emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, style, styleExtension)
   }
 
   emitSharedVueEntryJsonAsset({
@@ -266,7 +280,7 @@ export function emitBundleVueEntryAssets(options: {
   }
 }
 
-export function emitFallbackPageBundleAssets(options: {
+export async function emitFallbackPageBundleAssets(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
@@ -301,9 +315,10 @@ export function emitFallbackPageBundleAssets(options: {
     platformAssetOptions: options.platformAssetOptions,
   })
 
-  emitSharedFallbackPageAssets({
+  await emitSharedFallbackPageAssets({
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
+    configService: options.configService,
     relativeBase: options.relativeBase,
     result: options.result,
     outputExtensions: options.outputExtensions,
@@ -315,7 +330,7 @@ export function emitFallbackPageBundleAssets(options: {
   })
 }
 
-export function emitCompiledEntryBundleAssets(options: {
+export async function emitCompiledEntryBundleAssets(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
@@ -376,11 +391,12 @@ export function emitCompiledEntryBundleAssets(options: {
   })
 
   if (shouldEmitSfcStyleAsset) {
+    const style = await processVueResultStyle(sfcStyle, options.configService)
     emitSfcStyleIfMissing(
       options.pluginCtx,
       options.bundle,
       options.relativeBase,
-      sfcStyle,
+      style,
       options.outputExtensions.wxss,
       isAppVue ? { updateExisting: false } : undefined,
     )

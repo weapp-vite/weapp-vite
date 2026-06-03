@@ -20,6 +20,8 @@ definePageJson({
 
 <style lang="css">
 @import './hello.css';
+/* stylelint-disable-next-line at-rule-no-unknown, scss/at-rule-no-unknown */
+@wv-keep-import './keep-import.css';
 
 .css-inline {
   font-size: 28rpx;

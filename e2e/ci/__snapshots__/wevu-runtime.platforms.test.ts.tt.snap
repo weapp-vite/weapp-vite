@@ -166,7 +166,9 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr-sfc/index.style 1`] = `
-".hmr-sfc-page {
+"@import '../hmr/index.wxss';
+
+.hmr-sfc-page {
   padding: 24rpx;
 }
 .title {

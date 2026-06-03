@@ -42,6 +42,9 @@ const RUNTIME_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/runtime/index.js')
 const HMR_PAGE_BASE_MARKER = '<view class="title">HMR</view>'
 const HMR_SFC_TEMPLATE_BASE_MARKER = 'HMR-SFC'
 const HMR_SFC_SCRIPT_BASE_MARKER = 'HMR-SFC-SCRIPT'
+const HMR_SFC_STYLE_BASE_MARKER = 'hmr-sfc-page'
+const HMR_SFC_KEEP_IMPORT_OUTPUT = '@import \'../hmr/index.wxss\';'
+const HMR_SFC_KEEP_IMPORT_DIRECTIVE = '@wv-keep-import'
 const LAYOUT_PAGE_TEMPLATE_BASE_MARKER = 'LAYOUTS-PAGE-TEMPLATE-BASE'
 const LAYOUT_PAGE_SCRIPT_BASE_MARKER = 'LAYOUTS-PAGE-SCRIPT-BASE'
 
@@ -64,6 +67,11 @@ async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20
     await page.waitFor(200)
   }
   throw new Error(`Timed out waiting runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
+}
+
+function expectSfcKeepImportResolved(content: string) {
+  expect(content).toContain(HMR_SFC_KEEP_IMPORT_OUTPUT)
+  expect(content).not.toContain(HMR_SFC_KEEP_IMPORT_DIRECTIVE)
 }
 
 async function waitForIdeRecompileSettled(delayMs = 1_200) {
@@ -106,7 +114,7 @@ async function waitForInitialHmrDistReady(dev: ReturnType<typeof startDevProcess
       waitForFile(HMR_PAGE_WXSS_DIST, 90_000),
       waitForFileContains(HMR_SFC_WXML_DIST, HMR_SFC_TEMPLATE_BASE_MARKER, 90_000),
       waitForFileContains(HMR_SFC_JS_DIST, HMR_SFC_SCRIPT_BASE_MARKER, 90_000),
-      waitForFile(HMR_SFC_WXSS_DIST, 90_000),
+      waitForFileContains(HMR_SFC_WXSS_DIST, HMR_SFC_STYLE_BASE_MARKER, 90_000),
       waitForFileContains(LAYOUT_PAGE_WXML_DIST, LAYOUT_PAGE_TEMPLATE_BASE_MARKER, 90_000),
       waitForFileContains(LAYOUT_PAGE_JS_DIST, LAYOUT_PAGE_SCRIPT_BASE_MARKER, 90_000),
       waitForFile(LAYOUT_PAGE_WXSS_DIST, 90_000),
@@ -248,6 +256,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
 
     try {
       await waitForInitialHmrDistReady(dev)
+      expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
       let page = await relaunchIdeRoute('/pages/hmr/index', 'HMR', ctx)
       expect(await waitForPageWxmlContains(page, 'HMR')).toContain('HMR')
 
@@ -323,6 +332,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       await waitForIdeRecompileSettled()
       page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, sfcTemplateMarker)).toContain(sfcTemplateMarker)
+      expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
       const sfcScriptMarker = createHmrMarker('IDE-CORE-SFC-SCRIPT', 'weapp')
       const updatedSfcScript = updatedSfcTemplate
@@ -340,6 +350,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, sfcScriptMarker)).toContain(sfcScriptMarker)
       expect(await page.data('marker')).toBe(sfcScriptMarker)
+      expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
       const sfcStyleMarker = createHmrMarker('IDE-CORE-SFC-STYLE', 'weapp')
       const updatedSfcStyle = updatedSfcScript
@@ -354,6 +365,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc style hmr marker emitted',
       )
       expect(sfcStyleOutput).toContain(sfcStyleMarker)
+      expectSfcKeepImportResolved(sfcStyleOutput)
       await waitForIdeRecompileSettled()
       page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await page.data('marker')).toBe(sfcScriptMarker)
