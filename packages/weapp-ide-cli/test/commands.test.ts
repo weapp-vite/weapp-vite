@@ -60,7 +60,7 @@ describe('automator commands', () => {
       navigateBack: vi.fn(),
       reLaunch: vi.fn(),
       switchTab: vi.fn(),
-      close: vi.fn(),
+      disconnect: vi.fn(),
     }
 
     beforeEach(() => {
@@ -69,7 +69,7 @@ describe('automator commands', () => {
       mockMiniProgram.navigateBack.mockReset()
       mockMiniProgram.reLaunch.mockReset()
       mockMiniProgram.switchTab.mockReset()
-      mockMiniProgram.close.mockReset()
+      mockMiniProgram.disconnect.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
       connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
@@ -80,7 +80,7 @@ describe('automator commands', () => {
       await navigateTo({ projectPath: mockCwd, url: 'pages/detail/detail' })
 
       expect(mockMiniProgram.navigateTo).toHaveBeenCalledWith('pages/detail/detail')
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('redirectTo calls miniProgram.redirectTo with url', async () => {
@@ -89,7 +89,7 @@ describe('automator commands', () => {
       await redirectTo({ projectPath: mockCwd, url: 'pages/login/login' })
 
       expect(mockMiniProgram.redirectTo).toHaveBeenCalledWith('pages/login/login')
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('navigateBack calls miniProgram.navigateBack', async () => {
@@ -98,7 +98,7 @@ describe('automator commands', () => {
       await navigateBack({ projectPath: mockCwd })
 
       expect(mockMiniProgram.navigateBack).toHaveBeenCalled()
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('reLaunch calls miniProgram.reLaunch with url', async () => {
@@ -107,7 +107,7 @@ describe('automator commands', () => {
       await reLaunch({ projectPath: mockCwd, url: 'pages/index/index' })
 
       expect(mockMiniProgram.reLaunch).toHaveBeenCalledWith('pages/index/index')
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('switchTab calls miniProgram.switchTab with url', async () => {
@@ -116,7 +116,7 @@ describe('automator commands', () => {
       await switchTab({ projectPath: mockCwd, url: 'pages/home/home' })
 
       expect(mockMiniProgram.switchTab).toHaveBeenCalledWith('pages/home/home')
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('closes miniProgram even on error', async () => {
@@ -125,7 +125,7 @@ describe('automator commands', () => {
 
       await expect(navigateTo({ projectPath: mockCwd, url: 'pages/test/test' })).rejects.toThrow('Navigation failed')
 
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
   })
 
@@ -140,7 +140,7 @@ describe('automator commands', () => {
       currentPage: vi.fn(),
       pageStack: vi.fn(),
       systemInfo: vi.fn(),
-      close: vi.fn(),
+      disconnect: vi.fn(),
     }
 
     beforeEach(() => {
@@ -148,7 +148,7 @@ describe('automator commands', () => {
       mockMiniProgram.currentPage.mockReset()
       mockMiniProgram.pageStack.mockReset()
       mockMiniProgram.systemInfo.mockReset()
-      mockMiniProgram.close.mockReset()
+      mockMiniProgram.disconnect.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
       connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
@@ -160,7 +160,7 @@ describe('automator commands', () => {
       const result = await pageStack({ projectPath: mockCwd })
 
       expect(result).toEqual([{ path: 'pages/index/index', query: { id: '123' } }])
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('currentPage returns current page info', async () => {
@@ -170,7 +170,7 @@ describe('automator commands', () => {
       const result = await currentPage({ projectPath: mockCwd })
 
       expect(result).toEqual({ path: 'pages/index/index', query: { id: '123' } })
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('systemInfo returns system info', async () => {
@@ -181,7 +181,7 @@ describe('automator commands', () => {
       const result = await systemInfo({ projectPath: mockCwd })
 
       expect(result).toEqual(systemInfoData)
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('pageData returns page data', async () => {
@@ -192,7 +192,7 @@ describe('automator commands', () => {
       await pageData({ projectPath: mockCwd })
 
       expect(mockPage.data).toHaveBeenCalled()
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('pageData passes path argument to data()', async () => {
@@ -219,7 +219,7 @@ describe('automator commands', () => {
     const mockMiniProgram = {
       currentPage: vi.fn(),
       pageScrollTo: vi.fn(),
-      close: vi.fn(),
+      disconnect: vi.fn(),
     }
 
     beforeEach(() => {
@@ -228,7 +228,7 @@ describe('automator commands', () => {
       mockPage.$.mockReset()
       mockMiniProgram.currentPage.mockReset()
       mockMiniProgram.pageScrollTo.mockReset()
-      mockMiniProgram.close.mockReset()
+      mockMiniProgram.disconnect.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
       connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
@@ -242,7 +242,7 @@ describe('automator commands', () => {
 
       expect(mockPage.$).toHaveBeenCalledWith('.submit-btn')
       expect(mockElement.tap).toHaveBeenCalled()
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('tap throws error when element not found', async () => {
@@ -252,7 +252,7 @@ describe('automator commands', () => {
 
       await expect(tap({ projectPath: mockCwd, selector: '.not-exist' })).rejects.toThrow('未找到元素: .not-exist')
 
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('input calls element.input() with value', async () => {
@@ -264,7 +264,7 @@ describe('automator commands', () => {
 
       expect(mockPage.$).toHaveBeenCalledWith('.input-field')
       expect(mockElement.input).toHaveBeenCalledWith('Hello World')
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('scrollTo calls miniProgram.pageScrollTo()', async () => {
@@ -273,7 +273,7 @@ describe('automator commands', () => {
       await scrollTo({ projectPath: mockCwd, scrollTop: 500 })
 
       expect(mockMiniProgram.pageScrollTo).toHaveBeenCalledWith(500)
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
   })
 
@@ -281,13 +281,13 @@ describe('automator commands', () => {
     const mockMiniProgram = {
       stopAudits: vi.fn(),
       remote: vi.fn(),
-      close: vi.fn(),
+      disconnect: vi.fn(),
     }
 
     beforeEach(() => {
       mockMiniProgram.stopAudits.mockReset()
       mockMiniProgram.remote.mockReset()
-      mockMiniProgram.close.mockReset()
+      mockMiniProgram.disconnect.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
       connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
@@ -300,7 +300,7 @@ describe('automator commands', () => {
 
       expect(mockMiniProgram.stopAudits).toHaveBeenCalled()
       expect(result).toEqual({ score: 100, issues: [] })
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('remote enables remote debugging by default', async () => {
@@ -309,7 +309,7 @@ describe('automator commands', () => {
       await remote({ projectPath: mockCwd })
 
       expect(mockMiniProgram.remote).toHaveBeenCalledWith(true)
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
     it('remote disables remote debugging with enable: false', async () => {
@@ -318,7 +318,7 @@ describe('automator commands', () => {
       await remote({ projectPath: mockCwd, enable: false })
 
       expect(mockMiniProgram.remote).toHaveBeenCalledWith(false)
-      expect(mockMiniProgram.close).toHaveBeenCalled()
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
   })
 })
