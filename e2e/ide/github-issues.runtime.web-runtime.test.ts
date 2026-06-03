@@ -133,13 +133,21 @@ describe.sequential.skip('github-issues runtime web runtime globals', () => {
       expect(runtime.decoded).toBe('AB')
       expect(runtime.eventType).toBe('tick')
       expect(runtime.customEventType).toBe('payload')
+      expect(runtime.parsedUrl).toBe('https://issue-448.invalid/next?b=2&a=1')
+      expect(runtime.canParseUrl).toBe(true)
+      expect(runtime.searchParamsSize).toBe(3)
+      expect(runtime.sortedParams).toBe('a=1&a=0&b=2')
+      expect(runtime.cookieCount).toBe(2)
+      expect(runtime.jsonResponseContentType).toBe('application/json')
+      expect(runtime.errorResponseStatus).toBe(0)
+      expect(runtime.errorResponseType).toBe('error')
       expect(runtime.microtaskState).toBe('flushed')
       expect(runtime.duration).toBeGreaterThanOrEqual(0)
       expectRandomBytesPayload(runtime.randomBytes)
 
       expect(pageWxml).toContain('class="issue448-page"')
       expect(pageWxml).toContain('class="issue448-title"')
-      expect(pageWxml.match(/class="issue448-line"/g)?.length).toBe(7)
+      expect(pageWxml.match(/class="issue448-line"/g)?.length).toBe(13)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -10,6 +10,7 @@ import {
 
 type HeaderTuple = readonly [string, string]
 type HeaderRecord = Record<string, string>
+const SET_COOKIE_HEADER_NAME = 'set-cookie'
 
 function isIterableHeaders(input: unknown): input is Iterable<HeaderTuple> {
   return Boolean(input) && typeof (input as Iterable<HeaderTuple>)[Symbol.iterator] === 'function'
@@ -20,7 +21,7 @@ function isHeaderObject(input: unknown): input is Record<string, unknown> {
 }
 
 export class HeadersPolyfill {
-  private readonly store = new Map<string, { key: string, value: string }>()
+  private readonly store = new Map<string, { key: string, values: string[] }>()
 
   constructor(init?: unknown) {
     if (!init) {
@@ -49,8 +50,21 @@ export class HeadersPolyfill {
   }
 
   append(key: string, value: string) {
-    const current = this.get(key)
-    this.set(key, current ? `${current}, ${value}` : value)
+    const normalized = normalizeHeaderName(key)
+    if (!normalized) {
+      return
+    }
+
+    const item = this.store.get(normalized)
+    if (item) {
+      item.values.push(String(value))
+      return
+    }
+
+    this.store.set(normalized, {
+      key,
+      values: [String(value)],
+    })
   }
 
   set(key: string, value: string) {
@@ -60,12 +74,16 @@ export class HeadersPolyfill {
     }
     this.store.set(normalized, {
       key,
-      value: String(value),
+      values: [String(value)],
     })
   }
 
   get(key: string) {
-    return this.store.get(normalizeHeaderName(key))?.value ?? null
+    return this.store.get(normalizeHeaderName(key))?.values.join(', ') ?? null
+  }
+
+  getSetCookie() {
+    return this.store.get(SET_COOKIE_HEADER_NAME)?.values.slice() ?? []
   }
 
   has(key: string) {
@@ -77,13 +95,13 @@ export class HeadersPolyfill {
   }
 
   forEach(callback: (value: string, key: string) => void) {
-    for (const { key, value } of this.store.values()) {
-      callback(value, key)
+    for (const { key, values } of this.store.values()) {
+      callback(values.join(', '), key)
     }
   }
 
   entries() {
-    return Array.from(this.store.values(), item => [item.key, item.value] as [string, string])[Symbol.iterator]()
+    return Array.from(this.store.values(), item => [item.key, item.values.join(', ')] as [string, string])[Symbol.iterator]()
   }
 
   keys() {
@@ -91,7 +109,7 @@ export class HeadersPolyfill {
   }
 
   values() {
-    return Array.from(this.store.values(), item => item.value)[Symbol.iterator]()
+    return Array.from(this.store.values(), item => item.values.join(', '))[Symbol.iterator]()
   }
 
   [Symbol.iterator]() {
@@ -206,7 +224,7 @@ export class ResponsePolyfill {
   readonly ok: boolean
   readonly url: string
   readonly redirected = false
-  readonly type: ResponseType = 'basic'
+  readonly type: ResponseType
   readonly [Symbol.toStringTag] = 'Response'
 
   constructor(body?: RequestBodyLike, init: Record<string, any> = {}) {
@@ -217,6 +235,31 @@ export class ResponsePolyfill {
     this.ok = this.status >= 200 && this.status < 300
     this.headers = new HeadersPolyfill(init.headers)
     this.url = init.url ?? ''
+    this.type = init.type ?? 'basic'
+  }
+
+  static error() {
+    return new ResponsePolyfill(null, {
+      status: 0,
+      type: 'error',
+    })
+  }
+
+  static json(data: unknown, init: Record<string, any> = {}) {
+    const body = JSON.stringify(data)
+    if (body === undefined) {
+      throw new TypeError('Failed to execute \'json\' on \'Response\': data is not JSON serializable')
+    }
+
+    const headers = new HeadersPolyfill(init.headers)
+    if (!headers.has('content-type')) {
+      headers.set('content-type', 'application/json')
+    }
+
+    return new ResponsePolyfill(body, {
+      ...init,
+      headers,
+    })
   }
 
   get body(): ReadableStream<Uint8Array> | null {

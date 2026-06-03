@@ -766,6 +766,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
     expect(pageJs).toContain('"queueMicrotask"')
     expect(pageJs).toContain('const encoded = btoa("AB");')
+    expect(pageJs).toContain('URL.parse(')
+    expect(pageJs).toContain('URL.canParse(')
+    expect(pageJs).toContain('searchParams.sort()')
+    expect(pageJs).toContain('headers.getSetCookie()')
+    expect(pageJs).toContain('Response.json(')
+    expect(pageJs).toContain('Response.error()')
     expect(pageJs).toContain('function _runE2E() {')
   })
 

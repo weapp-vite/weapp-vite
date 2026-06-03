@@ -125,6 +125,137 @@ function assignHostGlobal(host: Record<string, any>, key: string, value: unknown
   }
 }
 
+function defineHostGlobal(host: Record<string, any>, key: string, descriptor: PropertyDescriptor) {
+  try {
+    Object.defineProperty(host, key, {
+      configurable: true,
+      ...descriptor,
+    })
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function createUrlParser(URLConstructor: typeof URLPolyfill) {
+  return function parse(input: string | URLPolyfill, base?: string | URLPolyfill) {
+    try {
+      return new URLConstructor(input, base)
+    }
+    catch {
+      return null
+    }
+  }
+}
+
+function createUrlCanParser(URLConstructor: typeof URLPolyfill) {
+  return function canParse(input: string | URLPolyfill, base?: string | URLPolyfill) {
+    try {
+      Reflect.construct(URLConstructor, base === undefined ? [input] : [input, base])
+      return true
+    }
+    catch {
+      return false
+    }
+  }
+}
+
+function patchUrlConstructor(host: Record<string, any>) {
+  const URLConstructor = host.URL
+  if (typeof URLConstructor !== 'function' || isPlaceholderRequestGlobal(URLConstructor)) {
+    return false
+  }
+
+  let patched = true
+  if (typeof URLConstructor.parse !== 'function') {
+    patched = assignHostGlobal(URLConstructor, 'parse', createUrlParser(URLConstructor)) && patched
+  }
+  if (typeof URLConstructor.canParse !== 'function') {
+    patched = assignHostGlobal(URLConstructor, 'canParse', createUrlCanParser(URLConstructor)) && patched
+  }
+  return patched
+}
+
+function compareUrlSearchParamKeys(leftKey: string, rightKey: string) {
+  if (leftKey < rightKey) {
+    return -1
+  }
+  if (leftKey > rightKey) {
+    return 1
+  }
+  return 0
+}
+
+function sortUrlSearchParams(this: URLSearchParams) {
+  const entries = Array.from(this.entries()).sort(([leftKey], [rightKey]) => compareUrlSearchParamKeys(leftKey, rightKey))
+  const keys = [...new Set(entries.map(([key]) => key))]
+  for (const key of keys) {
+    this.delete(key)
+  }
+  for (const [key, value] of entries) {
+    this.append(key, value)
+  }
+}
+
+function patchUrlSearchParamsConstructor(host: Record<string, any>) {
+  const URLSearchParamsConstructor = host.URLSearchParams
+  const prototype = URLSearchParamsConstructor?.prototype as Record<string, any> | undefined
+  if (typeof URLSearchParamsConstructor !== 'function' || isPlaceholderRequestGlobal(URLSearchParamsConstructor) || !prototype) {
+    return false
+  }
+
+  let patched = true
+  if (!('size' in prototype)) {
+    patched = defineHostGlobal(prototype, 'size', {
+      get(this: URLSearchParams) {
+        let size = 0
+        this.forEach(() => {
+          size += 1
+        })
+        return size
+      },
+    }) && patched
+  }
+  if (typeof prototype.sort !== 'function') {
+    patched = assignHostGlobal(prototype, 'sort', sortUrlSearchParams) && patched
+  }
+  return patched
+}
+
+function patchHeadersConstructor(host: Record<string, any>) {
+  const HeadersConstructor = host.Headers
+  const prototype = HeadersConstructor?.prototype as Record<string, any> | undefined
+  if (typeof HeadersConstructor !== 'function' || isPlaceholderRequestGlobal(HeadersConstructor) || !prototype) {
+    return false
+  }
+
+  if (typeof prototype.getSetCookie === 'function') {
+    return true
+  }
+
+  return assignHostGlobal(prototype, 'getSetCookie', function getSetCookie(this: Headers) {
+    const value = this.get('set-cookie')
+    return value == null ? [] : [value]
+  })
+}
+
+function patchResponseConstructor(host: Record<string, any>) {
+  const ResponseConstructor = host.Response
+  if (typeof ResponseConstructor !== 'function' || isPlaceholderRequestGlobal(ResponseConstructor)) {
+    return false
+  }
+
+  let patched = true
+  if (typeof ResponseConstructor.json !== 'function') {
+    patched = assignHostGlobal(ResponseConstructor, 'json', ResponsePolyfill.json) && patched
+  }
+  if (typeof ResponseConstructor.error !== 'function') {
+    patched = assignHostGlobal(ResponseConstructor, 'error', ResponsePolyfill.error) && patched
+  }
+  return patched
+}
+
 function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRuntimeGlobalsTarget) {
   if (target === 'fetch') {
     if (typeof host.fetch !== 'function' || isPlaceholderRequestGlobal(host.fetch)) {
@@ -134,7 +265,7 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
   }
 
   if (target === 'Headers') {
-    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers)) {
+    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers) || !patchHeadersConstructor(host)) {
       assignHostGlobal(host, 'Headers', HeadersPolyfill)
     }
     return
@@ -148,7 +279,7 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
   }
 
   if (target === 'Response') {
-    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response)) {
+    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response) || !patchResponseConstructor(host)) {
       assignHostGlobal(host, 'Response', ResponsePolyfill)
     }
     return
@@ -244,10 +375,10 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
 }
 
 function installUrlGlobals(host: Record<string, any>) {
-  if (!hasUsableConstructor(host.URL, ['https://request-globals.invalid'])) {
+  if (!hasUsableConstructor(host.URL, ['https://request-globals.invalid']) || !patchUrlConstructor(host)) {
     assignHostGlobal(host, 'URL', URLPolyfill)
   }
-  if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request'])) {
+  if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request']) || !patchUrlSearchParamsConstructor(host)) {
     assignHostGlobal(host, 'URLSearchParams', URLSearchParamsPolyfill)
   }
   if (!hasUsableConstructor(host.Blob)) {
