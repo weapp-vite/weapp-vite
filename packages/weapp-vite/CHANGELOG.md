@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.16.35
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 样式在 HMR 重建时可能跳过 `@wv-keep-import` 后处理的问题，确保产物稳定输出为 `@import`。** [#659](https://github.com/weapp-vite/weapp-vite/pull/659) by @sonofmagic
+- 📦 Updated 6 dependencies [`643c2fe`](https://github.com/weapp-vite/weapp-vite/commit/643c2fe8c0e64d3a817503d3080162b51c0d314a)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/miniprogram-automator@1.2.0`, `weapp-ide-cli@5.4.0`, `@weapp-vite/mcp@1.4.0`, `@wevu/web-apis@1.2.20`, `wevu@6.16.35`, `@weapp-vite/ast@6.16.35`
+
+  </details>
+
 ## 6.16.34
 
 ### Patch Changes

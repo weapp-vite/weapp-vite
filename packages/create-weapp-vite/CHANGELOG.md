@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.45
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 样式在 HMR 重建时可能跳过 `@wv-keep-import` 后处理的问题，确保产物稳定输出为 `@import`。** [#659](https://github.com/weapp-vite/weapp-vite/pull/659) by @sonofmagic
+
 ## 2.3.44
 
 ### Patch Changes

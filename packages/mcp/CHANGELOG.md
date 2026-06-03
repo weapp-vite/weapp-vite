@@ -1,5 +1,16 @@
 # @weapp-vite/mcp
 
+## 1.4.0
+
+### Minor Changes
+
+- ✨ **支持按端口或 sessionId 区分多个 DevTools automator 会话，并为自动启动流程增加并发安全的端口租约，避免多个自动化任务同时启动时争抢同一个 websocket 端口。** [#661](https://github.com/weapp-vite/weapp-vite/pull/661) by @sonofmagic
+
+### Patch Changes
+
+- 📦 **Dependencies** [`643c2fe`](https://github.com/weapp-vite/weapp-vite/commit/643c2fe8c0e64d3a817503d3080162b51c0d314a)
+  → `@weapp-vite/devtools-runtime@0.4.0`
+
 ## 1.3.6
 
 ### Patch Changes
