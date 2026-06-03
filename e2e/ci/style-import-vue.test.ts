@@ -89,6 +89,8 @@ describe.sequential('vue style @import resolution (e2e)', () => {
     for (const marker of EXPECTED_MARKERS) {
       expect(wxss).toContain(marker)
     }
+    expect(wxss).toContain('@import \'./keep-import.css\';')
+    expect(wxss).not.toContain('@wv-keep-import')
   })
 
   it('dev build inlines css/scss/src imports into wxss', async () => {
@@ -111,6 +113,8 @@ describe.sequential('vue style @import resolution (e2e)', () => {
       for (const marker of EXPECTED_MARKERS) {
         expect(wxss).toContain(marker)
       }
+      expect(wxss).toContain('@import \'./keep-import.css\';')
+      expect(wxss).not.toContain('@wv-keep-import')
     }
     finally {
       await devProcess.stop(2_000)
@@ -125,10 +129,12 @@ describe.sequential('vue style @import resolution (e2e)', () => {
     const originalScssImport = await fs.readFile(SCSS_IMPORT_PATH, 'utf8')
     const originalExternalCss = await fs.readFile(EXTERNAL_CSS_PATH, 'utf8')
 
+    const pageMarker = 'STYLE-IMPORT-HMR-PAGE'
     const helloMarker = 'STYLE-IMPORT-HMR-HELLO'
     const scssMarker = 'STYLE-IMPORT-HMR-SCSS'
     const externalMarker = 'STYLE-IMPORT-HMR-EXTERNAL'
 
+    const updatedPageSource = injectStyleMarker(originalPageSource, '.css-inline {', pageMarker)
     const updatedHelloCss = injectStyleMarker(originalHelloCss, '.hello-import {', helloMarker)
     const updatedScssImport = injectStyleMarker(originalScssImport, '.scss-imported {', scssMarker)
     const updatedExternalCss = injectStyleMarker(originalExternalCss, '.external-src {', externalMarker)
@@ -147,6 +153,19 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         ),
         'weapp initial style import output',
       )
+
+      await replaceFileByRename(PAGE_SOURCE_PATH, updatedPageSource)
+      const pageWxss = await devProcess.waitFor(
+        waitForFileWithSourceHeartbeat(
+          () => waitForFileContains(WXSS_PATH, [pageMarker], 1_000),
+          PAGE_SOURCE_PATH,
+          updatedPageSource,
+        ),
+        'weapp page style keep-import hmr output',
+      )
+      expect(pageWxss).toContain(pageMarker)
+      expect(pageWxss).toContain('@import \'./keep-import.css\';')
+      expect(pageWxss).not.toContain('@wv-keep-import')
 
       await replaceFileByRename(HELLO_CSS_PATH, updatedHelloCss)
       const helloWxss = await devProcess.waitFor(
@@ -184,6 +203,7 @@ describe.sequential('vue style @import resolution (e2e)', () => {
     }
     finally {
       await devProcess.stop(2_000)
+      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
       await fs.writeFile(HELLO_CSS_PATH, originalHelloCss, 'utf8')
       await fs.writeFile(SCSS_IMPORT_PATH, originalScssImport, 'utf8')
       await fs.writeFile(EXTERNAL_CSS_PATH, originalExternalCss, 'utf8')

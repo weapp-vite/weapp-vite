@@ -6,6 +6,7 @@ const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
 const emitSfcStyleIfMissingMock = vi.hoisted(() => vi.fn())
 const emitScopedSlotAssetsMock = vi.hoisted(() => vi.fn())
+const processCssWithCacheMock = vi.hoisted(() => vi.fn(async (code: string) => code))
 const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
   fileName: 'pages/index/__class_style.sjs',
 })))
@@ -48,6 +49,10 @@ vi.mock('../emitAssets', () => ({
   emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
   emitSfcJsonAsset: emitSfcJsonAssetMock,
   emitSfcStyleIfMissing: emitSfcStyleIfMissingMock,
+}))
+
+vi.mock('../../../css/shared/preprocessor', () => ({
+  processCssWithCache: processCssWithCacheMock,
 }))
 
 vi.mock('../scopedSlot', () => ({
@@ -118,6 +123,8 @@ describe('emitSharedVueEntryAssets', () => {
     emitSfcJsonAssetMock.mockReset()
     emitSfcStyleIfMissingMock.mockReset()
     emitScopedSlotAssetsMock.mockReset()
+    processCssWithCacheMock.mockReset()
+    processCssWithCacheMock.mockImplementation(async (code: string) => code)
     resolveClassStyleWxsLocationForBaseMock.mockClear()
     getClassStyleWxsSourceMock.mockClear()
     preparePlatformConfigAssetMock.mockReset()
@@ -336,8 +343,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
-  it('emits compiled component entry assets with default component json config', () => {
-    const result = emitCompiledEntryBundleAssets({
+  it('emits compiled component entry assets with default component json config', async () => {
+    const result = await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {} as any,
@@ -392,8 +399,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
-  it('emits page SFC style assets during asset-only HMR refresh', () => {
-    emitCompiledEntryBundleAssets({
+  it('emits page SFC style assets during asset-only HMR refresh', async () => {
+    await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {
@@ -418,6 +425,7 @@ describe('emitSharedVueEntryAssets', () => {
       isPage: true,
       configService: {
         isDev: true,
+        platform: 'weapp',
       } as any,
       templateExtension: 'wxml',
       jsonExtension: 'json',
@@ -440,10 +448,13 @@ describe('emitSharedVueEntryAssets', () => {
       'wxss',
       undefined,
     )
+    expect(processCssWithCacheMock).toHaveBeenCalledWith('.marker { color: red; }', expect.objectContaining({
+      isDev: true,
+    }))
   })
 
-  it('does not overwrite Vite-processed page SFC style assets during css importer HMR', () => {
-    emitCompiledEntryBundleAssets({
+  it('does not overwrite Vite-processed page SFC style assets during css importer HMR', async () => {
+    await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {
@@ -485,8 +496,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
   })
 
-  it('emits compiled app entry assets with merged app json config', () => {
-    const result = emitCompiledEntryBundleAssets({
+  it('emits compiled app entry assets with merged app json config', async () => {
+    const result = await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {
@@ -563,8 +574,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
-  it('does not overwrite processed app styles during unrelated dev HMR updates', () => {
-    emitCompiledEntryBundleAssets({
+  it('does not overwrite processed app styles during unrelated dev HMR updates', async () => {
+    await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {
@@ -1142,8 +1153,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result.result.script).toBe('Page({ loaded: true })')
   })
 
-  it('emits fallback page bundle assets through shared entry and page flows', () => {
-    emitFallbackPageBundleAssets({
+  it('emits fallback page bundle assets through shared entry and page flows', async () => {
+    await emitFallbackPageBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {} as any,
@@ -1369,10 +1380,13 @@ describe('emitSharedVueEntryAssets', () => {
     )
   })
 
-  it('emits fallback page style and shared page json asset', () => {
-    emitSharedFallbackPageAssets({
+  it('emits fallback page style and shared page json asset', async () => {
+    await emitSharedFallbackPageAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        platform: 'alipay',
+      } as any,
       relativeBase: 'pages/index/index',
       result: {
         style: '.page{}',
@@ -1409,6 +1423,41 @@ describe('emitSharedVueEntryAssets', () => {
         kind: 'page',
         extension: 'json',
       },
+    )
+  })
+
+  it('post-processes fallback page style before emitting', async () => {
+    processCssWithCacheMock.mockResolvedValueOnce('@import \'./keep.css\';\n.page{}')
+
+    await emitSharedFallbackPageAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        platform: 'weapp',
+      } as any,
+      relativeBase: 'pages/index/index',
+      result: {
+        style: '@wv-keep-import \'./keep.css\';\n.page{}',
+      },
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+      },
+      styleExtension: 'wxss',
+      jsonExtension: 'json',
+    })
+
+    expect(processCssWithCacheMock).toHaveBeenCalledWith(
+      '@wv-keep-import \'./keep.css\';\n.page{}',
+      expect.objectContaining({ platform: 'weapp' }),
+    )
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      '@import \'./keep.css\';\n.page{}',
+      'wxss',
     )
   })
 })

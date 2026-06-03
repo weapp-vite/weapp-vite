@@ -83,7 +83,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     })
   }
 
-  const { shouldEmitComponentJson } = emitCompiledEntryBundleAssets({
+  const { shouldEmitComponentJson } = await emitCompiledEntryBundleAssets({
     bundle,
     pluginCtx,
     ctx,
