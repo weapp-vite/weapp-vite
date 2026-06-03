@@ -1,0 +1,23 @@
+{
+  "description": "socket.io chat demo",
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ],
+    "es6": true,
+    "enhance": false,
+    "postcss": false,
+    "minified": false
+  },
+  "srcMiniprogramRoot": "dist/",
+  "projectname": "socket-io-chat",
+  "appid": "wxb3d842a4a7e3440d",
+  "libVersion": "3.15.0",
+  "condition": {}
+}

@@ -1,0 +1,30 @@
+{
+  "name": "socket-io-chat",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "server": "tsx server/index.ts",
+    "dev:web": "vite --host 127.0.0.1 --port 5174 web",
+    "build:web": "vite build web",
+    "dev:mini": "wv dev",
+    "build:mini": "wv build",
+    "open": "wv open",
+    "postinstall": "wv prepare",
+    "typecheck:web": "vue-tsc --noEmit -p web/tsconfig.json"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "tsx": "^4.22.4",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

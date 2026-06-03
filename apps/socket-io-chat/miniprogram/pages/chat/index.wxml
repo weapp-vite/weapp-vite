@@ -1,0 +1,44 @@
+<view class="chat-page">
+  <view class="chat-header">
+    <view class="chat-header__title">Socket.IO 聊天室</view>
+    <view class="chat-header__status {{connected ? 'is-online' : ''}}">
+      {{connected ? '在线' : '离线'}}
+    </view>
+  </view>
+
+  <scroll-view
+    class="message-list"
+    scroll-y
+    scroll-with-animation
+    scroll-into-view="{{scrollIntoView}}"
+  >
+    <view
+      class="message {{item.userId === userId ? 'message--mine' : ''}} {{item.platform === 'server' ? 'message--system' : ''}}"
+      id="msg-{{item.id}}"
+      wx:for="{{messages}}"
+      wx:key="id"
+    >
+      <view class="message__avatar" wx:if="{{item.platform !== 'server'}}">
+        {{item.platform === 'mini' ? '小' : 'W'}}
+      </view>
+      <view class="message__body">
+        <view class="message__meta" wx:if="{{item.platform !== 'server'}}">
+          {{item.userName}} · {{item.time}}
+        </view>
+        <view class="message__bubble">{{item.text}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="composer">
+    <input
+      class="composer__input"
+      value="{{draft}}"
+      confirm-type="send"
+      placeholder="发消息"
+      bindinput="onDraftInput"
+      bindconfirm="sendMessage"
+    />
+    <button class="composer__button" bindtap="sendMessage">发送</button>
+  </view>
+</view>

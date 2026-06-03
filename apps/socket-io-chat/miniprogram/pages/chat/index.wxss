@@ -1,0 +1,151 @@
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #ededed;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 28rpx;
+  background: #ededed;
+  border-bottom: 1rpx solid rgb(0 0 0 / 8%);
+}
+
+.chat-header__title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.chat-header__status {
+  padding: 6rpx 18rpx;
+  font-size: 22rpx;
+  color: #6b7280;
+  background: #ddd;
+  border-radius: 999rpx;
+}
+
+.chat-header__status.is-online {
+  color: #07582f;
+  background: #95ec69;
+}
+
+.message-list {
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  padding: 24rpx 24rpx 36rpx;
+}
+
+.message {
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+}
+
+.message--mine {
+  flex-direction: row-reverse;
+}
+
+.message--system {
+  justify-content: center;
+}
+
+.message__avatar {
+  display: flex;
+  flex: 0 0 72rpx;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #fff;
+  background: #07c160;
+  border-radius: 8rpx;
+}
+
+.message--mine .message__avatar {
+  background: #2f80ed;
+}
+
+.message__body {
+  max-width: 560rpx;
+}
+
+.message--mine .message__body {
+  align-items: flex-end;
+}
+
+.message__meta {
+  margin-bottom: 8rpx;
+  font-size: 22rpx;
+  color: #888;
+}
+
+.message--mine .message__meta {
+  text-align: right;
+}
+
+.message__bubble {
+  position: relative;
+  padding: 18rpx 22rpx;
+  font-size: 30rpx;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.message--mine .message__bubble {
+  background: #95ec69;
+}
+
+.message--system .message__bubble {
+  max-width: 560rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+  background: rgb(0 0 0 / 8%);
+  border-radius: 999rpx;
+}
+
+.composer {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  padding: 16rpx 20rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: #f7f7f7;
+  border-top: 1rpx solid rgb(0 0 0 / 8%);
+}
+
+.composer__input {
+  box-sizing: border-box;
+  flex: 1;
+  height: 76rpx;
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.composer__button {
+  width: 132rpx;
+  height: 76rpx;
+  padding: 0;
+  margin: 0;
+  font-size: 28rpx;
+  line-height: 76rpx;
+  color: #fff;
+  background: #07c160;
+  border-radius: 8rpx;
+}
+
+.composer__button::after {
+  border: 0;
+}

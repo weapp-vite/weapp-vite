@@ -1,0 +1,10 @@
+page {
+  height: 100%;
+  color: #111;
+  background: #ededed;
+}
+
+button,
+input {
+  font: inherit;
+}
