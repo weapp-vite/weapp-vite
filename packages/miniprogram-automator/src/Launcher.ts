@@ -247,6 +247,9 @@ export default class Launcher {
           })
           try {
             await candidate.checkVersion()
+            if (typeof candidate.waitForAppReady === 'function') {
+              await candidate.waitForAppReady(timeout)
+            }
           }
           catch (error) {
             candidate.disconnect()

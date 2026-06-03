@@ -13,6 +13,7 @@ import {
   withMiniProgram,
 } from './automator-session'
 import { captureFullPageScreenshotBuffer } from './fullPageScreenshot'
+import { closeWechatIdeProject } from './wechat-commands'
 
 export interface AutomatorCommandOptions extends AutomatorSessionOptions {}
 
@@ -96,6 +97,29 @@ function withCommandTimeout<T>(task: Promise<T>, timeoutMs: number, message: str
         reject(error)
       })
   })
+}
+
+function isDevtoolsProtocolTimeoutError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  return error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    || error.message.includes('DevTools did not respond to protocol method')
+    || Reflect.get(error, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+}
+
+function isScreenshotNavigationTimeoutError(error: unknown) {
+  return error instanceof Error && Reflect.get(error, 'code') === 'DEVTOOLS_SCREENSHOT_NAVIGATION_TIMEOUT'
+}
+
+async function reLaunchForScreenshot(miniProgram: MiniProgramLike, page: string) {
+  const routeOptions = { url: page }
+  if (typeof miniProgram.callWxMethod === 'function') {
+    await miniProgram.callWxMethod('reLaunch', routeOptions)
+  }
+  else {
+    await miniProgram.reLaunch(page)
+  }
 }
 
 async function runRouteCommand(
@@ -359,7 +383,25 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
         `正在跳转页面 ${colors.cyan(normalizedPage)}...`,
         `Navigating to page ${colors.cyan(normalizedPage)}...`,
       ))
-      await miniProgram.reLaunch(normalizedPage)
+      try {
+        await reLaunchForScreenshot(miniProgram, normalizedPage)
+      }
+      catch (error) {
+        if (!isDevtoolsProtocolTimeoutError(error)) {
+          throw error
+        }
+        logger.warn(i18nText(
+          `截图前跳转页面 ${normalizedPage} 超时，将重建会话后截取当前页面。`,
+          `Timed out navigating to ${normalizedPage} before screenshot. Rebuilding the session and capturing the current page.`,
+        ))
+        throw createTimeoutError(
+          i18nText(
+            `截图前跳转页面 ${normalizedPage} 超时`,
+            `Timed out navigating to ${normalizedPage} before screenshot`,
+          ),
+          'DEVTOOLS_SCREENSHOT_NAVIGATION_TIMEOUT',
+        )
+      }
       if (options.fullPage) {
         await sleep(1000)
       }
@@ -398,36 +440,54 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
  * @description 获取当前小程序截图。
  */
 export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
-  let screenshotBuffer: Buffer
+  let nextOptions = options
+  let screenshotBuffer: Buffer | undefined
+  let hasRetriedWithFreshSession = false
 
-  try {
-    screenshotBuffer = await captureScreenshotBuffer(options)
+  while (true) {
+    try {
+      screenshotBuffer = await captureScreenshotBuffer(nextOptions)
+      break
+    }
+    catch (error) {
+      const isProtocolTimeout = error instanceof Error && error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+      const isNavigationTimeout = isScreenshotNavigationTimeoutError(error)
+      const canRetryWithFreshSession = Boolean(!nextOptions.miniProgram && (isProtocolTimeout || isNavigationTimeout) && !hasRetriedWithFreshSession)
+
+      if (!canRetryWithFreshSession) {
+        throw error
+      }
+
+      hasRetriedWithFreshSession = true
+      await closeWechatIdeProject().catch((closeError) => {
+        logger.warn(i18nText(
+          `关闭当前微信开发者工具项目窗口失败：${closeError instanceof Error ? closeError.message : String(closeError)}，仍将继续尝试重建自动化会话。`,
+          `Failed to close the current Wechat DevTools project window: ${closeError instanceof Error ? closeError.message : String(closeError)}. Continuing to rebuild the automation session.`,
+        ))
+      })
+      const sessionIdOrPort = nextOptions.sessionId || nextOptions.port
+      if (sessionIdOrPort) {
+        await closeSharedMiniProgram(nextOptions.projectPath, sessionIdOrPort)
+      }
+      else {
+        await closeSharedMiniProgram(nextOptions.projectPath)
+      }
+      logger.warn(i18nText(
+        '当前 DevTools 会话截图超时，正在改用全新自动化会话重试一次...',
+        'The current DevTools session timed out while capturing screenshot. Retrying once with a fresh automation session...',
+      ))
+
+      const { page: _page, ...optionsWithoutPage } = nextOptions
+      nextOptions = {
+        ...(isNavigationTimeout ? optionsWithoutPage : nextOptions),
+        preferOpenedSession: false,
+        sharedSession: false,
+      }
+    }
   }
-  catch (error) {
-    const isProtocolTimeout = error instanceof Error && error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    const canRetryWithFreshSession = Boolean(options.sharedSession && !options.miniProgram && isProtocolTimeout)
 
-    if (!canRetryWithFreshSession) {
-      throw error
-    }
-
-    const sessionIdOrPort = options.sessionId || options.port
-    if (sessionIdOrPort) {
-      await closeSharedMiniProgram(options.projectPath, sessionIdOrPort)
-    }
-    else {
-      await closeSharedMiniProgram(options.projectPath)
-    }
-    logger.warn(i18nText(
-      '当前共享 DevTools 会话截图超时，正在改用全新自动化会话重试一次...',
-      'The current shared DevTools session timed out while capturing screenshot. Retrying once with a fresh automation session...',
-    ))
-
-    screenshotBuffer = await captureScreenshotBuffer({
-      ...options,
-      preferOpenedSession: false,
-      sharedSession: false,
-    })
+  if (!screenshotBuffer) {
+    throw new Error(i18nText('截图失败', 'Failed to capture screenshot'))
   }
 
   const base64 = screenshotBuffer.toString('base64')

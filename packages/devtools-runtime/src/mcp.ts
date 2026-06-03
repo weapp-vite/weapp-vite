@@ -3,6 +3,9 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 
 export type AutomatorMiniProgram = InstanceType<typeof MiniProgram>
+  & {
+    callWxMethod?: (method: string, ...args: unknown[]) => Promise<unknown>
+  }
 export type AutomatorPage = InstanceType<typeof Page>
 export type AutomatorElement = InstanceType<typeof Element> & {
   input?: (value: string) => Promise<void>

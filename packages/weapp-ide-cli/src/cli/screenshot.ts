@@ -84,6 +84,7 @@ export function parseScreenshotArgs(argv: string[]): ScreenshotOptions {
     ...(parsed.timeout ? { timeout: parsed.timeout } : {}),
     ...(parsed.port ? { port: parsed.port } : {}),
     ...(parsed.sessionId ? { sessionId: parsed.sessionId } : {}),
+    ...(parsed.preferOpenedSession === false ? { preferOpenedSession: parsed.preferOpenedSession } : {}),
     ...(outputPath ? { outputPath } : {}),
     ...(page ? { page } : {}),
     ...(fullPage ? { fullPage: true } : {}),

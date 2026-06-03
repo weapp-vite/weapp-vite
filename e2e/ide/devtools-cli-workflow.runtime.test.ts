@@ -1,0 +1,526 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { Buffer } from 'node:buffer'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
+import { spawn } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import process from 'node:process'
+import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { connectMiniProgram } from 'weapp-ide-cli'
+import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
+import { closeWechatIdeProject } from '../../packages/weapp-ide-cli/src/cli/wechat-commands'
+import { launchAutomator } from '../utils/automator'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+
+const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
+const WEAPP_IDE_CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-ide-cli/bin/weapp.js')
+const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const SCREENSHOT_OUTPUT = path.resolve(TEMPLATE_ROOT, '.tmp/devtools-cli-workflow.png')
+const DEV_SCREENSHOT_DIR = path.resolve(TEMPLATE_ROOT, '.weapp-vite/dev-screenshots')
+const INDEX_ROUTE = '/pages/index/index'
+const COUNT_LABEL_SELECTOR = '#count-label'
+const COUNT_BUTTON_SELECTOR = '.count-button-control'
+const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
+const SCRIPT_BIN = '/usr/bin/script'
+const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin'
+const NORMALIZE_LEADING_SLASH_RE = /^\/+/
+// eslint-disable-next-line no-control-regex, regexp/no-obscure-range -- 这里需要去掉终端 ANSI 控制序列，便于断言真实 CLI 输出。
+const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
+const LOGIN_REQUIRED_RE = /登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired|DEVTOOLS_LOGIN_REQUIRED/i
+const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools timed out|DevTools did not respond/i
+
+type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
+
+function normalizeRoutePath(routePath: string) {
+  return routePath.replace(NORMALIZE_LEADING_SLASH_RE, '')
+}
+
+function normalizeTerminalOutput(output: string) {
+  return output
+    .replace(STRIP_ANSI_RE, '')
+    .replace(/\r/g, '\n')
+}
+
+function isLoginRequiredOutput(output: string) {
+  return LOGIN_REQUIRED_RE.test(normalizeTerminalOutput(output))
+}
+
+function isProtocolTimeoutOutput(output: string) {
+  return PROTOCOL_TIMEOUT_RE.test(normalizeTerminalOutput(output))
+}
+
+function structuredResult<T>(result: unknown) {
+  return (result as { structuredContent?: { result?: T } }).structuredContent?.result
+}
+
+function toolErrorText(result: unknown) {
+  const content = (result as { content?: Array<{ text?: string }> }).content
+  return content?.map(item => item.text).filter(Boolean).join('\n') ?? ''
+}
+
+function expectToolResult<T>(result: unknown) {
+  const errorResult = result as { isError?: boolean }
+  if (errorResult.isError) {
+    throw new Error(`MCP tool failed: ${toolErrorText(result) || '<empty error>'}`)
+  }
+  return structuredResult<T>(result)
+}
+
+function getTool(tools: Map<string, ToolHandler>, name: string) {
+  const tool = tools.get(name)
+  if (!tool) {
+    throw new Error(`missing MCP tool: ${name}`)
+  }
+  return tool
+}
+
+async function runNodeCli(args: string[], options: {
+  cwd?: string
+  timeout?: number
+  reject?: boolean
+} = {}) {
+  // eslint-disable-next-line e18e/ban-dependencies -- e2e 里需要复用仓库现有 execa CLI 运行方式。
+  const { execa } = await import('execa')
+  return await execa('node', args, {
+    all: true,
+    cwd: options.cwd,
+    reject: options.reject ?? true,
+    timeout: options.timeout ?? 60_000,
+    stdin: 'ignore',
+  })
+}
+
+async function runWeappViteCli(args: string[], options: {
+  cwd?: string
+  timeout?: number
+  reject?: boolean
+} = {}) {
+  return await runNodeCli([CLI_PATH, ...args], options)
+}
+
+async function runWeappIdeCli(args: string[], options: {
+  cwd?: string
+  timeout?: number
+  reject?: boolean
+} = {}) {
+  return await runNodeCli([WEAPP_IDE_CLI_PATH, ...args], options)
+}
+
+async function waitForPageData<T>(miniProgram: any, dataPath: string, expected: T, timeoutMs = 8_000) {
+  const start = Date.now()
+  let lastValue: unknown
+  while (Date.now() - start <= timeoutMs) {
+    const page = await miniProgram.currentPage()
+    lastValue = await page.data(dataPath)
+    if (lastValue === expected) {
+      return lastValue
+    }
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  throw new Error(`page data "${dataPath}" mismatch: expected ${String(expected)}, actual ${String(lastValue)}`)
+}
+
+async function waitForCurrentRoute(miniProgram: any, route: string, timeoutMs = 8_000) {
+  const normalizedRoute = normalizeRoutePath(route)
+  const start = Date.now()
+  let lastPath = ''
+  while (Date.now() - start <= timeoutMs) {
+    const page = await miniProgram.currentPage()
+    lastPath = String(page?.path ?? '')
+    if (normalizeRoutePath(lastPath) === normalizedRoute) {
+      return page
+    }
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  throw new Error(`current route mismatch: expected ${route}, actual ${lastPath}`)
+}
+
+function isRecoverableAutomatorConnectionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Connection closed')
+    || message.includes('Target closed')
+    || message.includes('WebSocket is not open')
+    || message.includes('socket hang up')
+    || message.includes('Execution context was destroyed')
+}
+
+async function waitForPredicate(
+  predicate: () => boolean | Promise<boolean>,
+  timeoutMs: number,
+  label: string,
+) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    if (await predicate()) {
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  throw new Error(`timeout waiting for ${label}`)
+}
+
+async function waitForChildExit(child: ChildProcessWithoutNullStreams, timeoutMs: number) {
+  return await new Promise<{ code: number | null, signal: NodeJS.Signals | null }>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL')
+      reject(new Error(`timeout waiting for child process ${child.pid ?? '<unknown>'} to exit`))
+    }, timeoutMs)
+
+    child.once('exit', (code, signal) => {
+      clearTimeout(timer)
+      resolve({ code, signal })
+    })
+  })
+}
+
+async function listDevScreenshotFiles() {
+  try {
+    const entries = await fs.readdir(DEV_SCREENSHOT_DIR)
+    return entries
+      .filter(entry => entry.startsWith('screenshot-') && entry.endsWith('.png'))
+      .map(entry => path.join(DEV_SCREENSHOT_DIR, entry))
+  }
+  catch (error) {
+    if (error && typeof error === 'object' && (error as { code?: string }).code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
+async function waitForNewDevScreenshot(before: ReadonlySet<string>) {
+  let latestNewFile: string | undefined
+  await waitForPredicate(async () => {
+    const files = await listDevScreenshotFiles()
+    latestNewFile = files.find(file => !before.has(file))
+    if (!latestNewFile) {
+      return false
+    }
+    const stats = await fs.stat(latestNewFile)
+    return stats.size > 0
+  }, 30_000, 'dev hotkey screenshot file')
+
+  if (!latestNewFile) {
+    throw new Error('dev hotkey screenshot file was not created')
+  }
+  return latestNewFile
+}
+
+async function runDevHotkeyScreenshotSmoke() {
+  if (!SHOULD_RUN_TTY_HOTKEY_SMOKE) {
+    return
+  }
+
+  await fs.access(SCRIPT_BIN)
+  const beforeScreenshots = new Set(await listDevScreenshotFiles())
+  const child = spawn(SCRIPT_BIN, [
+    '-q',
+    '/dev/null',
+    'node',
+    CLI_PATH,
+    'dev',
+    '--non-interactive',
+    '--login-retry',
+    'never',
+  ], {
+    cwd: TEMPLATE_ROOT,
+    env: {
+      ...process.env,
+      FORCE_COLOR: '0',
+      NO_COLOR: '1',
+    },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  let output = ''
+  const appendOutput = (chunk: Buffer | string) => {
+    output += chunk.toString()
+  }
+  child.stdout.on('data', appendOutput)
+  child.stderr.on('data', appendOutput)
+
+  try {
+    await waitForPredicate(() => {
+      return normalizeTerminalOutput(output).includes('开发快捷键已就绪')
+    }, 120_000, 'dev hotkey startup')
+
+    child.stdin.write('s')
+    await waitForPredicate(() => {
+      return normalizeTerminalOutput(output).includes('当前页面截图完成')
+    }, 120_000, 'dev hotkey screenshot completion')
+
+    const screenshotFile = await waitForNewDevScreenshot(beforeScreenshots)
+    const stats = await fs.stat(screenshotFile)
+    expect(stats.size).toBeGreaterThan(0)
+  }
+  catch (error) {
+    const normalizedOutput = normalizeTerminalOutput(output).split('\n').slice(-80).join('\n')
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\n\nrecent output:\n${normalizedOutput}`)
+  }
+  finally {
+    if (!child.killed) {
+      child.stdin.write('q')
+    }
+    await waitForChildExit(child, 20_000).catch(() => {})
+    const afterScreenshots = await listDevScreenshotFiles().catch(() => [])
+    await Promise.all(afterScreenshots
+      .filter(file => !beforeScreenshots.has(file))
+      .map(file => fs.rm(file, { force: true }).catch(() => {})))
+  }
+}
+
+async function createRuntimeTools() {
+  const tools = new Map<string, ToolHandler>()
+  const server = {
+    registerTool(name: string, _definition: unknown, handler: ToolHandler) {
+      tools.set(name, handler)
+    },
+  }
+
+  const manager = registerRuntimeTools(server as unknown as McpServer, {
+    runtimeHooks: {
+      connectMiniProgram,
+    },
+    workspaceRoot: path.resolve(import.meta.dirname, '../..'),
+  })
+
+  return {
+    manager,
+    tools,
+  }
+}
+
+async function expectHelpfulCliFailure(
+  args: string[],
+  expectedPatterns: RegExp[],
+) {
+  const result = await runWeappIdeCli(args, {
+    cwd: TEMPLATE_ROOT,
+    reject: false,
+    timeout: 20_000,
+  })
+  const output = (result.all ?? '').replace(STRIP_ANSI_RE, '')
+  expect(result.exitCode).not.toBe(0)
+  for (const pattern of expectedPatterns) {
+    expect(output).toMatch(pattern)
+  }
+}
+
+describe.sequential('DevTools CLI workflow runtime', () => {
+  let miniProgram: any
+  let loginRequiredOutput: string | undefined
+  let protocolTimeoutOutput: string | undefined
+  let weappIdeOpenExitCode: number | undefined
+  let weappViteOpenExitCode: number | undefined
+  let screenshotExitCode: number | undefined
+
+  async function startMiniProgram() {
+    if (miniProgram) {
+      await miniProgram.close().catch(() => {})
+      miniProgram = undefined
+    }
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    miniProgram = await launchAutomator({
+      projectPath: TEMPLATE_ROOT,
+      warmupRoute: INDEX_ROUTE,
+    })
+  }
+
+  async function runWithMiniProgramRecovery<T>(runner: () => Promise<T>) {
+    try {
+      return await runner()
+    }
+    catch (error) {
+      if (!isRecoverableAutomatorConnectionError(error)) {
+        throw error
+      }
+      await startMiniProgram()
+      return await runner()
+    }
+  }
+
+  beforeAll(async () => {
+    await fs.rm(SCREENSHOT_OUTPUT, { force: true })
+    await runWeappViteBuildWithLogCapture({
+      cliPath: CLI_PATH,
+      projectRoot: TEMPLATE_ROOT,
+      platform: 'weapp',
+      cwd: TEMPLATE_ROOT,
+      label: 'ide:devtools-cli-workflow',
+    })
+    const wvOpen = await runWeappViteCli([
+      'open',
+      TEMPLATE_ROOT,
+      '--non-interactive',
+      '--login-retry',
+      'never',
+    ], {
+      cwd: TEMPLATE_ROOT,
+      reject: false,
+      timeout: 90_000,
+    })
+    if (wvOpen.exitCode !== 0) {
+      const output = wvOpen.all ?? ''
+      if (isLoginRequiredOutput(output)) {
+        loginRequiredOutput = output
+        return
+      }
+      throw new Error(output || `wv open failed with exit code ${wvOpen.exitCode}`)
+    }
+    weappViteOpenExitCode = wvOpen.exitCode
+
+    const weappOpen = await runWeappIdeCli([
+      'open',
+      '-p',
+      TEMPLATE_ROOT,
+      '--non-interactive',
+      '--login-retry',
+      'never',
+    ], {
+      cwd: TEMPLATE_ROOT,
+      reject: false,
+      timeout: 90_000,
+    })
+    if (weappOpen.exitCode !== 0) {
+      const output = weappOpen.all ?? ''
+      if (isLoginRequiredOutput(output)) {
+        loginRequiredOutput = output
+        return
+      }
+      throw new Error(output || `weapp open failed with exit code ${weappOpen.exitCode}`)
+    }
+    weappIdeOpenExitCode = weappOpen.exitCode
+
+    const screenshot = await runWeappIdeCli([
+      'screenshot',
+      '-p',
+      TEMPLATE_ROOT,
+      '--page',
+      INDEX_ROUTE,
+      '--output',
+      SCREENSHOT_OUTPUT,
+      '--no-runtime-service',
+      '--json',
+    ], {
+      cwd: TEMPLATE_ROOT,
+      reject: false,
+      timeout: 180_000,
+    })
+    if (screenshot.exitCode !== 0) {
+      const output = screenshot.all ?? ''
+      if (isProtocolTimeoutOutput(output)) {
+        protocolTimeoutOutput = output
+        return
+      }
+      throw new Error(output || `weapp screenshot failed with exit code ${screenshot.exitCode}`)
+    }
+    screenshotExitCode = screenshot.exitCode
+    const screenshotStats = await fs.stat(SCREENSHOT_OUTPUT)
+    expect(screenshotStats.size).toBeGreaterThan(0)
+
+    await startMiniProgram()
+  }, 360_000)
+
+  afterAll(async () => {
+    if (miniProgram) {
+      await miniProgram.close().catch(() => {})
+      miniProgram = undefined
+    }
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await fs.rm(SCREENSHOT_OUTPUT, { force: true }).catch(() => {})
+  }, 60_000)
+
+  it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async () => {
+    if (loginRequiredOutput) {
+      const output = normalizeTerminalOutput(loginRequiredOutput)
+      expect(output).toMatch(/登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired/i)
+      expect(output).toMatch(/非交互模式|non-interactive|请先登录|Please login/i)
+      return
+    }
+    if (protocolTimeoutOutput) {
+      const output = normalizeTerminalOutput(protocolTimeoutOutput)
+      expect(output).toMatch(/DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools did not respond/i)
+      expect(output).toMatch(/自动化会话已卡住|窗口不在目标项目|automation session is stuck|target project/i)
+      expect(output).toMatch(/重试一次|Retrying once|重建会话/i)
+      return
+    }
+
+    expect(weappViteOpenExitCode).toBe(0)
+    expect(weappIdeOpenExitCode).toBe(0)
+    expect(screenshotExitCode).toBe(0)
+
+    await runWithMiniProgramRecovery(async () => {
+      await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+      await waitForPageData(miniProgram, 'count', 0)
+    })
+
+    await runWeappIdeCli([
+      'tap',
+      COUNT_BUTTON_SELECTOR,
+      '-p',
+      TEMPLATE_ROOT,
+      '--no-runtime-service',
+    ], {
+      cwd: TEMPLATE_ROOT,
+      timeout: 60_000,
+    })
+    await runWithMiniProgramRecovery(async () => {
+      await waitForPageData(miniProgram, 'count', 1)
+    })
+
+    const { manager, tools } = await createRuntimeTools()
+    try {
+      const connectResult = await getTool(tools, 'weapp_devtools_connect')({
+        projectPath: TEMPLATE_ROOT,
+        timeout: 30_000,
+      })
+      expect(expectToolResult<{ connected: boolean }>(connectResult)).toMatchObject({
+        connected: true,
+      })
+
+      const findResult = await getTool(tools, 'weapp_runtime_find_node')({
+        projectPath: TEMPLATE_ROOT,
+        selector: COUNT_LABEL_SELECTOR,
+        withWxml: true,
+      })
+      expect(expectToolResult<{ outerWxml?: string, selector: string }>(findResult)).toMatchObject({
+        selector: COUNT_LABEL_SELECTOR,
+      })
+
+      const tapResult = await getTool(tools, 'weapp_runtime_tap_node')({
+        projectPath: TEMPLATE_ROOT,
+        selector: COUNT_BUTTON_WRAPPER_SELECTOR,
+        innerSelector: COUNT_BUTTON_SELECTOR,
+        waitMs: 300,
+      })
+      expect(expectToolResult<{ innerSelector: string, selector: string }>(tapResult)).toMatchObject({
+        innerSelector: COUNT_BUTTON_SELECTOR,
+        selector: COUNT_BUTTON_WRAPPER_SELECTOR,
+      })
+      await runWithMiniProgramRecovery(async () => {
+        await waitForPageData(miniProgram, 'count', 2)
+      })
+    }
+    finally {
+      await manager.close({ projectPath: TEMPLATE_ROOT }).catch(() => {})
+    }
+
+    await miniProgram.close().catch(() => {})
+    miniProgram = undefined
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await runDevHotkeyScreenshotSmoke()
+
+    await closeWechatIdeProject().catch(() => {})
+    await expectHelpfulCliFailure([
+      'current-page',
+      '-p',
+      TEMPLATE_ROOT,
+      '--timeout',
+      '3000',
+      '--no-runtime-service',
+    ], [
+      /无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket/,
+      /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project/,
+    ])
+  })
+})

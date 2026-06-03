@@ -36,6 +36,9 @@ const CHANGE_ROUTE_CONTEXT_TIMEOUT = 12_000
 const CHANGE_ROUTE_CALL_TIMEOUT = 12_000
 const CHANGE_ROUTE_READY_TIMEOUT = 15_000
 const CHANGE_ROUTE_POLL_DELAY = 500
+const APP_READY_TIMEOUT = 20_000
+const APP_READY_PROBE_TIMEOUT = 3_000
+const APP_READY_POLL_DELAY = 500
 const CHANGE_ROUTE_DEBUG_ENABLED = process.env.WEAPP_VITE_E2E_CHANGE_ROUTE_DEBUG === '1'
 
 function sleep(ms: number) {
@@ -321,6 +324,31 @@ export default class MiniProgram extends EventEmitter {
     if (sdkVersion !== 'dev' && cmpVersion(sdkVersion, '2.7.3') < 0) {
       throw new Error(`SDKVersion is currently ${sdkVersion}, while automator(${pkg.version}) requires at least version 2.7.3`)
     }
+  }
+
+  /**
+   * @description 等待小程序 App 域协议可用，避免返回半就绪自动化会话。
+   */
+  async waitForAppReady(timeout = APP_READY_TIMEOUT) {
+    const startedAt = Date.now()
+    let lastError: unknown
+
+    while (Date.now() - startedAt <= timeout) {
+      try {
+        await this.send('App.captureScreenshot', {}, {
+          timeout: APP_READY_PROBE_TIMEOUT,
+        })
+        return
+      }
+      catch (error) {
+        lastError = error
+        await sleep(APP_READY_POLL_DELAY)
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Timed out waiting App domain readiness after ${timeout}ms`)
   }
 
   async screenshot(options: IScreenshotOptions = {}) {

@@ -154,7 +154,7 @@ export async function withMiniProgram<T>(
   }
   finally {
     if (miniProgram) {
-      await miniProgram.close()
+      miniProgram.disconnect()
     }
   }
 }

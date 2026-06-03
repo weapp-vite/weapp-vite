@@ -5,6 +5,7 @@ export interface ParsedAutomatorArgs {
   timeout?: number
   port?: number
   sessionId?: string
+  preferOpenedSession?: boolean
   json: boolean
   positionals: string[]
 }
@@ -48,6 +49,7 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
   let timeout: number | undefined
   let port: number | undefined
   let sessionId: string | undefined
+  let preferOpenedSession: boolean | undefined
   let json = false
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -120,6 +122,11 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
       continue
     }
 
+    if (token === '--no-runtime-service') {
+      preferOpenedSession = false
+      continue
+    }
+
     if (token.startsWith('-')) {
       const optionName = token.includes('=') ? token.slice(0, token.indexOf('=')) : token
       if (takesValue(optionName) && !token.includes('=')) {
@@ -139,6 +146,7 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
     ...(timeout ? { timeout } : {}),
     ...(port ? { port } : {}),
     ...(sessionId ? { sessionId } : {}),
+    ...(preferOpenedSession === false ? { preferOpenedSession } : {}),
     json,
     positionals,
   }

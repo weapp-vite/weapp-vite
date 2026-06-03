@@ -112,7 +112,7 @@ describe('devtools runtime shared sessions', () => {
     expect(getSharedMiniProgramSessionCount()).toBe(0)
   })
 
-  it('closes non-shared sessions after runner completes', async () => {
+  it('disconnects non-shared sessions after runner completes', async () => {
     const miniProgram = createMiniProgram()
     const hooks = {
       connectMiniProgram: vi.fn(async () => miniProgram),
@@ -121,7 +121,8 @@ describe('devtools runtime shared sessions', () => {
     const result = await withMiniProgram(hooks, { projectPath: '/project-a' }, async () => 'ok')
 
     expect(result).toBe('ok')
-    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(miniProgram.disconnect).toHaveBeenCalledTimes(1)
+    expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
   it('resets shared sessions when runner fails', async () => {

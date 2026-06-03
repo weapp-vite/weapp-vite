@@ -117,6 +117,32 @@ describe('MiniProgram', () => {
     await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
   })
 
+  it('waits for App domain readiness before returning a launched session', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.captureScreenshot within 12000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.captureScreenshot',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce({ data: 'base64-data' })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.waitForAppReady()
+    await vi.advanceTimersByTimeAsync(600)
+
+    await expect(pending).resolves.toBeUndefined()
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.captureScreenshot', {}, {
+      timeout: 3_000,
+    })
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.captureScreenshot', {}, {
+      timeout: 3_000,
+    })
+  })
+
   it('forwards raw Tool domain commands through tool()', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)

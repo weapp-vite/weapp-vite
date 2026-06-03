@@ -57,6 +57,22 @@ describe('automator argv helpers', () => {
     })
   })
 
+  it('disables opened session reuse when runtime service is skipped', () => {
+    const parsed = parseAutomatorArgs([
+      '--project',
+      '/tmp/project',
+      '--no-runtime-service',
+      '#button',
+    ])
+
+    expect(parsed).toEqual({
+      projectPath: '/tmp/project',
+      preferOpenedSession: false,
+      json: false,
+      positionals: ['#button'],
+    })
+  })
+
   it('reads option values from both forms', () => {
     expect(readOptionValue(['--output', 'a.json'], '--output')).toBe('a.json')
     expect(readOptionValue(['--output=b.json'], '--output')).toBe('b.json')

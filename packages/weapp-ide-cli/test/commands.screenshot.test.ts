@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
+const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -12,6 +13,10 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('../src/cli/automator-session', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   withMiniProgram: withMiniProgramMock,
+}))
+
+vi.mock('../src/cli/wechat-commands', () => ({
+  closeWechatIdeProject: closeWechatIdeProjectMock,
 }))
 
 vi.mock('../src/logger', () => ({
@@ -40,6 +45,8 @@ describe('captureScreenshotBuffer', () => {
     vi.useFakeTimers()
     withMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockReset()
+    closeWechatIdeProjectMock.mockReset()
+    closeWechatIdeProjectMock.mockResolvedValue(undefined)
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
   })
@@ -83,6 +90,25 @@ describe('captureScreenshotBuffer', () => {
   })
 
   it('normalizes page paths before relaunching', async () => {
+    const callWxMethod = vi.fn()
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        callWxMethod,
+        screenshot: () => Promise.resolve(Buffer.from('png-data').toString('base64')),
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+
+    await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      page: 'pages/index/index',
+    })
+
+    expect(callWxMethod).toHaveBeenCalledWith('reLaunch', { url: '/pages/index/index' })
+  })
+
+  it('falls back to automator relaunch before screenshot when callWxMethod is unavailable', async () => {
     const reLaunch = vi.fn()
     withMiniProgramMock.mockImplementation(async (_options, runner) => {
       return await runner({
@@ -99,6 +125,40 @@ describe('captureScreenshotBuffer', () => {
     })
 
     expect(reLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('retries without page navigation when screenshot navigation protocol times out', async () => {
+    const expected = Buffer.from('png-data')
+    const callWxMethod = vi.fn().mockRejectedValue(Object.assign(
+      new Error('DevTools did not respond to protocol method App.callWxMethod within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.callWxMethod',
+      },
+    ))
+    let callCount = 0
+    withMiniProgramMock.mockImplementation(async (options, runner) => {
+      callCount += 1
+      if (callCount === 2) {
+        expect(options.page).toBeUndefined()
+        expect(options.sharedSession).toBe(false)
+        expect(options.preferOpenedSession).toBe(false)
+      }
+      return await runner({
+        ...(callCount === 1 ? { callWxMethod } : {}),
+        screenshot: () => Promise.resolve(expected.toString('base64')),
+      })
+    })
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+    const result = await takeScreenshot({
+      projectPath: '/workspace/project',
+      page: 'pages/index/index',
+    })
+
+    expect(result).toEqual({ base64: expected.toString('base64') })
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('截图前跳转页面 /pages/index/index 超时'))
   })
 
   it('skips devtools reconnect log when an existing miniProgram session is provided', async () => {
@@ -196,14 +256,14 @@ describe('captureScreenshotBuffer', () => {
     expect(pageScrollTo).toHaveBeenLastCalledWith(42)
   })
 
-  it('retries once with a fresh session when shared-session screenshot times out', async () => {
+  it('retries once with a fresh session when opened-session screenshot times out', async () => {
     const expected = Buffer.from('png-data')
     let callCount = 0
 
     withMiniProgramMock.mockImplementation(async (options, runner) => {
       callCount += 1
       if (callCount === 1) {
-        expect(options.sharedSession).toBe(true)
+        expect(options.preferOpenedSession).toBeUndefined()
         throw new Error('DEVTOOLS_PROTOCOL_TIMEOUT')
       }
 
@@ -217,12 +277,58 @@ describe('captureScreenshotBuffer', () => {
     const { takeScreenshot } = await import('../src/cli/commands')
     const result = await takeScreenshot({
       projectPath: '/workspace/project',
-      sharedSession: true,
     })
 
     expect(result).toEqual({ base64: expected.toString('base64') })
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('正在改用全新自动化会话重试一次'))
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries once when a fresh-session screenshot times out', async () => {
+    const expected = Buffer.from('png-data')
+    let callCount = 0
+
+    withMiniProgramMock.mockImplementation(async (options, runner) => {
+      callCount += 1
+      expect(options.preferOpenedSession).toBe(false)
+
+      if (callCount === 1) {
+        throw new Error('DEVTOOLS_PROTOCOL_TIMEOUT')
+      }
+
+      expect(options.sharedSession).toBe(false)
+      return await runner({
+        screenshot: () => Promise.resolve(expected.toString('base64')),
+      })
+    })
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+
+    const result = await takeScreenshot({
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+    })
+
+    expect(result).toEqual({ base64: expected.toString('base64') })
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+  })
+
+  it('does not retry more than once when screenshot protocol timeouts persist', async () => {
+    withMiniProgramMock.mockRejectedValue(new Error('DEVTOOLS_PROTOCOL_TIMEOUT'))
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+
+    await expect(takeScreenshot({
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+    })).rejects.toThrow('DEVTOOLS_PROTOCOL_TIMEOUT')
+
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
   })
 })

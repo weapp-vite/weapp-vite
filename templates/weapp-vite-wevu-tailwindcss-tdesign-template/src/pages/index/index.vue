@@ -28,14 +28,16 @@ function handleCountTap() {
       </view>
 
       <view class="mt-[24rpx] rounded-[20rpx] bg-[#f4f6ff] p-[20rpx]">
-        <text class="text-[24rpx] text-[#51517c]">
+        <text id="count-label" class="text-[24rpx] text-[#51517c]">
           {{ buttonText }}
         </text>
       </view>
 
-      <t-button class="mt-[24rpx]" theme="primary" block @tap="handleCountTap">
-        点一下
-      </t-button>
+      <view id="count-button">
+        <t-button class="mt-[24rpx] count-button-control" theme="primary" block @tap="handleCountTap">
+          点一下
+        </t-button>
+      </view>
     </view>
   </view>
 </template>

@@ -124,6 +124,20 @@ describe('run-automator', () => {
     })
   })
 
+  it('disables opened session reuse for direct commands when runtime service is skipped', async () => {
+    const { runAutomatorCommand } = await loadModule()
+
+    await runAutomatorCommand('tap', ['#button', '-p', '/tmp/demo', '--no-runtime-service'])
+
+    expect(commandMocks.tap).toHaveBeenCalledWith({
+      json: false,
+      positionals: ['#button'],
+      preferOpenedSession: false,
+      projectPath: '/tmp/demo',
+      selector: '#button',
+    })
+  })
+
   it('supports help output without running command', async () => {
     const { runAutomatorCommand } = await loadModule()
 

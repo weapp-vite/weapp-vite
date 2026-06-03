@@ -37,6 +37,7 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-features.runtime.subpath.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
+  'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts',
   'ide/template-weapp-vite-tailwindcss-template.test.ts',
   'ide/template-weapp-vite-tailwindcss-vant-template.test.ts',

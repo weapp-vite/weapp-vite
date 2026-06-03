@@ -102,6 +102,15 @@ describe('screenshot helpers', () => {
       })
     })
 
+    it('disables opened session reuse when runtime service is skipped', () => {
+      const options = parseScreenshotArgs(['--no-runtime-service'])
+
+      expect(options).toEqual({
+        projectPath: mockCwd,
+        preferOpenedSession: false,
+      })
+    })
+
     it('ignores unknown flags', () => {
       const options = parseScreenshotArgs(['--unknown', 'value', '-p', '/project'])
       expect(options.projectPath).toBe('/project')
