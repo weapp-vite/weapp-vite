@@ -39,6 +39,24 @@ describe('automator argv helpers', () => {
     expect(parsed.positionals).toEqual([])
   })
 
+  it('parses explicit automator session options', () => {
+    const parsed = parseAutomatorArgs([
+      '--project',
+      '/tmp/project',
+      '--port',
+      '19510',
+      '--session-id=worker-a',
+    ])
+
+    expect(parsed).toEqual({
+      projectPath: '/tmp/project',
+      port: 19510,
+      sessionId: 'worker-a',
+      json: false,
+      positionals: [],
+    })
+  })
+
   it('reads option values from both forms', () => {
     expect(readOptionValue(['--output', 'a.json'], '--output')).toBe('a.json')
     expect(readOptionValue(['--output=b.json'], '--output')).toBe('b.json')

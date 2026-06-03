@@ -9,6 +9,10 @@ const accessMock = vi.hoisted(() => vi.fn(async () => undefined))
 const readFileMock = vi.hoisted(() => vi.fn(async () => '{}'))
 const writeFileMock = vi.hoisted(() => vi.fn(async () => undefined))
 const getPortMock = vi.hoisted(() => vi.fn(async (value: number) => value))
+const acquirePortLeaseMock = vi.hoisted(() => vi.fn(async (port?: number) => ({
+  port: port ?? 9420,
+  release: vi.fn(async () => {}),
+})))
 const waitUntilMock = vi.hoisted(() => vi.fn(async (condition: () => unknown | Promise<unknown>, timeout = 0) => {
   const startTime = Date.now()
   while (true) {
@@ -46,6 +50,10 @@ vi.mock('./Connection', () => ({
   },
 }))
 
+vi.mock('./launcher/portLease', () => ({
+  acquireAutomatorPortLease: acquirePortLeaseMock,
+}))
+
 vi.mock('./SwanLauncher', () => ({
   default: swanLauncherMock,
 }))
@@ -69,6 +77,10 @@ async function loadLauncherModule(isWindows = false) {
 describe('Launcher', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    acquirePortLeaseMock.mockImplementation(async (port?: number) => ({
+      port: port ?? 9420,
+      release: vi.fn(async () => {}),
+    }))
     process.env.ComSpec = 'C:\\Windows\\System32\\cmd.exe'
   })
 
@@ -92,7 +104,7 @@ describe('Launcher', () => {
 
   it('rejects occupied custom ports before spawning', async () => {
     const { default: Launcher } = await loadLauncherModule()
-    getPortMock.mockResolvedValueOnce(10000)
+    acquirePortLeaseMock.mockRejectedValueOnce(new Error('Port 9420 is in use, please specify another port'))
     const launcher = new Launcher()
 
     await expect(launcher.launch({
@@ -100,6 +112,31 @@ describe('Launcher', () => {
       port: 9420,
       projectPath: '/tmp/project',
     })).rejects.toThrow('Port 9420 is in use')
+  })
+
+  it('retries automatic launch on websocket port conflicts with a new lease', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    acquirePortLeaseMock
+      .mockResolvedValueOnce({ port: 9420, release: vi.fn(async () => {}) })
+      .mockResolvedValueOnce({ port: 9421, release: vi.fn(async () => {}) })
+    const launcher = new Launcher()
+    const rawWaitUntil = waitUntilMock.getMockImplementation()!
+    waitUntilMock
+      .mockRejectedValueOnce(new Error('Wait timed out after 1 ms'))
+      .mockImplementationOnce(rawWaitUntil)
+    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion: vi.fn(async () => {}) })
+
+    await launcher.launch({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      projectPath: '/tmp/project',
+      timeout: 1,
+    })
+
+    expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
+    expect(spawnMock.mock.calls[1]?.[1]).toContain('9421')
   })
 
   it('spawns the cli and connects to the computed endpoint', async () => {

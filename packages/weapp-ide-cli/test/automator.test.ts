@@ -198,6 +198,8 @@ describe('automator helpers', () => {
       await launchAutomator({
         projectPath: '/workspace/project',
         timeout: 12_345,
+        port: 19_510,
+        sessionId: 'worker-a',
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
@@ -207,6 +209,7 @@ describe('automator helpers', () => {
       expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/Applications/wechat-cli',
+        port: 19_510,
         projectPath: '/workspace/project',
         timeout: 12_345,
         trustProject: false,
@@ -317,6 +320,28 @@ describe('automator helpers', () => {
       expect(writeFileMock).toHaveBeenCalledTimes(1)
       expect(String(writeFileMock.mock.calls[0]?.[1])).toContain('"wsEndpoint": "ws://127.0.0.1:9420"')
     })
+
+    it('persists explicit session metadata separately', async () => {
+      launchMock.mockResolvedValueOnce({
+        connected: true,
+        __WEAPP_VITE_SESSION_METADATA: {
+          port: 19_510,
+          wsEndpoint: 'ws://127.0.0.1:19510',
+        },
+      })
+
+      await launchAutomator({
+        port: 19_510,
+        projectPath: '/workspace/project',
+        sessionId: 'worker-a',
+      })
+
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
+        port: 19_510,
+      }))
+      expect(String(writeFileMock.mock.calls[0]?.[1])).toContain('"port": 19510')
+      expect(String(writeFileMock.mock.calls[0]?.[1])).toContain('"sessionId": "worker-a"')
+    })
   })
 
   describe('connectOpenedAutomator', () => {
@@ -336,6 +361,37 @@ describe('automator helpers', () => {
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
       expect(rmMock).not.toHaveBeenCalled()
+    })
+
+    it('uses explicit port endpoint when no persisted session exists', async () => {
+      await connectOpenedAutomator({
+        port: 19_510,
+        projectPath: '/workspace/project',
+      })
+
+      expect(connectMock).toHaveBeenCalledWith({
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      })
+    })
+
+    it('matches persisted endpoint by session id and port', async () => {
+      readFileMock.mockResolvedValueOnce(JSON.stringify({
+        port: 19_510,
+        projectPath: path.resolve('/workspace/project'),
+        sessionId: 'worker-a',
+        updatedAt: '2026-04-06T00:00:00.000Z',
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      }))
+
+      await connectOpenedAutomator({
+        port: 19_510,
+        projectPath: '/workspace/project',
+        sessionId: 'worker-a',
+      })
+
+      expect(connectMock).toHaveBeenCalledWith({
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      })
     })
 
     it('removes stale persisted endpoint when connect fails', async () => {

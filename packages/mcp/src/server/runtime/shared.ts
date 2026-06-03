@@ -8,6 +8,7 @@ import {
   releaseSharedMiniProgram,
   resolveDevtoolsProjectPath,
   resolveDevtoolsWorkspacePath,
+  resolveSharedMiniProgramSessionKey,
   toDevtoolsSerializableValue,
 } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
@@ -48,7 +49,9 @@ export interface MiniProgramLike {
 export interface RuntimeConnectionInput {
   projectPath: string
   timeout?: number
+  port?: number
   preferOpenedSession?: boolean
+  sessionId?: string
 }
 
 export interface RuntimeToolOptions {
@@ -73,13 +76,17 @@ interface AttachedSession {
 export const connectionSchema = z.object({
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
+  port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  sessionId: z.string().trim().min(1).optional(),
 })
 
 export const connectionInputSchema = {
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
+  port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  sessionId: z.string().trim().min(1).optional(),
 }
 
 export class RuntimeSessionManager {
@@ -94,8 +101,9 @@ export class RuntimeSessionManager {
 
   async close(input: RuntimeConnectionInput) {
     const projectPath = this.resolveProjectPath(input.projectPath)
-    this.detach(projectPath)
-    await closeSharedMiniProgram(projectPath)
+    const sessionKey = this.resolveSessionKey(projectPath, input)
+    this.detach(sessionKey)
+    await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
   }
 
   clearLogs() {
@@ -120,24 +128,27 @@ export class RuntimeSessionManager {
   ): Promise<T> {
     const projectPath = this.resolveProjectPath(input.projectPath)
     const miniProgram = await acquireSharedMiniProgram(this.runtimeHooks, {
+      port: input.port,
       projectPath,
+      sessionId: input.sessionId,
       timeout: input.timeout,
       preferOpenedSession: input.preferOpenedSession,
       sharedSession: true,
     })
 
-    this.attach(projectPath, miniProgram)
+    const sessionKey = this.resolveSessionKey(projectPath, input)
+    this.attach(sessionKey, miniProgram)
 
     try {
       return await runner(miniProgram)
     }
     catch (error) {
-      this.detach(projectPath)
-      await closeSharedMiniProgram(projectPath)
+      this.detach(sessionKey)
+      await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
       throw error
     }
     finally {
-      releaseSharedMiniProgram(projectPath)
+      releaseSharedMiniProgram(projectPath, input.sessionId || input.port)
     }
   }
 
@@ -154,13 +165,21 @@ export class RuntimeSessionManager {
     })
   }
 
-  private attach(projectPath: string, miniProgram: MiniProgramLike) {
-    const existing = this.attachedSessions.get(projectPath)
+  private resolveSessionKey(projectPath: string, input: Pick<RuntimeConnectionInput, 'port' | 'sessionId'>) {
+    return resolveSharedMiniProgramSessionKey({
+      port: input.port,
+      projectPath,
+      sessionId: input.sessionId,
+    })
+  }
+
+  private attach(sessionKey: string, miniProgram: MiniProgramLike) {
+    const existing = this.attachedSessions.get(sessionKey)
     if (existing?.miniProgram === miniProgram) {
       return
     }
 
-    this.detach(projectPath)
+    this.detach(sessionKey)
 
     const onConsole = (payload: unknown) => {
       this.pushLog(normalizeConsoleEvent(payload))
@@ -171,7 +190,7 @@ export class RuntimeSessionManager {
 
     miniProgram.on('console', onConsole)
     miniProgram.on('exception', onException)
-    this.attachedSessions.set(projectPath, {
+    this.attachedSessions.set(sessionKey, {
       miniProgram,
       onConsole,
       onException,

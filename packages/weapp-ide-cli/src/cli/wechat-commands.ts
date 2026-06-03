@@ -89,8 +89,10 @@ export interface ResetWechatIdeFileUtilsOptions {
 }
 
 export interface WechatIdeAutomatorSessionOptions {
+  port?: number
   preferOpenedSession?: boolean
   projectPath: string
+  sessionId?: string
   sharedSession?: boolean
   timeout?: number
 }
@@ -372,8 +374,10 @@ export async function resetWechatIdeFileUtils(options: ResetWechatIdeFileUtilsOp
 
 function createAutomatorSessionOptions(options: WechatIdeAutomatorSessionOptions) {
   return {
+    ...(options.port ? { port: options.port } : {}),
     preferOpenedSession: options.preferOpenedSession ?? true,
     projectPath: path.resolve(options.projectPath),
+    ...(options.sessionId ? { sessionId: options.sessionId } : {}),
     sharedSession: options.sharedSession ?? true,
     timeout: options.timeout,
   }

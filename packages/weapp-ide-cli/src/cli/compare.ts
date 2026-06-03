@@ -180,6 +180,8 @@ export function parseCompareArgs(argv: string[]): CompareOptions {
   return {
     projectPath: parsed.projectPath,
     timeout: parsed.timeout,
+    ...(parsed.port ? { port: parsed.port } : {}),
+    ...(parsed.sessionId ? { sessionId: parsed.sessionId } : {}),
     page: readOptionValue(argv, '--page'),
     fullPage: argv.includes('--full-page'),
     baselinePath,
