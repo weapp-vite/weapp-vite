@@ -55,7 +55,7 @@ export const TEMPLATE_CATALOG = {
   obug: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.15',
-  rolldown: '1.0.3',
+  rolldown: '1.1.0',
   sass: '^1.100.0',
   stylelint: '^17.12.0',
   tailwindcss: '^4.3.0',
