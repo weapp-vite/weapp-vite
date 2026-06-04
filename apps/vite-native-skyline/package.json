@@ -22,13 +22,12 @@
     "build": "wv build",
     "open": "wv open",
     "build-npm": "wv build-npm",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "wv prepare",
     "g": "wv g",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "catalog:",
     "@vant/weapp": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",

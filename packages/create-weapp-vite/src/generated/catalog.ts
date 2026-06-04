@@ -13,7 +13,6 @@ export const TEMPLATE_CATALOG = {
   '@icebreakers/stylelint-config': '^4.0.2',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/postcss': '^4.3.0',
   '@tailwindcss/vite': '^4.3.0',
   '@types/node': '^25.9.1',
   '@types/semver': '^7.7.1',
@@ -41,7 +40,7 @@ export const TEMPLATE_CATALOG = {
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.4.1',
   'vue-tsc': '^3.3.3',
-  'weapp-tailwindcss': '^4.12.0',
+  'weapp-tailwindcss': '^5.0.0',
   autoprefixer: '^10.5.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
@@ -52,7 +51,7 @@ export const TEMPLATE_CATALOG = {
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
   merge: '^2.1.1',
-  obug: '^2.1.1',
+  obug: '^2.1.2',
   pathe: '^2.0.3',
   postcss: '^8.5.15',
   rolldown: '1.1.0',
@@ -71,7 +70,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.15.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '4.12.0'
+    'weapp-tailwindcss': '5.0.0'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.1',

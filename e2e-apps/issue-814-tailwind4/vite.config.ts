@@ -1,5 +1,5 @@
 import path from 'pathe'
-import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -21,11 +21,11 @@ export default defineConfig({
     },
   },
   plugins: [
-    UnifiedViteWeappTailwindcssPlugin({
+    WeappTailwindcss({
       rem2rpx: true,
       cssEntries: [
         path.resolve(import.meta.dirname, 'src/app.css'),
       ],
-    }) as any,
+    }),
   ],
 })

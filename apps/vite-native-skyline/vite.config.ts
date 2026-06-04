@@ -1,12 +1,12 @@
 import path from 'node:path'
-import { weappTailwindcss } from 'weapp-tailwindcss/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 const __dirname = import.meta.dirname
 
 export default defineConfig({
   plugins: [
-    weappTailwindcss({
+    WeappTailwindcss({
       rem2rpx: true,
     }),
   ],

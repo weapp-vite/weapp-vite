@@ -13,12 +13,11 @@
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "wv open",
     "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "wv prepare",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "tailwindcss": "catalog:tailwind4",

@@ -28,7 +28,7 @@
     "build:open": "wv build --open",
     "build:debug": "cross-env DEBUG=weapp-vite:* wv build",
     "open": "wv open",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "wv prepare",
     "npm": "wv npm",
     "build-npm": "wv build-npm",
     "g": "wv g",
@@ -53,10 +53,9 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "catalog:",
     "@vue/language-plugin-pug": "^3.3.3",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "2.2.0",
+    "@weapp-tailwindcss/merge": "2.2.1",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",

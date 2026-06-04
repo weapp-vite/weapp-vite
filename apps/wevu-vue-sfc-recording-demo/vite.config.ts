@@ -1,6 +1,5 @@
 import path from 'node:path'
-import tailwindcss from '@tailwindcss/vite'
-import { weappTailwindcss } from 'weapp-tailwindcss/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig(() => ({
@@ -18,8 +17,7 @@ export default defineConfig(() => ({
     },
   },
   plugins: [
-    tailwindcss(),
-    weappTailwindcss({
+    WeappTailwindcss({
       rem2rpx: true,
       cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
     }),

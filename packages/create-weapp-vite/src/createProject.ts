@@ -191,7 +191,7 @@ async function upsertTailwindcssVersion(pkgJson: PackageJson) {
     pkgJson.devDependencies['weapp-tailwindcss'] = resolved
   }
   else if (!pkgJson.devDependencies['weapp-tailwindcss']) {
-    pkgJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
+    pkgJson.devDependencies['weapp-tailwindcss'] = '^5.0.0'
   }
 }
 

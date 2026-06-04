@@ -272,7 +272,7 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   }
 
   if (!expectedPackageJson.devDependencies['weapp-tailwindcss']) {
-    expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
+    expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^5.0.0'
   }
 
   return expectedPackageJson

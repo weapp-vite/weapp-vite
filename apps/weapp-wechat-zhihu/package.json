@@ -22,7 +22,7 @@
     "open": "wv open",
     "lint:fix": "eslint . --fix",
     "open:dev": "weapp open -p",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "wv prepare",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui"
   },
@@ -30,7 +30,6 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

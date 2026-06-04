@@ -31,7 +31,6 @@ catalog:
   '@icebreakers/stylelint-config': ^4.0.2
   '@iconify-json/mdi': ^1.2.3
   '@mini-types/alipay': ^3.0.14
-  '@tailwindcss/postcss': ^4.3.0
   '@tailwindcss/vite': ^4.3.0
   '@types/node': ^25.9.1
   '@types/semver': ^7.7.1
@@ -59,7 +58,7 @@ catalog:
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
-  obug: ^2.1.1
+  obug: ^2.1.2
   oxc-parser: ^0.134.0
   oxc-walker: ^1.0.0
   pathe: ^2.0.3
@@ -80,7 +79,7 @@ catalog:
   vite-plugin-inspect: ^11.4.1
   vue: ^3.5.35
   vue-tsc: ^3.3.3
-  weapp-tailwindcss: ^4.12.0
+  weapp-tailwindcss: ^5.0.0
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +93,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 4.12.0
+    weapp-tailwindcss: 5.0.0
 
 ignoredBuiltDependencies:
   - weapp-tailwindcss

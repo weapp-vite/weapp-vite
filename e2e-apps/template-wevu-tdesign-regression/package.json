@@ -16,7 +16,7 @@
     "open": "wv open",
     "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
     "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
-    "postinstall": "weapp-tw patch && wv prepare"
+    "postinstall": "wv prepare"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"
@@ -26,7 +26,6 @@
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
     "@iconify-json/mdi": "catalog:",
-    "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",

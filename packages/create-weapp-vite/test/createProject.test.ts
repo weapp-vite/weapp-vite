@@ -239,7 +239,7 @@ describe('createProject', () => {
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies).toBeDefined()
     expect(pkgJson.devDependencies['@types/node']).toBe(TEMPLATE_CATALOG['@types/node'])
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.3.3')
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^5.0.0')
   })
 
   it('falls back to an empty package.json when template package is missing', async () => {
@@ -380,7 +380,7 @@ describe('createProject', () => {
 
     const pkgWithFallback = { devDependencies: {} as Record<string, string> }
     await createProjectInternal.upsertTailwindcssVersion(pkgWithFallback)
-    expect(pkgWithFallback.devDependencies['weapp-tailwindcss']).toBe('^4.3.3')
+    expect(pkgWithFallback.devDependencies['weapp-tailwindcss']).toBe('^5.0.0')
 
     const pkgWithExisting = { devDependencies: { 'weapp-tailwindcss': 'workspace:*' } }
     await createProjectInternal.upsertTailwindcssVersion(pkgWithExisting)

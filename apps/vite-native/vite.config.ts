@@ -2,7 +2,7 @@ import process from 'node:process'
 // import consola from 'consola'
 // import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { weappTailwindcss } from 'weapp-tailwindcss/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
 
@@ -36,7 +36,7 @@ export default defineConfig({
   plugins: process.env.__TEST__
     ? []
     : [
-        weappTailwindcss({
+        WeappTailwindcss({
           rem2rpx: true,
           cssSelectorReplacement: {
             root: ['page', '.tw-page'],

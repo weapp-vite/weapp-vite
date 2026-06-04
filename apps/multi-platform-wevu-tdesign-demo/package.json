@@ -37,7 +37,7 @@
     "build:web": "wv build -p web",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "wv open",
-    "postinstall": "weapp-tw patch && wv prepare -p weapp",
+    "postinstall": "wv prepare -p weapp",
     "dev:ui": "wv dev --ui -p weapp",
     "build:ui": "wv build --ui -p weapp"
   },
@@ -48,7 +48,6 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/mdi": "catalog:",
-    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

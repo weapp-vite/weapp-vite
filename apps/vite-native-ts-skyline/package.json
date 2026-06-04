@@ -21,7 +21,7 @@
     "build": "wv build",
     "open": "wv open",
     "build-npm": "wv build-npm",
-    "postinstall": "weapp-tw patch && wv prepare",
+    "postinstall": "wv prepare",
     "dev:ui": "wv dev --ui -o",
     "build:ui": "wv build --ui"
   },
@@ -29,7 +29,6 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

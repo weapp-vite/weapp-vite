@@ -1,4 +1,4 @@
-import { weappTailwindcss } from 'weapp-tailwindcss/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    weappTailwindcss(
+    WeappTailwindcss(
       {
         rem2rpx: true,
       },
