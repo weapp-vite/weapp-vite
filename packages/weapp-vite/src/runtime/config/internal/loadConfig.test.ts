@@ -639,13 +639,23 @@ describe('runtime config internal loadConfig', () => {
     expect(tsconfigPathsMock).not.toHaveBeenCalled()
   })
 
-  it('enables native resolve.tsconfigPaths by default when the current project uses tsconfig paths', async () => {
+  it('injects static aliases when the current project uses tsconfig paths by default', async () => {
     inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
       enabled: true,
       root: true,
       references: false,
-      aliases: [],
-      referenceAliases: [],
+      aliases: [
+        {
+          find: '@shared',
+          replacement: '/project/shared',
+        },
+      ],
+      referenceAliases: [
+        {
+          find: '@shared',
+          replacement: '/project/shared',
+        },
+      ],
     })
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
@@ -668,8 +678,17 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.tsconfigPaths).toBe(true)
-    expect(result.config.resolve?.alias).toBeUndefined()
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+      expect.objectContaining({
+        find: '@shared',
+        replacement: '/project/shared',
+      }),
+    ]))
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
     expect(tsconfigPathsMock).not.toHaveBeenCalled()
   })
@@ -709,7 +728,7 @@ describe('runtime config internal loadConfig', () => {
     ]))
   })
 
-  it('does not inject default @ alias when tsconfig paths are enabled', async () => {
+  it('injects default @ alias when tsconfig paths are auto-detected', async () => {
     inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
       enabled: true,
       root: true,
@@ -738,7 +757,13 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.alias).toBeUndefined()
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+    ]))
   })
 
   it('enables native resolve.tsconfigPaths when weapp.tsconfigPaths is true', async () => {
@@ -807,7 +832,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
     expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
       expect.objectContaining({
         find: '@',
@@ -915,7 +940,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
     expect(result.aliasEntries).toEqual([])
   })
 
@@ -976,7 +1001,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
     expect(result.aliasEntries).toEqual([
       {
         find: '@',
@@ -1024,7 +1049,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.tsconfigPaths).toBeUndefined()
     expect(getAliasEntriesMock).not.toHaveBeenCalled()
     expect(result.aliasEntries).toEqual([])
   })

@@ -367,16 +367,18 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const srcRoot = config.weapp?.srcRoot ?? ''
     const managedTsconfigAliases = collectManagedTsconfigAliases(config, cwd)
     injectResolvedAliases(config, managedTsconfigAliases)
+    const tsconfigPathsOptions = config.weapp?.tsconfigPaths
     const tsconfigPathsUsage = await inspectTsconfigPathsUsage(cwd)
     const tsconfigUsageAliases = tsconfigPathsUsage.aliases ?? []
     const tsconfigReferenceAliases = tsconfigPathsUsage.referenceAliases ?? []
     const tsconfigAliases = tsconfigUsageAliases.length > 0
       ? tsconfigUsageAliases
       : tsconfigReferenceAliases
+    const shouldDelegateToNativeTsconfigPaths = tsconfigPathsOptions === true
     if (!tsconfigPathsUsage.enabled) {
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
-    else if (tsconfigPathsUsage.references && !tsconfigPathsUsage.root) {
+    else if (!shouldDelegateToNativeTsconfigPaths) {
       injectResolvedAliases(config, tsconfigAliases)
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
@@ -449,13 +451,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []
-    const tsconfigPathsOptions = config.weapp?.tsconfigPaths
     if (tsconfigPathsOptions !== false) {
       const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
       if (usesAdvancedTsconfigPathsOptions) {
         config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
       }
-      else if (tsconfigPathsOptions === true || tsconfigPathsUsage.enabled) {
+      else if (shouldDelegateToNativeTsconfigPaths) {
         config.resolve ??= {}
         config.resolve.tsconfigPaths ??= true
       }

@@ -193,7 +193,7 @@ export interface WeappViteConfig {
   jsonAlias?: AliasOptions | false
   npm?: WeappNpmConfig
   generate?: GenerateOptions
-  tsconfigPaths?: TsconfigPathsOptions | false
+  tsconfigPaths?: boolean | TsconfigPathsOptions
   subPackages?: Record<string, WeappSubPackageConfig>
   copy?: CopyOptions
   web?: WeappWebConfig
