@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.47
+
+### Patch Changes
+
+- 🐛 **修复 Vue 编译中解析已存在的相对文件 chunk 时仍进入 Vite tsconfig paths resolver 的问题，避免 monorepo clean CI 下误读取无关工作区应用缺失的 `.weapp-vite` 受管 tsconfig。** [`160027f`](https://github.com/weapp-vite/weapp-vite/commit/160027f6bd2332c7c44cee19185f8b3d55fc4baa) by @sonofmagic
+
 ## 2.3.46
 
 ### Patch Changes
