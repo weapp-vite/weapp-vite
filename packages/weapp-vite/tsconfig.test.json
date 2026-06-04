@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.test.tsbuildinfo",
     "target": "ESNext",
     "rootDir": ".",
     "module": "ESNext",
@@ -19,26 +21,22 @@
     "allowArbitraryExtensions": true,
     "strict": true,
     "declaration": true,
+    "noEmit": false,
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "references": [
-    {
-      "path": "./tsconfig.test.json"
-    }
-  ],
   "include": [
-    "src",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "test/**/*.test.ts",
+    "test/**/*.spec.ts",
     "client.d.ts"
   ],
   "exclude": [
     "coverage",
     "dist",
-    "node_modules",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "test"
+    "node_modules"
   ]
 }
