@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.16.40
+
+### Patch Changes
+
+- 🐛 **修复 `<json lang="ts">`、JSON 宏和 `defineOptions` 在执行临时 TypeScript 配置模块时，Vite 8/OXC 可能因为临时文件不属于任何 tsconfig 而构建失败的问题。** [`33a2602`](https://github.com/weapp-vite/weapp-vite/commit/33a2602eec27d1950d72ad5a05fb8dd0e9c1eb12) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.16.40`
+
 ## 6.16.39
 
 ### Patch Changes
