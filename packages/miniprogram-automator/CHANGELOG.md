@@ -1,5 +1,11 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.2.2
+
+### Patch Changes
+
+- 🐛 **修复自动分配 DevTools 自动化端口时的并发会话冲突：启动成功后端口租约会保留到会话关闭或断开，避免多个活跃会话复用同一个自动化端口。** [`90f71b0`](https://github.com/weapp-vite/weapp-vite/commit/90f71b013cd6314977d3054fedbbc043eb24dcfd) by @sonofmagic
+
 ## 1.2.1
 
 ### Patch Changes
