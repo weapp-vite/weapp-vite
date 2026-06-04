@@ -14,3 +14,4 @@ cache/
 
 # Hook markers
 .dirty
+daemon.pid
