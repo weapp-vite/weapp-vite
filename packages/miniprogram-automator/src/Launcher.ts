@@ -1,3 +1,4 @@
+import type { AutomatorPortLease } from './launcher/portLease'
 import type { MiniprogramAutomatorPlatform } from './platform'
 /**
  * @file 开发者工具启动与连接流程。
@@ -19,7 +20,7 @@ const AUTOMATOR_LAUNCH_RETRIES = 3
 const DEFAULT_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER'
 const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
 const EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
-const RETRYABLE_LAUNCH_PORT_RE = /Wait timed out after \d+ ms|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Failed connecting to devtools websocket endpoint/i
+const RETRYABLE_LAUNCH_PORT_RE = /Wait timed out after \d+ ms|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Failed connecting to devtools websocket endpoint|Failed to launch wechat web devTools, please make sure cliPath is correctly specified/i
 const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
 let localhostListenPatched = false
 
@@ -29,6 +30,51 @@ function isExtensionContextInvalidatedError(error: unknown) {
 
 function isRetryableAutomatorPortLaunchError(error: unknown) {
   return error instanceof Error && RETRYABLE_LAUNCH_PORT_RE.test(error.message)
+}
+
+function retainPortLeaseUntilSessionClose(miniProgram: MiniProgram, portLease: AutomatorPortLease) {
+  let released = false
+  const release = async () => {
+    if (released) {
+      return
+    }
+    released = true
+    await portLease.release()
+  }
+
+  const target = miniProgram as Omit<MiniProgram, 'close' | 'disconnect'> & {
+    close?: () => Promise<void>
+    disconnect?: () => void
+  }
+  const rawClose = target.close
+  const rawDisconnect = target.disconnect
+  if (typeof rawClose !== 'function' && typeof rawDisconnect !== 'function') {
+    return false
+  }
+
+  if (typeof rawDisconnect === 'function') {
+    target.disconnect = function disconnectWithPortLeaseRelease() {
+      try {
+        return rawDisconnect.call(this)
+      }
+      finally {
+        void release()
+      }
+    }
+  }
+
+  if (typeof rawClose === 'function') {
+    target.close = async function closeWithPortLeaseRelease() {
+      try {
+        return await rawClose.call(this)
+      }
+      finally {
+        await release()
+      }
+    }
+  }
+
+  return true
 }
 
 function patchNetListenToLoopback() {
@@ -164,6 +210,7 @@ export default class Launcher {
     const { cliPath = await this.resolveCliPath(), timeout = DEFAULT_TIMEOUT, projectConfig = {}, ticket = '', cwd = '', account = '', trustProject = false } = options
     let { args = [], projectPath } = options
     const portLease = await acquireAutomatorPortLease(options.port)
+    let releasePortLeaseOnExit = true
     try {
       const port = portLease.port
       if (!cliPath) {
@@ -285,11 +332,14 @@ export default class Launcher {
         projectPath: resolvedProjectPath,
         wsEndpoint: `ws://127.0.0.1:${port}`,
       } satisfies ILauncherSessionMetadata)
+      releasePortLeaseOnExit = !retainPortLeaseUntilSessionClose(resolvedMiniProgram, portLease)
       await sleep(5000)
       return resolvedMiniProgram
     }
     finally {
-      await portLease.release()
+      if (releasePortLeaseOnExit) {
+        await portLease.release()
+      }
     }
   }
 

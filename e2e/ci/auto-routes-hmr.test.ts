@@ -175,7 +175,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       // modify existing route file
       const modifiedLogsSource = originalLogsSource.replace('logs', modifyMarker)
       const outputLengthBeforeModify = dev.getOutput().length
-      await replaceFileByRename(LOGS_VUE_PATH, modifiedLogsSource)
+      await fs.writeFile(LOGS_VUE_PATH, modifiedLogsSource, 'utf8')
       await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, modifyMarker), 'dist template updated after modify')
       const modifyOutput = await dev.waitFor(
         waitForOutputSince(

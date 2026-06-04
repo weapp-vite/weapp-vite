@@ -57,6 +57,7 @@ const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+const CURRENT_PAGE_PROTOCOL_TIMEOUT = 3_000
 const PAGE_WXML_PROTOCOL_TIMEOUT = 4_000
 const PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH = 1_200
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
@@ -431,7 +432,11 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage()
+      const page = await runWithTimeout(
+        () => miniProgram.currentPage(),
+        Math.min(CURRENT_PAGE_PROTOCOL_TIMEOUT, Math.max(1, timeoutMs - (Date.now() - start))),
+        'currentPage',
+      )
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }
@@ -570,7 +575,14 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
       process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route} attempt=${attempt + 1}/4\n`)
       let page: any = null
       try {
-        page = await targetMiniProgram.reLaunch(route)
+        page = await runAutomatorOp(
+          `raw reLaunch ${route}`,
+          () => targetMiniProgram.reLaunch(route),
+          {
+            timeoutMs: Math.min(timeoutMs, 12_000),
+            retries: 1,
+          },
+        )
       }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)

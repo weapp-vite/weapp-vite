@@ -20,8 +20,6 @@ exports[`scoped slot native output snapshots > locks the emitted file tree and a
   "pages/index/index.json",
   "pages/index/index.wxml",
   "sitemap.json",
-  "weapp-vendors/wevu-ref.js",
-  "weapp-vendors/wevu-templateRef.js",
 ]
 `;
 
@@ -95,8 +93,8 @@ Component({ properties: { __wvSlotOwnerId: { type: String, value: "" }, __wvSlot
   <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[]}}" __wvSlotScope="{{__wvSlotScope}}" />
 </view>
 ",
-  "pages/index/index.__scoped-slot-default-0.js": "const require_common = require("../../weapp-vendors/wevu-ref.js");
-const require_templateRef = require("../../weapp-vendors/wevu-templateRef.js");
+  "pages/index/index.__scoped-slot-default-0.js": "const require_common = require("../../weapp-vendors/wevu-runtime.js");
+const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
 //#region \\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-default-0
 var createWevuScopedSlotComponent = (typeof globalThis !== "undefined" ? globalThis : void 0)?.__weapp_vite_createScopedSlotComponent ?? require_templateRef.__wevuScopedSlotCreator;
 var __wevuComputed = { __wv_bind_0: function() {
@@ -121,7 +119,7 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
 ",
   "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wv_bind_0}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
   "pages/index/index.js": "//#region <fixture>/src/pages/index/index.vue
-(require("../../weapp-vendors/wevu-templateRef.js").__wevuCreateWevuComponent || require("../../weapp-vendors/wevu-templateRef.js").to)({
+(require("../../weapp-vendors/wevu-runtime.js").__wevuCreateWevuComponent || require("../../weapp-vendors/wevu-runtime.js").to)({
 	computed: { __wv_bind_0: function() {
 		return (() => {
 			try {

@@ -35,6 +35,7 @@ const DEVTOOLS_CONNECTION_CLOSED_PATTERNS = [
   /socket hang up/i,
 ]
 const DEVTOOLS_CLI_EARLY_EXIT_PATTERNS = [
+  /Failed to launch wechat web devTools, please make sure cliPath is correctly specified/i,
   /WeChat DevTools CLI exited before automator socket was ready/i,
   /ERR_INVALID_ARG_TYPE/i,
   /The ["']path["'] argument must be of type string/i,
@@ -685,7 +686,8 @@ async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, pro
   const message = extractExecutionErrorText(error) || String(error)
   if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)
     && !isLikelyDevtoolsInfraErrorMessage(message)
-    && !isLikelySimulatorBootErrorMessage(message)) {
+    && !isLikelySimulatorBootErrorMessage(message)
+    && !DEVTOOLS_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(message))) {
     return
   }
 

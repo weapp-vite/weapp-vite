@@ -49,6 +49,18 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
   return null
 }
 
+async function resolveRoutePage(miniProgram: any, expectedPath: string) {
+  try {
+    const page = await miniProgram.reLaunch(expectedPath)
+    if (normalizeRoutePath(String(page?.path ?? '')) === normalizeRoutePath(expectedPath)) {
+      return page
+    }
+  }
+  catch {
+  }
+  return await waitForCurrentPage(miniProgram, expectedPath)
+}
+
 async function readPageWxml(page: any) {
   const element = await page.$('page')
   if (!element) {
@@ -94,10 +106,11 @@ describe.sequential('automator concurrent sessions', () => {
       runBuild(BASE_APP_ROOT, 'ide:automator-concurrent-sessions:base'),
       runBuild(NATIVE_APP_ROOT, 'ide:automator-concurrent-sessions:native'),
     ])
-    const sessions = await Promise.all([
-      launchProjectAutomator(BASE_APP_ROOT),
-      launchProjectAutomator(NATIVE_APP_ROOT),
-    ])
+    // DevTools cache recovery 是进程全局清理；串行启动避免一个项目的恢复流程关闭另一个新会话。
+    const sessions = [
+      await launchProjectAutomator(BASE_APP_ROOT),
+      await launchProjectAutomator(NATIVE_APP_ROOT),
+    ]
     miniPrograms.push(...sessions)
   }, HOOK_TIMEOUT)
 
@@ -126,8 +139,8 @@ describe.sequential('automator concurrent sessions', () => {
     expect(baseMetadata?.wsEndpoint).not.toBe(nativeMetadata?.wsEndpoint)
 
     const [basePage, nativePage] = await Promise.all([
-      waitForCurrentPage(baseMiniProgram, INDEX_ROUTE),
-      waitForCurrentPage(nativeMiniProgram, INDEX_ROUTE),
+      resolveRoutePage(baseMiniProgram, INDEX_ROUTE),
+      resolveRoutePage(nativeMiniProgram, INDEX_ROUTE),
     ])
 
     expect(basePage).toBeTruthy()

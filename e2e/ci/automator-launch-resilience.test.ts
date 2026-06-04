@@ -258,6 +258,30 @@ describe.sequential('automator launch resilience', () => {
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
+  it('retries launch when DevTools cli exits before the automator socket is ready', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockRejectedValueOnce(new Error('Failed to launch wechat web devTools, please make sure cliPath is correctly specified'))
+      .mockResolvedValueOnce(secondMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  })
+
   it('does not retry launch on login-required error', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '3'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'

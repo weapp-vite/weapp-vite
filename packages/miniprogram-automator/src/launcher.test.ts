@@ -180,6 +180,67 @@ describe('Launcher', () => {
     })
   })
 
+  it('keeps the automatic port lease until the launched session closes', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    const release = vi.fn(async () => {})
+    acquirePortLeaseMock.mockResolvedValueOnce({ port: 9420, release })
+    const rawDisconnect = vi.fn()
+    const rawClose = vi.fn(async function close(this: { disconnect: () => void }) {
+      this.disconnect()
+    })
+    const launcher = new Launcher()
+    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({
+      checkVersion: vi.fn(async () => {}),
+      close: rawClose,
+      disconnect: rawDisconnect,
+    })
+
+    const result = await launcher.launch({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      projectPath: '/tmp/project',
+    })
+
+    expect(release).not.toHaveBeenCalled()
+
+    await result.close()
+    await result.close()
+
+    expect(rawClose).toHaveBeenCalledTimes(2)
+    expect(rawDisconnect).toHaveBeenCalledTimes(2)
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
+  it('releases the automatic port lease when the launched session disconnects', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    const release = vi.fn(async () => {})
+    acquirePortLeaseMock.mockResolvedValueOnce({ port: 9420, release })
+    const rawDisconnect = vi.fn()
+    const launcher = new Launcher()
+    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({
+      checkVersion: vi.fn(async () => {}),
+      disconnect: rawDisconnect,
+    })
+
+    const result = await launcher.launch({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      projectPath: '/tmp/project',
+    })
+
+    expect(release).not.toHaveBeenCalled()
+
+    result.disconnect()
+    result.disconnect()
+
+    expect(rawDisconnect).toHaveBeenCalledTimes(2)
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
   it('delegates swan launch to the swan launcher', async () => {
     const { default: Launcher } = await loadLauncherModule()
     const launcher = new Launcher()
@@ -318,7 +379,39 @@ describe('Launcher', () => {
     expect(result).toEqual(secondCandidate)
   })
 
-  it('fails fast when cli exits with a non-zero code', async () => {
+  it('retries automatic launch when cli exits before the automator socket is ready', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const firstChild = new EventEmitter() as EventEmitter & { unref: () => void }
+    const secondChild = new EventEmitter() as EventEmitter & { unref: () => void }
+    firstChild.unref = vi.fn()
+    secondChild.unref = vi.fn()
+    spawnMock
+      .mockReturnValueOnce(firstChild)
+      .mockReturnValueOnce(secondChild)
+    acquirePortLeaseMock
+      .mockResolvedValueOnce({ port: 9420, release: vi.fn(async () => {}) })
+      .mockResolvedValueOnce({ port: 9421, release: vi.fn(async () => {}) })
+
+    const launcher = new Launcher()
+    const connectToolSpy = vi.spyOn(launcher as any, 'connectTool')
+    connectToolSpy
+      .mockImplementationOnce(async () => {
+        firstChild.emit('exit', 1, null)
+        throw new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled')
+      })
+      .mockResolvedValueOnce({ checkVersion: vi.fn(async () => {}) })
+
+    await launcher.launch({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      projectPath: '/tmp/project',
+    })
+
+    expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
+    expect(spawnMock.mock.calls[0]?.[1]).toContain('9420')
+    expect(spawnMock.mock.calls[1]?.[1]).toContain('9421')
+  })
+
+  it('fails fast when a custom port launch cli exits with a non-zero code', async () => {
     const { default: Launcher } = await loadLauncherModule()
     const child = new EventEmitter() as EventEmitter & { unref: () => void }
     child.unref = vi.fn()
@@ -332,6 +425,7 @@ describe('Launcher', () => {
 
     await expect(launcher.launch({
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      port: 9420,
       projectPath: '/tmp/project',
     })).rejects.toThrow('Failed to launch wechat web devTools, please make sure cliPath is correctly specified')
   })

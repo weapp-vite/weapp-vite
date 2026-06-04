@@ -160,30 +160,33 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
     <view
       class="mt-_b24rpx_B index--mt-_b24rpx_B rounded-_b20rpx_B index--rounded-_b20rpx_B bg-_b_hf4f6ff_B index--bg-_b_hf4f6ff_B p-_b20rpx_B index--p-_b20rpx_B">
       <text
-        class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h51517c_B index--text-_b_h51517c_B"></text>
+        class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h51517c_B index--text-_b_h51517c_B"
+        id="count-label"></text>
     </view>
-    <button
-      activity-type="0"
-      entrance-path=""
-      need-show-entrance=""
-      app-parameter=""
-      data-custom="null"
-      form-type=""
-      hover-class="t-button--hover"
-      hover-start-time="20"
-      hover-stay-time="70"
-      lang=""
-      open-type=""
-      send-message-img="截图"
-      send-message-path="当前分享路径"
-      send-message-title="当前标题"
-      session-from=""
-      style=""
-      class="mt-_b24rpx_B index--mt-_b24rpx_B t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-      role="button"
-      aria-disabled="false">
-      <view class="t-button__content button--t-button__content">点一下</view>
-    </button>
+    <view id="count-button">
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="mt-_b24rpx_B index--mt-_b24rpx_B count-button-control index--count-button-control t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">点一下</view>
+      </button>
+    </view>
   </view>
 </view>
 "
