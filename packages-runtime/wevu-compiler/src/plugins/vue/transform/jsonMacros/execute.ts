@@ -136,6 +136,7 @@ const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(conf
       const { mod, dependencies } = await bundleRequire<{ default?: any }>({
         filepath: tempFile,
         cwd: dir,
+        tsconfig: false,
       })
 
       const resolved: any = mod?.default ?? mod

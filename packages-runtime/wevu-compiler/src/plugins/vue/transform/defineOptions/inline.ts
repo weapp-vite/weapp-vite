@@ -216,6 +216,7 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
       const { mod, dependencies } = await bundleRequire<{ __weapp_define_options?: unknown[], __weapp_define_scope?: Record<string, unknown> }>({
         filepath: tempFile,
         cwd: dir,
+        tsconfig: false,
       })
       const exported = mod?.__weapp_define_options ?? mod
       const values = Array.isArray(exported) ? exported : [exported]

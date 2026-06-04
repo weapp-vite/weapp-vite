@@ -65,6 +65,7 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
       const { mod } = await bundleRequire<{ default?: any }>({
         filepath: tempFile,
         cwd: dir,
+        tsconfig: false,
       })
 
       let resolved: any = mod?.default ?? mod
