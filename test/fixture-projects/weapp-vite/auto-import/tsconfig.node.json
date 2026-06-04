@@ -8,6 +8,7 @@
     "skipLibCheck": true
   },
   "include": [
-    "vite.config.ts"
+    "vite.config.ts",
+    "weapp-vite.config.ts"
   ]
 }
