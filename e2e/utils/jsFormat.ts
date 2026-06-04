@@ -23,6 +23,16 @@ const VITE_CONFIG_CANDIDATES = [
   'vite.config.cjs',
 ]
 
+async function hasProjectTsconfig(projectRoot: string) {
+  try {
+    await fs.access(path.join(projectRoot, 'tsconfig.json'))
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 async function findConfigFile(projectRoot: string) {
   for (const fileName of [...WEAPP_CONFIG_CANDIDATES, ...VITE_CONFIG_CANDIDATES]) {
     const candidatePath = path.resolve(projectRoot, fileName)
@@ -109,6 +119,15 @@ export async function resolveJsFormatConfigOverride(options: ResolveJsFormatConf
 
   const tempRoot = await fs.mkdtemp(path.join(projectRoot, '.weapp-vite-test-config-'))
   const tempConfigFile = path.join(tempRoot, `vite.config.${jsFormat}.ts`)
+  const tempTsconfig = {
+    ...await hasProjectTsconfig(projectRoot)
+      ? { extends: '../tsconfig.json' }
+      : {},
+    include: [
+      './*.ts',
+    ],
+  }
+  await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), `${JSON.stringify(tempTsconfig, null, 2)}\n`, 'utf8')
   await fs.writeFile(tempConfigFile, renderConfigOverride(jsFormat, resolvedConfigFile), 'utf8')
 
   return {

@@ -3,8 +3,9 @@ import type { InlineConfig, Logger } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { WeappVitePlatform } from '../../../../runtimeTarget'
 import type { SubPackageMetaValue } from '../../../../types'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { defu } from '@weapp-core/shared'
+import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
 import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
@@ -30,6 +31,46 @@ function createAbsolutePathPattern(value: string) {
     .join('[/\\\\]+')
 }
 
+function hasTsconfigReference(tsconfig: string, target: string) {
+  if (!existsSync(tsconfig)) {
+    return false
+  }
+
+  try {
+    const parsed = parseJson(readFileSync(tsconfig, 'utf8'), undefined, true) as { references?: unknown }
+    const references = Array.isArray(parsed.references) ? parsed.references : []
+    const tsconfigDir = path.dirname(tsconfig)
+    return references.some((reference) => {
+      if (!reference || typeof reference !== 'object' || typeof (reference as { path?: unknown }).path !== 'string') {
+        return false
+      }
+
+      return path.resolve(tsconfigDir, (reference as { path: string }).path) === target
+    })
+  }
+  catch {
+    return false
+  }
+}
+
+function resolveDefaultRolldownTsconfig(cwd: string) {
+  const appTsconfig = path.resolve(cwd, '.weapp-vite/tsconfig.app.json')
+  const rootTsconfig = path.resolve(cwd, 'tsconfig.json')
+  if (existsSync(appTsconfig)) {
+    return appTsconfig
+  }
+
+  if (hasTsconfigReference(rootTsconfig, appTsconfig)) {
+    return appTsconfig
+  }
+
+  if (existsSync(rootTsconfig)) {
+    return rootTsconfig
+  }
+
+  return undefined
+}
+
 function normalizeInlineConfigAfterDefu(
   inline: InlineConfig,
   options: {
@@ -51,13 +92,13 @@ function normalizeInlineConfigAfterDefu(
       ...(userRolldownOptions?.output ?? {}),
     },
   }
-  const rootTsconfig = path.resolve(cwd, 'tsconfig.json')
+  const defaultTsconfig = resolveDefaultRolldownTsconfig(cwd)
   if (
     !Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')
     && !(mergedRolldownOptions.resolve as { tsconfigFilename?: unknown } | undefined)?.tsconfigFilename
-    && existsSync(rootTsconfig)
+    && defaultTsconfig
   ) {
-    mergedRolldownOptions.tsconfig = rootTsconfig
+    mergedRolldownOptions.tsconfig = defaultTsconfig
   }
   build.rolldownOptions = mergedRolldownOptions
   inline.define = {

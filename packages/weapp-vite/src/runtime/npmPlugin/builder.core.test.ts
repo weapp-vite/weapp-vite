@@ -115,10 +115,16 @@ describe('runtime npm package builder core', () => {
   })
 
   it('merges bundle options and injects oxc plugin without duplicates', async () => {
+    const root = await createTempDir()
+    const tsconfigPath = path.resolve(root, 'tsconfig.json')
+    await fs.writeJson(tsconfigPath, {
+      include: ['src/**/*'],
+    })
     const oxcPlugin = { name: 'oxc-runtime' } as any
     const customPlugin = { name: 'custom' } as any
     const buildOptions = vi.fn((options: any) => options)
     const ctx = createMockContext({
+      cwd: root,
       weappViteConfig: {
         npm: {
           buildOptions,
@@ -141,8 +147,58 @@ describe('runtime npm package builder core', () => {
     expect(finalOptions?.define?.['process.env.NODE_ENV']).toBe(JSON.stringify('production'))
     expect(finalOptions?.define?.['import.meta.env.__TEST__']).toBe(JSON.stringify('yes'))
     expect(finalOptions?.build?.lib?.fileName?.('cjs', 'entry')).toBe('entry.js')
+    expect(finalOptions?.oxc?.tsconfig).toBe(false)
+    expect(finalOptions?.build?.rolldownOptions?.tsconfig).toBe(tsconfigPath)
+    expect(finalOptions?.build?.rolldownOptions?.transform?.tsconfig).toBe(false)
     expect(finalOptions?.plugins?.filter((plugin: any) => plugin === oxcPlugin)).toHaveLength(1)
     expect(buildOptions).toHaveBeenCalledTimes(1)
+  })
+
+  it('prefers managed app tsconfig for npm package builds', async () => {
+    const root = await createTempDir()
+    const rootTsconfigPath = path.resolve(root, 'tsconfig.json')
+    const appTsconfigPath = path.resolve(root, '.weapp-vite/tsconfig.app.json')
+    await fs.writeJson(rootTsconfigPath, {
+      references: [{ path: '../other-app' }],
+    })
+    await fs.ensureDir(path.dirname(appTsconfigPath))
+    await fs.writeJson(appTsconfigPath, {
+      include: ['../src/**/*'],
+    })
+    const ctx = createMockContext({
+      cwd: root,
+    })
+    const builder = createPackageBuilder(ctx)
+
+    await builder.bundleBuild({
+      name: 'demo',
+      entry: { index: '/deps/demo/index.js' },
+      outDir: '/dist/demo',
+    })
+
+    expect(viteBuildMock).toHaveBeenCalledTimes(1)
+    const finalOptions = viteBuildMock.mock.calls[0]?.[0] as any
+    expect(finalOptions?.build?.rolldownOptions?.tsconfig).toBe(appTsconfigPath)
+  })
+
+  it('disables npm OXC tsconfig auto discovery when project tsconfig is missing', async () => {
+    const root = await createTempDir()
+    const ctx = createMockContext({
+      cwd: root,
+    })
+    const builder = createPackageBuilder(ctx)
+
+    await builder.bundleBuild({
+      name: 'demo',
+      entry: { index: '/deps/demo/index.js' },
+      outDir: '/dist/demo',
+    })
+
+    expect(viteBuildMock).toHaveBeenCalledTimes(1)
+    const finalOptions = viteBuildMock.mock.calls[0]?.[0] as any
+    expect(finalOptions?.oxc?.tsconfig).toBe(false)
+    expect(finalOptions?.build?.rolldownOptions?.tsconfig).toBe(false)
+    expect(finalOptions?.build?.rolldownOptions?.transform?.tsconfig).toBe(false)
   })
 
   it('skips vite build when npm buildOptions returns a non-object value', async () => {

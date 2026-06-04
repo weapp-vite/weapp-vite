@@ -88,6 +88,18 @@ export function configureBuildAndPlugins(options: {
   }
 
   const rdOptions = buildConfig.rolldownOptions ?? (buildConfig.rolldownOptions = {})
+  if (config.oxc !== false) {
+    const oxcOptions = (config.oxc ?? {}) as Record<string, unknown>
+    if (!Object.prototype.hasOwnProperty.call(oxcOptions, 'tsconfig')) {
+      oxcOptions.tsconfig = false
+    }
+    config.oxc = oxcOptions as InlineConfig['oxc']
+  }
+  const rdTransform = (rdOptions.transform ?? {}) as Record<string, unknown>
+  if (!Object.prototype.hasOwnProperty.call(rdTransform, 'tsconfig')) {
+    rdTransform.tsconfig = false
+  }
+  rdOptions.transform = rdTransform
   if (pluginOnly) {
     rdOptions.preserveEntrySignatures = 'exports-only'
   }

@@ -3,6 +3,7 @@ import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
+import { existsSync } from 'node:fs'
 import { copyFile } from 'node:fs/promises'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
@@ -75,6 +76,20 @@ function toPluginArray(plugins: NpmBuildOptions['plugins']): Plugin[] {
   return result
 }
 
+function resolveDefaultNpmBuildTsconfig(cwd: string) {
+  const appTsconfig = path.resolve(cwd, '.weapp-vite/tsconfig.app.json')
+  if (existsSync(appTsconfig)) {
+    return appTsconfig
+  }
+
+  const rootTsconfig = path.resolve(cwd, 'tsconfig.json')
+  if (existsSync(rootTsconfig)) {
+    return rootTsconfig
+  }
+
+  return false
+}
+
 async function copyDirectory(sourceDir: string, targetDir: string) {
   await fs.ensureDir(targetDir)
   const entries = await fs.readdir(sourceDir, { withFileTypes: true })
@@ -127,15 +142,20 @@ export function createPackageBuilder(
 
   function resolvePackageBuildTarget({ entry, name, options, outDir }: ResolvePackageBuildTargetArgs): ResolvedPackageBuildTarget {
     const importMetaDefineEntries = ctx.configService?.importMetaDefineEntries ?? {}
+    const cwd = ctx.configService?.cwd ?? process.cwd()
+    const defaultTsconfig = resolveDefaultNpmBuildTsconfig(cwd)
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       configFile: false,
       publicDir: false,
       logLevel: 'silent',
-      root: ctx.configService?.cwd ?? process.cwd(),
+      root: cwd,
       define: {
         ...importMetaDefineEntries,
         'process.env.NODE_ENV': JSON.stringify('production'),
       },
+      oxc: {
+        tsconfig: false,
+      } as NpmBuildOptions['oxc'],
       plugins: [],
       build: {
         lib: {
@@ -150,6 +170,10 @@ export function createPackageBuilder(
         target: 'es6',
         rolldownOptions: {
           external: [],
+          tsconfig: defaultTsconfig,
+          transform: {
+            tsconfig: false,
+          },
           output: {
             exports: 'named',
           },
