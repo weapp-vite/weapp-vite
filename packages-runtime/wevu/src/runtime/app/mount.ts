@@ -95,6 +95,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const adapterSnapshotOmitKeys = (adapter as any)?.__wevu_snapshotOmitKeys
     const deferInitialSnapshot = Boolean((adapter as any)?.__wevu_deferInitialSnapshot)
     const adapterInitialSnapshot = (adapter as any)?.__wevu_initialSnapshot
+    const adapterInitialState = (adapter as any)?.__wevu_initialState
     const snapshotOmitKeys = new Set<string>(
       adapterSnapshotOmitKeys instanceof Set
         ? adapterSnapshotOmitKeys
@@ -113,6 +114,14 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       }
       catch {
         // 若 data 返回对象不可扩展，则跳过预置，后续由注册阶段兜底注入。
+      }
+    }
+    if (rawState && typeof rawState === 'object' && adapterInitialState && typeof adapterInitialState === 'object') {
+      for (const [key, value] of Object.entries(adapterInitialState as Record<string, unknown>)) {
+        if (snapshotOmitKeys.has(key)) {
+          continue
+        }
+        ;(rawState as Record<string, unknown>)[key] = value
       }
     }
     const computedDefs = resolvedComputed
@@ -218,6 +227,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       isMounted: () => mounted,
       initialSnapshot: adapterInitialSnapshot && typeof adapterInitialSnapshot === 'object'
         ? adapterInitialSnapshot
+        : undefined,
+      initialState: adapterInitialState && typeof adapterInitialState === 'object'
+        ? adapterInitialState
         : undefined,
     })
     const job = () => scheduler.job(stateRootRaw)

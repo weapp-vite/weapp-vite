@@ -19,6 +19,10 @@ const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
 const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
 const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
+const APP_SHELL_FREE_TARGETS = new Set([
+  'github-issues.runtime.issue642-bug7-default.test.ts',
+  'github-issues.runtime.issue642-bug7-performance.test.ts',
+])
 const SOURCE_PROJECT_COPY_ENTRIES = [
   '.env',
   'auto-import-components.json',
@@ -49,6 +53,15 @@ function resolveGithubIssuesDistDir() {
     return 'dist-slot-fallback-compiler-off'
   }
   return 'dist'
+}
+
+function getNormalizedTargetFile() {
+  return process.env[E2E_TARGET_FILE_ENV]?.replaceAll('\\', '/') ?? ''
+}
+
+function isAppShellFreeTarget() {
+  const targetFile = getNormalizedTargetFile()
+  return [...APP_SHELL_FREE_TARGETS].some(target => targetFile.endsWith(target))
 }
 
 export const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
@@ -110,6 +123,19 @@ async function prepareIsolatedProjectRoot() {
 
   if (await fs.pathExists(SOURCE_NODE_MODULES)) {
     await fs.symlink(SOURCE_NODE_MODULES, path.join(APP_ROOT, 'node_modules'), 'junction')
+  }
+
+  if (isAppShellFreeTarget()) {
+    await fs.remove(path.join(APP_ROOT, 'src/app.vue'))
+    await fs.writeFile(path.join(APP_ROOT, 'src/app.ts'), 'App({})\n')
+    await fs.writeJSON(path.join(APP_ROOT, 'src/app.json'), {
+      pages: [
+        'pages/block-slot/index',
+        'pages/issue-642-bug7/index',
+      ],
+    }, {
+      spaces: 2,
+    })
   }
 
   await syncProjectConfigDistRoot()

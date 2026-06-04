@@ -1,5 +1,6 @@
 import type { WritableComputedOptions } from '../../reactivity'
 import type { ComputedDefinitions, SetDataSnapshotOptions } from '../types'
+import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
 import { resolveSetDataOptions } from '../app/setDataOptions'
 import { toPlain } from '../diff'
@@ -18,6 +19,52 @@ function isCompilerGeneratedTemplateComputedKey(key: string) {
   return key.startsWith('__wv_bind_')
     || key.startsWith('__wv_cls_')
     || key.startsWith('__wv_style_')
+}
+
+function canResolveInitialTemplateComputed(key: string, getter: (...args: any[]) => unknown) {
+  if (!key.startsWith('__wv_bind_')) {
+    return false
+  }
+  try {
+    return !/\bthis\b/.test(Function.prototype.toString.call(getter))
+  }
+  catch {
+    return false
+  }
+}
+
+function resolveRuntimeBindingPlaceholder(key: string) {
+  if (key === WEVU_SLOT_OWNER_ID_KEY) {
+    return ''
+  }
+  if (key.startsWith('__wv_bind_')) {
+    return null
+  }
+  if (key.startsWith('__wv_cls_') || key.startsWith('__wv_style_')) {
+    return ''
+  }
+}
+
+function resolveRuntimeBindingPlaceholderData(
+  data: Record<string, any>,
+  setData: SetDataSnapshotOptions | undefined,
+) {
+  const pickKeys = Array.isArray(setData?.pick) ? setData.pick : []
+  if (!pickKeys.length) {
+    return undefined
+  }
+  const omitKeys = new Set(Array.isArray(setData?.omit) ? setData.omit : [])
+  const resolved: Record<string, any> = {}
+  for (const key of pickKeys) {
+    if (omitKeys.has(key) || hasOwn(data, key)) {
+      continue
+    }
+    const placeholder = resolveRuntimeBindingPlaceholder(key)
+    if (placeholder !== undefined) {
+      resolved[key] = placeholder
+    }
+  }
+  return Object.keys(resolved).length ? resolved : undefined
 }
 
 export function resolveInitialComputedData(options: {
@@ -123,7 +170,8 @@ export function resolveInitialComputedData(options: {
   })
 
   for (const key of computedKeys) {
-    if (isCompilerGeneratedTemplateComputedKey(key)) {
+    const getter = resolveComputedGetter((computed as ComputedDefinitions)[key])
+    if (isCompilerGeneratedTemplateComputedKey(key) && (!getter || !canResolveInitialTemplateComputed(key, getter))) {
       continue
     }
     resolveComputedValue(key)
@@ -145,9 +193,11 @@ export function resolveNativeInitialData(
     computed,
     setData,
   })
-  return initialComputedData
+  const runtimeBindingPlaceholderData = resolveRuntimeBindingPlaceholderData(data as Record<string, any>, setData)
+  return initialComputedData || runtimeBindingPlaceholderData
     ? {
         ...(data as Record<string, any>),
+        ...runtimeBindingPlaceholderData,
         ...initialComputedData,
       }
     : data

@@ -152,6 +152,103 @@ describe('runtime: scoped slots', () => {
     }))
   })
 
+  it('flushes owner id and template slot bindings over native placeholder data in patch mode', async () => {
+    defineComponent({
+      data: () => ({
+        [WEVU_SLOT_OWNER_ID_KEY]: '',
+        __wv_bind_0: null,
+      }),
+      computed: {
+        __wv_bind_0() {
+          return ['io', 1]
+        },
+      },
+      setup() {
+        return {}
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_KEY, '__wv_bind_0'],
+        strategy: 'patch',
+      },
+    } as any)
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
+    expect(payloads).not.toContainEqual(expect.objectContaining({
+      [WEVU_SLOT_OWNER_ID_KEY]: '',
+    }))
+    expect(payloads).toContainEqual(expect.objectContaining({
+      [WEVU_SLOT_OWNER_ID_KEY]: expect.stringMatching(/^wv\d+$/),
+      __wv_bind_0: ['io', 1],
+    }))
+    expect(inst.data[WEVU_SLOT_OWNER_ID_KEY]).toMatch(/^wv\d+$/)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_OWNER_ID_KEY]).toBe(inst.data[WEVU_SLOT_OWNER_ID_KEY])
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.__wv_bind_0).toEqual(['io', 1])
+  })
+
+  it('seeds page slot owner id and static slot metadata in native initial data', () => {
+    defineComponent({
+      __wevu_isPage: true,
+      data: () => ({
+        tick: 0,
+      }),
+      computed: {
+        __wv_bind_0() {
+          return { default: true }
+        },
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_KEY, '__wv_bind_0', 'tick'],
+        strategy: 'patch',
+      },
+    } as any)
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    expect(opts.data[WEVU_SLOT_OWNER_ID_KEY]).toMatch(/^wv\d+$/)
+    expect(opts.data.__wv_bind_0).toEqual({ default: true })
+
+    const inst: any = {
+      data: { ...opts.data },
+      route: 'pages/issue-642-bug7/index',
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state[WEVU_SLOT_OWNER_ID_KEY]).toBe(opts.data[WEVU_SLOT_OWNER_ID_KEY])
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_OWNER_ID_KEY]).toBe(opts.data[WEVU_SLOT_OWNER_ID_KEY])
+  })
+
+  it('uses diff setData for explicit scoped slot host components in performance patch defaults', () => {
+    const definition = defineComponent({
+      properties: {
+        [WEVU_SLOT_OWNER_ID_PROP]: {
+          type: String,
+          value: '',
+        },
+        [WEVU_SLOT_SCOPE_KEY]: {
+          type: null,
+          value: null,
+        },
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY, 'vueSlots'],
+        strategy: 'patch',
+      },
+    } as any) as any
+
+    expect(definition.__wevu_options.setData.strategy).toBe('diff')
+  })
+
   it('binds owner-proxy computed bindings when owner id arrives after attach', () => {
     const computed = {
       __wv_bind_0(this: any) {

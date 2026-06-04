@@ -138,6 +138,17 @@ describe('runtime: define helpers', () => {
     expect(result.properties).toEqual({})
   })
 
+  it('keeps empty native properties free from component-only internal props during repeated normalization', () => {
+    const first = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: true,
+      __wevu_isPage: true,
+    })
+    const second = normalizeProps(first)
+
+    expect(second.properties).toEqual({})
+  })
+
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
     const result = normalizeProps({ data: () => ({}) }, {
       mixed: { type: [Number, String] },

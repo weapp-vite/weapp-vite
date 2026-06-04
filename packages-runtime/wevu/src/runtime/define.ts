@@ -11,7 +11,13 @@ import type {
   MiniProgramComponentRawOptions,
   ShallowUnwrapRef,
 } from './types'
-import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import {
+  WEVU_FUNCTION_PROP_PATHS_KEY,
+  WEVU_SCOPED_SLOT_CREATOR_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { resolveNativeInitialData } from './define/initialComputed'
@@ -20,6 +26,7 @@ import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
 import { getScopedSlotHostGlobalObject } from './platform'
 import { registerComponent, runSetupFunction } from './register'
+import { allocateOwnerId } from './scopedSlots'
 
 let scopedSlotCreator: (() => void) | undefined
 
@@ -31,6 +38,40 @@ function ensureScopedSlotComponentGlobal() {
   const globalRecord = globalObject as Record<string, any>
   if (scopedSlotCreator && globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] !== scopedSlotCreator) {
     globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] = scopedSlotCreator
+  }
+}
+
+function shouldSeedNativeSlotOwnerId(
+  mpOptions: Record<string, any>,
+  setData: DefineComponentOptions<any, any, any, any, any>['setData'],
+) {
+  return Boolean((mpOptions as any).__wevu_isPage)
+    && Array.isArray(setData?.pick)
+    && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
+}
+
+function hasScopedSlotHostProperties(mpOptions: Record<string, any>) {
+  const properties = mpOptions.properties
+  return Boolean(
+    properties
+    && typeof properties === 'object'
+    && (
+      WEVU_SLOT_OWNER_ID_PROP in properties
+      || WEVU_SLOT_SCOPE_KEY in properties
+    ),
+  )
+}
+
+function resolveScopedSlotHostSetData(
+  mpOptions: Record<string, any>,
+  setData: DefineComponentOptions<any, any, any, any, any>['setData'],
+) {
+  if (setData?.strategy !== 'patch' || !hasScopedSlotHostProperties(mpOptions)) {
+    return setData
+  }
+  return {
+    ...setData,
+    strategy: 'diff' as const,
   }
 }
 
@@ -169,7 +210,7 @@ export function defineComponent(
     : []
   delete (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
 
-  const resolvedSetData = allowFunctionProps === true
+  const rawResolvedSetData = allowFunctionProps === true
     ? {
         ...(setData ?? {}),
         includeFunctions: true,
@@ -183,6 +224,7 @@ export function defineComponent(
             functionPaths: functionPropPaths,
           }
         : setData
+  const resolvedSetData = resolveScopedSlotHostSetData(mpOptions, rawResolvedSetData)
   const setupFunctionPropKeys = new Set(
     functionPropPaths
       .filter(path => !path.includes('.')),
@@ -212,7 +254,13 @@ export function defineComponent(
   const nativeData = typeof data === 'function'
     ? data()
     : data
-  const nativeInitialData = resolveNativeInitialData(nativeData, computed as ComputedDefinitions, resolvedSetData)
+  const seededNativeData = shouldSeedNativeSlotOwnerId(mpOptions, resolvedSetData)
+    ? {
+        ...(nativeData && typeof nativeData === 'object' ? nativeData : {}),
+        [WEVU_SLOT_OWNER_ID_KEY]: (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || allocateOwnerId(),
+      }
+    : nativeData
+  const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData)
   const mpOptionsWithProps = normalizeProps(
     nativeInitialData !== undefined
       ? {
