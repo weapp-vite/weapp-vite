@@ -229,6 +229,21 @@ it('publish-packages runs constants guards before publishing packages', async ()
   assert.equal(versionGuardIndex < publishIndex, true)
 })
 
+it('ci:release keeps release build concurrency bounded', async () => {
+  const packageJsonPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../package.json',
+  )
+  const content = await fs.readFile(packageJsonPath, 'utf8')
+  const packageJson = JSON.parse(content) as {
+    scripts?: Record<string, string>
+  }
+
+  const releaseBuildScript = packageJson.scripts?.['ci:release'] ?? ''
+
+  assert.match(releaseBuildScript, /turbo run --concurrency=2\b/)
+})
+
 it('collectConstantsReleaseVersionIssues reports unchanged versions with changed constants sources', () => {
   const issues = collectConstantsReleaseVersionIssues({
     changedFiles: ['@weapp-core/constants/src/index.ts'],
