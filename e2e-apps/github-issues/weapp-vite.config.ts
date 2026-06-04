@@ -15,6 +15,8 @@ const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-f
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
+const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
+const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
@@ -66,6 +68,12 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue642.test.ts': [
     'pages/issue-642/**',
     'components/issue-642/**',
+  ],
+  'github-issues.runtime.issue642-bug7-default.test.ts': [
+    'pages/issue-642-bug7/**',
+  ],
+  'github-issues.runtime.issue642-bug7-performance.test.ts': [
+    'pages/issue-642-bug7/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -299,7 +307,11 @@ export default defineConfig({
       },
     },
     wevu: {
-      autoSetDataPick: true,
+      ...(issue642Bug7PerformanceEnabled
+        ? { preset: 'performance' as const }
+        : issue642Bug7DefaultEnabled
+          ? { autoSetDataPick: false }
+          : { autoSetDataPick: true }),
     },
     autoImportComponents: {
       resolvers: [

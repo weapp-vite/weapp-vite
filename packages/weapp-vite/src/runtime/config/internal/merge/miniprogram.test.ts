@@ -1,5 +1,7 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   mergeMiniprogram,
   resolveMiniprogramWatchInclude,
@@ -7,6 +9,7 @@ import {
 
 const arrangePluginsMock = vi.hoisted(() => vi.fn())
 const resolveBuiltinPackageAliasesMock = vi.hoisted(() => vi.fn(() => []))
+const cleanupTargets = new Set<string>()
 
 vi.mock('./plugins', () => {
   return {
@@ -18,6 +21,46 @@ vi.mock('../../../packageAliases', () => {
   return {
     resolveBuiltinPackageAliases: resolveBuiltinPackageAliasesMock,
   }
+})
+
+async function createTempProject(prefix: string) {
+  const root = await mkdtemp(path.join(tmpdir(), prefix))
+  cleanupTargets.add(root)
+  return root
+}
+
+function mergeMiniprogramForTsconfig(cwd: string, config: Record<string, unknown> = {}) {
+  return mergeMiniprogram(
+    {
+      ctx: {
+        configService: {
+          platform: 'weapp',
+        },
+      } as any,
+      subPackageMeta: undefined,
+      config: config as any,
+      cwd,
+      srcRoot: 'src',
+      configFileDependencies: [],
+      packageJson: undefined,
+      isDev: true,
+      applyRuntimePlatform: vi.fn(),
+      injectBuiltinAliases: vi.fn(),
+      getDefineImportMetaEnv: () => ({}),
+      setOptions: vi.fn(),
+      oxcRolldownPlugin: undefined,
+    },
+    undefined,
+  )
+}
+
+afterEach(async () => {
+  await Promise.all(
+    Array.from(cleanupTargets).map(async (target) => {
+      await rm(target, { recursive: true, force: true })
+    }),
+  )
+  cleanupTargets.clear()
 })
 
 describe('runtime config merge miniprogram', () => {
@@ -163,33 +206,35 @@ describe('runtime config merge miniprogram', () => {
     expect(setOptions).not.toHaveBeenCalled()
   })
 
-  it('pins default rolldown tsconfig only when project tsconfig exists', () => {
-    const result = mergeMiniprogram(
-      {
-        ctx: {
-          configService: {
-            platform: 'weapp',
-          },
-        } as any,
-        subPackageMeta: undefined,
-        config: {} as any,
-        cwd: path.resolve(import.meta.dirname, '../../../../../../..'),
-        srcRoot: 'src',
-        configFileDependencies: [],
-        packageJson: undefined,
-        isDev: true,
-        applyRuntimePlatform: vi.fn(),
-        injectBuiltinAliases: vi.fn(),
-        getDefineImportMetaEnv: () => ({}),
-        setOptions: vi.fn(),
-        oxcRolldownPlugin: undefined,
-      },
-      undefined,
-    )
+  it('prefers managed app tsconfig for default rolldown tsconfig', async () => {
+    const root = await createTempProject('weapp-vite-miniprogram-tsconfig-')
+    const rootTsconfig = path.join(root, 'tsconfig.json')
+    const appTsconfig = path.join(root, '.weapp-vite/tsconfig.app.json')
+    await writeFile(rootTsconfig, `${JSON.stringify({ references: [{ path: '../other-app' }] }, null, 2)}\n`, 'utf8')
+    await mkdir(path.dirname(appTsconfig), { recursive: true })
+    await writeFile(appTsconfig, `${JSON.stringify({ include: ['../src/**/*'] }, null, 2)}\n`, 'utf8')
 
-    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(
-      path.resolve(import.meta.dirname, '../../../../../../..', 'tsconfig.json'),
-    )
+    const result = mergeMiniprogramForTsconfig(root)
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(appTsconfig)
+  })
+
+  it('falls back to project tsconfig when managed app tsconfig is missing', async () => {
+    const root = await createTempProject('weapp-vite-miniprogram-root-tsconfig-')
+    const rootTsconfig = path.join(root, 'tsconfig.json')
+    await writeFile(rootTsconfig, `${JSON.stringify({ include: ['src/**/*'] }, null, 2)}\n`, 'utf8')
+
+    const result = mergeMiniprogramForTsconfig(root)
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(rootTsconfig)
+  })
+
+  it('does not set default rolldown tsconfig when project tsconfig files are missing', async () => {
+    const root = await createTempProject('weapp-vite-miniprogram-no-tsconfig-')
+
+    const result = mergeMiniprogramForTsconfig(root)
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBeUndefined()
   })
 
   it('preserves shared output options when merging user rolldown options', () => {
@@ -247,70 +292,28 @@ describe('runtime config merge miniprogram', () => {
 
   it('preserves explicit rolldown tsconfig options', () => {
     const explicitTsconfig = '/workspace/custom-tsconfig.json'
-    const result = mergeMiniprogram(
-      {
-        ctx: {
-          configService: {
-            platform: 'weapp',
-          },
-        } as any,
-        subPackageMeta: undefined,
-        config: {
-          build: {
-            rolldownOptions: {
-              tsconfig: explicitTsconfig,
-            },
-          },
-        } as any,
-        cwd: '/project',
-        srcRoot: 'src',
-        configFileDependencies: [],
-        packageJson: undefined,
-        isDev: true,
-        applyRuntimePlatform: vi.fn(),
-        injectBuiltinAliases: vi.fn(),
-        getDefineImportMetaEnv: () => ({}),
-        setOptions: vi.fn(),
-        oxcRolldownPlugin: undefined,
+    const result = mergeMiniprogramForTsconfig('/project', {
+      build: {
+        rolldownOptions: {
+          tsconfig: explicitTsconfig,
+        },
       },
-      undefined,
-    )
+    })
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(explicitTsconfig)
   })
 
   it('preserves deprecated resolve tsconfig filename for user compatibility', () => {
     const explicitTsconfig = '/workspace/resolve-tsconfig.json'
-    const result = mergeMiniprogram(
-      {
-        ctx: {
-          configService: {
-            platform: 'weapp',
+    const result = mergeMiniprogramForTsconfig('/project', {
+      build: {
+        rolldownOptions: {
+          resolve: {
+            tsconfigFilename: explicitTsconfig,
           },
-        } as any,
-        subPackageMeta: undefined,
-        config: {
-          build: {
-            rolldownOptions: {
-              resolve: {
-                tsconfigFilename: explicitTsconfig,
-              },
-            },
-          },
-        } as any,
-        cwd: '/project',
-        srcRoot: 'src',
-        configFileDependencies: [],
-        packageJson: undefined,
-        isDev: true,
-        applyRuntimePlatform: vi.fn(),
-        injectBuiltinAliases: vi.fn(),
-        getDefineImportMetaEnv: () => ({}),
-        setOptions: vi.fn(),
-        oxcRolldownPlugin: undefined,
+        },
       },
-      undefined,
-    )
+    })
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBeUndefined()
     expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(explicitTsconfig)

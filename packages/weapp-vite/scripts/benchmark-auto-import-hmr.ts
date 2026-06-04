@@ -8,6 +8,7 @@ import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
+import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { patchProjectConfigFile } from './utils/config-file'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
@@ -258,7 +259,7 @@ async function patchBenchmarkConfigImports(projectRoot: string) {
     },
   )
 
-  await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
+  await writeBenchmarkResolverFile(projectRoot, renderBenchmarkVantResolver())
 }
 
 async function ensureProjectConfigFiles(projectRoot: string) {

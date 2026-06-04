@@ -17,6 +17,7 @@ import { getAutoImportConfig } from '../src/runtime/autoImport/config'
 import { syncManagedTsconfigFiles } from '../src/runtime/tsconfigSupport'
 import { resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { scanWxml } from '../src/wxml'
+import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { patchProjectConfigFile } from './utils/config-file'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '5', 10)
@@ -246,7 +247,7 @@ async function patchBenchmarkConfigImports(projectRoot: string) {
     },
   )
 
-  await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
+  await writeBenchmarkResolverFile(projectRoot, renderBenchmarkVantResolver())
 }
 
 async function ensureProjectConfigFiles(projectRoot: string) {

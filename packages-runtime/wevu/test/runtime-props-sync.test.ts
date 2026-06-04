@@ -7,7 +7,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from '@/index'
+import { createWevuComponent, defineComponent, nextTick } from '@/index'
 import { resolvePropValue } from '@/runtime'
 
 const registeredComponents: Record<string, any>[] = []
@@ -715,6 +715,75 @@ describe('runtime: props sync', () => {
     expect(inst.data[WEVU_SLOT_SCOPE_KEY]).toBe(initialScope)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_SCOPE_KEY]).toBe(initialScope)
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
+      [WEVU_SLOT_SCOPE_KEY]: initialScope,
+    })
+  })
+
+  it('mirrors initially provided slot metadata for compiled slot-only components without setup', async () => {
+    createWevuComponent({
+      properties: {},
+      setData: {
+        pick: [WEVU_SLOT_NAMES_PROP],
+        strategy: 'patch',
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const initialSlots = { default: true }
+    const inst: any = {
+      data: {
+        [WEVU_SLOT_NAMES_PROP]: null,
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        [WEVU_SLOT_NAMES_PROP]: initialSlots,
+      },
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.data[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(initialSlots)
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots })
+  })
+
+  it('mirrors initially provided scoped slot owner metadata for compiled slot-only components without setup', async () => {
+    createWevuComponent({
+      properties: {},
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY],
+        strategy: 'patch',
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    const initialScope = ['io', 1]
+    const inst: any = {
+      data: {
+        [WEVU_SLOT_OWNER_ID_PROP]: '',
+        [WEVU_SLOT_SCOPE_KEY]: null,
+      },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
+        [WEVU_SLOT_SCOPE_KEY]: initialScope,
+      },
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.data[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst.data[WEVU_SLOT_SCOPE_KEY]).toBe(initialScope)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_OWNER_ID_PROP]).toBe('wv-owner-1')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_SCOPE_KEY]).toEqual(initialScope)
     expect(inst.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
       [WEVU_SLOT_SCOPE_KEY]: initialScope,

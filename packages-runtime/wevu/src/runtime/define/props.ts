@@ -275,8 +275,11 @@ export function normalizeProps(
     ...normalizedBaseOptions
   } = baseOptions
   const baseProperties = (baseOptions as any).properties
+  const normalizedBaseProperties = baseProperties && typeof baseProperties === 'object' && Object.keys(baseProperties).length > 0
+    ? (baseProperties as any)
+    : undefined
   const resolvedExplicit = explicitProperties
-    ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
+    ?? normalizedBaseProperties
   const shouldAttachInternalProps = Boolean(props || resolvedExplicit)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }

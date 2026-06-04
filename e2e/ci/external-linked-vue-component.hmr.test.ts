@@ -69,6 +69,7 @@ async function writeFixtureProject() {
       ],
     },
     include: [
+      'weapp-vite.config.ts',
       'src/**/*',
       '../packages/**/*.vue',
       '../packages/**/*.ts',
@@ -77,7 +78,9 @@ async function writeFixtureProject() {
   await fs.writeJson(path.join(TEMP_ROOT, 'tsconfig.json'), {
     extends: './app/.weapp-vite/tsconfig.shared.json',
     include: [
+      'app/weapp-vite.config.ts',
       'app/src/**/*',
+      'config/**/*.ts',
       'packages/**/*.vue',
       'packages/**/*.ts',
     ],

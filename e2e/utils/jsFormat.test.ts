@@ -42,8 +42,13 @@ describe('jsFormat test config override', () => {
 
     expect(result.configFile).toBeTruthy()
     const content = await fs.readFile(result.configFile!, 'utf8')
+    const tsconfig = JSON.parse(await fs.readFile(path.join(path.dirname(result.configFile!), 'tsconfig.json'), 'utf8'))
     expect(content).toContain(`jsFormat: 'esm'`)
     expect(content).toContain(`export default defineConfig({`)
+    expect(tsconfig).toMatchObject({
+      include: ['./*.ts'],
+    })
+    expect(tsconfig.extends).toBeUndefined()
 
     await result.cleanup()
     expect(await fs.access(result.configFile!).then(() => true).catch(() => false)).toBe(false)
@@ -52,6 +57,7 @@ describe('jsFormat test config override', () => {
   it('wraps existing config files and merges jsFormat override', async () => {
     const projectRoot = await createTempProject('weapp-vite-js-format-wrap-')
     const sourceConfigPath = path.join(projectRoot, 'weapp-vite.config.ts')
+    await fs.writeFile(path.join(projectRoot, 'tsconfig.json'), '{}\n', 'utf8')
     await fs.writeFile(sourceConfigPath, 'export default { weapp: { autoRoutes: true } }\n', 'utf8')
 
     const result = await resolveJsFormatConfigOverride({
@@ -61,10 +67,15 @@ describe('jsFormat test config override', () => {
 
     expect(result.configFile).toBeTruthy()
     const content = await fs.readFile(result.configFile!, 'utf8')
+    const tsconfig = JSON.parse(await fs.readFile(path.join(path.dirname(result.configFile!), 'tsconfig.json'), 'utf8'))
     expect(content).toContain(`import { mergeConfig } from 'vite'`)
     expect(content).toContain(pathToFileURL(sourceConfigPath).href)
     expect(content).toContain(`jsFormat: 'cjs'`)
     expect(content).toContain(`return mergeConfig(config ?? {}, jsFormatOverride)`)
+    expect(tsconfig).toMatchObject({
+      extends: '../tsconfig.json',
+      include: ['./*.ts'],
+    })
 
     await result.cleanup()
   })

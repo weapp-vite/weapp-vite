@@ -155,7 +155,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
   attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
   safeMarkNoSetData(target)
-  const ownerId = allocateOwnerId()
+  const initialNativeOwnerId = (target as any).data?.[WEVU_SLOT_OWNER_ID_KEY]
+  const ownerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId
+    ? initialNativeOwnerId
+    : allocateOwnerId()
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
     ? `page:${(target as any).route}`
@@ -281,6 +284,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       writable: false,
     })
   }
+  Object.defineProperty(baseMountAdapter, '__wevu_initialState', {
+    configurable: true,
+    enumerable: false,
+    value: { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
+    writable: false,
+  })
   const targetProperties = (target as any).properties
   const shouldDeferInitialSnapshot = Boolean(setup)
     || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)

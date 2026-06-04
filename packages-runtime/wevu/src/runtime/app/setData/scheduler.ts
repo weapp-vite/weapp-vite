@@ -37,6 +37,7 @@ export function createSetDataScheduler(options: {
   runTracker: () => void
   isMounted: () => boolean
   initialSnapshot?: Record<string, any>
+  initialState?: Record<string, any>
 }) {
   const {
     state,
@@ -68,6 +69,7 @@ export function createSetDataScheduler(options: {
     runTracker,
     isMounted,
     initialSnapshot,
+    initialState,
   } = options
 
   const plainCache = new WeakMap<object, { version: number, value: any }>()
@@ -79,6 +81,11 @@ export function createSetDataScheduler(options: {
   const needsFullSnapshot = { value: setDataStrategy === 'patch' }
   const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
   const fallbackTopKeys = new Set<string>()
+  const initialStateKeys = new Set(
+    initialState && typeof initialState === 'object'
+      ? Object.keys(initialState)
+      : [],
+  )
 
   const isPlainObject = (value: unknown): value is Record<string, any> => {
     if (Object.prototype.toString.call(value) !== '[object Object]') {
@@ -187,6 +194,9 @@ export function createSetDataScheduler(options: {
         continue
       }
       if (hasOwn(rawState, key)) {
+        if (initialStateKeys.has(key)) {
+          continue
+        }
         rawState[key] = initialSnapshot[key]
         latestStateTokens[key] = createValueToken(rawState[key])
       }

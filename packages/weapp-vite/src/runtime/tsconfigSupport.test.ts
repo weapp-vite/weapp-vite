@@ -344,6 +344,44 @@ describe('tsconfig support', () => {
     expect(rootTsconfig).not.toHaveProperty('references')
   })
 
+  it('bootstraps managed tsconfig files for referenced workspace apps', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-workspace-tsconfig-'))
+    const currentApp = path.join(root, 'apps/current')
+    const referencedApp = path.join(root, 'apps/referenced')
+    const plainPackage = path.join(root, 'packages/plain')
+
+    await fs.ensureDir(currentApp)
+    await fs.ensureDir(referencedApp)
+    await fs.ensureDir(plainPackage)
+    await fs.writeJson(path.join(root, 'tsconfig.json'), {
+      references: [
+        { path: './apps/current' },
+        { path: './apps/referenced' },
+        { path: './packages/plain' },
+      ],
+      files: [],
+    })
+    await fs.writeJson(path.join(currentApp, 'tsconfig.json'), {
+      references: [
+        { path: './.weapp-vite/tsconfig.app.json' },
+      ],
+      files: [],
+    })
+    await fs.writeJson(path.join(referencedApp, 'tsconfig.json'), {
+      extends: './.weapp-vite/tsconfig.shared.json',
+      compilerOptions: {},
+    })
+    await fs.writeJson(path.join(plainPackage, 'tsconfig.json'), {
+      compilerOptions: {},
+    })
+
+    await expect(syncManagedTsconfigBootstrapFiles(currentApp)).resolves.toBe(true)
+
+    await expect(fs.pathExists(path.join(currentApp, '.weapp-vite/tsconfig.shared.json'))).resolves.toBe(true)
+    await expect(fs.pathExists(path.join(referencedApp, '.weapp-vite/tsconfig.shared.json'))).resolves.toBe(true)
+    await expect(fs.pathExists(path.join(plainPackage, '.weapp-vite/tsconfig.shared.json'))).resolves.toBe(false)
+  })
+
   it('does not overwrite richer managed tsconfig files during bootstrap', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-preserve-'))
     await fs.writeJson(path.join(root, 'package.json'), {
