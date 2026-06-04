@@ -16,6 +16,11 @@
     "noEmit": true,
     "skipLibCheck": true
   },
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
   "include": [
     "src/**/*.ts",
     "src/**/*.js",
