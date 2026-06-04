@@ -53,6 +53,14 @@ function normalizeTemplateRelativePath(relativePath: string) {
   return normalizeTemplatePath(relativePath)
 }
 
+function isGeneratedOutputSegment(segment: string) {
+  return segment === 'dist' || segment.startsWith('dist-')
+}
+
+function hasTemplatePathSegment(relativePath: string, predicate: (segment: string) => boolean) {
+  return relativePath.split('/').some(predicate)
+}
+
 async function resolveTemplateDirs(templateName: TemplateName) {
   const packagedTemplateDir = path.resolve(moduleDir, '../templates', templateName)
   const workspaceTemplateDir = resolveWorkspaceTemplateDir(templateName)
@@ -77,22 +85,14 @@ function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
   }
 
   return (
-    relativePath === 'node_modules'
-    || relativePath.startsWith('node_modules/')
-    || relativePath.includes('/node_modules/')
-    || relativePath === '.weapp-vite'
-    || relativePath.startsWith('.weapp-vite/')
-    || relativePath.includes('/.weapp-vite/')
+    hasTemplatePathSegment(relativePath, segment => segment === 'node_modules')
+    || hasTemplatePathSegment(relativePath, segment => segment === '.weapp-vite')
+    || hasTemplatePathSegment(relativePath, isGeneratedOutputSegment)
+    || hasTemplatePathSegment(relativePath, segment => segment === '.turbo')
     || relativePath === 'vite.config.ts.timestamp'
     || relativePath.endsWith('/vite.config.ts.timestamp')
-    || relativePath === 'dist'
-    || relativePath.startsWith('dist/')
-    || relativePath.includes('/dist/')
     || relativePath === 'CHANGELOG.md'
     || relativePath.endsWith('/CHANGELOG.md')
-    || relativePath === '.turbo'
-    || relativePath.startsWith('.turbo/')
-    || relativePath.includes('/.turbo/')
     || relativePath === '.DS_Store'
     || relativePath.endsWith('/.DS_Store')
   )

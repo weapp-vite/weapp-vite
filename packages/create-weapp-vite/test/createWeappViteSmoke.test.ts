@@ -11,6 +11,7 @@ import {
   createPnpmCommand,
   createPnpmInstallCommand,
   hasSuccessfulRebuildSince,
+  shouldSkipTemplateFile,
   waitForChildClose,
   waitForFileChangeOrSuccessfulRebuild,
 } from '../../../scripts/create-weapp-vite-smoke.mjs'
@@ -36,6 +37,16 @@ describe('create-weapp-vite smoke helpers', () => {
 
     expect(hasSuccessfulRebuildSince(previousOutput, 0)).toBe(false)
     expect(hasSuccessfulRebuildSince(nextOutput, previousOutput.length)).toBe(true)
+  })
+
+  it('ignores generated template dist output directories in structure checks', () => {
+    const templateRoot = path.join(os.tmpdir(), 'create-weapp-vite-smoke-template')
+
+    expect(shouldSkipTemplateFile(path.join(templateRoot, 'src', 'app.json'), templateRoot)).toBe(false)
+    expect(shouldSkipTemplateFile(path.join(templateRoot, 'src', 'distribution', 'index.ts'), templateRoot)).toBe(false)
+    expect(shouldSkipTemplateFile(path.join(templateRoot, 'dist', 'app.js'), templateRoot)).toBe(true)
+    expect(shouldSkipTemplateFile(path.join(templateRoot, 'dist-plugin', 'plugin.js'), templateRoot)).toBe(true)
+    expect(shouldSkipTemplateFile(path.join(templateRoot, 'src', 'features', 'dist-web', 'app.js'), templateRoot)).toBe(true)
   })
 
   it('resolves update waits from rebuild logs when dist output is unchanged', async () => {

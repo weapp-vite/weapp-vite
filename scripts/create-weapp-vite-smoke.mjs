@@ -102,6 +102,25 @@ function normalizeRelativePath(value) {
   return value.split(path.sep).join('/')
 }
 
+function normalizeTemplatePath(value) {
+  return value.split('\\').join('/')
+}
+
+function normalizeTemplateRelativePath(relativePath) {
+  if (!relativePath || relativePath === '.') {
+    return ''
+  }
+  return normalizeTemplatePath(relativePath)
+}
+
+function isGeneratedOutputSegment(segment) {
+  return segment === 'dist' || segment.startsWith('dist-')
+}
+
+function hasTemplatePathSegment(relativePath, predicate) {
+  return relativePath.split('/').some(predicate)
+}
+
 function resolveWorkspaceTemplateDir(templateName) {
   const templateDirName = TEMPLATE_DIR_MAP[templateName] || templateName
   return path.resolve(MODULE_DIR, '../templates', templateDirName)
@@ -115,15 +134,28 @@ async function resolveExpectedTemplateDir(templateName) {
   return resolveWorkspaceTemplateDir(templateName)
 }
 
-function shouldSkipTemplateFile(filePath) {
+function shouldSkipTemplateFile(filePath, templateRoot = '') {
+  const relativePath = normalizeTemplateRelativePath(
+    templateRoot
+      ? path.relative(normalizeTemplatePath(templateRoot), normalizeTemplatePath(filePath))
+      : filePath,
+  )
+
+  if (!relativePath) {
+    return false
+  }
+
   return (
-    filePath.includes('node_modules')
-    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
-    || filePath.includes('vite.config.ts.timestamp')
-    || filePath.includes(`${path.sep}dist${path.sep}`)
-    || filePath.endsWith(`${path.sep}CHANGELOG.md`)
-    || filePath.includes(`${path.sep}.turbo${path.sep}`)
-    || filePath.endsWith(`${path.sep}.DS_Store`)
+    hasTemplatePathSegment(relativePath, segment => segment === 'node_modules')
+    || hasTemplatePathSegment(relativePath, segment => segment === '.weapp-vite')
+    || hasTemplatePathSegment(relativePath, isGeneratedOutputSegment)
+    || hasTemplatePathSegment(relativePath, segment => segment === '.turbo')
+    || relativePath === 'vite.config.ts.timestamp'
+    || relativePath.endsWith('/vite.config.ts.timestamp')
+    || relativePath === 'CHANGELOG.md'
+    || relativePath.endsWith('/CHANGELOG.md')
+    || relativePath === '.DS_Store'
+    || relativePath.endsWith('/.DS_Store')
   )
 }
 
@@ -165,7 +197,7 @@ async function collectExpectedTemplateFiles(templateName) {
     const entries = await fs.readdir(currentDir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name)
-      if (shouldSkipTemplateFile(fullPath)) {
+      if (shouldSkipTemplateFile(fullPath, templateDir)) {
         continue
       }
       if (entry.isDirectory()) {
@@ -784,6 +816,7 @@ export {
   createPnpmCommand,
   createPnpmInstallCommand,
   hasSuccessfulRebuildSince,
+  shouldSkipTemplateFile,
   waitForChildClose,
   waitForFileChange,
   waitForFileChangeOrSuccessfulRebuild,

@@ -330,6 +330,26 @@ describe('createProject', () => {
     ).toBe(true)
   })
 
+  it('skips generated dist output directories when copying templates', async () => {
+    const sourceRoot = await createTmpRoot('generated-output-source')
+    const targetRoot = await createTmpRoot('generated-output-target')
+
+    await fs.outputFile(path.join(sourceRoot, 'src', 'app.json'), '{}')
+    await fs.outputFile(path.join(sourceRoot, 'src', 'distribution', 'index.ts'), 'export {}')
+    await fs.outputFile(path.join(sourceRoot, 'dist', 'app.js'), 'generated')
+    await fs.outputFile(path.join(sourceRoot, 'dist-plugin', 'plugin.js'), 'generated')
+    await fs.outputFile(path.join(sourceRoot, 'src', 'features', 'dist-web', 'app.js'), 'generated')
+
+    await createProjectInternal.copyTemplateDir(sourceRoot, sourceRoot, targetRoot)
+
+    const files = await scanFiles(targetRoot)
+    expect(files).toContain('src/app.json')
+    expect(files).toContain('src/distribution/index.ts')
+    expect(files).not.toContain('dist/app.js')
+    expect(files).not.toContain('dist-plugin/plugin.js')
+    expect(files).not.toContain('src/features/dist-web/app.js')
+  })
+
   it('does not skip template files when Windows verbatim paths are used', () => {
     const fakeInstalledTemplateRoot = 'C:/tmp/node_modules/create-weapp-vite/templates/default'
     const windowsVerbatimFilePath = '\\\\?\\C:\\tmp\\node_modules\\create-weapp-vite\\templates\\default\\src\\app.json'

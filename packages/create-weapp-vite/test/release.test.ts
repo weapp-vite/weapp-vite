@@ -18,9 +18,14 @@ function parsePackJson(stdout: string) {
 describe('create-weapp-vite release pack', () => {
   it('includes dist assets and packaged templates in npm pack output', async () => {
     const packageRoot = path.resolve(import.meta.dirname, '..')
+    const workspaceTemplateRoot = path.resolve(packageRoot, '../../templates/weapp-vite-plugin-template')
+    const generatedTemplateFile = path.join(workspaceTemplateRoot, 'dist-plugin', 'pack-sentinel.js')
+    const generatedTemplateDirExisted = await fs.pathExists(path.dirname(generatedTemplateFile))
     const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-pack-cache-'))
 
     try {
+      await fs.outputFile(generatedTemplateFile, 'generated')
+
       const { stdout } = await execa(
         'npm',
         ['pack', '--json', '--dry-run', '.', '--cache', cacheDir],
@@ -44,8 +49,13 @@ describe('create-weapp-vite release pack', () => {
       }
 
       expect(packedFiles.has('templates/default/project.config.json')).toBe(true)
+      expect([...packedFiles].some(file => file.startsWith('templates/plugin/dist-'))).toBe(false)
     }
     finally {
+      await fs.remove(generatedTemplateFile)
+      if (!generatedTemplateDirExisted) {
+        await fs.remove(path.dirname(generatedTemplateFile))
+      }
       await fs.remove(cacheDir)
     }
   })
