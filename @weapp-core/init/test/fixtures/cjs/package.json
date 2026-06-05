@@ -6,11 +6,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "weapp-vite dev",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm",
-    "g": "weapp-vite generate"
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open",
+    "build-npm": "wv build-npm",
+    "g": "wv generate"
   },
   "keywords": [],
   "author": "ice breaker <1324318532@qq.com>",

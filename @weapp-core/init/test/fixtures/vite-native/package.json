@@ -17,15 +17,15 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:0": "weapp-vite dev -m x",
-    "dev:1": "weapp-vite dev --mode xx",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
+    "dev": "wv dev",
+    "dev:0": "wv dev -m x",
+    "dev:1": "wv dev --mode xx",
+    "build": "wv build",
+    "open": "wv open",
     "postinstall": "weapp-tw patch",
-    "npm": "weapp-vite npm",
-    "build-npm": "weapp-vite build-npm",
-    "g": "weapp-vite generate"
+    "npm": "wv npm",
+    "build-npm": "wv build-npm",
+    "g": "wv generate"
   },
   "dependencies": {
     "lodash": "^4.17.21"

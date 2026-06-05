@@ -76,13 +76,14 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
       logger.info(`✨ 没有找到 ${packageJsonFilename} 文件，正在创建默认 package.json ...`)
     }
 
-    set(packageJson, 'scripts.dev', `${command} dev`)
-    set(packageJson, 'scripts.dev:open', `${command} dev -o`)
-    set(packageJson, 'scripts.build', `${command} build`)
+    const scriptCommand = command === 'weapp-vite' ? 'wv' : command
+    set(packageJson, 'scripts.dev', `${scriptCommand} dev`)
+    set(packageJson, 'scripts.dev:open', `${scriptCommand} dev -o`)
+    set(packageJson, 'scripts.build', `${scriptCommand} build`)
 
     if (command === 'weapp-vite') {
-      set(packageJson, 'scripts.open', `${command} open`)
-      set(packageJson, 'scripts.g', `${command} generate`)
+      set(packageJson, 'scripts.open', `${scriptCommand} open`)
+      set(packageJson, 'scripts.g', `${scriptCommand} generate`)
       set(packageJson, 'devDependencies.weapp-vite', `^${version}`)
       await Promise.all([
         upsertDependencyVersion(packageJson, 'devDependencies.miniprogram-api-typings', 'miniprogram-api-typings', { skipNetwork: !write }),

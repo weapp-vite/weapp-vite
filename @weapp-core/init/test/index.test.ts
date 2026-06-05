@@ -35,14 +35,14 @@ describe('init', () => {
     }
     const pkg = await fs.readJSON(path.join(root, 'package.json')) as PackageJsonShape
     expect(pkg.scripts).toMatchObject({
-      'dev': 'weapp-vite dev',
-      'dev:open': 'weapp-vite dev -o',
-      'build': 'weapp-vite build',
-      'open': 'weapp-vite open',
-      'g': 'weapp-vite generate',
+      'dev': 'wv dev',
+      'dev:open': 'wv dev -o',
+      'build': 'wv build',
+      'open': 'wv open',
+      'g': 'wv generate',
     })
     expect(ctx.viteConfig.name).toBe('vite.config.ts')
-    expect(ctx.packageJson.value?.scripts?.build).toBe('weapp-vite build')
+    expect(ctx.packageJson.value?.scripts?.build).toBe('wv build')
   })
 
   it('infers root native miniprogram layout without mutating source outside root', async () => {

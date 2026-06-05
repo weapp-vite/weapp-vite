@@ -79,10 +79,11 @@ async function expectInitializedProject(projectRoot: string, expectedSrcRoot: st
   const viteConfig = await fs.readFile(path.join(projectRoot, 'vite.config.ts'), 'utf8')
 
   expect(packageJson.scripts).toMatchObject({
-    'dev': 'weapp-vite dev',
-    'dev:open': 'weapp-vite dev -o',
-    'build': 'weapp-vite build',
-    'open': 'weapp-vite open',
+    'dev': 'wv dev',
+    'dev:open': 'wv dev -o',
+    'build': 'wv build',
+    'open': 'wv open',
+    'g': 'wv generate',
   })
   expect(projectConfig.miniprogramRoot).toBe('dist/')
   expect(projectConfig.srcMiniprogramRoot).toBe('dist/')
