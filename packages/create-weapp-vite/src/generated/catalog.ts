@@ -36,7 +36,7 @@ export const TEMPLATE_CATALOG = {
   'sass-embedded': '^1.100.0',
   'tailwind-merge': '^3.6.0',
   'tailwind-variants': '^3.2.2',
-  'tdesign-miniprogram': '^1.15.0',
+  'tdesign-miniprogram': '^1.15.1',
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.4.1',
   'vue-tsc': '^3.3.3',
@@ -67,7 +67,7 @@ export const TEMPLATE_CATALOG = {
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.15.0'
+    'tdesign-miniprogram': '1.15.1'
   },
   'weapp-tailwindcss-fixed': {
     'weapp-tailwindcss': '5.0.1'

@@ -154,8 +154,8 @@ catalogs:
       specifier: ^4.3.0
       version: 4.3.0
     tdesign-miniprogram:
-      specifier: ^1.15.0
-      version: 1.15.0
+      specifier: ^1.15.1
+      version: 1.15.1
     ts-morph:
       specifier: ^28.0.0
       version: 28.0.0
@@ -200,8 +200,8 @@ catalogs:
       version: 4.3.0
   tdesign-miniprogram-fixed:
     tdesign-miniprogram:
-      specifier: 1.15.0
-      version: 1.15.0
+      specifier: 1.15.1
+      version: 1.15.1
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
       specifier: 5.0.1
@@ -693,7 +693,7 @@ importers:
         version: 3.4.3
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -776,7 +776,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -915,7 +915,7 @@ importers:
         version: 1.11.21
       tdesign-miniprogram:
         specifier: catalog:tdesign-miniprogram-fixed
-        version: 1.15.0
+        version: 1.15.1
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -955,7 +955,7 @@ importers:
         version: 8.0.0(miniprogram-api-typings@5.2.1)
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@vue/language-plugin-pug':
         specifier: ^3.3.3
@@ -1065,7 +1065,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1111,7 +1111,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1166,7 +1166,7 @@ importers:
         version: 1.11.7
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -1428,7 +1428,7 @@ importers:
         version: 8.0.0(miniprogram-api-typings@5.2.1)
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1657,7 +1657,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1706,7 +1706,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -2354,8 +2354,8 @@ importers:
         specifier: workspace:*
         version: link:../rolldown-require
       semver:
-        specifier: ^7.8.1
-        version: 7.8.1
+        specifier: ^7.8.2
+        version: 7.8.2
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -2474,7 +2474,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -2674,7 +2674,7 @@ importers:
         version: 1.11.21
       tdesign-miniprogram:
         specifier: catalog:tdesign-miniprogram-fixed
-        version: 1.15.0
+        version: 1.15.1
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -2726,7 +2726,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -2893,7 +2893,7 @@ importers:
         version: 0.1.12
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       autoprefixer:
         specifier: 'catalog:'
@@ -2952,7 +2952,7 @@ importers:
     dependencies:
       tdesign-miniprogram:
         specifier: latest
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       weapp-vite:
         specifier: workspace:*
@@ -3128,7 +3128,7 @@ importers:
         version: 1.11.21
       tdesign-miniprogram:
         specifier: 'catalog:'
-        version: 1.15.0
+        version: 1.15.1
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -13932,6 +13932,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.2:
+    resolution: {integrity: sha512-c8jsqUZm3omBOI66G90z1Dyw5z622G8oLG+omfsHBJf3CWQTlOcwOjvOG6wtiNfW6anKm/eA39LMwMtMez2TiQ==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.0:
     resolution: {integrity: sha512-dW41u5VfLXu8SJh5bwRmyYUbAoSB3c9uQh6L8h/KtsFREPWpbX1lrljJo186Jc4nmci/sGUZ9a0a0J2zgfq2hw==}
     engines: {node: '>= 0.8.0'}
@@ -14566,8 +14571,8 @@ packages:
     resolution: {integrity: sha512-dzGK0boVlC4W5QFuQN1EFSl3bIDYsk7Tj40U6eIBnK2k/8ml7TZ5agbI5j5+qnoVcAA+rNtBml8SEiLxZpNqRQ==}
     engines: {node: '>=18'}
 
-  tdesign-miniprogram@1.15.0:
-    resolution: {integrity: sha512-qP1CpUltY4T3SeC1xa4lrI/SnfKF5vwqwF1wyUc3TzIPMdyMBGyXxqBskQKrsIxcoAKSM21n0zsINbtafV/Nhg==}
+  tdesign-miniprogram@1.15.1:
+    resolution: {integrity: sha512-RTqsiNplYU3lLmpPFzIsT1WgfX226F8Xw6siWJ2B9iR1JYblMTxX6WniT0hl5vgS2J9lMYNjo06BIGPuGov2UA==}
 
   temp-dir@2.0.0:
     resolution: {integrity: sha512-aoBAniQmmwtcKp/7BzsH8Cxzv8OL736p7v1ihGb5e9DJ9kTwGWHrQrVB5+lfVDzfGrdRzXch+ig7LHaY1JTOrg==}
@@ -16579,7 +16584,7 @@ snapshots:
       outdent: 0.5.0
       prettier: 2.8.8
       resolve-from: 5.0.0
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@changesets/assemble-release-plan@6.0.10':
     dependencies:
@@ -16588,7 +16593,7 @@ snapshots:
       '@changesets/should-skip-package': 0.1.2
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@changesets/changelog-git@0.2.1':
     dependencies:
@@ -16627,7 +16632,7 @@ snapshots:
       package-manager-detector: 0.2.11
       picocolors: 1.1.1
       resolve-from: 5.0.0
-      semver: 7.8.1
+      semver: 7.8.2
       spawndamnit: 3.0.1
       term-size: 2.2.1
     transitivePeerDependencies:
@@ -16653,7 +16658,7 @@ snapshots:
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
       picocolors: 1.1.1
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@changesets/get-github-info@0.8.0(encoding@0.1.13)':
     dependencies:
@@ -16779,7 +16784,7 @@ snapshots:
   '@commitlint/is-ignored@21.0.2':
     dependencies:
       '@commitlint/types': 21.0.1
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@commitlint/lint@21.0.2':
     dependencies:
@@ -16851,7 +16856,7 @@ snapshots:
     dependencies:
       '@simple-libs/child-process-utils': 1.0.2
       '@simple-libs/stream-utils': 1.2.0
-      semver: 7.8.1
+      semver: 7.8.2
     optionalDependencies:
       conventional-commits-parser: 6.4.0
 
@@ -16913,7 +16918,7 @@ snapshots:
     dependencies:
       empathic: 2.0.1
       module-replacements: 3.0.0-beta.7
-      semver: 7.8.1
+      semver: 7.8.2
     optionalDependencies:
       eslint: 10.4.1(jiti@2.7.0)
 
@@ -17514,7 +17519,7 @@ snapshots:
       p-queue: 9.3.0
       pathe: 2.0.3
       picocolors: 1.1.1
-      semver: 7.8.1
+      semver: 7.8.2
       simple-git: 3.36.0
       yaml: 2.9.0
     optionalDependencies:
@@ -18215,7 +18220,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@ota-meshi/ast-token-store@0.3.0': {}
 
@@ -18759,7 +18764,7 @@ snapshots:
       pretty-ms: 7.0.1
       ramda: '@pnpm/ramda@0.28.1'
       rxjs: 7.8.2
-      semver: 7.8.1
+      semver: 7.8.2
       stacktracey: 2.2.0
       string-length: 4.0.2
 
@@ -18786,7 +18791,7 @@ snapshots:
     dependencies:
       '@pnpm/crypto.hash': 1000.2.2
       '@pnpm/types': 1001.3.0
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/directory-fetcher@1000.1.24(@pnpm/logger@1100.0.0)':
     dependencies:
@@ -18950,7 +18955,7 @@ snapshots:
       '@pnpm/resolver-base': 1005.4.1
       graceful-git: 4.0.0
       hosted-git-info: '@pnpm/hosted-git-info@1.0.0'
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - '@pnpm/logger'
       - domexception
@@ -19010,7 +19015,7 @@ snapshots:
       is-windows: 1.0.2
       normalize-path: 3.0.0
       ramda: '@pnpm/ramda@0.28.1'
-      semver: 7.8.1
+      semver: 7.8.2
       symlink-dir: 6.0.5
 
   '@pnpm/local-resolver@1002.1.13(@pnpm/logger@1100.0.0)':
@@ -19041,7 +19046,7 @@ snapshots:
       '@pnpm/logger': 1100.0.0
       '@pnpm/semver.peer-range': 1000.0.0
       '@pnpm/types': 1001.3.0
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/matcher@1000.1.0':
     dependencies:
@@ -19112,7 +19117,7 @@ snapshots:
       '@pnpm/fetching-types': 1000.2.1
       '@pnpm/resolver-base': 1005.4.1
       '@pnpm/types': 1001.3.0
-      semver: 7.8.1
+      semver: 7.8.2
       version-selector-type: 3.0.0
     transitivePeerDependencies:
       - '@pnpm/logger'
@@ -19168,7 +19173,7 @@ snapshots:
       path-temp: 2.1.1
       ramda: '@pnpm/ramda@0.28.1'
       rename-overwrite: 6.0.6
-      semver: 7.8.1
+      semver: 7.8.2
       semver-utils: 1.1.4
       ssri: 10.0.5
       version-selector-type: 3.0.0
@@ -19197,7 +19202,7 @@ snapshots:
       detect-libc: 2.1.2
       execa: safe-execa@0.1.2
       mem: 8.1.1
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/package-requester@1011.2.4(@pnpm/logger@1100.0.0)(@pnpm/worker@1100.1.8(@pnpm/logger@1100.0.0)(@types/node@25.9.1))':
     dependencies:
@@ -19221,7 +19226,7 @@ snapshots:
       p-queue: 6.6.2
       promise-share: 1.0.0
       ramda: '@pnpm/ramda@0.28.1'
-      semver: 7.8.1
+      semver: 7.8.2
       ssri: 10.0.5
 
   '@pnpm/package-store@1007.1.6(@pnpm/logger@1100.0.0)(@pnpm/worker@1100.1.8(@pnpm/logger@1100.0.0)(@types/node@25.9.1))':
@@ -19318,7 +19323,7 @@ snapshots:
     dependencies:
       '@pnpm/logger': 1100.0.0
       '@pnpm/registry.types': 1000.1.4
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/registry.types@1000.1.4':
     dependencies:
@@ -19334,7 +19339,7 @@ snapshots:
 
   '@pnpm/resolve-workspace-range@1000.1.0':
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/resolver-base@1005.4.1':
     dependencies:
@@ -19354,7 +19359,7 @@ snapshots:
       '@pnpm/types': 1001.3.0
       '@pnpm/util.lex-comparator': 3.0.2
       '@pnpm/worker': 1100.1.8(@pnpm/logger@1100.0.0)(@types/node@25.9.1)
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - '@pnpm/logger'
       - domexception
@@ -19375,7 +19380,7 @@ snapshots:
       '@pnpm/types': 1001.3.0
       '@pnpm/util.lex-comparator': 3.0.2
       '@pnpm/worker': 1100.1.8(@pnpm/logger@1100.0.0)(@types/node@25.9.1)
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - '@pnpm/logger'
       - domexception
@@ -19392,7 +19397,7 @@ snapshots:
 
   '@pnpm/semver.peer-range@1000.0.0':
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   '@pnpm/server@1001.0.20(@pnpm/logger@1100.0.0)':
     dependencies:
@@ -19470,7 +19475,7 @@ snapshots:
       is-subdir: 2.0.0
       p-limit: 7.3.0
       rename-overwrite: 7.0.1
-      semver: 7.8.1
+      semver: 7.8.2
       strip-bom: 5.0.0
 
   '@pnpm/store.controller-types@1100.1.2':
@@ -19557,7 +19562,7 @@ snapshots:
       '@rushstack/worker-pool': 0.7.7(@types/node@25.9.1)
       is-windows: 1.0.2
       p-limit: 7.3.0
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - '@types/node'
 
@@ -20626,7 +20631,7 @@ snapshots:
       eslint: 10.4.1(jiti@2.7.0)
       json-stable-stringify-without-jsonify: 1.0.1
       lodash.merge: 4.6.2
-      semver: 7.8.1
+      semver: 7.8.2
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
@@ -20676,7 +20681,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.60.0
       debug: 4.4.3
       minimatch: 10.2.5
-      semver: 7.8.1
+      semver: 7.8.2
       tinyglobby: 0.2.16
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -20691,7 +20696,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.60.1
       debug: 4.4.3
       minimatch: 10.2.5
-      semver: 7.8.1
+      semver: 7.8.2
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -21686,7 +21691,7 @@ snapshots:
 
   builtins@5.1.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   bundle-name@4.1.0:
     dependencies:
@@ -23095,7 +23100,7 @@ snapshots:
   eslint-compat-utils@0.5.1(eslint@10.4.1(jiti@2.7.0)):
     dependencies:
       eslint: 10.4.1(jiti@2.7.0)
-      semver: 7.8.1
+      semver: 7.8.2
 
   eslint-config-flat-gitignore@2.3.0(eslint@10.4.1(jiti@2.7.0)):
     dependencies:
@@ -23208,7 +23213,7 @@ snapshots:
       html-entities: 2.6.0
       object-deep-merge: 2.0.1
       parse-imports-exports: 0.2.4
-      semver: 7.8.1
+      semver: 7.8.2
       spdx-expression-parse: 4.0.0
       to-valid-identifier: 1.0.0
     transitivePeerDependencies:
@@ -23259,7 +23264,7 @@ snapshots:
       globals: 15.15.0
       globrex: 0.1.2
       ignore: 5.3.2
-      semver: 7.8.1
+      semver: 7.8.2
     optionalDependencies:
       ts-declaration-location: 1.0.7(typescript@6.0.3)
       typescript: 6.0.3
@@ -23442,7 +23447,7 @@ snapshots:
       pluralize: 8.0.0
       regexp-tree: 0.1.27
       regjsparser: 0.13.1
-      semver: 7.8.1
+      semver: 7.8.2
       strip-indent: 4.1.1
 
   eslint-plugin-unused-imports@4.4.1(@typescript-eslint/eslint-plugin@8.60.0(@typescript-eslint/parser@8.60.0(eslint@10.4.1(jiti@2.7.0))(typescript@6.0.3))(eslint@10.4.1(jiti@2.7.0))(typescript@6.0.3))(eslint@10.4.1(jiti@2.7.0)):
@@ -23458,7 +23463,7 @@ snapshots:
       natural-compare: 1.4.0
       nth-check: 2.1.1
       postcss-selector-parser: 7.1.1
-      semver: 7.8.1
+      semver: 7.8.2
       vue-eslint-parser: 10.4.0(eslint@10.4.1(jiti@2.7.0))
       xml-name-validator: 4.0.0
     optionalDependencies:
@@ -24959,7 +24964,7 @@ snapshots:
     dependencies:
       acorn: 8.16.0
       eslint-visitor-keys: 5.0.1
-      semver: 7.8.1
+      semver: 7.8.2
 
   jsonfile@4.0.0:
     optionalDependencies:
@@ -25334,7 +25339,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   make-empty-dir@3.0.2:
     dependencies:
@@ -26023,7 +26028,7 @@ snapshots:
       pkg-types: 2.3.1
       postcss: 8.5.15
       postcss-nested: 7.0.2(postcss@8.5.15)
-      semver: 7.8.1
+      semver: 7.8.2
       tinyglobby: 0.2.14
     optionalDependencies:
       sass: 1.100.0
@@ -26138,7 +26143,7 @@ snapshots:
       make-fetch-happen: 14.0.3
       nopt: 8.1.0
       proc-log: 5.0.0
-      semver: 7.8.1
+      semver: 7.8.2
       tar: 7.5.15
       tinyglobby: 0.2.17
       which: 5.0.0
@@ -26171,13 +26176,13 @@ snapshots:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.16.1
-      semver: 7.8.1
+      semver: 7.8.2
       validate-npm-package-license: 3.0.4
 
   normalize-package-data@7.0.1:
     dependencies:
       hosted-git-info: 8.1.0
-      semver: 7.8.1
+      semver: 7.8.2
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -26566,7 +26571,7 @@ snapshots:
 
   parse-npm-tarball-url@4.0.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   parse-path@7.1.0:
     dependencies:
@@ -27758,6 +27763,8 @@ snapshots:
 
   semver@7.8.1: {}
 
+  semver@7.8.2: {}
+
   send@0.19.0:
     dependencies:
       debug: 2.6.9
@@ -28321,7 +28328,7 @@ snapshots:
   stylelint-config-recommended-vue@1.6.1(postcss-html@1.8.1)(stylelint@17.12.0(typescript@6.0.3)):
     dependencies:
       postcss-html: 1.8.1
-      semver: 7.8.1
+      semver: 7.8.2
       stylelint: 17.12.0(typescript@6.0.3)
       stylelint-config-html: 1.1.0(postcss-html@1.8.1)(stylelint@17.12.0(typescript@6.0.3))
       stylelint-config-recommended: 18.0.0(stylelint@17.12.0(typescript@6.0.3))
@@ -28448,7 +28455,7 @@ snapshots:
       mime: 2.6.0
       qs: 6.14.0
       readable-stream: 3.6.2
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - supports-color
 
@@ -28617,7 +28624,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tdesign-miniprogram@1.15.0: {}
+  tdesign-miniprogram@1.15.1: {}
 
   temp-dir@2.0.0: {}
 
@@ -28805,7 +28812,7 @@ snapshots:
       picomatch: 4.0.4
       rolldown: 1.1.0
       rolldown-plugin-dts: 0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))
-      semver: 7.8.1
+      semver: 7.8.2
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tree-kill: 1.2.2
@@ -29254,7 +29261,7 @@ snapshots:
 
   version-selector-type@3.0.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   vfile-message@4.0.3:
     dependencies:
@@ -29495,7 +29502,7 @@ snapshots:
       eslint-visitor-keys: 5.0.1
       espree: 11.2.0
       esquery: 1.7.0
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - supports-color
 
@@ -29507,7 +29514,7 @@ snapshots:
       eslint-visitor-keys: 5.0.1
       espree: 11.2.0
       esquery: 1.7.0
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - supports-color
     optional: true
