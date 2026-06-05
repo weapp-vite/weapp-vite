@@ -2,11 +2,19 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
+import { createDevProcessEnv } from '../utils/dev-process-env'
+import { waitForFileContains } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const CONFIG_MODULE_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/dist/config.mjs')
 const TEMP_ROOT = path.resolve(import.meta.dirname, '../../.tmp')
 const tempRoots: string[] = []
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 async function writeJson(target: string, value: Record<string, any>) {
   await fs.ensureDir(path.dirname(target))
@@ -94,6 +102,33 @@ async function createAppTsWithJsonTsProject() {
   return root
 }
 
+async function createAppJsonProject() {
+  const root = await createBaseProject('issue-649-config-restart')
+
+  await writeText(
+    path.join(root, 'weapp-vite.config.ts'),
+    [
+      `import { defineConfig } from ${JSON.stringify(CONFIG_MODULE_PATH)}`,
+      '',
+      'export default defineConfig({',
+      '  define: { __ISSUE_649_CONFIG_RESTART__: JSON.stringify(\'issue-649-config-initial\') },',
+      '  weapp: {',
+      '    srcRoot: \'src\',',
+      '  },',
+      '})',
+      '',
+    ].join('\n'),
+  )
+  await writeText(path.join(root, 'src/app.ts'), 'App({})\n')
+  await writeText(path.join(root, 'src/pages/index/index.ts'), 'Page({ data: { configMarker: __ISSUE_649_CONFIG_RESTART__ } })\n')
+  await writeJson(path.join(root, 'src/app.json'), {
+    pages: ['pages/index/index'],
+    subPackages: [{ root: 'pkgA', pages: ['pages/detail/index'] }],
+  })
+
+  return root
+}
+
 async function buildProject(root: string, label: string) {
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -117,6 +152,7 @@ async function expectAppJson(root: string) {
 }
 
 afterAll(async () => {
+  await cleanupResidualDevProcesses()
   await Promise.all(tempRoots.splice(0).map(root => fs.remove(root)))
 })
 
@@ -137,5 +173,50 @@ describe.sequential('issue 649 entry config combinations', () => {
 
     expect(await fs.pathExists(path.join(root, 'dist/app.js'))).toBe(true)
     await expectAppJson(root)
+  })
+
+  it('restarts dev watcher after config changes and keeps responding to later updates', async () => {
+    await cleanupResidualDevProcesses()
+    const root = await createAppJsonProject()
+    const configPath = path.join(root, 'weapp-vite.config.ts')
+    const pageWxmlPath = path.join(root, 'src/pages/index/index.wxml')
+    const distPageJsPath = path.join(root, 'dist/pages/index/index.js')
+    const distWxmlPath = path.join(root, 'dist/pages/index/index.wxml')
+
+    await fs.remove(path.join(root, 'dist'))
+
+    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', root, '--platform', 'weapp', '--skipNpm'], {
+      env: createDevProcessEnv(),
+      all: true,
+    })
+
+    try {
+      await devProcess.waitFor(
+        waitForFileContains(distWxmlPath, 'issue 649', 90_000),
+        'issue 649 initial dev output',
+      )
+      await devProcess.waitFor(
+        waitForFileContains(distPageJsPath, 'issue-649-config-initial', 90_000),
+        'issue 649 initial config marker output',
+      )
+      await sleep(2_000)
+
+      const originalConfig = await fs.readFile(configPath, 'utf8')
+      const updatedConfig = originalConfig.replace('issue-649-config-initial', 'issue-649-config-changed')
+      await fs.writeFile(configPath, updatedConfig, 'utf8')
+      await devProcess.waitFor(
+        waitForFileContains(distPageJsPath, 'issue-649-config-changed', 90_000),
+        'issue 649 config restart marker output',
+      )
+
+      await fs.writeFile(pageWxmlPath, '<view>issue 649 after config restart</view>\n', 'utf8')
+      await devProcess.waitFor(
+        waitForFileContains(distWxmlPath, 'issue 649 after config restart', 90_000),
+        'issue 649 post config restart dev output',
+      )
+    }
+    finally {
+      await devProcess.stop(2_000)
+    }
   })
 })
