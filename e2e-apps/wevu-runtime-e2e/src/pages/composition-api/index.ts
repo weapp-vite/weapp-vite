@@ -68,6 +68,7 @@ import {
   unref,
   useAttrs,
   useBindModel,
+  useElementIntersectionObserver,
   useModel,
   useNativeInstance,
   useSlots,
@@ -147,6 +148,7 @@ const COVERAGE_API_NAMES = [
   'useSlots',
   'useNativeInstance',
   'useTemplateRef',
+  'useElementIntersectionObserver',
   'useBindModel',
   'useModel',
   'mergeModels',
@@ -254,6 +256,16 @@ export default defineComponent({
     const explicitGlobal = injectGlobal(globalProvideKey, 'missing')
 
     const templateRef = useTemplateRef('apiRef')
+    const intersectionObserveResults: Array<{ intersectionRatio?: number }> = []
+    const intersectionObserver = useElementIntersectionObserver<{ intersectionRatio?: number }>({
+      observerOptions: {
+        observeAll: false,
+      },
+      onObserve: (result) => {
+        intersectionObserveResults.push(result)
+      },
+      selector: () => templateRef.value?.selector,
+    })
 
     const bindModel = useBindModel({ event: 'input', valueProp: 'value' })
     const bindModelPayload = bindModel.model<string>('form.title')
@@ -376,6 +388,16 @@ export default defineComponent({
       return Boolean(templateRef.value?.selector)
     }
 
+    const waitIntersectionObserved = async () => {
+      for (let i = 0; i < 10; i += 1) {
+        if (intersectionObserveResults.length > 0) {
+          return true
+        }
+        await new Promise(resolve => setTimeout(resolve, 80))
+      }
+      return intersectionObserveResults.length > 0
+    }
+
     const runE2E = async () => {
       reactiveState.count = 1
       reactiveState.nested.value = 2
@@ -450,6 +472,10 @@ export default defineComponent({
       const exitStateResult = callHookReturn(target, 'onSaveExitState', [{}])
 
       const templateReady = await waitTemplateRefReady()
+      if (templateReady) {
+        intersectionObserver.observe()
+      }
+      const intersectionObserved = await waitIntersectionObserved()
 
       const coverage: Record<(typeof COVERAGE_API_NAMES)[number], boolean> = {
         ref: counter.value === 0,
@@ -512,6 +538,8 @@ export default defineComponent({
         useSlots: typeof slots === 'object',
         useNativeInstance: Boolean(nativeInstance),
         useTemplateRef: templateReady && templateRef.value?.selector === '#api-ref',
+        useElementIntersectionObserver: intersectionObserved
+          && intersectionObserveResults.some(result => typeof result.intersectionRatio === 'number'),
         useBindModel: target?.data?.form?.title === 'bind-model-value-2' && bindModel.value('form.title') === 'bind-model-value-2',
         useModel: modelEvents.some(item => item.event === 'update:titleModel' && item.value === 'emit-next') && modelRef.value === 'from-props',
         mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
@@ -530,6 +558,7 @@ export default defineComponent({
         hookLogs: hookLogs.value,
         watchedValues,
         effectValues,
+        intersectionObserveResults,
         modelEvents,
         pluginRuns,
       })

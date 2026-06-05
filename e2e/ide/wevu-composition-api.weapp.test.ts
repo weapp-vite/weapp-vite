@@ -63,6 +63,7 @@ const EXPECTED_APIS = [
   'useSlots',
   'useNativeInstance',
   'useTemplateRef',
+  'useElementIntersectionObserver',
   'useBindModel',
   'useModel',
   'mergeModels',

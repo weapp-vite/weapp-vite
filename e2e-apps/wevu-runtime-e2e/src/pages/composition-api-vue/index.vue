@@ -68,6 +68,7 @@ import {
   unref,
   useAttrs,
   useBindModel,
+  useElementIntersectionObserver,
   useModel,
   useNativeInstance,
   useSlots,
@@ -138,6 +139,7 @@ const COVERAGE_API_NAMES = [
   'useSlots',
   'useNativeInstance',
   'useTemplateRef',
+  'useElementIntersectionObserver',
   'useBindModel',
   'useModel',
   'mergeModels',
@@ -229,6 +231,16 @@ const injectedGlobal = inject(globalProvideKey, 'missing')
 const explicitGlobal = injectGlobal(globalProvideKey, 'missing')
 
 const templateRef = useTemplateRef('apiRef')
+const intersectionObserveResults: Array<{ intersectionRatio?: number }> = []
+const intersectionObserver = useElementIntersectionObserver<{ intersectionRatio?: number }>({
+  observerOptions: {
+    observeAll: false,
+  },
+  onObserve: (result) => {
+    intersectionObserveResults.push(result)
+  },
+  selector: () => templateRef.value?.selector,
+})
 
 const bindModel = useBindModel({ event: 'input', valueProp: 'value' })
 const bindModelPayload = bindModel.model<string>('form.title')
@@ -349,6 +361,16 @@ async function waitTemplateRefReady() {
   return Boolean(templateRef.value?.selector)
 }
 
+async function waitIntersectionObserved() {
+  for (let i = 0; i < 10; i += 1) {
+    if (intersectionObserveResults.length > 0) {
+      return true
+    }
+    await new Promise(resolve => setTimeout(resolve, 80))
+  }
+  return intersectionObserveResults.length > 0
+}
+
 async function runE2E() {
   reactiveState.count = 1
   reactiveState.nested.value = 2
@@ -423,6 +445,10 @@ async function runE2E() {
   const exitStateResult = callHookReturn(target, 'onSaveExitState', [{}])
 
   const templateReady = await waitTemplateRefReady()
+  if (templateReady) {
+    intersectionObserver.observe()
+  }
+  const intersectionObserved = await waitIntersectionObserved()
 
   const coverage: Record<(typeof COVERAGE_API_NAMES)[number], boolean> = {
     ref: counter.value === 0,
@@ -485,6 +511,8 @@ async function runE2E() {
     useSlots: typeof slots === 'object',
     useNativeInstance: Boolean(nativeInstance),
     useTemplateRef: templateReady && templateRef.value != null,
+    useElementIntersectionObserver: intersectionObserved
+      && intersectionObserveResults.some(result => typeof result.intersectionRatio === 'number'),
     useBindModel: form.title === 'bind-model-value-vue-2' && target?.data?.form?.title === 'bind-model-value-vue-2' && bindModel.value('form.title') === 'bind-model-value-vue-2',
     useModel: modelEvents.some(item => item.event === 'update:titleModel' && item.value === 'emit-next-vue') && modelRef.value === 'from-props-vue',
     mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
@@ -503,6 +531,7 @@ async function runE2E() {
     hookLogs: hookLogs.value,
     watchedValues,
     effectValues,
+    intersectionObserveResults,
     modelEvents,
   })
 
