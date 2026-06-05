@@ -18,6 +18,13 @@ export interface PackageJsonData extends JsonObject {
 export interface TsConfigData extends JsonObject {}
 
 /**
+ * @description init 过程中推断出的项目布局信息。
+ */
+export interface ProjectLayout {
+  srcRoot: string
+}
+
+/**
  * @description init 过程中单个文件的上下文结构
  */
 export interface ContextDocument<T> {
@@ -30,6 +37,7 @@ export interface ContextDocument<T> {
  * @description init 过程的上下文容器
  */
 export interface Context {
+  projectLayout: ProjectLayout
   projectConfig: ContextDocument<ProjectConfig>
   packageJson: ContextDocument<PackageJsonData>
   viteConfig: ContextDocument<string>
@@ -53,6 +61,9 @@ function createDocument<T>(): ContextDocument<T> {
  */
 export function createContext(): Context {
   return {
+    projectLayout: {
+      srcRoot: 'src',
+    },
     projectConfig: createDocument<ProjectConfig>(),
     packageJson: createDocument<PackageJsonData>(),
     viteConfig: createDocument<string>(),

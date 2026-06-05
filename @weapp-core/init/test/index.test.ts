@@ -45,6 +45,35 @@ describe('init', () => {
     expect(ctx.packageJson.value?.scripts?.build).toBe('weapp-vite build')
   })
 
+  it('infers root native miniprogram layout without mutating source outside root', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-root-native-'))
+    await fs.outputJSON(path.join(root, 'app.json'), { pages: ['pages/index/index'] })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue('^0.0.0')
+
+    await initConfig({ root, command: 'weapp-vite' })
+
+    const viteConfig = await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')
+    expect(viteConfig).toContain(`srcRoot: '.'`)
+    expect(ctx.projectLayout.srcRoot).toBe('.')
+  })
+
+  it('infers miniprogram native project layout from project config', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-miniprogram-native-'))
+    await fs.outputJSON(path.join(root, 'project.config.json'), {
+      miniprogramRoot: 'miniprogram/',
+      setting: {},
+    })
+    await fs.outputJSON(path.join(root, 'miniprogram/app.json'), { pages: ['pages/index/index'] })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue('^0.0.0')
+
+    await initConfig({ root, command: 'weapp-vite' })
+
+    const viteConfig = await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')
+    expect(viteConfig).toContain(`srcRoot: 'miniprogram'`)
+    expect(ctx.projectLayout.srcRoot).toBe('miniprogram')
+    expect(ctx.tsconfigApp.value?.include).toContain('../miniprogram/**/*.ts')
+  })
+
   it('skips optional files when command is not provided', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-lite-'))
     vi.spyOn(npm, 'latestVersion').mockResolvedValue('^0.0.0')

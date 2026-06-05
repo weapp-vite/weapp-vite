@@ -21,6 +21,15 @@ describe('configFiles', () => {
     expect(ctx.viteConfig.value).toContain('defineConfig')
   })
 
+  it('writes inferred srcRoot to vite config', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-config-src-root-'))
+    ctx.projectLayout.srcRoot = 'miniprogram'
+
+    const code = await initViteConfigFile({ root, write: false })
+
+    expect(code).toContain(`srcRoot: 'miniprogram'`)
+  })
+
   it('uses .mts suffix for non-module packages without writing to disk', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-config-cjs-'))
     ctx.packageJson.value = { type: 'commonjs' } as any
@@ -48,14 +57,25 @@ describe('configFiles', () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-config-ts-'))
     ctx.viteConfig.name = 'vite.config.custom.ts'
 
-    const { tsconfig } = await initTsJsonFiles({ root, write: false })
+    const { tsconfig, tsconfigApp } = await initTsJsonFiles({ root, write: false })
 
     expect(tsconfig.references?.map(ref => ref.path)).toContain('./.weapp-vite/tsconfig.server.json')
     expect(tsconfig.references?.map(ref => ref.path)).toContain('./.weapp-vite/tsconfig.node.json')
+    expect(tsconfigApp.include).toContain('../src/**/*.ts')
     expect(ctx.tsconfig.name).toBe('tsconfig.json')
     expect(ctx.tsconfigApp.name).toBe('.weapp-vite/tsconfig.app.json')
     expect(ctx.tsconfigServer.name).toBe('.weapp-vite/tsconfig.server.json')
     expect(ctx.tsconfigNode.name).toBe('.weapp-vite/tsconfig.node.json')
+  })
+
+  it('initializes tsconfig app include from inferred srcRoot', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-config-ts-src-root-'))
+    ctx.projectLayout.srcRoot = 'miniprogram'
+
+    const { tsconfigApp } = await initTsJsonFiles({ root, write: false })
+
+    expect(tsconfigApp.include).toContain('../miniprogram/**/*.ts')
+    expect(ctx.tsconfigApp.value?.compilerOptions?.paths?.['@/*']).toEqual(['../miniprogram/*'])
   })
 
   it('writes tsconfig files to disk by default', async () => {
@@ -63,7 +83,10 @@ describe('configFiles', () => {
     await initTsJsonFiles({ root })
 
     expect(await fs.pathExists(path.join(root, 'tsconfig.json'))).toBe(true)
-    expect(await fs.pathExists(path.join(root, 'tsconfig.app.json'))).toBe(false)
-    expect(await fs.pathExists(path.join(root, 'tsconfig.node.json'))).toBe(false)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite/tsconfig.app.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite/tsconfig.node.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite/tsconfig.server.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite/tsconfig.shared.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite/tsconfig.shared.empty.d.ts'))).toBe(true)
   })
 })

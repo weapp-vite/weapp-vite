@@ -1,15 +1,41 @@
-const srcIncludeGlobs = [
-  'src/**/*.ts',
-  'src/**/*.tsx',
-  'src/**/*.js',
-  'src/**/*.jsx',
-  'src/**/*.mts',
-  'src/**/*.cts',
-  'src/**/*.vue',
-  'src/**/*.json',
-  'src/**/*.d.ts',
-  'types/**/*.d.ts',
-  'env.d.ts',
+export interface DefaultTsconfigAppJsonOptions {
+  srcRoot?: string
+}
+
+function normalizeManagedSrcRoot(srcRoot: string) {
+  return srcRoot === '.' ? '..' : `../${srcRoot}`
+}
+
+function normalizeSrcRoot(srcRoot: string | undefined) {
+  if (!srcRoot) {
+    return 'src'
+  }
+  if (srcRoot === '.') {
+    return '.'
+  }
+  return srcRoot.replaceAll('\\', '/').replace(/\/+$/u, '')
+}
+
+function createSrcIncludeGlobs(srcRoot: string) {
+  const managedSrcRoot = normalizeManagedSrcRoot(srcRoot)
+  const prefix = `${managedSrcRoot}/**`
+  return [
+    `${prefix}/*.ts`,
+    `${prefix}/*.tsx`,
+    `${prefix}/*.js`,
+    `${prefix}/*.jsx`,
+    `${prefix}/*.mts`,
+    `${prefix}/*.cts`,
+    `${prefix}/*.vue`,
+    `${prefix}/*.json`,
+    `${prefix}/*.d.ts`,
+  ]
+}
+
+const extraIncludeGlobs = [
+  '../types/**/*.d.ts',
+  '../env.d.ts',
+  './**/*.d.ts',
 ]
 
 /**
@@ -38,10 +64,12 @@ export function getDefaultTsconfigJson() {
 /**
  * @description 生成默认 tsconfig.app.json
  */
-export function getDefaultTsconfigAppJson() {
+export function getDefaultTsconfigAppJson(options: DefaultTsconfigAppJsonOptions = {}) {
+  const srcRoot = normalizeSrcRoot(options.srcRoot)
   return {
+    extends: './tsconfig.shared.json',
     compilerOptions: {
-      tsBuildInfoFile: './node_modules/.tmp/tsconfig.app.tsbuildinfo',
+      tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
       target: 'ES2023',
       lib: [
         'ES2023',
@@ -53,7 +81,7 @@ export function getDefaultTsconfigAppJson() {
       moduleDetection: 'force',
       paths: {
         '@/*': [
-          './src/*',
+          `${normalizeManagedSrcRoot(srcRoot)}/*`,
         ],
       },
       resolveJsonModule: true,
@@ -75,7 +103,36 @@ export function getDefaultTsconfigAppJson() {
       erasableSyntaxOnly: true,
       skipLibCheck: true,
     },
-    include: srcIncludeGlobs,
+    include: [
+      ...createSrcIncludeGlobs(srcRoot),
+      ...extraIncludeGlobs,
+    ],
+  }
+}
+
+/**
+ * @description 生成默认 tsconfig.shared.json
+ */
+export function getDefaultTsconfigSharedJson() {
+  return {
+    compilerOptions: {
+      target: 'ES2023',
+      module: 'ESNext',
+      moduleResolution: 'bundler',
+      moduleDetection: 'force',
+      resolveJsonModule: true,
+      allowImportingTsExtensions: true,
+      strict: true,
+      noFallthroughCasesInSwitch: true,
+      noUnusedLocals: true,
+      noUnusedParameters: true,
+      noEmit: true,
+      verbatimModuleSyntax: true,
+      noUncheckedSideEffectImports: true,
+      erasableSyntaxOnly: true,
+      skipLibCheck: true,
+    },
+    files: ['./tsconfig.shared.empty.d.ts'],
   }
 }
 
@@ -84,11 +141,20 @@ export function getDefaultTsconfigAppJson() {
  */
 export function getDefaultTsconfigNodeJson(include: string[] = []) {
   const baseInclude = [
-    'vite.config.ts',
-    'vite.config.*.ts',
-    '*.config.ts',
-    'config/**/*.ts',
-    'scripts/**/*.ts',
+    '../vite.config.ts',
+    '../vite.config.*.ts',
+    '../vite.config.mts',
+    '../vite.config.*.mts',
+    '../weapp-vite.config.ts',
+    '../weapp-vite.config.*.ts',
+    '../weapp-vite.config.mts',
+    '../weapp-vite.config.*.mts',
+    '../*.config.ts',
+    '../*.config.mts',
+    '../config/**/*.ts',
+    '../config/**/*.mts',
+    '../scripts/**/*.ts',
+    '../scripts/**/*.mts',
   ]
 
   const mergedInclude = [...new Set([
@@ -97,8 +163,9 @@ export function getDefaultTsconfigNodeJson(include: string[] = []) {
   ])]
 
   return {
+    extends: './tsconfig.shared.json',
     compilerOptions: {
-      tsBuildInfoFile: './node_modules/.tmp/tsconfig.node.tsbuildinfo',
+      tsBuildInfoFile: '../node_modules/.tmp/tsconfig.node.tsbuildinfo',
       target: 'ES2023',
       lib: [
         'ES2023',
@@ -122,5 +189,25 @@ export function getDefaultTsconfigNodeJson(include: string[] = []) {
       skipLibCheck: true,
     },
     include: mergedInclude,
+  }
+}
+
+/**
+ * @description 生成默认 tsconfig.server.json
+ */
+export function getDefaultTsconfigServerJson() {
+  return {
+    extends: './tsconfig.shared.json',
+    compilerOptions: {
+      tsBuildInfoFile: '../node_modules/.tmp/tsconfig.server.tsbuildinfo',
+      target: 'ES2023',
+      lib: [
+        'ES2023',
+      ],
+      types: [
+        'node',
+      ],
+    },
+    files: [],
   }
 }

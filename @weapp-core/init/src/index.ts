@@ -2,6 +2,7 @@ import process from 'node:process'
 import { initTsDtsFile, initTsJsonFiles, initViteConfigFile } from './configFiles'
 import { createOrUpdatePackageJson } from './packageJson'
 import { createOrUpdateProjectConfig } from './projectConfig'
+import { resolveProjectSrcRoot } from './projectLayout'
 import { ctx, resetContext } from './state'
 import { updateGitIgnore } from './updateGitignore'
 
@@ -22,7 +23,8 @@ export {
 export async function initConfig(options: { root?: string, command?: 'weapp-vite' }) {
   const { root = process.cwd(), command } = options
 
-  await createOrUpdateProjectConfig({ root })
+  const projectConfig = await createOrUpdateProjectConfig({ root })
+  ctx.projectLayout.srcRoot = await resolveProjectSrcRoot(root, projectConfig)
   await createOrUpdatePackageJson({ root, command })
   await updateGitIgnore({ root })
 
