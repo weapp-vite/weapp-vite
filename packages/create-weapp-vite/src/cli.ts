@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
+import { initConfig } from '@weapp-core/init'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
 import { createProject, TemplateName } from './index'
@@ -60,6 +61,7 @@ function parseCliArgs(argv: string[]) {
   }
 
   return {
+    command: positionals[0],
     targetDir: positionals[0],
     templateName: positionals[1] as TemplateName | undefined,
     installSkills,
@@ -71,6 +73,13 @@ export async function run() {
   // Support non-interactive usage: node cli.mjs <targetDir> <templateName>
   // Example: node dist/cli.js my-app default
   const parsedArgs = parseCliArgs(process.argv.slice(2))
+  if (parsedArgs.command === 'init') {
+    await initConfig({
+      command: 'weapp-vite',
+    })
+    return
+  }
+
   const { targetDir: argTarget, templateName: argTemplate, installSkills: argInstallSkills } = parsedArgs
   const isArgMode = Boolean(argTarget)
   const targetDir = isArgMode

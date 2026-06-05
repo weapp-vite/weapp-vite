@@ -6,7 +6,8 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
-const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const WEAPP_VITE_CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const CREATE_WEAPP_VITE_CLI_PATH = path.resolve(ROOT, 'packages/create-weapp-vite/bin/create-weapp-vite.js')
 const TEMP_ROOT = path.resolve(ROOT, '.tmp')
 const FIXTURES = [
   {
@@ -18,6 +19,16 @@ const FIXTURES = [
     label: 'ts-base',
     sourceRoot: path.resolve(ROOT, 'fixtures/ts-base'),
     expectedSrcRoot: 'miniprogram',
+  },
+] as const
+const INIT_COMMANDS = [
+  {
+    commandLabel: 'weapp-vite',
+    cliPath: WEAPP_VITE_CLI_PATH,
+  },
+  {
+    commandLabel: 'create-weapp-vite',
+    cliPath: CREATE_WEAPP_VITE_CLI_PATH,
   },
 ] as const
 
@@ -46,17 +57,17 @@ async function collectFileSnapshot(root: string) {
   return snapshot
 }
 
-async function createFixtureCopy(label: string, sourceRoot: string) {
+async function createFixtureCopy(label: string, sourceRoot: string, commandLabel: string) {
   await fs.ensureDir(TEMP_ROOT)
-  const tempRoot = await fs.mkdtemp(path.join(TEMP_ROOT, `init-${label}-`))
+  const tempRoot = await fs.mkdtemp(path.join(TEMP_ROOT, `init-${commandLabel}-${label}-`))
   tempRoots.push(tempRoot)
   const projectRoot = path.join(tempRoot, label)
   await fs.copy(sourceRoot, projectRoot)
   return projectRoot
 }
 
-async function runInit(projectRoot: string) {
-  await execa('node', [CLI_PATH, 'init'], {
+async function runInit(projectRoot: string, cliPath: string) {
+  await execa('node', [cliPath, 'init'], {
     cwd: projectRoot,
     stdio: 'inherit',
   })
@@ -89,23 +100,32 @@ afterAll(async () => {
 })
 
 describe.sequential('weapp-vite init native fixtures (build e2e)', () => {
-  it.each(FIXTURES)('initializes and builds $label without mutating fixtures', async ({
+  it.each(INIT_COMMANDS.flatMap(command => FIXTURES.map(fixture => ({
+    cliPath: command.cliPath,
+    commandLabel: command.commandLabel,
+    expectedSrcRoot: fixture.expectedSrcRoot,
+    fixtureLabel: fixture.label,
+    sourceRoot: fixture.sourceRoot,
+    caseLabel: `${command.commandLabel}:${fixture.label}`,
+  }))))('initializes and builds $caseLabel without mutating fixtures', async ({
+    cliPath,
+    commandLabel,
     expectedSrcRoot,
-    label,
+    fixtureLabel,
     sourceRoot,
   }) => {
     const before = await collectFileSnapshot(sourceRoot)
-    const projectRoot = await createFixtureCopy(label, sourceRoot)
+    const projectRoot = await createFixtureCopy(fixtureLabel, sourceRoot, commandLabel)
 
-    await runInit(projectRoot)
+    await runInit(projectRoot, cliPath)
     await expectInitializedProject(projectRoot, expectedSrcRoot)
 
     await runWeappViteBuildWithLogCapture({
-      cliPath: CLI_PATH,
+      cliPath: WEAPP_VITE_CLI_PATH,
       projectRoot,
       platform: 'weapp',
       cwd: projectRoot,
-      label: `ci:init-native:${label}`,
+      label: `ci:init-native:${commandLabel}:${fixtureLabel}`,
       skipNpm: true,
     })
     await expectBuildOutput(projectRoot)

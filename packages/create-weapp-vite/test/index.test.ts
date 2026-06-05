@@ -4,6 +4,22 @@ import path from 'node:path'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const initConfigMock = vi.hoisted(() => vi.fn())
+const createProjectMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@weapp-core/init', () => ({
+  initConfig: initConfigMock,
+}))
+
+vi.mock('@/createProject', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/createProject')>()
+  createProjectMock.mockImplementation(original.createProject)
+  return {
+    ...original,
+    createProject: createProjectMock,
+  }
+})
+
 // shared answers object for mocked prompts
 const answers: {
   name: string
@@ -78,6 +94,8 @@ const initialCwd = process.cwd()
 beforeEach(async () => {
   originalArgv = [...process.argv]
   process.argv = process.argv.slice(0, 2)
+  initConfigMock.mockReset()
+  createProjectMock.mockClear()
   await fs.remove(tmpRoot)
   await fs.ensureDir(tmpRoot)
   answers.installSkills = false
@@ -186,16 +204,30 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     process.chdir(cwd)
     process.argv = [...process.argv.slice(0, 2), name, 'default']
 
-    const createProjectModule = await import('@/createProject')
-    const createProjectSpy = vi.spyOn(createProjectModule, 'createProject')
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     const cli = await import('../src/cli')
     await cli.runPromise
 
-    expect(createProjectSpy).toHaveBeenCalledWith(name, 'default', {
+    expect(createProjectMock).toHaveBeenCalledWith(name, 'default', {
       installSkills: false,
     })
+  })
+
+  it('routes init command to @weapp-core/init without creating a project', async () => {
+    const cwd = path.join(tmpRoot, 'init-command')
+    await fs.ensureDir(cwd)
+    process.chdir(cwd)
+    process.argv = [...process.argv.slice(0, 2), 'init']
+
+    const cli = await import('../src/cli')
+    await cli.runPromise
+
+    expect(initConfigMock).toHaveBeenCalledWith({
+      command: 'weapp-vite',
+    })
+    expect(createProjectMock).not.toHaveBeenCalled()
+    expect(await fs.pathExists(path.join(cwd, 'init'))).toBe(false)
   })
 })

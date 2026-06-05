@@ -2084,6 +2084,9 @@ importers:
       '@inquirer/prompts':
         specifier: ^8.5.2
         version: 8.5.2(@types/node@25.9.1)
+      '@weapp-core/init':
+        specifier: workspace:*
+        version: link:../../@weapp-core/init
       '@weapp-core/logger':
         specifier: workspace:*
         version: link:../../@weapp-core/logger
