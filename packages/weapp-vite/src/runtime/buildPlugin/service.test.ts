@@ -629,6 +629,10 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
+    const originalScanState = ctx.runtimeState.scan
+    ctx.runtimeState.json.cache.set('/project/src/app.json', { stale: true })
+    ctx.runtimeState.autoImport.registry.set('StaleComp', { kind: 'local', name: 'StaleComp', from: '/project/src/components/StaleComp/index' } as any)
+
     service.requestConfigRestart('app')
     watcher.emit('START')
     watcher.emit('END')
@@ -642,9 +646,14 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.scan).toBe(originalScanState)
+    expect(ctx.runtimeState.json.cache.get('/project/src/app.json')).toBeUndefined()
+    expect(ctx.runtimeState.autoImport.registry.size).toBe(0)
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(restartedWatcher)
     expect(loggerInfoMock).toHaveBeenCalledWith('检测到 Vite 配置变更，正在重启小程序开发构建...')
+    expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith('Vite 配置已重新加载，小程序开发构建已重启。')
   })
 
   it('keeps the app entry scan error when config restart cannot reload entries', async () => {

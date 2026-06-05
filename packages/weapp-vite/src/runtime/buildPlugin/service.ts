@@ -590,15 +590,70 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   function resetRuntimeStateForConfigRestart() {
     const fresh = createRuntimeState()
-    ctx.runtimeState.autoRoutes = fresh.autoRoutes
-    ctx.runtimeState.autoImport = fresh.autoImport
+
+    const autoRoutes = ctx.runtimeState.autoRoutes
+    autoRoutes.routes = fresh.autoRoutes.routes
+    autoRoutes.serialized = fresh.autoRoutes.serialized
+    autoRoutes.moduleCode = fresh.autoRoutes.moduleCode
+    autoRoutes.typedDefinition = fresh.autoRoutes.typedDefinition
+    autoRoutes.watchFiles.clear()
+    autoRoutes.watchDirs.clear()
+    autoRoutes.dirty = fresh.autoRoutes.dirty
+    autoRoutes.initialized = fresh.autoRoutes.initialized
+    autoRoutes.candidates.clear()
+    autoRoutes.needsFullRescan = fresh.autoRoutes.needsFullRescan
+    autoRoutes.loadingAppConfig = fresh.autoRoutes.loadingAppConfig
+
+    const autoImport = ctx.runtimeState.autoImport
+    autoImport.registry.clear()
+    autoImport.resolvedResolverComponents.clear()
+    autoImport.matcher = undefined
+    autoImport.matcherKey = fresh.autoImport.matcherKey
+    autoImport.version += 1
+    autoImport.pendingEntriesByImporter.clear()
+
     ctx.runtimeState.build.hmr = fresh.build.hmr
-    ctx.runtimeState.json = fresh.json
-    ctx.runtimeState.asset = fresh.asset
-    ctx.runtimeState.css = fresh.css
-    ctx.runtimeState.wxml = fresh.wxml
-    ctx.runtimeState.scan = fresh.scan
-    ctx.runtimeState.lib = fresh.lib
+
+    const json = ctx.runtimeState.json
+    json.cache.cache.clear()
+    json.cache.mtimeMap.clear()
+    json.cache.signatureMap.clear()
+    json.emittedSource.clear()
+
+    const asset = ctx.runtimeState.asset
+    asset.emittedBuffer.clear()
+    asset.scopedSlotGenerics.clear()
+
+    const css = ctx.runtimeState.css
+    css.importerToDependencies.clear()
+    css.dependencyToImporters.clear()
+    css.emittedSource.clear()
+
+    const wxml = ctx.runtimeState.wxml
+    wxml.depsMap.clear()
+    wxml.importerMap.clear()
+    wxml.tokenMap.clear()
+    wxml.componentsMap.clear()
+    wxml.aggregatedComponentsMap.clear()
+    wxml.templatePathMap.clear()
+    wxml.cache.cache.clear()
+    wxml.cache.mtimeMap.clear()
+    wxml.cache.signatureMap.clear()
+    wxml.emittedCode.clear()
+
+    const scan = ctx.runtimeState.scan
+    scan.subPackageMap.clear()
+    scan.independentSubPackageMap.clear()
+    scan.warnedMessages.clear()
+    scan.appEntry = undefined
+    scan.pluginJson = undefined
+    scan.pluginJsonPath = undefined
+    scan.isDirty = fresh.scan.isDirty
+    scan.independentDirtyRoots.clear()
+
+    const lib = ctx.runtimeState.lib
+    lib.enabled = fresh.lib.enabled
+    lib.entries.clear()
   }
 
   async function runDev(target: BuildTarget) {
@@ -772,6 +827,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
         void (async () => {
+          const shouldRestart = shouldRestartDevBuild(target)
+          if (shouldRestart) {
+            await watcher.close()
+            logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+            resetRuntimeStateForConfigRestart()
+            await configService.load(configService.loadOptions)
+            await scanService.loadAppEntry()
+            scanService.loadSubPackages()
+            await runDev(target)
+            logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+            resolveWatcher(e)
+            return
+          }
+
           if (firstBuildCompleted) {
             finalizeHmrProfile(durationMs)
             recordHmrProfile(durationMs)
@@ -789,16 +858,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             void touch(appWxssPath).catch(() => {})
           }
           resolveWatcher(e)
-          if (shouldRestartDevBuild(target)) {
-            await watcher.close()
-            logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
-            resetRuntimeStateForConfigRestart()
-            await configService.load(configService.loadOptions)
-            await scanService.loadAppEntry()
-            scanService.loadSubPackages()
-            logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
-            await runDev(target)
-          }
         })().catch((error) => {
           resetHmrProfile()
           rejectWatcher(error)
