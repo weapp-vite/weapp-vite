@@ -71,6 +71,7 @@ export interface TransformContext {
   filename: string
   warnings: string[]
   platform: MiniProgramPlatform
+  isPage?: boolean
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */
@@ -88,6 +89,7 @@ export interface TransformContext {
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
   componentNameMap?: Record<string, string>
+  miniProgramComponentTags?: Set<string>
   scopeStack: Array<Set<string>>
   slotPropStack: Array<Record<string, string>>
   rewriteScopedSlot: boolean
@@ -134,6 +136,7 @@ export type TransformNode = (node: any, context: TransformContext) => string
  */
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
+  isPage?: boolean
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */
@@ -157,6 +160,7 @@ export interface TemplateCompileOptions {
   functionPropNames?: Iterable<FunctionPropNameMatcher>
   wevuComponentTags?: Iterable<string>
   componentNameMap?: Record<string, string>
+  miniProgramComponentTags?: Iterable<string>
 }
 
 /**

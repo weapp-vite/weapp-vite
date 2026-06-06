@@ -31,6 +31,7 @@ describe('runtime: setData scheduler', () => {
       debug: undefined,
       debugWhen: 'fallback',
       debugSampleRate: 1,
+      loopWarning: false,
       runTracker: () => {},
       isMounted: () => true,
     })
@@ -76,6 +77,7 @@ describe('runtime: setData scheduler', () => {
       debug: undefined,
       debugWhen: 'fallback',
       debugSampleRate: 1,
+      loopWarning: false,
       runTracker: () => {},
       isMounted: () => true,
       initialSnapshot: {
@@ -95,5 +97,57 @@ describe('runtime: setData scheduler', () => {
       [WEVU_SLOT_OWNER_ID_KEY]: 'wv1',
       __wv_bind_0: { default: true },
     })
+  })
+
+  it('emits a diagnostic event when setData flushes look like a runtime loop', () => {
+    const setData = vi.fn()
+    const debug = vi.fn()
+    const state = { count: 0 }
+    const scheduler = createSetDataScheduler({
+      state,
+      computedRefs: {},
+      dirtyComputedKeys: new Set(),
+      includeComputed: false,
+      functionPaths: [],
+      setDataStrategy: 'diff',
+      computedCompare: 'reference',
+      computedCompareMaxDepth: 2,
+      computedCompareMaxKeys: 20,
+      currentAdapter: { setData },
+      shouldIncludeKey: () => true,
+      maxPatchKeys: 20,
+      maxPayloadBytes: 1024 * 32,
+      mergeSiblingThreshold: 4,
+      mergeSiblingMaxInflationRatio: 2,
+      mergeSiblingMaxParentBytes: 1024 * 8,
+      mergeSiblingSkipArray: false,
+      elevateTopKeyThreshold: 8,
+      toPlainMaxDepth: 4,
+      toPlainMaxKeys: 50,
+      debug,
+      debugWhen: 'fallback',
+      debugSampleRate: 1,
+      loopWarning: {
+        sampleWindowMs: 1000,
+        maxFlushes: 2,
+        coolDownMs: 0,
+      },
+      runTracker: () => {},
+      isMounted: () => true,
+    })
+
+    scheduler.job({})
+    state.count = 1
+    scheduler.job({})
+    state.count = 2
+    scheduler.job({})
+
+    expect(debug).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'loopWarning',
+      flushCount: 3,
+      windowMs: 1000,
+      pendingPatchKeys: 0,
+      computedDirtyKeys: 0,
+    }))
   })
 })

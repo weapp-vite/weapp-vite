@@ -21,6 +21,10 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   transformed: false,
   code,
 })))
+const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+})))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const readFileMock = vi.hoisted(() => vi.fn(async () => ''))
@@ -65,6 +69,7 @@ vi.mock('../injectPageFeatures', () => ({
 
 vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
+  injectScopedSlotHostPropertiesInJs: injectScopedSlotHostPropertiesInJsMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
@@ -138,6 +143,11 @@ describe('emitSharedVueEntryAssets', () => {
     collectSetDataPickKeysFromTemplateMock.mockReturnValue(['title'])
     injectSetDataPickInJsMock.mockReset()
     injectSetDataPickInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+    }))
+    injectScopedSlotHostPropertiesInJsMock.mockReset()
+    injectScopedSlotHostPropertiesInJsMock.mockImplementation((code: string) => ({
       transformed: false,
       code,
     }))
@@ -647,6 +657,59 @@ describe('emitSharedVueEntryAssets', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
     expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
+  })
+
+  it('injects scoped slot host properties when componentGenerics are emitted', async () => {
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { __wvSlotOwnerId: String } })',
+    })
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<view><scoped-slots-footer /></view>',
+        script: 'Component({ setup() { return {} } })',
+        componentGenerics: {
+          'scoped-slots-footer': true,
+        },
+      } as any,
+      filename: '/project/src/components/NamedSlotCard/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('__wvSlotOwnerId')
+  })
+
+  it('injects slot presence host properties when native slot fallback uses vueSlots', async () => {
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
+    })
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block>',
+        script: 'Component({ setup() { return {} } })',
+      } as any,
+      filename: '/project/src/components/PlainSlotCard/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('vueSlots')
   })
 
   it('compiles vue page entries and applies resolved layout plans', async () => {

@@ -16,6 +16,11 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   code,
   map: null,
 })))
+const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+  map: null,
+})))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
@@ -49,6 +54,7 @@ vi.mock('../injectPageFeatures', () => ({
 
 vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
+  injectScopedSlotHostPropertiesInJs: injectScopedSlotHostPropertiesInJsMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
@@ -107,6 +113,12 @@ describe('vue transform plugin shared helpers', () => {
     collectSetDataPickKeysFromTemplateMock.mockReturnValue(['count'])
     injectSetDataPickInJsMock.mockReset()
     injectSetDataPickInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+      map: null,
+    }))
+    injectScopedSlotHostPropertiesInJsMock.mockReset()
+    injectScopedSlotHostPropertiesInJsMock.mockImplementation((code: string) => ({
       transformed: false,
       code,
       map: null,
@@ -643,6 +655,32 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('App({})')
+  })
+
+  it('injects slot presence host properties when native slot fallback uses vueSlots', async () => {
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block>',
+        script: 'Component({ setup() { return {} } })',
+      } as any,
+      filename: '/project/src/components/PlainSlotCard/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('vueSlots')
   })
 
   it('finalizes transform entry code with style imports, scriptless stubs, and dev hashes', () => {

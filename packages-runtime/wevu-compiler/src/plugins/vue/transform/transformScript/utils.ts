@@ -83,6 +83,10 @@ export interface TransformScriptOptions {
    * 以避免小程序属性校验对复杂表达式/代理值产生误报。
    */
   relaxStructuredTypeOnlyProps?: boolean
+  /**
+   * 当前组件模板包含 scoped slot outlet，需要接收 scoped slot 桥接属性。
+   */
+  scopedSlotHostProperties?: boolean
 }
 
 export interface TransformState {

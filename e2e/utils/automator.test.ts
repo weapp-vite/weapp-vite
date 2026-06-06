@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { extractDevtoolsCliLoginState, formatRuntimeStatsLine, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
+import { extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -53,6 +53,12 @@ describe('automator', () => {
     const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
 
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it('treats WeChat DevTools prebuild port timeout as an infra launch error', () => {
+    const error = new Error('Wechat DevTools CLI prebuild failed: - initialize ✖ IDE may already started at port 18085, trying to connect ✖ #initialize-error: wait IDE port timeout')
+
+    expect(isDevtoolsHttpPortError(error)).toBe(true)
   })
 
   it('keeps legacy runtime issue totals while exposing ordinary log counts', () => {

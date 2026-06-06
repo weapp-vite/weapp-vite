@@ -138,6 +138,7 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
 
 function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY
   delete process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT
@@ -178,6 +179,7 @@ describe.sequential('automator launch resilience', () => {
     })
     scanRecentDevtoolsSimulatorBootIssuesMock.mockReturnValue([])
     clearLaunchEnv()
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '0'
   })
 
   afterEach(() => {
@@ -301,6 +303,25 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('does not launch DevTools when app.json is missing subPackages', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '40'
+
+    createProjectFixture(sandboxRoot)
+    writeJson(path.join(sandboxRoot, 'dist/app.json'), {
+      pages: ['pages/index/index'],
+    })
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot })).rejects.toMatchObject({
+      name: 'WechatIdeLaunchAppConfigNotReadyError',
+      message: expect.stringContaining('reason=subPackages is missing'),
+    })
+
+    expect(launchMock).not.toHaveBeenCalled()
+    expect(connectMock).not.toHaveBeenCalled()
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+  })
+
   it('retries when warmup current page never becomes ready and closes previous miniProgram', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
@@ -337,7 +358,7 @@ describe.sequential('automator launch resilience', () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('records WeChat DevTools simulator boot log warnings without failing a recovered launch', async () => {
+  it('retries launch when recent DevTools logs include simulator boot errors', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -347,8 +368,16 @@ describe.sequential('automator launch resilience', () => {
       subPackages: [],
     })
 
-    const miniProgram = createMockMiniProgram()
-    launchMock.mockResolvedValueOnce(miniProgram)
+    const firstMiniProgram = createMockMiniProgram()
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
     scanRecentDevtoolsSimulatorBootIssuesMock
       .mockReturnValueOnce([{
         file: 'devtools.log',
@@ -359,11 +388,57 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot })
 
-    expect(launchMock).toHaveBeenCalledTimes(1)
-    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
-    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts direct connect when DevTools logs simulator boot errors before launch resolves', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockImplementationOnce(async () => {
+        await new Promise(resolve => setTimeout(resolve, 6_000))
+        return createMockMiniProgram()
+      })
+      .mockResolvedValueOnce(secondMiniProgram)
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
+    scanRecentDevtoolsSimulatorBootIssuesMock
+      .mockReturnValueOnce([{
+        file: 'devtools.log',
+        line: '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+      }])
+      .mockReturnValue([])
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })
+
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
   it('reopens devtools project when warmup current page hangs', async () => {
@@ -786,6 +861,37 @@ describe.sequential('automator launch resilience', () => {
 
     expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  })
+
+  it('prebuilds project index before direct DevTools launch by default', async () => {
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const miniProgram = createMockMiniProgram()
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(execaMock).toHaveBeenCalledWith(
+      DEFAULT_WECHAT_CLI_PATH,
+      ['engine', 'build', sandboxRoot],
+      expect.objectContaining({
+        reject: false,
+        timeout: 70_000,
+      }),
+    )
+    expect(execaMock.mock.invocationCallOrder[0]).toBeLessThan(launchMock.mock.invocationCallOrder[0]!)
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
 
   it('does not rewrite project config when launch options do not pass projectConfig', async () => {

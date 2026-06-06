@@ -32,7 +32,7 @@ catalog:
   '@iconify-json/mdi': ^1.2.3
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/vite': ^4.3.0
-  '@types/node': ^25.9.1
+  '@types/node': ^25.9.2
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.7
@@ -79,7 +79,7 @@ catalog:
   vite-plugin-inspect: ^11.4.1
   vue: ^3.5.35
   vue-tsc: ^3.3.3
-  weapp-tailwindcss: ^5.0.1
+  weapp-tailwindcss: ^5.0.2
   zod: ^4.4.3
 
 catalogs:
@@ -93,7 +93,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.0.1
+    weapp-tailwindcss: 5.0.2
 
 ignoredBuiltDependencies:
   - weapp-tailwindcss

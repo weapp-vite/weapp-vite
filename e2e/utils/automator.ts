@@ -23,6 +23,8 @@ const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /#initialize-error:\s*wait IDE port timeout/i,
+  /wait IDE port timeout/i,
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
   /EACCES/i,
@@ -74,6 +76,7 @@ const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Conte
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
+const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_BRIDGE_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 const AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
@@ -259,6 +262,20 @@ interface LaunchProjectMeta {
   warmupRoute?: string
 }
 
+class LaunchAppConfigNotReadyError extends Error {
+  constructor(appConfigPath: string, reason: string) {
+    super(`[runtime:launch-preflight] app.json not ready: ${appConfigPath} reason=${reason}`)
+    this.name = 'WechatIdeLaunchAppConfigNotReadyError'
+  }
+}
+
+class DevtoolsSimulatorBootLogError extends Error {
+  constructor(label: string) {
+    super(`WeChat DevTools simulator boot error detected in IDE log during ${label}`)
+    this.name = 'WechatIdeSimulatorBootLogError'
+  }
+}
+
 interface LaunchAppConfigValidationResult {
   ready: boolean
   reason?: string
@@ -339,8 +356,19 @@ function shouldSkipAutomatorWarmup(skipWarmup?: boolean) {
   return skipWarmup === true || process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
 }
 
+function shouldPrebuildAutomatorProject() {
+  return process.env[AUTOMATOR_PREBUILD_ENV] !== '0'
+}
+
 function shouldPrebuildAutomatorBridgeProject() {
-  return process.env[AUTOMATOR_BRIDGE_PREBUILD_ENV] === '1'
+  const bridgePrebuild = process.env[AUTOMATOR_BRIDGE_PREBUILD_ENV]
+  if (bridgePrebuild === '0') {
+    return false
+  }
+  if (bridgePrebuild === '1') {
+    return true
+  }
+  return shouldPrebuildAutomatorProject()
 }
 
 function shouldRefreshAutomatorBridgeProjectAfterConnect() {
@@ -728,13 +756,12 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
         return
       }
 
-      const firstIssue = issues[0]!
-      const issueText = firstIssue.line.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
+      const issueText = 'WeChat DevTools simulator boot error detected in IDE log'
       if (issueText === reportedIssueText) {
-        return
+        throw new DevtoolsSimulatorBootLogError(label)
       }
       reportedIssueText = issueText
-      process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText.slice(0, 240)} project=${project}\n`)
+      process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText} project=${project}\n`)
       appendIdeReportEvent({
         source: 'runtime',
         kind: 'message',
@@ -743,6 +770,7 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
         channel: 'devtools-log',
         text: `${label}: ${issueText}`,
       })
+      throw new DevtoolsSimulatorBootLogError(label)
     },
   }
 }
@@ -797,6 +825,67 @@ async function runWithTimeout<T>(
   finally {
     if (timer) {
       clearTimeout(timer)
+    }
+    if (!settled) {
+      void task
+        .then(async (value) => {
+          if (timedOut && onLateResolve) {
+            await onLateResolve(value)
+          }
+        })
+        .catch(() => {})
+    }
+  }
+}
+
+async function runWithDevtoolsLogMonitor<T>(
+  factory: () => Promise<T>,
+  timeoutMs: number,
+  label: string,
+  monitor: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
+  onLateResolve?: (value: T) => Promise<void> | void,
+) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let interval: ReturnType<typeof setInterval> | null = null
+  let settled = false
+  let timedOut = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+        interval = setInterval(() => {
+          try {
+            monitor.assertClean(label)
+          }
+          catch (error) {
+            timedOut = true
+            reject(error)
+          }
+        }, DEVTOOLS_LOG_SCAN_INTERVAL)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (interval) {
+      clearInterval(interval)
     }
     if (!settled) {
       void task
@@ -946,13 +1035,11 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
   const appConfigPath = path.resolve(projectPath, resolveMiniprogramRoot(projectPath), 'app.json')
   const start = Date.now()
   let lastReason = 'app.json is not readable'
-  let lastWarmupRoute: string | undefined
   while (Date.now() - start <= APP_CONFIG_READY_TIMEOUT) {
     const config = readJsonObject(appConfigPath)
     if (config) {
       const validation = validateLaunchAppConfig(config)
       lastReason = validation.reason ?? 'app.json is ready'
-      lastWarmupRoute = validation.warmupRoute
       if (validation.ready) {
         return {
           appConfigPath,
@@ -973,7 +1060,7 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
     channel: 'launch-preflight',
     text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)} reason=${lastReason}`,
   })
-  return { appConfigPath, warmupRoute: lastWarmupRoute }
+  throw new LaunchAppConfigNotReadyError(appConfigPath, lastReason)
 }
 
 function extractLoginRequiredMessage(text: string) {
@@ -1544,7 +1631,7 @@ async function refreshMiniProgramProjectIndex(
   process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
 }
 
-async function prebuildBridgeProjectIndex(
+async function prebuildAutomatorProjectIndex(
   projectPath: string | undefined,
   project: string,
   options: { cliPath?: string, cwd?: string } = {},
@@ -1554,7 +1641,7 @@ async function prebuildBridgeProjectIndex(
   }
 
   const cliPath = resolveWechatCliPath(options.cliPath)
-  process.stdout.write(`[info] [runtime:launch-step] bridge-prebuild-start project=${project}\n`)
+  process.stdout.write(`[info] [runtime:launch-step] prebuild-start project=${project}\n`)
   const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
     cwd: options.cwd,
     reject: false,
@@ -1565,14 +1652,14 @@ async function prebuildBridgeProjectIndex(
     const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
     const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
     if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
-      process.stdout.write(`[warn] [runtime:launch-step] bridge-prebuild-opened-with-nonzero project=${project} reason=${details}\n`)
+      process.stdout.write(`[warn] [runtime:launch-step] prebuild-opened-with-nonzero project=${project} reason=${details}\n`)
       await sleep(1_200)
       return
     }
-    throw new Error(`Wechat DevTools CLI bridge prebuild failed: ${details}`)
+    throw new Error(`Wechat DevTools CLI prebuild failed: ${details}`)
   }
   await sleep(1_200)
-  process.stdout.write(`[info] [runtime:launch-step] bridge-prebuild-ready project=${project}\n`)
+  process.stdout.write(`[info] [runtime:launch-step] prebuild-ready project=${project}\n`)
 }
 
 async function closeUnstableRelaunchSession(
@@ -1935,8 +2022,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               trustProject: resolvedTrustProject,
               ...(mergedProjectConfig ? { projectConfig: mergedProjectConfig } : {}),
             }
-            if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE && shouldPrebuildAutomatorBridgeProject()) {
-              await prebuildBridgeProjectIndex(rest.projectPath, project, {
+            const shouldPrebuild = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+              ? shouldPrebuildAutomatorBridgeProject()
+              : shouldPrebuildAutomatorProject()
+            if (shouldPrebuild) {
+              await prebuildAutomatorProjectIndex(rest.projectPath, project, {
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
               })
@@ -1944,7 +2034,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? await launchAutomatorViaCliBridge(launchOptions, project, devtoolsLogMonitor)
-              : await automator.launch(launchOptions)
+              : await runWithDevtoolsLogMonitor(
+                  () => automator.launch(launchOptions),
+                  launchTimeout,
+                  'connect direct',
+                  devtoolsLogMonitor,
+                  async (lateMiniProgram) => {
+                    try {
+                      await lateMiniProgram?.close?.()
+                    }
+                    catch {
+                    }
+                  },
+                )
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
             if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {

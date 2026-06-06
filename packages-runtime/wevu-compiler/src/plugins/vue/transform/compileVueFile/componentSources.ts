@@ -16,6 +16,7 @@ export interface ComponentSourceInfo {
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
   wevuComponentTags: Set<string>
+  miniProgramComponentTags: Set<string>
   componentNameMap: Record<string, string>
 }
 
@@ -101,6 +102,50 @@ function extractStaticDefineOptionsName(scriptSetupContent: string) {
   return componentName
 }
 
+function extractStaticDefineComponentJsonIsComponent(scriptSetupContent: string) {
+  let ast: BabelFile
+  try {
+    ast = babelParse(scriptSetupContent, BABEL_TS_MODULE_PARSER_OPTIONS)
+  }
+  catch {
+    return false
+  }
+
+  let isComponent = false
+  traverse(ast, {
+    CallExpression(path) {
+      if (isComponent) {
+        return
+      }
+      const callee = path.node.callee
+      if (!t.isIdentifier(callee, { name: 'defineComponentJson' })) {
+        return
+      }
+      const arg = path.node.arguments[0]
+      if (!t.isObjectExpression(arg)) {
+        return
+      }
+      for (const property of arg.properties) {
+        if (!t.isObjectProperty(property)) {
+          continue
+        }
+        const key = property.key
+        const matched = t.isIdentifier(key)
+          ? key.name === 'component'
+          : t.isStringLiteral(key)
+            ? key.value === 'component'
+            : false
+        if (matched && t.isBooleanLiteral(property.value) && property.value.value) {
+          isComponent = true
+          path.stop()
+          return
+        }
+      }
+    },
+  })
+  return isComponent
+}
+
 async function resolveVueSfcComponentName(resolvedId: string | undefined, warn?: (message: string) => void) {
   if (!resolvedId?.endsWith('.vue')) {
     return undefined
@@ -122,12 +167,41 @@ async function resolveVueSfcComponentName(resolvedId: string | undefined, warn?:
   }
 }
 
+async function resolveVueSfcIsMiniProgramComponent(resolvedId: string | undefined, warn?: (message: string) => void) {
+  if (!resolvedId?.endsWith('.vue')) {
+    return false
+  }
+  try {
+    const source = await fs.readFile(resolvedId, 'utf8')
+    const { descriptor, errors } = parseSfc(source, {
+      filename: resolvedId,
+    })
+    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
+      return false
+    }
+    return extractStaticDefineComponentJsonIsComponent(descriptor.scriptSetup.content)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    warn?.(`[Vue 编译] 解析 ${resolvedId} 的 defineComponentJson.component 失败：${message}`)
+    return false
+  }
+}
+
 function registerComponentName(result: ComponentSourceInfo, tag: string, componentName: string | undefined) {
   if (!componentName) {
     return
   }
   result.componentNameMap[tag] = componentName
   result.componentNameMap[pascalToKebab(tag)] = componentName
+}
+
+function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: string, isComponent: boolean) {
+  if (!isComponent) {
+    return
+  }
+  result.miniProgramComponentTags.add(tag)
+  result.miniProgramComponentTags.add(pascalToKebab(tag))
 }
 
 export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
@@ -244,6 +318,11 @@ async function collectScriptSetupUsingComponents(options: {
       }
       const componentName = await resolveVueSfcComponentName(resolved?.resolvedId, autoUsingComponents?.warn ?? compileOptions?.warn)
       registerComponentName(result, localName, componentName)
+      registerMiniProgramComponentTag(
+        result,
+        localName,
+        await resolveVueSfcIsMiniProgramComponent(resolved?.resolvedId, autoUsingComponents?.warn ?? compileOptions?.warn),
+      )
     }
   }
   catch (error) {
@@ -296,8 +375,11 @@ async function collectAutoImportWevuComponents(options: {
     }
     const componentName = await resolveVueSfcComponentName(resolved.resolvedId, autoImportTags.warn ?? warn)
     registerComponentName(result, tag, componentName)
+    const isMiniProgramComponent = await resolveVueSfcIsMiniProgramComponent(resolved.resolvedId, autoImportTags.warn ?? warn)
+    registerMiniProgramComponentTag(result, tag, isMiniProgramComponent)
     if (resolved.name) {
       registerComponentName(result, resolved.name, componentName)
+      registerMiniProgramComponentTag(result, resolved.name, isMiniProgramComponent)
     }
   }
 }
@@ -314,6 +396,7 @@ export async function collectComponentSourceInfo(options: {
     autoUsingComponentsMap: {},
     autoComponentMeta: {},
     wevuComponentTags: new Set(),
+    miniProgramComponentTags: new Set(),
     componentNameMap: {},
   }
 

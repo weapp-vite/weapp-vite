@@ -289,16 +289,16 @@ describe('Vue Template Compiler', () => {
       expect(result.componentGenerics?.['scoped-slots-default']).toBeUndefined()
     })
 
-    it('should emit scoped slot placeholder for plain slot when disabled', () => {
+    it('should keep plain slot native even when scoped slot props are optional', () => {
       const result = compileVueTemplateToWxml(
         '<slot></slot>',
         'test.vue',
         { scopedSlotsRequireProps: false },
       )
-      expect(result.code).toContain('scoped-slots-default')
-      expect(result.code).toContain('wx:if="{{__wvSlotOwnerId}}"')
-      expect(result.code).toContain('__wvSlotProps')
-      expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
+      expect(result.code).toBe('<slot />')
+      expect(result.code).not.toContain('scoped-slots-default')
+      expect(result.code).not.toContain('__wvSlotProps')
+      expect(result.componentGenerics?.['scoped-slots-default']).toBeUndefined()
     })
 
     it('should compile named slot', () => {
@@ -324,9 +324,9 @@ describe('Vue Template Compiler', () => {
         '<slot :data="slotProps"></slot>',
         'test.vue',
       )
-      expect(result.code).toContain('<slot />')
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('__wvSlotProps')
+      expect(result.code).not.toContain('<slot />')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
 
@@ -337,8 +337,8 @@ describe('Vue Template Compiler', () => {
       )
 
       expect(result.code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-      expect(result.code).toContain('<slot /><scoped-slots-default')
       expect(result.code).toContain('scoped-slots-default')
+      expect(result.code).not.toContain('<slot />')
       expect(result.code).toContain('__wvSlotProps="{{[\'data\',slotProps]}}"')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
       expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)

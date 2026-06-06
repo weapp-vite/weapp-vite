@@ -94,7 +94,7 @@ describe('asset plugin bundled source collection', () => {
       },
       'components/native-tabbar/index.js': {
         type: 'chunk',
-        code: 'Component({ options: { virtualHost: true } });',
+        code: 'const runtime = require("../../../weapp-vendors/wevu-watch.js"); runtime.so({ options: { virtualHost: true } });',
       },
     }
 
@@ -107,7 +107,10 @@ describe('asset plugin bundled source collection', () => {
     })
     expect(bundle['components/native-tabbar/index.wxml'].source).toContain('<slot /><scoped-slots-default')
     expect(bundle['components/native-tabbar/index.wxml'].source).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId}}"')
-    expect(bundle['components/native-tabbar/index.js'].code).toContain('properties: { __wvSlotOwnerId')
+    expect(bundle['components/native-tabbar/index.js'].code).toContain('properties: {')
+    expect(bundle['components/native-tabbar/index.js'].code).toContain('vueSlots')
+    expect(bundle['components/native-tabbar/index.js'].code).toContain('__wvSlotOwnerId')
+    expect(bundle['components/native-tabbar/index.js'].code).toContain('runtime.so({')
     expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
       fileName: 'components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml',
       source: '<view wx:if="{{false}}" />',

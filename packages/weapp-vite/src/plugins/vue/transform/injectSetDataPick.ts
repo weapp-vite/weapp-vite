@@ -19,7 +19,7 @@ export function isAutoSetDataPickEnabled(config?: WeappViteConfig): boolean {
   return isAutoSetDataPickEnabledWithPreset(config)
 }
 
-function isTargetWevuComponentCall(callee: t.Expression | t.V8IntrinsicIdentifier): boolean {
+function isKnownWevuComponentCallee(callee: t.Expression | t.V8IntrinsicIdentifier): boolean {
   if (callee.type === 'Identifier') {
     return callee.name === 'createWevuComponent' || callee.name === 'defineComponent'
   }
@@ -27,14 +27,17 @@ function isTargetWevuComponentCall(callee: t.Expression | t.V8IntrinsicIdentifie
     return false
   }
   return callee.property.type === 'Identifier'
-    && (callee.property.name === 'createWevuComponent' || callee.property.name === 'defineComponent')
+    && (callee.property.name === 'createWevuComponent' || callee.property.name === 'defineComponent' || callee.property.name === 'so')
 }
 
 /**
  * 通过轻量字符串特征快速判断脚本是否可能需要注入 setData.pick。
  */
 export function mayNeedInjectSetDataPickInJs(source: string): boolean {
-  return source.includes('createWevuComponent') || source.includes('defineComponent')
+  return source.includes('createWevuComponent')
+    || source.includes('defineComponent')
+    || source.includes('__wevu_isPage')
+    || source.includes('.so(')
 }
 
 function getObjectPropertyByKey(objectExpression: t.ObjectExpression, key: string): t.ObjectProperty | undefined {
@@ -50,6 +53,10 @@ function getObjectPropertyByKey(objectExpression: t.ObjectExpression, key: strin
     }
   }
   return undefined
+}
+
+function hasCompiledWevuOptionsMarker(optionsObject: t.ObjectExpression) {
+  return Boolean(getObjectPropertyByKey(optionsObject, '__wevu_isPage'))
 }
 
 function unwrapExpression(node: t.Expression): t.Expression {
@@ -247,6 +254,13 @@ function createScopedSlotHostProperties(): t.ObjectProperty[] {
   return [
     {
       type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_NAMES_PROP },
+      computed: false,
+      shorthand: false,
+      value: createScopedSlotHostPropertyDefinition('null', null),
+    },
+    {
+      type: 'ObjectProperty',
       key: { type: 'Identifier', name: WEVU_SLOT_OWNER_ID_PROP },
       computed: false,
       shorthand: false,
@@ -327,15 +341,12 @@ function transformTargetWevuOptionsInJs(
   const candidateOptions = new Set<t.ObjectExpression>()
   traverse(ast, {
     CallExpression(path) {
-      if (!isTargetWevuComponentCall(path.node.callee)) {
-        return
-      }
       const firstArg = path.node.arguments[0]
       if (!firstArg || firstArg.type === 'SpreadElement') {
         return
       }
       const resolvedOptions = resolveOptionsObjectExpression(firstArg as t.Expression, path.scope)
-      if (resolvedOptions) {
+      if (resolvedOptions && (isKnownWevuComponentCallee(path.node.callee) || hasCompiledWevuOptionsMarker(resolvedOptions))) {
         candidateOptions.add(resolvedOptions)
       }
     },

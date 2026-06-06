@@ -72,6 +72,7 @@ export async function compileVueFile(
   const baseTemplateOptions = parsed.isAppFile
     ? {
         ...options?.template,
+        isPage: options?.isPage,
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
@@ -79,6 +80,7 @@ export async function compileVueFile(
       }
     : {
         ...options?.template,
+        isPage: options?.isPage,
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
@@ -89,11 +91,13 @@ export async function compileVueFile(
         ...baseTemplateOptions,
         wevuComponentTags: componentSourceInfo.wevuComponentTags,
         componentNameMap: componentSourceInfo.componentNameMap,
+        miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
       }
     : {
         ...baseTemplateOptions,
         wevuComponentTags: [],
         componentNameMap: componentSourceInfo.componentNameMap,
+        miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
       }
 
   const templateCompiled = compileTemplatePhase(

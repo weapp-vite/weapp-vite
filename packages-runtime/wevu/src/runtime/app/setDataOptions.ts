@@ -17,6 +17,11 @@ export interface ResolvedSetDataOptions {
   prelinkMaxKeys: number | undefined
   debug: SetDataSnapshotOptions['debug']
   diagnostics: 'off' | 'fallback' | 'always'
+  loopWarning: false | {
+    sampleWindowMs: number
+    maxFlushes: number
+    coolDownMs: number
+  }
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
   elevateTopKeyThreshold: number
@@ -62,6 +67,24 @@ export function resolveSetDataOptions(
   const prelinkMaxKeys = setDataOptions?.prelinkMaxKeys
   const debug = setDataOptions?.debug
   const diagnostics = setDataOptions?.diagnostics ?? 'off'
+  const loopWarningOption = setDataOptions?.loopWarning
+  const loopWarning = loopWarningOption === false || (
+    loopWarningOption
+    && typeof loopWarningOption === 'object'
+    && loopWarningOption.enabled === false
+  )
+    ? false
+    : {
+        sampleWindowMs: typeof loopWarningOption === 'object' && typeof loopWarningOption.sampleWindowMs === 'number'
+          ? Math.max(100, Math.floor(loopWarningOption.sampleWindowMs))
+          : 1000,
+        maxFlushes: typeof loopWarningOption === 'object' && typeof loopWarningOption.maxFlushes === 'number'
+          ? Math.max(1, Math.floor(loopWarningOption.maxFlushes))
+          : 50,
+        coolDownMs: typeof loopWarningOption === 'object' && typeof loopWarningOption.coolDownMs === 'number'
+          ? Math.max(0, Math.floor(loopWarningOption.coolDownMs))
+          : 5000,
+      }
   const debugWhen = setDataOptions?.debugWhen ?? 'fallback'
   const debugSampleRate = typeof setDataOptions?.debugSampleRate === 'number'
     ? Math.min(1, Math.max(0, setDataOptions!.debugSampleRate!))
@@ -112,6 +135,7 @@ export function resolveSetDataOptions(
     prelinkMaxKeys,
     debug,
     diagnostics,
+    loopWarning,
     debugWhen,
     debugSampleRate,
     elevateTopKeyThreshold,

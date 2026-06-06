@@ -3,6 +3,18 @@ import { parse } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileScriptPhase } from './script'
 
+vi.mock('../../../../utils/fs', () => ({
+  readFile: vi.fn(async (filename: string) => {
+    if (filename.endsWith('/my-card.vue')) {
+      return `<script setup lang="ts">
+defineComponentJson({ component: true })
+</script>
+<template><slot /></template>`
+    }
+    throw new Error(`unexpected readFile: ${filename}`)
+  }),
+}))
+
 describe('compileScriptPhase', () => {
   it('returns fallback script when both script and script setup are absent', async () => {
     const descriptor = parse(`<template><view /></template>`, { filename: '/project/src/pages/index/index.vue' }).descriptor
@@ -72,6 +84,37 @@ const local = 'ok'
       TButton: 'tdesign/button/button',
     })
     expect(resolveUsingComponentPath).toHaveBeenCalled()
+  })
+
+  it('injects scoped slot host properties when template emits component generics', async () => {
+    const sfc = parse(`
+<template>
+  <slot name="footer" :suffix="suffix" />
+</template>
+<script setup lang="ts">
+const suffix = '-footer'
+</script>
+    `.trim(), { filename: '/project/src/components/NamedSlotCard/index.vue' })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/NamedSlotCard/index.vue',
+      undefined,
+      undefined,
+      {
+        code: '<scoped-slots-footer />',
+        componentGenerics: {
+          'scoped-slots-footer': true,
+        },
+      } as any,
+      false,
+    )
+
+    expect(result.script).toContain('properties')
+    expect(result.script).toContain('vueSlots')
+    expect(result.script).toContain('__wvSlotOwnerId')
+    expect(result.script).toContain('__wvSlotScope')
   })
 
   it('warns when type-only defineProps declares id, class, or slot', async () => {
@@ -279,6 +322,8 @@ import MyCard from './my-card.vue'
 
     expect(result.wevuComponentTags.has('MyCard')).toBe(true)
     expect(result.wevuComponentTags.has('my-card')).toBe(true)
+    expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
+    expect(result.miniProgramComponentTags.has('my-card')).toBe(true)
   })
 
   it('marks direct .vue imports without auto using component resolver', async () => {
@@ -303,5 +348,7 @@ import MyCard from './my-card.vue'
     expect(result.autoUsingComponentsMap).toEqual({})
     expect(result.wevuComponentTags.has('MyCard')).toBe(true)
     expect(result.wevuComponentTags.has('my-card')).toBe(true)
+    expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
+    expect(result.miniProgramComponentTags.has('my-card')).toBe(true)
   })
 })

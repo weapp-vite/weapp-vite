@@ -38,6 +38,8 @@ const AUTOMATOR_LAUNCH_TIMEOUT_RE = /Wait timed out after \d+ ms/i
 const AUTOMATOR_WS_CONNECT_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+/i
 const DEVTOOLS_PROTOCOL_TIMEOUT_RE = /DevTools did not respond to protocol method (\S+) within \d+ms/i
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /#initialize-error:\s*wait IDE port timeout/i,
+  /wait IDE port timeout/i,
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
   /EACCES/i,

@@ -119,6 +119,7 @@ createWevuComponent({
     const injected = injectScopedSlotHostPropertiesInJs(source)
     expect(injected.transformed).toBe(true)
     expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
     expect(injected.code).toContain('__wvSlotOwnerId')
     expect(injected.code).toContain('__wvSlotScope')
   })
@@ -136,6 +137,46 @@ defineComponent({
     const injected = injectScopedSlotHostPropertiesInJs(source)
     expect(injected.transformed).toBe(true)
     expect(injected.code).toContain('title: String')
+    expect(injected.code).toContain('vueSlots')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
+  })
+
+  it('injects scoped slot host properties into compiled runtime calls', () => {
+    const source = `
+const require_runtime = require("../../../weapp-vendors/wevu-watch.js")
+require_runtime.so({
+  setData: { pick: ["__wvSlotOwnerId"] },
+  __wevu_isPage: true,
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
+  })
+
+  it('injects scoped slot host properties into compiled component runtime calls without page marker', () => {
+    const source = `
+const require_runtime = require("../../../weapp-vendors/wevu-watch.js")
+require_runtime.so({
+  allowNullPropInput: true,
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
     expect(injected.code).toContain('__wvSlotOwnerId')
     expect(injected.code).toContain('__wvSlotScope')
   })

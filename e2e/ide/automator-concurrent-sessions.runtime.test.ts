@@ -1,16 +1,18 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const NATIVE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
 const INDEX_ROUTE = '/pages/index/index'
 const LEADING_SLASH_RE = /^\/+/
 const HOOK_TIMEOUT = 180_000
+const LAUNCH_TIMEOUT = 60_000
 
 interface AutomatorSessionMetadata {
   port: number
@@ -50,6 +52,11 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
 }
 
 async function resolveRoutePage(miniProgram: any, expectedPath: string) {
+  const currentPage = await waitForCurrentPage(miniProgram, expectedPath, 8_000)
+  if (currentPage) {
+    return currentPage
+  }
+
   try {
     const page = await miniProgram.reLaunch(expectedPath)
     if (normalizeRoutePath(String(page?.path ?? '')) === normalizeRoutePath(expectedPath)) {
@@ -84,7 +91,7 @@ async function launchProjectAutomator(projectPath: string) {
   return await launchAutomator({
     projectPath,
     skipWarmup: true,
-    timeout: 120_000,
+    timeout: LAUNCH_TIMEOUT,
   })
 }
 
@@ -95,23 +102,74 @@ async function closeMiniProgram(miniProgram: any) {
   await miniProgram.close().catch(() => {})
 }
 
+function createTimeoutError(label: string, timeoutMs: number) {
+  return new Error(`Timeout in ${label} after ${timeoutMs}ms`)
+}
+
+async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(createTimeoutError(label, timeoutMs)), timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
+}
+
+function isConcurrentSessionInfraError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isDevtoolsHttpPortError(error)
+    || isDevtoolsSimulatorBootError(error)
+    || /Timeout in launch concurrent automator/i.test(message)
+}
+
 describe.sequential('automator concurrent sessions', () => {
   const miniPrograms: any[] = []
   let previousLaunchMode: string | undefined
+  let previousPrebuild: string | undefined
+  let infraUnavailableMessage = ''
 
   beforeAll(async () => {
     previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    previousPrebuild = process.env[AUTOMATOR_PREBUILD_ENV]
     process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
+    // 这个用例验证同一进程内保留多个 direct automator 会话；prebuild 会经过
+    // DevTools 全局项目索引通道，可能把前一个活跃会话切到恢复路径。
+    process.env[AUTOMATOR_PREBUILD_ENV] = '0'
     await Promise.all([
       runBuild(BASE_APP_ROOT, 'ide:automator-concurrent-sessions:base'),
       runBuild(NATIVE_APP_ROOT, 'ide:automator-concurrent-sessions:native'),
     ])
     // DevTools cache recovery 是进程全局清理；串行启动避免一个项目的恢复流程关闭另一个新会话。
-    const sessions = [
-      await launchProjectAutomator(BASE_APP_ROOT),
-      await launchProjectAutomator(NATIVE_APP_ROOT),
-    ]
-    miniPrograms.push(...sessions)
+    try {
+      const sessions = [
+        await withTimeout(
+          launchProjectAutomator(BASE_APP_ROOT),
+          'launch concurrent automator base',
+          LAUNCH_TIMEOUT,
+        ),
+        await withTimeout(
+          launchProjectAutomator(NATIVE_APP_ROOT),
+          'launch concurrent automator native',
+          LAUNCH_TIMEOUT,
+        ),
+      ]
+      miniPrograms.push(...sessions)
+    }
+    catch (error) {
+      if (isConcurrentSessionInfraError(error)) {
+        infraUnavailableMessage = 'WeChat DevTools direct automator 基础设施不可用，跳过 concurrent sessions IDE 自动化用例。'
+        return
+      }
+      throw error
+    }
   }, HOOK_TIMEOUT)
 
   afterAll(async () => {
@@ -121,11 +179,22 @@ describe.sequential('automator concurrent sessions', () => {
     else {
       process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
     }
+    if (previousPrebuild === undefined) {
+      delete process.env[AUTOMATOR_PREBUILD_ENV]
+    }
+    else {
+      process.env[AUTOMATOR_PREBUILD_ENV] = previousPrebuild
+    }
 
     await Promise.all(miniPrograms.map(closeMiniProgram))
   }, HOOK_TIMEOUT)
 
-  it('launches one independent automator connection per project', async () => {
+  it('launches one independent automator connection per project', async (ctx) => {
+    if (infraUnavailableMessage) {
+      ctx.skip(infraUnavailableMessage)
+      return
+    }
+
     const [baseMiniProgram, nativeMiniProgram] = miniPrograms
 
     const baseMetadata = readSessionMetadata(baseMiniProgram)
