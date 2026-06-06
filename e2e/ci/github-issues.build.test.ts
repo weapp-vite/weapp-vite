@@ -459,7 +459,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJson.usingComponents).toMatchObject({
       Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
     })
-    expect(pageWxml).toContain(`Issue520ResolverSlotCard vue-slots="{{__wv_bind_0}}"`)
+    expect(pageWxml).toContain('Issue520ResolverSlotCard vue-slots="{{ {header:true,default:true} }}"')
+    expect(pageWxml).not.toContain('vue-slots="{{{')
+    expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('issue-520 resolver slot header')
     expect(pageWxml).toContain('issue-520 resolver slot default')
   })
@@ -482,7 +484,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
       Issue651ResolverNoExt: '/issue-fixtures/issue-651/ResolverNoExt/index',
       Issue651ResolverWithExt: '/issue-fixtures/issue-651/ResolverWithExt/index',
     })
-    expect(pageWxml).toContain('Issue651ResolverNoExt vue-slots="{{__wv_bind_0}}"')
+    expect(pageWxml).toContain('Issue651ResolverNoExt vue-slots="{{ {default:true} }}"')
+    expect(pageWxml).not.toContain('vue-slots="{{{')
+    expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('Issue651ResolverWithExt')
     expect(noExtComponentWxml).toContain('<slot />')
     expect(noExtComponentWxss).toContain('.issue651-no-ext')
@@ -556,7 +560,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('PlainSlotFallbackCard class="slot-fallback-off-card-provided" vue-slots="{{__wv_bind_0}}"')
+    expect(pageWxml).toContain('PlainSlotFallbackCard class="slot-fallback-off-card-provided" vue-slots="{{ {header:true,default:true} }}"')
+    expect(pageWxml).not.toContain('vue-slots="{{{')
+    expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).not.toContain('generic:scoped-slots-')
     expect(componentWxml).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
     expect(componentWxml).toContain('<slot name="header" />')
@@ -963,7 +969,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(defaultIndex).toBeGreaterThanOrEqual(0)
     expect(footer1Index).toBeGreaterThan(defaultIndex)
     expect(footer2Index).toBeGreaterThan(footer1Index)
-    expect(pageWxml).toContain('VanCell vue-slots="{{__wv_bind_0}}"')
+    expect(pageWxml).toContain('VanCell vue-slots="{{ {footer1:true,footer2:true,default:true} }}"')
+    expect(pageWxml).not.toContain('vue-slots="{{{')
+    expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('<view slot="footer1" class="issue574-footer1" data-order="footer1" />')
     expect(pageWxml).toContain('<text slot="footer2" class="issue574-footer2" data-order="footer2" />')
     expect(pageJs).toContain('_runE2E')
@@ -1131,7 +1139,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue597Card vue-slots="{{__wv_bind_0}}"')
+    expect(pageWxml).toContain('Issue597Card vue-slots="{{ {header:true} }}"')
+    expect(pageWxml).not.toContain('vue-slots="{{{')
+    expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('<block wx:if="{{abc}}"><view slot="header" class="issue597-header-a" data-issue597-branch="if" /></block>')
     expect(pageWxml).toContain('<block wx:else><text slot="header" class="issue597-header-b" data-issue597-branch="else" /></block>')
     expect(pageWxml).not.toContain('<text slot="header" class="issue597-header-b" data-issue597-branch="else" />\n</Issue597Card>')
