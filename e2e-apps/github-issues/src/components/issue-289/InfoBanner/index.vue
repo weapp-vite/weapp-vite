@@ -1,9 +1,22 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   root: {
     a: string
   }
 }>()
+
+function _runE2E() {
+  const root = props.root
+  return {
+    type: root === null ? 'null' : Array.isArray(root) ? 'array' : typeof root,
+    isObject: root !== null && typeof root === 'object' && !Array.isArray(root),
+    a: root?.a ?? '',
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

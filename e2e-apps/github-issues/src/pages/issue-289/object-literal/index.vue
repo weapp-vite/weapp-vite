@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'wevu'
+import { computed, nextTick, ref, useNativeInstance } from 'wevu'
 import ObjectLiteralExample from '../../../components/issue-289/ObjectLiteralExample/index.vue'
 
 const objectItemIds = ['item-0', 'item-1', 'item-2'] as const
@@ -11,6 +11,12 @@ const controlState = ref({
 })
 
 const activeId = computed(() => objectItemIds[controlState.value.activeIndex] ?? objectItemIds[0])
+const nativeInstance = useNativeInstance()
+
+function readObjectLiteralExample() {
+  const example = (nativeInstance as any).selectComponent?.('#issue289-object-example')
+  return typeof example?._runE2E === 'function' ? example._runE2E() : null
+}
 
 function toggleShowList() {
   controlState.value.showList = !controlState.value.showList
@@ -50,6 +56,7 @@ async function runE2E() {
   return {
     ok: Object.values(checks).every(Boolean),
     checks,
+    objectLiteralExample: readObjectLiteralExample(),
     state: {
       showList: controlState.value.showList,
       compactMode: controlState.value.compactMode,
@@ -81,6 +88,7 @@ const _runE2E = runE2E
     </view>
 
     <ObjectLiteralExample
+      id="issue289-object-example"
       :show-list="controlState.showList"
       :compact-mode="controlState.compactMode"
       :active-id="activeId || ''"

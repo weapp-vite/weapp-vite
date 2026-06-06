@@ -1944,11 +1944,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(computedPageJs).toContain('runE2E')
     expect(computedPageJs).toContain('showItemsChanged')
 
-    const objectLiteralBindMatch = objectLiteralWxml.match(/root="\{\{(__wv_bind_\d+)\}\}"/)
-    expect(objectLiteralBindMatch).not.toBeNull()
-    const objectLiteralBindId = objectLiteralBindMatch?.[1] ?? '__wv_bind_0'
+    expect(objectLiteralWxml).toContain('root="{{ { a: \'aaaa\' } }}"')
     expect(objectLiteralWxml).not.toContain('root="{{{')
     expect(objectLiteralWxml).not.toContain('root="{{({')
+    expect(objectLiteralWxml).not.toMatch(/root="\{\{__wv_bind_\d+\}\}"/)
     expect(objectLiteralWxml).toMatch(/wx:if="\{\{showList\}\}"/)
     expect(objectLiteralWxml).toMatch(/wx:for="\{\{items\}\}"/)
     expect(objectLiteralWxml).toContain('wx:else')
@@ -1973,8 +1972,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const mapClassBindingTokens = mapClassWxml.match(/__wv_cls_\d+/g) ?? []
     expect(new Set(mapClassBindingTokens).size).toBeGreaterThanOrEqual(1)
 
-    expect(objectLiteralJs).toContain(objectLiteralBindId)
-    expect(objectLiteralJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
+    expect(objectLiteralJs).not.toMatch(/__wv_bind_\d+\s*=\s*\(\s*\(\)\s*=>\s*\(\{\s*a:\s*['"`]aaaa['"`]\s*\}\)\s*\)/)
+    expect(objectLiteralJs).not.toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
     expect(objectLiteralJs).toContain('showList')
     expect(objectLiteralJs).toContain('compactMode')
     expect(objectLiteralJs).toContain('activeId')

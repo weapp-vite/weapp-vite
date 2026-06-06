@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'wevu'
+import { computed, useNativeInstance } from 'wevu'
 import InfoBanner from '../InfoBanner/index.vue'
 
 interface ObjectItem {
@@ -36,11 +36,24 @@ const listClass = computed(() => [
   'object-list',
   props.compactMode ? 'object-list-compact' : 'object-list-loose',
 ])
+
+const nativeInstance = useNativeInstance()
+
+function _runE2E() {
+  const infoBanner = (nativeInstance as any).selectComponent?.('#issue289-info-banner')
+  return {
+    staticObjectProp: typeof infoBanner?._runE2E === 'function' ? infoBanner._runE2E() : null,
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>
   <view class="block">
-    <InfoBanner :root="{ a: 'aaaa' }" />
+    <InfoBanner id="issue289-info-banner" :root="{ a: 'aaaa' }" />
 
     <view v-if="showList" id="issue289-object-list" :class="listClass">
       <view

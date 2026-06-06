@@ -64,6 +64,11 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
         expect(objectResult?.checks?.activeChanged).toBe(true)
         expect(objectResult?.checks?.showListRoundTripWorked).toBe(true)
         expect(objectResult?.checks?.finalListVisible).toBe(true)
+        expect(objectResult?.objectLiteralExample?.staticObjectProp).toMatchObject({
+          type: 'object',
+          isObject: true,
+          a: 'aaaa',
+        })
         expect(objectResult?.state?.compactMode).toBe(true)
         expect(objectResult?.state?.showList).toBe(true)
         expect(objectResult?.state?.activeIndex).toBe(1)

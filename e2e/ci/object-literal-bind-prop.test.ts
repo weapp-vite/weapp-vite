@@ -9,7 +9,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/object-litera
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
 describe.sequential('e2e app: object-literal-bind-prop', () => {
-  it('compiles component object literal prop binding to runtime variable', async () => {
+  it('compiles static component object literal prop binding to IDE-safe inline mustache', async () => {
     await fs.remove(DIST_ROOT)
 
     await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
@@ -22,13 +22,12 @@ describe.sequential('e2e app: object-literal-bind-prop', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
-    const bindIdMatch = pageWxml.match(/root="\{\{(__wv_bind_\d+)\}\}"/)
-    expect(bindIdMatch).not.toBeNull()
-    const bindId = bindIdMatch?.[1] ?? '__wv_bind_0'
+    expect(pageWxml).toContain('root="{{ { a: \'aaaa\' } }}"')
     expect(pageWxml).not.toContain('root="{{{')
     expect(pageWxml).not.toContain('root="{{({')
+    expect(pageWxml).not.toMatch(/root="\{\{__wv_bind_\d+\}\}"/)
 
-    expect(pageJs).toContain(bindId)
-    expect(pageJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
+    expect(pageJs).not.toMatch(/__wv_bind_\d+\s*=\s*\(\s*\(\)\s*=>\s*\(\{\s*a:\s*['"`]aaaa['"`]\s*\}\)\s*\)/)
+    expect(pageJs).not.toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
   })
 })
