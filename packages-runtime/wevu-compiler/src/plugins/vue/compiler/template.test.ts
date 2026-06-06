@@ -204,9 +204,23 @@ describe('compileVueTemplateToWxml', () => {
     expect(result.classStyleBindings).toBeUndefined()
   })
 
-  it('wraps object literal in v-bind attribute expression', () => {
+  it('inlines static object literal in v-bind attribute expression by default', () => {
     const template = `
-<InfoBanner :root="{ a: 'aaaa' }" />
+<InfoBanner :root="{ name: 'home', active: true, nested: { count: 1 }, items: ['a', 2] }" />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    const normalized = code.replace(WHITESPACE_RE, '')
+    expect(normalized).toContain(`root="{{{name:'home',active:true,nested:{count:1},items:['a',2]}}}"`)
+    expect(code).toContain(`root="{{ {`)
+    expect(code).not.toContain('root="{{{')
+    expect(classStyleBindings).toBeUndefined()
+  })
+
+  it('wraps dynamic object literal in v-bind attribute expression', () => {
+    const template = `
+<InfoBanner :root="{ a: title }" />
     `.trim()
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')

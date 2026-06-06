@@ -2,6 +2,7 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { parseBabelExpression } from '../expression/parse'
@@ -22,6 +23,54 @@ function isTopLevelObjectLiteral(exp: string) {
   }
   const normalized = unwrapTsExpression(parsed)
   return normalized.type === 'ObjectExpression'
+}
+
+function isStaticLiteralNode(node: Expression): boolean {
+  const normalized = unwrapTsExpression(node)
+  if (
+    normalized.type === 'StringLiteral'
+    || normalized.type === 'NumericLiteral'
+    || normalized.type === 'BooleanLiteral'
+    || normalized.type === 'NullLiteral'
+  ) {
+    return true
+  }
+  if (normalized.type === 'UnaryExpression') {
+    return (
+      (normalized.operator === '-' || normalized.operator === '+')
+      && normalized.argument.type === 'NumericLiteral'
+    )
+  }
+  if (normalized.type === 'ArrayExpression') {
+    for (const element of normalized.elements) {
+      if (!element || element.type === 'SpreadElement' || !isStaticLiteralNode(element)) {
+        return false
+      }
+    }
+    return true
+  }
+  if (normalized.type === 'ObjectExpression') {
+    for (const property of normalized.properties) {
+      if (property.type !== 'ObjectProperty' || property.computed) {
+        return false
+      }
+      const value = property.value
+      if (!t.isExpression(value) || !isStaticLiteralNode(value)) {
+        return false
+      }
+    }
+    return true
+  }
+  return false
+}
+
+function isStaticObjectLiteral(exp: string) {
+  const parsed = parseBabelExpression(exp)
+  if (!parsed) {
+    return false
+  }
+  const normalized = unwrapTsExpression(parsed)
+  return normalized.type === 'ObjectExpression' && isStaticLiteralNode(normalized)
 }
 
 function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: TransformContext): string | null {
@@ -194,7 +243,7 @@ export function transformBindDirective(
   }
 
   if (isTopLevelObjectLiteral(rawExpValue)) {
-    if (context.objectLiteralBindMode === 'inline') {
+    if (context.objectLiteralBindMode === 'inline' || isStaticObjectLiteral(rawExpValue)) {
       return createInlineObjectLiteralAttr(argValue, rawExpValue, context)
     }
     return createBindRuntimeAttr(argValue, rawExpValue, context)
