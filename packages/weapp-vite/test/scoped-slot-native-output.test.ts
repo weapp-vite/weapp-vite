@@ -65,7 +65,11 @@ describe('scoped slot native output snapshots', () => {
     expect(appFiles).toMatchSnapshot('file-tree')
     expect(runtimeVendorFiles.length).toBeGreaterThan(0)
     expect(runtimeVendorFiles.every(file => /^weapp-vendors\/wevu-[\w-]+\.js$/.test(file))).toBe(true)
-    expect(files.filter(file => file.includes('__scoped-slot-default'))).toEqual([])
+    expect(files.filter(file => file.includes('__scoped-slot-default'))).toEqual([
+      'pages/index/index.__scoped-slot-default-0.js',
+      'pages/index/index.__scoped-slot-default-0.json',
+      'pages/index/index.__scoped-slot-default-0.wxml',
+    ])
 
     const outputSnapshot: Record<string, string> = {}
     for (const file of files) {
@@ -77,15 +81,18 @@ describe('scoped slot native output snapshots', () => {
     }
 
     expect(outputSnapshot).toMatchSnapshot('text-outputs')
-    expect(outputSnapshot['pages/index/index.wxml']).toContain(
-      '<van-tabbar-item wx:for="{{tabItems}}"',
+    expect(outputSnapshot['pages/index/index.wxml']).toContain('generic:scoped-slots-default')
+    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
+      'this.__wvOwnerProxy.tabItems',
     )
-    expect(outputSnapshot['pages/index/index.wxml']).toContain(
+    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
+      '<van-tabbar-item wx:for="{{__wv_bind_0}}"',
+    )
+    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
       'name="{{__wv_item_0.to.name}}"',
     )
-    expect(outputSnapshot['pages/index/index.wxml']).toContain(
+    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
       '>{{__wv_item_0.label}}</van-tabbar-item>',
     )
-    expect(outputSnapshot['pages/index/index.wxml']).not.toContain('generic:scoped-slots-default')
   })
 })
