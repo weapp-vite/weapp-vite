@@ -114,6 +114,10 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'TS/JS 生成 JSON', link: '/guide/json-enhance' },
       { text: '分包指南', link: '/guide/subpackage' },
       { text: '共享 Chunk', link: '/guide/chunks' },
+      {
+        text: 'App Prelude 与 Web Runtime 注入',
+        link: '/guide/app-prelude-web-runtime',
+      },
       { text: '组件库构建', link: '/guide/lib-mode' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
       { text: '插件开发', link: '/guide/plugin' },
@@ -643,6 +647,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '开发态 HMR 配置', link: '/config/hmr' },
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: 'WXS 配置', link: '/config/wxs' },
+      { text: 'App Prelude 与 Web Runtime 注入', link: '/config/app-prelude' },
       { text: '共享配置', link: '/config/shared' },
     ],
   },

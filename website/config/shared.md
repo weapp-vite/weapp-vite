@@ -1,12 +1,11 @@
 ---
 title: 共享配置
-description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、webRuntime 与 MCP 等能力。
+description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、forwardConsole、injectWeapi 与 MCP 等能力。
 keywords:
   - 配置
   - config
   - shared
   - autoRoutes
-  - appPrelude
   - mcp
   - forwardConsole
   - injectWeapi
@@ -19,9 +18,7 @@ keywords:
 - 自动路由
 - 调试钩子
 - 构建日志控制
-- `app.prelude` 前置注入
 - DevTools 控制台日志桥接
-- 运行时全局注入
 - 本地 MCP 服务
 
 [[toc]]
@@ -114,94 +111,6 @@ export default defineConfig({
 - 构建卡顿定位
 - 分包边界和监听文件排查
 - Vue SFC 编译耗时定位
-
-## `weapp.appPrelude` {#weapp-appprelude}
-
-- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; webRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; networkDefaults?: MiniProgramNetworkDefaults }; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; networkDefaults?: MiniProgramNetworkDefaults } }`
-- **默认值**：`{ mode: 'require' }`
-
-用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
-
-```ts
-export default defineConfig({
-  weapp: {
-    appPrelude: {
-      enabled: true,
-      mode: 'require',
-    },
-  },
-})
-```
-
-字段说明：
-
-- `enabled`：是否启用 `app.prelude` 注入；设为 `false` 时即使文件存在也不会注入
-- `mode: 'inline'`：把 prelude 代码内联到每个目标 JS chunk 顶部，执行时机最稳
-- `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
-- `mode: 'require'`：默认模式。按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
-- `webRuntime`：在 `appPrelude` 时机安装 Web Runtime 全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
-- `requestRuntime`：旧别名，已废弃，请迁移到 `webRuntime`
-- `networkDefaults`：传给 Web Runtime 网络兼容层的宿主默认参数，显式调用时传入的 `miniProgram` / `miniprogram` 参数优先级更高
-
-默认 `mode: 'require'` 下，构建产物通常会看到两类额外文件：
-
-- `app.prelude.js`：按主包 / 分包作用域拆分的前置脚本
-- `weapp-vendors/request-globals-runtime.js`：Web Runtime 共享 installer（启用 `webRuntime`、旧版 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
-
-```ts
-export default defineConfig({
-  weapp: {
-    appPrelude: {
-      mode: 'require',
-      webRuntime: {
-        enabled: true,
-        targets: ['fetch', 'Headers', 'Request', 'Response'],
-        dependencies: [/^axios$/, /^graphql-request$/],
-        networkDefaults: {
-          request: {
-            timeout: 10000,
-          },
-          socket: {
-            timeout: 10000,
-          },
-        },
-      },
-    },
-  },
-})
-```
-
-可用的 `targets` 包括：
-
-- `fetch`
-- `Headers`
-- `Request`
-- `Response`
-- `TextEncoder`
-- `TextDecoder`
-- `AbortController`
-- `AbortSignal`
-- `XMLHttpRequest`
-- `WebSocket`
-- `atob`
-- `btoa`
-- `queueMicrotask`
-- `performance`
-- `crypto`
-- `Event`
-- `CustomEvent`
-
-适用场景：
-
-- 需要在任何业务入口之前先安装运行时全局
-- 原生小程序项目里做 fetch / websocket / SDK 初始化
-- 需要兼顾主包、普通分包与独立分包的前置执行
-
-> [!NOTE]
-> 当前 `app.prelude` 仅支持无 `import` / `export` 的自包含脚本。
-
-> [!TIP]
-> 如果你只想打开 Web Runtime 安装，也可以直接写成 `webRuntime: true`。`weapp-vite` 会使用默认目标集合，并仍然保留对第三方库自由变量读取的 chunk 级兜底。
 
 ## `weapp.logger` {#weapp-logger}
 
@@ -303,63 +212,6 @@ export default defineConfig({
 > [!NOTE]
 > 当前 `replaceWx` 会采用静态宿主全局同步与源码重写，不再依赖 `Function(...)` 这类动态执行能力，因此更适合真实小程序宿主与受限运行环境。
 
-## `weapp.injectWebRuntimeGlobals` {#weapp-injectwebruntimeglobals}
-
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean; networkDefaults?: MiniProgramNetworkDefaults }`
-- **状态**：兼容配置；更推荐使用 `weapp.appPrelude.webRuntime`
-
-用于为 Web Runtime 全局对象做注入，例如：
-
-- `fetch`
-- `Headers`
-- `Request`
-- `Response`
-- `AbortController`
-- `AbortSignal`
-- `XMLHttpRequest`
-
-```ts
-export default defineConfig({
-  weapp: {
-    injectWebRuntimeGlobals: {
-      enabled: true,
-      prelude: true,
-      targets: ['fetch', 'Headers', 'Request', 'Response'],
-      dependencies: [/^axios$/, /^graphql-request$/],
-      networkDefaults: {
-        request: {
-          timeout: 10000,
-        },
-        socket: {
-          timeout: 10000,
-        },
-      },
-    },
-  },
-})
-```
-
-适用场景：
-
-- 需要在小程序环境兼容更多 Web 风格请求库
-- 第三方依赖假设了浏览器请求全局已存在
-
-> [!NOTE]
-> 这里解决的是“运行时 Web Runtime 全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
->
-> 新项目建议直接使用 `weapp.appPrelude.webRuntime`。`injectWebRuntimeGlobals` 适合不想改到 `appPrelude` 结构、但又想使用更准确命名的场景。
->
-> 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装所需的 Web Runtime 全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
->
-> 历史版本里这个共享产物可能叫 `dist.js` 或位于根目录；当前已经统一改为更易识别且更利于开发者工具发现的 `weapp-vendors/request-globals-runtime.js`。
-
-## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
-
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean; networkDefaults?: MiniProgramNetworkDefaults }`
-- **状态**：已废弃，请迁移到 `weapp.appPrelude.webRuntime` 或 `weapp.injectWebRuntimeGlobals`
-
-这是历史字段，行为仍与 `injectWebRuntimeGlobals` 兼容，但名称已经过窄。
-
 ## `weapp.mcp` {#weapp-mcp}
 
 - **类型**：`boolean | WeappMcpConfig`
@@ -403,9 +255,13 @@ export default defineConfig({
 如果你正在做 AI 亲和性增强，这一组配置通常和下面这些能力一起使用：
 
 - `forwardConsole`
+- `appPrelude.webRuntime`
 - 自动截图
 - 截图对比
 - `wv prepare`
+
+> [!TIP]
+> `app.prelude` 与 `appPrelude.webRuntime` 已拆到 [App Prelude 与 Web Runtime 注入配置](./app-prelude.md)。
 
 ## 这页和 Vite 原生配置的边界
 
