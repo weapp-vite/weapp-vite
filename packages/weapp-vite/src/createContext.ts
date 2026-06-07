@@ -41,7 +41,7 @@ export async function createCompilerContext(options?: CreateCompilerContextOptio
         logger.warn(warning)
       }
       if (supportFiles.managedTsconfigWarnings.length === 0 && (bootstrapManagedTsconfigChanged || supportFiles.managedTsconfigChanged)) {
-        logger.warn('[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。')
+        logger.warn('[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 wv prepare 并提交更新。')
       }
     }
     catch (error) {
