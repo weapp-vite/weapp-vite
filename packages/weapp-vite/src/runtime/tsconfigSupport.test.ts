@@ -3,6 +3,7 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { syncProjectSupportFiles } from './supportFiles'
 import { createManagedTsconfigFiles, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
 
 function createCtx(overrides: Record<string, any> = {}) {
@@ -276,6 +277,51 @@ describe('tsconfig support', () => {
     const after = await fs.stat(appTsconfigPath)
 
     expect(after.mtimeMs).toBe(before.mtimeMs)
+  })
+
+  it('warns and regenerates stale app tsconfig include after srcRoot changes', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-managed-tsconfig-srcroot-'))
+    const ctx = {
+      configService: {
+        cwd: root,
+        configFilePath: path.join(root, 'vite.config.ts'),
+        packageJson: {},
+        srcRoot: 'miniprogram',
+        weappViteConfig: {
+          autoImportComponents: false,
+        },
+      },
+      autoRoutesService: {
+        isEnabled: () => false,
+      },
+    } as any
+    const appTsconfigPath = path.join(root, '.weapp-vite', 'tsconfig.app.json')
+
+    await fs.outputJson(appTsconfigPath, {
+      extends: './tsconfig.shared.json',
+      compilerOptions: {
+        paths: {
+          '@/*': ['../src/*'],
+        },
+      },
+      include: [
+        '../src/**/*',
+        '../types/**/*.d.ts',
+        '../env.d.ts',
+        './**/*.d.ts',
+      ],
+    })
+
+    const result = await syncProjectSupportFiles(ctx)
+    const app = await fs.readJson(appTsconfigPath)
+
+    expect(result.managedTsconfigChanged).toBe(true)
+    expect(result.managedTsconfigWarnings).toEqual([
+      '[prepare] 检测到 .weapp-vite/tsconfig.app.json include 与 weapp.srcRoot 不匹配：srcRoot 为 `miniprogram`，期望包含 `../miniprogram/**/*`，当前为 `../src/**/*`。已自动重新生成支持文件并使用最新配置继续运行。',
+    ])
+    expect(app.include).toContain('../miniprogram/**/*')
+    expect(app.include).not.toContain('../src/**/*')
+    expect(app.compilerOptions.paths['@/*']).toEqual(['../miniprogram/*'])
   })
 
   it('bootstraps managed tsconfig files from cwd and package.json', async () => {

@@ -42,6 +42,7 @@ describe('createCompilerContext', () => {
     })
     syncProjectSupportFilesMock.mockResolvedValue({
       managedTsconfigChanged: false,
+      managedTsconfigWarnings: [],
     })
   })
 
@@ -75,6 +76,7 @@ describe('createCompilerContext', () => {
 
     syncProjectSupportFilesMock.mockResolvedValueOnce({
       managedTsconfigChanged: true,
+      managedTsconfigWarnings: [],
     })
 
     await createCompilerContext({
@@ -83,6 +85,23 @@ describe('createCompilerContext', () => {
     })
 
     expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。',
+    )
+  })
+
+  it('prints detailed managed tsconfig warnings', async () => {
+    syncProjectSupportFilesMock.mockResolvedValueOnce({
+      managedTsconfigChanged: true,
+      managedTsconfigWarnings: ['srcRoot mismatch'],
+    })
+
+    await createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+    })
+
+    expect(loggerWarnMock).toHaveBeenCalledWith('srcRoot mismatch')
+    expect(loggerWarnMock).not.toHaveBeenCalledWith(
       '[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。',
     )
   })

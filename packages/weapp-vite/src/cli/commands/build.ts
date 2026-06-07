@@ -86,7 +86,6 @@ export function registerBuildCommand(cli: CAC) {
         cliPlatform: targets.rawPlatform,
         projectConfigPath: options.projectConfig,
         emitDefaultAutoImportOutputs: false,
-        syncSupportFiles: false,
         preloadAppEntry: false,
       })
       const { buildService, configService, webService } = ctx

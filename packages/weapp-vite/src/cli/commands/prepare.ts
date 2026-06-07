@@ -48,7 +48,10 @@ export function registerPrepareCommand(cli: CAC) {
           ...(cliPlatform ? { cliPlatform } : {}),
         })
 
-        await syncProjectSupportFiles(ctx)
+        const supportFiles = await syncProjectSupportFiles(ctx)
+        for (const warning of supportFiles.managedTsconfigWarnings) {
+          logger.warn(warning)
+        }
 
         logger.info('已生成 .weapp-vite 支持文件。')
       }

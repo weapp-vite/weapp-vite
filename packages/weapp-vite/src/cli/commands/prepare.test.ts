@@ -36,6 +36,7 @@ describe('prepare cli command', () => {
     shouldBootstrapAutoImportWithoutGlobsMock.mockReturnValue(false)
     syncProjectSupportFilesMock.mockResolvedValue({
       managedTsconfigChanged: false,
+      managedTsconfigWarnings: [],
     })
   })
 
