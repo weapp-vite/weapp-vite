@@ -1,5 +1,25 @@
 # weapp-vite
 
+## 6.16.41
+
+### Patch Changes
+
+- 🐛 **修复 wevu 在 performance 模式下 scoped slot 与默认 slot 首屏同步失败的问题，确保插槽 owner 与静态 slot 元数据在真实小程序运行时稳定传递，并避免 prop-backed 插槽组件触发运行时循环更新；同时增强微信开发者工具 IDE e2e 的模拟器启动失败恢复能力，在 DevTools 内部缓存状态损坏时自动清理并重试。Vue SFC 模板编译现在会将静态对象字面量 prop 直接输出为小程序 WXML 对象表达式，并且仅在全部 slot 元数据无条件、slot 名可作为普通标识符输出时静态内联 `vueSlots`，其他动态、条件、循环或非标识符 slot 名继续使用运行时绑定，避免微信 IDE 无法解析 computed object key。** [#669](https://github.com/weapp-vite/weapp-vite/pull/669) by @sonofmagic
+
+- 🐛 **修复 dev 模式下修改 Vite/weapp-vite 配置后开发构建卡在重启流程的问题。配置重载现在会保留运行时服务状态引用，跳过普通 HMR 成功日志，并在重启后继续响应后续文件变更。** [#670](https://github.com/weapp-vite/weapp-vite/pull/670) by @sonofmagic
+
+- 🐛 **增强 `weapp-vite init` 对原生微信小程序项目的迁移能力，自动识别源码根目录并补齐受管 TypeScript 支持文件，使 JS/TS 原生模板初始化后可以直接通过 `weapp-vite build` 构建。** [`28d92ce`](https://github.com/weapp-vite/weapp-vite/commit/28d92ce007d3fcce9b49efe31343fa58c1117272) by @sonofmagic
+
+- 🐛 **修复干净 CI 环境中小程序构建会被工作区根 `tsconfig` references 牵引到缺失 `.weapp-vite` 支持文件的问题，确保受管 TypeScript 项目在构建前完成必要的 tsconfig bootstrap。** [#669](https://github.com/weapp-vite/weapp-vite/pull/669) by @sonofmagic
+
+- 🐛 **升级模板与初始化流程中的 weapp-tailwindcss 默认版本，并增强 weapp-ide-cli 在截图、审计和当前页面查询场景下的目录创建与超时提示，降低残留 DevTools 会话导致 IDE 自动化任务卡住时的排查成本。** [#671](https://github.com/weapp-vite/weapp-vite/pull/671) by @sonofmagic
+- 📦 Updated 4 dependencies [`f9938cd`](https://github.com/weapp-vite/weapp-vite/commit/f9938cd7a7ac73ec8e4fba85582eddbd1f6388d6)
+  <details><summary>Details</summary>
+
+  `weapp-ide-cli@5.4.3`, `wevu@6.16.41`, `@weapp-core/init@6.0.10`, `@weapp-vite/ast@6.16.41`
+
+  </details>
+
 ## 6.16.40
 
 ### Patch Changes
