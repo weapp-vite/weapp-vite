@@ -71,7 +71,7 @@ describe('support files integration', () => {
         '@/*': ['../src/*'],
       })
       expect(warnSpy).toHaveBeenCalledWith(
-        '[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。',
+        '[prepare] 检测到 .weapp-vite/tsconfig.app.json include 与 weapp.srcRoot 不匹配：srcRoot 为 `src`，期望包含 `../src/**/*`，当前未包含源码目录。已自动重新生成支持文件并使用最新配置继续运行。',
       )
     }
     finally {
