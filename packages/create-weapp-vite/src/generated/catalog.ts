@@ -56,7 +56,7 @@ export const TEMPLATE_CATALOG = {
   postcss: '^8.5.15',
   rolldown: '1.1.0',
   sass: '^1.100.0',
-  stylelint: '^17.12.0',
+  stylelint: '^17.13.0',
   tailwindcss: '^4.3.0',
   tslib: '^2.8.1',
   typescript: '^6.0.3',

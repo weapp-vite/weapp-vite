@@ -67,7 +67,7 @@ catalog:
   rolldown: 1.1.0
   sass: ^1.100.0
   sass-embedded: ^1.100.0
-  stylelint: ^17.12.0
+  stylelint: ^17.13.0
   tailwind-merge: ^3.6.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.3.0
