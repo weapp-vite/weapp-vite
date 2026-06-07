@@ -1,7 +1,11 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll } from 'vitest'
-import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
+import {
+  isDevtoolsHttpPortError,
+  isDevtoolsSimulatorBootError,
+  launchAutomator,
+} from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'

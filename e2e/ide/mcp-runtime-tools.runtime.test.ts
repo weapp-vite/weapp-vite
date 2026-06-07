@@ -106,6 +106,9 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
   }, 60_000)
 
   async function callTool<T>(name: string, input: Record<string, unknown> = {}) {
+    if (!runtimeTools) {
+      throw new Error('MCP runtime tools are not initialized')
+    }
     const result = await getTool(runtimeTools.tools, name)({
       projectPath: APP_ROOT,
       ...input,

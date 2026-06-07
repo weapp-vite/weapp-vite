@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
+import { DEVTOOLS_SKIP_REASON_ENV } from './utils/devtoolsSkip'
 import {
   clearRuntimeWarningLog,
   ensureIdeWarningReportEnv,
@@ -11,7 +12,6 @@ import { resolveRuntimeProviderName } from './utils/runtimeProvider'
 
 const DEFAULT_LOGIN_CHECK_PROJECT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
-const DEVTOOLS_SKIP_REASON_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_REASON'
 const WHITESPACE_RE = /\s+/g
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
