@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "dev": "tsx scripts/dev.ts",
     "server": "tsx server/index.ts",
     "dev:web": "vite --host 127.0.0.1 --port 5174 web",
     "build:web": "vite build web",

@@ -6,8 +6,7 @@ import path from 'pathe'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from '../autoImport/config/base'
 import { requireConfigService } from '../utils/requireConfigService'
 
-export const DEFAULT_APP_INCLUDE = [
-  '../src/**/*',
+export const DEFAULT_APP_EXTRA_INCLUDE = [
   '../types/**/*.d.ts',
   '../env.d.ts',
   './**/*.d.ts',
@@ -133,4 +132,11 @@ export function normalizeSrcRoot(srcRoot: string | undefined) {
       .replace(TRAILING_SLASH_PATTERN, '')
       || 'src'
     : 'src'
+}
+
+export function createDefaultAppInclude(srcRoot: string | undefined) {
+  return [
+    `../${normalizeSrcRoot(srcRoot)}/**/*`,
+    ...DEFAULT_APP_EXTRA_INCLUDE,
+  ]
 }

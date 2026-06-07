@@ -4,7 +4,7 @@ import { getPlatformAppTypesPackage } from '../../platform'
 import { resolveBaseDir } from '../autoImport/config/base'
 import { requireConfigService } from '../utils/requireConfigService'
 import {
-  DEFAULT_APP_INCLUDE,
+  createDefaultAppInclude,
   DEFAULT_NODE_INCLUDE,
   getManagedTypeScriptConfig,
   hasDependency,
@@ -131,7 +131,7 @@ export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: Le
   }
 
   const include = unique([
-    ...DEFAULT_APP_INCLUDE,
+    ...createDefaultAppInclude(requireConfigService(ctx, '生成 app include 前必须初始化 configService。').srcRoot),
     ...(legacyConfig?.app?.include ?? []),
     ...(userConfig?.app?.include ?? []),
   ])

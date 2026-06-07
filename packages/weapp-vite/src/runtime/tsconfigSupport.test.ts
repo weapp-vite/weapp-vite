@@ -202,6 +202,8 @@ describe('tsconfig support', () => {
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
     expect(app.compilerOptions.paths['@/*']).toEqual(['../miniprogram/*'])
+    expect(app.include).toContain('../miniprogram/**/*')
+    expect(app.include).not.toContain('../src/**/*')
   })
 
   it('keeps builtin app macro types when user overrides app compilerOptions.types', async () => {
