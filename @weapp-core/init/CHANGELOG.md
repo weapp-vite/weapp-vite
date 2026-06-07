@@ -1,5 +1,15 @@
 # @weapp-core/init
 
+## 6.0.10
+
+### Patch Changes
+
+- 🐛 **调整 init 生成的 package scripts，默认使用 `wv` 短命令写入 `dev`、`build`、`open` 与 `g` 等脚本，避免新迁移项目继续暴露冗长的 `weapp-vite` 全写命令。** [`700b1f9`](https://github.com/weapp-vite/weapp-vite/commit/700b1f9c4d576bb754c30789d335844eb6fcddfa) by @sonofmagic
+
+- 🐛 **增强 `weapp-vite init` 对原生微信小程序项目的迁移能力，自动识别源码根目录并补齐受管 TypeScript 支持文件，使 JS/TS 原生模板初始化后可以直接通过 `weapp-vite build` 构建。** [`28d92ce`](https://github.com/weapp-vite/weapp-vite/commit/28d92ce007d3fcce9b49efe31343fa58c1117272) by @sonofmagic
+
+- 🐛 **升级模板与初始化流程中的 weapp-tailwindcss 默认版本，并增强 weapp-ide-cli 在截图、审计和当前页面查询场景下的目录创建与超时提示，降低残留 DevTools 会话导致 IDE 自动化任务卡住时的排查成本。** [#671](https://github.com/weapp-vite/weapp-vite/pull/671) by @sonofmagic
+
 ## 6.0.9
 
 ### Patch Changes

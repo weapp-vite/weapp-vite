@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 5.4.3
+
+### Patch Changes
+
+- 🐛 **修复 wevu 在 performance 模式下 scoped slot 与默认 slot 首屏同步失败的问题，确保插槽 owner 与静态 slot 元数据在真实小程序运行时稳定传递，并避免 prop-backed 插槽组件触发运行时循环更新；同时增强微信开发者工具 IDE e2e 的模拟器启动失败恢复能力，在 DevTools 内部缓存状态损坏时自动清理并重试。Vue SFC 模板编译现在会将静态对象字面量 prop 直接输出为小程序 WXML 对象表达式，并且仅在全部 slot 元数据无条件、slot 名可作为普通标识符输出时静态内联 `vueSlots`，其他动态、条件、循环或非标识符 slot 名继续使用运行时绑定，避免微信 IDE 无法解析 computed object key。** [#669](https://github.com/weapp-vite/weapp-vite/pull/669) by @sonofmagic
+
+- 🐛 **升级模板与初始化流程中的 weapp-tailwindcss 默认版本，并增强 weapp-ide-cli 在截图、审计和当前页面查询场景下的目录创建与超时提示，降低残留 DevTools 会话导致 IDE 自动化任务卡住时的排查成本。** [#671](https://github.com/weapp-vite/weapp-vite/pull/671) by @sonofmagic
+
 ## 5.4.2
 
 ### Patch Changes
