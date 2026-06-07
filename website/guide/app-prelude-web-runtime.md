@@ -24,6 +24,8 @@ keywords:
 
 ## 什么时候需要它
 
+:::: details 展开本节说明 {open}
+
 常见场景包括：
 
 - 你要在业务入口前统一初始化一段自包含脚本。
@@ -33,7 +35,11 @@ keywords:
 
 如果只是想做浏览器预览，请看 [Web 运行时配置](/config/web)。这一页讨论的是“小程序产物中如何提前安装 Web Runtime 全局对象”。
 
+::::
+
 ## app.prelude 做什么
+
+:::: details 展开本节说明 {open}
 
 在源码根目录放置 `app.prelude.ts` 或 `app.prelude.js` 后，`weapp-vite` 会把它包装成一段只执行一次的前置脚本，并按配置注入到产物中。
 
@@ -65,7 +71,11 @@ export default defineConfig({
 > [!NOTE]
 > `app.prelude` 当前必须是自包含脚本，不能包含 `import` 或 `export`。
 
+::::
+
 ## Web Runtime 全局对象注入做什么
+
+:::: details 展开本节说明 {open}
 
 小程序宿主不等同于浏览器。很多 Web 依赖会默认全局存在这些对象：
 
@@ -119,7 +129,11 @@ export default defineConfig({
 })
 ```
 
+::::
+
 ## 和浏览器 Web runtime 的关系
+
+:::: details 展开本节说明 {open}
 
 `weapp.web` 和 `weapp.appPrelude.webRuntime` 名字相近，但作用不同。
 
@@ -131,7 +145,11 @@ export default defineConfig({
 如果你要在浏览器中预览小程序页面，配置 `weapp.web`。
 如果你要让小程序产物兼容 Web 风格请求库，配置 `weapp.appPrelude.webRuntime`。
 
+::::
+
 ## 推荐做法
+
+:::: details 展开本节说明 {open}
 
 新项目优先使用：
 
@@ -150,7 +168,11 @@ export default defineConfig({
 
 建议把 Web Runtime 全局对象注入统一放在 `weapp.appPrelude.webRuntime` 下，这样配置和执行时机都更清晰。
 
+::::
+
 ## 验证方式
+
+:::: details 展开本节说明 {open}
 
 构建后可以检查产物中是否出现这些内容：
 
@@ -163,6 +185,8 @@ pnpm build
 ```
 
 然后查看 `dist` 下的 `app.js`、页面 JS 和分包目录。
+
+::::
 
 ## 继续阅读
 

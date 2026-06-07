@@ -21,6 +21,8 @@ keywords:
 
 ## `weapp.appPrelude` {#weapp-appprelude}
 
+:::: details 展开配置说明 {open}
+
 - **类型**：
 
 ```ts
@@ -70,7 +72,11 @@ export default defineConfig({
 > [!NOTE]
 > `app.prelude` 当前仅支持无 `import` / `export` 的自包含脚本。
 
+::::
+
 ## `weapp.appPrelude.webRuntime` {#weapp-appprelude-webruntime}
+
+:::: details 展开配置说明 {open}
 
 - **类型**：
 
@@ -159,7 +165,11 @@ export default defineConfig({
 
 显式调用时传入的 `miniProgram` 或 `miniprogram` 参数优先级更高。
 
+::::
+
 ## 产物说明
+
+:::: details 展开产物说明 {open}
 
 启用 `appPrelude.webRuntime` 后，构建产物中可能出现：
 
@@ -169,7 +179,11 @@ export default defineConfig({
 | `weapp-vendors/request-globals-web-apis-shared.js` | Web Runtime 全局对象 installer 共享模块 |
 | 入口 JS 顶部的 `require(...)` | 用于提前执行对应作用域的 `app.prelude.js` |
 
+::::
+
 ## 常见配置
+
+:::: details 展开常见配置 {open}
 
 ### 只启用默认注入
 
@@ -206,6 +220,8 @@ export default defineConfig({
   },
 })
 ```
+
+::::
 
 ## 继续阅读
 
