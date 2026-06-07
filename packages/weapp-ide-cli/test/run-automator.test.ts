@@ -138,6 +138,16 @@ describe('run-automator', () => {
     })
   })
 
+  it('reports helpful diagnostics when a direct command does not finish before timeout', async () => {
+    const { runAutomatorCommand } = await loadModule()
+    commandMocks.currentPage.mockReturnValue(new Promise(() => {}))
+
+    await expect(runAutomatorCommand('current-page', ['-p', '/tmp/demo', '--timeout', '10', '--no-runtime-service'])).rejects.toMatchObject({
+      code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+      message: expect.stringMatching(/无法连接到当前项目的微信开发者工具自动化 websocket.+请确认当前打开的是目标项目/),
+    })
+  })
+
   it('supports help output without running command', async () => {
     const { runAutomatorCommand } = await loadModule()
 

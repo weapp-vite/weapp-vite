@@ -6,6 +6,7 @@ import type {
 } from './automator-session'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
+import path from 'node:path'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import {
@@ -97,6 +98,13 @@ function withCommandTimeout<T>(task: Promise<T>, timeoutMs: number, message: str
         reject(error)
       })
   })
+}
+
+function createCurrentPageTimeoutMessage(commandTimeout: number) {
+  return i18nText(
+    `当前页面请求在 ${commandTimeout}ms 内未收到 DevTools 回包，请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 \`wechatwebdevtools cli auto --project ...\` 进程后重试。`,
+    `Current page request did not receive a DevTools response within ${commandTimeout}ms. Please confirm the current DevTools window is the target project. If you recently ran other e2e / screenshot tasks, close extra windows or stop stale \`wechatwebdevtools cli auto --project ...\` processes and retry.`,
+  )
 }
 
 function isDevtoolsProtocolTimeoutError(error: unknown) {
@@ -237,7 +245,14 @@ export async function pageStack(options: PageInfoOptions) {
  */
 export async function currentPage(options: PageInfoOptions) {
   return await withMiniProgram(options, async (miniProgram) => {
-    const result = toPageSnapshot(await miniProgram.currentPage())
+    const commandTimeout = options.timeout ?? 30_000
+    const page = await withCommandTimeout(
+      miniProgram.currentPage(),
+      commandTimeout,
+      createCurrentPageTimeoutMessage(commandTimeout),
+      'DEVTOOLS_PROTOCOL_TIMEOUT',
+    )
+    const result = toPageSnapshot(page)
     if (options.json) {
       console.log(JSON.stringify(result, null, 2))
     }
@@ -346,6 +361,7 @@ export async function audit(options: AuditOptions) {
     const result = await miniProgram.stopAudits()
 
     if (options.outputPath) {
+      await fs.mkdir(path.dirname(options.outputPath), { recursive: true })
       await fs.writeFile(options.outputPath, JSON.stringify(result, null, 2))
       logger.success(i18nText(
         `审计报告已保存到 ${colors.cyan(options.outputPath)}`,
@@ -493,6 +509,7 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
   const base64 = screenshotBuffer.toString('base64')
 
   if (options.outputPath) {
+    await fs.mkdir(path.dirname(options.outputPath), { recursive: true })
     await fs.writeFile(options.outputPath, screenshotBuffer)
     logger.success(i18nText(
       `截图已保存到 ${colors.cyan(options.outputPath)}`,

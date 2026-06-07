@@ -234,6 +234,27 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
+  it('bridges script setup simple template handlers through inline map', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view class="urgent-row-toggle" @tap="toggleUrgent">Tap</view>
+</template>
+<script setup lang="ts">
+function toggleUrgent(event: unknown) {
+  return event
+}
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.template).toContain('data-wi-tap="i0"')
+    expect(result.template).toContain('bindtap="__weapp_vite_inline"')
+    expect(result.script).toContain('__weapp_vite_inline_map')
+    expect(result.script).toContain('ctx.toggleUrgent($event)')
+  })
+
   it('rewrites inline event assignments to script setup ref values', async () => {
     const result = await compileVueFile(
       `

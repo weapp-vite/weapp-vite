@@ -7,11 +7,12 @@ const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-const { cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
+const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
   return {
+    captureDevtoolsLogBaselineMock: vi.fn(() => ({ 'devtools.log': 120 })),
     cleanupResidualDevtoolsProcessesMock: vi.fn(async () => {}),
     connectMock: vi.fn(),
     execaMock: vi.fn(),
@@ -61,6 +62,7 @@ vi.mock('../utils/ide-devtools-cleanup', () => {
 
 vi.mock('../utils/ide-devtools-logs', () => {
   return {
+    captureDevtoolsLogBaseline: captureDevtoolsLogBaselineMock,
     scanRecentDevtoolsSimulatorBootIssues: scanRecentDevtoolsSimulatorBootIssuesMock,
   }
 })
@@ -123,10 +125,22 @@ function writeJson(target: string, value: Record<string, any>) {
   fs.writeFileSync(target, JSON.stringify(value, null, 2))
 }
 
-function createProjectFixture(projectRoot: string, appJson?: Record<string, any>) {
+function readJson(target: string) {
+  return JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, any>
+}
+
+function createProjectFixture(projectRoot: string, appJson?: Record<string, any>, projectConfig?: Record<string, any>) {
   writeJson(path.join(projectRoot, 'project.config.json'), {
     appid: 'wxb3d842a4a7e3440d',
     miniprogramRoot: 'dist',
+    ...projectConfig,
+  })
+  writeJson(path.join(projectRoot, 'project.private.config.json'), {
+    condition: {
+      miniprogram: {
+        list: [],
+      },
+    },
   })
   if (appJson) {
     writeJson(path.join(projectRoot, 'dist/app.json'), {
@@ -153,6 +167,44 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
+}
+
+function readBridgePayloadFromFirstExecaCall() {
+  const firstCall = execaMock.mock.calls[0]
+  const args = firstCall?.[1] as string[] | undefined
+  const rawPayload = args?.find(arg => arg.startsWith('{'))
+  return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string } : undefined
+}
+
+function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: string | undefined) {
+  expect(projectPath).toBeTruthy()
+  expect(projectPath).not.toBe(sourceProjectPath)
+  expect(projectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
+  const wrapperAppJsonPath = path.join(projectPath!, 'app.json')
+  expect(fs.lstatSync(wrapperAppJsonPath).isSymbolicLink()).toBe(false)
+  expect(readJson(wrapperAppJsonPath)).toMatchObject({
+    pages: ['pages/index/index'],
+    subPackages: [],
+  })
+  expect(readJson(path.join(projectPath!, 'project.config.json'))).toMatchObject({
+    appid: 'wxb3d842a4a7e3440d',
+    miniprogramRoot: './',
+  })
+}
+
+function expectBridgeWrapperPluginRoot(projectPath: string | undefined) {
+  expect(projectPath).toBeTruthy()
+  const wrapperPluginJsonPath = path.join(projectPath!, 'dist-plugin/plugin.json')
+  expect(fs.lstatSync(wrapperPluginJsonPath).isSymbolicLink()).toBe(false)
+  expect(readJson(wrapperPluginJsonPath)).toMatchObject({
+    publicComponents: {},
+  })
+  expect(readJson(path.join(projectPath!, 'project.config.json'))).toMatchObject({
+    miniprogramRoot: './',
+    pluginRoot: 'dist-plugin',
+    srcMiniprogramRoot: './',
+  })
 }
 
 describe.sequential('automator launch resilience', () => {
@@ -160,6 +212,7 @@ describe.sequential('automator launch resilience', () => {
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
+    captureDevtoolsLogBaselineMock.mockReset()
     cleanupResidualDevtoolsProcessesMock.mockReset()
     connectMock.mockReset()
     execaMock.mockReset()
@@ -177,8 +230,10 @@ describe.sequential('automator launch resilience', () => {
       failed: false,
       status: 'END',
     })
+    captureDevtoolsLogBaselineMock.mockReturnValue({ 'devtools.log': 120 })
     scanRecentDevtoolsSimulatorBootIssuesMock.mockReturnValue([])
     clearLaunchEnv()
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'direct'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '0'
   })
 
@@ -863,8 +918,8 @@ describe.sequential('automator launch resilience', () => {
     expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('prebuilds project index before direct DevTools launch by default', async () => {
-    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+  it('prebuilds project index before direct DevTools launch when explicitly enabled', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
 
     createProjectFixture(sandboxRoot, {
@@ -989,11 +1044,73 @@ describe.sequential('automator launch resilience', () => {
 
     expect(launchMock).not.toHaveBeenCalled()
     expect(execaMock).toHaveBeenCalledTimes(1)
+    expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromFirstExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  })
+
+  it('copies local pluginRoot into cli bridge wrapper project', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    }, {
+      compileType: 'plugin',
+      pluginRoot: 'dist-plugin',
+    })
+    writeJson(path.join(sandboxRoot, 'dist-plugin/plugin.json'), {
+      publicComponents: {},
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    const payload = readBridgePayloadFromFirstExecaCall()
+    expectBridgeWrapperProjectPath(sandboxRoot, payload?.projectPath)
+    expectBridgeWrapperPluginRoot(payload?.projectPath)
+    expect(connectMock).toHaveBeenCalledWith({
+      wsEndpoint: 'ws://127.0.0.1:9420',
+    })
+  })
+
+  it('can disable cli bridge wrapper project for focused launch debugging', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(readBridgePayloadFromFirstExecaCall()?.projectPath).toBe(sandboxRoot)
+    expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
 
   it('does not refresh project index after bridge connection by default', async () => {
@@ -1140,10 +1257,12 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
+    const prebuildProjectPath = execaMock.mock.calls[0]?.[1]?.[2] as string | undefined
+    expectBridgeWrapperProjectPath(sandboxRoot, prebuildProjectPath)
     expect(execaMock).toHaveBeenNthCalledWith(
       1,
       DEFAULT_WECHAT_CLI_PATH,
-      ['engine', 'build', sandboxRoot],
+      ['engine', 'build', prebuildProjectPath],
       expect.objectContaining({
         reject: false,
         timeout: 70_000,

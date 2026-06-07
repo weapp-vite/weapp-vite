@@ -181,7 +181,7 @@ wx-root-portal-content {
   border-radius: var(--radius-3xl);
 }
 .rounded-full {
-  border-radius: calc(infinity * 1px);
+  border-radius: 9999px;
 }
 .bg-gray-100 {
   background-color: var(--color-gray-100);

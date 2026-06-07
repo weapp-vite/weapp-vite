@@ -3,7 +3,7 @@ import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
-import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
+import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
@@ -11,7 +11,7 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../..
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
@@ -66,8 +66,7 @@ export async function finalizeTransformEntryScript(options: {
     }
   }
 
-  if (
-    !isApp
+  const shouldAutoSetDataPick = !isApp
     && result.script
     && result.template
     && isAutoSetDataPickEnabled(configService.weappViteConfig)
@@ -75,11 +74,34 @@ export async function finalizeTransformEntryScript(options: {
       platform: configService.platform,
     })
     && mayNeedInjectSetDataPickInJs(result.script)
-  ) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template, {
+  const shouldInjectScopedSlotOwnerPick = !isApp
+    && result.script
+    && result.template?.includes(WEVU_SLOT_OWNER_ID_ATTR)
+    && mayNeedInjectSetDataPickInJs(result.script)
+
+  if (shouldAutoSetDataPick) {
+    const keys = collectSetDataPickKeysFromTemplate(result.template!, {
       astEngine: resolveAstEngine(configService.weappViteConfig),
     })
-    const injectedPick = injectSetDataPickInJs(result.script, keys)
+    const scopedSlotPickKeys = shouldUseScopedSlotOwnerOnlySetDataPick(keys)
+      ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
+      : keys
+    const injectedPick = shouldInjectScopedSlotOwnerPick
+      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys)
+      : injectSetDataPickInJs(result.script!, keys)
+    if (injectedPick.transformed) {
+      result.script = injectedPick.code
+      result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
+    }
+  }
+  else if (shouldInjectScopedSlotOwnerPick) {
+    const keys = collectSetDataPickKeysFromTemplate(result.template!, {
+      astEngine: resolveAstEngine(configService.weappViteConfig),
+    })
+    const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
+      result.script!,
+      pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
+    )
     if (injectedPick.transformed) {
       result.script = injectedPick.code
       result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)

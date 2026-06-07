@@ -247,21 +247,7 @@ describe('suiteRunner', () => {
       'ide/chunk-modes.runtime.hoist.test.ts',
     ])
     expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
-    expect(ideFullTasks.find(task => task.label === 'ide/app-lifecycle.test.ts')).toMatchObject({
-      env: {
-        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
-      },
-    })
-    expect(ideFullTasks.find(task => task.label === 'ide/app-prelude-native.runtime.test.ts')).toMatchObject({
-      env: {
-        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
-      },
-    })
-    expect(ideFullTasks.find(task => task.label === 'ide/template-wevu-features-app.test.ts')).toMatchObject({
-      env: {
-        WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
-      },
-    })
+    expect(ideFullTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue558.test.ts')
@@ -273,7 +259,7 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
     expect(ideGithubIssuesTasks.length).toBe(15)
-    expect(ideGithubIssuesTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBe(true)
+    expect(ideGithubIssuesTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
   })
 
   it('uses env-based target file selection for suite vitest tasks', async () => {
@@ -384,7 +370,9 @@ describe('suiteRunner', () => {
 
   it('defaults devtools vitest tasks to cli bridge launch mode', () => {
     const previousLaunchMode = process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+    const previousPrebuild = process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
     delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
 
     try {
       const options = getTaskSpawnOptions({
@@ -395,6 +383,7 @@ describe('suiteRunner', () => {
 
       expect(options.env).toMatchObject({
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'bridge',
+        WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '0',
         WEAPP_VITE_E2E_REPORT_MARKERS: '1',
       })
     }
@@ -405,21 +394,29 @@ describe('suiteRunner', () => {
       else {
         process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = previousLaunchMode
       }
+      if (previousPrebuild == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = previousPrebuild
+      }
     }
   })
 
-  it('preserves explicit devtools launch mode override', () => {
+  it('preserves explicit devtools launch mode and prebuild overrides', () => {
     const options = getTaskSpawnOptions({
       label: 'ide/task.test.ts',
       command: 'pnpm',
       args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts'],
       env: {
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+        WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '1',
       },
     })
 
     expect(options.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
+      WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '1',
       WEAPP_VITE_E2E_REPORT_MARKERS: '1',
     })
   })

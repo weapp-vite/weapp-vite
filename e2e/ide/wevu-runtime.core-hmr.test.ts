@@ -69,6 +69,32 @@ async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20
   throw new Error(`Timed out waiting runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
 }
 
+async function waitForPageDataEquals<T>(page: any, key: string, expected: T, timeoutMs = 10_000) {
+  const start = Date.now()
+  let lastValue: unknown
+  while (Date.now() - start < timeoutMs) {
+    lastValue = await page.data(key)
+    if (lastValue === expected) {
+      return lastValue
+    }
+    await page.waitFor(200)
+  }
+  throw new Error(`Timed out waiting runtime data "${key}" to equal ${String(expected)}; lastValue=${String(lastValue)}`)
+}
+
+async function waitForRunE2EName(page: any, expected: string, timeoutMs = 10_000) {
+  const start = Date.now()
+  let lastResult: any
+  while (Date.now() - start < timeoutMs) {
+    lastResult = await page.callMethod('runE2E')
+    if (lastResult?.name === expected) {
+      return lastResult
+    }
+    await page.waitFor(200)
+  }
+  throw new Error(`Timed out waiting runE2E name to equal ${expected}; lastResult=${JSON.stringify(lastResult)}`)
+}
+
 function expectSfcKeepImportResolved(content: string) {
   expect(content).toContain(HMR_SFC_KEEP_IMPORT_OUTPUT)
   expect(content).not.toContain(HMR_SFC_KEEP_IMPORT_DIRECTIVE)
@@ -130,7 +156,10 @@ async function relaunchIdeRoute(
   route: string,
   readyText: string | undefined,
   ctx: { skip: (message?: string) => void },
-  options: { allowCurrentSession?: boolean } = {},
+  options: {
+    allowCurrentSession?: boolean
+    validate?: (page: any) => Promise<void>
+  } = {},
 ) {
   // 小程序 IDE 的文件型热更新在 compile 后会频繁残留陈旧的 automator 会话；
   // 这里统一重建连接，验证的是“IDE 已感知并重新运行最新产物”，而不是浏览器式模块常驻 HMR。
@@ -142,6 +171,7 @@ async function relaunchIdeRoute(
         if (readyText) {
           await waitForPageWxmlContains(page, readyText, 8_000)
         }
+        await options.validate?.(page)
         return page
       }
     }
@@ -169,6 +199,7 @@ async function relaunchIdeRoute(
         if (readyText) {
           await waitForPageWxmlContains(page, readyText, readyTimeout)
         }
+        await options.validate?.(page)
         return page
       }
       catch (error) {
@@ -291,8 +322,12 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
-      const pageScriptResult = await page.callMethod('runE2E')
+      let pageScriptResult: any
+      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, {
+        validate: async (currentPage) => {
+          pageScriptResult = await waitForRunE2EName(currentPage, pageScriptMarker)
+        },
+      })
       expect(pageScriptResult?.name).toBe(pageScriptMarker)
       expect(pageScriptResult?.ok).toBe(true)
       expect(await page.data('__e2eText')).toContain(pageScriptMarker)
@@ -347,7 +382,12 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
+      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, {
+        validate: async (currentPage) => {
+          await waitForPageDataEquals(currentPage, 'marker', sfcScriptMarker)
+          await waitForPageWxmlContains(currentPage, sfcScriptMarker, 10_000)
+        },
+      })
       expect(await waitForPageWxmlContains(page, sfcScriptMarker)).toContain(sfcScriptMarker)
       expect(await page.data('marker')).toBe(sfcScriptMarker)
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
@@ -401,7 +441,11 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'layout page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
+      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, {
+        validate: async (currentPage) => {
+          await waitForPageWxmlContains(currentPage, layoutPageScriptMarker, 10_000)
+        },
+      })
       expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
 
       const layoutPageStyleMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-STYLE', 'weapp')

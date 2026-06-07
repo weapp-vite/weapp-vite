@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Launcher } from '@weapp-vite/miniprogram-automator'
 import { readCustomConfig } from '../config/custom'
+import { resolveAutomatorProjectPath } from './automatorProject'
 import { resolveCliPath } from './resolver'
 import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
@@ -276,10 +277,11 @@ export async function launchAutomator(options: AutomatorOptions) {
   const launcher = new Launcher()
   let lastError: unknown = null
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+  const resolvedProject = await resolveAutomatorProjectPath(projectPath)
 
   if (config.autoBootstrapDevtools !== false) {
     bootstrapResult = await bootstrapWechatDevtoolsSettings({
-      projectPath,
+      projectPath: resolvedProject.projectPath,
       trustProject: resolvedTrustProject,
     })
   }
@@ -293,7 +295,7 @@ export async function launchAutomator(options: AutomatorOptions) {
       const miniProgram = await launcher.launch({
         cliPath: resolvedCliPath,
         ...(port ? { port } : {}),
-        projectPath,
+        projectPath: resolvedProject.projectPath,
         timeout,
         trustProject: resolvedTrustProject,
       })

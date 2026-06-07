@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
@@ -9,7 +10,7 @@ import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { launchHeadlessAutomator } from './automator.headless'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
-import { scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
+import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
@@ -81,7 +82,9 @@ const AUTOMATOR_BRIDGE_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 const AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY'
+const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
+const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects')
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /simulator not found/i,
@@ -348,16 +351,16 @@ function isProjectPathTrustedByEnv(projectPath: string | undefined) {
   })
 }
 
-function resolveAutomatorLaunchMode() {
-  return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || ''
+export function resolveAutomatorLaunchMode() {
+  return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || AUTOMATOR_LAUNCH_MODE_BRIDGE
 }
 
 function shouldSkipAutomatorWarmup(skipWarmup?: boolean) {
   return skipWarmup === true || process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
 }
 
-function shouldPrebuildAutomatorProject() {
-  return process.env[AUTOMATOR_PREBUILD_ENV] !== '0'
+export function shouldPrebuildAutomatorProject() {
+  return process.env[AUTOMATOR_PREBUILD_ENV] === '1'
 }
 
 function shouldPrebuildAutomatorBridgeProject() {
@@ -378,6 +381,10 @@ function shouldRefreshAutomatorBridgeProjectAfterConnect() {
 
 function shouldDisableAutomatorRelaunchCurrentReady() {
   return process.env[AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV] !== '0'
+}
+
+function shouldUseAutomatorBridgeWrapper() {
+  return process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] !== '0'
 }
 
 function resolveConsolePayload(entry: any) {
@@ -740,6 +747,7 @@ function sleep(ms: number) {
 
 function createDevtoolsSimulatorBootLogMonitor(project: string) {
   const sinceMs = Date.now()
+  const baseline = captureDevtoolsLogBaseline()
   let lastScanAt = 0
   let reportedIssueText = ''
 
@@ -751,7 +759,7 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
       }
       lastScanAt = now
 
-      const issues = scanRecentDevtoolsSimulatorBootIssues({ sinceMs })
+      const issues = scanRecentDevtoolsSimulatorBootIssues({ baseline, sinceMs })
       if (issues.length === 0) {
         return
       }
@@ -926,6 +934,47 @@ function readJsonObject(filePath: string): Record<string, any> | undefined {
   }
 }
 
+function writeJsonObject(filePath: string, value: Record<string, any>) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+
+function copyJsonConfigAsBridgeWrapper(sourcePath: string, targetPath: string, patch: Record<string, any> = {}) {
+  const source = readJsonObject(sourcePath)
+  if (!source) {
+    return
+  }
+  writeJsonObject(targetPath, {
+    ...source,
+    ...patch,
+  })
+}
+
+export function createBridgeWrapperProjectConfig(source: Record<string, any>, patch: Record<string, any> = {}) {
+  const {
+    miniprogramRoot: _miniprogramRoot,
+    srcMiniprogramRoot: _srcMiniprogramRoot,
+    qcloudRoot: _qcloudRoot,
+    ...rest
+  } = source
+
+  return {
+    compileType: 'miniprogram',
+    ...rest,
+    ...patch,
+    miniprogramRoot: './',
+    srcMiniprogramRoot: './',
+    setting: {
+      ...(source.setting && typeof source.setting === 'object' ? source.setting : {}),
+      ...(patch.setting && typeof patch.setting === 'object' ? patch.setting : {}),
+    },
+    condition: {
+      ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
+      ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
+    },
+  }
+}
+
 function resolveMiniprogramRoot(projectPath: string) {
   for (const fileName of ['project.config.json', 'project.private.config.json']) {
     const config = readJsonObject(path.join(projectPath, fileName))
@@ -938,6 +987,93 @@ function resolveMiniprogramRoot(projectPath: string) {
     }
   }
   return 'dist'
+}
+
+function resolveBridgeWrapperProjectConfig(projectPath: string) {
+  return readJsonObject(path.join(projectPath, 'project.config.json')) ?? {}
+}
+
+function normalizeProjectRelativeRoot(rawRoot: unknown) {
+  if (typeof rawRoot !== 'string') {
+    return undefined
+  }
+  const normalized = rawRoot.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
+  if (!normalized || normalized === '.') {
+    return undefined
+  }
+  if (normalized.split('/').includes('..')) {
+    return undefined
+  }
+  return normalized
+}
+
+function copyDistEntryForBridgeWrapper(sourcePath: string, targetPath: string, isDirectory: boolean) {
+  if (isDirectory) {
+    fs.cpSync(sourcePath, targetPath, {
+      dereference: true,
+      recursive: true,
+    })
+    return
+  }
+
+  fs.copyFileSync(sourcePath, targetPath)
+}
+
+function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: string, relativeRoot: string) {
+  const sourcePath = path.join(projectPath, relativeRoot)
+  if (!fs.existsSync(sourcePath)) {
+    return
+  }
+
+  const targetPath = path.join(wrapperRoot, relativeRoot)
+  const entry = fs.lstatSync(sourcePath)
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+}
+
+function prepareAutomatorBridgeWrapperProject(
+  projectPath: string | undefined,
+  projectMeta: LaunchProjectMeta | undefined,
+) {
+  if (!projectPath || !projectMeta || !shouldUseAutomatorBridgeWrapper()) {
+    return projectPath
+  }
+
+  const distRoot = path.dirname(projectMeta.appConfigPath)
+  if (!fs.existsSync(distRoot)) {
+    return projectPath
+  }
+
+  const hash = crypto
+    .createHash('sha1')
+    .update(path.resolve(projectPath))
+    .update('\0')
+    .update(path.resolve(distRoot))
+    .digest('hex')
+    .slice(0, 16)
+  const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
+  fs.rmSync(wrapperRoot, { recursive: true, force: true })
+  fs.mkdirSync(wrapperRoot, { recursive: true })
+
+  for (const entry of fs.readdirSync(distRoot, { withFileTypes: true })) {
+    const sourcePath = path.join(distRoot, entry.name)
+    const targetPath = path.join(wrapperRoot, entry.name)
+    copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+  }
+
+  const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
+  const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
+  if (pluginRoot) {
+    copyProjectRootForBridgeWrapper(projectPath, wrapperRoot, pluginRoot)
+  }
+
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig)
+  writeJsonObject(path.join(wrapperRoot, 'project.config.json'), wrapperProjectConfig)
+  copyJsonConfigAsBridgeWrapper(
+    path.join(projectPath, 'project.private.config.json'),
+    path.join(wrapperRoot, 'project.private.config.json'),
+  )
+
+  return wrapperRoot
 }
 
 function resolveRouteFromAppConfig(config: Record<string, any>) {
@@ -1973,6 +2109,12 @@ async function launchAutomatorViaCliBridge(
   if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
     enhanceMiniProgramWithBridgeCliCleanup(miniProgram, bridgeResult.cliPid)
   }
+  const endpointPort = new URL(bridgeResult.wsEndpoint).port
+  Reflect.set(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA', {
+    port: Number.parseInt(endpointPort, 10),
+    projectPath: options.projectPath,
+    wsEndpoint: bridgeResult.wsEndpoint,
+  })
   await sleep(BRIDGE_CONNECT_SETTLE_DELAY)
   return miniProgram
 }
@@ -2016,8 +2158,15 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   ...projectConfig,
                 }
               : undefined
-            const launchOptions = {
+            const launchProjectPath = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
+              : rest.projectPath
+            const launchRest = {
               ...rest,
+              ...(launchProjectPath ? { projectPath: launchProjectPath } : {}),
+            }
+            const launchOptions = {
+              ...launchRest,
               timeout: launchTimeout,
               trustProject: resolvedTrustProject,
               ...(mergedProjectConfig ? { projectConfig: mergedProjectConfig } : {}),
@@ -2026,7 +2175,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               ? shouldPrebuildAutomatorBridgeProject()
               : shouldPrebuildAutomatorProject()
             if (shouldPrebuild) {
-              await prebuildAutomatorProjectIndex(rest.projectPath, project, {
+              await prebuildAutomatorProjectIndex(launchProjectPath, project, {
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
               })
@@ -2058,7 +2207,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               process.stdout.write(`[info] [runtime:launch-step] post-connect-refresh-skip project=${project}\n`)
             }
             else {
-              await refreshMiniProgramProjectIndex(rest.projectPath, project, {
+              await refreshMiniProgramProjectIndex(launchProjectPath, project, {
                 allowCliEngineBuildFallback: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
@@ -2080,7 +2229,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               cliPath: rest.cliPath,
               cwd: rest.cwd,
               project,
-              projectPath: rest.projectPath,
+              projectPath: launchProjectPath,
               skipPageRootCheck: skipRelaunchPageRootCheck,
             })
             return withRelaunch

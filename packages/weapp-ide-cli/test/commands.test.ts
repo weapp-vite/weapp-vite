@@ -173,6 +173,17 @@ describe('automator commands', () => {
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
+    it('currentPage reports a helpful protocol timeout when DevTools does not respond', async () => {
+      const { currentPage } = await loadCommands()
+      mockMiniProgram.currentPage.mockReturnValue(new Promise(() => {}))
+
+      await expect(currentPage({ projectPath: mockCwd, timeout: 10 })).rejects.toMatchObject({
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        message: expect.stringMatching(/当前页面请求在 10ms 内未收到 DevTools 回包.+请确认当前打开的是目标项目/),
+      })
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
+    })
+
     it('systemInfo returns system info', async () => {
       const { systemInfo } = await loadCommands()
       const systemInfoData = { brand: 'devtools', model: 'iPhone 12', SDKVersion: '3.7.12' }

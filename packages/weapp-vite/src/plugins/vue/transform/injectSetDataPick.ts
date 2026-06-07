@@ -5,12 +5,16 @@ import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import {
   WEVU_SLOT_NAMES_PROP,
+  WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { collectSetDataPickKeysFromTemplateCode } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
+
+const SCOPED_SLOT_OWNER_AUTO_PICK_BIND_KEY_LIMIT = 200
+const AUTO_BIND_PICK_KEY_PREFIX = '__wv_bind_'
 
 /**
  * 根据配置判断是否启用自动 setData.pick 注入。
@@ -385,6 +389,32 @@ export function collectSetDataPickKeysFromTemplate(
 }
 
 /**
+ * 判断 scoped slot 宿主页是否应该跳过大规模模板 bind 自动 pick。
+ */
+export function shouldUseScopedSlotOwnerOnlySetDataPick(pickKeys: string[]): boolean {
+  let bindKeyCount = 0
+  for (const key of pickKeys) {
+    if (key.startsWith(AUTO_BIND_PICK_KEY_PREFIX)) {
+      bindKeyCount += 1
+      if (bindKeyCount > SCOPED_SLOT_OWNER_AUTO_PICK_BIND_KEY_LIMIT) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+/**
+ * 裁剪 scoped slot 宿主页中过量的自动 bind key，同时保留业务状态 key。
+ */
+export function pruneScopedSlotOwnerAutoSetDataPickKeys(pickKeys: string[]): string[] {
+  if (!shouldUseScopedSlotOwnerOnlySetDataPick(pickKeys)) {
+    return pickKeys
+  }
+  return pickKeys.filter(key => !key.startsWith(AUTO_BIND_PICK_KEY_PREFIX))
+}
+
+/**
  * 在 wevu 组件脚本中注入 setData.pick。
  */
 export function injectSetDataPickInJs(
@@ -400,6 +430,25 @@ export function injectSetDataPickInJs(
     return { code: source, transformed: false }
   }
 
+  return transformTargetWevuOptionsInJs(
+    source,
+    optionsObject => injectPickIntoOptionsObject(optionsObject, mergedPickKeys),
+  )
+}
+
+/**
+ * 只为 scoped slot 宿主首屏同步注入必要的 setData.pick 字段。
+ */
+export function injectScopedSlotOwnerSetDataPickInJs(
+  source: string,
+  pickKeys: string[] = [],
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
+  const mergedPickKeys = mergeStableKeys(pickKeys, [
+    WEVU_SLOT_OWNER_ID_KEY,
+    WEVU_SLOT_NAMES_PROP,
+    WEVU_SLOT_OWNER_ID_PROP,
+    WEVU_SLOT_SCOPE_KEY,
+  ])
   return transformTargetWevuOptionsInJs(
     source,
     optionsObject => injectPickIntoOptionsObject(optionsObject, mergedPickKeys),

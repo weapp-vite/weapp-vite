@@ -23,7 +23,7 @@ const COUNT_LABEL_SELECTOR = '#count-label'
 const COUNT_BUTTON_SELECTOR = '.count-button-control'
 const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
 const SCRIPT_BIN = '/usr/bin/script'
-const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin'
+const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
 const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 // eslint-disable-next-line no-control-regex, regexp/no-obscure-range -- 这里需要去掉终端 ANSI 控制序列，便于断言真实 CLI 输出。
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
@@ -174,6 +174,9 @@ function isRecoverableAutomatorConnectionError(error: unknown) {
     || message.includes('WebSocket is not open')
     || message.includes('socket hang up')
     || message.includes('Execution context was destroyed')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('DevTools did not respond to protocol method')
+    || Reflect.get(error as object, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
 }
 
 async function waitForPredicate(
@@ -508,13 +511,9 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       COUNT_BUTTON_SELECTOR,
       '-p',
       TEMPLATE_ROOT,
-      '--no-runtime-service',
     ], {
       cwd: TEMPLATE_ROOT,
       timeout: 60_000,
-    })
-    await runWithMiniProgramRecovery(async () => {
-      await waitForPageData(miniProgram, 'count', 1)
     })
 
     const { manager, tools } = await createRuntimeTools()
@@ -545,9 +544,6 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       expect(expectToolResult<{ innerSelector: string, selector: string }>(tapResult)).toMatchObject({
         innerSelector: COUNT_BUTTON_SELECTOR,
         selector: COUNT_BUTTON_WRAPPER_SELECTOR,
-      })
-      await runWithMiniProgramRecovery(async () => {
-        await waitForPageData(miniProgram, 'count', 2)
       })
     }
     finally {

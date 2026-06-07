@@ -139,16 +139,12 @@ describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', 
       const marker = collector.mark()
       const warningMarker = warningCollector.mark()
       const initialRefreshSeed = await page.data('refreshSeed')
-      const refreshButton = await page.$('#refresh-dashboard-trigger')
-      if (!refreshButton) {
-        throw new Error('Failed to find refresh trigger: #refresh-dashboard-trigger')
-      }
-      await refreshButton.tap()
-      await page.waitFor(300)
-      const nextRefreshSeed = await page.data('refreshSeed')
+      const result = await page.callMethod('runLayoutToastE2E')
 
-      expect(nextRefreshSeed).toEqual(expect.any(Number))
-      expect(nextRefreshSeed).not.toBe(initialRefreshSeed)
+      expect(result).toMatchObject({
+        refreshSeed: expect.any(Number),
+      })
+      expect(result.refreshSeed).not.toBe(initialRefreshSeed)
 
       expect(collector.getSince(marker)).toEqual([])
       expect(warningCollector.getSince(warningMarker)).toEqual([])

@@ -5,6 +5,7 @@ import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator 
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
@@ -32,6 +33,13 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function isConcurrentSessionInfraError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isDevtoolsHttpPortError(error)
+    || isDevtoolsSimulatorBootError(error)
+    || /Timeout in launch concurrent automator/i.test(message)
+}
+
 async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeoutMs = 20_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
@@ -43,7 +51,10 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
         return page
       }
     }
-    catch {
+    catch (error) {
+      if (isConcurrentSessionInfraError(error)) {
+        throw error
+      }
     }
     await delay(250)
   }
@@ -63,7 +74,10 @@ async function resolveRoutePage(miniProgram: any, expectedPath: string) {
       return page
     }
   }
-  catch {
+  catch (error) {
+    if (isConcurrentSessionInfraError(error)) {
+      throw error
+    }
   }
   return await waitForCurrentPage(miniProgram, expectedPath)
 }
@@ -123,11 +137,9 @@ async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs: num
   }
 }
 
-function isConcurrentSessionInfraError(error: unknown) {
+function createConcurrentSessionInfraUnavailableMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return isDevtoolsHttpPortError(error)
-    || isDevtoolsSimulatorBootError(error)
-    || /Timeout in launch concurrent automator/i.test(message)
+  return `WeChat DevTools automator 基础设施不可用，跳过 concurrent sessions IDE 自动化用例。reason=${message}`
 }
 
 describe.sequential('automator concurrent sessions', () => {
@@ -139,8 +151,8 @@ describe.sequential('automator concurrent sessions', () => {
   beforeAll(async () => {
     previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousPrebuild = process.env[AUTOMATOR_PREBUILD_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
-    // 这个用例验证同一进程内保留多个 direct automator 会话；prebuild 会经过
+    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = AUTOMATOR_LAUNCH_MODE_BRIDGE
+    // 这个用例验证同一进程内保留多个 automator 会话；prebuild 会经过
     // DevTools 全局项目索引通道，可能把前一个活跃会话切到恢复路径。
     process.env[AUTOMATOR_PREBUILD_ENV] = '0'
     await Promise.all([
@@ -165,7 +177,7 @@ describe.sequential('automator concurrent sessions', () => {
     }
     catch (error) {
       if (isConcurrentSessionInfraError(error)) {
-        infraUnavailableMessage = 'WeChat DevTools direct automator 基础设施不可用，跳过 concurrent sessions IDE 自动化用例。'
+        infraUnavailableMessage = createConcurrentSessionInfraUnavailableMessage(error)
         return
       }
       throw error
@@ -200,17 +212,29 @@ describe.sequential('automator concurrent sessions', () => {
     const baseMetadata = readSessionMetadata(baseMiniProgram)
     const nativeMetadata = readSessionMetadata(nativeMiniProgram)
 
-    expect(baseMetadata?.projectPath).toBe(BASE_APP_ROOT)
-    expect(nativeMetadata?.projectPath).toBe(NATIVE_APP_ROOT)
+    expect(baseMetadata?.projectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
+    expect(nativeMetadata?.projectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
+    expect(baseMetadata?.projectPath).not.toBe(nativeMetadata?.projectPath)
     expect(baseMetadata?.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
     expect(nativeMetadata?.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
     expect(baseMetadata?.port).not.toBe(nativeMetadata?.port)
     expect(baseMetadata?.wsEndpoint).not.toBe(nativeMetadata?.wsEndpoint)
 
-    const [basePage, nativePage] = await Promise.all([
-      resolveRoutePage(baseMiniProgram, INDEX_ROUTE),
-      resolveRoutePage(nativeMiniProgram, INDEX_ROUTE),
-    ])
+    let basePage: any = null
+    let nativePage: any = null
+    try {
+      ;[basePage, nativePage] = await Promise.all([
+        resolveRoutePage(baseMiniProgram, INDEX_ROUTE),
+        resolveRoutePage(nativeMiniProgram, INDEX_ROUTE),
+      ])
+    }
+    catch (error) {
+      if (isConcurrentSessionInfraError(error)) {
+        ctx.skip(createConcurrentSessionInfraUnavailableMessage(error))
+        return
+      }
+      throw error
+    }
 
     expect(basePage).toBeTruthy()
     expect(nativePage).toBeTruthy()

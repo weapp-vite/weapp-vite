@@ -21,12 +21,18 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   transformed: false,
   code,
 })))
+const injectScopedSlotOwnerSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+})))
 const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   transformed: false,
   code,
 })))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
+const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_'))))
+const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const readFileMock = vi.hoisted(() => vi.fn(async () => ''))
 const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view />',
@@ -70,9 +76,12 @@ vi.mock('../injectPageFeatures', () => ({
 vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
   injectScopedSlotHostPropertiesInJs: injectScopedSlotHostPropertiesInJsMock,
+  injectScopedSlotOwnerSetDataPickInJs: injectScopedSlotOwnerSetDataPickInJsMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
+  pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
+  shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
 }))
 
 vi.mock('../pageLayout', async (importOriginal) => {
@@ -146,6 +155,11 @@ describe('emitSharedVueEntryAssets', () => {
       transformed: false,
       code,
     }))
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReset()
+    injectScopedSlotOwnerSetDataPickInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+    }))
     injectScopedSlotHostPropertiesInJsMock.mockReset()
     injectScopedSlotHostPropertiesInJsMock.mockImplementation((code: string) => ({
       transformed: false,
@@ -155,6 +169,10 @@ describe('emitSharedVueEntryAssets', () => {
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
     mayNeedInjectSetDataPickInJsMock.mockReset()
     mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
+    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockReset()
+    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_')))
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(false)
     readFileMock.mockReset()
     readFileMock.mockResolvedValue('')
     compileVueFileMock.mockReset()
@@ -657,6 +675,100 @@ describe('emitSharedVueEntryAssets', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
     expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
+  })
+
+  it('injects scoped slot owner setDataPick even when auto pick is disabled', async () => {
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+    })
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/index/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {
+          wevu: {
+            autoSetDataPick: false,
+          },
+        },
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
+    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['title'])
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
+  })
+
+  it('uses scoped slot owner setDataPick when auto pick collects too many bind keys', async () => {
+    const keys = ['currentStep', ...Array.from({ length: 201 }, (_, index) => `__wv_bind_${index}`), 'formState']
+    collectSetDataPickKeysFromTemplateMock.mockReturnValue(keys)
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(true)
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+    })
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/index/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
+    expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
+    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
+  })
+
+  it('injects scoped slot owner setDataPick when template has only owner id binding', async () => {
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+    collectSetDataPickKeysFromTemplateMock.mockReturnValue([])
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+    })
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/index/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />')
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
   it('injects scoped slot host properties when componentGenerics are emitted', async () => {

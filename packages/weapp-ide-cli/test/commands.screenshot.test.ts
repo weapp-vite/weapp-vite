@@ -1,14 +1,20 @@
 import { Buffer } from 'node:buffer'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { PNG } from 'pngjs'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
+  success: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
 }))
+
+const tempDirs: string[] = []
 
 vi.mock('../src/cli/automator-session', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
@@ -47,8 +53,17 @@ describe('captureScreenshotBuffer', () => {
     closeSharedMiniProgramMock.mockReset()
     closeWechatIdeProjectMock.mockReset()
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
+    loggerMock.success.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
+  })
+
+  afterEach(async () => {
+    vi.useRealTimers()
+    await Promise.all(tempDirs.splice(0).map(async tempDir => fs.rm(tempDir, {
+      force: true,
+      recursive: true,
+    })))
   })
 
   it('rejects with a timeout error when DevTools does not respond to captureScreenshot', async () => {
@@ -87,6 +102,27 @@ describe('captureScreenshotBuffer', () => {
     })
 
     expect(result.equals(expected)).toBe(true)
+  })
+
+  it('creates parent directories before writing screenshot output', async () => {
+    const expected = Buffer.from('png-data')
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-ide-cli-screenshot-output-'))
+    tempDirs.push(tempDir)
+    const outputPath = path.join(tempDir, 'nested', 'screenshots', 'index.png')
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        screenshot: () => Promise.resolve(expected.toString('base64')),
+      })
+    })
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+    const result = await takeScreenshot({
+      outputPath,
+      projectPath: '/workspace/project',
+    })
+
+    expect(result).toEqual({ path: outputPath })
+    await expect(fs.readFile(outputPath)).resolves.toEqual(expected)
   })
 
   it('normalizes page paths before relaunching', async () => {
