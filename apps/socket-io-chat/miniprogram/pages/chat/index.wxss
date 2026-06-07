@@ -135,9 +135,9 @@
 
 .composer {
   display: flex;
-  gap: 16rpx;
+  gap: 12rpx;
   align-items: center;
-  padding: 16rpx 20rpx calc(16rpx + env(safe-area-inset-bottom));
+  padding: 12rpx 20rpx calc(12rpx + env(safe-area-inset-bottom));
   background: #f7f7f7;
   border-top: 1rpx solid rgb(0 0 0 / 8%);
 }
@@ -145,20 +145,20 @@
 .composer__input {
   box-sizing: border-box;
   flex: 1;
-  height: 76rpx;
-  padding: 0 24rpx;
-  font-size: 30rpx;
+  height: 64rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
   background: #fff;
   border-radius: 8rpx;
 }
 
 .composer__button {
-  width: 132rpx;
-  height: 76rpx;
+  width: 88rpx;
+  height: 56rpx;
   padding: 0;
   margin: 0;
-  font-size: 28rpx;
-  line-height: 76rpx;
+  font-size: 24rpx;
+  line-height: 56rpx;
   color: #fff;
   background: #07c160;
   border-radius: 8rpx;
