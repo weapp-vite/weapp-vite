@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-07T16:15:12.496Z",
+  "generatedAt": "2026-06-07T16:47:37.990Z",
   "site": "https://vite.icebreaker.top",
-  "count": 265,
+  "count": 268,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -446,33 +446,28 @@
     },
     {
       "id": "doc-69fbd89f9d",
-      "title": "App Prelude 与 Web Runtime 注入配置",
-      "summary": "weapp.appPrelude 与 weapp.appPrelude.webRuntime 的配置说明，覆盖前置脚本、Web Runtime 全局对象注入与网络默认参数。",
+      "title": "App Prelude 配置",
+      "summary": "weapp.appPrelude 的配置说明，覆盖 app.prelude 前置脚本开关、注入模式与产物行为。",
       "url": "/config/app-prelude",
       "canonical": "https://vite.icebreaker.top/config/app-prelude",
       "keywords": [
         "配置",
         "appprelude",
         "app.prelude",
-        "webruntime",
-        "运行时",
+        "prelude",
         "config",
-        "app",
-        "prelude"
+        "app"
       ],
       "headings": [
-        "App Prelude 与 Web Runtime 注入配置 {#app-prelude-config}",
+        "App Prelude 配置 {#app-prelude-config}",
         "weapp.appPrelude {#weapp-appprelude}",
         "enabled",
         "mode",
-        "weapp.appPrelude.webRuntime {#weapp-appprelude-webruntime}",
-        "enabled",
-        "targets",
-        "dependencies",
-        "networkDefaults",
         "产物说明",
         "常见配置",
-        "只启用默认注入"
+        "使用默认注入模式",
+        "关闭前置脚本注入",
+        "继续阅读"
       ],
       "updatedAt": "2026-06-08",
       "source": "config/app-prelude.md"
@@ -954,6 +949,38 @@
       "source": "config/vue.md"
     },
     {
+      "id": "doc-78308cf264",
+      "title": "Web Runtime 全局对象注入配置",
+      "summary": "weapp.appPrelude.webRuntime 的配置说明，覆盖 Web Runtime 全局对象注入、目标对象、依赖匹配与网络默认参数。",
+      "url": "/config/web-runtime-globals",
+      "canonical": "https://vite.icebreaker.top/config/web-runtime-globals",
+      "keywords": [
+        "配置",
+        "webruntime",
+        "fetch",
+        "xmlhttprequest",
+        "websocket",
+        "运行时",
+        "config",
+        "web"
+      ],
+      "headings": [
+        "Web Runtime 全局对象注入配置 {#web-runtime-globals-config}",
+        "weapp.appPrelude.webRuntime {#weapp-appprelude-webruntime}",
+        "enabled",
+        "targets",
+        "dependencies",
+        "networkDefaults",
+        "产物说明",
+        "常见配置",
+        "只启用默认注入",
+        "仅兼容 axios / graphql-request 请求链路",
+        "继续阅读"
+      ],
+      "updatedAt": "2026-06-08",
+      "source": "config/web-runtime-globals.md"
+    },
+    {
       "id": "doc-7b53a5ab4d",
       "title": "Web 运行时配置 experimental",
       "summary": "weapp-vite 可选集成浏览器端运行时 @weapp-vite/web，用于预览、兼容验证、截图联调与 AI 调试。",
@@ -1304,32 +1331,51 @@
     },
     {
       "id": "doc-192cd49927",
-      "title": "App Prelude 与 Web Runtime 全局注入",
-      "summary": "介绍 weapp-vite 的 app.prelude 前置脚本、Web Runtime 全局对象注入，以及它们在第三方请求库兼容中的使用方式。",
+      "title": "App Prelude 与 Web Runtime 注入",
+      "summary": "App Prelude 与 Web Runtime 全局对象注入的功能入口，帮助你区分前置脚本和 Web 风格全局对象注入。",
       "url": "/guide/app-prelude-web-runtime",
       "canonical": "https://vite.icebreaker.top/guide/app-prelude-web-runtime",
       "keywords": [
         "app.prelude",
         "web runtime",
-        "fetch",
-        "xmlhttprequest",
-        "websocket",
-        "axios",
-        "graphql-request",
-        "运行时"
+        "global injection",
+        "运行时",
+        "guide",
+        "app",
+        "prelude",
+        "web"
       ],
       "headings": [
-        "App Prelude 与 Web Runtime 全局注入",
+        "App Prelude 与 Web Runtime 注入",
+        "继续阅读"
+      ],
+      "updatedAt": "2026-06-08",
+      "source": "guide/app-prelude-web-runtime.md"
+    },
+    {
+      "id": "doc-2944f4d5e1",
+      "title": "App Prelude",
+      "summary": "介绍 weapp-vite 的 app.prelude 前置脚本，以及它在小程序入口执行前统一初始化代码的使用方式。",
+      "url": "/guide/app-prelude",
+      "canonical": "https://vite.icebreaker.top/guide/app-prelude",
+      "keywords": [
+        "app.prelude",
+        "prelude",
+        "前置脚本",
+        "appprelude",
+        "guide",
+        "app"
+      ],
+      "headings": [
+        "App Prelude",
         "什么时候需要它",
-        "app.prelude 做什么",
-        "Web Runtime 全局对象注入做什么",
-        "和浏览器 Web runtime 的关系",
+        "它做什么",
         "推荐做法",
         "验证方式",
         "继续阅读"
       ],
       "updatedAt": "2026-06-08",
-      "source": "guide/app-prelude-web-runtime.md"
+      "source": "guide/app-prelude.md"
     },
     {
       "id": "doc-9b2986e688",
@@ -2666,6 +2712,34 @@
       ],
       "updatedAt": "2026-04-05",
       "source": "guide/web-compat-matrix.md"
+    },
+    {
+      "id": "doc-8159720693",
+      "title": "Web Runtime 全局对象注入",
+      "summary": "介绍 weapp-vite 如何在小程序产物中注入 fetch、XMLHttpRequest、WebSocket 等 Web 风格全局对象。",
+      "url": "/guide/web-runtime-globals",
+      "canonical": "https://vite.icebreaker.top/guide/web-runtime-globals",
+      "keywords": [
+        "web runtime",
+        "fetch",
+        "xmlhttprequest",
+        "websocket",
+        "axios",
+        "graphql-request",
+        "运行时",
+        "guide"
+      ],
+      "headings": [
+        "Web Runtime 全局对象注入",
+        "什么时候需要它",
+        "注入哪些对象",
+        "和浏览器 Web runtime 的关系",
+        "推荐做法",
+        "验证方式",
+        "继续阅读"
+      ],
+      "updatedAt": "2026-06-08",
+      "source": "guide/web-runtime-globals.md"
     },
     {
       "id": "doc-95c7de0814",

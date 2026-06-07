@@ -261,7 +261,7 @@ export default defineConfig({
 - `wv prepare`
 
 > [!TIP]
-> `app.prelude` 与 `appPrelude.webRuntime` 已拆到 [App Prelude 与 Web Runtime 注入配置](./app-prelude.md)。
+> `app.prelude` 配置请看 [App Prelude 配置](./app-prelude.md)，`appPrelude.webRuntime` 配置请看 [Web Runtime 全局对象注入配置](./web-runtime-globals.md)。
 
 ## 这页和 Vite 原生配置的边界
 

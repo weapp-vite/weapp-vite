@@ -96,16 +96,16 @@ keywords:
 
 ## 3. 一个常见问题到入口的映射表
 
-| 你遇到的问题                 | 建议先去哪里                                                                                                   |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 自动路由怎么开               | [/guide/auto-routes](/guide/auto-routes)                                                                       |
-| 分包字段怎么配               | [/config/subpackages](/config/subpackages)                                                                     |
-| Web Runtime 全局对象怎么注入 | [/guide/app-prelude-web-runtime](/guide/app-prelude-web-runtime) 和 [/config/app-prelude](/config/app-prelude) |
-| `v-model` 在小程序里怎么写   | [/handbook/sfc/template](/handbook/sfc/template)                                                               |
-| 页面为什么不更新             | [/handbook/debugging](/handbook/debugging) 和 [/handbook/wevu/runtime](/handbook/wevu/runtime)                 |
-| Wevu 生命周期怎么理解        | [/wevu/api/lifecycle](/wevu/api/lifecycle)                                                                     |
-| Web 运行时支持到什么程度     | [/guide/web-compat-matrix](/guide/web-compat-matrix)                                                           |
-| 配置项总览在哪里             | [/config/](/config/)                                                                                           |
+| 你遇到的问题                 | 建议先去哪里                                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 自动路由怎么开               | [/guide/auto-routes](/guide/auto-routes)                                                                               |
+| 分包字段怎么配               | [/config/subpackages](/config/subpackages)                                                                             |
+| Web Runtime 全局对象怎么注入 | [/guide/web-runtime-globals](/guide/web-runtime-globals) 和 [/config/web-runtime-globals](/config/web-runtime-globals) |
+| `v-model` 在小程序里怎么写   | [/handbook/sfc/template](/handbook/sfc/template)                                                                       |
+| 页面为什么不更新             | [/handbook/debugging](/handbook/debugging) 和 [/handbook/wevu/runtime](/handbook/wevu/runtime)                         |
+| Wevu 生命周期怎么理解        | [/wevu/api/lifecycle](/wevu/api/lifecycle)                                                                             |
+| Web 运行时支持到什么程度     | [/guide/web-compat-matrix](/guide/web-compat-matrix)                                                                   |
+| 配置项总览在哪里             | [/config/](/config/)                                                                                                   |
 
 ## 4. 你也可以按“当前阶段”找
 

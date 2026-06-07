@@ -116,7 +116,12 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '共享 Chunk', link: '/guide/chunks' },
       {
         text: 'App Prelude 与 Web Runtime 注入',
-        link: '/guide/app-prelude-web-runtime',
+        collapsed: false,
+        items: [
+          { text: '功能概览', link: '/guide/app-prelude-web-runtime' },
+          { text: 'App Prelude', link: '/guide/app-prelude' },
+          { text: 'Web Runtime 全局对象注入', link: '/guide/web-runtime-globals' },
+        ],
       },
       { text: '组件库构建', link: '/guide/lib-mode' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
@@ -647,8 +652,15 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '开发态 HMR 配置', link: '/config/hmr' },
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: 'WXS 配置', link: '/config/wxs' },
-      { text: 'App Prelude 与 Web Runtime 注入', link: '/config/app-prelude' },
       { text: '共享配置', link: '/config/shared' },
+    ],
+  },
+  {
+    text: 'App Prelude 与 Web Runtime 注入',
+    collapsed: false,
+    items: [
+      { text: 'App Prelude 配置', link: '/config/app-prelude' },
+      { text: 'Web Runtime 全局对象注入配置', link: '/config/web-runtime-globals' },
     ],
   },
   {

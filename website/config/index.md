@@ -112,7 +112,7 @@ export default defineConfig(env => ({
 ## 推荐阅读顺序
 
 1. 先看 [基础目录与资源收集](./paths.md)、[构建输出与兼容](./build-and-output.md)、[TypeScript 支持文件](./typescript.md)，把目录、输出、类型支持先稳定下来。
-2. 再看 [共享配置](./shared.md)、[自动导入组件配置](./auto-import-components.md)、[分包配置](./subpackages.md)、[共享 Chunk 配置](./chunks.md)、[App Prelude 与 Web Runtime 注入](./app-prelude.md)，接入增强能力。
+2. 再看 [共享配置](./shared.md)、[自动导入组件配置](./auto-import-components.md)、[分包配置](./subpackages.md)、[共享 Chunk 配置](./chunks.md)、[App Prelude 配置](./app-prelude.md)、[Web Runtime 全局对象注入配置](./web-runtime-globals.md)，接入增强能力。
 3. 最后再看 [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[Web 运行时配置](./web.md)、[库模式配置](./lib.md) 这些偏进阶链路。
 
 ## 按场景找配置
@@ -125,7 +125,7 @@ export default defineConfig(env => ({
 | 项目有分包、独立分包、共享样式或分包独立 npm | [分包配置](./subpackages.md)、[npm 配置](./npm.md)、[共享 Chunk 配置](./chunks.md) |
 | 使用 Vue SFC / Wevu，需要调模板编译、setData 策略或 HMR | [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[开发态 HMR 配置](./hmr.md) |
 | 想把分包体积、重复模块和 HMR profile 纳入本地或 CI 检查 | [Analyze 报告配置](./analyze.md)、[分包配置](./subpackages.md)、[开发态 HMR 配置](./hmr.md) |
-| 想让小程序产物兼容 `fetch` / `XMLHttpRequest` / `WebSocket` 等 Web 风格全局对象 | [App Prelude 与 Web Runtime 注入](./app-prelude.md) |
+| 想让小程序产物兼容 `fetch` / `XMLHttpRequest` / `WebSocket` 等 Web 风格全局对象 | [Web Runtime 全局对象注入配置](./web-runtime-globals.md) |
 | 想做浏览器预览、AI 协作、截图、日志桥接 | [共享配置](./shared.md)、[Web 运行时配置](./web.md) |
 | 想做小程序组件库或业务模块库 | [库模式配置](./lib.md) |
 
@@ -137,7 +137,8 @@ export default defineConfig(env => ({
 | [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `buildScope` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` / 顶层 `build.*` |
 | [TypeScript 支持文件](./typescript.md) | `.weapp-vite/tsconfig.*`、托管类型输出、`weapp.typescript` |
 | [Analyze 报告配置](./analyze.md) | `weapp.analyze.budgets`、历史快照、Markdown / PR 报告、HMR profile 分析 |
-| [App Prelude 与 Web Runtime 注入](./app-prelude.md) | `appPrelude` / `appPrelude.webRuntime` / Web Runtime 全局对象注入 |
+| [App Prelude 配置](./app-prelude.md) | `appPrelude` 前置脚本开关、注入模式与产物行为 |
+| [Web Runtime 全局对象注入配置](./web-runtime-globals.md) | `appPrelude.webRuntime` / Web Runtime 全局对象注入 |
 | [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `forwardConsole` / `injectWeapi` / `mcp` |
 | [Route Rules 与 Layout](./route-rules.md) | `weapp.routeRules`、layout 默认值、`layouts/` 约定 |
 | [JSON 配置](./json.md) | `jsonAlias` / `json.defaults` / `json.mergeStrategy` |
