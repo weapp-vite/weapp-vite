@@ -115,7 +115,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '分包指南', link: '/guide/subpackage' },
       { text: '共享 Chunk', link: '/guide/chunks' },
       {
-        text: 'App Prelude 与 Web Runtime 注入',
+        text: 'Prelude 与 Web 注入',
         collapsed: false,
         items: [
           { text: '功能概览', link: '/guide/app-prelude-web-runtime' },
@@ -656,7 +656,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: 'App Prelude 与 Web Runtime 注入',
+    text: 'Prelude 与 Web 注入',
     collapsed: false,
     items: [
       { text: 'App Prelude 配置', link: '/config/app-prelude' },
