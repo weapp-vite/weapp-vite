@@ -1,4 +1,5 @@
-import { io, type Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client'
+import { io } from 'socket.io-client'
 
 interface ChatMessage {
   id: string
@@ -8,10 +9,6 @@ interface ChatMessage {
   text: string
   platform: 'web' | 'mini' | 'server'
   createdAt: number
-}
-
-type ViewMessage = ChatMessage & {
-  time: string
 }
 
 const room = 'wechat-chat-demo'
@@ -24,7 +21,7 @@ Page({
   data: {
     connected: false,
     draft: '',
-    messages: [] as ViewMessage[],
+    messages: [] as ChatMessage[],
     scrollIntoView: '',
     userId,
   },
@@ -44,7 +41,7 @@ Page({
       this.setData({ connected: true })
       socket?.emit('join', {
         room,
-        userName: '小程序用户',
+        userName: '我',
       })
     })
 
@@ -57,21 +54,21 @@ Page({
     })
 
     socket.on('chat:message', (message: ChatMessage) => {
-      this.setMessages([...(this.data.messages as ViewMessage[]), toViewMessage(message)])
+      this.setMessages([...(this.data.messages as ChatMessage[]), message])
     })
 
-    socket.on('presence', (event: { type: 'join' | 'leave'; userName: string; at: number }) => {
+    socket.on('presence', (event: { type: 'join' | 'leave', userName: string, at: number }) => {
       this.setMessages([
-        ...(this.data.messages as ViewMessage[]),
-        toViewMessage({
+        ...(this.data.messages as ChatMessage[]),
+        {
           id: `presence-${event.at}`,
           room,
           userId: 'server',
           userName: 'Socket.IO',
-          text: `${event.userName}${event.type === 'join' ? '进入' : '离开'}了聊天室`,
+          text: event.type === 'join' ? '对方已加入会话' : '对方已离开会话',
           platform: 'server',
           createdAt: event.at,
-        }),
+        },
       ])
     })
   },
@@ -88,7 +85,7 @@ Page({
     socket?.emit('chat:send', {
       room,
       userId,
-      userName: '小程序用户',
+      userName: '我',
       text,
       platform: 'mini',
     })
@@ -96,41 +93,11 @@ Page({
       draft: '',
     })
   },
-  goContact() {
-    void wx.navigateTo({
-      url: '/pages/contact/index',
-    })
-  },
-  goMoments() {
-    void wx.navigateTo({
-      url: '/pages/moments/index',
-    })
-  },
-  goInsights() {
-    void wx.navigateTo({
-      url: '/pages/insights/index',
-    })
-  },
-  setMessages(messages: ChatMessage[] | ViewMessage[]) {
-    const viewMessages = messages.map(toViewMessage)
-    const latest = viewMessages.at(-1)
+  setMessages(messages: ChatMessage[]) {
+    const latest = messages.at(-1)
     this.setData({
-      messages: viewMessages,
+      messages,
       scrollIntoView: latest ? `msg-${latest.id}` : '',
     })
   },
 })
-
-function toViewMessage(message: ChatMessage | ViewMessage): ViewMessage {
-  return {
-    ...message,
-    time: 'time' in message ? message.time : formatTime(message.createdAt),
-  }
-}
-
-function formatTime(value: number) {
-  const date = new Date(value)
-  const hours = `${date.getHours()}`.padStart(2, '0')
-  const minutes = `${date.getMinutes()}`.padStart(2, '0')
-  return `${hours}:${minutes}`
-}

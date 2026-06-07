@@ -1,17 +1,4 @@
 <view class="chat-page">
-  <view class="chat-header">
-    <view class="chat-header__title">Socket.IO 聊天室</view>
-    <view class="chat-header__status {{connected ? 'is-online' : ''}}">
-      {{connected ? '在线' : '离线'}}
-    </view>
-  </view>
-
-  <view class="client-links">
-    <button bindtap="goContact">联系人</button>
-    <button bindtap="goMoments">朋友圈</button>
-    <button bindtap="goInsights">洞察</button>
-  </view>
-
   <scroll-view
     class="message-list"
     scroll-y
@@ -24,13 +11,15 @@
       wx:for="{{messages}}"
       wx:key="id"
     >
-      <view class="message__avatar" wx:if="{{item.platform !== 'server'}}">
-        {{item.platform === 'mini' ? '小' : 'W'}}
+      <view
+        class="message__avatar {{item.userId === userId ? 'message__avatar--me' : 'message__avatar--yang'}}"
+        wx:if="{{item.platform !== 'server'}}"
+      >
+        <view class="message__avatar-hair"></view>
+        <view class="message__avatar-head"></view>
+        <view class="message__avatar-body"></view>
       </view>
       <view class="message__body">
-        <view class="message__meta" wx:if="{{item.platform !== 'server'}}">
-          {{item.userName}} · {{item.time}}
-        </view>
         <view class="message__bubble">{{item.text}}</view>
       </view>
     </view>
