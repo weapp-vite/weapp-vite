@@ -32,6 +32,7 @@ import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
@@ -833,6 +834,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
             resetRuntimeStateForConfigRestart()
             await configService.load(configService.loadOptions)
+            try {
+              const supportFiles = await syncProjectSupportFiles(ctx)
+              for (const warning of supportFiles.managedTsconfigWarnings) {
+                logger.warn(warning)
+              }
+            }
+            catch (error) {
+              const message = error instanceof Error ? error.message : String(error)
+              logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
+            }
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
             await runDev(target)

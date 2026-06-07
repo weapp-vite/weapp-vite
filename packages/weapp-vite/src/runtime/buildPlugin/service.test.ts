@@ -32,6 +32,7 @@ const watchWorkersMock = vi.hoisted(() => vi.fn())
 const buildWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
 const independentBuildMock = vi.hoisted(() => vi.fn(async () => ({ output: [] })))
 const independentGetOutputMock = vi.hoisted(() => vi.fn(() => undefined))
 const independentInvalidateMock = vi.hoisted(() => vi.fn())
@@ -47,6 +48,10 @@ const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
   close: vi.fn(),
 })))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: undefined })))
+const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
+  managedTsconfigChanged: false,
+  managedTsconfigWarnings: [],
+})))
 
 vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
@@ -75,6 +80,10 @@ vi.mock('../../createContext', () => ({
 
 vi.mock('../../utils/projectConfig', () => ({
   syncProjectConfigToOutput: syncProjectConfigToOutputMock,
+}))
+
+vi.mock('../supportFiles', () => ({
+  syncProjectSupportFiles: syncProjectSupportFilesMock,
 }))
 
 vi.mock('../libDts', () => ({
@@ -106,6 +115,7 @@ vi.mock('../../context/shared', () => ({
   logger: {
     info: loggerInfoMock,
     success: loggerSuccessMock,
+    warn: loggerWarnMock,
   },
 }))
 
@@ -267,6 +277,10 @@ describe('runtime buildPlugin service', () => {
       workersDir: undefined,
     })
     findJsEntryMock.mockResolvedValue({ path: undefined })
+    syncProjectSupportFilesMock.mockResolvedValue({
+      managedTsconfigChanged: false,
+      managedTsconfigWarnings: [],
+    })
     chokidarWatchMock.mockClear()
     delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
     delete process.env.WEAPP_VITE_HMR_PROFILE_JSON
@@ -632,6 +646,10 @@ describe('runtime buildPlugin service', () => {
     const originalScanState = ctx.runtimeState.scan
     ctx.runtimeState.json.cache.set('/project/src/app.json', { stale: true })
     ctx.runtimeState.autoImport.registry.set('StaleComp', { kind: 'local', name: 'StaleComp', from: '/project/src/components/StaleComp/index' } as any)
+    syncProjectSupportFilesMock.mockResolvedValueOnce({
+      managedTsconfigChanged: true,
+      managedTsconfigWarnings: ['srcRoot mismatch'],
+    })
 
     service.requestConfigRestart('app')
     watcher.emit('START')
@@ -644,6 +662,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(sidecarWatcher.close).toHaveBeenCalledTimes(1)
     expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledWith(ctx)
+    expect(loggerWarnMock).toHaveBeenCalledWith('srcRoot mismatch')
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
     expect(ctx.runtimeState.scan).toBe(originalScanState)
