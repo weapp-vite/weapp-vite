@@ -7,11 +7,12 @@ const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-const { cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
+const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
   return {
+    captureDevtoolsLogBaselineMock: vi.fn(() => ({ 'devtools.log': 120 })),
     cleanupResidualDevtoolsProcessesMock: vi.fn(async () => {}),
     connectMock: vi.fn(),
     execaMock: vi.fn(),
@@ -61,6 +62,7 @@ vi.mock('../utils/ide-devtools-cleanup', () => {
 
 vi.mock('../utils/ide-devtools-logs', () => {
   return {
+    captureDevtoolsLogBaseline: captureDevtoolsLogBaselineMock,
     scanRecentDevtoolsSimulatorBootIssues: scanRecentDevtoolsSimulatorBootIssuesMock,
   }
 })
@@ -123,10 +125,22 @@ function writeJson(target: string, value: Record<string, any>) {
   fs.writeFileSync(target, JSON.stringify(value, null, 2))
 }
 
-function createProjectFixture(projectRoot: string, appJson?: Record<string, any>) {
+function readJson(target: string) {
+  return JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, any>
+}
+
+function createProjectFixture(projectRoot: string, appJson?: Record<string, any>, projectConfig?: Record<string, any>) {
   writeJson(path.join(projectRoot, 'project.config.json'), {
     appid: 'wxb3d842a4a7e3440d',
     miniprogramRoot: 'dist',
+    ...projectConfig,
+  })
+  writeJson(path.join(projectRoot, 'project.private.config.json'), {
+    condition: {
+      miniprogram: {
+        list: [],
+      },
+    },
   })
   if (appJson) {
     writeJson(path.join(projectRoot, 'dist/app.json'), {
@@ -138,6 +152,7 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
 
 function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY
   delete process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT
@@ -152,6 +167,44 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
+}
+
+function readBridgePayloadFromFirstExecaCall() {
+  const firstCall = execaMock.mock.calls[0]
+  const args = firstCall?.[1] as string[] | undefined
+  const rawPayload = args?.find(arg => arg.startsWith('{'))
+  return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string } : undefined
+}
+
+function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: string | undefined) {
+  expect(projectPath).toBeTruthy()
+  expect(projectPath).not.toBe(sourceProjectPath)
+  expect(projectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
+  const wrapperAppJsonPath = path.join(projectPath!, 'app.json')
+  expect(fs.lstatSync(wrapperAppJsonPath).isSymbolicLink()).toBe(false)
+  expect(readJson(wrapperAppJsonPath)).toMatchObject({
+    pages: ['pages/index/index'],
+    subPackages: [],
+  })
+  expect(readJson(path.join(projectPath!, 'project.config.json'))).toMatchObject({
+    appid: 'wxb3d842a4a7e3440d',
+    miniprogramRoot: './',
+  })
+}
+
+function expectBridgeWrapperPluginRoot(projectPath: string | undefined) {
+  expect(projectPath).toBeTruthy()
+  const wrapperPluginJsonPath = path.join(projectPath!, 'dist-plugin/plugin.json')
+  expect(fs.lstatSync(wrapperPluginJsonPath).isSymbolicLink()).toBe(false)
+  expect(readJson(wrapperPluginJsonPath)).toMatchObject({
+    publicComponents: {},
+  })
+  expect(readJson(path.join(projectPath!, 'project.config.json'))).toMatchObject({
+    miniprogramRoot: './',
+    pluginRoot: 'dist-plugin',
+    srcMiniprogramRoot: './',
+  })
 }
 
 describe.sequential('automator launch resilience', () => {
@@ -159,6 +212,7 @@ describe.sequential('automator launch resilience', () => {
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
+    captureDevtoolsLogBaselineMock.mockReset()
     cleanupResidualDevtoolsProcessesMock.mockReset()
     connectMock.mockReset()
     execaMock.mockReset()
@@ -176,8 +230,11 @@ describe.sequential('automator launch resilience', () => {
       failed: false,
       status: 'END',
     })
+    captureDevtoolsLogBaselineMock.mockReturnValue({ 'devtools.log': 120 })
     scanRecentDevtoolsSimulatorBootIssuesMock.mockReturnValue([])
     clearLaunchEnv()
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'direct'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '0'
   })
 
   afterEach(() => {
@@ -301,6 +358,25 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('does not launch DevTools when app.json is missing subPackages', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '40'
+
+    createProjectFixture(sandboxRoot)
+    writeJson(path.join(sandboxRoot, 'dist/app.json'), {
+      pages: ['pages/index/index'],
+    })
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot })).rejects.toMatchObject({
+      name: 'WechatIdeLaunchAppConfigNotReadyError',
+      message: expect.stringContaining('reason=subPackages is missing'),
+    })
+
+    expect(launchMock).not.toHaveBeenCalled()
+    expect(connectMock).not.toHaveBeenCalled()
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+  })
+
   it('retries when warmup current page never becomes ready and closes previous miniProgram', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
@@ -337,7 +413,7 @@ describe.sequential('automator launch resilience', () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('records WeChat DevTools simulator boot log warnings without failing a recovered launch', async () => {
+  it('retries launch when recent DevTools logs include simulator boot errors', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -347,8 +423,16 @@ describe.sequential('automator launch resilience', () => {
       subPackages: [],
     })
 
-    const miniProgram = createMockMiniProgram()
-    launchMock.mockResolvedValueOnce(miniProgram)
+    const firstMiniProgram = createMockMiniProgram()
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
     scanRecentDevtoolsSimulatorBootIssuesMock
       .mockReturnValueOnce([{
         file: 'devtools.log',
@@ -359,11 +443,57 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot })
 
-    expect(launchMock).toHaveBeenCalledTimes(1)
-    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
-    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts direct connect when DevTools logs simulator boot errors before launch resolves', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+
+    const secondMiniProgram = createMockMiniProgram()
+    launchMock
+      .mockImplementationOnce(async () => {
+        await new Promise(resolve => setTimeout(resolve, 6_000))
+        return createMockMiniProgram()
+      })
+      .mockResolvedValueOnce(secondMiniProgram)
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
+    scanRecentDevtoolsSimulatorBootIssuesMock
+      .mockReturnValueOnce([{
+        file: 'devtools.log',
+        line: '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+      }])
+      .mockReturnValue([])
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })
+
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
   it('reopens devtools project when warmup current page hangs', async () => {
@@ -788,6 +918,37 @@ describe.sequential('automator launch resilience', () => {
     expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
+  it('prebuilds project index before direct DevTools launch when explicitly enabled', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const miniProgram = createMockMiniProgram()
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    })
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(execaMock).toHaveBeenCalledWith(
+      DEFAULT_WECHAT_CLI_PATH,
+      ['engine', 'build', sandboxRoot],
+      expect.objectContaining({
+        reject: false,
+        timeout: 70_000,
+      }),
+    )
+    expect(execaMock.mock.invocationCallOrder[0]).toBeLessThan(launchMock.mock.invocationCallOrder[0]!)
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+  })
+
   it('does not rewrite project config when launch options do not pass projectConfig', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
 
@@ -883,11 +1044,73 @@ describe.sequential('automator launch resilience', () => {
 
     expect(launchMock).not.toHaveBeenCalled()
     expect(execaMock).toHaveBeenCalledTimes(1)
+    expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromFirstExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  })
+
+  it('copies local pluginRoot into cli bridge wrapper project', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    }, {
+      compileType: 'plugin',
+      pluginRoot: 'dist-plugin',
+    })
+    writeJson(path.join(sandboxRoot, 'dist-plugin/plugin.json'), {
+      publicComponents: {},
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    const payload = readBridgePayloadFromFirstExecaCall()
+    expectBridgeWrapperProjectPath(sandboxRoot, payload?.projectPath)
+    expectBridgeWrapperPluginRoot(payload?.projectPath)
+    expect(connectMock).toHaveBeenCalledWith({
+      wsEndpoint: 'ws://127.0.0.1:9420',
+    })
+  })
+
+  it('can disable cli bridge wrapper project for focused launch debugging', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(readBridgePayloadFromFirstExecaCall()?.projectPath).toBe(sandboxRoot)
+    expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
 
   it('does not refresh project index after bridge connection by default', async () => {
@@ -1034,10 +1257,12 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
+    const prebuildProjectPath = execaMock.mock.calls[0]?.[1]?.[2] as string | undefined
+    expectBridgeWrapperProjectPath(sandboxRoot, prebuildProjectPath)
     expect(execaMock).toHaveBeenNthCalledWith(
       1,
       DEFAULT_WECHAT_CLI_PATH,
-      ['engine', 'build', sandboxRoot],
+      ['engine', 'build', prebuildProjectPath],
       expect.objectContaining({
         reject: false,
         timeout: 70_000,

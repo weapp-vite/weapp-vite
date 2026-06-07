@@ -71,8 +71,8 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{__wv_bind_0}}"`)
-    expect(result.script).toContain('__wv_bind_0')
+    expect(result.template).toContain(`my-card vue-slots="{{ {header:true} }}"`)
+    expect(result.script).not.toContain('__wv_bind_0')
   })
 
   it('injects slot metadata for kebab-case direct .vue imports without resolver', async () => {
@@ -92,8 +92,8 @@ import MyCard from './my-card.vue'
       '/project/src/pages/index/index.vue',
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{__wv_bind_0}}"`)
-    expect(result.script).toContain('__wv_bind_0')
+    expect(result.template).toContain(`my-card vue-slots="{{ {header:true} }}"`)
+    expect(result.script).not.toContain('__wv_bind_0')
   })
 
   it('does not inject slot metadata for kebab-case native auto-import components', async () => {
@@ -154,8 +154,8 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`resolver-card vue-slots="{{__wv_bind_0}}"`)
-    expect(result.script).toContain('__wv_bind_0')
+    expect(result.template).toContain(`resolver-card vue-slots="{{ {header:true} }}"`)
+    expect(result.script).not.toContain('__wv_bind_0')
   })
 
   it('matches fallback wrapper rules by auto-imported component defineOptions name', async () => {
@@ -232,6 +232,27 @@ const handle = (value: string) => value
     expect(result.script).toContain('__weapp_vite_inline_map')
     expect(result.script).toContain('i0')
     expect(result.script).toContain('ctx.handle')
+  })
+
+  it('bridges script setup simple template handlers through inline map', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view class="urgent-row-toggle" @tap="toggleUrgent">Tap</view>
+</template>
+<script setup lang="ts">
+function toggleUrgent(event: unknown) {
+  return event
+}
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.template).toContain('data-wi-tap="i0"')
+    expect(result.template).toContain('bindtap="__weapp_vite_inline"')
+    expect(result.script).toContain('__weapp_vite_inline_map')
+    expect(result.script).toContain('ctx.toggleUrgent($event)')
   })
 
   it('rewrites inline event assignments to script setup ref values', async () => {

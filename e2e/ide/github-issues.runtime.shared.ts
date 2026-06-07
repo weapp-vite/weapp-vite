@@ -71,7 +71,8 @@ const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const CURRENT_PAGE_PROTOCOL_TIMEOUT = 3_000
-const PAGE_WXML_PROTOCOL_TIMEOUT = 4_000
+const PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT = 8_000
+const PAGE_WXML_PROTOCOL_TIMEOUT = 8_000
 const PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH = 1_200
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 
@@ -366,7 +367,11 @@ function recordPageWxmlSnapshot(options: {
 
 export async function readPageWxml(page: any) {
   return await runAutomatorOp('read page wxml', async () => {
-    const element = await page.$('page')
+    const element = await runWithTimeout(
+      () => page.$('page'),
+      PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT,
+      'Page.queryPageRoot',
+    )
     if (!element) {
       throw new Error('Failed to find page element')
     }
@@ -376,9 +381,9 @@ export async function readPageWxml(page: any) {
       'Element.getWXML',
     ))
   }, {
-    timeoutMs: 5_000,
-    retries: 2,
-    retryDelayMs: 180,
+    timeoutMs: PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT + PAGE_WXML_PROTOCOL_TIMEOUT + 1_000,
+    retries: 5,
+    retryDelayMs: 360,
   })
 }
 
@@ -496,6 +501,7 @@ function isGithubIssuesLaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Timeout in warmup reLaunch')
     || message.includes('Timed out waiting page root after warmup reLaunch')
+    || isDevtoolsHttpPortError(error)
     || isDevtoolsSimulatorBootError(error)
 }
 

@@ -8,6 +8,7 @@ import { createSuiteReport } from './suiteReport'
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
 
@@ -206,6 +207,9 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
   const shouldDefaultDevtoolsBridgeLaunch = isDevtoolsVitestTask(task)
     && process.env[AUTOMATOR_LAUNCH_MODE_ENV] == null
     && task.env?.[AUTOMATOR_LAUNCH_MODE_ENV] == null
+  const shouldDisableDevtoolsPrebuild = isDevtoolsVitestTask(task)
+    && process.env[AUTOMATOR_PREBUILD_ENV] == null
+    && task.env?.[AUTOMATOR_PREBUILD_ENV] == null
 
   return {
     cwd: process.cwd(),
@@ -214,6 +218,9 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
       [REPORT_MARKER_ENV]: '1',
       ...(shouldDefaultDevtoolsBridgeLaunch
         ? { [AUTOMATOR_LAUNCH_MODE_ENV]: AUTOMATOR_LAUNCH_MODE_BRIDGE }
+        : {}),
+      ...(shouldDisableDevtoolsPrebuild
+        ? { [AUTOMATOR_PREBUILD_ENV]: '0' }
         : {}),
       ...task.env,
     },

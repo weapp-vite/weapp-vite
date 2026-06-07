@@ -126,6 +126,40 @@ describe('runtime', () => {
     })
   })
 
+  it('prints a default diagnostic warning for suspected setData loops', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ count: 0 }),
+      setData: {
+        loopWarning: {
+          maxFlushes: 2,
+          sampleWindowMs: 1000,
+          coolDownMs: 0,
+        },
+      },
+      methods: {
+        increment(this: any) {
+          this.count += 1
+        },
+      },
+    })
+
+    try {
+      const instance = app.mount(adapter)
+      instance.methods.increment()
+      await flushJobs()
+      instance.methods.increment()
+      await flushJobs()
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('reason=loopWarning'))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('flushes=3'))
+    }
+    finally {
+      warn.mockRestore()
+    }
+  })
+
   it('supports two-way bindings via bindModel', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({

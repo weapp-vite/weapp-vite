@@ -262,6 +262,7 @@ export async function compileScriptPhase(
       propsAliases,
       propsDerivedKeys,
       relaxStructuredTypeOnlyProps,
+      scopedSlotHostProperties: Boolean(templateCompiled?.componentGenerics && Object.keys(templateCompiled.componentGenerics).length > 0),
     })
     return {
       script: transformed.code,

@@ -27,6 +27,12 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     if (typeof info.computedDirtyKeys === 'number') {
       parts.push(`computedDirty=${info.computedDirtyKeys}`)
     }
+    if (typeof info.flushCount === 'number') {
+      parts.push(`flushes=${info.flushCount}`)
+    }
+    if (typeof info.windowMs === 'number') {
+      parts.push(`window=${info.windowMs}ms`)
+    }
     const message = `[wevu:setData] ${parts.join(' ')}`
     if (isFallbackReason(info.reason)) {
       // eslint-disable-next-line no-console

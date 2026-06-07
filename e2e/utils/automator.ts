@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
@@ -9,7 +10,7 @@ import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { launchHeadlessAutomator } from './automator.headless'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
-import { scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
+import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
@@ -23,6 +24,8 @@ const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /#initialize-error:\s*wait IDE port timeout/i,
+  /wait IDE port timeout/i,
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
   /EACCES/i,
@@ -74,11 +77,14 @@ const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Conte
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
+const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_BRIDGE_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 const AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY'
+const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
+const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects')
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /simulator not found/i,
@@ -259,6 +265,20 @@ interface LaunchProjectMeta {
   warmupRoute?: string
 }
 
+class LaunchAppConfigNotReadyError extends Error {
+  constructor(appConfigPath: string, reason: string) {
+    super(`[runtime:launch-preflight] app.json not ready: ${appConfigPath} reason=${reason}`)
+    this.name = 'WechatIdeLaunchAppConfigNotReadyError'
+  }
+}
+
+class DevtoolsSimulatorBootLogError extends Error {
+  constructor(label: string) {
+    super(`WeChat DevTools simulator boot error detected in IDE log during ${label}`)
+    this.name = 'WechatIdeSimulatorBootLogError'
+  }
+}
+
 interface LaunchAppConfigValidationResult {
   ready: boolean
   reason?: string
@@ -331,16 +351,27 @@ function isProjectPathTrustedByEnv(projectPath: string | undefined) {
   })
 }
 
-function resolveAutomatorLaunchMode() {
-  return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || ''
+export function resolveAutomatorLaunchMode() {
+  return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || AUTOMATOR_LAUNCH_MODE_BRIDGE
 }
 
 function shouldSkipAutomatorWarmup(skipWarmup?: boolean) {
   return skipWarmup === true || process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
 }
 
+export function shouldPrebuildAutomatorProject() {
+  return process.env[AUTOMATOR_PREBUILD_ENV] === '1'
+}
+
 function shouldPrebuildAutomatorBridgeProject() {
-  return process.env[AUTOMATOR_BRIDGE_PREBUILD_ENV] === '1'
+  const bridgePrebuild = process.env[AUTOMATOR_BRIDGE_PREBUILD_ENV]
+  if (bridgePrebuild === '0') {
+    return false
+  }
+  if (bridgePrebuild === '1') {
+    return true
+  }
+  return shouldPrebuildAutomatorProject()
 }
 
 function shouldRefreshAutomatorBridgeProjectAfterConnect() {
@@ -350,6 +381,10 @@ function shouldRefreshAutomatorBridgeProjectAfterConnect() {
 
 function shouldDisableAutomatorRelaunchCurrentReady() {
   return process.env[AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV] !== '0'
+}
+
+function shouldUseAutomatorBridgeWrapper() {
+  return process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] !== '0'
 }
 
 function resolveConsolePayload(entry: any) {
@@ -712,6 +747,7 @@ function sleep(ms: number) {
 
 function createDevtoolsSimulatorBootLogMonitor(project: string) {
   const sinceMs = Date.now()
+  const baseline = captureDevtoolsLogBaseline()
   let lastScanAt = 0
   let reportedIssueText = ''
 
@@ -723,18 +759,17 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
       }
       lastScanAt = now
 
-      const issues = scanRecentDevtoolsSimulatorBootIssues({ sinceMs })
+      const issues = scanRecentDevtoolsSimulatorBootIssues({ baseline, sinceMs })
       if (issues.length === 0) {
         return
       }
 
-      const firstIssue = issues[0]!
-      const issueText = firstIssue.line.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
+      const issueText = 'WeChat DevTools simulator boot error detected in IDE log'
       if (issueText === reportedIssueText) {
-        return
+        throw new DevtoolsSimulatorBootLogError(label)
       }
       reportedIssueText = issueText
-      process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText.slice(0, 240)} project=${project}\n`)
+      process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText} project=${project}\n`)
       appendIdeReportEvent({
         source: 'runtime',
         kind: 'message',
@@ -743,6 +778,7 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
         channel: 'devtools-log',
         text: `${label}: ${issueText}`,
       })
+      throw new DevtoolsSimulatorBootLogError(label)
     },
   }
 }
@@ -810,6 +846,67 @@ async function runWithTimeout<T>(
   }
 }
 
+async function runWithDevtoolsLogMonitor<T>(
+  factory: () => Promise<T>,
+  timeoutMs: number,
+  label: string,
+  monitor: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
+  onLateResolve?: (value: T) => Promise<void> | void,
+) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let interval: ReturnType<typeof setInterval> | null = null
+  let settled = false
+  let timedOut = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+        interval = setInterval(() => {
+          try {
+            monitor.assertClean(label)
+          }
+          catch (error) {
+            timedOut = true
+            reject(error)
+          }
+        }, DEVTOOLS_LOG_SCAN_INTERVAL)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (interval) {
+      clearInterval(interval)
+    }
+    if (!settled) {
+      void task
+        .then(async (value) => {
+          if (timedOut && onLateResolve) {
+            await onLateResolve(value)
+          }
+        })
+        .catch(() => {})
+    }
+  }
+}
+
 export function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isLikelySimulatorBootErrorMessage(message)
@@ -837,6 +934,47 @@ function readJsonObject(filePath: string): Record<string, any> | undefined {
   }
 }
 
+function writeJsonObject(filePath: string, value: Record<string, any>) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+
+function copyJsonConfigAsBridgeWrapper(sourcePath: string, targetPath: string, patch: Record<string, any> = {}) {
+  const source = readJsonObject(sourcePath)
+  if (!source) {
+    return
+  }
+  writeJsonObject(targetPath, {
+    ...source,
+    ...patch,
+  })
+}
+
+export function createBridgeWrapperProjectConfig(source: Record<string, any>, patch: Record<string, any> = {}) {
+  const {
+    miniprogramRoot: _miniprogramRoot,
+    srcMiniprogramRoot: _srcMiniprogramRoot,
+    qcloudRoot: _qcloudRoot,
+    ...rest
+  } = source
+
+  return {
+    compileType: 'miniprogram',
+    ...rest,
+    ...patch,
+    miniprogramRoot: './',
+    srcMiniprogramRoot: './',
+    setting: {
+      ...(source.setting && typeof source.setting === 'object' ? source.setting : {}),
+      ...(patch.setting && typeof patch.setting === 'object' ? patch.setting : {}),
+    },
+    condition: {
+      ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
+      ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
+    },
+  }
+}
+
 function resolveMiniprogramRoot(projectPath: string) {
   for (const fileName of ['project.config.json', 'project.private.config.json']) {
     const config = readJsonObject(path.join(projectPath, fileName))
@@ -849,6 +987,93 @@ function resolveMiniprogramRoot(projectPath: string) {
     }
   }
   return 'dist'
+}
+
+function resolveBridgeWrapperProjectConfig(projectPath: string) {
+  return readJsonObject(path.join(projectPath, 'project.config.json')) ?? {}
+}
+
+function normalizeProjectRelativeRoot(rawRoot: unknown) {
+  if (typeof rawRoot !== 'string') {
+    return undefined
+  }
+  const normalized = rawRoot.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
+  if (!normalized || normalized === '.') {
+    return undefined
+  }
+  if (normalized.split('/').includes('..')) {
+    return undefined
+  }
+  return normalized
+}
+
+function copyDistEntryForBridgeWrapper(sourcePath: string, targetPath: string, isDirectory: boolean) {
+  if (isDirectory) {
+    fs.cpSync(sourcePath, targetPath, {
+      dereference: true,
+      recursive: true,
+    })
+    return
+  }
+
+  fs.copyFileSync(sourcePath, targetPath)
+}
+
+function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: string, relativeRoot: string) {
+  const sourcePath = path.join(projectPath, relativeRoot)
+  if (!fs.existsSync(sourcePath)) {
+    return
+  }
+
+  const targetPath = path.join(wrapperRoot, relativeRoot)
+  const entry = fs.lstatSync(sourcePath)
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+}
+
+function prepareAutomatorBridgeWrapperProject(
+  projectPath: string | undefined,
+  projectMeta: LaunchProjectMeta | undefined,
+) {
+  if (!projectPath || !projectMeta || !shouldUseAutomatorBridgeWrapper()) {
+    return projectPath
+  }
+
+  const distRoot = path.dirname(projectMeta.appConfigPath)
+  if (!fs.existsSync(distRoot)) {
+    return projectPath
+  }
+
+  const hash = crypto
+    .createHash('sha1')
+    .update(path.resolve(projectPath))
+    .update('\0')
+    .update(path.resolve(distRoot))
+    .digest('hex')
+    .slice(0, 16)
+  const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
+  fs.rmSync(wrapperRoot, { recursive: true, force: true })
+  fs.mkdirSync(wrapperRoot, { recursive: true })
+
+  for (const entry of fs.readdirSync(distRoot, { withFileTypes: true })) {
+    const sourcePath = path.join(distRoot, entry.name)
+    const targetPath = path.join(wrapperRoot, entry.name)
+    copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+  }
+
+  const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
+  const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
+  if (pluginRoot) {
+    copyProjectRootForBridgeWrapper(projectPath, wrapperRoot, pluginRoot)
+  }
+
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig)
+  writeJsonObject(path.join(wrapperRoot, 'project.config.json'), wrapperProjectConfig)
+  copyJsonConfigAsBridgeWrapper(
+    path.join(projectPath, 'project.private.config.json'),
+    path.join(wrapperRoot, 'project.private.config.json'),
+  )
+
+  return wrapperRoot
 }
 
 function resolveRouteFromAppConfig(config: Record<string, any>) {
@@ -946,13 +1171,11 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
   const appConfigPath = path.resolve(projectPath, resolveMiniprogramRoot(projectPath), 'app.json')
   const start = Date.now()
   let lastReason = 'app.json is not readable'
-  let lastWarmupRoute: string | undefined
   while (Date.now() - start <= APP_CONFIG_READY_TIMEOUT) {
     const config = readJsonObject(appConfigPath)
     if (config) {
       const validation = validateLaunchAppConfig(config)
       lastReason = validation.reason ?? 'app.json is ready'
-      lastWarmupRoute = validation.warmupRoute
       if (validation.ready) {
         return {
           appConfigPath,
@@ -973,7 +1196,7 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
     channel: 'launch-preflight',
     text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)} reason=${lastReason}`,
   })
-  return { appConfigPath, warmupRoute: lastWarmupRoute }
+  throw new LaunchAppConfigNotReadyError(appConfigPath, lastReason)
 }
 
 function extractLoginRequiredMessage(text: string) {
@@ -1544,7 +1767,7 @@ async function refreshMiniProgramProjectIndex(
   process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
 }
 
-async function prebuildBridgeProjectIndex(
+async function prebuildAutomatorProjectIndex(
   projectPath: string | undefined,
   project: string,
   options: { cliPath?: string, cwd?: string } = {},
@@ -1554,7 +1777,7 @@ async function prebuildBridgeProjectIndex(
   }
 
   const cliPath = resolveWechatCliPath(options.cliPath)
-  process.stdout.write(`[info] [runtime:launch-step] bridge-prebuild-start project=${project}\n`)
+  process.stdout.write(`[info] [runtime:launch-step] prebuild-start project=${project}\n`)
   const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
     cwd: options.cwd,
     reject: false,
@@ -1565,14 +1788,14 @@ async function prebuildBridgeProjectIndex(
     const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
     const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
     if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
-      process.stdout.write(`[warn] [runtime:launch-step] bridge-prebuild-opened-with-nonzero project=${project} reason=${details}\n`)
+      process.stdout.write(`[warn] [runtime:launch-step] prebuild-opened-with-nonzero project=${project} reason=${details}\n`)
       await sleep(1_200)
       return
     }
-    throw new Error(`Wechat DevTools CLI bridge prebuild failed: ${details}`)
+    throw new Error(`Wechat DevTools CLI prebuild failed: ${details}`)
   }
   await sleep(1_200)
-  process.stdout.write(`[info] [runtime:launch-step] bridge-prebuild-ready project=${project}\n`)
+  process.stdout.write(`[info] [runtime:launch-step] prebuild-ready project=${project}\n`)
 }
 
 async function closeUnstableRelaunchSession(
@@ -1886,6 +2109,12 @@ async function launchAutomatorViaCliBridge(
   if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
     enhanceMiniProgramWithBridgeCliCleanup(miniProgram, bridgeResult.cliPid)
   }
+  const endpointPort = new URL(bridgeResult.wsEndpoint).port
+  Reflect.set(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA', {
+    port: Number.parseInt(endpointPort, 10),
+    projectPath: options.projectPath,
+    wsEndpoint: bridgeResult.wsEndpoint,
+  })
   await sleep(BRIDGE_CONNECT_SETTLE_DELAY)
   return miniProgram
 }
@@ -1929,14 +2158,24 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   ...projectConfig,
                 }
               : undefined
-            const launchOptions = {
+            const launchProjectPath = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
+              : rest.projectPath
+            const launchRest = {
               ...rest,
+              ...(launchProjectPath ? { projectPath: launchProjectPath } : {}),
+            }
+            const launchOptions = {
+              ...launchRest,
               timeout: launchTimeout,
               trustProject: resolvedTrustProject,
               ...(mergedProjectConfig ? { projectConfig: mergedProjectConfig } : {}),
             }
-            if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE && shouldPrebuildAutomatorBridgeProject()) {
-              await prebuildBridgeProjectIndex(rest.projectPath, project, {
+            const shouldPrebuild = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+              ? shouldPrebuildAutomatorBridgeProject()
+              : shouldPrebuildAutomatorProject()
+            if (shouldPrebuild) {
+              await prebuildAutomatorProjectIndex(launchProjectPath, project, {
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
               })
@@ -1944,7 +2183,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? await launchAutomatorViaCliBridge(launchOptions, project, devtoolsLogMonitor)
-              : await automator.launch(launchOptions)
+              : await runWithDevtoolsLogMonitor(
+                  () => automator.launch(launchOptions),
+                  launchTimeout,
+                  'connect direct',
+                  devtoolsLogMonitor,
+                  async (lateMiniProgram) => {
+                    try {
+                      await lateMiniProgram?.close?.()
+                    }
+                    catch {
+                    }
+                  },
+                )
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
             if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
@@ -1956,7 +2207,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               process.stdout.write(`[info] [runtime:launch-step] post-connect-refresh-skip project=${project}\n`)
             }
             else {
-              await refreshMiniProgramProjectIndex(rest.projectPath, project, {
+              await refreshMiniProgramProjectIndex(launchProjectPath, project, {
                 allowCliEngineBuildFallback: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
@@ -1978,7 +2229,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               cliPath: rest.cliPath,
               cwd: rest.cwd,
               project,
-              projectPath: rest.projectPath,
+              projectPath: launchProjectPath,
               skipPageRootCheck: skipRelaunchPageRootCheck,
             })
             return withRelaunch

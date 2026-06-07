@@ -72,26 +72,81 @@ function isWevuComponentTag(node: ElementNode, context: TransformContext) {
   return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
-function shouldAugmentPlainSlot(decl: ScopedSlotDeclaration, context: TransformContext, ownerNode: ElementNode) {
+function hasDirectWevuComponentSlotChild(children: any[], context: TransformContext): boolean {
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    const element = child as ElementNode
+    if (element.tag === 'template' || isBuiltinTag(resolveTemplateTagName(element.tag, context))) {
+      return false
+    }
+    return isWevuComponentTag(element, context)
+  })
+}
+
+function hasMiniProgramComponentSlotDescendant(children: any[], context: TransformContext): boolean {
+  const componentTags = context.miniProgramComponentTags
+  if (!componentTags?.size) {
+    return false
+  }
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    const element = child as ElementNode
+    if (componentTags.has(element.tag)) {
+      return true
+    }
+    return hasMiniProgramComponentSlotDescendant(element.children, context)
+  })
+}
+
+function hasNativeComponentSlotDescendant(children: any[], context: TransformContext): boolean {
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    const element = child as ElementNode
+    const resolvedTag = resolveTemplateTagName(element.tag, context)
+    if (!isBuiltinTag(resolvedTag) && element.tag.includes('-') && !isWevuComponentTag(element, context)) {
+      return true
+    }
+    return hasNativeComponentSlotDescendant(element.children, context)
+  })
+}
+
+function shouldAugmentPlainSlot(
+  decl: ScopedSlotDeclaration,
+  context: TransformContext,
+  ownerNode: ElementNode,
+  hasScopedSlotPropsSibling: boolean,
+) {
   if (context.scopedSlotsRequireProps) {
     return false
   }
   if (context.rewriteScopedSlot && !isWevuComponentTag(ownerNode, context)) {
     return false
   }
-  if (context.rewriteScopedSlot && !hasDirectComponentSlotChild(decl.children, context)) {
-    return false
+  if (context.rewriteScopedSlot) {
+    if (context.scopedSlotsCompiler === 'augmented' && !decl.implicitDefault) {
+      return true
+    }
+    return context.scopedSlotsCompiler === 'augmented'
+      ? hasMiniProgramComponentSlotDescendant(decl.children, context)
+      : hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context)
   }
   if (context.scopedSlotsCompiler === 'augmented') {
-    return true
-  }
-  if (!decl.implicitDefault) {
-    return false
+    if (!decl.implicitDefault) {
+      return true
+    }
+    return hasMiniProgramComponentSlotDescendant(decl.children, context)
+      || (!isWevuComponentTag(ownerNode, context) && hasNativeComponentSlotDescendant(decl.children, context))
   }
   if (!isWevuComponentTag(ownerNode, context)) {
     return false
   }
-  return hasDirectComponentSlotChild(decl.children, context)
+  return hasScopedSlotPropsSibling || hasDirectWevuComponentSlotChild(decl.children, context)
 }
 
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {
@@ -118,10 +173,19 @@ function resolveTemplateSlotCondition(node: ElementNode, context: TransformConte
   }
 }
 
+function resolveInlineStaticSlotName(name: string): string | null {
+  if (!name.startsWith('\'') || !name.endsWith('\'')) {
+    return null
+  }
+  const normalizedName = name.slice(1, -1)
+  return /^[A-Z_$][\w$]*$/i.test(normalizedName) ? normalizedName : null
+}
+
 function pushSlotNamesAttr(
   attrs: string[],
   slotNames: Array<{ name: string, condition?: string }>,
   context: TransformContext,
+  options?: { forInfo?: ForParseResult },
 ) {
   if (!slotNames.length) {
     return
@@ -147,11 +211,26 @@ function pushSlotNamesAttr(
     entries.set(item.name, entry)
   }
   const properties: string[] = []
+  const inlineProperties: string[] = []
+  let canInlineStatic = !options?.forInfo
   for (const [name, entry] of entries) {
     const value = entry.conditions.length
       ? entry.conditions.map(condition => `(${condition})`).join('||')
       : 'true'
+    const inlineName = resolveInlineStaticSlotName(name)
+    if (value !== 'true' || !inlineName) {
+      canInlineStatic = false
+    }
     properties.push(`[${name}]:${value}`)
+    inlineProperties.push(`${inlineName}:${value}`)
+  }
+  if (canInlineStatic) {
+    const inlineSlots = `{${inlineProperties.join(',')}}`
+    const mustache = context.mustacheInterpolation === 'spaced'
+      ? renderMustache(inlineSlots, context)
+      : `{{ ${inlineSlots} }}`
+    attrs.push(`${WEVU_SLOT_NAMES_ATTR}="${mustache}"`)
+    return
   }
   const slotNamesRef = registerRuntimeBindingExpression(`{${properties.join(',')}}`, context, {
     hint: 'vue-slots 元数据',
@@ -413,7 +492,7 @@ export function transformComponentWithSlots(
       children = renderMustache(vTextExp, context)
     }
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
-      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
+      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context, { forInfo: options?.forInfo })
     }
     const mergedAttrs = [...extraAttrs, ...attrs]
     const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
@@ -425,9 +504,10 @@ export function transformComponentWithSlots(
 
   const scopedSlotDeclarations: ScopedSlotDeclaration[] = []
   const plainSlotDeclarations: ScopedSlotDeclaration[] = []
+  const hasScopedSlotProps = slotDeclarations.some(decl => Object.keys(decl.props).length > 0)
   for (const decl of slotDeclarations) {
     const hasSlotProps = Object.keys(decl.props).length > 0
-    if (hasSlotProps || shouldAugmentPlainSlot(decl, context, node)) {
+    if (hasSlotProps || shouldAugmentPlainSlot(decl, context, node, hasScopedSlotProps)) {
       scopedSlotDeclarations.push(decl)
     }
     else {
@@ -458,7 +538,7 @@ export function transformComponentWithSlots(
     isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
-  pushSlotNamesAttr(mergedAttrs, slotNames, context)
+  pushSlotNamesAttr(mergedAttrs, slotNames, context, { forInfo: options?.forInfo })
   if (scopedSlotDeclarations.length) {
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
@@ -580,7 +660,7 @@ export function transformComponentWithSlotsFallback(
       children = renderMustache(vTextExp, context)
     }
     if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
-      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
+      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context, { forInfo: options?.forInfo })
     }
     const mergedAttrs = [...extraAttrs, ...attrs]
     const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
@@ -624,6 +704,7 @@ export function transformComponentWithSlotsFallback(
       mergedAttrs,
       slotDeclarations.map(decl => ({ name: stringifySlotName(decl.name, context), condition: decl.condition })),
       context,
+      { forInfo: options?.forInfo },
     )
   }
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''

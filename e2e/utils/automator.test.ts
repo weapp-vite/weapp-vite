@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { extractDevtoolsCliLoginState, formatRuntimeStatsLine, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
+import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, resolveAutomatorLaunchMode, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -53,6 +53,89 @@ describe('automator', () => {
     const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
 
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it('treats WeChat DevTools prebuild port timeout as an infra launch error', () => {
+    const error = new Error('Wechat DevTools CLI prebuild failed: - initialize ✖ IDE may already started at port 18085, trying to connect ✖ #initialize-error: wait IDE port timeout')
+
+    expect(isDevtoolsHttpPortError(error)).toBe(true)
+  })
+
+  it('defaults IDE launches to bridge mode without direct prebuild', () => {
+    const previousLaunchMode = process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+    const previousPrebuild = process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+
+    try {
+      expect(resolveAutomatorLaunchMode()).toBe('bridge')
+      expect(shouldPrebuildAutomatorProject()).toBe(false)
+
+      process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'direct'
+      process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '1'
+
+      expect(resolveAutomatorLaunchMode()).toBe('direct')
+      expect(shouldPrebuildAutomatorProject()).toBe(true)
+    }
+    finally {
+      if (previousLaunchMode == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = previousLaunchMode
+      }
+      if (previousPrebuild == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = previousPrebuild
+      }
+    }
+  })
+
+  it('creates self-contained bridge wrapper project config', () => {
+    const config = createBridgeWrapperProjectConfig({
+      appid: 'wxb3d842a4a7e3440d',
+      miniprogramRoot: 'dist/',
+      srcMiniprogramRoot: 'dist/',
+      pluginRoot: 'plugin/',
+      compileType: 'miniprogram',
+      setting: {
+        es6: true,
+        packNpmRelationList: [
+          {
+            packageJsonPath: './package.json',
+            miniprogramNpmDistDir: './dist',
+          },
+        ],
+      },
+      condition: {
+        miniprogram: {
+          list: [],
+        },
+      },
+    }, {
+      setting: {
+        packNpmRelationList: [],
+      },
+    })
+
+    expect(config).toMatchObject({
+      appid: 'wxb3d842a4a7e3440d',
+      compileType: 'miniprogram',
+      miniprogramRoot: './',
+      srcMiniprogramRoot: './',
+      pluginRoot: 'plugin/',
+      setting: {
+        es6: true,
+        packNpmRelationList: [],
+      },
+      condition: {
+        miniprogram: {
+          list: [],
+        },
+      },
+    })
   })
 
   it('keeps legacy runtime issue totals while exposing ordinary log counts', () => {

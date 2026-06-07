@@ -92,6 +92,11 @@ describe('automator helpers', () => {
       expect(isDevtoolsHttpPortError(error)).toBe(true)
     })
 
+    it('recognises DevTools CLI IDE port timeout', () => {
+      const error = new Error('#initialize-error: wait IDE port timeout')
+      expect(isDevtoolsHttpPortError(error)).toBe(true)
+    })
+
     it('recognises EACCES error', () => {
       const error = new Error('EACCES: permission denied')
       expect(isDevtoolsHttpPortError(error)).toBe(true)

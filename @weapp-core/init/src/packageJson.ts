@@ -12,7 +12,7 @@ import { resolveOutputPath } from './utils/path'
 const FALLBACK_DEP_VERSIONS: Record<string, string> = {
   'miniprogram-api-typings': '^4.1.0',
   'typescript': '^5.9.2',
-  'weapp-tailwindcss': '^4.3.3',
+  'weapp-tailwindcss': '^5.0.4',
 }
 
 /**

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   assertNoRecentDevtoolsSimulatorBootIssues,
+  captureDevtoolsLogBaseline,
   scanRecentDevtoolsSimulatorBootIssues,
 } from '../utils/ide-devtools-logs'
 
@@ -50,5 +51,37 @@ describe('ide devtools logs', () => {
       rootDir: sandboxRoot,
       sinceMs: startedAt,
     })).toThrow('WeChat DevTools simulator boot error detected')
+  })
+
+  it('ignores stale simulator boot lines already present in a reused log file', () => {
+    const startedAt = Date.now() - 1_000
+    const logFile = writeLog(sandboxRoot, [
+      'simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+      '[2026-05-03 12:08:14.848][INFO] stale line',
+    ].join('\n'))
+    const baseline = captureDevtoolsLogBaseline({ rootDir: sandboxRoot })
+
+    fs.appendFileSync(logFile, '\n[2026-05-03 12:08:15.000][INFO] launch started\n', 'utf8')
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      baseline,
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    fs.appendFileSync(
+      logFile,
+      `[${timestamp}][ERROR] simulator launch catch error TypeError: Cannot read property 'subPackages' of undefined\n`,
+      'utf8',
+    )
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      baseline,
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('subPackages')
   })
 })

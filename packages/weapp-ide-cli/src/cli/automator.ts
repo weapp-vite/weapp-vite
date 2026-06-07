@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Launcher } from '@weapp-vite/miniprogram-automator'
 import { readCustomConfig } from '../config/custom'
+import { resolveAutomatorProjectPath } from './automatorProject'
 import { resolveCliPath } from './resolver'
 import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
@@ -38,6 +39,8 @@ const AUTOMATOR_LAUNCH_TIMEOUT_RE = /Wait timed out after \d+ ms/i
 const AUTOMATOR_WS_CONNECT_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+/i
 const DEVTOOLS_PROTOCOL_TIMEOUT_RE = /DevTools did not respond to protocol method (\S+) within \d+ms/i
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /#initialize-error:\s*wait IDE port timeout/i,
+  /wait IDE port timeout/i,
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
   /EACCES/i,
@@ -274,10 +277,11 @@ export async function launchAutomator(options: AutomatorOptions) {
   const launcher = new Launcher()
   let lastError: unknown = null
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+  const resolvedProject = await resolveAutomatorProjectPath(projectPath)
 
   if (config.autoBootstrapDevtools !== false) {
     bootstrapResult = await bootstrapWechatDevtoolsSettings({
-      projectPath,
+      projectPath: resolvedProject.projectPath,
       trustProject: resolvedTrustProject,
     })
   }
@@ -291,7 +295,7 @@ export async function launchAutomator(options: AutomatorOptions) {
       const miniProgram = await launcher.launch({
         cliPath: resolvedCliPath,
         ...(port ? { port } : {}),
-        projectPath,
+        projectPath: resolvedProject.projectPath,
         timeout,
         trustProject: resolvedTrustProject,
       })

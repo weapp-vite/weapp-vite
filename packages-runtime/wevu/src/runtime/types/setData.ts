@@ -158,6 +158,35 @@ export interface SetDataSnapshotOptions {
   diagnostics?: 'off' | 'fallback' | 'always'
 
   /**
+   * 疑似运行时更新循环诊断。
+   *
+   * 在短时间内连续触发 setData flush 时输出告警，帮助定位页面/组件、
+   * 调度模式、patch 信号和 computed dirty 状态。
+   */
+  loopWarning?: boolean | {
+    /**
+     * 是否启用告警。
+     * @default true
+     */
+    enabled?: boolean
+    /**
+     * 统计窗口（毫秒）。
+     * @default 1000
+     */
+    sampleWindowMs?: number
+    /**
+     * 窗口内超过该次数触发告警。
+     * @default 50
+     */
+    maxFlushes?: number
+    /**
+     * 告警冷却时间（毫秒），避免刷屏。
+     * @default 5000
+     */
+    coolDownMs?: number
+  }
+
+  /**
    * debug 触发时机：
    * - fallback：仅在回退 diff / 超阈值时触发（默认）
    * - always：每次 flush 都触发
@@ -201,11 +230,14 @@ export interface SetDataSnapshotOptions {
 
 export interface SetDataDebugInfo {
   mode: 'patch' | 'diff'
-  reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes'
+  reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes' | 'loopWarning'
   pendingPatchKeys: number
   payloadKeys: number
   estimatedBytes?: number
   bytes?: number
   mergedSiblingParents?: number
   computedDirtyKeys?: number
+  flushCount?: number
+  windowMs?: number
+  message?: string
 }

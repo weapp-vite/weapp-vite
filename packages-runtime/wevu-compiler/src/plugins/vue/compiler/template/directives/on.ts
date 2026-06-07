@@ -18,6 +18,10 @@ const SIMPLE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
 const isSimpleHandler = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 
+function isScriptSetupHandlerBinding(value: string, context: TransformContext) {
+  return isSimpleHandler(value) && Boolean(context.scriptSetupBindings?.[value])
+}
+
 function shouldUseDetailPayload(options?: { isComponent?: boolean }) {
   return options?.isComponent === true
 }
@@ -77,7 +81,8 @@ export function transformOnDirective(
   }
   const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content.trim() : ''
   const useDetailPayload = shouldUseDetailPayload(options)
-  const inlineSource = useDetailPayload && isSimpleHandler(rawExpValue)
+  const shouldBridgeSimpleHandler = useDetailPayload || isScriptSetupHandlerBinding(rawExpValue, context)
+  const inlineSource = shouldBridgeSimpleHandler && isSimpleHandler(rawExpValue)
     ? `${rawExpValue}($event)`
     : rawExpValue
   const isInlineExpression = inlineSource && !isSimpleHandler(inlineSource)

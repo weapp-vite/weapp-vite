@@ -36,9 +36,38 @@ function resolveMiniprogramRoot(projectPath: string) {
   return 'dist'
 }
 
+function isLaunchAppConfigReady(config: Record<string, any> | undefined) {
+  if (!config) {
+    return false
+  }
+
+  const pages = Array.isArray(config.pages) ? config.pages : []
+  if (!pages.some(item => typeof item === 'string' && item.trim())) {
+    return false
+  }
+
+  if (!Object.hasOwn(config, 'subPackages') || !Array.isArray(config.subPackages)) {
+    return false
+  }
+
+  if (config.subpackages != null && !Array.isArray(config.subpackages)) {
+    return false
+  }
+
+  const subPackages = [
+    ...config.subPackages,
+    ...(Array.isArray(config.subpackages) ? config.subpackages : []),
+  ]
+  return subPackages.every((subPackage) => {
+    return subPackage
+      && typeof subPackage === 'object'
+      && Array.isArray((subPackage as Record<string, any>).pages)
+  })
+}
+
 async function ensureLoginCheckProjectReady(projectPath: string) {
   const appConfigPath = path.resolve(projectPath, resolveMiniprogramRoot(projectPath), 'app.json')
-  if (fs.existsSync(appConfigPath)) {
+  if (isLaunchAppConfigReady(readJsonObject(appConfigPath))) {
     return
   }
 

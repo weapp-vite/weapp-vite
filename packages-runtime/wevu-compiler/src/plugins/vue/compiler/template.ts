@@ -29,6 +29,14 @@ const HTML_VOID_TAGS = new Set([
   'wbr',
 ])
 
+function resolveTemplateIsPage(filename: string, options?: TemplateCompileOptions) {
+  if (options?.isPage !== true) {
+    return false
+  }
+  const normalized = filename.replace(/\\/g, '/')
+  return !/(?:^|\/)(?:components|layouts|custom-tab-bar)\//.test(normalized)
+}
+
 export type { MiniProgramPlatform } from './template/platform'
 export {
   alipayPlatform,
@@ -125,6 +133,7 @@ export function compileVueTemplateToWxml(
       filename,
       warnings,
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
+      isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
       propsDerivedKeys: options?.propsDerivedKeys,
       scriptSetupBindings: options?.scriptSetupBindings,
@@ -161,6 +170,7 @@ export function compileVueTemplateToWxml(
       functionPropPaths: new Set(),
       functionPropNames: Array.from(options?.functionPropNames ?? []),
       wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
+      miniProgramComponentTags: options?.miniProgramComponentTags ? new Set(options.miniProgramComponentTags) : undefined,
     }
 
     // 转换 AST 到 WXML

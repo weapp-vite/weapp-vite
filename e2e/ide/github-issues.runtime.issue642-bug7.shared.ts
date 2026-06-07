@@ -1,13 +1,73 @@
 import { expect } from 'vitest'
 import {
+  delay,
   getSharedMiniProgram,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-function countToken(wxml: string, token: string) {
-  return wxml.split(token).length - 1
+async function waitForIssue642Bug7Runtime(page: any, expectedTick: number, timeoutMs = 8_000) {
+  const startedAt = Date.now()
+  let latest: any
+
+  while (Date.now() - startedAt < timeoutMs) {
+    latest = await page.callMethod('_runE2E')
+
+    const ownerReady = typeof latest?.owner?.dataOwnerId === 'string'
+      && latest.owner.dataOwnerId.length > 0
+      && latest.owner.runtimeOwnerId === latest.owner.dataOwnerId
+    const providedReady = latest?.provided?.dataVueSlots?.default === true
+      && latest?.provided?.propertyVueSlots?.default === true
+      && latest?.provided?.hasDefault === true
+    const scopedReady = latest?.scoped?.dataSlotOwnerId === latest?.owner?.dataOwnerId
+      && latest?.scoped?.propsSlotOwnerId === latest?.owner?.dataOwnerId
+
+    if (latest?.tick === expectedTick && ownerReady && providedReady && scopedReady) {
+      return latest
+    }
+
+    await delay(160)
+  }
+
+  return latest
+}
+
+async function readRenderedSlotState(page: any) {
+  const scoped = await page.$('[data-issue642-bug7-cell1-state="scoped"]')
+  const provided = await page.$('[data-issue642-bug7-cell2-state="provided"]')
+  const fallback = await page.$('[data-issue642-bug7-cell2-state="fallback"]')
+
+  return {
+    scopedText: scoped ? (await scoped.text()).trim() : '',
+    scopedValue: scoped ? await scoped.attribute('data-issue642-bug7-scoped-value') : undefined,
+    hasScoped: Boolean(scoped),
+    providedText: provided ? (await provided.text()).trim() : '',
+    hasProvided: Boolean(provided),
+    hasFallback: Boolean(fallback),
+  }
+}
+
+async function waitForIssue642Bug7RenderedSlots(page: any, timeoutMs = 8_000) {
+  const startedAt = Date.now()
+  let latest: Awaited<ReturnType<typeof readRenderedSlotState>> | undefined
+
+  while (Date.now() - startedAt < timeoutMs) {
+    latest = await readRenderedSlotState(page)
+    const scopedReady = latest.hasScoped
+      && latest.scopedText === '1'
+      && latest.scopedValue === '1'
+    const providedReady = latest.hasProvided
+      && latest.providedText === '1234'
+      && !latest.hasFallback
+
+    if (scopedReady && providedReady) {
+      return latest
+    }
+
+    await delay(160)
+  }
+
+  return latest ?? await readRenderedSlotState(page)
 }
 
 export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string) => void }) {
@@ -18,24 +78,12 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
       throw new Error('Failed to launch issue-642-bug7 page')
     }
 
-    const initialRuntime = await issuePage.callMethod('_runE2E')
+    const initialRuntime = await waitForIssue642Bug7Runtime(issuePage, 0)
     expect(initialRuntime).toMatchObject({
       tick: 0,
       owner: {
         dataOwnerId: expect.any(String),
         runtimeOwnerId: expect.any(String),
-        dataBind0: {
-          default: true,
-        },
-        dataBind1: {
-          default: true,
-        },
-        runtimeBind0: {
-          default: true,
-        },
-        runtimeBind1: {
-          default: true,
-        },
       },
       scoped: {
         propsSlotOwnerId: expect.any(String),
@@ -53,15 +101,19 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     })
     expect(initialRuntime.owner.dataOwnerId).not.toBe('')
     expect(initialRuntime.owner.runtimeOwnerId).toBe(initialRuntime.owner.dataOwnerId)
-    expect(initialRuntime.scoped.propsSlotOwnerId).not.toBe('')
-    expect(initialRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.scoped.propsSlotOwnerId)
+    expect(initialRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
+    expect(initialRuntime.scoped.propsSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
     expect(initialRuntime.provided.dataVueSlots).toEqual(initialRuntime.provided.propertyVueSlots)
 
-    const initialWxml = await readPageWxml(issuePage)
-    expect(countToken(initialWxml, 'data-issue642-bug7-cell1-state="scoped"')).toBe(1)
-    expect(initialWxml).toContain('data-issue642-bug7-scoped-value="1"')
-    expect(countToken(initialWxml, 'data-issue642-bug7-cell2-state="provided"')).toBe(1)
-    expect(initialWxml).not.toContain('data-issue642-bug7-cell2-state="fallback"')
+    const initialSlots = await waitForIssue642Bug7RenderedSlots(issuePage)
+    expect(initialSlots).toEqual({
+      scopedText: '1',
+      scopedValue: '1',
+      hasScoped: true,
+      providedText: '1234',
+      hasProvided: true,
+      hasFallback: false,
+    })
 
     const action = await issuePage.$('[data-issue642-bug7-action="bump"]')
     if (!action) {
@@ -69,28 +121,12 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     }
     await action.tap()
 
-    const updatedRuntime = await issuePage.callMethod('_runE2E')
+    const updatedRuntime = await waitForIssue642Bug7Runtime(issuePage, 1)
     expect(updatedRuntime).toMatchObject({
       tick: 1,
       owner: {
         dataOwnerId: initialRuntime.owner.dataOwnerId,
         runtimeOwnerId: initialRuntime.owner.runtimeOwnerId,
-        dataBind0: {
-          default: true,
-        },
-        dataBind1: {
-          default: true,
-        },
-        runtimeBind0: {
-          default: true,
-        },
-        runtimeBind1: {
-          default: true,
-        },
-      },
-      scoped: {
-        dataSlotOwnerId: initialRuntime.scoped.dataSlotOwnerId,
-        propsSlotOwnerId: initialRuntime.scoped.propsSlotOwnerId,
       },
       provided: {
         dataVueSlots: {
@@ -103,12 +139,18 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
       },
     })
     expect(updatedRuntime.provided.dataVueSlots).toEqual(updatedRuntime.provided.propertyVueSlots)
+    expect(updatedRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
+    expect(updatedRuntime.scoped.propsSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
 
-    const updatedWxml = await readPageWxml(issuePage)
-    expect(countToken(updatedWxml, 'data-issue642-bug7-cell1-state="scoped"')).toBe(1)
-    expect(updatedWxml).toContain('data-issue642-bug7-scoped-value="1"')
-    expect(countToken(updatedWxml, 'data-issue642-bug7-cell2-state="provided"')).toBe(1)
-    expect(updatedWxml).not.toContain('data-issue642-bug7-cell2-state="fallback"')
+    const updatedSlots = await waitForIssue642Bug7RenderedSlots(issuePage)
+    expect(updatedSlots).toEqual({
+      scopedText: '1',
+      scopedValue: '1',
+      hasScoped: true,
+      providedText: '1234',
+      hasProvided: true,
+      hasFallback: false,
+    })
   }
   finally {
     await releaseSharedMiniProgram(miniProgram)

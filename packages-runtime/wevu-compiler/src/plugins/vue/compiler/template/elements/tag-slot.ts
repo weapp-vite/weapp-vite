@@ -184,6 +184,7 @@ export function createScopedSlotComponent(
     ...context,
     scopedSlotComponents: context.scopedSlotComponents,
     componentGenerics: {},
+    miniProgramComponentTags: context.miniProgramComponentTags,
     scopeStack: [],
     slotPropStack: [],
     rewriteScopedSlot: true,
@@ -582,7 +583,14 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     }
   }
 
-  if (!slotPropsExp && (context.scopedSlotsRequireProps || (slotNameInfo.type !== 'default' && context.scopedSlotsCompiler !== 'augmented'))) {
+  if (
+    !slotPropsExp
+    && (
+      context.scopedSlotsRequireProps
+      || slotNameInfo.type !== 'default'
+      || !context.isPage
+    )
+  ) {
     return slotTag
   }
 

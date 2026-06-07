@@ -70,7 +70,6 @@ describe('scoped slot native output snapshots', () => {
       'pages/index/index.__scoped-slot-default-0.json',
       'pages/index/index.__scoped-slot-default-0.wxml',
     ])
-    expect(files.some(file => file.includes('__scoped-slot-default-1'))).toBe(false)
 
     const outputSnapshot: Record<string, string> = {}
     for (const file of files) {
@@ -82,6 +81,10 @@ describe('scoped slot native output snapshots', () => {
     }
 
     expect(outputSnapshot).toMatchSnapshot('text-outputs')
+    expect(outputSnapshot['pages/index/index.wxml']).toContain('generic:scoped-slots-default')
+    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
+      'this.__wvOwnerProxy.tabItems',
+    )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
       '<van-tabbar-item wx:for="{{__wv_bind_0}}"',
     )
@@ -90,14 +93,6 @@ describe('scoped slot native output snapshots', () => {
     )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(
       '>{{__wv_item_0.label}}</van-tabbar-item>',
-    )
-    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).not.toContain('generic:scoped-slots-default')
-    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
-      'createWevuScopedSlotComponent({ computed: __wevuComputed })',
-    )
-    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain('this.__wvOwnerProxy.tabItems')
-    expect(outputSnapshot['pages/index/index.js']).toContain(
-      `console.error("[wevu] 模板运行时表达式执行失败: __wv_bind_0 = {['default']:true}", __wv_expr_err)`,
     )
   })
 })

@@ -153,6 +153,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       prelinkMaxKeys,
       debug,
       diagnostics,
+      loopWarning,
       debugWhen,
       debugSampleRate,
       elevateTopKeyThreshold,
@@ -163,12 +164,18 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       shouldIncludeKey,
     } = resolveSetDataOptions(setDataOptions)
     const diagnosticsLogger = createDiagnosticsLogger(diagnostics)
-    const mergedDebug = (debug || diagnosticsLogger)
+    const loopWarningLogger = diagnostics === 'off' && loopWarning
+      ? createDiagnosticsLogger('fallback')
+      : undefined
+    const mergedDebug = (debug || diagnosticsLogger || loopWarningLogger)
       ? (info: SetDataDebugInfo) => {
           if (typeof debug === 'function') {
             debug(info)
           }
           diagnosticsLogger?.(info)
+          if (info.reason === 'loopWarning') {
+            loopWarningLogger?.(info)
+          }
         }
       : undefined
     const mergedDebugWhen = diagnostics === 'always'
@@ -223,6 +230,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       debug: mergedDebug,
       debugWhen: mergedDebugWhen,
       debugSampleRate,
+      loopWarning,
       runTracker: () => tracker?.(),
       isMounted: () => mounted,
       initialSnapshot: adapterInitialSnapshot && typeof adapterInitialSnapshot === 'object'

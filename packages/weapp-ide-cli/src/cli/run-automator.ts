@@ -99,6 +99,35 @@ function validateUnsupportedOptions(command: string, argv: readonly string[], al
   }
 }
 
+function createCommandTimeoutError(command: string, timeout: number) {
+  const error = new Error(i18nText(
+    `${command} 命令在 ${timeout}ms 内未收到 DevTools 回包，无法连接到当前项目的微信开发者工具自动化 websocket。请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 \`wechatwebdevtools cli auto --project ...\` 进程后重试。`,
+    `${command} command did not receive a DevTools response within ${timeout}ms. Cannot connect to the Wechat DevTools automation websocket for the current project. Please confirm the current DevTools window is the target project. If you recently ran other e2e / screenshot tasks, close extra windows or stop stale \`wechatwebdevtools cli auto --project ...\` processes and retry.`,
+  )) as Error & { code: string }
+  error.code = 'DEVTOOLS_PROTOCOL_TIMEOUT'
+  return error
+}
+
+async function runCommandHandlerWithTimeout(command: string, args: ParsedAutomatorArgs, task: Promise<void>) {
+  const timeout = args.timeout ?? 30_000
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      task,
+      new Promise<void>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(createCommandTimeoutError(command, timeout))
+        }, timeout)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
+}
+
 const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
   'navigate': createDefinition({
     description: { zh: '跳转到页面（保留当前页面栈）', en: 'Navigate to a page (keep current page in stack)' },
@@ -317,5 +346,5 @@ export async function runAutomatorCommand(command: string, argv: string[]) {
   }
 
   const args = parseAutomatorArgs(argv)
-  await definition.handler({ argv, args })
+  await runCommandHandlerWithTimeout(command, args, definition.handler({ argv, args }))
 }

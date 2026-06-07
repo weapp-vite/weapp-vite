@@ -16,8 +16,20 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   code,
   map: null,
 })))
+const injectScopedSlotOwnerSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+  map: null,
+})))
+const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+  map: null,
+})))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
+const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_'))))
+const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
@@ -49,9 +61,13 @@ vi.mock('../injectPageFeatures', () => ({
 
 vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
+  injectScopedSlotHostPropertiesInJs: injectScopedSlotHostPropertiesInJsMock,
+  injectScopedSlotOwnerSetDataPickInJs: injectScopedSlotOwnerSetDataPickInJsMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
+  pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
+  shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
 }))
 
 vi.mock('../../../performance/onPageScrollDiagnostics', () => ({
@@ -111,10 +127,26 @@ describe('vue transform plugin shared helpers', () => {
       code,
       map: null,
     }))
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReset()
+    injectScopedSlotOwnerSetDataPickInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+      map: null,
+    }))
+    injectScopedSlotHostPropertiesInJsMock.mockReset()
+    injectScopedSlotHostPropertiesInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+      map: null,
+    }))
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
     mayNeedInjectSetDataPickInJsMock.mockReset()
     mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
+    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockReset()
+    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_')))
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(false)
     collectOnPageScrollPerformanceWarningsMock.mockReset()
     collectOnPageScrollPerformanceWarningsMock.mockReturnValue([])
     loggerWarnMock.mockReset()
@@ -621,6 +653,112 @@ describe('vue transform plugin shared helpers', () => {
     expect(result.script).toBe('Page({ onReachBottom() {}, __setDataPick: ["count"] })')
   })
 
+  it('injects scoped slot owner setDataPick even when auto pick is disabled', async () => {
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        weappViteConfig: {
+          wevu: {
+            autoSetDataPick: false,
+          },
+        },
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />', {
+      astEngine: 'oxc',
+    })
+    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['count'])
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
+  })
+
+  it('uses scoped slot owner setDataPick when auto pick collects too many bind keys', async () => {
+    const keys = ['currentStep', ...Array.from({ length: 201 }, (_, index) => `__wv_bind_${index}`), 'formState']
+    collectSetDataPickKeysFromTemplateMock.mockReturnValue(keys)
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(true)
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />', {
+      astEngine: 'oxc',
+    })
+    expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
+    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
+  })
+
+  it('injects scoped slot owner setDataPick when template has only owner id binding', async () => {
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+    collectSetDataPickKeysFromTemplateMock.mockReturnValue([])
+    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __slotOwnerPick: true })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />', {
+      astEngine: 'oxc',
+    })
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
+  })
+
   it('skips transform entry script finalize side effects when conditions are not met', async () => {
     const result = await finalizeTransformEntryScript({
       result: {
@@ -643,6 +781,32 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('App({})')
+  })
+
+  it('injects slot presence host properties when native slot fallback uses vueSlots', async () => {
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block>',
+        script: 'Component({ setup() { return {} } })',
+      } as any,
+      filename: '/project/src/components/PlainSlotCard/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('vueSlots')
   })
 
   it('finalizes transform entry code with style imports, scriptless stubs, and dev hashes', () => {

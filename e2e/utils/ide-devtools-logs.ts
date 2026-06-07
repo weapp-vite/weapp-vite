@@ -21,6 +21,8 @@ export interface DevtoolsLogIssue {
   line: string
 }
 
+export type DevtoolsLogBaseline = Record<string, number>
+
 function resolveDefaultDevtoolsDataRoot() {
   if (process.platform === 'darwin') {
     return path.join(os.homedir(), 'Library/Application Support/微信开发者工具')
@@ -73,6 +75,28 @@ function resolveRecentLogFiles(rootDir: string, sinceMs: number) {
     })
 }
 
+export function captureDevtoolsLogBaseline(options: {
+  rootDir?: string
+} = {}): DevtoolsLogBaseline {
+  const rootDir = options.rootDir || resolveDevtoolsLogRoot()
+  const baseline: DevtoolsLogBaseline = {}
+
+  for (const logDir of resolveWeappLogDirs(rootDir)) {
+    for (const entry of safeReadDir(logDir)) {
+      if (!entry.isFile() || !DEVTOOLS_LOG_FILE_PATTERN.test(entry.name)) {
+        continue
+      }
+      const filePath = path.join(logDir, entry.name)
+      const stat = safeStat(filePath)
+      if (stat) {
+        baseline[filePath] = stat.size
+      }
+    }
+  }
+
+  return baseline
+}
+
 function isSimulatorBootIssue(line: string) {
   return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(line))
 }
@@ -87,6 +111,7 @@ function parseDevtoolsLogLineTime(line: string) {
 }
 
 export function scanRecentDevtoolsSimulatorBootIssues(options: {
+  baseline?: DevtoolsLogBaseline
   rootDir?: string
   sinceMs: number
 }): DevtoolsLogIssue[] {
@@ -96,7 +121,12 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
   for (const filePath of resolveRecentLogFiles(rootDir, options.sinceMs)) {
     let content = ''
     try {
-      content = fs.readFileSync(filePath, 'utf8')
+      const raw = fs.readFileSync(filePath)
+      const baselineSize = options.baseline?.[filePath]
+      const start = typeof baselineSize === 'number' && baselineSize > 0 && baselineSize <= raw.length
+        ? baselineSize
+        : 0
+      content = raw.subarray(start).toString('utf8')
     }
     catch {
       continue

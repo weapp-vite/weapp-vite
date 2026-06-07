@@ -34,6 +34,11 @@ export function createSetDataScheduler(options: {
   debug: ((info: SetDataDebugInfo) => void) | undefined
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
+  loopWarning: false | {
+    sampleWindowMs: number
+    maxFlushes: number
+    coolDownMs: number
+  }
   runTracker: () => void
   isMounted: () => boolean
   initialSnapshot?: Record<string, any>
@@ -66,6 +71,7 @@ export function createSetDataScheduler(options: {
     debug,
     debugWhen,
     debugSampleRate,
+    loopWarning,
     runTracker,
     isMounted,
     initialSnapshot,
@@ -81,6 +87,8 @@ export function createSetDataScheduler(options: {
   const needsFullSnapshot = { value: setDataStrategy === 'patch' }
   const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
   const fallbackTopKeys = new Set<string>()
+  const flushTimes: number[] = []
+  let lastLoopWarningAt = Number.NEGATIVE_INFINITY
   const initialStateKeys = new Set(
     initialState && typeof initialState === 'object'
       ? Object.keys(initialState)
@@ -241,6 +249,35 @@ export function createSetDataScheduler(options: {
     catch {
       // 忽略异常
     }
+  }
+
+  const recordFlushForLoopWarning = () => {
+    if (!loopWarning) {
+      return
+    }
+    const current = Date.now()
+    flushTimes.push(current)
+    const windowStart = current - loopWarning.sampleWindowMs
+    while (flushTimes.length && flushTimes[0] < windowStart) {
+      flushTimes.shift()
+    }
+    if (flushTimes.length <= loopWarning.maxFlushes) {
+      return
+    }
+    if (loopWarning.coolDownMs > 0 && current - lastLoopWarningAt < loopWarning.coolDownMs) {
+      return
+    }
+    lastLoopWarningAt = current
+    emitDebug({
+      mode: setDataStrategy,
+      reason: 'loopWarning',
+      pendingPatchKeys: pendingPatches.size + fallbackTopKeys.size,
+      payloadKeys: 0,
+      computedDirtyKeys: includeComputed ? dirtyComputedKeys.size : 0,
+      flushCount: flushTimes.length,
+      windowMs: loopWarning.sampleWindowMs,
+      message: `疑似运行时更新循环：${flushTimes.length} 次 setData flush/${loopWarning.sampleWindowMs}ms`,
+    })
   }
 
   const collect = () => collectSnapshot({
@@ -443,6 +480,7 @@ export function createSetDataScheduler(options: {
     if (!isMounted()) {
       return
     }
+    recordFlushForLoopWarning()
     // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
     runTracker()
 

@@ -50,7 +50,7 @@ function getTool(tools: Map<string, ToolHandler>, name: string) {
   return tool
 }
 
-async function createRuntimeTools(): Promise<RuntimeToolsContext> {
+async function createRuntimeTools(miniProgram: any): Promise<RuntimeToolsContext> {
   const tools = new Map<string, ToolHandler>()
   const server = {
     registerTool(name: string, _definition: unknown, handler: ToolHandler) {
@@ -60,7 +60,12 @@ async function createRuntimeTools(): Promise<RuntimeToolsContext> {
 
   const manager = registerRuntimeTools(server as unknown as McpServer, {
     runtimeHooks: {
-      connectMiniProgram,
+      connectMiniProgram: async (options) => {
+        if (path.resolve(options.projectPath) === APP_ROOT) {
+          return miniProgram
+        }
+        return await connectMiniProgram(options)
+      },
     },
     workspaceRoot: path.resolve(import.meta.dirname, '../..'),
   })
@@ -87,7 +92,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       projectPath: APP_ROOT,
       warmupRoute: INDEX_ROUTE,
     })
-    runtimeTools = await createRuntimeTools()
+    runtimeTools = await createRuntimeTools(miniProgram)
   }, 420_000)
 
   afterAll(async () => {

@@ -4,6 +4,7 @@ import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
 import { Buffer } from 'node:buffer'
 import {
+  WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_PROPS_ATTR,
@@ -18,6 +19,7 @@ import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 import { resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../utils'
 import { normalizePath, toPosixPath } from '../utils/path'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
+import { injectScopedSlotHostPropertiesInJs } from './vue/transform/injectSetDataPick'
 
 interface AssetPluginState {
   ctx: CompilerContext
@@ -163,7 +165,7 @@ function withScopedSlotGenericSlots(
 }
 
 function createScopedSlotHostPropertiesSource() {
-  return `${WEVU_SLOT_OWNER_ID_PROP}: { type: String, value: "" }, ${WEVU_SLOT_SCOPE_KEY}: { type: null, value: null }`
+  return `${WEVU_SLOT_NAMES_PROP}: { type: null, value: null }, ${WEVU_SLOT_OWNER_ID_PROP}: { type: String, value: "" }, ${WEVU_SLOT_SCOPE_KEY}: { type: null, value: null }`
 }
 
 function withScopedSlotHostProperties(
@@ -176,10 +178,12 @@ function withScopedSlotHostProperties(
     return source
   }
 
-  const propertySource = createScopedSlotHostPropertiesSource()
-  if (/properties\s*:\s*\{/.test(source)) {
-    return source.replace(/properties\s*:\s*\{/, matched => `${matched} ${propertySource},`)
+  const injected = injectScopedSlotHostPropertiesInJs(source)
+  if (injected.transformed) {
+    return injected.code
   }
+
+  const propertySource = createScopedSlotHostPropertiesSource()
   return source.replace(/Component\(\s*\{/, matched => `${matched} properties: { ${propertySource} },`)
 }
 

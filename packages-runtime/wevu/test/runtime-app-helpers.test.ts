@@ -21,6 +21,21 @@ describe('runtime: app helpers', () => {
     expect(resolved.shouldIncludeKey('b')).toBe(false)
   })
 
+  it('enables setData loop warnings by default', () => {
+    const resolved = resolveSetDataOptions()
+
+    expect(resolved.loopWarning).toEqual({
+      sampleWindowMs: 1000,
+      maxFlushes: 50,
+      coolDownMs: 5000,
+    })
+  })
+
+  it('allows disabling setData loop warnings explicitly', () => {
+    expect(resolveSetDataOptions({ loopWarning: false }).loopWarning).toBe(false)
+    expect(resolveSetDataOptions({ loopWarning: { enabled: false } }).loopWarning).toBe(false)
+  })
+
   it('tracks computed values and marks dirty keys', () => {
     const state = reactive({ count: 0 })
     const { computedRefs, computedProxy, dirtyComputedKeys, createTrackedComputed } = createComputedAccessors({

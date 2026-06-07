@@ -2,7 +2,7 @@ import type { File as BabelFile, ObjectExpression, Program } from '@weapp-vite/a
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
-import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY } from '@weapp-core/constants'
+import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
@@ -48,6 +48,56 @@ function injectFunctionPropPaths(componentOptionsObject: ObjectExpression, paths
     ),
   )
   return true
+}
+
+function createScopedSlotHostPropertyDefinition(typeName: 'String' | 'null', value: string | null) {
+  return t.objectExpression([
+    t.objectProperty(t.identifier('type'), typeName === 'String' ? t.identifier('String') : t.nullLiteral()),
+    t.objectProperty(t.identifier('value'), value === null ? t.nullLiteral() : t.stringLiteral(value)),
+  ])
+}
+
+function createScopedSlotHostProperties() {
+  return [
+    t.objectProperty(
+      t.identifier(WEVU_SLOT_NAMES_PROP),
+      createScopedSlotHostPropertyDefinition('null', null),
+    ),
+    t.objectProperty(
+      t.identifier(WEVU_SLOT_OWNER_ID_PROP),
+      createScopedSlotHostPropertyDefinition('String', ''),
+    ),
+    t.objectProperty(
+      t.identifier(WEVU_SLOT_SCOPE_KEY),
+      createScopedSlotHostPropertyDefinition('null', null),
+    ),
+  ]
+}
+
+function injectScopedSlotHostProperties(componentOptionsObject: ObjectExpression) {
+  const propertiesProp = getObjectPropertyByKey(componentOptionsObject, 'properties')
+  if (!propertiesProp) {
+    componentOptionsObject.properties.splice(
+      0,
+      0,
+      t.objectProperty(t.identifier('properties'), t.objectExpression(createScopedSlotHostProperties())),
+    )
+    return true
+  }
+  if (!t.isObjectExpression(propertiesProp.value)) {
+    return false
+  }
+
+  let changed = false
+  for (const prop of createScopedSlotHostProperties().reverse()) {
+    const key = t.isIdentifier(prop.key) ? prop.key.name : undefined
+    if (!key || getObjectPropertyByKey(propertiesProp.value, key)) {
+      continue
+    }
+    propertiesProp.value.properties.unshift(prop)
+    changed = true
+  }
+  return changed
 }
 
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
@@ -262,6 +312,10 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && options?.relaxStructuredTypeOnlyProps) {
     transformed = relaxStructuredTypeOnlyProps(componentOptionsObject) || transformed
+  }
+
+  if (componentOptionsObject && options?.scopedSlotHostProperties) {
+    transformed = injectScopedSlotHostProperties(componentOptionsObject) || transformed
   }
 
   if (componentOptionsObject) {

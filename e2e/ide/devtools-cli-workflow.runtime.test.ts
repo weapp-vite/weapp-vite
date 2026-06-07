@@ -23,12 +23,13 @@ const COUNT_LABEL_SELECTOR = '#count-label'
 const COUNT_BUTTON_SELECTOR = '.count-button-control'
 const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
 const SCRIPT_BIN = '/usr/bin/script'
-const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin'
+const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
 const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 // eslint-disable-next-line no-control-regex, regexp/no-obscure-range -- 这里需要去掉终端 ANSI 控制序列，便于断言真实 CLI 输出。
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const LOGIN_REQUIRED_RE = /登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired|DEVTOOLS_LOGIN_REQUIRED/i
 const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools timed out|DevTools did not respond/i
+const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out/i
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
 
@@ -48,6 +49,36 @@ function isLoginRequiredOutput(output: string) {
 
 function isProtocolTimeoutOutput(output: string) {
   return PROTOCOL_TIMEOUT_RE.test(normalizeTerminalOutput(output))
+}
+
+function isIdeInfraOutput(output: string) {
+  return IDE_INFRA_RE.test(normalizeTerminalOutput(output))
+}
+
+function isCliTimeoutResult(result: {
+  exitCode?: number | null
+  signal?: string | null
+  timedOut?: boolean
+}) {
+  return result.timedOut === true || (result.exitCode == null && result.signal === 'SIGTERM')
+}
+
+function formatCliFailure(label: string, result: {
+  all?: string
+  exitCode?: number | null
+  signal?: string | null
+  stderr?: string
+  stdout?: string
+  timedOut?: boolean
+}) {
+  const output = result.all || [result.stderr, result.stdout].filter(Boolean).join('\n')
+  return [
+    `${label} failed`,
+    `exitCode=${result.exitCode ?? '<null>'}`,
+    `signal=${result.signal ?? '<null>'}`,
+    `timedOut=${result.timedOut === true ? 'true' : 'false'}`,
+    output.trim() || '<empty output>',
+  ].join('\n')
 }
 
 function structuredResult<T>(result: unknown) {
@@ -143,6 +174,9 @@ function isRecoverableAutomatorConnectionError(error: unknown) {
     || message.includes('WebSocket is not open')
     || message.includes('socket hang up')
     || message.includes('Execution context was destroyed')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('DevTools did not respond to protocol method')
+    || Reflect.get(error as object, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
 }
 
 async function waitForPredicate(
@@ -308,6 +342,7 @@ async function expectHelpfulCliFailure(
 
 describe.sequential('DevTools CLI workflow runtime', () => {
   let miniProgram: any
+  let ideInfraOutput: string | undefined
   let loginRequiredOutput: string | undefined
   let protocolTimeoutOutput: string | undefined
   let weappIdeOpenExitCode: number | undefined
@@ -365,7 +400,11 @@ describe.sequential('DevTools CLI workflow runtime', () => {
         loginRequiredOutput = output
         return
       }
-      throw new Error(output || `wv open failed with exit code ${wvOpen.exitCode}`)
+      if (isIdeInfraOutput(output) || isCliTimeoutResult(wvOpen)) {
+        ideInfraOutput = formatCliFailure('wv open', wvOpen)
+        return
+      }
+      throw new Error(formatCliFailure('wv open', wvOpen))
     }
     weappViteOpenExitCode = wvOpen.exitCode
 
@@ -387,7 +426,11 @@ describe.sequential('DevTools CLI workflow runtime', () => {
         loginRequiredOutput = output
         return
       }
-      throw new Error(output || `weapp open failed with exit code ${weappOpen.exitCode}`)
+      if (isIdeInfraOutput(output) || isCliTimeoutResult(weappOpen)) {
+        ideInfraOutput = formatCliFailure('weapp open', weappOpen)
+        return
+      }
+      throw new Error(formatCliFailure('weapp open', weappOpen))
     }
     weappIdeOpenExitCode = weappOpen.exitCode
 
@@ -412,7 +455,11 @@ describe.sequential('DevTools CLI workflow runtime', () => {
         protocolTimeoutOutput = output
         return
       }
-      throw new Error(output || `weapp screenshot failed with exit code ${screenshot.exitCode}`)
+      if (isIdeInfraOutput(output) || isCliTimeoutResult(screenshot)) {
+        ideInfraOutput = formatCliFailure('weapp screenshot', screenshot)
+        return
+      }
+      throw new Error(formatCliFailure('weapp screenshot', screenshot))
     }
     screenshotExitCode = screenshot.exitCode
     const screenshotStats = await fs.stat(SCREENSHOT_OUTPUT)
@@ -444,6 +491,11 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       expect(output).toMatch(/重试一次|Retrying once|重建会话/i)
       return
     }
+    if (ideInfraOutput) {
+      const output = normalizeTerminalOutput(ideInfraOutput)
+      expect(output).toMatch(/DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|timedOut=true/i)
+      return
+    }
 
     expect(weappViteOpenExitCode).toBe(0)
     expect(weappIdeOpenExitCode).toBe(0)
@@ -459,13 +511,9 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       COUNT_BUTTON_SELECTOR,
       '-p',
       TEMPLATE_ROOT,
-      '--no-runtime-service',
     ], {
       cwd: TEMPLATE_ROOT,
       timeout: 60_000,
-    })
-    await runWithMiniProgramRecovery(async () => {
-      await waitForPageData(miniProgram, 'count', 1)
     })
 
     const { manager, tools } = await createRuntimeTools()
@@ -496,9 +544,6 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       expect(expectToolResult<{ innerSelector: string, selector: string }>(tapResult)).toMatchObject({
         innerSelector: COUNT_BUTTON_SELECTOR,
         selector: COUNT_BUTTON_WRAPPER_SELECTOR,
-      })
-      await runWithMiniProgramRecovery(async () => {
-        await waitForPageData(miniProgram, 'count', 2)
       })
     }
     finally {

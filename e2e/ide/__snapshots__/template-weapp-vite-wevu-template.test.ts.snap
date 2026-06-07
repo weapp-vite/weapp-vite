@@ -66,6 +66,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn"
+          data-wi-tap="i0"
           role="button"
           aria-disabled="false">
           使用 default 布局
@@ -75,6 +76,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--primary"
+          data-wi-tap="i1"
           role="button"
           aria-disabled="false">
           切到 admin 布局
@@ -84,6 +86,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--ghost"
+          data-wi-tap="i2"
           role="button"
           aria-disabled="false">
           关闭布局
@@ -161,6 +164,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn"
+          data-wi-tap="i0"
           role="button"
           aria-disabled="false">
           使用 default 布局
@@ -170,6 +174,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--primary"
+          data-wi-tap="i1"
           role="button"
           aria-disabled="false">
           切到 admin 布局
@@ -179,6 +184,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--ghost"
+          data-wi-tap="i2"
           role="button"
           aria-disabled="false">
           关闭布局

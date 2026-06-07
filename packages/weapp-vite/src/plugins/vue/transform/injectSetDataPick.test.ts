@@ -1,7 +1,7 @@
-import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
+import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { getWxmlDirectivePrefix } from '../../../platform'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs } from './injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from './injectSetDataPick'
 
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
@@ -54,6 +54,71 @@ defineComponent({
     expect(injected.code).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
     expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
     expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
+  })
+
+  it('injects only scoped slot owner bridge keys when auto pick is disabled', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+defineComponent({
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotOwnerSetDataPickInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
+    expect(injected.code).not.toContain('"__wv_bind_0"')
+  })
+
+  it('keeps normal state keys when injecting scoped slot owner pick after pruning auto pick', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+defineComponent({
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotOwnerSetDataPickInJs(source, ['currentStep', 'formState'])
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('"currentStep"')
+    expect(injected.code).toContain('"formState"')
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+    expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
+  })
+
+  it('detects oversized scoped slot owner auto pick keys', () => {
+    const smallKeys = Array.from({ length: 200 }, (_, index) => `__wv_bind_${index}`)
+    const largeKeys = Array.from({ length: 201 }, (_, index) => `__wv_bind_${index}`)
+
+    expect(shouldUseScopedSlotOwnerOnlySetDataPick(smallKeys)).toBe(false)
+    expect(shouldUseScopedSlotOwnerOnlySetDataPick(largeKeys)).toBe(true)
+    expect(shouldUseScopedSlotOwnerOnlySetDataPick([...largeKeys.slice(0, 200), 'count'])).toBe(false)
+  })
+
+  it('prunes oversized auto bind keys but keeps normal state keys', () => {
+    const bindKeys = Array.from({ length: 201 }, (_, index) => `__wv_bind_${index}`)
+
+    expect(pruneScopedSlotOwnerAutoSetDataPickKeys([
+      'currentStep',
+      ...bindKeys,
+      'formState',
+      'paceModel.value',
+      'formState.urgent',
+    ])).toEqual([
+      'currentStep',
+      'formState',
+      'paceModel.value',
+      'formState.urgent',
+    ])
   })
 
   it('detects whether js may need setData.pick injection', () => {
@@ -119,6 +184,7 @@ createWevuComponent({
     const injected = injectScopedSlotHostPropertiesInJs(source)
     expect(injected.transformed).toBe(true)
     expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
     expect(injected.code).toContain('__wvSlotOwnerId')
     expect(injected.code).toContain('__wvSlotScope')
   })
@@ -136,6 +202,46 @@ defineComponent({
     const injected = injectScopedSlotHostPropertiesInJs(source)
     expect(injected.transformed).toBe(true)
     expect(injected.code).toContain('title: String')
+    expect(injected.code).toContain('vueSlots')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
+  })
+
+  it('injects scoped slot host properties into compiled runtime calls', () => {
+    const source = `
+const require_runtime = require("../../../weapp-vendors/wevu-watch.js")
+require_runtime.so({
+  setData: { pick: ["__wvSlotOwnerId"] },
+  __wevu_isPage: true,
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
+    expect(injected.code).toContain('__wvSlotOwnerId')
+    expect(injected.code).toContain('__wvSlotScope')
+  })
+
+  it('injects scoped slot host properties into compiled component runtime calls without page marker', () => {
+    const source = `
+const require_runtime = require("../../../weapp-vendors/wevu-watch.js")
+require_runtime.so({
+  allowNullPropInput: true,
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectScopedSlotHostPropertiesInJs(source)
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('properties')
+    expect(injected.code).toContain('vueSlots')
     expect(injected.code).toContain('__wvSlotOwnerId')
     expect(injected.code).toContain('__wvSlotScope')
   })

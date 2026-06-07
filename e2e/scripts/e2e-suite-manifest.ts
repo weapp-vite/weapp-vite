@@ -9,7 +9,6 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
@@ -58,12 +57,6 @@ const IDE_TEMPLATES_PATTERNS = [
 ]
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
-])
-const IDE_DIRECT_LAUNCH_PATTERNS = new Set([
-  'ide/app-lifecycle.test.ts',
-  'ide/app-prelude-native.runtime.test.ts',
-  'ide/plugin-demo.runtime.test.ts',
-  'ide/template-wevu-features-app.test.ts',
 ])
 const IDE_SMOKE_TESTS = [
   'ide/index.test.ts',
@@ -120,23 +113,8 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
   }
 }
 
-function isGithubIssuesIdeTask(label: string) {
-  return label.startsWith('ide/github-issues.runtime.')
-}
-
-function shouldUseDirectIdeLaunch(label: string) {
-  return isGithubIssuesIdeTask(label) || IDE_DIRECT_LAUNCH_PATTERNS.has(label)
-}
-
 function createIdeVitestTask(filePath: string) {
-  const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
-  if (shouldUseDirectIdeLaunch(task.label)) {
-    task.env = {
-      ...task.env,
-      [AUTOMATOR_LAUNCH_MODE_ENV]: 'direct',
-    }
-  }
-  return task
+  return createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
 }
 
 function isIdeHelperTest(label: string) {

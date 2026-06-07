@@ -1,4 +1,5 @@
 import os from 'node:os'
+import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -27,12 +28,21 @@ function createCtx(root: string, weappViteConfig: Record<string, any> = {}) {
         return path.relative(root, p).replace(/\\/g, '/')
       },
     },
+    resolve(source: string, importer?: string) {
+      return Promise.resolve({
+        id: importer ? path.resolve(path.dirname(importer), source) : source,
+      })
+    },
     scanService: {
       appEntry: { json: { pages: ['pages/index/index'] } },
       loadAppEntry: async () => ({ json: { pages: ['pages/index/index'] } }),
       loadSubPackages: () => [],
     },
   } as any
+}
+
+function getSetDataPickSection(code: string | undefined) {
+  return code?.match(/setData\s*:\s*\{\s*pick\s*:\s*\[([\s\S]*?)\]/)?.[1] ?? ''
 }
 
 describe('auto setData.pick injection', () => {
@@ -100,6 +110,95 @@ const count = ref(0)
 
       expect(transformed?.code).not.toContain('setData')
       expect(transformed?.code).not.toContain('pick')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('injects scoped slot owner pick when autoSetDataPick is disabled', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-setdata-pick-scoped-slot-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          autoSetDataPick: false,
+        },
+      }))
+      const file = path.join(srcRoot, 'pages/index/index.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template>
+  <SlotCell
+    :p0="{ value: count }"
+    :p1="{ value: count + 1 }"
+    __wvSlotOwnerId="{{__wvOwnerId || ''}}"
+  />
+</template>
+<script setup lang="ts">
+import SlotCell from '../../components/SlotCell/index.vue'
+
+const count = 1
+</script>
+        `.trim(),
+        file,
+      )
+
+      const pickSection = getSetDataPickSection(transformed?.code)
+      expect(transformed?.code).toContain('setData')
+      expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
+      expect(pickSection).toContain('"__wv_bind_0"')
+      expect(pickSection).toContain('"__wv_bind_1"')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('uses owner id pick for oversized scoped slot host pages even when autoSetDataPick is enabled', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-setdata-pick-scoped-slot-large-'))
+    const srcRoot = path.join(root, 'src')
+    const attrs = Array.from({ length: 201 }, (_, index) => `:p${index}="{ value: count + ${index} }"`).join('\n    ')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          autoSetDataPick: true,
+        },
+      }))
+      const file = path.join(srcRoot, 'pages/index/index.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template>
+  <view>{{ count }}</view>
+  <SlotCell
+    ${attrs}
+    __wvSlotOwnerId="{{__wvOwnerId || ''}}"
+  />
+</template>
+<script setup lang="ts">
+import SlotCell from '../../components/SlotCell/index.vue'
+
+const count = 1
+</script>
+        `.trim(),
+        file,
+      )
+
+      const pickSection = getSetDataPickSection(transformed?.code)
+      expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_NAMES_PROP}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
+      expect(pickSection).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
+      expect(pickSection).toContain('"count"')
+      expect(pickSection).not.toContain('"__wv_bind_0"')
+      expect(pickSection).not.toContain('"__wv_bind_200"')
     }
     finally {
       await fs.remove(root)
