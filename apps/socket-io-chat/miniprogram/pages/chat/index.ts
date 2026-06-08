@@ -1,3 +1,4 @@
+import type { PageInstance } from 'miniprogram-api-typings'
 import type { Socket } from 'socket.io-client'
 import type { ChatMessage, PresenceEvent } from './chat'
 import { io } from 'socket.io-client'
@@ -10,31 +11,45 @@ import {
   socketUrl,
 } from './chat'
 
-const userId = createMiniUserId()
+interface ChatPageData {
+  draft: string
+  messages: ChatMessage[]
+  scrollIntoView: string
+  userId: string
+}
 
-let socket: Socket | undefined
+interface ChatPageInstance extends PageInstance<ChatPageData> {
+  socket?: Socket
+  connectSocket: () => void
+  setMessages: (messages: ChatMessage[]) => void
+}
 
-Page({
+Page<ChatPageData, ChatPageInstance>({
+  socket: undefined as Socket | undefined,
   data: {
     draft: '',
     messages: [] as ChatMessage[],
     scrollIntoView: '',
-    userId,
+    userId: '',
   },
   onLoad() {
+    this.setData({
+      userId: createMiniUserId(),
+    })
     this.connectSocket()
   },
   onUnload() {
-    socket?.disconnect()
-    socket = undefined
+    this.socket?.disconnect()
+    this.socket = undefined
   },
   connectSocket() {
-    socket = io(socketUrl, {
+    const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
     })
+    this.socket = socket
 
     socket.on('connect', () => {
-      socket?.emit('join', {
+      socket.emit('join', {
         room: chatRoom,
         userName: miniUserName,
       })
@@ -65,9 +80,9 @@ Page({
     if (!text) {
       return
     }
-    socket?.emit('chat:send', {
+    this.socket?.emit('chat:send', {
       room: chatRoom,
-      userId,
+      userId: this.data.userId,
       userName: miniUserName,
       text,
       platform: 'mini',
