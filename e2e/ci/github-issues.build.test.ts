@@ -747,6 +747,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expectSetDataPickKeys(scopedProbeJs, ['vueSlots', '__wvSlotOwnerId', '__wvSlotScope'])
   })
 
+  it('issue #674: injects vueSlots into slot-aware components without declared props', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-674/index.wxml')
+    const slotProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-674/SlotProbe/index.wxml')
+    const slotProbeJsPath = path.join(DIST_ROOT, 'components/issue-674/SlotProbe/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const slotProbeWxml = await fs.readFile(slotProbeWxmlPath, 'utf-8')
+    const slotProbeJs = await fs.readFile(slotProbeJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('Issue674SlotProbe')
+    expect(pageWxml).toContain('vue-slots=')
+    expect(pageWxml).toContain('header:true')
+    expect(pageWxml).toContain('default:true')
+    expect(slotProbeWxml).toContain('<slot />')
+    expect(slotProbeWxml).toContain('<slot name="header" />')
+    expect(slotProbeWxml).not.toContain('vueSlots&&vueSlots')
+    expect(slotProbeJs).toContain('"vueSlots"')
+    expect(slotProbeJs).toContain('"__wvSlotOwnerId"')
+    expect(slotProbeJs).toContain('"__wvSlotScope"')
+  })
+
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
     await runBuild()
 

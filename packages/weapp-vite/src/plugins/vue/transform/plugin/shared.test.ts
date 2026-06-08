@@ -26,6 +26,7 @@ const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: str
   code,
   map: null,
 })))
+const mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock = vi.hoisted(() => vi.fn(() => false))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_'))))
@@ -66,6 +67,7 @@ vi.mock('../injectSetDataPick', () => ({
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
+  mayNeedScopedSlotHostPropertiesForSetupSlotsInJs: mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock,
   pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
   shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
 }))
@@ -139,6 +141,8 @@ describe('vue transform plugin shared helpers', () => {
       code,
       map: null,
     }))
+    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReset()
+    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(false)
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
     mayNeedInjectSetDataPickInJsMock.mockReset()
@@ -806,6 +810,34 @@ describe('vue transform plugin shared helpers', () => {
     })
 
     expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('vueSlots')
+  })
+
+  it('injects slot host properties when setup uses slots without template vueSlots fallback', async () => {
+    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(true)
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<view><slot /></view>',
+        script: 'import { useSlots } from "wevu/internal-runtime"; Component({ setup() { return { slots: useSlots() } } })',
+      } as any,
+      filename: '/project/src/components/SlotProbe/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
     expect(result.script).toContain('vueSlots')
   })
 
