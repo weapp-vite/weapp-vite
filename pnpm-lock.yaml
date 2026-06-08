@@ -58,8 +58,8 @@ catalogs:
       specifier: ^3.5.35
       version: 3.5.35
     '@vue/language-core':
-      specifier: ^3.3.3
-      version: 3.3.3
+      specifier: ^3.3.4
+      version: 3.3.4
     antd-mini:
       specifier: ^3.4.3
       version: 3.4.3
@@ -175,11 +175,11 @@ catalogs:
       specifier: ^3.5.35
       version: 3.5.35
     vue-tsc:
-      specifier: ^3.3.3
-      version: 3.3.3
+      specifier: ^3.3.4
+      version: 3.3.4
     weapp-tailwindcss:
-      specifier: ^5.0.4
-      version: 5.0.4
+      specifier: ^5.0.5
+      version: 5.0.5
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -204,8 +204,8 @@ catalogs:
       version: 1.15.1
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.0.4
-      version: 5.0.4
+      specifier: 5.0.5
+      version: 5.0.5
 
 overrides:
   rolldown: 1.1.0
@@ -303,7 +303,7 @@ importers:
         version: 4.1.8(@vitest/browser@4.1.8)(vitest@4.1.8)
       '@vue/language-core':
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.3.4
       '@vue/reactivity':
         specifier: ^3.5.35
         version: 3.5.35
@@ -504,7 +504,7 @@ importers:
         version: 0.33.0
       tsdown:
         specifier: 0.22.2
-        version: 0.22.2(tsx@4.22.4)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.3(typescript@6.0.3))
+        version: 0.22.2(tsx@4.22.4)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.4(typescript@6.0.3))
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -522,7 +522,7 @@ importers:
         version: 6.0.3
       unbuild:
         specifier: ^3.6.1
-        version: 3.6.1(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3))
+        version: 3.6.1(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3))
       vite:
         specifier: 'catalog:'
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0)
@@ -537,7 +537,7 @@ importers:
         version: 3.5.35(typescript@6.0.3)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       why-is-node-running:
         specifier: ^3.2.2
         version: 3.2.2
@@ -642,7 +642,7 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -724,10 +724,10 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -815,7 +815,7 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -876,7 +876,7 @@ importers:
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -903,7 +903,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -958,8 +958,8 @@ importers:
         version: 1.15.1
     devDependencies:
       '@vue/language-plugin-pug':
-        specifier: ^3.3.3
-        version: 3.3.3
+        specifier: ^3.3.4
+        version: 3.3.4
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
@@ -1016,7 +1016,7 @@ importers:
         version: 11.4.1(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1040,7 +1040,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1084,7 +1084,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1133,7 +1133,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1151,7 +1151,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1281,10 +1281,10 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1401,7 +1401,7 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1465,7 +1465,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1483,7 +1483,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1501,7 +1501,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1694,7 +1694,7 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1752,10 +1752,10 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1867,7 +1867,7 @@ importers:
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
 
   mpcore/packages/core: {}
 
@@ -2144,7 +2144,7 @@ importers:
         version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
 
   packages/devtools-runtime:
     dependencies:
@@ -2262,7 +2262,7 @@ importers:
         version: 2.4.28
       '@vue/language-core':
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.3.4
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
@@ -2349,7 +2349,7 @@ importers:
         version: 1.1.0
       rolldown-plugin-dts:
         specifier: 0.25.2
-        version: 0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))
+        version: 0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))
       rolldown-require:
         specifier: workspace:*
         version: link:../rolldown-require
@@ -2373,7 +2373,7 @@ importers:
         version: 3.5.35(typescript@6.0.3)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
@@ -2517,7 +2517,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2568,7 +2568,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2623,7 +2623,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2714,10 +2714,10 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2769,10 +2769,10 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2808,7 +2808,7 @@ importers:
         version: 6.0.3
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2906,7 +2906,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -8036,11 +8036,11 @@ packages:
   '@vue/devtools-shared@8.1.2':
     resolution: {integrity: sha512-X9RyVFYAdkBe4IUf5v48TxBF/6QPmF8CmWrDAjXzfUHrgQ/HGfTC1A6TqgXqZ03ye66l3AD51BAGD69IvKM9sw==}
 
-  '@vue/language-core@3.3.3':
-    resolution: {integrity: sha512-X6p+7nfY7vVT6dQwUJ+v0Jfq/lwIfhL2jMi91dQ3ln4hnlGXlxsDu/FNkeyHYgvYtyQy18ZX76IZy7X4diDbiQ==}
+  '@vue/language-core@3.3.4':
+    resolution: {integrity: sha512-IuHqQ5zGGOE7CXP72VX6A42IVeIzYv4WAhO6arej11TRNqtdZfGyH8Yr2FOCaDX0dSQG+JwULLoFHGY1igYVjQ==}
 
-  '@vue/language-plugin-pug@3.3.3':
-    resolution: {integrity: sha512-tS4AXuhvQJEb7zrLClZf+uzfD5mLkWqJeD+3YbjGtg1KyQmoJN4Adz1+84oZAohJUlu1S42Y5qlMXRxFHsnHgQ==}
+  '@vue/language-plugin-pug@3.3.4':
+    resolution: {integrity: sha512-hbp1NakJCUYz/XItrnCwLkcvuJf38CvUJ4pv2CKLlVYaZKUhra/uv0PlVdNkdVTQS3loAHGg9GvmbCXzmJhg6g==}
 
   '@vue/reactivity@3.5.35':
     resolution: {integrity: sha512-tVc+SsHConvh/Lz64qq1pP3rYArBmK42xonovEcxY74SQtvctZodG/zhq54P5dr38cVuw25d27cPNRdlMidpGQ==}
@@ -8147,8 +8147,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.0.2':
-    resolution: {integrity: sha512-CkRUxJ6OLNQoj+D4Xq16LBZDlwgm3s50taAp4THUiSfkTtLkFZdRmh3dABQTkAaTsusYi8RBzYmwrxCNcUBSqQ==}
+  '@weapp-tailwindcss/postcss@3.0.3':
+    resolution: {integrity: sha512-p1HGDNhHYpd7ES3uXm43dYnYaJq4V3TvlgRBv5FqxAuiOmAveNm539atFXGtIB13hrmTRhNtMfIEPgtKJW+FXA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/reset@0.1.1':
@@ -15462,8 +15462,8 @@ packages:
       vite:
         optional: true
 
-  vue-tsc@3.3.3:
-    resolution: {integrity: sha512-SWUEG7YRUeDJHT7Xsuhf02elYX2gxPzzAII7OxDAh4KNOr4QHQ0Lls0YfnaO5GNd560CwVa2HTfdqmA5MqvRqQ==}
+  vue-tsc@3.3.4:
+    resolution: {integrity: sha512-XA/JqmQwS2GZmfgpjOEGdrKwaTSEuPwxpHa7/t6f4yiGrJb3gVHTPb9wBfByMNZwQ+xDXs41b8gaS2DKsOozUw==}
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
@@ -15483,8 +15483,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@5.0.4:
-    resolution: {integrity: sha512-AYju7dMsonEZB7kTOXK0hkDfHxgXUzspozBu/PnkqpkM4HsU/LdLrelQezb5TfGS0rugd91ZnolMmVOZgzE4gg==}
+  weapp-tailwindcss@5.0.5:
+    resolution: {integrity: sha512-dKm7XNv0+wX9EGXkzL8QgYPHRCm9B+D2txC/u8Pm2ssAzJ2hJFmm/dfUbVYOxxRL6U2wGOjUaZDrEm7e+YtZAQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -21006,7 +21006,7 @@ snapshots:
 
   '@vue/devtools-shared@8.1.2': {}
 
-  '@vue/language-core@3.3.3':
+  '@vue/language-core@3.3.4':
     dependencies:
       '@volar/language-core': 2.4.28
       '@vue/compiler-dom': 3.5.35
@@ -21016,7 +21016,7 @@ snapshots:
       path-browserify: 1.0.1
       picomatch: 4.0.4
 
-  '@vue/language-plugin-pug@3.3.3':
+  '@vue/language-plugin-pug@3.3.4':
     dependencies:
       '@volar/source-map': 2.4.28
       muggle-string: 0.4.1
@@ -21103,7 +21103,7 @@ snapshots:
       postcss-selector-parser: 7.1.1
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.0.2':
+  '@weapp-tailwindcss/postcss@3.0.3':
     dependencies:
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/postcss-calc': 1.0.2(postcss@8.5.15)
@@ -26033,7 +26033,7 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
-  mkdist@2.3.0(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3)):
+  mkdist@2.3.0(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3)):
     dependencies:
       autoprefixer: 10.5.0(postcss@8.5.15)
       citty: 0.1.6
@@ -26052,7 +26052,7 @@ snapshots:
       sass: 1.100.0
       typescript: 6.0.3
       vue: 3.5.35(typescript@6.0.3)
-      vue-tsc: 3.3.3(typescript@6.0.3)
+      vue-tsc: 3.3.4(typescript@6.0.3)
 
   mlly@1.8.0:
     dependencies:
@@ -27480,7 +27480,7 @@ snapshots:
 
   robust-predicates@3.0.2: {}
 
-  rolldown-plugin-dts@0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3)):
+  rolldown-plugin-dts@0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3)):
     dependencies:
       '@babel/generator': 8.0.0-rc.6
       '@babel/helper-validator-identifier': 8.0.0-rc.6
@@ -27493,7 +27493,7 @@ snapshots:
       rolldown: 1.1.0
     optionalDependencies:
       typescript: 6.0.3
-      vue-tsc: 3.3.3(typescript@6.0.3)
+      vue-tsc: 3.3.4(typescript@6.0.3)
     transitivePeerDependencies:
       - oxc-resolver
 
@@ -28817,7 +28817,7 @@ snapshots:
       path-exists: 4.0.0
       read-pkg-up: 7.0.1
 
-  tsdown@0.22.2(tsx@4.22.4)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.3(typescript@6.0.3)):
+  tsdown@0.22.2(tsx@4.22.4)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.4(typescript@6.0.3)):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -28828,7 +28828,7 @@ snapshots:
       obug: 2.1.2
       picomatch: 4.0.4
       rolldown: 1.1.0
-      rolldown-plugin-dts: 0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))
+      rolldown-plugin-dts: 0.25.2(oxc-resolver@11.6.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(rolldown@1.1.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))
       semver: 7.8.2
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
@@ -28877,7 +28877,7 @@ snapshots:
 
   twoslash-vue@0.3.8(typescript@6.0.3):
     dependencies:
-      '@vue/language-core': 3.3.3
+      '@vue/language-core': 3.3.4
       twoslash: 0.3.8(typescript@6.0.3)
       twoslash-protocol: 0.3.8
       typescript: 6.0.3
@@ -28989,7 +28989,7 @@ snapshots:
       which-boxed-primitive: 1.1.1
     optional: true
 
-  unbuild@3.6.1(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3)):
+  unbuild@3.6.1(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3)):
     dependencies:
       '@rollup/plugin-alias': 5.1.1(rollup@4.61.1)
       '@rollup/plugin-commonjs': 28.0.6(rollup@4.61.1)
@@ -29005,7 +29005,7 @@ snapshots:
       hookable: 5.5.3
       jiti: 2.7.0
       magic-string: 0.30.21
-      mkdist: 2.3.0(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.3(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3))
+      mkdist: 2.3.0(sass@1.100.0)(typescript@6.0.3)(vue-tsc@3.3.4(typescript@6.0.3))(vue@3.5.35(typescript@6.0.3))
       mlly: 1.8.0
       pathe: 2.0.3
       pkg-types: 2.3.1
@@ -29564,10 +29564,10 @@ snapshots:
       '@vue/compiler-sfc': 3.5.35
       vite: 8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0)
 
-  vue-tsc@3.3.3(typescript@6.0.3):
+  vue-tsc@3.3.4(typescript@6.0.3):
     dependencies:
       '@volar/typescript': 2.4.28
-      '@vue/language-core': 3.3.3
+      '@vue/language-core': 3.3.4
       typescript: 6.0.3
 
   vue@3.5.35(typescript@6.0.3):
@@ -29589,17 +29589,16 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@5.0.4(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4):
+  weapp-tailwindcss@5.0.5(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.7
       '@babel/traverse': 7.29.7
       '@babel/types': 7.29.7
       '@vue/compiler-dom': 3.5.35
-      '@vue/compiler-sfc': 3.5.35
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.0
-      '@weapp-tailwindcss/postcss': 3.0.2
+      '@weapp-tailwindcss/postcss': 3.0.3
       '@weapp-tailwindcss/reset': 0.1.1(tailwindcss@4.3.0)
       '@weapp-tailwindcss/shared': 2.0.0
       comment-json: 5.0.0
