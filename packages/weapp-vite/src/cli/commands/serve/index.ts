@@ -203,7 +203,7 @@ export function registerServeCommand(cli: CAC) {
               tags: ['ide', 'open'],
             },
           ])
-          await miniProgramDevActions.openIde()
+          await miniProgramDevActions.openIde({ forceOpen: true })
           devHotkeysSession?.restore()
         }
 

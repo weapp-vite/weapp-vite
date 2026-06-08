@@ -139,6 +139,7 @@ describe('serve cli command', () => {
     vi.clearAllMocks()
     devHotkeysCloseMock.mockReset()
     devHotkeysRestoreMock.mockReset()
+    maybeStartForwardConsoleMock.mockReset()
     resolveConfigFileMock.mockReturnValue(undefined)
     resolveIdeProjectRootMock.mockReset()
     resolveIdeProjectRootMock.mockImplementation((root: string) => root)
@@ -364,6 +365,25 @@ describe('serve cli command', () => {
       trustProject: false,
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('opens ide during serve startup even when forward console can attach', async () => {
+    const action = createServeActionHandler()
+    maybeStartForwardConsoleMock.mockResolvedValueOnce(true)
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+      open: true,
+      trustProject: true,
+    })
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+
+    expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      reuseOpenedProject: false,
+      trustProject: true,
+    })
   })
 
   it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {

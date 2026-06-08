@@ -2,9 +2,13 @@ import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
 
 export interface ServeMiniProgramDevActions {
-  openIde: () => Promise<string>
+  openIde: (options?: OpenServeIdeOptions) => Promise<string>
   projectPath?: string
   rebuild: () => Promise<string>
+}
+
+export interface OpenServeIdeOptions {
+  forceOpen?: boolean
 }
 
 export interface CreateServeMiniProgramDevActionsOptions {
@@ -37,9 +41,8 @@ export function createServeMiniProgramDevActions(
   const projectPath = options.projectPath ?? options.fallbackProjectPath
   return {
     projectPath,
-    openIde: async () => {
-      const openedByForwardConsole = await options.tryReuseForwardConsole?.()
-      if (openedByForwardConsole) {
+    openIde: async (openOptions = {}) => {
+      if (!openOptions.forceOpen && await options.tryReuseForwardConsole?.()) {
         return '已通过控制台转发复用当前开发者工具会话'
       }
 

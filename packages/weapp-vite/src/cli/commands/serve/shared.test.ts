@@ -21,6 +21,24 @@ describe('serve shared helpers', () => {
     expect(openIde).not.toHaveBeenCalled()
   })
 
+  it('forces ide reopen when requested by serve --open startup', async () => {
+    const build = vi.fn().mockResolvedValue(undefined)
+    const openIde = vi.fn().mockResolvedValue(undefined)
+    const tryReuseForwardConsole = vi.fn().mockResolvedValue(true)
+    const actions = createServeMiniProgramDevActions({
+      build,
+      fallbackProjectPath: '/project',
+      openIde,
+      projectPath: '/project/dist-root',
+      tryReuseForwardConsole,
+    })
+
+    await expect(actions.openIde({ forceOpen: true })).resolves.toBe('已重新打开微信开发者工具项目')
+
+    expect(tryReuseForwardConsole).not.toHaveBeenCalled()
+    expect(openIde).toHaveBeenCalledWith('/project/dist-root')
+  })
+
   it('falls back to reopening and rebuilding current mini program project', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
