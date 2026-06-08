@@ -13,6 +13,7 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
 const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
+const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 let standardBuildPromise: Promise<void> | null = null
 let distVariant: 'standard' | 'sourcemap' | null = null
@@ -293,7 +294,7 @@ async function runIssue621AugmentedBuild() {
 
 async function runIssue642Build() {
   standardBuildPromise = null
-  await fs.remove(DIST_ROOT)
+  await fs.remove(ISSUE_642_DIST_ROOT)
 
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -301,9 +302,11 @@ async function runIssue642Build() {
     platform: 'weapp',
     cwd: APP_ROOT,
     label: 'ci:github-issues:issue642',
+    outDir: 'dist-issue-642',
     skipNpm: true,
     env: {
       WEAPP_VITE_E2E_TARGET_FILE: 'e2e/ide/github-issues.runtime.issue642.test.ts',
+      WEAPP_GITHUB_ISSUE_642_SCOPED: 'true',
     },
   })
 
@@ -398,9 +401,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appShellWxml).toContain('issue-563-app-shell')
     expect(appShellWxml).toContain('<slot />')
     expect(appShellWxml).not.toContain('scoped-slots-default')
-    expect(appShellJson).toEqual({
+    expect(appShellJson).toMatchObject({
       component: true,
       styleIsolation: 'apply-shared',
+      usingComponents: {
+        'custom-tab-bar': '/custom-tab-bar/index',
+      },
     })
     expect(pageWxml).toContain('<weapp-app-shell><weapp-layout-default>')
     expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
@@ -704,13 +710,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
   it('issue #642: keeps slot bridge props available to performance setData pick', async () => {
     await runIssue642Build()
 
-    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-642/index.wxml')
-    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-642/index.js')
-    const scopedSlotWxmlPath = path.join(DIST_ROOT, 'pages/issue-642/index.__scoped-slot-default-0.wxml')
-    const slotProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-642/SlotProbe/index.wxml')
-    const slotProbeJsPath = path.join(DIST_ROOT, 'components/issue-642/SlotProbe/index.js')
-    const scopedProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.wxml')
-    const scopedProbeJsPath = path.join(DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.js')
+    const pageWxmlPath = path.join(ISSUE_642_DIST_ROOT, 'pages/issue-642/index.wxml')
+    const pageJsPath = path.join(ISSUE_642_DIST_ROOT, 'pages/issue-642/index.js')
+    const scopedSlotWxmlPath = path.join(ISSUE_642_DIST_ROOT, 'pages/issue-642/index.__scoped-slot-default-0.wxml')
+    const slotProbeWxmlPath = path.join(ISSUE_642_DIST_ROOT, 'components/issue-642/SlotProbe/index.wxml')
+    const slotProbeJsPath = path.join(ISSUE_642_DIST_ROOT, 'components/issue-642/SlotProbe/index.js')
+    const scopedProbeWxmlPath = path.join(ISSUE_642_DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.wxml')
+    const scopedProbeJsPath = path.join(ISSUE_642_DIST_ROOT, 'components/issue-642/ScopedSlotProbe/index.js')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')

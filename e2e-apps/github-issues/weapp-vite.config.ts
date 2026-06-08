@@ -10,6 +10,7 @@ const issue564AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_564_AUGMENTED
 const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED === 'true'
 const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
+const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -92,6 +93,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-320/**',
     'pages/issue-373/**',
     'pages/issue-380/**',
+    'custom-tab-bar/**',
     'pages/issue-385/**',
     'pages/issue-398/**',
     'pages/issue-404/**',
@@ -402,5 +404,11 @@ export default defineConfig({
                 outDir: 'dist-issue-595',
               },
             }
-          : {}),
+          : issue642ScopedBuildEnabled
+            ? {
+                build: {
+                  outDir: 'dist-issue-642',
+                },
+              }
+            : {}),
 })
