@@ -1,3 +1,2 @@
 @import 'tailwindcss';
-@config "../tailwind.config.ts";
 @source "./**/*.{wxml,js,ts,vue}";

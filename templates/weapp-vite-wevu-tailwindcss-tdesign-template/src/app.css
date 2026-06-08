@@ -1,5 +1,10 @@
 @import 'tailwindcss';
-@config "../tailwind.config.ts";
+
+@plugin "@iconify/tailwind4" {
+  prefixes: mdi;
+  icon-selector: ".i-{prefix}-{name}";
+}
+
 @source "./**/*.{wxml,js,ts,vue}";
 
 page {

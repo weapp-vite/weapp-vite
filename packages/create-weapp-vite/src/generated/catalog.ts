@@ -12,6 +12,7 @@ export const TEMPLATE_CATALOG = {
   '@icebreakers/eslint-config': '^5.0.4',
   '@icebreakers/stylelint-config': '^4.0.2',
   '@iconify-json/mdi': '^1.2.3',
+  '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
   '@tailwindcss/vite': '^4.3.0',
   '@types/node': '^25.9.2',

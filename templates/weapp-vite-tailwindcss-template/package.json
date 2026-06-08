@@ -30,10 +30,10 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "@egoist/tailwindcss-icons": "catalog:",
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
     "@iconify-json/mdi": "catalog:",
+    "@iconify/tailwind4": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",

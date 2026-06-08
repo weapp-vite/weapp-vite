@@ -168,7 +168,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     const out = path.join(cwd, name)
     await waitForFile(path.join(out, 'package.json'))
     // check a tailwind related file exists
-    const hasTailwind = await fs.pathExists(path.join(out, 'tailwind.config.ts'))
+    const hasTailwind = await fs.pathExists(path.join(out, 'src/app.css'))
     expect(hasTailwind).toBe(true)
   })
 

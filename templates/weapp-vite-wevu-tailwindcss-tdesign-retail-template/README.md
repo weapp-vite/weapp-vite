@@ -40,7 +40,7 @@ pnpm vitest run -c ./e2e/vitest.e2e.devtools.config.ts e2e/ide/template-weapp-vi
 - 修改业务接口：`src/services/**`
 - 切换 mock/真实接口：`src/config/index.ts`
 - 调整页面路由与分包：`src/app.vue` 内 `defineAppJson`
-- 调整主题与样式：`tailwind.config.ts` + 组件内 Tailwind utilities
+- 调整主题与样式：`src/app.css` + 组件内 Tailwind utilities
 - 调整常用启动场景：`project.config.json` 与 `project.private.config.json` 中 `condition.miniprogram.list`
 
 ## 对齐原则
