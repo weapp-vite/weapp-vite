@@ -1,4 +1,3 @@
-import type { PageInstance } from 'miniprogram-api-typings'
 import type { Socket } from 'socket.io-client'
 import type { ChatMessage, PresenceEvent } from './chat'
 import { io } from 'socket.io-client'
@@ -18,13 +17,13 @@ interface ChatPageData {
   userId: string
 }
 
-interface ChatPageInstance extends PageInstance<ChatPageData> {
+interface ChatPageCustom {
   socket?: Socket
   connectSocket: () => void
   setMessages: (messages: ChatMessage[]) => void
 }
 
-Page<ChatPageData, ChatPageInstance>({
+Page<ChatPageData, ChatPageCustom>({
   socket: undefined as Socket | undefined,
   data: {
     draft: '',
