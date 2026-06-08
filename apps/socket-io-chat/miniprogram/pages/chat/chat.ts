@@ -26,6 +26,8 @@ export interface ChatPageData {
 export interface ChatPageCustom {
   socket?: Socket
   connectSocket: () => void
+  onDraftInput: (event: WechatMiniprogram.Input) => void
+  sendMessage: () => void
   setMessages: (messages: ChatMessage[]) => void
 }
 
