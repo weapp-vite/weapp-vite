@@ -22,6 +22,7 @@ const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
 const APP_SHELL_FREE_TARGETS = new Set([
   'github-issues.runtime.issue642-bug7-default.test.ts',
   'github-issues.runtime.issue642-bug7-performance.test.ts',
+  'github-issues.runtime.issue642-bug8.test.ts',
 ])
 const SOURCE_PROJECT_COPY_ENTRIES = [
   '.env',
@@ -133,6 +134,7 @@ async function prepareIsolatedProjectRoot() {
       pages: [
         'pages/block-slot/index',
         'pages/issue-642-bug7/index',
+        'pages/issue-642-bug8/index',
       ],
     }, {
       spaces: 2,

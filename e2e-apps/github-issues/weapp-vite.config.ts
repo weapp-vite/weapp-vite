@@ -75,6 +75,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue642-bug7-performance.test.ts': [
     'pages/issue-642-bug7/**',
   ],
+  'github-issues.runtime.issue642-bug8.test.ts': [
+    'pages/issue-642-bug8/**',
+    'components/issue-642-bug8/**',
+  ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
   ],
