@@ -1,6 +1,6 @@
-import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
+import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_NAMES_PROP } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
+import { createWevuComponent, defineComponent, mergeModels, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -72,6 +72,35 @@ describe('runtime: vue compat helpers', () => {
     inst.properties.extra = 'beta'
     opts.observers['**'].call(inst)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'beta' })
+  })
+
+  it('useSlots reads compiled slot metadata in components without user props', () => {
+    createWevuComponent({
+      properties: {
+        [WEVU_SLOT_NAMES_PROP]: { type: null, value: null },
+      },
+      setup() {
+        const slots = useSlots()
+        return { slots }
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    expect(opts.properties[WEVU_SLOT_NAMES_PROP]).toBeTruthy()
+
+    const inst: any = {
+      setData() {},
+      triggerEvent: vi.fn(),
+      properties: {
+        [WEVU_SLOT_NAMES_PROP]: { default: true, header: true },
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(Object.keys(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots)).toEqual(['default', 'header'])
+    expect(typeof inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots.default).toBe('function')
+    expect('header' in inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots).toBe(true)
   })
 
   it('useAttrs filters compiler internal template binding keys', () => {

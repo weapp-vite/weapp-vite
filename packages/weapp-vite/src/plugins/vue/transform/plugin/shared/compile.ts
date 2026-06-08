@@ -11,7 +11,7 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../..
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
@@ -109,7 +109,8 @@ export async function finalizeTransformEntryScript(options: {
   }
 
   const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
-  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('vueSlots'))) {
+  const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
+  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
     const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
     if (injectedProps.transformed) {
       result.script = injectedProps.code

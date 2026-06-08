@@ -6,6 +6,7 @@ const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn())
 const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn())
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn())
 const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
+const mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock = vi.hoisted(() => vi.fn(() => false))
 const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys))
 const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
@@ -38,6 +39,7 @@ vi.mock('./injectSetDataPick', () => ({
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
   mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
+  mayNeedScopedSlotHostPropertiesForSetupSlotsInJs: mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock,
   pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
   shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
 }))
@@ -131,6 +133,8 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     })
     mayNeedInjectSetDataPickInJsMock.mockReset()
     mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
+    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReset()
+    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(false)
     pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockReset()
     pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys)
     shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()

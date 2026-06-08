@@ -1,7 +1,7 @@
 import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { getWxmlDirectivePrefix } from '../../../platform'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from './injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from './injectSetDataPick'
 
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
@@ -125,6 +125,28 @@ defineComponent({
     expect(mayNeedInjectSetDataPickInJs('createWevuComponent(options)')).toBe(true)
     expect(mayNeedInjectSetDataPickInJs('defineComponent({})')).toBe(true)
     expect(mayNeedInjectSetDataPickInJs('Page({})')).toBe(false)
+  })
+
+  it('detects setup useSlots calls that need slot host properties', () => {
+    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(`
+import { useSlots } from 'wevu/internal-runtime'
+const slots = useSlots()
+    `.trim())).toBe(true)
+
+    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(`
+import { useSlots as useSetupSlots } from 'wevu'
+const slots = useSetupSlots()
+    `.trim())).toBe(true)
+
+    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(`
+import { useSlots } from 'wevu'
+const slots = {}
+    `.trim())).toBe(false)
+
+    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(`
+const useSlots = () => ({})
+const slots = useSlots()
+    `.trim())).toBe(false)
   })
 
   it('merges with existing setData.pick array', () => {

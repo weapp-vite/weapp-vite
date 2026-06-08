@@ -44,6 +44,54 @@ export function mayNeedInjectSetDataPickInJs(source: string): boolean {
     || source.includes('.so(')
 }
 
+/**
+ * 判断脚本 setup 阶段是否会读取编译期 slot 名元数据。
+ */
+export function mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(source: string): boolean {
+  if (!source.includes('useSlots')) {
+    return false
+  }
+
+  const ast = parseJsLike(source)
+  const useSlotsLocals = new Set<string>()
+  traverse(ast, {
+    ImportDeclaration(path) {
+      const sourceValue = path.node.source.value
+      if (sourceValue !== 'wevu' && sourceValue !== 'vue' && sourceValue !== 'wevu/internal-runtime') {
+        return
+      }
+      for (const specifier of path.node.specifiers) {
+        if (
+          specifier.type === 'ImportSpecifier'
+          && specifier.imported.type === 'Identifier'
+          && specifier.imported.name === 'useSlots'
+          && specifier.local.type === 'Identifier'
+        ) {
+          useSlotsLocals.add(specifier.local.name)
+        }
+      }
+    },
+  })
+
+  if (!useSlotsLocals.size) {
+    return false
+  }
+
+  let hasSetupSlotsCall = false
+  traverse(ast, {
+    CallExpression(path) {
+      if (
+        path.node.callee.type === 'Identifier'
+        && useSlotsLocals.has(path.node.callee.name)
+      ) {
+        hasSetupSlotsCall = true
+      }
+    },
+  })
+
+  return hasSetupSlotsCall
+}
+
 function getObjectPropertyByKey(objectExpression: t.ObjectExpression, key: string): t.ObjectProperty | undefined {
   for (const member of objectExpression.properties) {
     if (member.type !== 'ObjectProperty') {
