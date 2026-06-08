@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source "./**/*.{wxml,js,ts,vue}";
 
 page {
   color: #102340;
