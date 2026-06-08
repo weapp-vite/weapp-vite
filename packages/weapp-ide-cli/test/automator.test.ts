@@ -50,6 +50,8 @@ vi.mock('node:fs/promises', () => ({
 }))
 
 describe('automator helpers', () => {
+  const mockProjectPath = path.resolve('/workspace/project')
+
   beforeEach(() => {
     launchMock.mockReset()
     connectMock.mockReset()
@@ -208,14 +210,14 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         trustProject: false,
       })
       expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/Applications/wechat-cli',
         port: 19_510,
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         timeout: 12_345,
         trustProject: false,
       })
@@ -228,13 +230,13 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         trustProject: false,
       })
       expect(resolveCliPathMock).not.toHaveBeenCalled()
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/custom/cli',
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         timeout: 30_000,
         trustProject: false,
       })
@@ -250,7 +252,7 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         trustProject: true,
       })
       expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -317,7 +319,7 @@ describe('automator helpers', () => {
 
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/Applications/wechat-cli',
-        projectPath: '/workspace/project',
+        projectPath: mockProjectPath,
         timeout: 30_000,
         trustProject: true,
       })

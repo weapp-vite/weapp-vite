@@ -61,6 +61,7 @@ export function createPropsSync(options: {
     if (!templateRuntimePropKeys.has(key)) {
       return
     }
+    let nativeDataChanged = false
     const runtimeState = (instance as any).__wevu?.state
     try {
       if (runtimeState && typeof runtimeState === 'object') {
@@ -68,11 +69,20 @@ export function createPropsSync(options: {
       }
       const nativeData = (instance as any).data
       if (nativeData && typeof nativeData === 'object') {
-        setIfChanged(nativeData as Record<string, unknown>, key, value)
+        nativeDataChanged = setIfChanged(nativeData as Record<string, unknown>, key, value)
       }
     }
     catch {
       // 忽略模板运行时字段同步失败，保持 props 主链路可用。
+    }
+    if (!nativeDataChanged || typeof (instance as any).setData !== 'function') {
+      return
+    }
+    try {
+      ;(instance as any).setData({ [key]: value })
+    }
+    catch {
+      // 忽略模板桥接字段 setData 失败，后续响应式调度仍可兜底。
     }
   }
 

@@ -195,6 +195,46 @@ describe('runtime: scoped slots', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.__wv_bind_0).toEqual(['io', 1])
   })
 
+  it('predeclares regular component owner id in native initial data without sharing owner ids', () => {
+    defineComponent({
+      computed: {
+        __wv_bind_0() {
+          return { default: true }
+        },
+      },
+      setData: {
+        pick: [WEVU_SLOT_OWNER_ID_KEY, '__wv_bind_0'],
+        strategy: 'patch',
+      },
+    } as any)
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    expect(opts.data[WEVU_SLOT_OWNER_ID_KEY]).toBe('')
+    expect(opts.data.__wv_bind_0).toEqual({ default: true })
+
+    const first: any = {
+      data: { ...opts.data },
+      setData: vi.fn(),
+    }
+    const second: any = {
+      data: { ...opts.data },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(first)
+    opts.lifetimes.attached.call(second)
+
+    expect(first.data[WEVU_SLOT_OWNER_ID_KEY]).toMatch(/^wv\d+$/)
+    expect(second.data[WEVU_SLOT_OWNER_ID_KEY]).toMatch(/^wv\d+$/)
+    expect(first.data[WEVU_SLOT_OWNER_ID_KEY]).not.toBe(second.data[WEVU_SLOT_OWNER_ID_KEY])
+    expect(first.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_OWNER_ID_KEY]: first.data[WEVU_SLOT_OWNER_ID_KEY],
+    })
+    expect(second.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_OWNER_ID_KEY]: second.data[WEVU_SLOT_OWNER_ID_KEY],
+    })
+  })
+
   it('seeds page slot owner id and static slot metadata in native initial data', () => {
     defineComponent({
       __wevu_isPage: true,

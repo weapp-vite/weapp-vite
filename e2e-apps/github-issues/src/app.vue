@@ -17,6 +17,9 @@ const tabBarList = [
 defineAppJson({
   pages: routes.pages,
   subPackages: routes.subPackages,
+  usingComponents: {
+    'custom-tab-bar': '/custom-tab-bar/index',
+  },
   ...(tabBarList.length >= 2
     ? {
         tabBar: {

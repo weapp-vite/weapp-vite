@@ -50,6 +50,13 @@ function shouldSeedNativeSlotOwnerId(
     && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
 }
 
+function shouldDeclareNativeSlotOwnerId(
+  setData: DefineComponentOptions<any, any, any, any, any>['setData'],
+) {
+  return Array.isArray(setData?.pick)
+    && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
+}
+
 function hasScopedSlotHostProperties(mpOptions: Record<string, any>) {
   const properties = mpOptions.properties
   return Boolean(
@@ -254,10 +261,13 @@ export function defineComponent(
   const nativeData = typeof data === 'function'
     ? data()
     : data
-  const seededNativeData = shouldSeedNativeSlotOwnerId(mpOptions, resolvedSetData)
+  const shouldDeclareOwnerId = shouldDeclareNativeSlotOwnerId(resolvedSetData)
+  const seededNativeData = shouldDeclareOwnerId
     ? {
         ...(nativeData && typeof nativeData === 'object' ? nativeData : {}),
-        [WEVU_SLOT_OWNER_ID_KEY]: (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || allocateOwnerId(),
+        [WEVU_SLOT_OWNER_ID_KEY]: shouldSeedNativeSlotOwnerId(mpOptions, resolvedSetData)
+          ? (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || allocateOwnerId()
+          : (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || '',
       }
     : nativeData
   const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData)

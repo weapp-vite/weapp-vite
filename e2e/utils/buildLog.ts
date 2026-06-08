@@ -26,6 +26,7 @@ interface BuildCommandOptions {
   platform: 'weapp' | 'alipay' | 'tt'
   cwd?: string
   label?: string
+  outDir?: string
   skipNpm?: boolean
   env?: Record<string, string | undefined>
 }
@@ -43,6 +44,12 @@ const BUILD_ENV_STRIP_PREFIXES = [
 const BUILD_ENV_STRIP_KEYS = new Set([
   'PNPM_PACKAGE_NAME',
   'PNPM_SCRIPT_SRC_DIR',
+  'NODE_ENV',
+  'VITEST',
+  'VITEST_MODE',
+  'VITEST_POOL_ID',
+  'VITEST_WORKER_ID',
+  'WEAPP_VITE_E2E_TARGET_FILE',
 ])
 
 function createSkipNpmGuardKey(label: string, projectRoot: string, dependencyMeta: DependencyMeta) {
@@ -180,6 +187,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     platform,
     cwd,
     label = projectRoot,
+    outDir = 'dist',
     skipNpm = false,
     env,
   } = options
@@ -201,7 +209,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     }
   }
 
-  const distRoot = path.resolve(projectRoot, 'dist')
+  const distRoot = path.resolve(projectRoot, outDir)
   const configOverride = await resolveJsFormatConfigOverride({
     configFile,
     jsFormat,

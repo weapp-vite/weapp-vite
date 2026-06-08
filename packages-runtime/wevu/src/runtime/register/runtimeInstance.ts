@@ -159,6 +159,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const ownerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId
     ? initialNativeOwnerId
     : allocateOwnerId()
+  const shouldFlushNativeOwnerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId !== ownerId
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
     ? `page:${(target as any).route}`
@@ -228,6 +229,25 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
     mergeOwnerSnapshotProps(snapshot, propsSource, runtimeRef)
     updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
+  }
+  const syncNativeOwnerId = () => {
+    if (!shouldFlushNativeOwnerId) {
+      return
+    }
+    const nativeData = (target as any).data
+    try {
+      if (nativeData && typeof nativeData === 'object') {
+        nativeData[WEVU_SLOT_OWNER_ID_KEY] = ownerId
+      }
+    }
+    catch {
+      // 忽略直接写入失败，后续 setData 仍会尝试同步。
+    }
+    const setData = resolveNativeSetData(target)
+    if (!setData) {
+      return
+    }
+    callNativeSetData(target, setData, { [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
   }
   const adapter: AdapterWithSetData = {
     ...(baseAdapter as any),
@@ -366,6 +386,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   ensureRuntimeProps(target, runtimeState as Record<string, any>)
 
   attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
+  syncNativeOwnerId()
 
   if (watchMap) {
     const stops = registerWatches(runtimeWithDefaults, watchMap, target)
