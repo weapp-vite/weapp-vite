@@ -1,36 +1,19 @@
-import type { Socket } from 'socket.io-client'
-import type { ChatMessage, PresenceEvent } from './chat'
 import { io } from 'socket.io-client'
 import {
+  appendChatMessage,
+  appendPresenceMessage,
   chatRoom,
+  createInitialChatData,
   createMiniUserId,
-  createPresenceMessage,
+  defineChatPage,
   getMessageAnchor,
   miniUserName,
   socketUrl,
 } from './chat'
 
-interface ChatPageData {
-  draft: string
-  messages: ChatMessage[]
-  scrollIntoView: string
-  userId: string
-}
-
-interface ChatPageCustom {
-  socket?: Socket
-  connectSocket: () => void
-  setMessages: (messages: ChatMessage[]) => void
-}
-
-Page<ChatPageData, ChatPageCustom>({
-  socket: undefined as Socket | undefined,
-  data: {
-    draft: '',
-    messages: [] as ChatMessage[],
-    scrollIntoView: '',
-    userId: '',
-  },
+defineChatPage({
+  socket: undefined,
+  data: createInitialChatData(),
   onLoad() {
     this.setData({
       userId: createMiniUserId(),
@@ -54,19 +37,16 @@ Page<ChatPageData, ChatPageCustom>({
       })
     })
 
-    socket.on('history', (history: ChatMessage[]) => {
+    socket.on('history', (history) => {
       this.setMessages(history)
     })
 
-    socket.on('chat:message', (message: ChatMessage) => {
-      this.setMessages([...(this.data.messages as ChatMessage[]), message])
+    socket.on('chat:message', (message) => {
+      this.setMessages(appendChatMessage(this.data.messages, message))
     })
 
-    socket.on('presence', (event: PresenceEvent) => {
-      this.setMessages([
-        ...(this.data.messages as ChatMessage[]),
-        createPresenceMessage(event),
-      ])
+    socket.on('presence', (event) => {
+      this.setMessages(appendPresenceMessage(this.data.messages, event))
     })
   },
   onDraftInput(event: WechatMiniprogram.Input) {
@@ -90,7 +70,7 @@ Page<ChatPageData, ChatPageCustom>({
       draft: '',
     })
   },
-  setMessages(messages: ChatMessage[]) {
+  setMessages(messages) {
     const latest = messages.at(-1)
     this.setData({
       messages,
