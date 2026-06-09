@@ -97,6 +97,7 @@ export function registerServeCommand(cli: CAC) {
             nonInteractive: options.nonInteractive,
             reuseOpenedProject: !openOptions?.forceReopen,
             trustProject: options.trustProject,
+            useAutomatorOpen: false,
           })
         },
         projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),

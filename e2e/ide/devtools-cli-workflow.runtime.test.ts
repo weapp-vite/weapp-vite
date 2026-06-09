@@ -241,22 +241,26 @@ async function waitForNewDevScreenshot(before: ReadonlySet<string>) {
   return latestNewFile
 }
 
-async function runDevHotkeyScreenshotSmoke() {
+async function runDevHotkeyScreenshotSmoke(options: { open?: boolean } = {}) {
   if (!SHOULD_RUN_TTY_HOTKEY_SMOKE) {
     return
   }
 
   await fs.access(SCRIPT_BIN)
   const beforeScreenshots = new Set(await listDevScreenshotFiles())
+  const devArgs = [
+    'dev',
+    ...(options.open ? ['-o'] : []),
+    '--non-interactive',
+    '--login-retry',
+    'never',
+  ]
   const child = spawn(SCRIPT_BIN, [
     '-q',
     '/dev/null',
     'node',
     CLI_PATH,
-    'dev',
-    '--non-interactive',
-    '--login-retry',
-    'never',
+    ...devArgs,
   ], {
     cwd: TEMPLATE_ROOT,
     env: {
@@ -289,7 +293,7 @@ async function runDevHotkeyScreenshotSmoke() {
   }
   catch (error) {
     const normalizedOutput = normalizeTerminalOutput(output).split('\n').slice(-80).join('\n')
-    throw new Error(`${error instanceof Error ? error.message : String(error)}\n\nrecent output:\n${normalizedOutput}`)
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\n\ncommand: node ${path.basename(CLI_PATH)} ${devArgs.join(' ')}\nrecent output:\n${normalizedOutput}`)
   }
   finally {
     if (!child.killed) {
@@ -568,4 +572,14 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project/,
     ])
   })
+
+  it('captures screenshots from the dev hotkey after dev -o opens the project', async () => {
+    if (loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput) {
+      return
+    }
+
+    await closeWechatIdeProject().catch(() => {})
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await runDevHotkeyScreenshotSmoke({ open: true })
+  }, 240_000)
 })

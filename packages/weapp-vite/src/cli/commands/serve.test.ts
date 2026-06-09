@@ -367,6 +367,7 @@ describe('serve cli command', () => {
       nonInteractive: true,
       reuseOpenedProject: true,
       trustProject: false,
+      useAutomatorOpen: false,
     })
     expect(devHotkeysSuspendMock).toHaveBeenCalledTimes(1)
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
@@ -417,6 +418,7 @@ describe('serve cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       reuseOpenedProject: true,
       trustProject: true,
+      useAutomatorOpen: false,
     })
   })
 
@@ -479,6 +481,7 @@ describe('serve cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       reuseOpenedProject: false,
       trustProject: true,
+      useAutomatorOpen: false,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 
@@ -528,6 +531,7 @@ describe('serve cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
       reuseOpenedProject: false,
       trustProject: true,
+      useAutomatorOpen: false,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 

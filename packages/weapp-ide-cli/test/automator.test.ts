@@ -242,6 +242,22 @@ describe('automator helpers', () => {
       })
     })
 
+    it('keeps the source project path when caller preserves project root', async () => {
+      await launchAutomator({
+        preserveProjectRoot: true,
+        projectPath: '/workspace/project',
+      })
+
+      expect(readFileMock).not.toHaveBeenCalled()
+      expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        projectPath: mockProjectPath,
+        trustProject: false,
+      })
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
+        projectPath: mockProjectPath,
+      }))
+    })
+
     it('uses configured auto trust project when option is omitted', async () => {
       readCustomConfigMock.mockResolvedValueOnce({
         autoTrustProject: true,

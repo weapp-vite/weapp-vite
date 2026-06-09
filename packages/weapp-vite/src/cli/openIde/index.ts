@@ -42,6 +42,7 @@ export interface ResolvedIdeCommandContext {
 export interface OpenIdeOptions {
   trustProject?: boolean
   reuseOpenedProject?: boolean
+  useAutomatorOpen?: boolean
   loginRetry?: string
   loginRetryTimeout?: string
   nonInteractive?: boolean
@@ -162,16 +163,18 @@ async function stabilizeOpenedWechatIdeProject(
       }
       logger.warn('当前微信开发者工具不支持自动 engine build 刷新，已跳过该步骤；如模拟器显示旧状态，可在开发者工具内手动编译。')
     }
-    try {
-      await executeWechatIdeCliCommand(appendLoginRetryArgv(['compile'], options), {
-        automatorMode: 'require',
-        httpMode: 'skip',
-        projectPath,
-      })
-    }
-    catch (error) {
-      if (shouldLogAutomatorFallbackError()) {
-        logger.error(error)
+    if (options.useAutomatorOpen !== false) {
+      try {
+        await executeWechatIdeCliCommand(appendLoginRetryArgv(['compile'], options), {
+          automatorMode: 'require',
+          httpMode: 'skip',
+          projectPath,
+        })
+      }
+      catch (error) {
+        if (shouldLogAutomatorFallbackError()) {
+          logger.error(error)
+        }
       }
     }
   }
@@ -212,6 +215,7 @@ function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options:
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+  const useAutomatorOpen = options.useAutomatorOpen !== false
 
   if (platform === 'weapp' && projectPath) {
     try {
@@ -230,7 +234,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
     logger.warn('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
   }
 
-  if (platform === 'weapp' && projectPath && options.trustProject !== false && bootstrapResult?.servicePortEnabled !== false) {
+  if (platform === 'weapp' && projectPath && options.trustProject !== false && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {
     try {
       const openResult = await tryOpenWechatIdeByAutomator(projectPath, options)
       if (openResult === 'reused') {
@@ -250,6 +254,12 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       if (shouldLogAutomatorFallbackError()) {
         logger.error(error)
       }
+    }
+  }
+  else if (platform === 'weapp' && projectPath && options.reuseOpenedProject === false) {
+    const closed = await closeIde()
+    if (!closed) {
+      logger.warn('关闭当前微信开发者工具失败，仍继续尝试打开目标项目。')
     }
   }
 

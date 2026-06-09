@@ -14,6 +14,7 @@ export type AutomatorElement = InstanceType<typeof Element> & {
 export interface DevtoolsRuntimeSessionOptions {
   miniProgram?: AutomatorMiniProgram
   preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
   port?: number
   projectPath: string
   sharedSession?: boolean

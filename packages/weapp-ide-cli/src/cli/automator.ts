@@ -16,6 +16,7 @@ export interface AutomatorOptions {
   sessionId?: string
   trustProject?: boolean
   preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
 }
 
 interface PersistedAutomatorSession {
@@ -277,7 +278,12 @@ export async function launchAutomator(options: AutomatorOptions) {
   const launcher = new Launcher()
   let lastError: unknown = null
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
-  const resolvedProject = await resolveAutomatorProjectPath(projectPath)
+  const resolvedProject = options.preserveProjectRoot
+    ? {
+        projectPath: path.resolve(projectPath),
+        sourceProjectPath: path.resolve(projectPath),
+      }
+    : await resolveAutomatorProjectPath(projectPath)
 
   if (config.autoBootstrapDevtools !== false) {
     bootstrapResult = await bootstrapWechatDevtoolsSettings({

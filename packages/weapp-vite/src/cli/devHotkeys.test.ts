@@ -364,6 +364,7 @@ describe('devHotkeys', () => {
       fullPage: true,
       outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
       projectPath: '/project/dist',
+      preserveProjectRoot: true,
       sharedSession: true,
       timeout: 30000,
     })

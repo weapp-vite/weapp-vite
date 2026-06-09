@@ -39,6 +39,7 @@ export async function runScreenshotAction(options: StartDevHotkeysOptions) {
   const result = await takeScreenshot({
     fullPage: true,
     projectPath: options.projectPath,
+    preserveProjectRoot: true,
     sharedSession: true,
     outputPath,
     timeout: DEFAULT_SCREENSHOT_TIMEOUT,
