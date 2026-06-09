@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { Socket } from 'socket.io-client'
+import { io } from 'socket.io-client'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { io, type Socket } from 'socket.io-client'
 
 interface ChatMessage {
   id: string
@@ -22,6 +23,13 @@ const draft = ref('')
 const messages = ref<ChatMessage[]>([])
 const messageList = ref<HTMLElement>()
 let socket: Socket | undefined
+
+async function scrollToBottom() {
+  await nextTick()
+  if (messageList.value) {
+    messageList.value.scrollTop = messageList.value.scrollHeight
+  }
+}
 
 onMounted(() => {
   socket = io(socketUrl, {
@@ -47,7 +55,7 @@ onMounted(() => {
     scrollToBottom()
   })
 
-  socket.on('presence', (event: { type: 'join' | 'leave'; userName: string; at: number }) => {
+  socket.on('presence', (event: { at: number, type: 'join' | 'leave', userName: string }) => {
     messages.value.push({
       id: `presence-${event.at}`,
       room,
@@ -91,13 +99,6 @@ function formatTime(value: number) {
   const minutes = `${date.getMinutes()}`.padStart(2, '0')
   return `${hours}:${minutes}`
 }
-
-async function scrollToBottom() {
-  await nextTick()
-  if (messageList.value) {
-    messageList.value.scrollTop = messageList.value.scrollHeight
-  }
-}
 </script>
 
 <template>
@@ -115,43 +116,47 @@ async function scrollToBottom() {
       </span>
     </header>
 
-    <div ref="messageList" class="min-h-0 flex-1 overflow-y-auto px-3.5 pt-4.5 pb-6">
-      <article
-        v-for="message in messages"
-        :key="message.id"
-        class="mb-4 flex items-start gap-2.5"
-        :class="{
-          'flex-row-reverse': isMine(message),
-          'justify-center': message.platform === 'server',
-        }"
-      >
-        <div
-          v-if="message.platform !== 'server'"
-          class="flex size-9.5 shrink-0 items-center justify-center rounded bg-[#07c160] font-bold text-white"
-          :class="{ 'bg-[#2f80ed]': isMine(message) }"
+    <div ref="messageList" class="min-h-0 flex-1 overflow-y-auto bg-[#ededed]">
+      <div class="flex min-h-full flex-col justify-end px-3.5 pt-4.5 pb-6">
+        <article
+          v-for="message in messages"
+          :key="message.id"
+          class="chat-message mb-3.5 flex items-start gap-2.5 last:mb-0"
+          :class="{
+            'flex-row-reverse': isMine(message),
+            'justify-center': message.platform === 'server',
+            'chat-message--mine': isMine(message),
+            'chat-message--system': message.platform === 'server',
+          }"
         >
-          {{ message.platform === 'mini' ? '小' : 'W' }}
-        </div>
-        <div class="max-w-[286px]">
           <div
             v-if="message.platform !== 'server'"
-            class="mb-1 text-xs text-[#888]"
-            :class="{ 'text-right': isMine(message) }"
+            class="flex size-9.5 shrink-0 items-center justify-center rounded bg-[#07c160] font-bold text-white"
+            :class="{ 'bg-[#2f80ed]': isMine(message) }"
           >
-            {{ message.userName }} · {{ formatTime(message.createdAt) }}
+            {{ message.platform === 'mini' ? '小' : 'W' }}
           </div>
-          <div
-            class="overflow-wrap-anywhere rounded px-3 py-2.5 leading-snug"
-            :class="message.platform === 'server'
-              ? 'max-w-[300px] rounded-full bg-black/8 px-3 py-1.5 text-center text-xs text-[#666]'
-              : isMine(message)
-                ? 'bg-[#95ec69]'
-                : 'bg-white'"
-          >
-            {{ message.text }}
+          <div class="max-w-[286px]">
+            <div
+              v-if="message.platform !== 'server'"
+              class="mb-1 text-xs text-[#888]"
+              :class="{ 'text-right': isMine(message) }"
+            >
+              {{ message.userName }} · {{ formatTime(message.createdAt) }}
+            </div>
+            <div
+              class="chat-message__bubble overflow-wrap-anywhere rounded px-3 py-2.5 leading-snug"
+              :class="message.platform === 'server'
+                ? 'max-w-[300px] rounded-full bg-black/8 px-3 py-1.5 text-center text-xs text-[#666]'
+                : isMine(message)
+                  ? 'bg-[#95ec69]'
+                  : 'bg-[#f5f5f5]'"
+            >
+              {{ message.text }}
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </div>
     </div>
 
     <form class="flex items-center gap-2.5 border-t border-black/10 bg-[#f7f7f7] p-3" @submit.prevent="sendMessage">
@@ -167,3 +172,34 @@ async function scrollToBottom() {
     </form>
   </section>
 </template>
+
+<style scoped>
+.chat-message__bubble {
+  position: relative;
+  color: #111;
+  word-break: break-word;
+}
+
+.chat-message__bubble::before {
+  position: absolute;
+  top: 12px;
+  left: -5px;
+  width: 0;
+  height: 0;
+  content: '';
+  border-top: 5px solid transparent;
+  border-right: 6px solid #f5f5f5;
+  border-bottom: 5px solid transparent;
+}
+
+.chat-message--mine .chat-message__bubble::before {
+  right: -5px;
+  left: auto;
+  border-right: 0;
+  border-left: 6px solid #95ec69;
+}
+
+.chat-message--system .chat-message__bubble::before {
+  display: none;
+}
+</style>

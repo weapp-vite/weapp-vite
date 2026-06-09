@@ -5,22 +5,24 @@
     scroll-with-animation
     scroll-into-view="{{scrollIntoView}}"
   >
-    <view
-      class="message {{item.userId === userId ? 'message--mine' : ''}} {{item.platform === 'server' ? 'message--system' : ''}}"
-      id="msg-{{item.id}}"
-      wx:for="{{messages}}"
-      wx:key="id"
-    >
+    <view class="message-list__content">
       <view
-        class="message__avatar {{item.userId === userId ? 'message__avatar--me' : 'message__avatar--yang'}}"
-        wx:if="{{item.platform !== 'server'}}"
+        class="message {{item.userId === userId ? 'message--mine' : ''}} {{item.platform === 'server' ? 'message--system' : ''}}"
+        id="msg-{{item.id}}"
+        wx:for="{{messages}}"
+        wx:key="id"
       >
-        <view class="message__avatar-hair"></view>
-        <view class="message__avatar-head"></view>
-        <view class="message__avatar-body"></view>
-      </view>
-      <view class="message__body">
-        <view class="message__bubble">{{item.text}}</view>
+        <view
+          class="message__avatar {{item.userId === userId ? 'message__avatar--me' : 'message__avatar--yang'}}"
+          wx:if="{{item.platform !== 'server'}}"
+        >
+          <view class="message__avatar-hair"></view>
+          <view class="message__avatar-head"></view>
+          <view class="message__avatar-body"></view>
+        </view>
+        <view class="message__body">
+          <view class="message__bubble">{{item.text}}</view>
+        </view>
       </view>
     </view>
   </scroll-view>

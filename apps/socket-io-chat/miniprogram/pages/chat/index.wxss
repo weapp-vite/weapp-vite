@@ -10,14 +10,28 @@
   box-sizing: border-box;
   flex: 1;
   min-height: 0;
-  padding: 28rpx 24rpx 36rpx;
+  height: 0;
+  background: #ededed;
+}
+
+.message-list__content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 100%;
+  padding: 28rpx 24rpx 38rpx;
 }
 
 .message {
   display: flex;
-  gap: 18rpx;
+  gap: 20rpx;
   align-items: flex-start;
-  margin-bottom: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.message:last-child {
+  margin-bottom: 0;
 }
 
 .message--mine {
@@ -31,13 +45,13 @@
 .message__avatar {
   position: relative;
   display: flex;
-  flex: 0 0 72rpx;
+  flex: 0 0 76rpx;
   align-items: center;
   justify-content: center;
-  width: 72rpx;
-  height: 72rpx;
+  width: 76rpx;
+  height: 76rpx;
   overflow: hidden;
-  border-radius: 10rpx;
+  border-radius: 8rpx;
   box-shadow: 0 1rpx 3rpx rgb(0 0 0 / 8%);
 }
 
@@ -55,8 +69,8 @@
 
 .message__avatar-hair {
   position: absolute;
-  top: 10rpx;
-  left: 17rpx;
+  top: 11rpx;
+  left: 19rpx;
   z-index: 1;
   width: 38rpx;
   height: 24rpx;
@@ -70,8 +84,8 @@
 
 .message__avatar-head {
   position: absolute;
-  top: 17rpx;
-  left: 21rpx;
+  top: 18rpx;
+  left: 23rpx;
   z-index: 2;
   width: 30rpx;
   height: 30rpx;
@@ -85,9 +99,9 @@
 
 .message__avatar-body {
   position: absolute;
-  right: 13rpx;
-  bottom: 7rpx;
-  left: 13rpx;
+  right: 14rpx;
+  bottom: 8rpx;
+  left: 14rpx;
   height: 28rpx;
   background:
     linear-gradient(90deg, transparent 0 15rpx, rgb(255 255 255 / 35%) 16rpx 20rpx, transparent 21rpx),
@@ -102,42 +116,72 @@
 }
 
 .message__body {
-  max-width: 560rpx;
+  display: flex;
+  max-width: 538rpx;
 }
 
 .message--mine .message__body {
-  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .message__bubble {
   position: relative;
+  box-sizing: border-box;
+  min-height: 72rpx;
   padding: 18rpx 22rpx;
   font-size: 30rpx;
-  line-height: 1.45;
+  line-height: 1.42;
+  color: #111;
   overflow-wrap: anywhere;
-  background: #fff;
+  word-break: break-word;
+  background: #f5f5f5;
   border-radius: 8rpx;
+}
+
+.message__bubble::before {
+  position: absolute;
+  top: 22rpx;
+  left: -10rpx;
+  width: 0;
+  height: 0;
+  content: "";
+  border-top: 9rpx solid transparent;
+  border-right: 11rpx solid #f5f5f5;
+  border-bottom: 9rpx solid transparent;
 }
 
 .message--mine .message__bubble {
   background: #95ec69;
 }
 
+.message--mine .message__bubble::before {
+  right: -10rpx;
+  left: auto;
+  border-right: 0;
+  border-left: 11rpx solid #95ec69;
+}
+
 .message--system .message__bubble {
   max-width: 560rpx;
+  min-height: 0;
   padding: 10rpx 20rpx;
   font-size: 24rpx;
+  line-height: 1.35;
   color: #666;
   text-align: center;
   background: rgb(0 0 0 / 8%);
   border-radius: 999rpx;
 }
 
+.message--system .message__bubble::before {
+  display: none;
+}
+
 .composer {
   display: flex;
-  gap: 12rpx;
+  gap: 16rpx;
   align-items: center;
-  padding: 12rpx 20rpx calc(12rpx + env(safe-area-inset-bottom));
+  padding: 14rpx 20rpx calc(14rpx + env(safe-area-inset-bottom));
   background: #f7f7f7;
   border-top: 1rpx solid rgb(0 0 0 / 8%);
 }
@@ -145,20 +189,22 @@
 .composer__input {
   box-sizing: border-box;
   flex: 1;
-  height: 64rpx;
-  padding: 0 20rpx;
+  min-width: 0;
+  height: 68rpx;
+  padding: 0 22rpx;
   font-size: 28rpx;
   background: #fff;
   border-radius: 8rpx;
 }
 
 .composer__button {
-  width: 88rpx;
-  height: 56rpx;
+  flex: 0 0 104rpx;
+  width: 104rpx;
+  height: 64rpx;
   padding: 0;
   margin: 0;
   font-size: 24rpx;
-  line-height: 56rpx;
+  line-height: 64rpx;
   color: #fff;
   background: #07c160;
   border-radius: 8rpx;
