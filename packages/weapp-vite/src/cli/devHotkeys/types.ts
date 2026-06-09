@@ -1,6 +1,7 @@
 import type { WeappMcpConfig, WeappViteConfig } from '../../types'
 
 export interface StartDevHotkeysOptions {
+  agentName?: string
   cwd: string
   mcpConfig?: boolean | WeappMcpConfig
   openIde?: () => Promise<string | undefined>
@@ -9,6 +10,7 @@ export interface StartDevHotkeysOptions {
   rebuild?: () => Promise<string | undefined>
   silentStartupHint?: boolean
   weappViteConfig?: WeappViteConfig
+  isAgent?: boolean
 }
 
 export type DevHotkeyGroup = 'development' | 'devtools' | 'help' | 'process'

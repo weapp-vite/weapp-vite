@@ -3,6 +3,7 @@ import type { ViteDevServer } from 'vite'
 import type { AnalyzeDashboardHandle } from '../../analyze/dashboard'
 import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
+import { detectAiDevelopmentEnvironment } from '../../../aiEnvironment'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
@@ -10,6 +11,7 @@ import { startDevHotkeys } from '../../devHotkeys'
 import { formatDuration } from '../../formatDuration'
 import { maybeStartForwardConsole } from '../../forwardConsole'
 import { logBuildAppFinish } from '../../logBuildAppFinish'
+import { applyMcpCliOptions } from '../../mcpOptions'
 import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
@@ -30,6 +32,8 @@ export function registerServeCommand(cli: CAC) {
     .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
     .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
     .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
+    .option('--mcp', '[boolean] auto start MCP service during dev')
+    .option('--no-mcp', '[boolean] disable MCP service during dev')
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
@@ -83,6 +87,8 @@ export function registerServeCommand(cli: CAC) {
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
+      const aiEnvironment = await detectAiDevelopmentEnvironment()
+      const mcpConfig = applyMcpCliOptions(configService.weappViteConfig?.mcp, options)
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
@@ -114,7 +120,9 @@ export function registerServeCommand(cli: CAC) {
       const devHotkeysSession = targets.runMini
         ? startDevHotkeys({
             cwd: configService.cwd,
-            mcpConfig: configService.weappViteConfig?.mcp,
+            agentName: aiEnvironment.agentName,
+            isAgent: aiEnvironment.isAgent,
+            mcpConfig,
             openIde: async () => await miniProgramDevActions.openIde({
               forceOpen: true,
               forceReopen: true,

@@ -45,13 +45,41 @@ describe('weapp mcp config', () => {
 
   it('uses defaults when config is omitted', async () => {
     const { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_PORT, DEFAULT_RUNTIME_REST_ENDPOINT, resolveWeappMcpConfig } = await loadMcpModule()
-    const resolved = resolveWeappMcpConfig(undefined)
+    const resolved = resolveWeappMcpConfig(undefined, { cwd: '/workspace/default-app', env: {} })
 
     expect(resolved.enabled).toBe(true)
     expect(resolved.autoStart).toBe(false)
-    expect(resolved.port).toBe(DEFAULT_MCP_PORT)
+    expect(resolved.port).not.toBe(DEFAULT_MCP_PORT)
     expect(resolved.endpoint).toBe(DEFAULT_MCP_ENDPOINT)
     expect(resolved.restEndpoint).toBe(DEFAULT_RUNTIME_REST_ENDPOINT)
+  })
+
+  it('auto starts in ai environments by default', async () => {
+    const { resolveWeappMcpConfig } = await loadMcpModule()
+    const resolved = resolveWeappMcpConfig(undefined, {
+      cwd: '/workspace/demo',
+      env: {
+        CODEX_HOME: '/tmp/codex',
+      },
+    })
+
+    expect(resolved.autoStart).toBe(true)
+    expect(resolved.port).not.toBe(3088)
+  })
+
+  it('respects env override for mcp auto start', async () => {
+    const { resolveWeappMcpConfig } = await loadMcpModule()
+
+    expect(resolveWeappMcpConfig({ autoStart: false }, {
+      env: {
+        WEAPP_VITE_MCP: '1',
+      },
+    }).autoStart).toBe(true)
+    expect(resolveWeappMcpConfig({ autoStart: true }, {
+      env: {
+        WEAPP_VITE_MCP: '0',
+      },
+    }).autoStart).toBe(false)
   })
 
   it('normalizes endpoint, REST endpoint, host, and port', async () => {

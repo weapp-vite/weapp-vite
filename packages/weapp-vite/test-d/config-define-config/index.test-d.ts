@@ -40,6 +40,10 @@ const objectConfig = defineConfig({
       includeMainPackage: true,
       include: ['main', 'subpackages/item'],
     },
+    mcp: {
+      autoStart: 'ai',
+      port: 'auto',
+    },
     vue: {
       template: {
         htmlTagToWxml: {
@@ -118,6 +122,14 @@ expectAssignable<{
     limit?: number
   }
 } | undefined>(objectConfig.weapp?.analyze)
+expectAssignable<UserConfig>({
+  weapp: {
+    mcp: {
+      autoStart: 'ai',
+      port: 'auto',
+    },
+  },
+})
 expectAssignable<string | string[] | {
   includeMainPackage?: boolean
   include?: string[]

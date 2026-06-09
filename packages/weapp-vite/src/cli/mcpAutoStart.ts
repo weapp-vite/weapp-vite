@@ -1,6 +1,7 @@
 import type { WeappMcpConfig } from '../types'
 import type { GlobalCLIOptions } from './types'
 import process from 'node:process'
+import { detectAiDevelopmentEnvironment } from '../aiEnvironment'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 import { loadConfig } from './loadConfig'
@@ -52,7 +53,12 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
   }
 
   const maybeMcpConfig = rawMcpConfig as (boolean | WeappMcpConfig | undefined)
-  const resolvedMcp = resolveWeappMcpConfig(maybeMcpConfig)
+  const aiEnvironment = await detectAiDevelopmentEnvironment()
+  const resolvedMcp = resolveWeappMcpConfig(maybeMcpConfig, {
+    agentName: aiEnvironment.agentName,
+    cwd: process.cwd(),
+    isAgent: aiEnvironment.isAgent,
+  })
   if (!resolvedMcp.enabled || !resolvedMcp.autoStart) {
     return
   }

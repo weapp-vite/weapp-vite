@@ -11,8 +11,14 @@ const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
   rawPlatform: 'weapp',
 })))
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
+const maybeStartDetachedMcpServerMock = vi.hoisted(() => vi.fn())
+const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
+}))
+
+vi.mock('../../aiEnvironment', () => ({
+  detectAiDevelopmentEnvironment: detectAiDevelopmentEnvironmentMock,
 }))
 
 vi.mock('../openIde', () => ({
@@ -32,6 +38,10 @@ vi.mock('../runtime', () => ({
 
 vi.mock('../hmrProfileSummary', () => ({
   readLatestHmrProfileSummary: readLatestHmrProfileSummaryMock,
+}))
+
+vi.mock('../mcpDetached', () => ({
+  maybeStartDetachedMcpServer: maybeStartDetachedMcpServerMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -71,6 +81,11 @@ describe('open cli command', () => {
     })
     resolveIdeProjectRootMock.mockReturnValue('/workspace/demo')
     readLatestHmrProfileSummaryMock.mockResolvedValue(undefined)
+    maybeStartDetachedMcpServerMock.mockResolvedValue(undefined)
+    detectAiDevelopmentEnvironmentMock.mockResolvedValue({
+      agentName: 'codex',
+      isAgent: true,
+    })
     openIdeMock.mockResolvedValue(undefined)
   })
 
@@ -92,6 +107,12 @@ describe('open cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/workspace/demo/dist/dev', {
       trustProject: undefined,
     })
+    expect(maybeStartDetachedMcpServerMock).toHaveBeenCalledWith({
+      agentName: 'codex',
+      cwd: '/workspace/demo',
+      isAgent: true,
+      mcpConfig: undefined,
+    })
   })
 
   it('opens ide without summary when no hmr profile is available', async () => {
@@ -102,6 +123,24 @@ describe('open cli command', () => {
     expect(loggerMock.info).not.toHaveBeenCalled()
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/workspace/demo/dist/dev', {
       trustProject: false,
+    })
+  })
+
+  it('passes mcp cli override before opening ide', async () => {
+    const action = createOpenActionHandler()
+
+    await action(undefined, {
+      mcp: true,
+    })
+
+    expect(maybeStartDetachedMcpServerMock).toHaveBeenCalledWith({
+      agentName: 'codex',
+      cwd: '/workspace/demo',
+      isAgent: true,
+      mcpConfig: {
+        autoStart: true,
+        enabled: true,
+      },
     })
   })
 

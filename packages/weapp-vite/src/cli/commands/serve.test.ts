@@ -21,6 +21,7 @@ const analyzeSubpackagesMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
+const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const hasOtherActiveServeIdeProjectMock = vi.hoisted(() => vi.fn())
 const registerActiveServeIdeProjectMock = vi.hoisted(() => vi.fn())
@@ -65,6 +66,17 @@ class MockWatcher extends EventEmitter {
   close = vi.fn()
 }
 
+async function waitForStartDevHotkeys() {
+  for (let index = 0; index < 10; index++) {
+    const options = startDevHotkeysMock.mock.calls[0]?.[0]
+    if (options) {
+      return options
+    }
+    await Promise.resolve()
+  }
+  return undefined
+}
+
 vi.mock('node:process', () => ({
   default: fakeProcess,
 }))
@@ -91,6 +103,10 @@ vi.mock('../runtime', () => ({
 
 vi.mock('../../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
+}))
+
+vi.mock('../../../aiEnvironment', () => ({
+  detectAiDevelopmentEnvironment: detectAiDevelopmentEnvironmentMock,
 }))
 
 vi.mock('../../analyze/subpackages', () => ({
@@ -151,6 +167,11 @@ describe('serve cli command', () => {
     devHotkeysRestoreMock.mockReset()
     devHotkeysSuspendMock.mockReset()
     maybeStartForwardConsoleMock.mockReset()
+    detectAiDevelopmentEnvironmentMock.mockReset()
+    detectAiDevelopmentEnvironmentMock.mockResolvedValue({
+      agentName: 'codex',
+      isAgent: true,
+    })
     hasOtherActiveServeIdeProjectMock.mockReset()
     hasOtherActiveServeIdeProjectMock.mockResolvedValue(false)
     registerActiveServeIdeProjectMock.mockReset()
@@ -255,6 +276,8 @@ describe('serve cli command', () => {
     }, null)
     expect(startDevHotkeysMock).toHaveBeenCalledWith({
       cwd: '/project',
+      agentName: 'codex',
+      isAgent: true,
       mcpConfig: undefined,
       openIde: expect.any(Function),
       platform: 'weapp',
@@ -269,6 +292,39 @@ describe('serve cli command', () => {
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
+  })
+
+  it('forces mcp config for dev hotkeys with --mcp', async () => {
+    const action = createServeActionHandler()
+
+    await action('/project', {
+      mcp: true,
+      platform: 'weapp',
+    })
+
+    expect(startDevHotkeysMock).toHaveBeenCalledWith(expect.objectContaining({
+      agentName: 'codex',
+      isAgent: true,
+      mcpConfig: {
+        autoStart: true,
+        enabled: true,
+      },
+    }))
+  })
+
+  it('disables mcp config for dev hotkeys with --no-mcp', async () => {
+    const action = createServeActionHandler()
+
+    await action('/project', {
+      mcp: false,
+      platform: 'weapp',
+    })
+
+    expect(startDevHotkeysMock).toHaveBeenCalledWith(expect.objectContaining({
+      agentName: 'codex',
+      isAgent: true,
+      mcpConfig: false,
+    }))
   })
 
   it('emits hmr profile events to dashboard after mini rebuilds', async () => {
@@ -496,9 +552,7 @@ describe('serve cli command', () => {
       trustProject: true,
     })
 
-    await Promise.resolve()
-
-    const hotkeyOptions = startDevHotkeysMock.mock.calls[0]?.[0]
+    const hotkeyOptions = await waitForStartDevHotkeys()
     expect(hotkeyOptions).toBeDefined()
 
     const rebuildResult = await hotkeyOptions.rebuild()
@@ -553,9 +607,7 @@ describe('serve cli command', () => {
       trustProject: true,
     })
 
-    await Promise.resolve()
-
-    const hotkeyOptions = startDevHotkeysMock.mock.calls[0]?.[0]
+    const hotkeyOptions = await waitForStartDevHotkeys()
     expect(hotkeyOptions?.projectPath).toBe('/project/ide-root')
 
     maybeStartForwardConsoleMock.mockResolvedValueOnce(false)

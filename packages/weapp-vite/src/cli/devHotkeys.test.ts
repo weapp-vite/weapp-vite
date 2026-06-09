@@ -425,6 +425,32 @@ describe('devHotkeys', () => {
     session?.close()
   })
 
+  it('reuses existing mcp service when hotkey start hits occupied port', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    startWeappViteMcpServerMock.mockRejectedValueOnce(new Error('listen EADDRINUSE: address already in use 127.0.0.1:3088'))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: {
+        autoStart: false,
+      },
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('data', 'm')
+    await flushMicrotasks(10)
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('MCP 服务已存在，继续复用'))
+    stdin.emit('data', 'm')
+    await flushMicrotasks(10)
+    expect(closeMcpMock).not.toHaveBeenCalled()
+    session?.close()
+  })
+
   it('resets devtools session with c hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,

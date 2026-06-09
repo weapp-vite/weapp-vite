@@ -40,7 +40,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let lastAction: string | undefined
   let lastRenderedPanel = ''
   const recentInputs = new Map<string, string>()
-  const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
+  const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig, {
+    agentName: options.agentName,
+    cwd: options.cwd,
+    isAgent: options.isAgent,
+  })
   const getState = (): DevHotkeyState => ({
     currentAction,
     lastAction,

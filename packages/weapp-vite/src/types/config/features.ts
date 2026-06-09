@@ -102,9 +102,9 @@ export interface MultiPlatformConfig {
  */
 export interface WeappMcpConfig {
   enabled?: boolean
-  autoStart?: boolean
+  autoStart?: boolean | 'ai'
   host?: string
-  port?: number
+  port?: number | 'auto'
   endpoint?: string
   /**
    * @description streamable-http 模式下的 DevTools runtime REST 入口；设为 false 可关闭。

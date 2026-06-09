@@ -15,6 +15,7 @@ export interface GlobalCLIOptions {
   'm'?: string
   'mode'?: string
   'force'?: boolean
+  'mcp'?: boolean
   'skipNpm'?: boolean
   'open'?: boolean
   'host'?: boolean | string

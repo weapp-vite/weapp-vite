@@ -41,6 +41,11 @@ export interface WeappViteConfig {
     dependencies?: (string | RegExp)[]
     prelude?: boolean
   }
+  mcp?: boolean | {
+    enabled?: boolean
+    autoStart?: boolean | 'ai'
+    port?: number | 'auto'
+  }
   autoImportComponents?: boolean | AutoImportComponentsConfig
   vue?: {
     template?: {
