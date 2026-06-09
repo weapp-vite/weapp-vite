@@ -1,5 +1,27 @@
 # weapp-vite
 
+## 6.16.43
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite dev -o` 通过 automator 打开带 `miniprogramRoot` 项目时可能切到临时哈希目录的问题。开发模式现在直接打开真实项目目录，打开后的 HTTP 编译刷新失败时也不会回退到会创建临时 wrapper 的 automator 编译；开发态 `s` 截图热键会保留真实项目根，避免微信开发者工具监听临时拷贝导致后续热更新失效。** [`9799aa2`](https://github.com/weapp-vite/weapp-vite/commit/9799aa221f999a1dbd28ab95b21723336e8de680) by @sonofmagic
+
+- 🐛 **修复 `dev --open` 在 `forwardConsole` 已连接时跳过微信开发者工具打开与项目刷新流程的问题。现在启动阶段会强制执行 IDE 打开、fileutils 重置和编译刷新，避免小程序产物已经重新构建但开发者工具不响应文件变化。** [`462ce06`](https://github.com/weapp-vite/weapp-vite/commit/462ce06950a53f542c1ef587617a18c433f2049f) by @sonofmagic
+
+- 🐛 **修复多个 TailwindCSS 模板同时执行 `pnpm dev:open` 时，截图、MCP 与其他微信开发者工具联动可能连接到默认全局 automator 端口或其他项目窗口的问题。开发态普通 open 后会为真实项目根目录准备独立的默认 automator 会话，MCP runtime 默认保留真实项目根目录，确保多开场景下各模板的热更新、截图和运行时调试都绑定到自己的项目。** [`16150fa`](https://github.com/weapp-vite/weapp-vite/commit/16150fa2039be50c0cd124688bdc43266181800d) by @sonofmagic
+
+- 🐛 **修复多个模板或项目同时/顺序运行 `weapp-vite dev -o` 时，微信开发者工具 automator 默认端口可能复用旧项目窗口的问题。`dev:open` 现在会为每个真实项目派生稳定的 automator 端口，并将截图、MCP 与会话重建路径绑定到对应项目，避免热更新、截图或 MCP 误连到其它模板。** [`2221135`](https://github.com/weapp-vite/weapp-vite/commit/2221135ba56eea877feee3480d6eacebcf5f4cb9) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 在目标项目已由微信开发者工具打开时仍可能反复关闭并重新拉起的问题。开发服务启动阶段现在会优先复用已打开项目，并在自动打开 IDE 期间暂停开发态快捷键输入，避免终端按键被误触发为再次重开；手动按 `o` 重新打开项目的快捷键行为保持不变。** [`39e872d`](https://github.com/weapp-vite/weapp-vite/commit/39e872d9b6d6b017d8dfe50e56b00ece7771eb13) by @sonofmagic
+
+- 🐛 **修复无业务 props 的 Vue SFC 组件在 `setup` 中调用 `useSlots()` 或 `defineSlots()` 时无法读取父级传入插槽的问题。编译收尾阶段现在会在脚本使用 slot 元数据时为组件同步注入 `vueSlots` 等内部属性，确保默认插槽和具名插槽的存在性检测可用。** [#676](https://github.com/weapp-vite/weapp-vite/pull/676) by @sonofmagic
+- 📦 Updated 4 dependencies [`9799aa2`](https://github.com/weapp-vite/weapp-vite/commit/9799aa221f999a1dbd28ab95b21723336e8de680)
+  <details><summary>Details</summary>
+
+  `weapp-ide-cli@5.4.4`, `@weapp-vite/mcp@1.4.3`, `wevu@6.16.43`, `@weapp-vite/ast@6.16.43`
+
+  </details>
+
 ## 6.16.42
 
 ### Patch Changes
