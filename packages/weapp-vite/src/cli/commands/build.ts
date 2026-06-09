@@ -75,11 +75,12 @@ export function registerBuildCommand(cli: CAC) {
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
+      const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets.platform, options.scope)
       const ctx = await createCompilerContext({
-        cwd: root,
+        cwd,
         mode: options.mode ?? 'production',
         configFile,
         inlineConfig,

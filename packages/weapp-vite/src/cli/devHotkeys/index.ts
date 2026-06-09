@@ -99,9 +99,16 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     printHint()
   }
 
+  const suspendInput = () => {
+    if (closed) {
+      return
+    }
+    inputSession?.suspend()
+  }
+
   const suspend = () => {
     lastRenderedPanel = ''
-    inputSession?.suspend()
+    suspendInput()
     forwardSigtstp()
   }
   const toggleMcp = createToggleMcpAction({
@@ -250,5 +257,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   return {
     close,
     restore,
+    suspend: suspendInput,
   }
 }

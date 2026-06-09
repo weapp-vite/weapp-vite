@@ -131,15 +131,30 @@ describe('devHotkeys', () => {
     closeSharedMiniProgramMock.mockResolvedValue(undefined)
     createSharedInputSessionMock.mockReset()
     createSharedInputSessionMock.mockImplementation(({ onData, onKeypress }) => {
-      stdin.on('data', onData)
-      stdin.on('keypress', onKeypress)
+      let suspended = false
+      const handleData = (chunk: string | Uint8Array) => {
+        if (!suspended) {
+          onData(chunk)
+        }
+      }
+      const handleKeypress = (str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
+        if (!suspended) {
+          onKeypress(str, key)
+        }
+      }
+      stdin.on('data', handleData)
+      stdin.on('keypress', handleKeypress)
       return {
         close: vi.fn(() => {
-          stdin.off('data', onData)
-          stdin.off('keypress', onKeypress)
+          stdin.off('data', handleData)
+          stdin.off('keypress', handleKeypress)
         }),
-        resume: vi.fn(),
-        suspend: vi.fn(),
+        resume: vi.fn(() => {
+          suspended = false
+        }),
+        suspend: vi.fn(() => {
+          suspended = true
+        }),
       }
     })
     parseWeappIdeCliMock.mockReset()
@@ -556,6 +571,36 @@ describe('devHotkeys', () => {
     })
     expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目；[hmr] 最近一次热更新 88.00 ms'))
+  })
+
+  it('ignores reopen hotkey while session input is suspended', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      openIde: openIdeMock,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    session?.suspend()
+    stdin.emit('data', 'o')
+    await flushMicrotasks(10)
+
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
+
+    session?.restore()
+    stdin.emit('data', 'o')
+    await flushMicrotasks(10)
+
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
   })
 
   it('shows screenshot summary in hint after screenshot action', async () => {

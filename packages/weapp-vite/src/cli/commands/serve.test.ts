@@ -26,11 +26,13 @@ const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn((root: string) => root)
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
 const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
+const devHotkeysSuspendMock = vi.hoisted(() => vi.fn())
 const watcherCloseAllMock = vi.hoisted(() => vi.fn())
 const buildServiceBuildMock = vi.hoisted(() => vi.fn())
 const fakeProcess = vi.hoisted(() => {
   const listeners = new Map<string, Set<(...args: any[]) => void>>()
   return {
+    cwd: vi.fn(() => '/cwd-project'),
     env: {} as Record<string, string | undefined>,
     emit(event: string, ...args: any[]) {
       listeners.get(event)?.forEach(listener => listener(...args))
@@ -54,6 +56,7 @@ const fakeProcess = vi.hoisted(() => {
 const startDevHotkeysMock = vi.hoisted(() => vi.fn(() => ({
   close: devHotkeysCloseMock,
   restore: devHotkeysRestoreMock,
+  suspend: devHotkeysSuspendMock,
 })))
 
 class MockWatcher extends EventEmitter {
@@ -139,6 +142,7 @@ describe('serve cli command', () => {
     vi.clearAllMocks()
     devHotkeysCloseMock.mockReset()
     devHotkeysRestoreMock.mockReset()
+    devHotkeysSuspendMock.mockReset()
     maybeStartForwardConsoleMock.mockReset()
     resolveConfigFileMock.mockReturnValue(undefined)
     resolveIdeProjectRootMock.mockReset()
@@ -361,10 +365,40 @@ describe('serve cli command', () => {
       loginRetry: 'never',
       loginRetryTimeout: '1000',
       nonInteractive: true,
-      reuseOpenedProject: false,
+      reuseOpenedProject: true,
       trustProject: false,
     })
+    expect(devHotkeysSuspendMock).toHaveBeenCalledTimes(1)
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('suspends dev hotkeys while opening ide during serve startup', async () => {
+    const action = createServeActionHandler()
+    const order: string[] = []
+    devHotkeysSuspendMock.mockImplementation(() => {
+      order.push('suspend')
+    })
+    openIdeMock.mockImplementation(async () => {
+      order.push('open')
+    })
+    devHotkeysRestoreMock.mockImplementation(() => {
+      order.push('restore')
+    })
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+      open: true,
+      trustProject: true,
+    })
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+
+    expect(order).toEqual([
+      'restore',
+      'suspend',
+      'open',
+      'restore',
+    ])
   })
 
   it('opens ide during serve startup even when forward console can attach', async () => {
@@ -381,7 +415,7 @@ describe('serve cli command', () => {
 
     expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
-      reuseOpenedProject: false,
+      reuseOpenedProject: true,
       trustProject: true,
     })
   })
@@ -402,6 +436,22 @@ describe('serve cli command', () => {
 
     expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
     expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses process cwd when serve root argument is omitted', async () => {
+    const action = createServeActionHandler()
+
+    const actionPromise = action(undefined as any, {
+      platform: 'weapp',
+    })
+
+    await Promise.resolve()
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+
+    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: '/cwd-project',
+    }))
   })
 
   it('injects rebuild and reopen callbacks into dev hotkeys session', async () => {

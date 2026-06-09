@@ -95,17 +95,22 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
   if (options.reuseOpenedProject === false) {
     const reopened = await reopenOpenedWechatIde(projectPath, closeIde)
     if (reopened) {
-      return true
+      return 'reopened'
     }
   }
 
-  const reuseResult = await tryReuseOpenedWechatIde(projectPath, closeIde)
-  if (reuseResult?.reused || reuseResult?.reopened) {
-    return true
+  const reuseResult = await tryReuseOpenedWechatIde(projectPath, closeIde, {
+    promptReopen: options.reuseOpenedProject !== true,
+  })
+  if (reuseResult?.reused) {
+    return 'reused'
+  }
+  if (reuseResult?.reopened) {
+    return 'reopened'
   }
 
   await openWechatIdeByAutomator(projectPath)
-  return true
+  return 'opened'
 }
 
 /**
@@ -227,8 +232,11 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
 
   if (platform === 'weapp' && projectPath && options.trustProject !== false && bootstrapResult?.servicePortEnabled !== false) {
     try {
-      const opened = await tryOpenWechatIdeByAutomator(projectPath, options)
-      if (opened) {
+      const openResult = await tryOpenWechatIdeByAutomator(projectPath, options)
+      if (openResult === 'reused') {
+        return
+      }
+      if (openResult) {
         await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, options)
         return
       }

@@ -9,12 +9,13 @@ export interface ServeMiniProgramDevActions {
 
 export interface OpenServeIdeOptions {
   forceOpen?: boolean
+  forceReopen?: boolean
 }
 
 export interface CreateServeMiniProgramDevActionsOptions {
   build: () => Promise<unknown>
   fallbackProjectPath?: string
-  openIde: (projectPath?: string) => Promise<void>
+  openIde: (projectPath?: string, options?: OpenServeIdeOptions) => Promise<void>
   projectPath?: string
   tryReuseForwardConsole?: () => Promise<boolean>
 }
@@ -46,8 +47,10 @@ export function createServeMiniProgramDevActions(
         return '已通过控制台转发复用当前开发者工具会话'
       }
 
-      await options.openIde(projectPath)
-      return '已重新打开微信开发者工具项目'
+      await options.openIde(projectPath, openOptions)
+      return openOptions.forceReopen
+        ? '已重新打开微信开发者工具项目'
+        : '已打开或复用微信开发者工具项目'
     },
     rebuild: async () => {
       await options.build()

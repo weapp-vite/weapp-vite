@@ -245,12 +245,33 @@ describe('openIde', () => {
     expect(colorsMock.bold).toHaveBeenCalledWith('r')
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
     expect(launchAutomatorMock).not.toHaveBeenCalled()
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
-    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
-      fallbackToCli: false,
-      logPath: undefined,
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('reuses opened weapp project without retry prompt when reuse is explicitly requested', async () => {
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
     })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      reuseOpenedProject: true,
+    })
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 3000,
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。')
+    expect(promptRetryKeypressMock).not.toHaveBeenCalled()
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
     expect(parseMock).not.toHaveBeenCalled()
   })
 

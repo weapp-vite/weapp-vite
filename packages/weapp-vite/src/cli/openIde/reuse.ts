@@ -40,6 +40,9 @@ async function connectOpenedProject(projectPath: string) {
 export async function tryReuseOpenedWechatIde(
   projectPath: string,
   closeIde: () => Promise<boolean>,
+  options: {
+    promptReopen?: boolean
+  } = {},
 ) {
   const miniProgram = await connectOpenedProject(projectPath)
   if (!miniProgram) {
@@ -47,6 +50,14 @@ export async function tryReuseOpenedWechatIde(
   }
 
   disconnectMiniProgram(miniProgram)
+  if (options.promptReopen === false) {
+    logger.info('目标项目已在微信开发者工具中打开，已跳过重复打开。')
+    return {
+      reopened: false,
+      reused: true,
+    } as const
+  }
+
   logger.info(formatReuseOpenedWechatIdePrompt())
 
   const action = await promptRetryKeypress({ logger })

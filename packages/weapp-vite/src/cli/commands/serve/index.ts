@@ -2,6 +2,7 @@ import type { CAC } from 'cac'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeDashboardHandle } from '../../analyze/dashboard'
 import type { GlobalCLIOptions } from '../../types'
+import process from 'node:process'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
@@ -34,6 +35,7 @@ export function registerServeCommand(cli: CAC) {
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
+      const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
       let inlineConfig = createInlineConfig(targets.platform, options.scope)
@@ -71,7 +73,7 @@ export function registerServeCommand(cli: CAC) {
         }
       }
       const ctx = await createCompilerContext({
-        cwd: root,
+        cwd,
         mode: options.mode ?? 'development',
         isDev: true,
         configFile,
@@ -88,12 +90,12 @@ export function registerServeCommand(cli: CAC) {
           await buildService.build(options)
         },
         fallbackProjectPath: configService.cwd,
-        openIde: async (projectPath) => {
+        openIde: async (projectPath, openOptions) => {
           await openIde(configService.platform, projectPath, {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
-            reuseOpenedProject: false,
+            reuseOpenedProject: !openOptions?.forceReopen,
             trustProject: options.trustProject,
           })
         },
@@ -111,7 +113,10 @@ export function registerServeCommand(cli: CAC) {
         ? startDevHotkeys({
             cwd: configService.cwd,
             mcpConfig: configService.weappViteConfig?.mcp,
-            openIde: miniProgramDevActions.openIde,
+            openIde: async () => await miniProgramDevActions.openIde({
+              forceOpen: true,
+              forceReopen: true,
+            }),
             platform: configService.platform,
             projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
             rebuild: miniProgramDevActions.rebuild,
@@ -203,8 +208,13 @@ export function registerServeCommand(cli: CAC) {
               tags: ['ide', 'open'],
             },
           ])
-          await miniProgramDevActions.openIde({ forceOpen: true })
-          devHotkeysSession?.restore()
+          devHotkeysSession?.suspend()
+          try {
+            await miniProgramDevActions.openIde({ forceOpen: true })
+          }
+          finally {
+            devHotkeysSession?.restore()
+          }
         }
 
         if (analyzeHandle) {
