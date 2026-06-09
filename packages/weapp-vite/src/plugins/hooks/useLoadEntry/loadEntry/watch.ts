@@ -86,6 +86,47 @@ export async function collectAppSideFiles(
   await processSideJson(themeLocation)
 }
 
+export async function collectMiniappConfigFile(
+  pluginCtx: PluginContext,
+  id: string,
+  configService: CompilerContext['configService'],
+  jsonService: CompilerContext['jsonService'],
+  registerJsonAsset: (entry: JsonEmitFileEntry) => void,
+  existsCache: Map<string, boolean>,
+  ttlMs: number,
+) {
+  if (configService.platform !== 'weapp') {
+    return
+  }
+
+  const runtimeMiniappConfigPath = path.resolve(path.dirname(id), 'app.miniapp.json')
+  const runtimeConfigExists = await addWatchTarget(pluginCtx, runtimeMiniappConfigPath, existsCache, ttlMs)
+  if (runtimeConfigExists) {
+    const content = await jsonService.read(runtimeMiniappConfigPath)
+    registerJsonAsset({
+      fileName: 'app.miniapp.json',
+      json: content,
+      jsonPath: runtimeMiniappConfigPath,
+      type: 'page',
+    })
+    return
+  }
+
+  const miniappConfigPath = path.resolve(configService.cwd, 'project.miniapp.json')
+  const exists = await addWatchTarget(pluginCtx, miniappConfigPath, existsCache, ttlMs)
+  if (!exists) {
+    return
+  }
+
+  const content = await jsonService.read(miniappConfigPath)
+  registerJsonAsset({
+    fileName: 'app.miniapp.json',
+    json: content,
+    jsonPath: miniappConfigPath,
+    type: 'page',
+  })
+}
+
 export async function ensureTemplateScanned(
   pluginCtx: PluginContext,
   id: string,

@@ -85,6 +85,24 @@ describe('runtime/jsonPlugin', () => {
     })
   })
 
+  it('does not normalize project.miniapp.json as app.json', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
+    tempRoots.push(root)
+    const entry = path.join(root, 'project.miniapp.json')
+    await fs.writeFile(entry, JSON.stringify({
+      miniVersion: 'v2',
+      name: '多端应用',
+    }), 'utf8')
+
+    const ctx = createTestContext(root)
+    const result = await ctx.jsonService.read(entry)
+
+    expect(result).toEqual({
+      miniVersion: 'v2',
+      name: '多端应用',
+    })
+  })
+
   it('inlines weapp-vite/auto-routes imports before executing app.json.ts', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
     tempRoots.push(root)

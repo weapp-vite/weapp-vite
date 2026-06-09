@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="header">
+    <view class="title">能力矩阵</view>
+    <view class="subtitle">以低风险 API 展示 App 与小程序共用的能力入口。</view>
+  </view>
+
+  <view class="panel">
+    <view class="status-line">
+      <text>Last action</text>
+      <t-tag theme="primary" variant="light">{{lastAction}}</t-tag>
+    </view>
+    <t-divider content="Native API" />
+    <t-cell-group>
+      <t-cell wx:for="{{capabilityRows}}" wx:key="title" title="{{item.title}}" note="{{item.note}}" />
+    </t-cell-group>
+  </view>
+
+  <view class="actions">
+    <t-button theme="primary" block bindtap="copyToken">复制标识</t-button>
+    <t-button theme="default" block variant="outline" bindtap="enableShare">开启分享</t-button>
+    <t-button theme="primary" block variant="outline" bindtap="openProfile">打开资料页</t-button>
+  </view>
+
+  <t-empty description="更多真机能力由 DevTools 多端模式验证" />
+</view>

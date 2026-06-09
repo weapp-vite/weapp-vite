@@ -1,5 +1,24 @@
 <view class="page">
-  <view class="title">Profile</view>
-  <view class="row">Status: {{__e2eResult.status}}</view>
-  <view class="row">From: {{__e2eResult.from}}</view>
+  <view class="header">
+    <view class="title">Profile</view>
+    <view class="subtitle">原生页面展示路由参数、状态更新与 TDesign 单元格。</view>
+    <view class="tags">
+      <t-tag theme="primary" variant="light">native</t-tag>
+      <t-tag theme="success" variant="light">{{__e2eResult.status}}</t-tag>
+    </view>
+  </view>
+
+  <view class="panel">
+    <t-cell-group>
+      <t-cell title="Status" note="{{__e2eResult.status}}" />
+      <t-cell title="Entry" note="{{__e2eResult.entry}}" />
+      <t-cell title="From" note="{{__e2eResult.from || 'direct'}}" />
+      <t-cell title="Edits" note="{{__e2eResult.edits}}" />
+    </t-cell-group>
+  </view>
+
+  <view class="actions">
+    <t-button theme="primary" block bindtap="updateProfile">Update profile</t-button>
+    <t-button theme="default" variant="outline" block bindtap="backHome">Back home</t-button>
+  </view>
 </view>

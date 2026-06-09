@@ -1,6 +1,48 @@
 <view class="page">
-  <view class="title">Donut Multi-End Fixture</view>
-  <view class="row">Status: {{__e2eResult.status}}</view>
-  <view class="row">Architecture: {{__e2eResult.projectArchitecture}}</view>
-  <button bind:tap="openProfile">Open profile</button>
+  <view class="hero">
+    <view class="eyebrow">DONUT MULTI-END</view>
+    <view class="title">多端能力展示台</view>
+    <view class="subtitle">原生小程序页面展示 Donut 多端配置、TDesign 组件和跨页面能力。</view>
+    <view class="tags">
+      <t-tag theme="primary" variant="light">multiPlatform</t-tag>
+      <t-tag theme="success" variant="light">TDesign</t-tag>
+      <t-tag theme="warning" variant="light">E2E</t-tag>
+    </view>
+  </view>
+
+  <t-notice-bar visible marquee content="fixture: donut-multi-end / status: {{__e2eResult.status}}" />
+
+  <view class="panel">
+    <view class="panel-title">核心状态</view>
+    <view wx:for="{{metrics}}" wx:key="label" class="metric">
+      <view class="metric-head">
+        <text>{{item.label}}</text>
+        <text>{{item.value}}</text>
+      </view>
+      <t-progress percentage="{{item.percent}}" stroke-width="8" />
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="panel-title">场景入口</view>
+    <t-grid column="{{4}}" border="{{false}}">
+      <t-grid-item
+        wx:for="{{quickRoutes}}"
+        wx:key="path"
+        text="{{item.text}}"
+        icon="{{item.icon}}"
+        data-path="{{item.path}}"
+        bindtap="openRoute"
+      />
+    </t-grid>
+  </view>
+
+  <view class="panel">
+    <view class="panel-title">多端检查项</view>
+    <t-cell-group>
+      <t-cell wx:for="{{checklist}}" wx:key="title" title="{{item.title}}" note="{{item.note}}" />
+    </t-cell-group>
+  </view>
+
+  <t-button theme="primary" block data-path="/pages/ability/index" bindtap="openRoute">查看能力页</t-button>
 </view>

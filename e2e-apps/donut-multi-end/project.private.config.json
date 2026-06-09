@@ -15,6 +15,27 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "multi-end data",
+          "pathName": "pages/data/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "multi-end form",
+          "pathName": "pages/form/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "multi-end ability",
+          "pathName": "pages/ability/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

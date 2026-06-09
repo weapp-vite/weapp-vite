@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:open": "wv dev -o",
     "build": "wv build",
     "postinstall": "wv prepare"
   },
   "devDependencies": {
+    "tdesign-miniprogram": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "多端表单",
+  "usingComponents": {
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-input": "tdesign-miniprogram/input/input",
+    "t-rate": "tdesign-miniprogram/rate/rate",
+    "t-stepper": "tdesign-miniprogram/stepper/stepper",
+    "t-switch": "tdesign-miniprogram/switch/switch",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-textarea": "tdesign-miniprogram/textarea/textarea"
+  }
+}

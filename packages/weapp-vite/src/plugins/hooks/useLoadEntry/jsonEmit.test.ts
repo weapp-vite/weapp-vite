@@ -40,6 +40,31 @@ describe('createJsonEmitManager', () => {
     expect(manager.map.size).toBe(0)
   })
 
+  it('supports explicit output file names for project-level sidecar json', () => {
+    const manager = createJsonEmitManager({
+      relativeOutputPath(filePath: string) {
+        return filePath.replace('/project/src/', '')
+      },
+    } as any)
+
+    manager.register({
+      fileName: 'app.miniapp.json',
+      type: 'page',
+      json: { miniVersion: 'v2' },
+      jsonPath: '/project/project.miniapp.json',
+    })
+
+    expect(Array.from(manager.map.keys())).toEqual(['app.miniapp.json'])
+    expect(manager.map.get('app.miniapp.json')).toMatchObject({
+      fileName: 'app.miniapp.json',
+      entry: {
+        fileName: 'app.miniapp.json',
+        jsonPath: '/project/project.miniapp.json',
+        type: 'page',
+      },
+    })
+  })
+
   it('normalizes emitted app json with a stable subPackages array', () => {
     const manager = createJsonEmitManager({
       relativeOutputPath(filePath: string) {

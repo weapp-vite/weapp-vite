@@ -5,14 +5,22 @@ import { createRouter } from 'wevu/router'
 
 const APP_PROVIDE_KEY = 'donut-multi-end-wevu-sfc:app'
 const launchCount = ref(0)
+const orderedPages: string[] = [
+  'pages/index/index',
+  'pages/data/index',
+  'pages/form/index',
+  'pages/ability/index',
+  'pages/profile/index',
+  'pages/status/index',
+]
 const appSummary = computed(() => ({
   fixture: 'donut-multi-end-wevu-sfc',
-  routeCount: autoRoutes.pages.length,
+  routeCount: orderedPages.length,
   launchCount: launchCount.value,
 }))
 
 defineAppJson({
-  pages: autoRoutes.pages,
+  pages: orderedPages,
   window: {
     navigationBarTitleText: 'Wevu 多端 E2E',
     navigationBarBackgroundColor: '#ffffff',

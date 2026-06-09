@@ -10,7 +10,7 @@ import path from 'pathe'
 import { normalizeAppJson } from '../../../../utils'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
-import { collectAppSideFiles } from './watch'
+import { collectAppSideFiles, collectMiniappConfigFile } from './watch'
 
 export interface AppEntryResult {
   entries: string[]
@@ -93,6 +93,15 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
       pluginCtx,
       id,
       json,
+      jsonService,
+      registerJsonAsset,
+      existsCache,
+      pathExistsTtlMs,
+    )
+    await collectMiniappConfigFile(
+      pluginCtx,
+      id,
+      configService,
       jsonService,
       registerJsonAsset,
       existsCache,

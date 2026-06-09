@@ -1,9 +1,12 @@
 {
-  "navigationBarTitleText": "多端资料",
+  "navigationBarTitleText": "多端数据",
   "usingComponents": {
     "t-button": "tdesign-miniprogram/button/button",
     "t-cell": "tdesign-miniprogram/cell/cell",
     "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
+    "t-progress": "tdesign-miniprogram/progress/progress",
+    "t-tabs": "tdesign-miniprogram/tabs/tabs",
+    "t-tab-panel": "tdesign-miniprogram/tab-panel/tab-panel",
     "t-tag": "tdesign-miniprogram/tag/tag"
   }
 }

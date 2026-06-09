@@ -1,17 +1,66 @@
 .page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 32rpx;
-  color: #1f2937;
-  background: #f7f8fa;
+  color: #172033;
+  background: #f5f7fb;
+}
+
+.hero {
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #0f766e, #2563eb);
+  border-radius: 20rpx;
+}
+
+.eyebrow {
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
 .title {
-  margin-bottom: 20rpx;
-  font-size: 34rpx;
-  font-weight: 600;
+  margin-top: 12rpx;
+  font-size: 42rpx;
+  font-weight: 700;
 }
 
-.row {
-  margin-bottom: 12rpx;
-  font-size: 26rpx;
+.subtitle {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 86%);
+}
+
+.tags {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.panel {
+  padding: 24rpx;
+  margin: 24rpx 0;
+  background: #fff;
+  border: 2rpx solid #e2e8f0;
+  border-radius: 16rpx;
+}
+
+.panel-title {
+  margin-bottom: 18rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.metric {
+  margin-top: 18rpx;
+}
+
+.metric-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+  font-size: 24rpx;
+  color: #475569;
 }

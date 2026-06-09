@@ -9,7 +9,7 @@ import { inlineAutoRoutesImports, normalizeAppJson, parseCommentJson, resolveJso
 import { hasOwn } from './utils/object'
 import { requireConfigService } from './utils/requireConfigService'
 
-const APP_CONFIG_RE = /app\.json(?:\.[jt]s)?$/
+const APP_CONFIG_RE = /(?:^|[/\\])app\.json(?:\.[jt]s)?$/
 const SCRIPT_JSON_CONFIG_RE = /\.json\.[jt]s$/
 
 export interface JsonService {

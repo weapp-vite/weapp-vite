@@ -1,6 +1,9 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/data/index",
+    "pages/form/index",
+    "pages/ability/index",
     "pages/profile/index"
   ],
   "window": {

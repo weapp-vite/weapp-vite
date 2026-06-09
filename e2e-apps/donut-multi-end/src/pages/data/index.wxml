@@ -1,0 +1,30 @@
+<view class="page">
+  <view class="header">
+    <view class="title">数据总线</view>
+    <view class="subtitle">展示跨端配置、运行指标和平台 SDK 状态。</view>
+  </view>
+
+  <view class="kpi-grid">
+    <view wx:for="{{kpis}}" wx:key="title" class="kpi">
+      <view class="kpi-title">{{item.title}}</view>
+      <view class="kpi-value">{{item.value}}</view>
+      <t-tag size="small" theme="primary" variant="light">{{item.trend}}</t-tag>
+      <t-progress percentage="{{item.percent}}" stroke-width="8" />
+    </view>
+  </view>
+
+  <view class="panel">
+    <t-tabs value="{{activeTab}}" bindchange="onTabChange">
+      <t-tab-panel value="runtime" label="运行时"></t-tab-panel>
+      <t-tab-panel value="platform" label="平台"></t-tab-panel>
+    </t-tabs>
+    <t-cell-group wx:if="{{activeTab === 'runtime'}}">
+      <t-cell wx:for="{{runtimeRows}}" wx:key="title" title="{{item.title}}" note="{{item.note}}" />
+    </t-cell-group>
+    <t-cell-group wx:else>
+      <t-cell wx:for="{{platformRows}}" wx:key="title" title="{{item.title}}" note="{{item.note}}" />
+    </t-cell-group>
+  </view>
+
+  <t-button theme="primary" block bindtap="refreshData">刷新数据</t-button>
+</view>

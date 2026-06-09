@@ -1,9 +1,11 @@
 {
-  "navigationBarTitleText": "多端资料",
+  "navigationBarTitleText": "多端能力",
   "usingComponents": {
     "t-button": "tdesign-miniprogram/button/button",
     "t-cell": "tdesign-miniprogram/cell/cell",
     "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
+    "t-divider": "tdesign-miniprogram/divider/divider",
+    "t-empty": "tdesign-miniprogram/empty/empty",
     "t-tag": "tdesign-miniprogram/tag/tag"
   }
 }

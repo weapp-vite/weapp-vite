@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="header">
+    <view class="title">巡检表单</view>
+    <view class="subtitle">组合输入、开关、步进器、评分和文本域。</view>
+  </view>
+
+  <view class="panel">
+    <view class="field">
+      <view class="label">任务名称</view>
+      <t-input value="{{form.name}}" placeholder="输入任务名称" bindchange="onNameChange" />
+    </view>
+    <view class="field">
+      <view class="label">负责人</view>
+      <t-input value="{{form.owner}}" placeholder="输入负责人" bindchange="onOwnerChange" />
+    </view>
+    <view class="field row-field">
+      <view>
+        <view class="label">加急处理</view>
+        <view class="hint">开启后视为高优先级巡检</view>
+      </view>
+      <t-switch value="{{form.urgent}}" bindchange="onUrgentChange" />
+    </view>
+    <view class="field row-field">
+      <view>
+        <view class="label">页面样本数</view>
+        <view class="hint">覆盖更多页面与组件组合</view>
+      </view>
+      <t-stepper value="{{form.count}}" min="{{1}}" max="{{8}}" bindchange="onCountChange" />
+    </view>
+    <view class="field">
+      <view class="label">体验评分</view>
+      <t-rate value="{{form.score}}" bindchange="onScoreChange" />
+    </view>
+    <view class="field">
+      <view class="label">巡检说明</view>
+      <t-textarea value="{{form.notes}}" autosize placeholder="补充说明" bindchange="onNotesChange" />
+    </view>
+  </view>
+
+  <view class="summary">
+    <t-tag theme="{{form.urgent ? 'danger' : 'success'}}" variant="light">
+      {{form.urgent ? 'urgent' : 'normal'}}
+    </t-tag>
+    <text class="summary-text">样本 {{form.count}} 页 / 评分 {{form.score}}</text>
+    <text wx:if="{{submitted}}" class="summary-text">已提交</text>
+  </view>
+
+  <t-button theme="primary" block bindtap="submitForm">提交巡检</t-button>
+</view>

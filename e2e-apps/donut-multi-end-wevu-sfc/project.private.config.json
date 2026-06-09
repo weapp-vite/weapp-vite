@@ -22,6 +22,27 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc data",
+          "pathName": "pages/data/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc form",
+          "pathName": "pages/form/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc ability",
+          "pathName": "pages/ability/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

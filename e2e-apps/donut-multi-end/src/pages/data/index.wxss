@@ -1,0 +1,55 @@
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 32rpx;
+  color: #172033;
+  background: #f6f8fb;
+}
+
+.header {
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin: 24rpx 0;
+}
+
+.kpi {
+  padding: 18rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}
+
+.kpi-title {
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+.kpi-value {
+  margin: 10rpx 0;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.panel {
+  padding: 18rpx;
+  margin-bottom: 24rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}

@@ -448,6 +448,89 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('prefers source app.miniapp.json over project.miniapp.json for runtime sidecar config', async () => {
+    const { loader, jsonService, registerJsonAsset, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      return target === '/project/src/app.miniapp.json'
+        || target === '/project/project.miniapp.json'
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.miniapp.json') {
+        return {
+          identityServiceConfig: {
+            authorizeMiniprogramType: 1,
+          },
+        }
+      }
+      if (filepath === '/project/project.miniapp.json') {
+        return {
+          miniVersion: 'v2',
+        }
+      }
+      return {}
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      fileName: 'app.miniapp.json',
+      jsonPath: '/project/src/app.miniapp.json',
+      type: 'page',
+      json: {
+        identityServiceConfig: {
+          authorizeMiniprogramType: 1,
+        },
+      },
+    })
+    expect(registerJsonAsset).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        jsonPath: '/project/project.miniapp.json',
+      }),
+    )
+  })
+
+  it('falls back to project.miniapp.json when source runtime sidecar is missing', async () => {
+    const { loader, jsonService, registerJsonAsset, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      return target === '/project/project.miniapp.json'
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/project.miniapp.json') {
+        return {
+          miniVersion: 'v2',
+          name: '多端应用',
+        }
+      }
+      return {}
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      fileName: 'app.miniapp.json',
+      jsonPath: '/project/project.miniapp.json',
+      type: 'page',
+      json: {
+        miniVersion: 'v2',
+        name: '多端应用',
+      },
+    })
+  })
+
   it('prepends style imports once when sidecar styles exist', async () => {
     existsMock.mockImplementation(async (target: string) => {
       if (target === '/project/src/app.wxss') {

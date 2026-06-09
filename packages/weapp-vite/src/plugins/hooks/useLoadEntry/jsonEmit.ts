@@ -3,6 +3,7 @@ import { normalizeAppJson } from '../../../utils'
 import { resolveRelativeJsonOutputFileName } from '../../utils/outputFileName'
 
 export interface JsonEmitFileEntry {
+  fileName?: string
   jsonPath?: string
   json: any
   type: 'app' | 'page' | 'component' | 'plugin'
@@ -19,11 +20,11 @@ export function createJsonEmitManager(
   const map = new Map<string, JsonEmitRecord>()
 
   function register(entry: JsonEmitFileEntry) {
-    if (!entry.jsonPath) {
+    if (!entry.jsonPath && !entry.fileName) {
       return
     }
 
-    const fileName = resolveRelativeJsonOutputFileName(configService, entry.jsonPath)
+    const fileName = entry.fileName ?? resolveRelativeJsonOutputFileName(configService, entry.jsonPath!)
     const shouldNormalizeAppJson = entry.type === 'app' && fileName === 'app.json'
     const normalizedEntry = shouldNormalizeAppJson
       ? {

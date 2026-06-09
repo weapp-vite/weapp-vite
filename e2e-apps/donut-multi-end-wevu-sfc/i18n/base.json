@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "name": "Weapp Vite Wevu 多端 E2E"
+  },
+  "android": {
+    "name": "Weapp Vite Wevu 多端 E2E"
+  },
+  "common": {
+    "name": "Weapp Vite Wevu 多端 E2E"
+  }
+}

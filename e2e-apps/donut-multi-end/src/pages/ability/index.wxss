@@ -1,0 +1,40 @@
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 32rpx;
+  background: #f5f7fb;
+}
+
+.header,
+.panel {
+  padding: 24rpx;
+  margin-bottom: 22rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.status-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}

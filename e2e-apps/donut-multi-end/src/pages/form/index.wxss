@@ -1,0 +1,58 @@
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 32rpx;
+  background: #f8fafc;
+}
+
+.header,
+.panel,
+.summary {
+  padding: 24rpx;
+  margin-bottom: 22rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.subtitle,
+.hint,
+.summary-text {
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.subtitle {
+  margin-top: 10rpx;
+}
+
+.field {
+  margin-bottom: 22rpx;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.row-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary {
+  display: flex;
+  gap: 14rpx;
+  align-items: center;
+}

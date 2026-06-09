@@ -6,5 +6,9 @@
     "minifyWXML": true,
     "es6": true
   },
-  "libVersion": "3.15.0"
+  "libVersion": "3.15.0",
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {
+    "wxext14566970e7e9f62": "3.6.5-26"
+  }
 }

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:open": "wv dev -o",
     "build": "wv build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "postinstall": "wv prepare"
@@ -11,6 +12,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "miniprogram-api-typings": "catalog:",
+    "tdesign-miniprogram": "catalog:",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*",
