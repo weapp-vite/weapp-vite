@@ -12,7 +12,7 @@
     </view>
     <view class="flex items-center">
       <text>切换模式</text>
-      <view class="{{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-4xl" bind:tap="switchMode"></view>
+      <view class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-4xl" bind:tap="switchMode"></view>
     </view>
     <view class="underline" mark:url="https://vite.icebreaker.top" bind:tap="copy">
       https://vite.icebreaker.top

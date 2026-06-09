@@ -13,7 +13,7 @@
       docs="{{hello.docs}}"
       links="{{hello.links}}"
     />
-    <view class="{{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl" bind:tap="switchMode"></view>
+    <view class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl" bind:tap="switchMode"></view>
     <view class="underline" mark:url="https://vite.icebreaker.top" bind:tap="copy">
       https://vite.icebreaker.top
     </view>
