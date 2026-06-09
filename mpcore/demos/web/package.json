@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
-    "@iconify/tailwind4": "^1.2.3",
+    "@iconify/tailwind4": "catalog:",
     "@shikijs/engine-javascript": "^4.2.0",
     "@shikijs/langs": "^4.2.0",
     "@shikijs/themes": "^4.2.0",
