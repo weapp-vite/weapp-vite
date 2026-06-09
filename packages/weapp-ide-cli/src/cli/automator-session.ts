@@ -24,6 +24,7 @@ import {
   isDevtoolsExtensionContextInvalidatedError,
   isDevtoolsHttpPortError,
   launchAutomator,
+  resolveProjectAutomatorPort,
 } from './automator'
 import { createWechatIdeLoginRequiredExitError, promptWechatIdeLoginRetry } from './retry'
 import { runRetryableCommand } from './run-login-executor'
@@ -44,6 +45,19 @@ type AutomatorConnectionResult
 
 function unwrapAutomatorConnectionError(result: AutomatorConnectionResult) {
   return result.kind === 'retryable' ? result.error : result.value
+}
+
+async function launchFreshAutomator(options: AutomatorSessionOptions) {
+  const shouldUseProjectPort = !options.port && !options.sessionId
+  return await launchAutomator({
+    ...options,
+    ...(shouldUseProjectPort
+      ? {
+          persistAsDefaultSession: true,
+          port: resolveProjectAutomatorPort(options.projectPath),
+        }
+      : {}),
+  }) as MiniProgramLike
 }
 
 function normalizeMiniProgramConnectionError(error: unknown) {
@@ -122,7 +136,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
         try {
           return {
             kind: 'result',
-            value: await launchAutomator(options) as MiniProgramLike,
+            value: await launchFreshAutomator(options),
           } as const
         }
         catch (error) {
@@ -151,7 +165,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
         try {
           return {
             kind: 'result',
-            value: await launchAutomator(options) as MiniProgramLike,
+            value: await launchFreshAutomator(options),
           } as const
         }
         catch (launchError) {

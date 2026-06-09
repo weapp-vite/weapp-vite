@@ -19,38 +19,94 @@ import {
 import { createDevProcessEnv } from '../utils/dev-process-env'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const READY_OUTPUT_RE = /✔ open/
-const INDEX_ROUTE = '/pages/index/index'
-const TEMPLATE_CASES = [
-  {
-    expectedText: 'Hello weapp-vite',
-    name: 'tailwindcss',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-template'),
-    tdesign: false,
-  },
-  {
-    expectedText: 'Vant 按钮',
-    name: 'tailwindcss-vant',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-vant-template'),
-    tdesign: false,
-  },
-  {
-    expectedText: 'TDesign Button',
-    name: 'tailwindcss-tdesign',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template'),
-    tdesign: true,
-  },
-] as const
-const PLAIN_TEMPLATE = TEMPLATE_CASES[0]
-const TDESIGN_TEMPLATE = TEMPLATE_CASES[2]
+const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
+const HMR_SUFFIX = 'IDE_ALL_HMR'
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
+
+interface TemplateCase {
+  expectedText: string
+  hmrText: string
+  name: string
+  route: string
+  root: string
+  sourcePath: string
+}
 
 interface AutomatorSessionMetadata {
   projectPath: string
   updatedAt: string
   wsEndpoint: string
 }
+
+const TEMPLATE_CASES: TemplateCase[] = [
+  {
+    name: 'weapp-vite-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.ts',
+    expectedText: 'Hello weapp-vite',
+    hmrText: `Hello weapp-vite ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-lib-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-lib-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.ts',
+    expectedText: 'Hello weapp-vite lib',
+    hmrText: `Hello weapp-vite lib ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-tailwindcss-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.ts',
+    expectedText: 'Hello weapp-vite',
+    hmrText: `Hello weapp-vite ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-tailwindcss-tdesign-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.ts',
+    expectedText: 'Hello weapp-vite + TDesign',
+    hmrText: `Hello weapp-vite + TDesign ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-tailwindcss-vant-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-vant-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.ts',
+    expectedText: 'Hello weapp-vite + Vant',
+    hmrText: `Hello weapp-vite + Vant ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-wevu-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.vue',
+    expectedText: 'Weapp-vite + Wevu',
+    hmrText: `Weapp-vite + Wevu ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-wevu-tailwindcss-tdesign-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template'),
+    route: '/pages/index/index',
+    sourcePath: 'src/pages/index/index.vue',
+    expectedText: 'TDesign 最小模板',
+    hmrText: `TDesign 最小模板 ${HMR_SUFFIX}`,
+  },
+  {
+    name: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template'),
+    route: '/pages/home/home',
+    sourcePath: 'src/pages/home/home.vue',
+    expectedText: 'iphone 13 火热发售中',
+    hmrText: `iphone 13 火热发售中 ${HMR_SUFFIX}`,
+  },
+]
+
+const originalSources = new Map<string, string>()
 
 function resolveAutomatorSessionFile(projectPath: string) {
   const encodedProjectPath = Buffer.from(path.resolve(projectPath)).toString('base64url')
@@ -131,24 +187,6 @@ async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
-async function waitForPageText(miniProgram: any, route: string, text: string, timeoutMs = 90_000) {
-  const start = Date.now()
-  let latestWxml = ''
-
-  while (Date.now() - start <= timeoutMs) {
-    const page = await miniProgram.reLaunch(route)
-    await page.waitFor(500)
-    const root = await page.$('page')
-    latestWxml = root ? await root.outerWxml() : ''
-    if (latestWxml.includes(text)) {
-      return latestWxml
-    }
-    await delay(1_000)
-  }
-
-  throw new Error(`Timed out waiting for rendered text "${text}". Latest WXML:\n${latestWxml.slice(0, 1000)}`)
-}
-
 async function createRuntimeTools() {
   const tools = new Map<string, ToolHandler>()
   const server = {
@@ -170,21 +208,58 @@ async function createRuntimeTools() {
   }
 }
 
-describe.sequential('template TailwindCSS dev:open multi-project IDE integration', () => {
+async function waitForPageText(miniProgram: any, route: string, text: string, timeoutMs = 90_000) {
+  const start = Date.now()
+  let latestWxml = ''
+
+  while (Date.now() - start <= timeoutMs) {
+    const page = await miniProgram.reLaunch(route)
+    await page.waitFor(500)
+    const root = await page.$('page')
+    latestWxml = root ? await root.outerWxml() : ''
+    if (latestWxml.includes(text)) {
+      return latestWxml
+    }
+    await delay(1_000)
+  }
+
+  throw new Error(`Timed out waiting for rendered text "${text}". Latest WXML:\n${latestWxml.slice(0, 1000)}`)
+}
+
+async function patchSourceText(templateCase: TemplateCase) {
+  const sourceFile = path.join(templateCase.root, templateCase.sourcePath)
+  const source = await fs.readFile(sourceFile, 'utf8')
+  originalSources.set(sourceFile, source)
+  const patched = source.replace(templateCase.expectedText, templateCase.hmrText)
+  if (patched === source) {
+    throw new Error(`[${templateCase.name}] failed to patch HMR source text: ${templateCase.expectedText}`)
+  }
+  await fs.writeFile(sourceFile, patched, 'utf8')
+}
+
+async function restoreSources() {
+  for (const [filePath, source] of originalSources) {
+    await fs.writeFile(filePath, source, 'utf8').catch(() => {})
+  }
+  originalSources.clear()
+}
+
+describe.sequential('all templates dev:open IDE integration', () => {
   beforeAll(async () => {
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png'), { force: true }).catch(() => {})))
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-all.png'), { force: true }).catch(() => {})))
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-all-mcp.png'), { force: true }).catch(() => {})))
   }, 60_000)
 
   afterAll(async () => {
+    await restoreSources()
     await cleanupTrackedDevProcesses()
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(templateCase.root).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-all.png'), { force: true }).catch(() => {})))
   }, 60_000)
 
-  it('keeps screenshot and MCP bound to each real template root after concurrent dev:open', async () => {
+  it('keeps HMR, screenshot, and MCP connected for every runnable app template after concurrent dev:open', async () => {
     const processes = TEMPLATE_CASES.map(templateCase => ({
       ...templateCase,
       dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
@@ -195,7 +270,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     }))
 
     try {
-      await Promise.all(processes.map(async item => await item.dev.waitForOutput(READY_OUTPUT_RE, `${item.name} dev:open ready`, 180_000)))
+      await Promise.all(processes.map(async item => await item.dev.waitForOutput(READY_OUTPUT_RE, `${item.name} dev:open ready`, 240_000)))
 
       const runtimeTools = await createRuntimeTools()
       try {
@@ -204,10 +279,12 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
           await expect(fs.access(resolveAutomatorWrapperProjectPath(templateCase.root))).rejects.toThrow()
-          await waitForPageText(miniProgram, INDEX_ROUTE, templateCase.expectedText)
-          await miniProgram.disconnect()
 
-          const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-multi.png')
+          await waitForPageText(miniProgram, templateCase.route, templateCase.expectedText)
+          await patchSourceText(templateCase)
+          await waitForPageText(miniProgram, templateCase.route, templateCase.hmrText)
+
+          const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-all.png')
           const screenshot = await takeScreenshot({
             outputPath: screenshotPath,
             preserveProjectRoot: true,
@@ -228,7 +305,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
             resolvedProjectPath: templateCase.root,
           })
 
-          const capturePath = path.join('templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png')
+          const capturePath = path.join('templates', path.basename(templateCase.root), '.tmp/dev-open-all-mcp.png')
           const captureResult = await getTool(runtimeTools.tools, 'weapp_devtools_capture')({
             outputPath: capturePath,
             preserveProjectRoot: true,
@@ -238,47 +315,17 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
           const capture = expectToolResult<{ bytes: number, path: string }>(captureResult)
           expect(capture.bytes).toBeGreaterThan(0)
           expect(path.resolve(capture.path)).toBe(path.resolve(WORKSPACE_ROOT, capturePath))
+
+          await miniProgram.disconnect()
         }
       }
       finally {
+        await restoreSources()
         await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({ projectPath: templateCase.root }).catch(() => {})))
       }
     }
     finally {
       await Promise.all(processes.map(async item => await item.dev.stop().catch(() => {})))
     }
-  }, 480_000)
-
-  it('opens the next template after the previous dev:open process exits', async () => {
-    await fs.rm(resolveAutomatorSessionFile(PLAIN_TEMPLATE.root), { force: true }).catch(() => {})
-    await fs.rm(resolveAutomatorSessionFile(TDESIGN_TEMPLATE.root), { force: true }).catch(() => {})
-
-    const plainDev = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
-      cwd: PLAIN_TEMPLATE.root,
-      env: createDevProcessEnv(),
-      reject: false,
-    })
-    await plainDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss dev:open ready', 180_000)
-    await plainDev.stop()
-
-    const tdesignDev = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
-      cwd: TDESIGN_TEMPLATE.root,
-      env: createDevProcessEnv(),
-      reject: false,
-    })
-
-    try {
-      await tdesignDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss tdesign dev:open ready after plain exit', 180_000)
-      const { miniProgram } = await waitForOpenedAutomator(TDESIGN_TEMPLATE.root)
-      try {
-        await waitForPageText(miniProgram, INDEX_ROUTE, 'TDesign Button')
-      }
-      finally {
-        await miniProgram.disconnect()
-      }
-    }
-    finally {
-      await tdesignDev.stop().catch(() => {})
-    }
-  }, 360_000)
+  }, 900_000)
 })

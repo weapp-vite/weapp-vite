@@ -7,6 +7,7 @@ import {
   isAutomatorLoginError,
   isWechatIdeEngineBuildEndpointMissingError,
   launchAutomator,
+  resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
@@ -134,8 +135,10 @@ function appendLoginRetryArgv(argv: string[], options: OpenIdeOptions) {
 async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions) {
   try {
     const miniProgram = await launchAutomator({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath,
+      port: resolveProjectAutomatorPort(projectPath),
       timeout: 30_000,
       trustProject: options.trustProject !== false,
     }) as { disconnect?: () => void }

@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -17,6 +18,7 @@ export interface AutomatorOptions {
   trustProject?: boolean
   preferOpenedSession?: boolean
   preserveProjectRoot?: boolean
+  persistAsDefaultSession?: boolean
 }
 
 interface PersistedAutomatorSession {
@@ -48,7 +50,9 @@ const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /ECONNREFUSED/i,
   /connect ECONNREFUSED/i,
 ]
-const DEFAULT_WECHAT_DEVTOOLS_WS_ENDPOINT = 'ws://127.0.0.1:9420'
+const DEFAULT_WECHAT_DEVTOOLS_WS_PORT = 9420
+const PROJECT_AUTOMATOR_PORT_BASE = 9620
+const PROJECT_AUTOMATOR_PORT_RANGE = 2000
 const AUTOMATOR_SESSION_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
@@ -87,6 +91,15 @@ function normalizeAutomatorSessionId(sessionId: string | undefined, port: number
     return sessionId.trim()
   }
   return port ? `port-${port}` : 'default'
+}
+
+/**
+ * @description 为项目路径派生稳定的 DevTools automator 端口，避免多个 dev:open 项目抢占默认端口。
+ */
+export function resolveProjectAutomatorPort(projectPath: string) {
+  const digest = createHash('sha1').update(path.resolve(projectPath)).digest()
+  const offset = digest.readUInt32BE(0) % PROJECT_AUTOMATOR_PORT_RANGE
+  return PROJECT_AUTOMATOR_PORT_BASE + offset
 }
 
 function resolveAutomatorSessionFilePath(projectPath: string, sessionId?: string, port?: number) {
@@ -313,6 +326,12 @@ export async function launchAutomator(options: AutomatorOptions) {
           sessionId,
           wsEndpoint: sessionMetadata.wsEndpoint,
         })
+        if (options.persistAsDefaultSession && (port || sessionId)) {
+          await persistAutomatorSession({
+            projectPath,
+            wsEndpoint: sessionMetadata.wsEndpoint,
+          })
+        }
       }
       return miniProgram
     }
@@ -334,7 +353,7 @@ export async function connectOpenedAutomator(options: AutomatorOptions) {
   const { port, projectPath, sessionId } = options
   const launcher = new Launcher()
   const persistedSession = await readPersistedAutomatorSession(projectPath, sessionId, port)
-  const wsEndpoint = persistedSession?.wsEndpoint ?? (port ? `ws://127.0.0.1:${port}` : DEFAULT_WECHAT_DEVTOOLS_WS_ENDPOINT)
+  const wsEndpoint = persistedSession?.wsEndpoint ?? (port ? `ws://127.0.0.1:${port}` : `ws://127.0.0.1:${DEFAULT_WECHAT_DEVTOOLS_WS_PORT}`)
 
   try {
     return await launcher.connect({ wsEndpoint })

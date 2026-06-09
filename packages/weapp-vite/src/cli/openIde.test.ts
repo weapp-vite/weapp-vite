@@ -33,6 +33,7 @@ const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ 
 const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
+const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
@@ -56,6 +57,7 @@ vi.mock('weapp-ide-cli', () => ({
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
   runWechatIdeEngineBuild: runWechatIdeEngineBuildMock,
+  resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   withMiniProgram: withMiniProgramMock,
 }))
 
@@ -104,6 +106,8 @@ describe('openIde', () => {
     miniProgramDisconnectMock.mockReset()
     connectOpenedAutomatorMock.mockReset()
     launchAutomatorMock.mockReset()
+    resolveProjectAutomatorPortMock.mockReset()
+    resolveProjectAutomatorPortMock.mockReturnValue(9633)
     bootstrapWechatDevtoolsSettingsMock.mockReset()
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
@@ -368,8 +372,10 @@ describe('openIde', () => {
       trustProject: undefined,
     })
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 30000,
       trustProject: true,
     })
@@ -406,8 +412,10 @@ describe('openIde', () => {
     ])
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 30000,
       trustProject: true,
     })
@@ -423,8 +431,10 @@ describe('openIde', () => {
 
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 30000,
       trustProject: true,
     })
