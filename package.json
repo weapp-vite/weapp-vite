@@ -231,7 +231,7 @@
     "fast-sort": "^3.4.1",
     "fdir": "catalog:",
     "get-value": "^4.0.1",
-    "hono": "^4.12.24",
+    "hono": "^4.12.25",
     "htmlparser2": "catalog:",
     "husky": "^9.1.7",
     "importx": "^0.5.2",
