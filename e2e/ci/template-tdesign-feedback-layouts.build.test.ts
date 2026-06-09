@@ -6,6 +6,15 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const RETAIL_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
+const DONUT_ONLY_FEEDBACK_MARKERS = [
+  'layout-message',
+  '显示运行时 Message',
+  '显示表单 Message',
+  '调用 layout Message',
+  'Donut',
+  'donut-multi-end',
+] as const
+
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -35,6 +44,12 @@ function expectLayoutWrappers(wxml: string) {
   expect(wxml).toContain('<weapp-layout-admin')
 }
 
+function expectNoDonutFeedbackMarkers(output: string) {
+  for (const marker of DONUT_ONLY_FEEDBACK_MARKERS) {
+    expect(output).not.toContain(marker)
+  }
+}
+
 describe.sequential('template build: tdesign feedback layouts', () => {
   beforeAll(async () => {
     await buildTemplate(BASE_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:template-wevu-tdesign-regression')
@@ -55,6 +70,13 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     expectNoFeedbackNodes(pageWxml)
     expectNoFeedbackNodes(abilityPageWxml)
     expectLayoutWrappers(layoutPageWxml)
+    expectNoDonutFeedbackMarkers(defaultLayoutWxml)
+    expectNoDonutFeedbackMarkers(adminLayoutWxml)
+    expectNoDonutFeedbackMarkers(pageWxml)
+    expectNoDonutFeedbackMarkers(abilityPageWxml)
+    expectNoDonutFeedbackMarkers(layoutPageWxml)
+    expect(defaultLayoutWxml).not.toContain('<t-message')
+    expect(adminLayoutWxml).not.toContain('<t-message')
     expect(defaultLayoutJs).toContain('setup(')
     expect(adminLayoutJs).toContain('setup(')
   })
@@ -67,5 +89,9 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     expectSharedFeedbackNodes(defaultLayoutWxml)
     expectNoFeedbackNodes(cartPageWxml)
     expectNoFeedbackNodes(orderButtonBarWxml)
+    expectNoDonutFeedbackMarkers(defaultLayoutWxml)
+    expectNoDonutFeedbackMarkers(cartPageWxml)
+    expectNoDonutFeedbackMarkers(orderButtonBarWxml)
+    expect(defaultLayoutWxml).not.toContain('<t-message')
   })
 })

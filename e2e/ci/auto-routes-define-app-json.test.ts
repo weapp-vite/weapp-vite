@@ -8,6 +8,23 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const TYPED_ROUTER_PATH = path.join(APP_ROOT, '.weapp-vite/typed-router.d.ts')
+const DONUT_ONLY_OUTPUTS = [
+  'app.miniapp.json',
+  'pages/data/index.wxml',
+  'pages/form/index.wxml',
+  'pages/ability/index.wxml',
+  'pages/profile/index.wxml',
+  'pages/status/index.wxml',
+  'pages/layouts/index.wxml',
+  'layouts/default/index.wxml',
+  'layouts/compact/index.wxml',
+] as const
+
+async function expectNoDonutOutputs() {
+  for (const relativePath of DONUT_ONLY_OUTPUTS) {
+    expect(await fs.pathExists(path.join(DIST_ROOT, relativePath)), relativePath).toBe(false)
+  }
+}
 
 describe.sequential('e2e app: auto-routes defineAppJson', () => {
   it('builds with routes.pages, generates mutable tuple typings, and shares routes to runtime globalData', async () => {
@@ -51,6 +68,7 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
       'pages/home/index',
       'pages/logs/index',
     ])
+    expect(appJson.pages).not.toContain('pages/index/index')
     expect(appJson.subPackages).toEqual([
       {
         root: 'subpackages/lab',
@@ -65,6 +83,7 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
         ],
       },
     ])
+    await expectNoDonutOutputs()
 
     const appJsPath = path.join(DIST_ROOT, 'app.js')
     expect(await fs.pathExists(appJsPath)).toBe(true)

@@ -1,4 +1,5 @@
 import { readFile, rm } from 'node:fs/promises'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -7,6 +8,19 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/tdesign-dialog-import')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const DIST_NPM_ROOT = path.join(DIST_ROOT, 'miniprogram_npm')
+const DONUT_ONLY_OUTPUTS = [
+  'app.miniapp.json',
+  'pages/data/index.wxml',
+  'pages/form/index.wxml',
+  'pages/ability/index.wxml',
+  'pages/profile/index.wxml',
+  'pages/status/index.wxml',
+  'pages/layouts/index.wxml',
+  'layouts/default/index.wxml',
+  'layouts/default.wxml',
+  'layouts/compact/index.wxml',
+  'layouts/compact.wxml',
+] as const
 
 async function buildApp() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -32,6 +46,12 @@ function expectModuleReference(code: string, specifier: string) {
   const escapedSpecifier = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
   expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
+}
+
+async function expectNoDonutOutputs() {
+  for (const relativePath of DONUT_ONLY_OUTPUTS) {
+    expect(await fs.pathExists(path.join(DIST_ROOT, relativePath)), relativePath).toBe(false)
+  }
 }
 
 describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
@@ -79,5 +99,11 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(toastIndexJs).toContain('showToast')
     expect(toastIndexJs).toContain('hideToast')
     expect(toastIndexJs).toContain('#t-toast')
+
+    await expectNoDonutOutputs()
+    expect(barePageWxml).not.toContain('layout-message')
+    expect(indexPageWxml).not.toContain('layout-message')
+    expect(barePageJs).not.toContain('donut-multi-end')
+    expect(indexPageJs).not.toContain('donut-multi-end')
   })
 })

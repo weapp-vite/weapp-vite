@@ -6,6 +6,14 @@ import { runBuild as runWevuRuntimeBuild, CLI_PATH as WEVU_RUNTIME_CLI_PATH, DIS
 
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const TEMPLATE_DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
+const DONUT_ONLY_LAYOUT_MARKERS = [
+  'weapp-layout-compact',
+  'compact layout',
+  'layout-toast',
+  'layout-message',
+  'Donut',
+  'donut-multi-end',
+] as const
 
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
@@ -19,6 +27,12 @@ async function buildTemplate(projectRoot: string, label: string) {
 
 async function readDistFile(root: string, relativePath: string) {
   return await fs.readFile(path.join(root, relativePath), 'utf8')
+}
+
+function expectNoDonutLayoutMarkers(output: string) {
+  for (const marker of DONUT_ONLY_LAYOUT_MARKERS) {
+    expect(output).not.toContain(marker)
+  }
 }
 
 describe.sequential('layout runtime switching build integration', () => {
@@ -39,12 +53,17 @@ describe.sequential('layout runtime switching build integration', () => {
     expect(pageWxml).toContain(`!__wv_page_layout_name || __wv_page_layout_name === 'default'`)
     expect(pageWxml).toContain(`__wv_page_layout_name === 'admin'`)
     expect(pageWxml).toContain('subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}"')
+    expectNoDonutLayoutMarkers(pageWxml)
 
     expect(pageJson).toContain('"weapp-layout-default": "/layouts/default"')
     expect(pageJson).toContain('"weapp-layout-admin": "/layouts/admin"')
+    expect(pageJson).not.toContain('/layouts/compact')
     expect(pageJs).toContain('setPageLayout')
+    expectNoDonutLayoutMarkers(pageJs)
     expect(defaultLayoutJsExists).toBe(true)
     expect(adminLayoutJsExists).toBe(true)
+    expect(await fs.pathExists(path.join(TEMPLATE_DIST_ROOT, 'app.miniapp.json'))).toBe(false)
+    expect(await fs.pathExists(path.join(TEMPLATE_DIST_ROOT, 'layouts/compact.wxml'))).toBe(false)
   })
 
   it('emits native layout switching assets for the runtime e2e page', async () => {
@@ -59,13 +78,18 @@ describe.sequential('layout runtime switching build integration', () => {
     expect(pageWxml).toContain(`!__wv_page_layout_name || __wv_page_layout_name === 'default'`)
     expect(pageWxml).toContain(`__wv_page_layout_name === 'admin'`)
     expect(pageWxml).toContain('title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"')
+    expectNoDonutLayoutMarkers(pageWxml)
 
     expect(pageJson).toContain('"weapp-layout-default": "/layouts/default/index"')
     expect(pageJson).toContain('"weapp-layout-admin": "/layouts/admin/index"')
+    expect(pageJson).not.toContain('/layouts/compact')
     expect(pageJs).toContain('__wevuSetPageLayout')
     expect(pageJs).toContain('__wv_page_layout_name')
     expect(pageJs).toContain('LAYOUTS-ADMIN-TITLE-BASE')
+    expectNoDonutLayoutMarkers(pageJs)
     expect(defaultLayoutJsExists).toBe(true)
     expect(adminLayoutJsExists).toBe(true)
+    expect(await fs.pathExists(path.join(WEVU_RUNTIME_DIST_ROOT, 'app.miniapp.json'))).toBe(false)
+    expect(await fs.pathExists(path.join(WEVU_RUNTIME_DIST_ROOT, 'layouts/compact/index.wxml'))).toBe(false)
   })
 })
