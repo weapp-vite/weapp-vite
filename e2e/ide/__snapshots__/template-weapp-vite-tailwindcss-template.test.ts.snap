@@ -103,21 +103,7 @@ wx-root-portal-content {
 .mt-4 {
   margin-top: calc(var(--spacing) * 4);
 }
-.i-mdi-moon-waxing-crescent {
-  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 2a9.9 9.9 0 0 0-3 .46a10 10 0 0 1 0 19.08A10 10 0 1 0 12 2'/%3E%3C/svg%3E");
-  -webkit-mask-image: var(--svg);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 100% 100%;
-  background-color: currentColor;
-  display: inline-block;
-  height: 1em;
-  mask-image: var(--svg);
-  mask-repeat: no-repeat;
-  mask-size: 100% 100%;
-  width: 1em;
-}
-.i-mdi-weather-sunny {
-  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10l1.76-3.77a7.13 7.13 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10l-4.14.36c.59-.51 1.12-1.14 1.54-1.86c.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44c.82 0 1.63-.17 2.37-.44z'/%3E%3C/svg%3E");
+.iconify {
   -webkit-mask-image: var(--svg);
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 100% 100%;
@@ -466,6 +452,12 @@ wx-root-portal-content {
   --tw-duration: 500ms;
   transition-duration: 500ms;
 }
+.i-mdi-moon-waxing-crescent {
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 2a9.9 9.9 0 0 0-3 .46a10 10 0 0 1 0 19.08A10 10 0 1 0 12 2'/%3E%3C/svg%3E");
+}
+.i-mdi-weather-sunny {
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10l1.76-3.77a7.13 7.13 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10l-4.14.36c.59-.51 1.12-1.14 1.54-1.86c.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44c.82 0 1.63-.17 2.37-.44z'/%3E%3C/svg%3E");
+}
 .active_cscale-95:active {
   --tw-scale-x: 95%;
   --tw-scale-y: 95%;
@@ -559,7 +551,7 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
         </view>
         <view class="flex items-center">
           <text></text>
-          <view class="i-mdi-moon-waxing-crescent text-4xl"></view>
+          <view class="iconify i-mdi-moon-waxing-crescent text-4xl"></view>
         </view>
         <view class="underline">https://vite.icebreaker.top</view>
         <view class="underline">https://tw.icebreaker.top/</view>

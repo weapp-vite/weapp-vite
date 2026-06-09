@@ -1,20 +1,33 @@
 import { mkdtemp } from 'node:fs/promises'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_PATH = path.resolve(REPO_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(REPO_ROOT, 'templates/weapp-vite-tailwindcss-template')
 const TMP_ROOT = path.resolve(REPO_ROOT, '.tmp')
+const TEMPLATE_CASES = [
+  {
+    name: 'weapp-vite-tailwindcss-template',
+    root: path.resolve(REPO_ROOT, 'templates/weapp-vite-tailwindcss-template'),
+  },
+  {
+    name: 'weapp-vite-tailwindcss-vant-template',
+    root: path.resolve(REPO_ROOT, 'templates/weapp-vite-tailwindcss-vant-template'),
+  },
+  {
+    name: 'weapp-vite-tailwindcss-tdesign-template',
+    root: path.resolve(REPO_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template'),
+  },
+] as const
 
-async function createTemplateFixture() {
+async function createTemplateFixture(templateRoot: string, templateName: string) {
   await fs.ensureDir(TMP_ROOT)
-  const fixtureRoot = await mkdtemp(path.join(TMP_ROOT, 'template-tailwind-iconify-'))
-  await fs.copy(TEMPLATE_ROOT, fixtureRoot, {
+  const fixtureRoot = await mkdtemp(path.join(TMP_ROOT, `${templateName}-iconify-`))
+  await fs.copy(templateRoot, fixtureRoot, {
     filter: (source) => {
-      const relativePath = path.relative(TEMPLATE_ROOT, source)
+      const relativePath = path.relative(templateRoot, source)
       return relativePath !== 'dist' && !relativePath.startsWith(`dist${path.sep}`)
     },
   })
@@ -22,27 +35,24 @@ async function createTemplateFixture() {
 }
 
 describe.sequential('template: Tailwind CSS Iconify build output', () => {
-  let fixtureRoot: string
+  const fixtureRoots: string[] = []
 
-  beforeAll(async () => {
-    fixtureRoot = await createTemplateFixture()
+  afterAll(async () => {
+    await Promise.all(fixtureRoots.map(async fixtureRoot => await fs.remove(fixtureRoot)))
+  })
+
+  it.each(TEMPLATE_CASES)('keeps Iconify base mask rules for i-mdi utility icons in $name', async (templateCase) => {
+    const fixtureRoot = await createTemplateFixture(templateCase.root, templateCase.name)
+    fixtureRoots.push(fixtureRoot)
 
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
       projectRoot: fixtureRoot,
       platform: 'weapp',
       cwd: fixtureRoot,
-      label: 'ci:template-tailwind-iconify',
+      label: `ci:template-tailwind-iconify:${templateCase.name}`,
     })
-  }, 120_000)
 
-  afterAll(async () => {
-    if (fixtureRoot) {
-      await fs.remove(fixtureRoot)
-    }
-  })
-
-  it('keeps Iconify base mask rules for i-mdi utility icons', async () => {
     const appWxss = await fs.readFile(path.join(fixtureRoot, 'dist/app.wxss'), 'utf8')
     const indexWxml = await fs.readFile(path.join(fixtureRoot, 'dist/pages/index/index.wxml'), 'utf8')
 
@@ -56,5 +66,5 @@ describe.sequential('template: Tailwind CSS Iconify build output', () => {
     expect(appWxss).toContain('mask-image: var(--svg)')
     expect(appWxss).toContain('.i-mdi-moon-waxing-crescent')
     expect(appWxss).toContain('.i-mdi-weather-sunny')
-  })
+  }, 120_000)
 })
