@@ -18,6 +18,7 @@ const connectionSchema = z.object({
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 })
 
@@ -128,6 +129,7 @@ function readConnectionFromQuery(url: URL): RuntimeConnectionInput {
     timeout: readNumberParam(url.searchParams.get('timeout')),
     port: readNumberParam(url.searchParams.get('port')),
     preferOpenedSession: readBooleanParam(url.searchParams.get('preferOpenedSession')),
+    preserveProjectRoot: readBooleanParam(url.searchParams.get('preserveProjectRoot')),
     sessionId: url.searchParams.get('sessionId') ?? undefined,
   }))
 }

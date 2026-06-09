@@ -308,7 +308,7 @@ export async function launchAutomator(options: AutomatorOptions) {
       const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
       if (typeof sessionMetadata?.wsEndpoint === 'string' && sessionMetadata.wsEndpoint) {
         await persistAutomatorSession({
-          port: sessionMetadata.port ?? port,
+          ...(port ? { port: sessionMetadata.port ?? port } : {}),
           projectPath,
           sessionId,
           wsEndpoint: sessionMetadata.wsEndpoint,

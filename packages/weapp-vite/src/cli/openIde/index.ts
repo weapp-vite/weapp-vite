@@ -6,6 +6,7 @@ import {
   formatAutomatorLoginError,
   isAutomatorLoginError,
   isWechatIdeEngineBuildEndpointMissingError,
+  launchAutomator,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
@@ -128,6 +129,24 @@ function appendLoginRetryArgv(argv: string[], options: OpenIdeOptions) {
     argv.push('--login-retry-timeout', options.loginRetryTimeout)
   }
   return argv
+}
+
+async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions) {
+  try {
+    const miniProgram = await launchAutomator({
+      preserveProjectRoot: true,
+      projectPath,
+      timeout: 30_000,
+      trustProject: options.trustProject !== false,
+    }) as { disconnect?: () => void }
+    miniProgram.disconnect?.()
+  }
+  catch (error) {
+    logger.warn('准备当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
+    if (shouldLogAutomatorFallbackError()) {
+      logger.error(error)
+    }
+  }
 }
 
 async function stabilizeOpenedWechatIdeProject(
@@ -266,6 +285,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, options))
   if (platform === 'weapp' && projectPath) {
     await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, options)
+    if (options.useAutomatorOpen === false && bootstrapResult?.servicePortEnabled !== false) {
+      await prepareOpenedWechatIdeAutomatorSession(projectPath, options)
+    }
   }
 }
 

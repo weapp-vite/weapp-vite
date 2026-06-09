@@ -51,6 +51,7 @@ export interface RuntimeConnectionInput {
   timeout?: number
   port?: number
   preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
   sessionId?: string
 }
 
@@ -78,6 +79,7 @@ export const connectionSchema = z.object({
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 })
 
@@ -86,6 +88,7 @@ export const connectionInputSchema = {
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().optional(),
   preferOpenedSession: z.boolean().optional(),
+  preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 }
 
@@ -133,6 +136,7 @@ export class RuntimeSessionManager {
       sessionId: input.sessionId,
       timeout: input.timeout,
       preferOpenedSession: input.preferOpenedSession,
+      preserveProjectRoot: input.preserveProjectRoot ?? true,
       sharedSession: true,
     })
 

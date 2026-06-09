@@ -32,6 +32,7 @@ export interface DevtoolsConnectionInput {
   timeout?: number
   port?: number
   preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
   sessionId?: string
 }
 

@@ -144,6 +144,7 @@ describe('runtime MCP tools', () => {
       },
     })
     expect(mocks.acquireSharedMiniProgram).toHaveBeenCalledWith(expect.objectContaining({
+      preserveProjectRoot: true,
       projectPath: demoProjectPath,
       sharedSession: true,
     }))
@@ -168,6 +169,23 @@ describe('runtime MCP tools', () => {
     expect(readStructuredResult(clearedResult)).toMatchObject({
       count: 0,
     })
+  })
+
+  it('allows explicitly disabling real project root preservation for runtime connections', async () => {
+    const fixture = createMiniProgram()
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    await getTool(tools, 'weapp_devtools_connect')({
+      preserveProjectRoot: false,
+      projectPath: 'apps/demo',
+    })
+
+    expect(mocks.acquireSharedMiniProgram).toHaveBeenCalledWith(expect.objectContaining({
+      preserveProjectRoot: false,
+      projectPath: demoProjectPath,
+      sharedSession: true,
+    }))
   })
 
   it('supports indexed selectors and inner selectors for element taps', async () => {

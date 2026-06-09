@@ -356,7 +356,7 @@ describe('openIde', () => {
     expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
-  it('uses plain open without automator wrapper when automator open is disabled', async () => {
+  it('uses plain open and prepares a real-root automator session when automator open is disabled', async () => {
     const { openIde } = await import('./openIde')
 
     await openIde('weapp', 'dist/dev/mp-weixin', {
@@ -367,7 +367,12 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: undefined,
     })
-    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 30000,
+      trustProject: true,
+    })
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(connectOpenedAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledWith([
@@ -382,6 +387,7 @@ describe('openIde', () => {
       fallbackToCli: false,
       logPath: undefined,
     })
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
   })
 
   it('closes the current ide window before plain reopen when automator open is disabled', async () => {
@@ -393,7 +399,12 @@ describe('openIde', () => {
     })
 
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 30000,
+      trustProject: true,
+    })
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(connectOpenedAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledWith([
@@ -402,6 +413,25 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
+  })
+
+  it('does not fail plain open when real-root automator session preparation fails', async () => {
+    const { openIde } = await import('./openIde')
+    const error = new Error('automator prepare failed')
+    launchAutomatorMock.mockRejectedValueOnce(error)
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      useAutomatorOpen: false,
+    })
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(loggerMock.warn).toHaveBeenCalledWith('准备当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
+    expect(loggerMock.error).not.toHaveBeenCalledWith(error)
   })
 
   it('falls back to weapp open when automator trust launch fails', async () => {

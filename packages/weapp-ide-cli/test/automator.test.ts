@@ -342,6 +342,7 @@ describe('automator helpers', () => {
       expect(mkdirMock).toHaveBeenCalledTimes(1)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
       expect(String(writeFileMock.mock.calls[0]?.[1])).toContain('"wsEndpoint": "ws://127.0.0.1:9420"')
+      expect(String(writeFileMock.mock.calls[0]?.[1])).not.toContain('"port"')
     })
 
     it('persists explicit session metadata separately', async () => {
@@ -414,6 +415,34 @@ describe('automator helpers', () => {
 
       expect(connectMock).toHaveBeenCalledWith({
         wsEndpoint: 'ws://127.0.0.1:19510',
+      })
+    })
+
+    it('uses project-specific persisted endpoints for concurrent opened projects', async () => {
+      readFileMock
+        .mockResolvedValueOnce(JSON.stringify({
+          projectPath: path.resolve('/workspace/template-a'),
+          updatedAt: '2026-04-06T00:00:00.000Z',
+          wsEndpoint: 'ws://127.0.0.1:19510',
+        }))
+        .mockResolvedValueOnce(JSON.stringify({
+          projectPath: path.resolve('/workspace/template-b'),
+          updatedAt: '2026-04-06T00:00:00.000Z',
+          wsEndpoint: 'ws://127.0.0.1:19511',
+        }))
+
+      await connectOpenedAutomator({
+        projectPath: '/workspace/template-a',
+      })
+      await connectOpenedAutomator({
+        projectPath: '/workspace/template-b',
+      })
+
+      expect(connectMock).toHaveBeenNthCalledWith(1, {
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      })
+      expect(connectMock).toHaveBeenNthCalledWith(2, {
+        wsEndpoint: 'ws://127.0.0.1:19511',
       })
     })
 
