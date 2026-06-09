@@ -179,6 +179,20 @@ describe('executeWechatIdeCliCommand', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
+  it('skips automator fallback when automator mode is disabled', async () => {
+    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
+      automatorMode: 'skip',
+      onNonLoginError: vi.fn(),
+      projectPath: '/project/dist',
+    })
+
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
+    expect(parseMock).toHaveBeenCalledWith(['compile', '--project', '/project/dist'])
+  })
+
   it('can require automator compile without the http open shortcut', async () => {
     const { executeWechatIdeCliCommand } = await import('./execute')
 
@@ -193,6 +207,22 @@ describe('executeWechatIdeCliCommand', () => {
       projectPath: '/project/dist',
     })
     expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves project root when automator compile is explicitly required', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
+      automatorMode: 'require',
+      httpMode: 'skip',
+      preserveProjectRoot: true,
+      projectPath: '/project/dist',
+    })
+
+    expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: '/project/dist',
+    })
   })
 
   it('prefers http reset-fileutils when projectPath is provided', async () => {

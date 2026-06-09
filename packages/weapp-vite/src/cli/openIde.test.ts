@@ -390,6 +390,29 @@ describe('openIde', () => {
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
   })
 
+  it('does not fall back to automator wrapper when plain open stabilization http compile fails', async () => {
+    const { openIde } = await import('./openIde')
+    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      useAutomatorOpen: false,
+    })
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 30000,
+      trustProject: true,
+    })
+  })
+
   it('closes the current ide window before plain reopen when automator open is disabled', async () => {
     const { openIde } = await import('./openIde')
 

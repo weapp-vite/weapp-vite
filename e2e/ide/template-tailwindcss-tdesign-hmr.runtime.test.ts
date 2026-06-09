@@ -16,10 +16,8 @@ const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwin
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
 const INDEX_ROUTE = '/pages/index/index'
 const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
-const ORIGINAL_ROOT_MARKUP = '<view class="min-h-screen {{ mode === \'light\'?\'bg-[#f40909] text-slate-800\':\'bg-gray-900 text-slate-200\' }} transition-colors duration-500">'
-const PATCHED_INITIAL_ROOT_MARKUP = '<view id="tailwind-hmr-probe" class="min-h-screen {{ mode === \'light\'?\'bg-[#f40909] text-slate-800\':\'bg-gray-900 text-slate-200\' }} transition-colors duration-500">'
-const PATCHED_UPDATED_ROOT_MARKUP = '<view id="tailwind-hmr-probe" class="min-h-screen {{ mode === \'light\'?\'bg-[#10b981] text-slate-800\':\'bg-gray-900 text-slate-200\' }} transition-colors duration-500">'
-const ORIGINAL_BACKGROUND_RE = /^(?:rgb\(244,\s*9,\s*9\)|rgba\(244,\s*9,\s*9,\s*1\)|#f40909)$/i
+const ROOT_MARKUP_RE = /<view class="min-h-screen \{\{ mode === 'light'\?'bg-\[#([0-9a-fA-F]{6})\] text-slate-800':'bg-gray-900 text-slate-200' \}\} transition-colors duration-500">/
+const UPDATED_BACKGROUND_HEX = '10b981'
 const UPDATED_BACKGROUND_RE = /^(?:rgb\(16,\s*185,\s*129\)|rgba\(16,\s*185,\s*129,\s*1\)|#10b981)$/i
 
 interface AutomatorSessionMetadata {
@@ -34,6 +32,14 @@ function resolveAutomatorSessionFile(projectPath: string) {
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function createColorPattern(hex: string) {
+  const normalized = hex.toLowerCase()
+  const red = Number.parseInt(normalized.slice(0, 2), 16)
+  const green = Number.parseInt(normalized.slice(2, 4), 16)
+  const blue = Number.parseInt(normalized.slice(4, 6), 16)
+  return new RegExp(`^(?:rgb\\(${red},\\s*${green},\\s*${blue}\\)|rgba\\(${red},\\s*${green},\\s*${blue},\\s*1\\)|#${normalized})$`, 'i')
 }
 
 async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
@@ -93,14 +99,17 @@ async function waitForRootBackgroundColor(
 
 describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', () => {
   let originalWxml = ''
+  let originalBackgroundRe = /^$/
   let miniProgram: any
   let devProcess: ReturnType<typeof startDevProcess> | undefined
 
   beforeAll(async () => {
     originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
-    if (!originalWxml.includes(ORIGINAL_ROOT_MARKUP)) {
+    const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
+    if (!rootMarkupMatch) {
       throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
     }
+    originalBackgroundRe = createColorPattern(rootMarkupMatch[1])
     await fs.rm(resolveAutomatorSessionFile(TEMPLATE_ROOT), { force: true }).catch(() => {})
   }, 60_000)
 
@@ -126,13 +135,22 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     await devProcess.waitForOutput(READY_OUTPUT_RE, 'tailwindcss tdesign dev:open ready', 180_000)
 
     miniProgram = await waitForOpenedAutomator(TEMPLATE_ROOT)
-    const patchedInitialWxml = originalWxml.replace(ORIGINAL_ROOT_MARKUP, PATCHED_INITIAL_ROOT_MARKUP)
+    const rootMarkup = originalWxml.match(ROOT_MARKUP_RE)?.[0]
+    if (!rootMarkup) {
+      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
+    }
+
+    const probedRootMarkup = rootMarkup.replace('<view ', '<view id="tailwind-hmr-probe" ')
+    const patchedInitialWxml = originalWxml.replace(rootMarkup, probedRootMarkup)
     expect(patchedInitialWxml).not.toBe(originalWxml)
     await fs.writeFile(INDEX_WXML, patchedInitialWxml, 'utf8')
     await miniProgram.reLaunch(INDEX_ROUTE)
-    await waitForRootBackgroundColor(miniProgram, ORIGINAL_BACKGROUND_RE, 'initial Tailwind background')
+    await waitForRootBackgroundColor(miniProgram, originalBackgroundRe, 'initial Tailwind background')
 
-    const updatedWxml = originalWxml.replace(ORIGINAL_ROOT_MARKUP, PATCHED_UPDATED_ROOT_MARKUP)
+    const updatedWxml = originalWxml.replace(
+      rootMarkup,
+      probedRootMarkup.replace(/bg-\[#([0-9a-fA-F]{6})\]/, `bg-[#${UPDATED_BACKGROUND_HEX}]`),
+    )
     expect(updatedWxml).not.toBe(originalWxml)
     await fs.writeFile(INDEX_WXML, updatedWxml, 'utf8')
 

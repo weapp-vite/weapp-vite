@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -46,6 +47,18 @@ interface AutomatorSessionMetadata {
 function resolveAutomatorSessionFile(projectPath: string) {
   const encodedProjectPath = Buffer.from(path.resolve(projectPath)).toString('base64url')
   return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
+}
+
+function resolveAutomatorWrapperProjectPath(projectPath: string) {
+  const sourceProjectPath = path.resolve(projectPath)
+  const distRoot = path.resolve(sourceProjectPath, 'dist')
+  const wrapperHash = createHash('sha1')
+    .update(sourceProjectPath)
+    .update('\0')
+    .update(distRoot)
+    .digest('hex')
+    .slice(0, 16)
+  return path.join(os.tmpdir(), 'weapp-ide-cli-automator-projects', wrapperHash)
 }
 
 function structuredResult<T>(result: unknown) {
@@ -134,6 +147,7 @@ async function createRuntimeTools() {
 describe.sequential('template TailwindCSS dev:open multi-project IDE integration', () => {
   beforeAll(async () => {
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {})))
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png'), { force: true }).catch(() => {})))
   }, 60_000)
@@ -163,6 +177,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
           const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
+          await expect(fs.access(resolveAutomatorWrapperProjectPath(templateCase.root))).rejects.toThrow()
           await miniProgram.disconnect()
 
           const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-multi.png')

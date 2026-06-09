@@ -19,7 +19,7 @@ import {
 import logger from '../../logger'
 
 export interface ExecuteWechatIdeCliCommandOptions {
-  automatorMode?: 'prefer' | 'require'
+  automatorMode?: 'prefer' | 'require' | 'skip'
   cancelLevel?: 'info' | 'warn'
   engineBuildFallbackToCli?: boolean
   httpMode?: 'prefer' | 'require' | 'skip'
@@ -27,6 +27,7 @@ export interface ExecuteWechatIdeCliCommandOptions {
   onNonLoginError?: (error: unknown) => void
   onRetry?: () => void
   projectPath?: string
+  preserveProjectRoot?: boolean
 }
 
 function readArgOption(argv: readonly string[], ...names: string[]) {
@@ -42,7 +43,11 @@ function readArgOption(argv: readonly string[], ...names: string[]) {
   }
 }
 
-async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[], projectPath?: string) {
+async function tryExecuteWechatIdeCliCommandByAutomator(
+  argv: readonly string[],
+  projectPath?: string,
+  options: Pick<ExecuteWechatIdeCliCommandOptions, 'preserveProjectRoot'> = {},
+) {
   if (!projectPath) {
     return false
   }
@@ -54,6 +59,7 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
 
   if (command === 'compile') {
     await compileWechatIdeByAutomator({
+      preserveProjectRoot: options.preserveProjectRoot,
       projectPath,
     })
     return true
@@ -67,6 +73,7 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
 
     await clearWechatIdeCacheByAutomator({
       clean: cleanType,
+      preserveProjectRoot: options.preserveProjectRoot,
       projectPath,
     })
     return true
@@ -166,6 +173,7 @@ export async function executeWechatIdeCliCommand(
     onNonLoginError,
     onRetry,
     projectPath,
+    preserveProjectRoot,
   } = options
 
   await runWithSuspendedSharedInput(async () => {
@@ -183,17 +191,21 @@ export async function executeWechatIdeCliCommand(
       }
     }
 
-    try {
-      const handledByAutomator = await tryExecuteWechatIdeCliCommandByAutomator(argv, projectPath)
-      if (handledByAutomator) {
-        return
+    if (automatorMode !== 'skip') {
+      try {
+        const handledByAutomator = await tryExecuteWechatIdeCliCommandByAutomator(argv, projectPath, {
+          preserveProjectRoot,
+        })
+        if (handledByAutomator) {
+          return
+        }
       }
-    }
-    catch (error) {
-      if (automatorMode === 'require') {
-        throw error
+      catch (error) {
+        if (automatorMode === 'require') {
+          throw error
+        }
+        // automator 优先策略仅作增强；失败时回退到原有 CLI 命令链路
       }
-      // automator 优先策略仅作增强；失败时回退到原有 CLI 命令链路
     }
 
     try {
