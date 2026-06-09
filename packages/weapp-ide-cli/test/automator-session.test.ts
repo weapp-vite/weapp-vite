@@ -97,7 +97,11 @@ describe('automator session diagnostics', () => {
       disconnect: disconnectMock,
     })
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
-    expect(launchAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      port: expect.any(Number),
+      projectPath: '/workspace/project',
+    })
   })
 
   it('retries automator connection after login is restored', async () => {
