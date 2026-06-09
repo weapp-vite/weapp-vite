@@ -41,6 +41,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
+  'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts',
   'ide/template-weapp-vite-tailwindcss-template.test.ts',
   'ide/template-weapp-vite-tailwindcss-vant-template.test.ts',
