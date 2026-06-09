@@ -1,3 +1,5 @@
+import { showLayoutMessage, showLayoutToast } from '../../shared/layoutFeedback'
+
 Page({
   data: {
     lastAction: 'idle',
@@ -12,6 +14,10 @@ Page({
       data: 'donut-multi-end',
       success: () => {
         this.setData({ lastAction: 'clipboard' })
+        showLayoutToast(this, {
+          message: '标识已复制',
+          theme: 'success',
+        })
       },
     })
   },
@@ -20,12 +26,21 @@ Page({
       withShareTicket: true,
       complete: () => {
         this.setData({ lastAction: 'share-menu' })
+        showLayoutMessage(this, {
+          message: '分享菜单状态已更新',
+          theme: 'info',
+        })
       },
     })
   },
   openProfile() {
     wx.navigateTo({
       url: '/pages/profile/index?from=ability',
+    })
+  },
+  openLayouts() {
+    wx.navigateTo({
+      url: '/pages/layouts/index',
     })
   },
 })

@@ -43,6 +43,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "wevu sfc layouts",
+          "pathName": "pages/layouts/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

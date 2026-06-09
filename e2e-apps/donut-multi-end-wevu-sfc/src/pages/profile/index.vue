@@ -2,6 +2,8 @@
 import { computed, ref } from 'wevu'
 import { useRoute, useRouter } from 'wevu/router'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端资料',
   usingComponents: {
@@ -17,6 +19,7 @@ const route = useRoute()
 const router = useRouter()
 const edits = ref(0)
 const enabled = ref(true)
+const { showMessage, showToast } = useLayoutFeedback()
 
 const source = computed(() => {
   const value = route.query.from
@@ -41,6 +44,7 @@ const rows = computed(() => [
 
 function updateProfile() {
   edits.value += 1
+  showToast('Profile 已更新')
 }
 
 function toggleMode(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
@@ -51,6 +55,10 @@ async function backHome() {
   await router.nativeRouter.reLaunch({
     url: '/pages/index/index',
   })
+}
+
+function showProfileMessage() {
+  showMessage(`Profile 来源：${profile.value.from || 'direct'}`)
 }
 </script>
 
@@ -99,6 +107,9 @@ async function backHome() {
     <view class="actions">
       <t-button class="action-button" theme="primary" block @tap="updateProfile">
         Update profile
+      </t-button>
+      <t-button class="action-button" theme="default" variant="outline" block @tap="showProfileMessage">
+        Layout message
       </t-button>
       <t-button class="action-button" theme="default" variant="outline" block @tap="backHome">
         Back home

@@ -2,56 +2,58 @@
   box-sizing: border-box;
   min-height: 100vh;
   padding: 32rpx;
-  color: #1f2937;
-  background: #fff;
+  color: #172033;
 }
 
 .header,
 .panel {
-  padding: 24rpx;
+  padding: 26rpx;
   background: #fff;
   border: 2rpx solid #e2e8f0;
   border-radius: 16rpx;
 }
 
-.header {
-  background: #f8fafc;
+.eyebrow {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #0f766e;
 }
 
 .title {
+  margin-top: 10rpx;
   font-size: 40rpx;
   font-weight: 700;
-  color: #0f172a;
 }
 
 .subtitle {
   margin-top: 10rpx;
-  font-size: 26rpx;
-  line-height: 1.7;
-  color: #475569;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #64748b;
 }
 
 .tags,
 .actions {
   display: flex;
   gap: 14rpx;
-  align-items: center;
 }
 
 .tags {
   flex-wrap: wrap;
-  margin-top: 16rpx;
+  margin-top: 18rpx;
 }
 
 .panel,
 .actions {
-  margin-top: 20rpx;
+  margin-top: 22rpx;
+}
+
+.panel-title {
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
 .actions {
-  flex-wrap: wrap;
-}
-
-.actions > * {
-  flex: 1;
+  flex-direction: column;
 }

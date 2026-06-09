@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "usingComponents": {
+    "t-message": "tdesign-miniprogram/message/message",
+    "t-toast": "tdesign-miniprogram/toast/toast"
+  }
+}

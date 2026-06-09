@@ -45,5 +45,8 @@
     <text wx:if="{{submitted}}" class="summary-text">已提交</text>
   </view>
 
-  <t-button theme="primary" block bindtap="submitForm">提交巡检</t-button>
+  <view class="actions">
+    <t-button theme="primary" block bindtap="submitForm">提交巡检 Toast</t-button>
+    <t-button theme="default" variant="outline" block bindtap="showFormMessage">显示表单 Message</t-button>
+  </view>
 </view>

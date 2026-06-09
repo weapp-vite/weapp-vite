@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="header">
+    <view class="eyebrow">LAYOUTS</view>
+    <view class="title">原生 Layout 切换</view>
+    <view class="subtitle">当前布局：{{currentLayout}}。页面按钮会调用 layout 内的 t-toast 和 t-message。</view>
+    <view class="tags">
+      <t-tag theme="primary" variant="light">setPageLayout</t-tag>
+      <t-tag theme="success" variant="light">t-toast</t-tag>
+      <t-tag theme="warning" variant="light">t-message</t-tag>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="panel-title">布局列表</view>
+    <t-cell-group>
+      <t-cell wx:for="{{layoutRows}}" wx:key="title" title="{{item.title}}" note="{{item.note}}" />
+    </t-cell-group>
+  </view>
+
+  <view class="actions">
+    <t-button theme="primary" block bindtap="useDefaultLayout">使用 default layout</t-button>
+    <t-button theme="primary" variant="outline" block bindtap="useCompactLayout">切换 compact layout</t-button>
+    <t-button theme="danger" variant="outline" block bindtap="closeLayout">关闭 layout</t-button>
+    <t-button theme="success" variant="outline" block bindtap="showToastFromLayout">调用 layout Toast</t-button>
+    <t-button theme="default" variant="outline" block bindtap="showMessageFromLayout">调用 layout Message</t-button>
+  </view>
+</view>

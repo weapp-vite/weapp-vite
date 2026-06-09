@@ -1,0 +1,9 @@
+<view class="layout-default">
+  <view class="layout-default__bar">
+    <text class="layout-default__label">default layout</text>
+    <text class="layout-default__status">toast + message host</text>
+  </view>
+  <slot />
+  <t-toast id="layout-toast" />
+  <t-message id="layout-message" />
+</view>

@@ -26,5 +26,8 @@
     </t-cell-group>
   </view>
 
-  <t-button theme="primary" block bindtap="refreshData">刷新数据</t-button>
+  <view class="actions">
+    <t-button theme="primary" block bindtap="refreshData">刷新数据 Toast</t-button>
+    <t-button theme="default" variant="outline" block bindtap="showRuntimeMessage">显示运行时 Message</t-button>
+  </view>
 </view>

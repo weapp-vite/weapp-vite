@@ -1,3 +1,5 @@
+import { showLayoutMessage, showLayoutToast } from '../../shared/layoutFeedback'
+
 Page({
   data: {
     form: {
@@ -30,9 +32,15 @@ Page({
   },
   submitForm() {
     this.setData({ submitted: true })
-    wx.showToast({
-      title: '表单已提交',
-      icon: 'success',
+    showLayoutToast(this, {
+      message: '表单已提交',
+      theme: 'success',
+    })
+  },
+  showFormMessage() {
+    showLayoutMessage(this, {
+      message: `巡检样本 ${this.data.form.count} 页，评分 ${this.data.form.score}`,
+      theme: this.data.form.urgent ? 'warning' : 'info',
     })
   },
 })

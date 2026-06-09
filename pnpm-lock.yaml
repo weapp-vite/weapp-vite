@@ -1387,6 +1387,12 @@ importers:
 
   e2e-apps/donut-multi-end:
     devDependencies:
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
+      tdesign-miniprogram:
+        specifier: 'catalog:'
+        version: 1.15.1
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1396,9 +1402,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.2
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.1
+      tdesign-miniprogram:
+        specifier: 'catalog:'
+        version: 1.15.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

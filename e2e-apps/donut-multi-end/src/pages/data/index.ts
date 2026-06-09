@@ -1,3 +1,5 @@
+import { showLayoutMessage, showLayoutToast } from '../../shared/layoutFeedback'
+
 Page({
   data: {
     activeTab: 'runtime',
@@ -23,9 +25,15 @@ Page({
     })
   },
   refreshData() {
-    wx.showToast({
-      title: '数据已刷新',
-      icon: 'none',
+    showLayoutToast(this, {
+      message: '数据已刷新',
+      theme: 'success',
+    })
+  },
+  showRuntimeMessage() {
+    showLayoutMessage(this, {
+      message: `当前数据页 tab：${this.data.activeTab}`,
+      theme: 'info',
     })
   },
 })

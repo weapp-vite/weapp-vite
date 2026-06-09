@@ -38,6 +38,12 @@
   margin-top: 20rpx;
 }
 
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
 .panel {
   padding: 24rpx;
   margin: 24rpx 0;

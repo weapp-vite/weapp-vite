@@ -29,6 +29,9 @@ describe.sequential('e2e app: donut-multi-end (build)', () => {
     expect(await fs.pathExists(path.join(DIST_ROOT, 'pages/form/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'pages/ability/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'pages/profile/index.wxml'))).toBe(true)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'pages/layouts/index.wxml'))).toBe(true)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'layouts/default/index.wxml'))).toBe(true)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'layouts/compact/index.wxml'))).toBe(true)
 
     const appJson = await readJson<{
       pages?: string[]
@@ -39,6 +42,7 @@ describe.sequential('e2e app: donut-multi-end (build)', () => {
       'pages/form/index',
       'pages/ability/index',
       'pages/profile/index',
+      'pages/layouts/index',
     ])
 
     const projectConfig = await readJson<{
@@ -109,17 +113,34 @@ describe.sequential('e2e app: donut-multi-end (build)', () => {
     const indexJson = await readJson<{
       usingComponents?: Record<string, string>
     }>(path.join(DIST_ROOT, 'pages/index/index.json'))
+    const layoutsJson = await readJson<{
+      usingComponents?: Record<string, string>
+    }>(path.join(DIST_ROOT, 'pages/layouts/index.json'))
     expect(indexJson.usingComponents?.['t-grid']).toContain('tdesign-miniprogram/grid/grid')
     expect(indexJson.usingComponents?.['t-notice-bar']).toContain('tdesign-miniprogram/notice-bar/notice-bar')
+    expect(indexJson.usingComponents?.['weapp-layout-default']).toContain('/layouts/default/index')
+    expect(layoutsJson.usingComponents?.['weapp-layout-default']).toContain('/layouts/default/index')
+    expect(layoutsJson.usingComponents?.['weapp-layout-compact']).toContain('/layouts/compact/index')
 
     const dataWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/data/index.wxml'), 'utf8')
     const formWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/form/index.wxml'), 'utf8')
     const abilityWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/ability/index.wxml'), 'utf8')
+    const layoutPageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/layouts/index.wxml'), 'utf8')
+    const defaultLayoutWxml = await fs.readFile(path.join(DIST_ROOT, 'layouts/default/index.wxml'), 'utf8')
+    const compactLayoutWxml = await fs.readFile(path.join(DIST_ROOT, 'layouts/compact/index.wxml'), 'utf8')
     expect(dataWxml).toContain('数据总线')
     expect(dataWxml).toContain('t-tabs')
+    expect(dataWxml).toContain('显示运行时 Message')
     expect(formWxml).toContain('巡检表单')
     expect(formWxml).toContain('t-stepper')
+    expect(formWxml).toContain('显示表单 Message')
     expect(abilityWxml).toContain('能力矩阵')
     expect(abilityWxml).toContain('t-empty')
+    expect(abilityWxml).toContain('打开布局页')
+    expect(layoutPageWxml).toContain('原生 Layout 切换')
+    expect(layoutPageWxml).toContain('调用 layout Message')
+    expect(defaultLayoutWxml).toContain('<t-toast id="layout-toast" />')
+    expect(defaultLayoutWxml).toContain('<t-message id="layout-message" />')
+    expect(compactLayoutWxml).toContain('compact layout')
   })
 })

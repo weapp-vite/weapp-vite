@@ -9,6 +9,7 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
+    "@weapp-core/constants": "workspace:*",
     "tdesign-miniprogram": "catalog:",
     "weapp-vite": "workspace:*"
   }

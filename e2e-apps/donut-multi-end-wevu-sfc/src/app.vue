@@ -12,6 +12,7 @@ const orderedPages: string[] = [
   'pages/ability/index',
   'pages/profile/index',
   'pages/status/index',
+  'pages/layouts/index',
 ]
 const appSummary = computed(() => ({
   fixture: 'donut-multi-end-wevu-sfc',

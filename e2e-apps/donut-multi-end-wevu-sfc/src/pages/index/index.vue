@@ -2,6 +2,8 @@
 import { computed, ref } from 'wevu'
 import { useRouter } from 'wevu/router'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端首页',
   usingComponents: {
@@ -18,6 +20,7 @@ definePageJson({
 
 const router = useRouter()
 const taps = ref(0)
+const { showMessage, showToast } = useLayoutFeedback()
 
 const cards = [
   {
@@ -42,6 +45,7 @@ const quickRoutes = [
   { text: '表单', path: '/pages/form/index', icon: 'edit-1' },
   { text: '能力', path: '/pages/ability/index', icon: 'app' },
   { text: '资料', path: '/pages/profile/index?from=index', icon: 'user' },
+  { text: '布局', path: '/pages/layouts/index', icon: 'view-module' },
 ]
 
 const checklist = [
@@ -59,6 +63,7 @@ const e2eState = computed(() => ({
 
 function recordTap() {
   taps.value += 1
+  showToast(`Record tap: ${taps.value}`)
 }
 
 async function openRoute(path: string) {
@@ -71,6 +76,10 @@ async function openProfile() {
 
 async function openStatus() {
   await router.push('/pages/status/index')
+}
+
+function showHomeMessage() {
+  showMessage('首页通过 default layout 触发 Message')
 }
 </script>
 
@@ -125,7 +134,7 @@ async function openStatus() {
     </view>
 
     <view class="grid-panel">
-      <t-grid column="4">
+      <t-grid column="5">
         <t-grid-item
           v-for="item in quickRoutes"
           :key="item.path"
@@ -174,6 +183,9 @@ async function openStatus() {
       </t-button>
       <t-button class="action-button" theme="default" variant="outline" block @tap="openStatus">
         Open status
+      </t-button>
+      <t-button class="action-button" theme="success" variant="outline" block @tap="showHomeMessage">
+        Layout message
       </t-button>
     </view>
   </view>

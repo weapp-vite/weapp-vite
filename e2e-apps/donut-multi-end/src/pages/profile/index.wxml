@@ -19,6 +19,7 @@
 
   <view class="actions">
     <t-button theme="primary" block bindtap="updateProfile">Update profile</t-button>
+    <t-button theme="default" variant="outline" block bindtap="showProfileMessage">Layout Message</t-button>
     <t-button theme="default" variant="outline" block bindtap="backHome">Back home</t-button>
   </view>
 </view>

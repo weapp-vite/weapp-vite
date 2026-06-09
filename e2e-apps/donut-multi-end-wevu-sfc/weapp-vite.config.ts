@@ -14,6 +14,7 @@ export default defineConfig({
         't-grid': 'tdesign-miniprogram/grid/grid',
         't-grid-item': 'tdesign-miniprogram/grid-item/grid-item',
         't-input': 'tdesign-miniprogram/input/input',
+        't-message': 'tdesign-miniprogram/message/message',
         't-notice-bar': 'tdesign-miniprogram/notice-bar/notice-bar',
         't-progress': 'tdesign-miniprogram/progress/progress',
         't-rate': 'tdesign-miniprogram/rate/rate',
@@ -23,6 +24,7 @@ export default defineConfig({
         't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
         't-tag': 'tdesign-miniprogram/tag/tag',
         't-textarea': 'tdesign-miniprogram/textarea/textarea',
+        't-toast': 'tdesign-miniprogram/toast/toast',
       },
     },
     typescript: {

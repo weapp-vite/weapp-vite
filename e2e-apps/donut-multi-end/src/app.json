@@ -4,7 +4,8 @@
     "pages/data/index",
     "pages/form/index",
     "pages/ability/index",
-    "pages/profile/index"
+    "pages/profile/index",
+    "pages/layouts/index"
   ],
   "window": {
     "navigationBarTitleText": "多端 E2E",

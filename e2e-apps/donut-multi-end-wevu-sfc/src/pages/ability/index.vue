@@ -2,6 +2,8 @@
 import { ref } from 'wevu'
 import { useRouter } from 'wevu/router'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端能力',
   usingComponents: {
@@ -16,6 +18,7 @@ definePageJson({
 
 const router = useRouter()
 const lastAction = ref('idle')
+const { showMessage, showToast } = useLayoutFeedback()
 const capabilityRows = [
   { title: '剪贴板', note: 'wx.setClipboardData' },
   { title: '分享菜单', note: 'wx.showShareMenu' },
@@ -27,6 +30,7 @@ function copyToken() {
     data: 'donut-multi-end-wevu-sfc',
     success: () => {
       lastAction.value = 'clipboard'
+      showToast('标识已复制')
     },
   })
 }
@@ -36,12 +40,17 @@ function enableShare() {
     withShareTicket: true,
     complete: () => {
       lastAction.value = 'share-menu'
+      showMessage('分享菜单状态已更新')
     },
   })
 }
 
 async function openProfile() {
   await router.push('/pages/profile/index?from=ability')
+}
+
+async function openLayouts() {
+  await router.push('/pages/layouts/index')
 }
 </script>
 
@@ -83,6 +92,9 @@ async function openProfile() {
       </t-button>
       <t-button theme="primary" block variant="outline" @tap="openProfile">
         打开资料页
+      </t-button>
+      <t-button theme="success" block variant="outline" @tap="openLayouts">
+        打开布局页
       </t-button>
     </view>
 

@@ -53,3 +53,9 @@
   background: #fff;
   border-radius: 16rpx;
 }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}

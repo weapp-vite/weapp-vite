@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端状态',
   usingComponents: {
@@ -14,6 +16,7 @@ definePageJson({
 
 const enabled = ref(true)
 const activeTab = ref('config')
+const { showMessage, showToast } = useLayoutFeedback()
 
 const capabilityRows = computed(() => [
   { label: 'Donut project', value: 'multiPlatform' },
@@ -30,10 +33,15 @@ const configRows = [
 
 function toggleEnabled() {
   enabled.value = !enabled.value
+  showToast(`Status: ${enabled.value ? 'enabled' : 'disabled'}`, enabled.value ? 'success' : 'warning')
 }
 
 function onTabChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
   activeTab.value = event.detail.value
+}
+
+function showStatusMessage() {
+  showMessage(`当前状态页 tab：${activeTab.value}`)
 }
 </script>
 
@@ -82,6 +90,9 @@ function onTabChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
     <view class="actions">
       <t-button theme="primary" block @tap="toggleEnabled">
         Toggle status
+      </t-button>
+      <t-button theme="default" variant="outline" block @tap="showStatusMessage">
+        Layout message
       </t-button>
     </view>
   </view>

@@ -56,3 +56,9 @@
   gap: 14rpx;
   align-items: center;
 }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}

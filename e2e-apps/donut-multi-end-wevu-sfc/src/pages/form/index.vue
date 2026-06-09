@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'wevu'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端表单',
   usingComponents: {
@@ -15,6 +17,7 @@ definePageJson({
 })
 
 const submitted = ref(false)
+const { showMessage, showToast } = useLayoutFeedback()
 const form = reactive({
   name: '多端体验巡检',
   owner: 'E2E Runner',
@@ -60,10 +63,11 @@ function onNotesChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) 
 
 function submitForm() {
   submitted.value = true
-  wx.showToast({
-    title: '表单已提交',
-    icon: 'success',
-  })
+  showToast('表单已提交')
+}
+
+function showFormMessage() {
+  showMessage(`巡检样本 ${form.count} 页，评分 ${form.score}`, form.urgent ? 'warning' : 'info')
 }
 </script>
 
@@ -141,7 +145,10 @@ function submitForm() {
 
     <view class="actions">
       <t-button theme="primary" block @tap="submitForm">
-        提交巡检
+        提交巡检 Toast
+      </t-button>
+      <t-button theme="default" variant="outline" block @tap="showFormMessage">
+        显示表单 Message
       </t-button>
     </view>
   </view>

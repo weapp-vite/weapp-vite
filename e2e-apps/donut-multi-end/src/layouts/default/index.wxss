@@ -1,0 +1,23 @@
+.layout-default {
+  min-height: 100%;
+  background: #f5f7fb;
+}
+
+.layout-default__bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 18rpx 28rpx;
+  color: #0f172a;
+  background: #fff;
+  border-bottom: 2rpx solid #e2e8f0;
+}
+
+.layout-default__label {
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.layout-default__status {
+  font-size: 22rpx;
+  color: #64748b;
+}

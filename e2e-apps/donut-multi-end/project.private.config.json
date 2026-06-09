@@ -36,6 +36,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "multi-end layouts",
+          "pathName": "pages/layouts/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

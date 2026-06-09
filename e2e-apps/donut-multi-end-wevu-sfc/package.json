@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@weapp-core/constants": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "tdesign-miniprogram": "catalog:",
     "typescript": "catalog:",

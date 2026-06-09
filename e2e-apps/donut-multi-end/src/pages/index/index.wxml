@@ -25,7 +25,7 @@
 
   <view class="panel">
     <view class="panel-title">场景入口</view>
-    <t-grid column="{{4}}" border="{{false}}">
+    <t-grid column="{{5}}" border="{{false}}">
       <t-grid-item
         wx:for="{{quickRoutes}}"
         wx:key="path"
@@ -44,5 +44,9 @@
     </t-cell-group>
   </view>
 
-  <t-button theme="primary" block data-path="/pages/ability/index" bindtap="openRoute">查看能力页</t-button>
+  <view class="actions">
+    <t-button theme="primary" block data-path="/pages/ability/index" bindtap="openRoute">查看能力页</t-button>
+    <t-button theme="success" variant="outline" block bindtap="showLayoutToast">Layout Toast</t-button>
+    <t-button theme="default" variant="outline" block bindtap="showLayoutMessage">Layout Message</t-button>
+  </view>
 </view>

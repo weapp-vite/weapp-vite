@@ -1,3 +1,5 @@
+import { showLayoutMessage, showLayoutToast } from '../../shared/layoutFeedback'
+
 Page({
   data: {
     __e2eResult: {
@@ -15,6 +17,7 @@ Page({
       { text: '表单', path: '/pages/form/index', icon: 'edit-1' },
       { text: '能力', path: '/pages/ability/index', icon: 'app' },
       { text: '资料', path: '/pages/profile/index?from=index', icon: 'user' },
+      { text: '布局', path: '/pages/layouts/index', icon: 'view-module' },
     ],
     checklist: [
       { title: '多端项目标记', note: 'projectArchitecture=multiPlatform' },
@@ -29,6 +32,18 @@ Page({
     }
     wx.navigateTo({
       url,
+    })
+  },
+  showLayoutToast() {
+    showLayoutToast(this, {
+      message: '首页通过 default layout 触发 Toast',
+      theme: 'success',
+    })
+  },
+  showLayoutMessage() {
+    showLayoutMessage(this, {
+      message: '首页通过 default layout 触发 Message',
+      theme: 'info',
     })
   },
 })

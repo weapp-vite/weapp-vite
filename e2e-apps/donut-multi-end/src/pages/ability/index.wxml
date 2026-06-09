@@ -19,6 +19,7 @@
     <t-button theme="primary" block bindtap="copyToken">复制标识</t-button>
     <t-button theme="default" block variant="outline" bindtap="enableShare">开启分享</t-button>
     <t-button theme="primary" block variant="outline" bindtap="openProfile">打开资料页</t-button>
+    <t-button theme="success" block variant="outline" bindtap="openLayouts">打开布局页</t-button>
   </view>
 
   <t-empty description="更多真机能力由 DevTools 多端模式验证" />

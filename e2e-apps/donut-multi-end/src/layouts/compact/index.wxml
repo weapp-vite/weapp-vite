@@ -1,0 +1,12 @@
+<view class="layout-compact">
+  <view class="layout-compact__hero">
+    <text class="layout-compact__eyebrow">compact layout</text>
+    <text class="layout-compact__title">{{title || 'Donut Layout Console'}}</text>
+    <text class="layout-compact__subtitle">{{subtitle || '运行时可切换的紧凑布局，内置 TDesign 反馈宿主。'}}</text>
+  </view>
+  <view class="layout-compact__body">
+    <slot />
+  </view>
+  <t-toast id="layout-toast" />
+  <t-message id="layout-message" />
+</view>

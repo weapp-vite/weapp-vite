@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
 
+import { useLayoutFeedback } from '@/hooks/useLayoutFeedback'
+
 definePageJson({
   navigationBarTitleText: 'Wevu 多端数据',
   usingComponents: {
@@ -16,6 +18,7 @@ definePageJson({
 
 const activeTab = ref('runtime')
 const refreshCount = ref(0)
+const { showMessage, showToast } = useLayoutFeedback()
 
 const kpis = computed(() => [
   { title: '启动耗时', value: `${328 - refreshCount.value * 3}ms`, trend: 'stable', percent: 78 },
@@ -43,10 +46,11 @@ function onTabChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
 
 function refreshData() {
   refreshCount.value += 1
-  wx.showToast({
-    title: '数据已刷新',
-    icon: 'none',
-  })
+  showToast('数据已刷新')
+}
+
+function showRuntimeMessage() {
+  showMessage(`当前数据页 tab：${activeTab.value}`)
 }
 </script>
 
@@ -97,7 +101,10 @@ function refreshData() {
 
     <view class="actions">
       <t-button theme="primary" block @tap="refreshData">
-        刷新数据
+        刷新数据 Toast
+      </t-button>
+      <t-button theme="default" variant="outline" block @tap="showRuntimeMessage">
+        显示运行时 Message
       </t-button>
     </view>
   </view>
