@@ -1,5 +1,11 @@
 # @weapp-vite/dashboard
 
+## 6.16.43
+
+### Patch Changes
+
+- 🐛 **模板中的 Tailwind v4 图标插件从 `@egoist/tailwindcss-icons` 迁移到 `@iconify/tailwind4`，并移除模板里的 `tailwind.config.ts`，让 Tailwind 扫描与插件配置统一由 `src/app.css` 管理。** [`44bd5a8`](https://github.com/weapp-vite/weapp-vite/commit/44bd5a89ba172fed7f54fb5f6d769075f21e75d5) by @sonofmagic
+
 ## 6.16.42
 
 ## 6.16.41

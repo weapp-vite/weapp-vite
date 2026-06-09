@@ -1,5 +1,27 @@
 # create-weapp-vite
 
+## 2.3.50
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite dev -o` 通过 automator 打开带 `miniprogramRoot` 项目时可能切到临时哈希目录的问题。开发模式现在直接打开真实项目目录，打开后的 HTTP 编译刷新失败时也不会回退到会创建临时 wrapper 的 automator 编译；开发态 `s` 截图热键会保留真实项目根，避免微信开发者工具监听临时拷贝导致后续热更新失效。** [`9799aa2`](https://github.com/weapp-vite/weapp-vite/commit/9799aa221f999a1dbd28ab95b21723336e8de680) by @sonofmagic
+
+- 🐛 **修复多个 TailwindCSS 模板同时执行 `pnpm dev:open` 时，截图、MCP 与其他微信开发者工具联动可能连接到默认全局 automator 端口或其他项目窗口的问题。开发态普通 open 后会为真实项目根目录准备独立的默认 automator 会话，MCP runtime 默认保留真实项目根目录，确保多开场景下各模板的热更新、截图和运行时调试都绑定到自己的项目。** [`16150fa`](https://github.com/weapp-vite/weapp-vite/commit/16150fa2039be50c0cd124688bdc43266181800d) by @sonofmagic
+
+- 🐛 **修复多个模板或项目同时/顺序运行 `weapp-vite dev -o` 时，微信开发者工具 automator 默认端口可能复用旧项目窗口的问题。`dev:open` 现在会为每个真实项目派生稳定的 automator 端口，并将截图、MCP 与会话重建路径绑定到对应项目，避免热更新、截图或 MCP 误连到其它模板。** [`2221135`](https://github.com/weapp-vite/weapp-vite/commit/2221135ba56eea877feee3480d6eacebcf5f4cb9) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 在目标项目已由微信开发者工具打开时仍可能反复关闭并重新拉起的问题。开发服务启动阶段现在会优先复用已打开项目，并在自动打开 IDE 期间暂停开发态快捷键输入，避免终端按键被误触发为再次重开；手动按 `o` 重新打开项目的快捷键行为保持不变。** [`39e872d`](https://github.com/weapp-vite/weapp-vite/commit/39e872d9b6d6b017d8dfe50e56b00ece7771eb13) by @sonofmagic
+
+- 🐛 **修复嵌套组件透传 scoped slot 时，组件自身的 `__wvOwnerId` 只写入运行时内存而没有同步到小程序视图层，导致子组件收到空的 `__wvSlotOwnerId`、作用域插槽无法在微信开发者工具中稳定渲染的问题。** [#673](https://github.com/weapp-vite/weapp-vite/pull/673) by @sonofmagic
+
+- 🐛 **修复无业务 props 的 Vue SFC 组件在 `setup` 中调用 `useSlots()` 或 `defineSlots()` 时无法读取父级传入插槽的问题。编译收尾阶段现在会在脚本使用 slot 元数据时为组件同步注入 `vueSlots` 等内部属性，确保默认插槽和具名插槽的存在性检测可用。** [#676](https://github.com/weapp-vite/weapp-vite/pull/676) by @sonofmagic
+
+- 🐛 **修复 TailwindCSS 模板中的 Iconify 图标只生成 `--svg` 变量、缺少 `.iconify` 基础 mask 渲染类而不可见的问题。模板内的 `i-mdi-*` 图标现在会同时带上 Iconify 基础类，构建产物会生成小程序可渲染的 mask 图标规则。** [`ca27efd`](https://github.com/weapp-vite/weapp-vite/commit/ca27efd8cf83292e43af89d6ed0dcb878de4ec1a) by @sonofmagic
+
+- 🐛 **修复 Tailwind CSS 4 模板仍依赖 `tailwind.config.ts` 的 `content` 扫描范围，导致 WXML/Vue 中的 `bg-[...]` 等任意值类名只被小程序转义、但没有生成对应 WXSS 规则的问题。模板和回归用例现在在 `src/app.css` 中显式声明 `@source`，确保脚手架生成的新项目能在首轮构建和开发热更新时稳定扫描 WXML、TS 与 Vue 源码。** [`afb9595`](https://github.com/weapp-vite/weapp-vite/commit/afb95956d69987f3f9676bdefb1a63eec822e9a3) by @sonofmagic
+
+- 🐛 **模板中的 Tailwind v4 图标插件从 `@egoist/tailwindcss-icons` 迁移到 `@iconify/tailwind4`，并移除模板里的 `tailwind.config.ts`，让 Tailwind 扫描与插件配置统一由 `src/app.css` 管理。** [`44bd5a8`](https://github.com/weapp-vite/weapp-vite/commit/44bd5a89ba172fed7f54fb5f6d769075f21e75d5) by @sonofmagic
+
 ## 2.3.49
 
 ### Patch Changes

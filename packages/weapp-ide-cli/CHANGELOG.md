@@ -1,5 +1,17 @@
 # weapp-ide-cli
 
+## 5.4.4
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite dev -o` 通过 automator 打开带 `miniprogramRoot` 项目时可能切到临时哈希目录的问题。开发模式现在直接打开真实项目目录，打开后的 HTTP 编译刷新失败时也不会回退到会创建临时 wrapper 的 automator 编译；开发态 `s` 截图热键会保留真实项目根，避免微信开发者工具监听临时拷贝导致后续热更新失效。** [`9799aa2`](https://github.com/weapp-vite/weapp-vite/commit/9799aa221f999a1dbd28ab95b21723336e8de680) by @sonofmagic
+
+- 🐛 **修复多个 TailwindCSS 模板同时执行 `pnpm dev:open` 时，截图、MCP 与其他微信开发者工具联动可能连接到默认全局 automator 端口或其他项目窗口的问题。开发态普通 open 后会为真实项目根目录准备独立的默认 automator 会话，MCP runtime 默认保留真实项目根目录，确保多开场景下各模板的热更新、截图和运行时调试都绑定到自己的项目。** [`16150fa`](https://github.com/weapp-vite/weapp-vite/commit/16150fa2039be50c0cd124688bdc43266181800d) by @sonofmagic
+
+- 🐛 **修复多个模板或项目同时/顺序运行 `weapp-vite dev -o` 时，微信开发者工具 automator 默认端口可能复用旧项目窗口的问题。`dev:open` 现在会为每个真实项目派生稳定的 automator 端口，并将截图、MCP 与会话重建路径绑定到对应项目，避免热更新、截图或 MCP 误连到其它模板。** [`2221135`](https://github.com/weapp-vite/weapp-vite/commit/2221135ba56eea877feee3480d6eacebcf5f4cb9) by @sonofmagic
+- 📦 **Dependencies** [`9799aa2`](https://github.com/weapp-vite/weapp-vite/commit/9799aa221f999a1dbd28ab95b21723336e8de680)
+  → `@weapp-vite/devtools-runtime@0.4.3`
+
 ## 5.4.3
 
 ### Patch Changes
