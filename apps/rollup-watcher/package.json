@@ -2,7 +2,6 @@
   "name": "rollup-watcher",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.11.0",
   "description": "",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",

@@ -2,7 +2,6 @@
   "name": "wevu-comprehensive-demo",
   "version": "0.0.147",
   "private": true,
-  "packageManager": "pnpm@10.26.0",
   "description": "WeVu comprehensive demo showcasing all features",
   "scripts": {
     "prepare:weapp": "wv prepare",

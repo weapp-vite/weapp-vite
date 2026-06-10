@@ -25,7 +25,7 @@ const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS |
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
 const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
-const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '10.33.3'
+const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '11'
 const REPORT_FILE = process.env.CREATE_WEAPP_VITE_REPORT_FILE?.trim()
 const REPORT_META = {
   os: process.env.CREATE_WEAPP_VITE_REPORT_OS?.trim() || process.platform,
@@ -69,7 +69,7 @@ function resolveEnabledScenarioNames() {
 
   // Yarn Classic 会在 install 阶段严格拦截 engines。
   // 当前模板链路里的部分 ESLint 依赖要求 Node >= 22，
-  // 因此 Node 20 的 smoke 仅验证 npm / pnpm / bun 发布链路。
+  // 因此低版本 Node 的 smoke 仅验证 npm / pnpm / bun 发布链路。
   if (NODE_MAJOR > 0 && NODE_MAJOR < 22) {
     names.delete('yarn')
   }

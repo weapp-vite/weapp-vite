@@ -2,7 +2,6 @@
   "name": "wevu-vue-demo",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.10.0",
   "scripts": {
     "dev": "wv dev",
     "dev:open": "wv dev -o",

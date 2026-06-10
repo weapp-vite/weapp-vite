@@ -24,19 +24,16 @@ jobs:
         include:
           - platform: weapp
             os: ubuntu-latest
-            node-version: 20
-          - platform: weapp
-            os: ubuntu-latest
             node-version: 22
           - platform: weapp
             os: ubuntu-latest
             node-version: 24
           - platform: weapp
             os: windows-latest
-            node-version: 20
+            node-version: 22
           - platform: weapp
             os: macos-latest
-            node-version: 20
+            node-version: 22
       max-parallel: 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -57,15 +54,6 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - platform: weapp
-            os: ubuntu-latest
-            node-version: 20
-          - platform: weapp
-            os: windows-latest
-            node-version: 20
-          - platform: weapp
-            os: macos-latest
-            node-version: 20
           - platform: weapp
             os: ubuntu-latest
             node-version: 22
@@ -147,7 +135,7 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest

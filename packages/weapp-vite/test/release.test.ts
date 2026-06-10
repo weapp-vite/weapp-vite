@@ -88,7 +88,7 @@ describe('weapp-vite release pack', () => {
         cwd: tempPackageRoot,
         env: {
           ...process.env,
-          npm_config_loglevel: 'silent',
+          pnpm_config_loglevel: 'silent',
         },
       })
 

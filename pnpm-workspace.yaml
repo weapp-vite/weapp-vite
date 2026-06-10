@@ -96,13 +96,28 @@ catalogs:
   weapp-tailwindcss-fixed:
     weapp-tailwindcss: 5.0.6
 
-ignoredBuiltDependencies:
-  - weapp-tailwindcss
+overrides:
+  rolldown: 'catalog:'
 
-onlyBuiltDependencies:
-  - '@swc/core'
-  - '@weapp-tailwindcss/merge'
-  - oxc-resolver
-  - rolldown
+gitChecks: false
+
+confirmModulesPurge: false
+
+minimumReleaseAge: 0
+
+allowBuilds:
+  '@parcel/watcher': false
+  '@swc/core': true
+  '@weapp-tailwindcss/merge': true
+  bufferutil: false
+  cos-wx-sdk-v5: false
+  esbuild: false
+  minidev: false
+  msgpackr-extract: false
+  oxc-resolver: true
+  rolldown: true
+  sharp: false
+  vue-demi: false
+  weapp-tailwindcss: false
 
 shamefullyHoist: true

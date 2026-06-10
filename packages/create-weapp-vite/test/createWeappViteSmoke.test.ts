@@ -20,14 +20,14 @@ describe('create-weapp-vite smoke helpers', () => {
   it('pins pnpm smoke commands through corepack', () => {
     expect(createPnpmCommand(['create', 'weapp-vite@latest', 'pnpm-default', 'default'])).toEqual({
       command: 'corepack',
-      args: ['pnpm@10.33.3', 'create', 'weapp-vite@latest', 'pnpm-default', 'default'],
+      args: ['pnpm@11', 'create', 'weapp-vite@latest', 'pnpm-default', 'default'],
     })
   })
 
   it('allows dependency build scripts during pnpm smoke installs', () => {
     expect(createPnpmInstallCommand()).toEqual({
       command: 'corepack',
-      args: ['pnpm@10.33.3', 'install', '--config.dangerouslyAllowAllBuilds=true'],
+      args: ['pnpm@11', 'install', '--config.dangerouslyAllowAllBuilds=true'],
     })
   })
 

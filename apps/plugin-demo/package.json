@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.10.0",
   "description": "",
   "author": "",
   "license": "ISC",

@@ -25,11 +25,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node-version: 20
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-          - os: ubuntu-latest
             node-version: 22
             timeout_minutes: 25
             build_pkgs_script: build:pkgs:ci
@@ -40,12 +35,12 @@ jobs:
             build_pkgs_script: build:pkgs:ci
             build_script: build:ci
           - os: windows-latest
-            node-version: 20
+            node-version: 22
             timeout_minutes: 40
             build_pkgs_script: build:pkgs:ci:windows
             build_script: build:ci:windows
           - os: macos-latest
-            node-version: 20
+            node-version: 22
             timeout_minutes: 25
             build_pkgs_script: build:pkgs:ci:macos
             build_script: build:ci:macos
@@ -72,11 +67,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node-version: 20
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-          - os: ubuntu-latest
             node-version: 22
             timeout_minutes: 25
             build_pkgs_script: build:pkgs:ci
@@ -87,11 +77,6 @@ jobs:
             build_pkgs_script: build:pkgs:ci
             build_script: build:ci
           - os: windows-latest
-            node-version: 20
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci:windows
-            build_script: build:ci:windows
-          - os: windows-latest
             node-version: 22
             timeout_minutes: 40
             build_pkgs_script: build:pkgs:ci:windows
@@ -101,11 +86,6 @@ jobs:
             timeout_minutes: 40
             build_pkgs_script: build:pkgs:ci:windows
             build_script: build:ci:windows
-          - os: macos-latest
-            node-version: 20
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci:macos
-            build_script: build:ci:macos
           - os: macos-latest
             node-version: 22
             timeout_minutes: 25
@@ -165,7 +145,7 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest

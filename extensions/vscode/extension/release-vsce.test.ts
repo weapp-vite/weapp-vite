@@ -46,7 +46,8 @@ it('vsce env strips pnpm and npm script context noise', () => {
     HOME: '/tmp/home',
     VSCE_PAT: 'secret',
     npm_package_json: '/workspace/extensions/vscode/package.json',
-    npm_config_user_agent: 'pnpm/10',
+    npm_config_user_agent: 'pnpm/11',
+    pnpm_config_registry: 'https://registry.npmjs.org',
     PNPM_HOME: '/tmp/pnpm',
     LANG: 'en_US.UTF-8',
   })

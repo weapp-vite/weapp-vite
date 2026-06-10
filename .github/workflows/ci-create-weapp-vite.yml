@@ -28,7 +28,6 @@ on:
         default: '24'
         type: choice
         options:
-          - '20'
           - '22'
           - '24'
       templates:
@@ -96,9 +95,6 @@ jobs:
           INPUT_NODE_VERSION: ${{ github.event.inputs['node-version'] || '24' }}
         run: |
           full_matrix='{"include":[
-            {"os":"ubuntu-latest","node-version":"20"},
-            {"os":"windows-latest","node-version":"20"},
-            {"os":"macos-latest","node-version":"20"},
             {"os":"ubuntu-latest","node-version":"22"},
             {"os":"windows-latest","node-version":"22"},
             {"os":"macos-latest","node-version":"22"},
@@ -171,7 +167,7 @@ jobs:
 
       - uses: pnpm/action-setup@v5
         with:
-          version: 10.33.3
+          version: 11
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
@@ -202,7 +198,7 @@ jobs:
           print_version node node -v
           print_version npm npm -v
           print_version pnpm pnpm -v
-          print_version "smoke pnpm" corepack pnpm@10.33.3 -v
+          print_version "smoke pnpm" corepack pnpm@11 -v
           print_version yarn yarn -v
 
       - name: Run create-weapp-vite smoke matrix
