@@ -22,7 +22,7 @@
     "dev:1": "weapp-vite dev --mode xx",
     "build": "node --eval \"console.log('skip app build for npm-only fixture')\"",
     "open": "weapp-vite open",
-    "postinstall": "weapp-tw patch",
+    "postinstall": "wv prepare",
     "npm": "weapp-vite npm"
   },
   "dependencies": {

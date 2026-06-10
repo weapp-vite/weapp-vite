@@ -22,7 +22,7 @@
     "dev:1": "wv dev --mode xx",
     "build": "wv build",
     "open": "wv open",
-    "postinstall": "weapp-tw patch",
+    "postinstall": "wv prepare",
     "npm": "wv npm",
     "build-npm": "wv build-npm",
     "g": "wv generate"
@@ -34,7 +34,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.12",
-    "weapp-tailwindcss": "^3.5.2",
+    "weapp-tailwindcss": "^5.0.4",
     "weapp-vite": "latest",
     "miniprogram-api-typings": "latest",
     "typescript": "latest"

@@ -104,7 +104,7 @@ it('formatLifecycleWaitMessage limits command list and reports remaining count',
     '[workspace] waiting briefly for remaining workspace lifecycle scripts before rolldown report',
     [
       { pid: 300, ppid: 100, command: 'sh -c templates/weapp-vite-template postinstall' },
-      { pid: 301, ppid: 100, command: 'sh -c weapp-tw patch && wv prepare' },
+      { pid: 301, ppid: 100, command: 'sh -c wv prepare' },
       { pid: 302, ppid: 100, command: '/bin/sh /tmp/node_modules/.bin/wv prepare' },
       { pid: 303, ppid: 100, command: 'sh -c apps/demo postinstall' },
     ],
@@ -113,7 +113,7 @@ it('formatLifecycleWaitMessage limits command list and reports remaining count',
   assert.equal(message, [
     '[workspace] waiting briefly for remaining workspace lifecycle scripts before rolldown report (4) 等 1 个:',
     '- templates/weapp-vite-template postinstall',
-    '- weapp-tw patch && wv prepare',
+    '- wv prepare',
     '- /bin/sh /tmp/node_modules/.bin/wv prepare',
   ].join('\n'))
 })
