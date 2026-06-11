@@ -190,4 +190,31 @@ describe('runWechatIdeEngineBuildByHttp', () => {
 
     await expect(runWechatIdeEngineBuild('/workspace/demo-app')).resolves.toBeUndefined()
   })
+
+  it('accepts cli engine build when devtools reports checkmarked open output', async () => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    execaMock.mockResolvedValueOnce({
+      exitCode: 1,
+      stderr: '',
+      stdout: '- initialize\n\n✔ IDE server has started, listening on http://127.0.0.1:15864\n- preparing\n✔ open',
+    })
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+
+    await expect(runWechatIdeEngineBuild('/workspace/demo-app')).resolves.toBeUndefined()
+  })
+
+  it('accepts cli engine build when endpoint-missing output still opens the project', async () => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    execaMock.mockResolvedValueOnce({
+      exitCode: 1,
+      stderr: '[error] Fail to build project:<!DOCTYPE html><pre>Cannot GET /engine/build</pre>',
+      stdout: '- initialize\n\n✔ IDE server has started, listening on http://127.0.0.1:15864\n- preparing\n✔ open',
+    })
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+
+    await expect(runWechatIdeEngineBuild('/workspace/demo-app')).resolves.toBeUndefined()
+  })
 })

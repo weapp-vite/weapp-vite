@@ -35,7 +35,7 @@ const ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS = [
   /Cannot GET \/engine\/buildResult\//i,
 ]
 const ENGINE_BUILD_ENDPOINT_MISSING_MESSAGE = '当前微信开发者工具未提供 engine build 接口，已跳过自动 engine build 刷新。'
-const ENGINE_BUILD_CLI_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
+const ENGINE_BUILD_CLI_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success|(?:^|\n)\s*✔\s*open(?:\n|$)/i
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 
 function sleep(ms: number) {
@@ -121,10 +121,6 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
   const output = [stdout, stderr].filter(Boolean).join('\n')
   await writeEngineBuildLog(options.logPath, output)
 
-  if (isEngineBuildEndpointMissingError(output)) {
-    throw createEngineBuildEndpointMissingError()
-  }
-
   if ((result.exitCode ?? 1) === 0) {
     if (stdout) {
       process.stdout.write(stdout)
@@ -137,6 +133,10 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
 
   if (ENGINE_BUILD_CLI_OPENED_PATTERN.test(output)) {
     return
+  }
+
+  if (isEngineBuildEndpointMissingError(output)) {
+    throw createEngineBuildEndpointMissingError()
   }
 
   if (stdout) {

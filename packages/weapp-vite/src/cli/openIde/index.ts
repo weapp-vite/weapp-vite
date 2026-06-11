@@ -179,6 +179,7 @@ async function stabilizeOpenedWechatIdeProject(
     try {
       await executeWechatIdeCliCommand(appendLoginRetryArgv(['engine', 'build', projectPath], options), {
         automatorMode: options.useAutomatorOpen === false ? 'skip' : 'prefer',
+        engineBuildFallbackToCli: true,
         httpMode: 'prefer',
         onNonLoginError: error => logger.error(error),
         preserveProjectRoot: options.useAutomatorOpen === false,
