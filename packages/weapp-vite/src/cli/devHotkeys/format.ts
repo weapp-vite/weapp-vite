@@ -3,6 +3,7 @@ import path from 'pathe'
 import { RETRY_CANCEL_KEYS, RETRY_CONFIRM_KEYS } from 'weapp-ide-cli'
 import packageJson from '../../../package.json'
 import { colors } from '../../logger'
+import { formatMcpQuickStart } from '../mcpClient'
 import { resolveDevHotkeyRowsByGroup } from './actions'
 
 const FULLWIDTH_ASCII_START = 0xFF01
@@ -21,6 +22,23 @@ function formatMcpStatus(state: DevHotkeyState) {
     return '已禁用'
   }
   return state.mcpRunning ? '运行中' : '未启动'
+}
+
+function formatMcpHelpRows(state: DevHotkeyState) {
+  if (!state.mcpEnabled || !state.mcpHttpUrl) {
+    return []
+  }
+
+  return [
+    '',
+    'MCP 接入',
+    `HTTP：${colors.cyan(state.mcpHttpUrl)}`,
+    ...(state.mcpRestUrl ? [`REST：${colors.cyan(state.mcpRestUrl)}`] : []),
+    ...formatMcpQuickStart({
+      httpUrl: state.mcpHttpUrl,
+      transport: 'http',
+    }),
+  ]
 }
 
 function formatFooterLine(state: DevHotkeyState) {
@@ -76,6 +94,7 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     '',
     `当前状态：${state.currentAction ?? '等待操作'} / MCP ${formatMcpStatus(state)}`,
     ...(state.lastAction ? [`最近操作：${state.lastAction}`] : []),
+    ...formatMcpHelpRows(state),
   ].join('\n')
 }
 

@@ -22,6 +22,10 @@ function forwardSigtstp() {
 
 export { formatDevHotkeyHelp, formatDevHotkeyHelpWithState, formatDevHotkeyHint, formatDevHotkeyHintWithState, resolveDevScreenshotOutputPath, runScreenshotAction }
 
+function formatMcpUrl(host: string, port: number, endpoint: string) {
+  return `http://${host}:${port}${endpoint}`
+}
+
 /**
  * @description 在开发态启动终端快捷键，并将动作输出到本地日志。
  */
@@ -45,11 +49,17 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     cwd: options.cwd,
     isAgent: options.isAgent,
   })
+  const mcpHttpUrl = formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.endpoint)
+  const mcpRestUrl = resolvedMcp.restEndpoint === false
+    ? undefined
+    : formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.restEndpoint)
   const getState = (): DevHotkeyState => ({
     currentAction,
     lastAction,
     mcpEnabled: resolvedMcp.enabled,
+    mcpHttpUrl,
     mcpRunning: Boolean(mcpHandle?.close),
+    mcpRestUrl,
     projectLabel: resolveProjectLabel(options.cwd),
   })
   let inputSession = createSharedInputSession({
@@ -162,6 +172,32 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
   }
 
+  const runBackgroundAction = (
+    label: string,
+    pendingLabel: string,
+    action: () => Promise<string | undefined>,
+  ) => {
+    if (running) {
+      return
+    }
+
+    running = true
+    currentAction = pendingLabel
+    void action()
+      .then((summary) => {
+        if (summary) {
+          lastAction = summary
+        }
+      })
+      .catch((error) => {
+        logger.error(`[dev action] ${label}失败：${error instanceof Error ? error.message : String(error)}`)
+      })
+      .finally(() => {
+        running = false
+        currentAction = undefined
+      })
+  }
+
   const handleInput = (input: string) => {
     if (closed) {
       return
@@ -253,8 +289,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     printHint()
   }
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
-    runAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
-      await toggleMcp()
+    runBackgroundAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
+      await toggleMcp({ silent: true })
     })
   }
 

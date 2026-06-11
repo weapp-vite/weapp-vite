@@ -290,6 +290,10 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 y'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 q / Esc / Ctrl+C'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('MCP 接入'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('HTTP：http://127.0.0.1:3088/mcp'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('REST：http://127.0.0.1:3088/api/weapp/devtools'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('wv mcp init codex --transport http --url http://127.0.0.1:3088/mcp'))
   })
 
   it('prints full help on keypress hotkey', async () => {
@@ -409,6 +413,7 @@ describe('devHotkeys', () => {
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
       endpoint: '/mcp',
       host: '127.0.0.1',
+      onReady: expect.any(Function),
       port: 3088,
       restEndpoint: '/api/weapp/devtools',
       transport: 'streamable-http',
@@ -416,12 +421,69 @@ describe('devHotkeys', () => {
       workspaceRoot: '/project',
     })
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('在 AI 工具中接入 weapp-vite MCP'))
 
     stdin.emit('data', 'm')
     await flushMicrotasks(10)
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
+    session?.close()
+  })
+
+  it('auto starts mcp service without startup onboarding logs', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: {
+        autoStart: true,
+      },
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    await flushMicrotasks(10)
+
+    expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
+      endpoint: '/mcp',
+      host: '127.0.0.1',
+      onReady: expect.any(Function),
+      port: 3088,
+      restEndpoint: '/api/weapp/devtools',
+      transport: 'streamable-http',
+      unref: false,
+      workspaceRoot: '/project',
+    })
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('在 AI 工具中接入 weapp-vite MCP'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('最近操作：MCP'))
+    expect(loggerMock.success).not.toHaveBeenCalledWith(expect.stringContaining('MCP 服务已启动'))
+    session?.close()
+  })
+
+  it('auto reuses existing mcp service without startup logs', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    startWeappViteMcpServerMock.mockRejectedValueOnce(new Error('listen EADDRINUSE: address already in use 127.0.0.1:3088'))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: {
+        autoStart: true,
+      },
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    await flushMicrotasks(10)
+
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('MCP 服务已存在，继续复用'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('最近操作：MCP'))
     session?.close()
   })
 

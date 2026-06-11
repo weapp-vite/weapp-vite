@@ -1,7 +1,6 @@
 import type { WeappViteMcpServerHandle } from '../../mcp'
 import logger, { colors } from '../../logger'
 import { startWeappViteMcpServer } from '../../mcp'
-import { formatMcpQuickStart } from '../mcpClient'
 
 const REG_EADDRINUSE = /EADDRINUSE/
 
@@ -26,7 +25,8 @@ export function createToggleMcpAction(options: {
 }) {
   const { cwd, getHandle, resolvedMcp, setHandle } = options
 
-  return async function toggleMcp() {
+  return async function toggleMcp(actionOptions: { silent?: boolean } = {}) {
+    const silent = actionOptions.silent === true
     if (!resolvedMcp.enabled) {
       logger.warn('[dev action] MCP 已在配置中禁用，跳过切换。')
       return 'MCP 已禁用'
@@ -43,7 +43,9 @@ export function createToggleMcpAction(options: {
     }
 
     const url = formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.endpoint)
-    logger.info(`[dev action] 正在启动 MCP 服务：${colors.cyan(url)}`)
+    if (!silent) {
+      logger.info(`[dev action] 正在启动 MCP 服务：${colors.cyan(url)}`)
+    }
     let handle: WeappViteMcpServerHandle
     try {
       handle = await startWeappViteMcpServer({
@@ -53,25 +55,24 @@ export function createToggleMcpAction(options: {
         restEndpoint: resolvedMcp.restEndpoint,
         transport: 'streamable-http',
         unref: false,
+        onReady: () => {},
         workspaceRoot: cwd,
       })
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       if (REG_EADDRINUSE.test(message)) {
-        logger.info(`[dev action] MCP 服务已存在，继续复用：${colors.cyan(url)}`)
+        if (!silent) {
+          logger.info(`[dev action] MCP 服务已存在，继续复用：${colors.cyan(url)}`)
+        }
         return `MCP 已复用 (${url})`
       }
       throw error
     }
     setHandle(handle)
     const suffix = resolvedMcp.agentName ? `（AI 终端：${resolvedMcp.agentName}）` : ''
-    logger.success(`[dev action] MCP 服务已启动：${colors.cyan(url)}${suffix}`)
-    for (const line of formatMcpQuickStart({
-      httpUrl: url,
-      transport: 'http',
-    })) {
-      logger.info(line)
+    if (!silent) {
+      logger.success(`[dev action] MCP 服务已启动：${colors.cyan(url)}${suffix}`)
     }
     return `MCP 已启动 (${url})`
   }

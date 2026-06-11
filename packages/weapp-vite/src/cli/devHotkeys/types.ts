@@ -17,7 +17,7 @@ export type DevHotkeyGroup = 'development' | 'devtools' | 'help' | 'process'
 
 export interface DevHotkeyActionContext {
   options: StartDevHotkeysOptions
-  toggleMcp: () => Promise<string | undefined>
+  toggleMcp: (options?: { silent?: boolean }) => Promise<string | undefined>
 }
 
 export interface DevHotkeyDefinition {
@@ -39,7 +39,9 @@ export interface DevHotkeyState {
   currentAction?: string
   lastAction?: string
   mcpEnabled: boolean
+  mcpHttpUrl?: string
   mcpRunning: boolean
+  mcpRestUrl?: string
   projectLabel?: string
 }
 
