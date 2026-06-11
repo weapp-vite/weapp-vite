@@ -9,6 +9,7 @@
     "dev:web": "vite --host 127.0.0.1 --port 5174 web",
     "build:web": "vite build web",
     "dev:mini": "wv dev",
+    "dev:open": "wv dev -o",
     "build:mini": "wv build",
     "open": "wv open",
     "postinstall": "wv prepare",
