@@ -65,7 +65,7 @@
     "miniprogram-simulate": "^1.6.1",
     "postcss": "catalog:",
     "sass-embedded": "catalog:",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.0",
     "svgo": "^4.0.1",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
