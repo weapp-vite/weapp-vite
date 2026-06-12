@@ -52,7 +52,7 @@ export const TEMPLATE_CATALOG = {
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
   merge: '^2.1.1',
-  obug: '^2.1.2',
+  obug: '^2.1.3',
   pathe: '^2.0.3',
   postcss: '^8.5.15',
   rolldown: '1.1.1',
