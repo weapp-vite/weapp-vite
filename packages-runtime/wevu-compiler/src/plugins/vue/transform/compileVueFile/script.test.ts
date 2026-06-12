@@ -83,7 +83,57 @@ const local = 'ok'
     expect(result.autoComponentMeta).toEqual({
       TButton: 'tdesign/button/button',
     })
+    expect(result.script).not.toContain(`import TButton`)
+    expect(result.script).not.toContain(`get TButton`)
+    expect(result.script).not.toContain(`__weappViteUsingComponent`)
     expect(resolveUsingComponentPath).toHaveBeenCalled()
+  })
+
+  it('keeps auto using component imports when script setup references them', async () => {
+    const sfc = parse(`
+<template>
+  <view><TButton /></view>
+</template>
+<script setup lang="ts">
+import TButton from '@/components/TButton'
+console.log(TButton)
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+
+    const resolveUsingComponentPath = vi.fn(async (importSource: string) => {
+      if (importSource === '@/components/TButton') {
+        return 'tdesign/button/button'
+      }
+      return undefined
+    })
+
+    const componentSourceInfo = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: { isPage: true },
+      autoUsingComponents: {
+        resolveUsingComponentPath,
+      },
+      autoImportTags: undefined,
+    })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/pages/index/index.vue',
+      { isPage: true },
+      {
+        resolveUsingComponentPath,
+      },
+      undefined,
+      false,
+      componentSourceInfo,
+    )
+
+    expect(result.script).toContain(`import TButton`)
+    expect(result.script).toContain(`console.log(TButton)`)
+    expect(result.script).toContain(`get TButton`)
   })
 
   it('injects scoped slot host properties when template emits component generics', async () => {

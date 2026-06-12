@@ -6,7 +6,7 @@ import { WE_VU_RUNTIME_APIS } from '../../../../constants'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { collectWevuPageFeatureFlags } from '../../../wevu/pageFeatures'
-import { injectTemplateComponentMeta } from '../scriptTemplateMeta'
+import { pruneTemplateComponentMeta } from '../scriptTemplateMeta'
 import { vueSfcTransformPlugin } from '../scriptVueSfcTransform'
 import { createCollectVisitors } from './collect'
 import { createImportVisitors } from './imports'
@@ -50,9 +50,9 @@ export function transformScript(source: string, options?: TransformScriptOptions
 
   traverse(ast, visitor as any)
 
-  // <script setup> 组件导入自动注册：移除 import，并注入元信息对象（满足用户在 script 中访问/打印的需求）
+  // <script setup> 组件导入自动注册：移除仅供模板使用的 import 与自动返回 getter。
   if (options?.templateComponentMeta) {
-    state.transformed = injectTemplateComponentMeta(ast, options.templateComponentMeta) || state.transformed
+    state.transformed = pruneTemplateComponentMeta(ast, options.templateComponentMeta) || state.transformed
   }
 
   state.transformed = rewriteDefaultExport(

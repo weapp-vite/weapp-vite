@@ -1,21 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { generate, parseJsLike } from '../../../utils/babel'
-import { injectTemplateComponentMeta } from './scriptTemplateMeta'
+import { pruneTemplateComponentMeta } from './scriptTemplateMeta'
 
-describe('injectTemplateComponentMeta', () => {
+describe('pruneTemplateComponentMeta', () => {
   it('returns false when template meta is empty', () => {
     const ast = parseJsLike(`import Foo from './Foo'`)
-    expect(injectTemplateComponentMeta(ast, {})).toBe(false)
+    expect(pruneTemplateComponentMeta(ast, {})).toBe(false)
   })
 
-  it('removes matched import specifiers and injects meta declarations', () => {
+  it('removes unused template component import specifiers and returned getters', () => {
     const ast = parseJsLike(`
 import Foo from './Foo'
 import { Keep, Remove } from './bar'
 const local = 1
+export default {
+  setup() {
+    const __returned__ = { local, get Foo() { return Foo }, get Remove() { return Remove } }
+    return __returned__
+  },
+}
     `.trim())
 
-    const changed = injectTemplateComponentMeta(ast, {
+    const changed = pruneTemplateComponentMeta(ast, {
       Foo: '@/components/Foo',
       Remove: '@/components/Remove',
     })
@@ -25,10 +31,33 @@ const local = 1
 
     expect(output).not.toContain(`import Foo`)
     expect(output).toContain(`import { Keep } from './bar'`)
-    expect(output).toContain(`const Foo =`)
-    expect(output).toContain(`const Remove =`)
-    expect(output).toContain(`__weappViteUsingComponent: true`)
-    expect(output).toContain(`from: "@/components/Foo"`)
-    expect(output).toContain(`from: "@/components/Remove"`)
+    expect(output).not.toContain(`get Foo()`)
+    expect(output).not.toContain(`get Remove()`)
+    expect(output).not.toContain(`__weappViteUsingComponent`)
+    expect(output).not.toContain(`@/components/Foo`)
+    expect(output).not.toContain(`@/components/Remove`)
+  })
+
+  it('keeps template component imports when script code references them', () => {
+    const ast = parseJsLike(`
+import Foo from './Foo'
+console.log(Foo)
+export default {
+  setup() {
+    const __returned__ = { get Foo() { return Foo } }
+    return __returned__
+  },
+}
+    `.trim())
+
+    const changed = pruneTemplateComponentMeta(ast, {
+      Foo: '@/components/Foo',
+    })
+
+    expect(changed).toBe(false)
+    const output = generate(ast).code
+    expect(output).toContain(`import Foo from './Foo'`)
+    expect(output).toContain(`console.log(Foo)`)
+    expect(output).toContain(`get Foo()`)
   })
 })

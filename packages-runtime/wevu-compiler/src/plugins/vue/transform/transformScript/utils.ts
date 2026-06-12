@@ -30,7 +30,7 @@ export interface TransformScriptOptions {
    */
   isPage?: boolean
   /**
-   * <script setup> 中引入的组件：编译时移除 import，并提供同名元信息对象占位，避免运行时访问时报错。
+   * <script setup> 中仅由模板使用的导入组件：编译时移除 import 与 Vue 编译器自动返回的 getter。
    * key: 组件别名（需与模板标签一致），value: usingComponents 的 from（如 `/components/foo/index`）
    */
   templateComponentMeta?: Record<string, string>
