@@ -41,7 +41,7 @@ export const TEMPLATE_CATALOG = {
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.4.1',
   'vue-tsc': '^3.3.4',
-  'weapp-tailwindcss': '^5.0.7',
+  'weapp-tailwindcss': '^5.0.8',
   autoprefixer: '^10.5.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
@@ -71,7 +71,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.15.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.0.7'
+    'weapp-tailwindcss': '5.0.8'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.1',

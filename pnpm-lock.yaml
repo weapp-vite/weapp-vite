@@ -181,8 +181,8 @@ catalogs:
       specifier: ^3.3.4
       version: 3.3.4
     weapp-tailwindcss:
-      specifier: ^5.0.7
-      version: 5.0.7
+      specifier: ^5.0.8
+      version: 5.0.8
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -207,8 +207,8 @@ catalogs:
       version: 1.15.1
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.0.7
-      version: 5.0.7
+      specifier: 5.0.8
+      version: 5.0.8
 
 overrides:
   rolldown: 1.1.1
@@ -347,8 +347,8 @@ importers:
         specifier: ^6.1.7
         version: 6.1.7
       es-toolkit:
-        specifier: ^1.47.0
-        version: 1.47.0
+        specifier: ^1.47.1
+        version: 1.47.1
       esbuild:
         specifier: 'catalog:'
         version: 0.28.1
@@ -730,7 +730,7 @@ importers:
         version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -906,7 +906,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1019,7 +1019,7 @@ importers:
         version: 11.4.1(vite@8.0.16(@types/node@25.9.3)(esbuild@0.28.1)(jiti@2.7.0)(less@4.6.4)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1043,7 +1043,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1087,7 +1087,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1136,7 +1136,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1154,7 +1154,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1287,7 +1287,7 @@ importers:
         version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1480,7 +1480,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1498,7 +1498,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1516,7 +1516,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1770,7 +1770,7 @@ importers:
         version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2532,7 +2532,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2583,7 +2583,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2638,7 +2638,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2732,7 +2732,7 @@ importers:
         version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2787,7 +2787,7 @@ importers:
         version: 3.3.4(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2901,8 +2901,8 @@ importers:
         specifier: ^1.11.6
         version: 1.11.7
       es-toolkit:
-        specifier: ^1.47.0
-        version: 1.47.0
+        specifier: ^1.47.1
+        version: 1.47.1
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
@@ -2921,7 +2921,7 @@ importers:
         version: 4.3.0
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
+        version: 5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -8348,8 +8348,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.0.4':
-    resolution: {integrity: sha512-8rva2AHBL/VyP2BEpwuzGP4r/1XKoHx1Dnvmrh2wfgoWCYVRVyXQbGqPFvBho/Yf/DYMMQ/dqtYkdL+FT2BGhg==}
+  '@weapp-tailwindcss/postcss@3.0.5':
+    resolution: {integrity: sha512-+PU+KCyexZjCkTEdOgZn7Wp+GHIEctwCA3Nb7g/aQxv808+n2CUjIyda8doRzN9EvmJ6WEBMmkdsEDchUbp1GQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/reset@0.1.1':
@@ -8360,10 +8360,6 @@ packages:
 
   '@weapp-tailwindcss/runtime@0.1.6':
     resolution: {integrity: sha512-MsLHtZMLaADyfMVQaZ3StwH/RjXqNWwXdnTlTBSpPIWU+9uD9qQB7TRVPsX3jRIa8hEqMCYgUx0kEFzqMmTqzg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-
-  '@weapp-tailwindcss/shared@1.1.3':
-    resolution: {integrity: sha512-UXABvDZerj5goxh8bE6fhOJwQpgTrv/J2M3aJM8l69xs9WMKILlZ9A88i/oYxIxN5xX+pOMmOkz73dQ5Z8YtfA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/shared@2.0.0':
@@ -9994,8 +9990,8 @@ packages:
     resolution: {integrity: sha512-w+5mJ3GuFL+NjVtJlvydShqE1eN3h3PbI7/5LAsYJP/2qtuMXjfL2LpHSRqo4b4eSF5K/DH1JXKUAHSB2UW50g==}
     engines: {node: '>= 0.4'}
 
-  es-toolkit@1.47.0:
-    resolution: {integrity: sha512-n1GuoD0WEQZMBk5tttoZSqwgyLx01oqa5XsBmCHwPyNe1S9jPBEmtR2pSgp2kJuWE3ciFZ6yRHmY4pM4C3OOkw==}
+  es-toolkit@1.47.1:
+    resolution: {integrity: sha512-5RAqEwf4P4E17p+W75KLOWw/nOvKZzSQpxM32IpI2KZLaVonjTrZ0Ai5ghMaVI9eKC2p8eoQgcBdkEDgzFk6+Q==}
 
   esbuild@0.25.12:
     resolution: {integrity: sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==}
@@ -14773,16 +14769,12 @@ packages:
       tailwind-merge:
         optional: true
 
-  tailwindcss-config@1.1.5:
-    resolution: {integrity: sha512-qkqLZB/1Kg0EVrp7QX7KtaiMvx80oj9NzkvVwg1REBr4Z/WGwjEkRkQzD4f6Xg1LqCtcsa/xj9zbqB3aNG+zGA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-
   tailwindcss-config@2.0.0:
     resolution: {integrity: sha512-9v4u+G+FFDgAHAD1Km2MuHr82EG30d24l7cY9wSo8hQkeb9A384fuKI23hhbEHwAYhPKdROl6wTtoNpTDRHYFQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  tailwindcss-patch@9.4.2:
-    resolution: {integrity: sha512-JB/VvqHvXnxvcfTH2uggWsM9I2eMp44le5dgXvA0QAYjdkT4PvaSLYXutlrx1GxpdCfmeA2FWB2dPjRdwVk+WQ==}
+  tailwindcss-patch@9.4.3:
+    resolution: {integrity: sha512-K759BY1Df9BnqFQOOsikOAgXtmWMYyQq4R90pT7+bMH9u43HZRe73b3uP1Dyrq9NKeLvo/MknAKgPu/tnyDseQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
@@ -15718,8 +15710,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@5.0.7:
-    resolution: {integrity: sha512-2U76egnnPbClDCOz51P874MAMMHRGuDkII/B+LSIrqeTliC/3KTfi4ERxdRtCve14V7Ewx9e0HLr02WqGxbHeg==}
+  weapp-tailwindcss@5.0.8:
+    resolution: {integrity: sha512-Gr7InjIAbxTPn+Tj/V4rpVYrUUMDYy4WlhM3WT+0Oa9zFNFBQLMiaTV+Ti4hIyJFx6xyIVvSZzxiMlMyqmv5ug==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -17017,7 +17009,7 @@ snapshots:
   '@commitlint/ensure@21.0.1':
     dependencies:
       '@commitlint/types': 21.0.1
-      es-toolkit: 1.47.0
+      es-toolkit: 1.47.1
 
   '@commitlint/execute-rule@21.0.1': {}
 
@@ -17046,7 +17038,7 @@ snapshots:
       '@commitlint/types': 21.0.1
       cosmiconfig: 9.0.1(typescript@6.0.3)
       cosmiconfig-typescript-loader: 6.3.0(@types/node@25.9.3)(cosmiconfig@9.0.1(typescript@6.0.3))(typescript@6.0.3)
-      es-toolkit: 1.47.0
+      es-toolkit: 1.47.1
       is-plain-obj: 4.1.0
       picocolors: 1.1.1
     transitivePeerDependencies:
@@ -17075,7 +17067,7 @@ snapshots:
     dependencies:
       '@commitlint/config-validator': 21.0.1
       '@commitlint/types': 21.0.1
-      es-toolkit: 1.47.0
+      es-toolkit: 1.47.1
       global-directory: 5.0.0
       resolve-from: 5.0.0
 
@@ -21512,7 +21504,7 @@ snapshots:
       postcss-selector-parser: 7.1.4
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.0.4':
+  '@weapp-tailwindcss/postcss@3.0.5':
     dependencies:
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/postcss-calc': 1.0.2(postcss@8.5.15)
@@ -21534,10 +21526,6 @@ snapshots:
     dependencies:
       '@weapp-core/escape': 8.0.0
       clsx: 2.1.1
-
-  '@weapp-tailwindcss/shared@1.1.3':
-    dependencies:
-      pathe: 2.0.3
 
   '@weapp-tailwindcss/shared@2.0.0':
     dependencies:
@@ -23411,7 +23399,7 @@ snapshots:
       is-symbol: 1.1.1
     optional: true
 
-  es-toolkit@1.47.0: {}
+  es-toolkit@1.47.1: {}
 
   esbuild@0.25.12:
     optionalDependencies:
@@ -26062,7 +26050,7 @@ snapshots:
       dagre-d3-es: 7.0.14
       dayjs: 1.11.21
       dompurify: 3.4.2
-      es-toolkit: 1.47.0
+      es-toolkit: 1.47.1
       katex: 0.16.45
       khroma: 2.1.0
       marked: 16.4.2
@@ -29076,18 +29064,12 @@ snapshots:
     optionalDependencies:
       tailwind-merge: 3.6.0
 
-  tailwindcss-config@1.1.5:
-    dependencies:
-      '@weapp-tailwindcss/shared': 1.1.3
-      jiti: 2.7.0
-      lilconfig: 3.1.3
-
   tailwindcss-config@2.0.0:
     dependencies:
       '@weapp-tailwindcss/shared': 2.0.0
       jiti: 2.7.0
 
-  tailwindcss-patch@9.4.2(magicast@0.5.3)(tailwindcss@4.3.0):
+  tailwindcss-patch@9.4.3(magicast@0.5.3)(tailwindcss@4.3.0):
     dependencies:
       '@babel/generator': 7.29.7
       '@babel/parser': 7.29.7
@@ -29104,7 +29086,7 @@ snapshots:
       pathe: 2.0.3
       postcss: 8.5.15
       semver: 7.8.4
-      tailwindcss-config: 1.1.5
+      tailwindcss-config: 2.0.0
     optionalDependencies:
       tailwindcss: 4.3.0
     transitivePeerDependencies:
@@ -30098,7 +30080,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@5.0.7(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4):
+  weapp-tailwindcss@5.0.8(jiti@2.7.0)(magicast@0.5.3)(postcss@8.5.15)(tailwindcss@4.3.0)(tsx@4.22.4):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.7
@@ -30107,7 +30089,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.38
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.0
-      '@weapp-tailwindcss/postcss': 3.0.4
+      '@weapp-tailwindcss/postcss': 3.0.5
       '@weapp-tailwindcss/reset': 0.1.1(tailwindcss@4.3.0)
       '@weapp-tailwindcss/shared': 2.0.0
       comment-json: 5.0.0
@@ -30121,7 +30103,7 @@ snapshots:
       postcss-selector-parser: 7.1.4
       semver: 7.8.4
       tailwindcss-config: 2.0.0
-      tailwindcss-patch: 9.4.2(magicast@0.5.3)(tailwindcss@4.3.0)
+      tailwindcss-patch: 9.4.3(magicast@0.5.3)(tailwindcss@4.3.0)
       yaml: 2.9.0
     transitivePeerDependencies:
       - jiti
