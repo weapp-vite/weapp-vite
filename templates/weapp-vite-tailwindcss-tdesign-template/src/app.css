@@ -2,7 +2,7 @@
 
 @plugin "@iconify/tailwind4" {
   prefixes: mdi;
-  icon-selector: ".i-{prefix}-{name}";
+  icon-selector: '.i-{prefix}-{name}';
 }
 
 @source "./**/*.{wxml,js,ts}";
