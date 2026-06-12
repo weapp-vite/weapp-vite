@@ -23,8 +23,6 @@ const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
 const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
-const hasOtherActiveServeIdeProjectMock = vi.hoisted(() => vi.fn())
-const registerActiveServeIdeProjectMock = vi.hoisted(() => vi.fn())
 const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn((root: string) => root))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
@@ -134,11 +132,6 @@ vi.mock('../devHotkeys', () => ({
   startDevHotkeys: startDevHotkeysMock,
 }))
 
-vi.mock('./serve/activeIdeProjects', () => ({
-  hasOtherActiveServeIdeProject: hasOtherActiveServeIdeProjectMock,
-  registerActiveServeIdeProject: registerActiveServeIdeProjectMock,
-}))
-
 function createServeActionHandler() {
   let actionHandler: ((root: string, options: any) => Promise<void>) | undefined
   const chain = {
@@ -172,10 +165,6 @@ describe('serve cli command', () => {
       agentName: 'codex',
       isAgent: true,
     })
-    hasOtherActiveServeIdeProjectMock.mockReset()
-    hasOtherActiveServeIdeProjectMock.mockResolvedValue(false)
-    registerActiveServeIdeProjectMock.mockReset()
-    registerActiveServeIdeProjectMock.mockResolvedValue(vi.fn().mockResolvedValue(undefined))
     resolveConfigFileMock.mockReturnValue(undefined)
     resolveIdeProjectRootMock.mockReset()
     resolveIdeProjectRootMock.mockImplementation((root: string) => root)
@@ -432,12 +421,10 @@ describe('serve cli command', () => {
       loginRetry: 'never',
       loginRetryTimeout: '1000',
       nonInteractive: true,
-      reuseOpenedProject: false,
+      reuseOpenedProject: true,
       trustProject: false,
       useAutomatorOpen: false,
     })
-    expect(hasOtherActiveServeIdeProjectMock).toHaveBeenCalledWith('/project/dist')
-    expect(registerActiveServeIdeProjectMock).toHaveBeenCalledWith('/project/dist')
     expect(devHotkeysSuspendMock).toHaveBeenCalledTimes(1)
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
   })
@@ -485,15 +472,14 @@ describe('serve cli command', () => {
 
     expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
-      reuseOpenedProject: false,
+      reuseOpenedProject: true,
       trustProject: true,
       useAutomatorOpen: false,
     })
   })
 
-  it('keeps serve startup ide open reusable when another dev:open project is active', async () => {
+  it('keeps serve startup ide open reusable', async () => {
     const action = createServeActionHandler()
-    hasOtherActiveServeIdeProjectMock.mockResolvedValueOnce(true)
 
     const actionPromise = action('/project', {
       platform: 'weapp',
@@ -563,7 +549,10 @@ describe('serve cli command', () => {
     expect(rebuildResult).toBe('已手动重新构建当前小程序产物')
 
     maybeStartForwardConsoleMock.mockResolvedValueOnce(false)
-    const openResult = await hotkeyOptions.openIde()
+    const openResult = await hotkeyOptions.openIde({
+      forceOpen: true,
+      forceReopen: true,
+    })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       reuseOpenedProject: false,
       trustProject: true,
@@ -611,7 +600,10 @@ describe('serve cli command', () => {
     expect(hotkeyOptions?.projectPath).toBe('/project/ide-root')
 
     maybeStartForwardConsoleMock.mockResolvedValueOnce(false)
-    const openResult = await hotkeyOptions.openIde()
+    const openResult = await hotkeyOptions.openIde({
+      forceOpen: true,
+      forceReopen: true,
+    })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
       reuseOpenedProject: false,
       trustProject: true,

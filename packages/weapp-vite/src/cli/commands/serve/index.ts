@@ -15,7 +15,6 @@ import { applyMcpCliOptions } from '../../mcpOptions'
 import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
-import { hasOtherActiveServeIdeProject, registerActiveServeIdeProject } from './activeIdeProjects'
 import { createAnalyzeController } from './analyze'
 import { createServeMiniProgramDevActions, resolveWebHost, waitForServeShutdownSignal } from './shared'
 
@@ -134,8 +133,6 @@ export function registerServeCommand(cli: CAC) {
             weappViteConfig: configService.weappViteConfig,
           })
         : undefined
-      let unregisterActiveIdeProject: (() => Promise<void>) | undefined
-
       try {
         const analyzeController = createAnalyzeController({
           configFile,
@@ -221,15 +218,9 @@ export function registerServeCommand(cli: CAC) {
           ])
           devHotkeysSession?.suspend()
           try {
-            unregisterActiveIdeProject = miniProgramDevActions.projectPath
-              ? await registerActiveServeIdeProject(miniProgramDevActions.projectPath)
-              : undefined
-            const shouldForceReopen = miniProgramDevActions.projectPath
-              ? !(await hasOtherActiveServeIdeProject(miniProgramDevActions.projectPath))
-              : true
             await miniProgramDevActions.openIde({
               forceOpen: true,
-              forceReopen: shouldForceReopen,
+              forceReopen: false,
             })
           }
           finally {
@@ -245,7 +236,6 @@ export function registerServeCommand(cli: CAC) {
         }
       }
       finally {
-        await unregisterActiveIdeProject?.()
         devHotkeysSession?.close()
         ctx.watcherService?.closeAll()
       }
