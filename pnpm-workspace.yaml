@@ -37,8 +37,8 @@ catalog:
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.7
-  '@vue/compiler-core': ^3.5.35
-  '@vue/compiler-dom': ^3.5.35
+  '@vue/compiler-core': ^3.5.38
+  '@vue/compiler-dom': ^3.5.38
   '@vue/language-core': ^3.3.4
   antd-mini: ^3.4.3
   autoprefixer: ^10.5.0
@@ -48,7 +48,7 @@ catalog:
   comment-json: ^5.0.0
   dayjs: ^1.11.21
   echarts: ^6.1.0
-  esbuild: ^0.28.0
+  esbuild: ^0.28.1
   eslint: ^10.4.1
   estree-walker: ^3.0.3
   fdir: ^6.5.0
@@ -65,8 +65,8 @@ catalog:
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.15
-  rolldown: 1.1.0
-  sass: ^1.100.0
+  rolldown: 1.1.1
+  sass: ^1.101.0
   sass-embedded: ^1.100.0
   stylelint: ^17.13.0
   tailwind-merge: ^3.6.0
@@ -78,9 +78,9 @@ catalog:
   typescript: ^6.0.3
   vite: 8.0.16
   vite-plugin-inspect: ^11.4.1
-  vue: ^3.5.35
+  vue: ^3.5.38
   vue-tsc: ^3.3.4
-  weapp-tailwindcss: ^5.0.6
+  weapp-tailwindcss: ^5.0.7
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +94,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.0.6
+    weapp-tailwindcss: 5.0.7
 
 overrides:
   rolldown: 'catalog:'
@@ -104,6 +104,8 @@ gitChecks: false
 confirmModulesPurge: false
 
 minimumReleaseAge: 0
+
+optimisticRepeatInstall: false
 
 allowBuilds:
   '@parcel/watcher': false
