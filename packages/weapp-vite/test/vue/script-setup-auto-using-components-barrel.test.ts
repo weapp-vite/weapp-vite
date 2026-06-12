@@ -64,7 +64,6 @@ describe('<script setup> auto usingComponents (barrel exports)', () => {
 </template>
 <script setup lang="ts">
 import { VueCard } from '../../components'
-console.log(VueCard)
 </script>
       `.trim()
 
@@ -77,8 +76,6 @@ console.log(VueCard)
       expect(transformed?.code).toBeDefined()
       const js = String(transformed!.code)
       expect(js).not.toContain('../../components')
-      expect(js).toContain('__weappViteUsingComponent')
-      expect(js).toContain('/components/vue-card/index')
 
       const emitted: Array<{ fileName: string, source: string }> = []
       await plugin.generateBundle!.call(

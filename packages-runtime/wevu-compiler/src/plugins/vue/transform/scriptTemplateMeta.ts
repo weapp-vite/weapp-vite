@@ -37,12 +37,35 @@ function isTemplateReturnGetterReference(path: NodePath<t.Identifier>) {
   return false
 }
 
+function isTemplateReturnPropertyReference(path: NodePath<t.Identifier>) {
+  const property = path.parentPath
+  if (!property?.isObjectProperty()) {
+    return false
+  }
+  if (
+    !property.parentPath?.isObjectExpression()
+    || !isScriptSetupReturnedObject(property.parentPath)
+    || property.node.computed
+  ) {
+    return false
+  }
+  const key = property.node.key
+  const value = property.node.value
+  if (!t.isIdentifier(value, { name: path.node.name })) {
+    return false
+  }
+  if (t.isIdentifier(key, { name: path.node.name }) || t.isStringLiteral(key, { value: path.node.name })) {
+    return true
+  }
+  return false
+}
+
 function isReferencedOutsideTemplateReturn(path: NodePath<t.Identifier>) {
   if (!path.isReferencedIdentifier()) {
     return false
   }
 
-  if (isTemplateReturnGetterReference(path)) {
+  if (isTemplateReturnGetterReference(path) || isTemplateReturnPropertyReference(path)) {
     return false
   }
 
@@ -90,6 +113,26 @@ function removeSetupReturnProperties(ast: BabelFile, removableNames: Set<string>
       }
       const getter = path.node.body.body.find(statement => t.isReturnStatement(statement))
       if (!getter || !t.isReturnStatement(getter) || !t.isIdentifier(getter.argument, { name })) {
+        return
+      }
+      path.remove()
+      changed = true
+    },
+    ObjectProperty(path) {
+      if (!path.parentPath?.isObjectExpression() || !isScriptSetupReturnedObject(path.parentPath)) {
+        return
+      }
+      if (path.node.computed || !t.isIdentifier(path.node.value)) {
+        return
+      }
+      const name = path.node.value.name
+      if (!removableNames.has(name)) {
+        return
+      }
+      if (
+        !t.isIdentifier(path.node.key, { name })
+        && !t.isStringLiteral(path.node.key, { value: name })
+      ) {
         return
       }
       path.remove()
