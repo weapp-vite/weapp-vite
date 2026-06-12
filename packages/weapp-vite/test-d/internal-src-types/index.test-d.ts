@@ -42,6 +42,7 @@ const injectOptions = resolveInjectRequestGlobalsOptions(true, packageJson)
 if (injectOptions) {
   expectType<string>(createRequestGlobalsPassiveBindingsCode(injectOptions.targets))
   expectAssignable<RequestGlobalBindingTarget[]>(resolveRequestGlobalsBindingTargets(injectOptions.targets))
+  expectAssignable<RequestGlobalBindingTarget>('File')
   expectAssignable<WeappInjectRequestGlobalsTarget[]>(injectOptions.targets)
 }
 

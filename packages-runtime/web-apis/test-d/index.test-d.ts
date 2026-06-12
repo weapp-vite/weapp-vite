@@ -1,4 +1,6 @@
 import type {
+  BlobPart,
+  FormDataEntryValue,
   InstallWebRuntimeGlobalsOptions,
   MiniProgramNetworkDefaults,
   RequestGlobalsMiniProgramOptions,
@@ -10,6 +12,9 @@ import type {
   RequestGlobalsFetchInit,
 } from '@wevu/web-apis/fetch'
 import {
+  BlobPolyfill,
+  FilePolyfill,
+  FormDataPolyfill,
   getMiniProgramNetworkDefaults,
   HeadersPolyfill,
   installRequestGlobals,
@@ -59,6 +64,20 @@ expectType<ResponsePolyfill>(ResponsePolyfill.json({ ok: true }))
 expectType<ResponsePolyfill>(ResponsePolyfill.error())
 expectType<Uint8Array>(new TextEncoderPolyfill().encode('ok'))
 expectType<string>(new TextDecoderPolyfill().decode(new Uint8Array([111, 107])))
+expectType<BlobPart>('ok')
+expectType<BlobPart>(new BlobPolyfill(['ok']))
+expectType<FilePolyfill>(new FilePolyfill(['ok'], 'ok.txt', {
+  lastModified: 123,
+  type: 'text/plain',
+}))
+expectType<string>(new FilePolyfill(['ok'], 'ok.txt').name)
+expectType<number>(new FilePolyfill(['ok'], 'ok.txt').lastModified)
+expectType<FormDataEntryValue>(new FilePolyfill(['ok'], 'ok.txt'))
+expectType<FormDataEntryValue>(new BlobPolyfill(['ok']))
+const formDataPolyfill = new FormDataPolyfill()
+expectType<void>(formDataPolyfill.append('file', new FilePolyfill(['ok'], 'ok.txt'), 'renamed.txt'))
+expectType<void>(formDataPolyfill.set('blob', new BlobPolyfill(['ok']), 'blob.txt'))
+expectError(formDataPolyfill.append('text', 'ok', 'text.txt'))
 
 const miniProgramOptions: RequestGlobalsMiniProgramOptions = {
   enableChunked: true,

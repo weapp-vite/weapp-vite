@@ -72,13 +72,14 @@ const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsT
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
 const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
-type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
 
 const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindingTarget>([
   ...FULL_REQUEST_GLOBAL_TARGETS,
   'URL',
   'URLSearchParams',
   'Blob',
+  'File',
   'FormData',
 ])
 
@@ -337,7 +338,7 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
 
   if (needsRequestRuntimeBinarySupport) {
     bindingTargets.push('TextEncoder', 'TextDecoder')
-    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
+    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'File', 'FormData')
   }
 
   if (targets.includes('CustomEvent')) {
@@ -423,6 +424,9 @@ export function createRequestGlobalsPassiveBindingsCode(
     }
     if (target === 'Blob') {
       return `var Blob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Blob",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory})`
+    }
+    if (target === 'File') {
+      return `var File = ${REQUEST_GLOBAL_EXPOSE_HELPER}("File",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[[],"request-globals.bin"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.File,[[],"request-globals.bin"])?globalThis.File:${placeholderFactory})`
     }
     if (target === 'FormData') {
       return `var FormData = ${REQUEST_GLOBAL_EXPOSE_HELPER}("FormData",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory})`
