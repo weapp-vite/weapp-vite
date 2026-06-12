@@ -17,7 +17,7 @@
 <p align="center"><strong>Modern development experience for mini-programs</strong></p>
 <p align="center"><a href="https://vite.icebreaker.top">Documentation</a> · <a href="./README.md">中文 README</a></p>
 
-weapp-vite brings a modern Vite-style workflow to traditional mini-program development. The monorepo includes the core bundler, runtime packages, templates, IDE helpers, MCP support, and end-to-end examples for building WeChat and related mini-program projects with better DX.
+weapp-vite is built for teams maintaining mini-programs. It keeps the native mini-program directory model, syntax, and platform capabilities, while adding TypeScript, Vite/Rolldown, Vue SFC, automated debugging, and AI-friendly workflows. You can start from a template or adopt it gradually in an existing project.
 
 ## Table of Contents
 
@@ -34,18 +34,21 @@ weapp-vite brings a modern Vite-style workflow to traditional mini-program devel
 
 ## Why weapp-vite
 
-- Use a modern toolchain for mini-program apps instead of legacy-only workflows.
-- Start quickly with the official `create-weapp-vite` scaffolder.
-- Build across multiple templates, runtimes, demos, and e2e apps from one workspace.
-- Explore AI-friendly tooling such as MCP support, IDE helpers, and packaged skills.
+- **Keep your existing mini-program model**: continue using native `Page` / `Component`, WXML, WXSS, and JSON configuration; existing projects can adopt the toolchain incrementally through directory migration and config setup.
+- **Bring modern frontend DX into mini-programs**: TypeScript, ESM, Sass/Less, PostCSS, Tailwind CSS, JSONC, path aliases, and the Vite plugin ecosystem become part of the project instead of being maintained through scattered scripts.
+- **Reduce repetitive mini-program plumbing**: automatic `miniprogram_npm` builds, subpackage dependency analysis, auto component imports, auto routes, layouts, generators, and chunk strategies help with projects that have many pages, packages, and components.
+- **Stay native, then upgrade where it pays off**: teams can first stabilize the build chain with `weapp-vite + native`, then introduce Vue SFC and Wevu in new pages or selected modules instead of rewriting everything at once.
+- **Debug and verify in the real mini-program workflow**: `wv dev --open`, DevTools bootstrapping, console log bridging, screenshots, screenshot comparison, `preview/upload` passthrough, and `analyze` cover the daily loop from local development to pre-upload checks.
+- **Make AI collaboration verifiable**: generated `AGENTS.md`, MCP, DevTools logs, runtime screenshots, and screenshot comparison let AI agents inspect and validate the actual mini-program runtime instead of only editing files.
 
 ## Highlights
 
-- Official scaffolder: [`create-weapp-vite`](packages/create-weapp-vite)
-- Core bundler/runtime packages under `packages/`, `packages-runtime/`, and `@weapp-core/`
-- Ready-to-run demo apps in `apps/` and regression fixtures in `e2e-apps/`
-- Documentation site in `website/`
-- Extensive CI, HMR, IDE, and runtime validation scripts powered by `pnpm` + `turbo`
+- New projects: use [`create-weapp-vite`](packages/create-weapp-vite) to choose native, Wevu, Tailwind CSS, TDesign, Vant, plugin, or library templates with aligned dependencies.
+- Existing projects: adopt Weapp-vite manually or through `wv init` while preserving the current page structure and platform APIs.
+- Vue SFC: write `.vue`, `<script setup>`, JSON macros, class/style bindings, and Wevu-powered reactive runtime code for mini-programs.
+- Engineering workflow: build, watch, HMR, auto imports, auto routes, subpackage strategies, npm builds, and output analysis.
+- IDE and acceptance checks: WeChat DevTools opening, logs, screenshots, screenshot comparison, preview, and upload workflows.
+- AI-ready workflow: MCP, packaged docs, skills guidance, and real mini-program runtime inspection entry points.
 
 ## Quick Start
 

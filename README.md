@@ -17,7 +17,7 @@
 <p align="center"><strong>给小程序现代化的开发体验</strong></p>
 <p align="center"><a href="https://vite.icebreaker.top">中文文档</a> · <a href="./README.en-US.md">English README</a></p>
 
-`weapp-vite` 为传统小程序开发带来接近 Vite 的现代工程体验。这个 monorepo 包含核心构建器、运行时包、项目模板、IDE 辅助能力、MCP 支持，以及用于验证微信等小程序项目的端到端示例。
+`weapp-vite` 面向正在维护小程序的团队：既保留原生小程序的目录、语法和平台能力，又把 TypeScript、Vite/Rolldown、Vue SFC、自动化调试和 AI 协作带进日常研发。你可以从一个新模板开始，也可以把已有项目渐进接入进来。
 
 ## 目录
 
@@ -34,18 +34,21 @@
 
 ## 为什么选择 weapp-vite
 
-- 用现代工具链维护小程序应用，减少传统构建流程的限制。
-- 通过官方脚手架 `create-weapp-vite` 快速创建项目。
-- 在一个 workspace 内维护模板、运行时、示例应用和 e2e 回归用例。
-- 内置面向 AI 协作的 MCP、IDE 辅助命令和 packaged skills 等能力。
+- **不必推翻现有小程序**：可以继续写原生 `Page` / `Component`、WXML、WXSS 和 JSON 配置；存量项目也能按目录迁移、配置补齐、依赖安装的方式渐进接入。
+- **把日常开发效率补齐**：TypeScript、ESM、Sass/Less、PostCSS、Tailwind CSS、JSONC、路径别名和 Vite 插件生态可以直接进入小程序工程，不再靠零散脚本拼维护体验。
+- **减少小程序工程的重复劳动**：自动构建 `miniprogram_npm`、分包依赖分析、自动导入组件、自动路由、布局、生成页面/组件等能力，适合页面多、分包多、组件多的项目。
+- **保留原生能力，同时可逐步升级写法**：团队可以先用 `weapp-vite + 原生` 稳定构建链路，再在新页面或局部模块中引入 Vue SFC 与 Wevu，而不是一次性重写业务。
+- **更适合真实小程序调试和验收**：`wv dev --open`、DevTools 配置预热、日志桥接、截图、截图对比、`preview/upload` 透传和 `analyze` 能覆盖从开发到上传前检查的常见链路。
+- **让 AI 协作落到真实运行时**：脚手架会生成 `AGENTS.md`，并可接入 MCP、DevTools 日志、运行时截图和截图对比，让 AI 不只改代码，还能按小程序环境做验证。
 
 ## 特性亮点
 
-- 官方脚手架：[`create-weapp-vite`](packages/create-weapp-vite)
-- 核心构建与运行时包位于 `packages/`、`packages-runtime/` 和 `@weapp-core/`
-- `apps/` 提供可运行示例，`e2e-apps/` 提供回归和 issue 复现场景
-- `website/` 承载公开文档站点
-- 基于 `pnpm` + `turbo` 维护 CI、HMR、IDE 和运行时验证脚本
+- 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、Wevu、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
+- 存量项目：通过手动集成或 `wv init` 接入现有小程序，保留原有页面结构和平台能力。
+- Vue SFC：在小程序里使用 `.vue`、`<script setup>`、JSON 宏、class/style 绑定和 Wevu 响应式运行时。
+- 工程体验：支持构建、开发监听、HMR、组件自动导入、自动路由、分包策略、npm 构建和产物分析。
+- IDE 与验收：集成 WeChat DevTools 打开、日志、截图、截图对比、预览和上传等工作流。
+- AI 友好：提供 MCP、packaged docs、skills 指引和面向真实小程序运行时的检查入口。
 
 ## 快速开始
 
