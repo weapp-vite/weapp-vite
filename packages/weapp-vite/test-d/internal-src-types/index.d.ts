@@ -39,7 +39,7 @@ export declare function createSidecarWatchOptions(
 
 export type WeappInjectRequestGlobalsTarget = 'fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent'
 
-export type RequestGlobalBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+export type RequestGlobalBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
 
 export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'

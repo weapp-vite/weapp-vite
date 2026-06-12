@@ -79,6 +79,10 @@ function mockPortOpen() {
   })
 }
 
+function toPosixPath(value: string) {
+  return value.replace(/\\/g, '/')
+}
+
 describe('detached mcp auto start', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -124,16 +128,12 @@ describe('detached mcp auto start', () => {
       detached: true,
       stdio: 'ignore',
     })
-    expect(writeFileMock).toHaveBeenCalledWith(
-      '/repo/apps/demo/.weapp-vite/mcp-runtime.json',
-      expect.stringContaining('"pid": 12345'),
-      'utf8',
-    )
-    expect(writeFileMock).toHaveBeenCalledWith(
-      '/repo/apps/demo/.weapp-vite/mcp-runtime.json',
-      expect.stringContaining('"agentName": "codex"'),
-      'utf8',
-    )
+    expect(writeFileMock).toHaveBeenCalledTimes(1)
+    const [runtimeManifestPath, runtimeManifestContent, runtimeManifestEncoding] = writeFileMock.mock.calls[0]
+    expect(toPosixPath(String(runtimeManifestPath))).toBe('/repo/apps/demo/.weapp-vite/mcp-runtime.json')
+    expect(runtimeManifestContent).toEqual(expect.stringContaining('"pid": 12345'))
+    expect(runtimeManifestContent).toEqual(expect.stringContaining('"agentName": "codex"'))
+    expect(runtimeManifestEncoding).toBe('utf8')
     expect(loggerSuccessMock).toHaveBeenCalledWith('MCP 服务已在后台自动启动：（AI 终端：codex）')
   })
 

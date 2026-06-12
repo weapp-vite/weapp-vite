@@ -15,6 +15,13 @@ import { toRelativeImport } from '../utils/wevu-vendor'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
 const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
+const REQUEST_GLOBAL_BINARY_BINDING_TARGETS = [
+  'URL',
+  'URLSearchParams',
+  'Blob',
+  'File',
+  'FormData',
+] as const
 
 function hasRequestGlobalsRuntimeMarker(code: string) {
   return code.includes('installWebRuntimeGlobals')
@@ -145,6 +152,12 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
           expect(appJs).toContain(JSON.stringify(target))
         }
+        for (const target of REQUEST_GLOBAL_BINARY_BINDING_TARGETS) {
+          expect(runtimeJs).toContain(target)
+        }
+        expect(runtimeJs).toContain('request-globals.bin')
+        expect(runtimeJs).toContain('File')
+        expect(runtimeJs).toContain('FormData')
 
         for (const entryFile of testCase.entryFiles) {
           const entryJsPath = path.join(distRoot, entryFile)
@@ -158,7 +171,14 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
           expect(entryJs).toContain('.XMLHttpRequest')
           expect(entryJs).toContain('var WebSocket =')
           expect(entryJs).toContain('.WebSocket')
+          expect(entryJs).toContain('var File =')
+          expect(entryJs).toContain('.File')
+          expect(entryJs).toContain('var FormData =')
+          expect(entryJs).toContain('.FormData')
           for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
+            expect(entryJs).toContain(JSON.stringify(target))
+          }
+          for (const target of REQUEST_GLOBAL_BINARY_BINDING_TARGETS) {
             expect(entryJs).toContain(JSON.stringify(target))
           }
         }

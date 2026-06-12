@@ -76,6 +76,14 @@ describe('rewriteDefaultExport', () => {
     expect(code).toContain('createWevuComponent')
   })
 
+  it('preserves component default export after creating wevu component', () => {
+    const { transformed, code } = runRewrite('export default { setup() {} }')
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('createWevuComponent(__wevuOptions)')
+    expect(code).toContain('export default __wevuOptions')
+  })
+
   it('detects existing page marker through Object.assign and spread chain', () => {
     const { code } = runRewrite(`
 const marker = ({ __wevu_isPage: true } as const)

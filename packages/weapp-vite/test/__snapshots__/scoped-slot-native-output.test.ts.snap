@@ -118,8 +118,9 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
 }
 ",
   "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wv_bind_0}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
-  "pages/index/index.js": "//#region <fixture>/src/pages/index/index.vue
-(require("../../weapp-vendors/wevu-runtime.js").__wevuCreateWevuComponent || require("../../weapp-vendors/wevu-runtime.js").to)({
+  "pages/index/index.js": "const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
+//#region <fixture>/src/pages/index/index.vue
+var __wevuOptions = {
 	setData: { pick: [
 		"__wvOwnerId",
 		"vueSlots",
@@ -150,8 +151,10 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
 			to: { name: "user" }
 		}] };
 	}
-});
+};
+require_templateRef.__wevuScopedSlotCreator(__wevuOptions);
 //#endregion
+exports.default = __wevuOptions;
 ",
   "pages/index/index.json": "{
   "usingComponents": {

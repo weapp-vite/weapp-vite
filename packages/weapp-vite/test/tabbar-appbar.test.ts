@@ -41,11 +41,17 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
+    /var __wevuOptions = \{/,
+    /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
+    /exports\.default = __wevuOptions/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)\.[A-Za-z_$][\s\S]*?\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
+    /var __wevuOptions = \{/,
+    /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
+    /exports\.default = __wevuOptions/,
   ],
   'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,

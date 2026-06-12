@@ -103,7 +103,7 @@ vi.mock('../../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
 }))
 
-vi.mock('../../../aiEnvironment', () => ({
+vi.mock('../../aiEnvironment', () => ({
   detectAiDevelopmentEnvironment: detectAiDevelopmentEnvironmentMock,
 }))
 

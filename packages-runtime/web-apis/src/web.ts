@@ -1,13 +1,28 @@
 import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText } from './shared'
 
-type BlobPart = ArrayBuffer | ArrayBufferView | BlobPolyfill | string
+export interface BlobLikePart {
+  readonly size?: number
+  readonly type?: string
+  arrayBuffer: () => Promise<ArrayBuffer>
+}
+
+export type BlobPart = ArrayBuffer | ArrayBufferView | BlobLikePart | string
+export type FormDataEntryValue = FilePolyfill | BlobPolyfill | string
+
+interface BlobPropertyBag {
+  type?: string
+}
+
+interface FilePropertyBag extends BlobPropertyBag {
+  lastModified?: number
+}
 
 function normalizeBlobPart(part: BlobPart): Promise<ArrayBuffer> {
   if (typeof part === 'string') {
     return Promise.resolve(encodeText(part))
   }
   if (part && typeof part === 'object' && typeof (part as BlobPolyfill).arrayBuffer === 'function') {
-    return (part as BlobPolyfill).arrayBuffer()
+    return (part as BlobLikePart).arrayBuffer()
   }
   if (part instanceof ArrayBuffer) {
     return Promise.resolve(cloneArrayBuffer(part))
@@ -23,15 +38,15 @@ export class BlobPolyfill {
   readonly type: string
   private readonly parts: BlobPart[]
 
-  constructor(parts: BlobPart[] = [], options?: { type?: string }) {
+  constructor(parts: BlobPart[] = [], options?: BlobPropertyBag) {
     this.parts = [...parts]
     this.type = options?.type ?? ''
     this.size = parts.reduce((total, part) => {
       if (typeof part === 'string') {
         return total + String(part).length
       }
-      if (part instanceof BlobPolyfill) {
-        return total + part.size
+      if (part && typeof part === 'object' && typeof (part as BlobLikePart).size === 'number') {
+        return total + Number((part as BlobLikePart).size)
       }
       if (part instanceof ArrayBuffer) {
         return total + part.byteLength
@@ -60,13 +75,54 @@ export class BlobPolyfill {
   }
 }
 
-type FormDataEntryValue = BlobPolyfill | string
+export class FilePolyfill extends BlobPolyfill {
+  readonly lastModified: number
+  readonly name: string
+
+  constructor(parts: BlobPart[] = [], name: string, options?: FilePropertyBag) {
+    super(parts, options)
+    this.name = String(name)
+    this.lastModified = options?.lastModified ?? Date.now()
+  }
+
+  get [Symbol.toStringTag]() {
+    return 'File'
+  }
+}
+
+function isFileLikePart(value: BlobLikePart): value is BlobLikePart & { lastModified: number, name: string } {
+  return typeof (value as { name?: unknown }).name === 'string'
+    && typeof (value as { lastModified?: unknown }).lastModified === 'number'
+}
+
+function normalizeFormDataValue(value: BlobLikePart | string, filename?: string): FormDataEntryValue {
+  if (value instanceof FilePolyfill) {
+    if (filename === undefined) {
+      return value
+    }
+    return new FilePolyfill([value], filename, {
+      lastModified: value.lastModified,
+      type: value.type,
+    })
+  }
+
+  if (typeof value !== 'string') {
+    return new FilePolyfill([value], filename ?? (isFileLikePart(value) ? value.name : 'blob'), {
+      lastModified: isFileLikePart(value) ? value.lastModified : undefined,
+      type: value.type,
+    })
+  }
+
+  return String(value)
+}
 
 export class FormDataPolyfill {
   private readonly entriesList: Array<[string, FormDataEntryValue]> = []
 
-  append(name: string, value: FormDataEntryValue) {
-    this.entriesList.push([String(name), value instanceof BlobPolyfill ? value : String(value)])
+  append(name: string, value: string): void
+  append(name: string, value: BlobLikePart, filename?: string): void
+  append(name: string, value: BlobLikePart | string, filename?: string) {
+    this.entriesList.push([String(name), normalizeFormDataValue(value, filename)])
   }
 
   delete(name: string) {
@@ -93,9 +149,11 @@ export class FormDataPolyfill {
     return this.entriesList.some(entry => entry[0] === String(name))
   }
 
-  set(name: string, value: FormDataEntryValue) {
+  set(name: string, value: string): void
+  set(name: string, value: BlobLikePart, filename?: string): void
+  set(name: string, value: BlobLikePart | string, filename?: string) {
     this.delete(name)
-    this.append(name, value)
+    this.append(name, value, filename)
   }
 
   forEach(callback: (value: FormDataEntryValue, key: string, parent: FormDataPolyfill) => void) {

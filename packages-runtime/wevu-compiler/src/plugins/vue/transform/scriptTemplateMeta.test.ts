@@ -38,6 +38,34 @@ export default {
     expect(output).not.toContain(`@/components/Remove`)
   })
 
+  it('removes unused template component import specifiers and returned properties', () => {
+    const ast = parseJsLike(`
+import Foo from './Foo'
+import { Keep, Remove } from './bar'
+const local = 1
+export default {
+  setup() {
+    const __returned__ = { local, Foo, "Remove": Remove }
+    return __returned__
+  },
+}
+    `.trim())
+
+    const changed = pruneTemplateComponentMeta(ast, {
+      Foo: '@/components/Foo',
+      Remove: '@/components/Remove',
+    })
+
+    expect(changed).toBe(true)
+    const output = generate(ast).code
+
+    expect(output).not.toContain(`import Foo`)
+    expect(output).toContain(`import { Keep } from './bar'`)
+    expect(output).toContain(`local`)
+    expect(output).not.toContain(`Foo,`)
+    expect(output).not.toContain(`Remove: Remove`)
+  })
+
   it('keeps template component imports when script code references them', () => {
     const ast = parseJsLike(`
 import Foo from './Foo'

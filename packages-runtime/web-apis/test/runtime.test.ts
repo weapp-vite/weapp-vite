@@ -81,6 +81,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).XMLHttpRequest
     delete (globalThis as Record<string, any>).WebSocket
     delete (globalThis as Record<string, any>).Blob
+    delete (globalThis as Record<string, any>).File
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).atob
     delete (globalThis as Record<string, any>).btoa
@@ -369,7 +370,42 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.TextEncoder).toBe('function')
     expect(typeof (globalThis as any).wx.TextDecoder).toBe('function')
     expect(typeof globalThis.Blob).toBe('function')
+    expect(typeof globalThis.File).toBe('function')
     expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('installs File and preserves FormData filenames for blob values', async () => {
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    const file = new globalThis.File(['hello'], 'hello.txt', {
+      lastModified: 123,
+      type: 'text/plain',
+    })
+    expect(file).toBeInstanceOf(globalThis.Blob)
+    expect(file.name).toBe('hello.txt')
+    expect(file.lastModified).toBe(123)
+    expect(file.size).toBe(5)
+    expect(await file.text()).toBe('hello')
+
+    const formData = new globalThis.FormData()
+    formData.append('from-file', file)
+    formData.append('from-blob', new globalThis.Blob(['blob text'], { type: 'text/plain' }), 'blob.txt')
+    formData.set('from-file', file, 'renamed.txt')
+
+    const renamed = formData.get('from-file') as File
+    const blobFile = formData.get('from-blob') as File
+    expect(renamed).toBeInstanceOf(globalThis.File)
+    expect(renamed.name).toBe('renamed.txt')
+    expect(renamed.type).toBe('text/plain')
+    expect(renamed.lastModified).toBe(123)
+    expect(await renamed.text()).toBe('hello')
+    expect(blobFile).toBeInstanceOf(globalThis.File)
+    expect(blobFile.name).toBe('blob.txt')
+    expect(blobFile.type).toBe('text/plain')
+    expect(await blobFile.text()).toBe('blob text')
   })
 
   it('installs request globals onto additional mini-program host globals discovered from shared platform registry', async () => {
@@ -438,7 +474,7 @@ describe('request globals runtime', () => {
   it('ignores host objects that reject injected request globals', async () => {
     const throwingHost = Object.create(null)
 
-    for (const key of ['fetch', 'URL', 'URLSearchParams', 'Blob', 'FormData'] as const) {
+    for (const key of ['fetch', 'URL', 'URLSearchParams', 'Blob', 'File', 'FormData'] as const) {
       Object.defineProperty(throwingHost, key, {
         configurable: true,
         enumerable: true,

@@ -83,9 +83,8 @@ describe.sequential('e2e app: script-setup-macros-mapping (build)', () => {
     expect(pageWxml).toContain('data-wd-pick="1"')
     expect(pageWxml).toContain('data-wd-change="1"')
 
-    expect(pageJs).toMatch(/__weappViteUsingComponent:\s*true/)
-    expect(pageJs).toMatch(/name:\s*['"`]NativeBadge['"`],\s*from:\s*['"`]\/native\/native-badge\/index['"`]/)
-    expect(pageJs).toMatch(/name:\s*['"`]TsWithDefaults['"`],\s*from:\s*['"`]\/components\/ts-with-defaults\/index['"`]/)
+    expect(pageJs).not.toContain('../../native/native-badge/index')
+    expect(pageJs).not.toContain('../../components/ts-with-defaults/index.vue')
 
     expect(nativeBadgeJson.component).toBe(true)
     expect(nativeBadgeJs).toContain('Component({')

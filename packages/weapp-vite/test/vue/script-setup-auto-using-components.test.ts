@@ -64,8 +64,6 @@ import Child from '../child/index.vue'
 
     expect(transformed?.code).toBeDefined()
     expect(String(transformed!.code)).not.toContain('../child/index.vue')
-    expect(String(transformed!.code)).toContain('__weappViteUsingComponent')
-    expect(String(transformed!.code)).toContain('/components/child/index')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(

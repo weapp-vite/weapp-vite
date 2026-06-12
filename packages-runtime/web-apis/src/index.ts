@@ -21,7 +21,7 @@ import {
 import { queueMicrotaskPolyfill } from './task'
 import { TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
-import { BlobPolyfill, FormDataPolyfill } from './web'
+import { BlobPolyfill, FilePolyfill, FormDataPolyfill } from './web'
 import { WebSocketPolyfill } from './websocket'
 import { XMLHttpRequestPolyfill } from './xhr'
 
@@ -58,7 +58,7 @@ export type {
   WebSocketMiniProgramOptions,
 } from './networkDefaults'
 
-type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
 
 function hasRequestRuntimeBinaryUsage(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
   return targets.some(target => (
@@ -87,7 +87,7 @@ function resolveActualBindingTargets(targets: WeappInjectWebRuntimeGlobalsTarget
 
   if (needsRequestRuntimeBinarySupport) {
     bindingTargets.push('TextEncoder', 'TextDecoder')
-    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
+    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'File', 'FormData')
   }
 
   return [...new Set(bindingTargets)]
@@ -384,6 +384,9 @@ function installUrlGlobals(host: Record<string, any>) {
   if (!hasUsableConstructor(host.Blob)) {
     assignHostGlobal(host, 'Blob', BlobPolyfill)
   }
+  if (!hasUsableConstructor(host.File, [[], 'request-globals.bin'])) {
+    assignHostGlobal(host, 'File', FilePolyfill)
+  }
   if (!hasUsableConstructor(host.FormData)) {
     assignHostGlobal(host, 'FormData', FormDataPolyfill)
   }
@@ -478,6 +481,7 @@ export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOption
     installGlobalBindingIfNeeded(primaryHost, 'URL')
     installGlobalBindingIfNeeded(primaryHost, 'URLSearchParams')
     installGlobalBindingIfNeeded(primaryHost, 'Blob')
+    installGlobalBindingIfNeeded(primaryHost, 'File')
     installGlobalBindingIfNeeded(primaryHost, 'FormData')
   }
   for (const target of targets) {
@@ -515,6 +519,7 @@ export {
   CustomEventPolyfill,
   EventPolyfill,
   requestGlobalsFetch as fetch,
+  FilePolyfill,
   FormDataPolyfill,
   getMiniProgramNetworkDefaults,
   HeadersPolyfill,

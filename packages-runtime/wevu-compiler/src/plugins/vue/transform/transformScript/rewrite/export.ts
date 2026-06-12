@@ -43,5 +43,8 @@ export function rewriteComponentExport(params: {
       ]),
     ),
   )
+  exportPath.insertAfter(
+    t.exportDefaultDeclaration(t.identifier(DEFAULT_OPTIONS_IDENTIFIER)),
+  )
   return true
 }
