@@ -114,6 +114,9 @@ function resolveProjects(): string[] {
 
 const projects = [
   {
+    oxc: {
+      include: ['scripts/**/*.ts'],
+    },
     test: {
       name: 'repo-scripts',
       include: ['scripts/**/*.test.ts'],
