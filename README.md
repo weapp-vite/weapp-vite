@@ -15,49 +15,54 @@
 </p>
 
 <p align="center"><strong>给小程序现代化的开发体验</strong></p>
-<p align="center"><a href="https://vite.icebreaker.top">中文文档</a> · <a href="./README_CN.md">中文 README</a></p>
+<p align="center"><a href="https://vite.icebreaker.top">中文文档</a> · <a href="./README.en-US.md">English README</a></p>
 
-weapp-vite brings a modern Vite-style workflow to traditional mini-program development. The monorepo includes the core bundler, runtime packages, templates, IDE helpers, MCP support, and end-to-end examples for building WeChat and related mini-program projects with better DX.
+`weapp-vite` 为传统小程序开发带来接近 Vite 的现代工程体验。这个 monorepo 包含核心构建器、运行时包、项目模板、IDE 辅助能力、MCP 支持，以及用于验证微信等小程序项目的端到端示例。
 
-## Table of Contents
+## 目录
 
-- [Why weapp-vite](#why-weapp-vite)
-- [Highlights](#highlights)
-- [Quick Start](#quick-start)
-- [Workspace Layout](#workspace-layout)
-- [Key Packages](#key-packages)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Contributors](#contributors)
+- [为什么选择 weapp-vite](#为什么选择-weapp-vite)
+- [特性亮点](#特性亮点)
+- [快速开始](#快速开始)
+- [仓库结构](#仓库结构)
+- [核心包](#核心包)
+- [文档](#文档)
+- [参与贡献](#参与贡献)
+- [贡献者](#贡献者)
 - [Star History](#star-history)
-- [License](#license)
+- [许可证](#许可证)
 
-## Why weapp-vite
+## 为什么选择 weapp-vite
 
-- Use a modern toolchain for mini-program apps instead of legacy-only workflows.
-- Start quickly with the official `create-weapp-vite` scaffolder.
-- Build across multiple templates, runtimes, demos, and e2e apps from one workspace.
-- Explore AI-friendly tooling such as MCP support, IDE helpers, and packaged skills.
+- 用现代工具链维护小程序应用，减少传统构建流程的限制。
+- 通过官方脚手架 `create-weapp-vite` 快速创建项目。
+- 在一个 workspace 内维护模板、运行时、示例应用和 e2e 回归用例。
+- 内置面向 AI 协作的 MCP、IDE 辅助命令和 packaged skills 等能力。
 
-## Highlights
+## 特性亮点
 
-- Official scaffolder: [`create-weapp-vite`](packages/create-weapp-vite)
-- Core bundler/runtime packages under `packages/`, `packages-runtime/`, and `@weapp-core/`
-- Ready-to-run demo apps in `apps/` and regression fixtures in `e2e-apps/`
-- Documentation site in `website/`
-- Extensive CI, HMR, IDE, and runtime validation scripts powered by `pnpm` + `turbo`
+- 官方脚手架：[`create-weapp-vite`](packages/create-weapp-vite)
+- 核心构建与运行时包位于 `packages/`、`packages-runtime/` 和 `@weapp-core/`
+- `apps/` 提供可运行示例，`e2e-apps/` 提供回归和 issue 复现场景
+- `website/` 承载公开文档站点
+- 基于 `pnpm` + `turbo` 维护 CI、HMR、IDE 和运行时验证脚本
 
-## Quick Start
+## 快速开始
 
-### Create a new project
+### 创建新项目
 
 ```bash
 pnpm create weapp-vite
 ```
 
-You can also use `yarn create weapp-vite` or `npm create weapp-vite@latest`.
+也可以使用：
 
-### Work on this monorepo locally
+```bash
+yarn create weapp-vite
+npm create weapp-vite@latest
+```
+
+### 本地开发当前仓库
 
 ```bash
 pnpm install
@@ -65,7 +70,7 @@ pnpm build:pkgs
 pnpm test
 ```
 
-Useful follow-up commands:
+常用补充命令：
 
 ```bash
 pnpm build:apps
@@ -73,49 +78,49 @@ pnpm build:templates
 pnpm build:docs
 ```
 
-## Workspace Layout
+## 仓库结构
 
-- `packages/` and `packages-runtime/`: core tooling and runtime packages
-- `@weapp-core/`: shared workspace utilities and constants
-- `apps/`: demo and playground applications
-- `templates/`: starter templates used by the scaffolder
-- `e2e/` and `e2e-apps/`: CI, runtime, and issue reproduction coverage
-- `website/`: the documentation site
-- `docs/`: architecture notes, plans, and reports
-- `extensions/`: editor and integration extensions
+- `packages/` 和 `packages-runtime/`：核心工具链与运行时包
+- `@weapp-core/`：workspace 共享工具、常量和初始化能力
+- `apps/`：示例和 playground 应用
+- `templates/`：脚手架使用的项目模板
+- `e2e/` 和 `e2e-apps/`：CI、真实运行时和 issue 复现覆盖
+- `website/`：公开文档站点
+- `docs/`：架构说明、计划和报告
+- `extensions/`：编辑器和集成扩展
 
-## Key Packages
+## 核心包
 
-- [`weapp-vite`](packages/weapp-vite): the main mini-program bundler
-- [`create-weapp-vite`](packages/create-weapp-vite): official project scaffolder
-- [`@weapp-vite/mcp`](packages/mcp): MCP-related tooling
-- [`weapp-ide-cli`](packages/weapp-ide-cli): CLI helpers for WeChat DevTools workflows
-- [`rolldown-require`](packages/rolldown-require): helper for bundling and requiring files with Rolldown
+- [`weapp-vite`](packages/weapp-vite)：主要的小程序构建器
+- [`create-weapp-vite`](packages/create-weapp-vite)：官方项目脚手架
+- [`@weapp-vite/mcp`](packages/mcp)：MCP 相关工具
+- [`weapp-ide-cli`](packages/weapp-ide-cli)：微信开发者工具工作流辅助 CLI
+- [`rolldown-require`](packages/rolldown-require)：基于 Rolldown 的文件打包与 require 辅助工具
 
-## Documentation
+## 文档
 
-- Main docs: <https://vite.icebreaker.top>
-- Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Chinese README: [README_CN.md](./README_CN.md)
+- 中文文档：<https://vite.icebreaker.top>
+- 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
+- English README：[README.en-US.md](./README.en-US.md)
 
-## Contributing
+## 参与贡献
 
-Contributions are welcome.
+欢迎提交 issue 和 PR：
 
-- Open an issue for bugs, feature ideas, or documentation gaps.
-- Send a PR for fixes, refactors, docs, or new examples.
-- Share production use cases, middleware, and ecosystem integrations.
+- 通过 issue 反馈 bug、功能建议或文档缺口。
+- 通过 PR 提交修复、重构、文档或示例。
+- 分享生产实践、中间件和生态集成经验。
 
-For contribution details, see [CONTRIBUTING.md](CONTRIBUTING.md).
+贡献细节请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-## Contributors
+## 贡献者
 
-Thanks to [all contributors](https://github.com/weapp-vite/weapp-vite/graphs/contributors).
+感谢 [所有贡献者](https://github.com/weapp-vite/weapp-vite/graphs/contributors)。
 
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=weapp-vite/weapp-vite&type=Date)](https://star-history.com/#weapp-vite/weapp-vite&Date)
 
-## License
+## 许可证
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+本项目基于 MIT License 发布，详见 [LICENSE](LICENSE)。

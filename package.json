@@ -5,6 +5,7 @@
   "private": true,
   "packageManager": "pnpm@11.5.3",
   "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git"
