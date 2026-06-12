@@ -89,6 +89,32 @@ const local = 'ok'
     expect(resolveUsingComponentPath).toHaveBeenCalled()
   })
 
+  it('keeps a real default export for script-setup-only components', async () => {
+    const sfc = parse(`
+<template>
+  <view>{{ props.title }}</view>
+</template>
+<script setup lang="ts">
+const props = defineProps({
+  title: null,
+})
+</script>
+    `.trim(), { filename: '/project/src/components/MainVueCard/index.vue' })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/MainVueCard/index.vue',
+      undefined,
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(result.script).toContain('export default __wevuOptions')
+    expect(result.script).toContain('createWevuComponent')
+  })
+
   it('keeps auto using component imports when script setup references them', async () => {
     const sfc = parse(`
 <template>

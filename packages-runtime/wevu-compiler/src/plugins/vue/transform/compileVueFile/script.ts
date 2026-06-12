@@ -12,6 +12,7 @@ import { transformScript } from '../script'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
 const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
+const EXPORT_DEFAULT_RE = /\bexport\s+default\b/
 
 export interface ScriptPhaseResult {
   script?: string
@@ -22,6 +23,23 @@ export interface ScriptPhaseResult {
 
 type SfcDescriptor = Parameters<typeof compileScript>[0]
 type CompiledScript = ReturnType<typeof compileScript>
+
+function hasDefaultExport(scriptCode: string) {
+  try {
+    const ast = parseJsLike(scriptCode)
+    let found = false
+    traverse(ast, {
+      ExportDefaultDeclaration(path) {
+        found = true
+        path.stop()
+      },
+    })
+    return found
+  }
+  catch {
+    return EXPORT_DEFAULT_RE.test(scriptCode)
+  }
+}
 
 export function resolveScriptSetupPropsAliases(bindings: Record<string, any> | undefined) {
   const aliases = bindings?.__propsAliases
@@ -236,7 +254,7 @@ export async function compileScriptPhase(
       scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
     }
 
-    if (!isAppFile && !scriptCode.includes('export default')) {
+    if (!isAppFile && !hasDefaultExport(scriptCode)) {
       scriptCode += '\nexport default {}'
     }
   }
