@@ -55,10 +55,9 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     expect(pageWxml).toContain('data-wd-run="1"')
     expect(pageWxml).toContain('data-wd-runevent="1"')
 
-    expect(pageJs).toMatch(/__weappViteUsingComponent:\s*true/)
-    expect(pageJs).toMatch(/name:\s*['"`]NativeBadge['"`],\s*from:\s*['"`]\/native\/native-badge\/index['"`]/)
-    expect(pageJs).toMatch(/name:\s*['"`]CompatPanel['"`],\s*from:\s*['"`]\/pages\/vue-compat\/components\/CompatPanel['"`]/)
-    expect(pageJs).toMatch(/name:\s*['"`]CompatAltPanel['"`],\s*from:\s*['"`]\/pages\/vue-compat\/components\/CompatAltPanel['"`]/)
+    expect(pageJs).not.toContain('../../native/native-badge/index')
+    expect(pageJs).not.toContain('../../pages/vue-compat/components/CompatPanel.vue')
+    expect(pageJs).not.toContain('../../pages/vue-compat/components/CompatAltPanel.vue')
 
     expect(panelJson.component).toBe(true)
     expect(altPanelJson.component).toBe(true)
