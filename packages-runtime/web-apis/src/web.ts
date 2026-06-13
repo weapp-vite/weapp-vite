@@ -153,6 +153,10 @@ export class FormDataPolyfill {
   set(name: string, value: BlobLikePart, filename?: string): void
   set(name: string, value: BlobLikePart | string, filename?: string) {
     this.delete(name)
+    if (typeof value === 'string') {
+      this.append(name, value)
+      return
+    }
     this.append(name, value, filename)
   }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { onLoad, ref } from 'wevu'
 
 definePageJson({
   navigationBarTitleText: 'issue-448',
@@ -33,13 +33,172 @@ const jsonResponse = Response.json({ ok: true })
 const jsonResponseContentType = jsonResponse.headers.get('content-type')
 const errorResponse = Response.error()
 const microtaskState = ref('pending')
+const baseUrl = ref('')
+const formDataUploadStatus = ref('idle')
+const formDataUploadPayload = ref('')
 
 queueMicrotask(() => {
   microtaskState.value = 'flushed'
 })
 
+interface DownloadFileSuccessResult {
+  statusCode?: number
+  tempFilePath: string
+}
+
+interface MultipartUploadFileResult {
+  contentType: string
+  filename: string
+  name: string
+  sha256: string
+  size: number
+}
+
+interface MultipartUploadPayload {
+  expectedSha256: string
+  files: MultipartUploadFileResult[]
+  path: string
+}
+
+interface Issue448WxApi {
+  downloadFile: (options: {
+    fail?: (error: unknown) => void
+    success?: (result: DownloadFileSuccessResult) => void
+    url: string
+  }) => void
+  getFileSystemManager: () => {
+    readFile: (options: {
+      encoding?: 'binary'
+      fail?: (error: unknown) => void
+      filePath: string
+      success?: (result: { data: string | ArrayBuffer }) => void
+    }) => void
+  }
+}
+
+const wxApi = (globalThis as unknown as { wx: Issue448WxApi }).wx
+
+function resolveBaseUrl(query: Record<string, unknown> | undefined) {
+  return typeof query?.baseUrl === 'string' ? decodeURIComponent(query.baseUrl) : ''
+}
+
+function downloadFile(url: string) {
+  return new Promise<DownloadFileSuccessResult>((resolve, reject) => {
+    wxApi.downloadFile({
+      fail: reject,
+      success: resolve,
+      url,
+    })
+  })
+}
+
+function readDownloadedFile(filePath: string) {
+  return new Promise<ArrayBuffer>((resolve, reject) => {
+    wxApi.getFileSystemManager().readFile({
+      encoding: 'binary',
+      fail: reject,
+      filePath,
+      success(result) {
+        if (typeof result.data === 'string') {
+          const bytes = new Uint8Array(result.data.length)
+          for (let index = 0; index < result.data.length; index++) {
+            bytes[index] = result.data.charCodeAt(index) & 0xFF
+          }
+          resolve(bytes.buffer)
+          return
+        }
+        resolve(result.data)
+      },
+    })
+  })
+}
+
+function assertUploadPayload(payload: MultipartUploadPayload, expectedNames: string[]) {
+  if (payload.path !== '/issue-448/upload') {
+    throw new Error(`unexpected upload path: ${payload.path}`)
+  }
+
+  for (const expectedName of expectedNames) {
+    const file = payload.files.find(item => item.name === expectedName)
+    if (!file) {
+      throw new Error(`missing upload file: ${expectedName}`)
+    }
+    if (file.sha256 !== payload.expectedSha256) {
+      throw new Error(`unexpected ${expectedName} sha256: ${file.sha256}, size: ${file.size}`)
+    }
+    if (file.size <= 0) {
+      throw new Error(`unexpected ${expectedName} size: ${file.size}`)
+    }
+  }
+}
+
+async function uploadDownloadedFileAsFormData() {
+  if (!baseUrl.value) {
+    throw new Error('missing issue-448 baseUrl')
+  }
+
+  formDataUploadStatus.value = 'running'
+  const download = await downloadFile(`${baseUrl.value}/issue-448/download.bin`)
+  if (download.statusCode && download.statusCode !== 200) {
+    throw new Error(`downloadFile failed with status ${download.statusCode}`)
+  }
+
+  const buffer = await readDownloadedFile(download.tempFilePath)
+  const blobFormData = new FormData()
+  blobFormData.append('blob-file', new Blob([buffer], { type: 'application/octet-stream' }), 'downloaded-blob.bin')
+  const blobResponse = await fetch(`${baseUrl.value}/issue-448/upload`, {
+    body: blobFormData,
+    method: 'POST',
+  })
+  const blobPayload = await blobResponse.json() as MultipartUploadPayload
+  assertUploadPayload(blobPayload, ['blob-file'])
+
+  const fileFormData = new FormData()
+  fileFormData.append('file-file', new File([buffer], 'downloaded-file.bin', { type: 'application/octet-stream' }))
+  const fileResponse = await fetch(`${baseUrl.value}/issue-448/upload`, {
+    body: fileFormData,
+    method: 'POST',
+  })
+  const filePayload = await fileResponse.json() as MultipartUploadPayload
+  assertUploadPayload(filePayload, ['file-file'])
+
+  const payload = {
+    blob: blobPayload.files.find(item => item.name === 'blob-file'),
+    expectedSha256: blobPayload.expectedSha256,
+    file: filePayload.files.find(item => item.name === 'file-file'),
+  }
+  formDataUploadPayload.value = JSON.stringify(payload)
+  formDataUploadStatus.value = 'passed'
+  return payload
+}
+
+async function _runFormDataUploadE2E() {
+  try {
+    const payload = await uploadDownloadedFileAsFormData()
+    return {
+      ok: true,
+      payload,
+      status: formDataUploadStatus.value,
+    }
+  }
+  catch (error) {
+    formDataUploadStatus.value = 'failed'
+    formDataUploadPayload.value = error instanceof Error ? error.message : String(error)
+    return {
+      error: formDataUploadPayload.value,
+      ok: false,
+      status: formDataUploadStatus.value,
+    }
+  }
+}
+
+onLoad((query) => {
+  baseUrl.value = resolveBaseUrl(query)
+})
+
 function _runE2E() {
   return {
+    baseUrl: baseUrl.value,
     encoded,
     decoded,
     duration,
@@ -54,6 +213,8 @@ function _runE2E() {
     jsonResponseContentType,
     errorResponseStatus: errorResponse.status,
     errorResponseType: errorResponse.type,
+    formDataUploadPayload: formDataUploadPayload.value,
+    formDataUploadStatus: formDataUploadStatus.value,
     microtaskState: microtaskState.value,
   }
 }
@@ -74,6 +235,8 @@ function _runE2E() {
     <text class="issue448-line">cookies = {{ cookieCount }}</text>
     <text class="issue448-line">json = {{ jsonResponseContentType }}</text>
     <text class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
+    <text class="issue448-line">upload = {{ formDataUploadStatus }}</text>
+    <text class="issue448-line">uploadPayload = {{ formDataUploadPayload }}</text>
     <text class="issue448-line">microtask = {{ microtaskState }}</text>
   </view>
 </template>

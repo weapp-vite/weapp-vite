@@ -1,5 +1,7 @@
 import type { IncomingHttpHeaders, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { Readable } from 'node:stream'
 import { Hono } from 'hono'
@@ -7,10 +9,24 @@ import { Server as SocketIOServer } from 'socket.io'
 import { WebSocketServer } from 'ws'
 
 const REALTIME_RANDOM_PUSH_INTERVAL_MS = 5_000
+const FORM_DATA_BINARY_FIXTURE = Buffer.from([
+  0x00,
+  0x01,
+  0x02,
+  0x03,
+  ...Buffer.from('issue-448-formdata-upload'),
+  0xF0,
+  0x9F,
+  0x94,
+  0xA5,
+  0xFF,
+])
+const FORM_DATA_BINARY_FIXTURE_SHA256 = createHash('sha256').update(FORM_DATA_BINARY_FIXTURE).digest('hex')
 
 export interface RequestClientsRealServerState {
   axios: number
   fetch: number
+  formDataUpload: number
   graphql: number
   socketIo: number
   vueQuery: number
@@ -41,11 +57,68 @@ function createRequestCounts(): RequestClientsRealServerState {
   return {
     axios: 0,
     fetch: 0,
+    formDataUpload: 0,
     graphql: 0,
     socketIo: 0,
     vueQuery: 0,
     websocket: 0,
   }
+}
+
+function parseMultipartBoundary(contentType: string | null) {
+  const match = contentType?.match(/(?:^|;\s*)boundary=([^;]+)/i)
+  return match?.[1]?.replace(/^"|"$/g, '') ?? ''
+}
+
+async function readRequestBuffer(request: Request) {
+  const buffer = await request.arrayBuffer()
+  return Buffer.from(buffer)
+}
+
+function parseMultipartParts(body: Buffer, boundary: string) {
+  const rawBody = body.toString('binary')
+  const delimiter = `--${boundary}`
+  const parts: Array<{
+    content: Buffer
+    headers: Record<string, string>
+    name: string
+    filename: string | null
+  }> = []
+
+  for (const rawPart of rawBody.split(delimiter)) {
+    if (!rawPart || rawPart === '--\r\n' || rawPart === '--') {
+      continue
+    }
+
+    const normalized = rawPart.replace(/^\r\n/, '').replace(/\r\n$/, '').replace(/--$/, '')
+    const headerEnd = normalized.indexOf('\r\n\r\n')
+    if (headerEnd < 0) {
+      continue
+    }
+
+    const headerBlock = normalized.slice(0, headerEnd)
+    const contentBinary = normalized.slice(headerEnd + 4)
+    const headers: Record<string, string> = {}
+    for (const line of headerBlock.split('\r\n')) {
+      const separatorIndex = line.indexOf(':')
+      if (separatorIndex < 0) {
+        continue
+      }
+      headers[line.slice(0, separatorIndex).trim().toLowerCase()] = line.slice(separatorIndex + 1).trim()
+    }
+
+    const disposition = headers['content-disposition'] ?? ''
+    const name = disposition.match(/(?:^|;\s*)name="([^"]*)"/)?.[1] ?? ''
+    const filename = disposition.match(/(?:^|;\s*)filename="([^"]*)"/)?.[1] ?? null
+    parts.push({
+      content: Buffer.from(contentBinary, 'binary'),
+      filename,
+      headers,
+      name,
+    })
+  }
+
+  return parts
 }
 
 function createNodeRequest(url: string, method: string, headers: IncomingHttpHeaders, req: NodeJS.ReadableStream) {
@@ -96,6 +169,41 @@ export async function startRequestClientsRealServer(
       path: '/fetch',
       requestCount: requestCounts.fetch,
       transport: 'fetch',
+    })
+  })
+
+  app.get('/issue-448/download.bin', (_c) => {
+    return new Response(FORM_DATA_BINARY_FIXTURE, {
+      headers: {
+        'content-type': 'application/octet-stream',
+        'x-issue-448-sha256': FORM_DATA_BINARY_FIXTURE_SHA256,
+      },
+    })
+  })
+
+  app.post('/issue-448/upload', async (c) => {
+    requestCounts.formDataUpload += 1
+    const contentType = c.req.header('content-type') ?? ''
+    const boundary = parseMultipartBoundary(contentType)
+    const body = await readRequestBuffer(c.req.raw)
+    const parts = boundary ? parseMultipartParts(body, boundary) : []
+    const files = parts
+      .filter(part => part.filename)
+      .map(part => ({
+        contentType: part.headers['content-type'] ?? '',
+        filename: part.filename,
+        name: part.name,
+        sha256: createHash('sha256').update(part.content).digest('hex'),
+        size: part.content.byteLength,
+      }))
+
+    return c.json({
+      contentType,
+      expectedSha256: FORM_DATA_BINARY_FIXTURE_SHA256,
+      files,
+      method: c.req.method,
+      path: '/issue-448/upload',
+      requestCount: requestCounts.formDataUpload,
     })
   })
 
