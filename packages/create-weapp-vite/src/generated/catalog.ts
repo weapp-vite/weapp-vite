@@ -14,14 +14,14 @@ export const TEMPLATE_CATALOG = {
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/vite': '^4.3.0',
+  '@tailwindcss/vite': '^4.3.1',
   '@types/node': '^25.9.3',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.7',
   '@vue/compiler-core': '^3.5.38',
   '@vue/compiler-dom': '^3.5.38',
-  '@vue/language-core': '^3.3.4',
+  '@vue/language-core': '^3.3.5',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
   'class-variance-authority': '^0.7.1',
@@ -40,14 +40,14 @@ export const TEMPLATE_CATALOG = {
   'tdesign-miniprogram': '^1.15.1',
   'ts-morph': '^28.0.0',
   'vite-plugin-inspect': '^11.4.1',
-  'vue-tsc': '^3.3.4',
+  'vue-tsc': '^3.3.5',
   'weapp-tailwindcss': '^5.0.8',
   autoprefixer: '^10.5.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
   echarts: '^6.1.0',
   esbuild: '^0.28.1',
-  eslint: '^10.4.1',
+  eslint: '^10.5.0',
   fdir: '^6.5.0',
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
@@ -58,7 +58,7 @@ export const TEMPLATE_CATALOG = {
   rolldown: '1.1.1',
   sass: '^1.101.0',
   stylelint: '^17.13.0',
-  tailwindcss: '^4.3.0',
+  tailwindcss: '^4.3.1',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.0.16',
@@ -78,9 +78,9 @@ export const TEMPLATE_NAMED_CATALOG = {
     typescript: '^6.0.3'
   },
   tailwind3: {
-    tailwindcss: '^4.3.0'
+    tailwindcss: '^4.3.1'
   },
   tailwind4: {
-    tailwindcss: '^4.3.0'
+    tailwindcss: '^4.3.1'
   }
 } as const
