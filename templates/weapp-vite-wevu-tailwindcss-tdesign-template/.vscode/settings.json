@@ -77,43 +77,57 @@
   "html.customData": [
     "./.weapp-vite/mini-program.html-data.json"
   ],
-  "tailwindCSS.experimental.classRegex": [
-    [
-      "clsx\\(([^)]*)\\)",
-      "(?:'|\"|`)([^']*)(?:'|\"|`)"
-    ],
-    [
-      "cn\\(([^)]*)\\)",
-      "(?:'|\"|`)([^']*)(?:'|\"|`)"
-    ],
-    [
-      "cva\\(([^)]*)\\)",
-      "[\"'`]([^\"'`]*).*?[\"'`]"
-    ],
-    [
-      "cx\\(([^)]*)\\)",
-      "(?:'|\"|`)([^']*)(?:'|\"|`)"
-    ]
-  ],
-  "tailwindCSS.classAttributes": [
-    "class",
-    "className",
-    "ngClass",
-    "class:list",
-    "hover-class"
-  ],
-  "tailwindCSS.includeLanguages": {
-    "wxml": "html"
-  },
+  "tailwindCSS.suggestions": false,
+  "tailwindCSS.hovers": false,
+  "tailwindCSS.validate": false,
+  "tailwindCSS.codeActions": false,
+  "tailwindCSS.colorDecorators": false,
+  "tailwindCSS.experimental.configFile": null,
+  "stylelint.enable": false,
   "stylelint.validate": [
     "css",
     "scss",
     "vue"
   ],
   "vue.server.hybridMode": true,
+  "vue.server.includeLanguages": [
+    "vue"
+  ],
+  "typescript.tsserver.maxTsServerMemory": 3072,
+  "typescript.tsserver.useSyntaxServer": "auto",
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriorityPolling"
+  },
   "typescript.disableReferencedProjectLoad": true,
   "typescript.disableSolutionSearching": true,
   "typescript.disableAutomaticTypeAcquisition": true,
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "**/.cache/**",
+    "**/.codegraph/**",
+    "**/.codex-tmp/**",
+    "**/.minidev/**",
+    "**/.playwright/**",
+    "**/.playwright-cli/**",
+    "**/.playwright-mcp/**",
+    "**/.pnpm-store/**",
+    "**/.tmp/**",
+    "**/.turbo/**",
+    "**/.vite/**",
+    "**/.vite-inspect/**",
+    "**/.weapp-vite/**",
+    "**/.wevu-config/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/dist-*/**",
+    "**/dist-plugin/**",
+    "**/dist-web/**",
+    "**/docs/reports/**",
+    "**/miniprogram_npm/**",
+    "**/node_modules/**"
+  ],
   "typescript.preferences.includePackageJsonAutoImports": "off",
   "javascript.preferences.includePackageJsonAutoImports": "off",
   "search.followSymlinks": false,
@@ -128,9 +142,11 @@
     "**/coverage/**": true,
     "**/miniprogram_npm/**": true,
     "**/.cache/**": true,
+    "**/.codegraph/**": true,
     "**/.smartapp-automator/**": true,
     "**/.minidev/**": true,
     "**/.playwright/**": true,
+    "**/.playwright-mcp/**": true,
     "**/.pnpm-store/**": true,
     "**/.tmp/**": true,
     "**/.turbo/**": true,
@@ -153,11 +169,13 @@
     "**/coverage": true,
     "**/miniprogram_npm": true,
     "**/.cache": true,
+    "**/.codegraph": true,
     "**/.smartapp-automator": true,
     "**/.codex-tmp": true,
     "**/.minidev": true,
     "**/.playwright": true,
     "**/.playwright-cli": true,
+    "**/.playwright-mcp": true,
     "**/.pnpm-store": true,
     "**/.tmp": true,
     "**/.turbo": true,
@@ -179,9 +197,11 @@
     "**/coverage/**": true,
     "**/miniprogram_npm/**": true,
     "**/.cache/**": true,
+    "**/.codegraph/**": true,
     "**/.smartapp-automator/**": true,
     "**/.minidev/**": true,
     "**/.playwright/**": true,
+    "**/.playwright-mcp/**": true,
     "**/.pnpm-store/**": true,
     "**/.tmp/**": true,
     "**/.turbo/**": true,
@@ -205,9 +225,11 @@
     "**/coverage/**",
     "**/miniprogram_npm/**",
     "**/.cache/**",
+    "**/.codegraph/**",
     "**/.smartapp-automator/**",
     "**/.minidev/**",
     "**/.playwright/**",
+    "**/.playwright-mcp/**",
     "**/.pnpm-store/**",
     "**/.tmp/**",
     "**/.turbo/**",
@@ -220,7 +242,6 @@
     "**/__temp__/**",
     "**/docs/reports/**"
   ],
-  "tailwindCSS.codeActions": false,
   "i18n-ally.usage.scanningIgnore": [
     "**/.git/**",
     "**/node_modules/**",
@@ -232,9 +253,11 @@
     "**/coverage/**",
     "**/miniprogram_npm/**",
     "**/.cache/**",
+    "**/.codegraph/**",
     "**/.smartapp-automator/**",
     "**/.minidev/**",
     "**/.playwright/**",
+    "**/.playwright-mcp/**",
     "**/.pnpm-store/**",
     "**/.tmp/**",
     "**/.turbo/**",
@@ -248,5 +271,6 @@
     "**/docs/reports/**"
   ],
   "vue.tsserver.useWorkspaceTsdk": true,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "vue3snippets.enable-compile-vue-file-on-did-save-code": false
 }
