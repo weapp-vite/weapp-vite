@@ -8,8 +8,10 @@ import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
 import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
 import { HeadersPolyfill, ResponsePolyfill } from './http'
+import { encodeMultipartFormData } from './multipart'
 import { resolveRequestMiniProgramOptions } from './networkDefaults'
 import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
+import { FormDataPolyfill } from './web'
 
 export type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 
@@ -150,6 +152,17 @@ function isRequestLikeInput(input: unknown): input is RequestLikeInput {
   return isObject(input) && typeof input.url === 'string'
 }
 
+function isFormDataInstance(value: unknown): value is FormData {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && (
+      (typeof FormData !== 'undefined' && value instanceof FormData)
+      || value instanceof FormDataPolyfill
+    ),
+  )
+}
+
 async function extractRequestBodyFromInput(input: RequestLikeInput | undefined) {
   if (!input || typeof input.clone !== 'function') {
     return undefined
@@ -195,8 +208,12 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
     }
     return body.arrayBuffer()
   }
-  if (typeof FormData !== 'undefined' && body instanceof FormData) {
-    throw new TypeError('Failed to execute fetch: FormData body is not supported in request globals fetch')
+  if (isFormDataInstance(body)) {
+    const payload = await encodeMultipartFormData(body)
+    if (!hasHeader(headers, 'content-type')) {
+      headers['content-type'] = payload.contentType
+    }
+    return payload.body
   }
   return String(body)
 }

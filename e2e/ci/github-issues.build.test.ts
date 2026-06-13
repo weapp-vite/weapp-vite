@@ -831,6 +831,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('Response.json(')
     expect(pageJs).toContain('Response.error()')
     expect(pageJs).toContain('function _runE2E() {')
+    expect(pageJs).toContain('function _runFormDataUploadE2E()')
+    expect(pageJs).toContain('globalThis.wx')
+    expect(pageJs).toContain('.downloadFile({')
+    expect(pageJs).toContain('new Blob([')
+    expect(pageJs).toContain('new File([')
+    expect(pageJs).toContain('FormData')
   })
 
   it('issue #457: keeps injected web runtime code readable in production output', async () => {

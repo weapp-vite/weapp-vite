@@ -408,6 +408,51 @@ describe('request globals runtime', () => {
     expect(await blobFile.text()).toBe('blob text')
   })
 
+  it('serializes FormData Blob and File values into multipart fetch bodies', async () => {
+    let requestOptions: Record<string, any> | undefined
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptions = options
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    const formData = new globalThis.FormData()
+    formData.append('message', 'hello')
+    formData.append('blob-file', new globalThis.Blob(['blob payload'], { type: 'text/plain' }), 'blob.txt')
+    formData.append('file-file', new globalThis.File(['file payload'], 'file.txt', { type: 'text/plain' }))
+
+    const response = await globalThis.fetch('https://request-globals.invalid/upload', {
+      body: formData,
+      method: 'POST',
+    })
+
+    expect(await response.json()).toEqual({ ok: true })
+    expect(requestOptions?.header['content-type']).toMatch(/^multipart\/form-data; boundary=----weapp-vite-formdata-/)
+    expect(requestOptions?.data).toBeInstanceOf(ArrayBuffer)
+
+    const multipartBody = new TextDecoder().decode(requestOptions?.data)
+    expect(multipartBody).toContain('name="message"')
+    expect(multipartBody).toContain('hello')
+    expect(multipartBody).toContain('name="blob-file"; filename="blob.txt"')
+    expect(multipartBody).toContain('Content-Type: text/plain')
+    expect(multipartBody).toContain('blob payload')
+    expect(multipartBody).toContain('name="file-file"; filename="file.txt"')
+    expect(multipartBody).toContain('file payload')
+  })
+
   it('installs request globals onto additional mini-program host globals discovered from shared platform registry', async () => {
     ;(globalThis as Record<string, any>).swan = {}
 

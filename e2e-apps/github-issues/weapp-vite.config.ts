@@ -28,6 +28,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-338/**',
     'pages/issue-448/**',
   ],
+  'github-issues.runtime.issue448-formdata-upload.test.ts': [
+    'pages/issue-448/**',
+  ],
   'github-issues.runtime.import-meta.test.ts': [
     'pages/issue-431/**',
   ],
