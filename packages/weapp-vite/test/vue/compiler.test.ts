@@ -366,7 +366,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{ {default:true} }}"')
       expect(result.classStyleBindings?.some(binding => binding.exp === `{['default']:true}`)).not.toBe(true)
-      expect(result.code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
+      expect(result.code).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
     })

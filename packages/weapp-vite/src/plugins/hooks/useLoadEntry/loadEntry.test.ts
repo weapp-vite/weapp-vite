@@ -7,6 +7,7 @@ import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
+import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
 import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
@@ -1882,7 +1883,7 @@ import { VueCard } from '../../components'
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'layouts/default.js',
-      source: 'Component({})',
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
     })
 
     const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
@@ -1942,7 +1943,7 @@ import { VueCard } from '../../components'
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'layouts/default.js',
-      source: 'Component({})',
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
     })
 
     const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
@@ -2002,7 +2003,7 @@ import { VueCard } from '../../components'
     expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'asset',
       fileName: 'layouts/default.js',
-      source: 'Component({})',
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
     }))
 
     const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
@@ -2064,7 +2065,7 @@ import { VueCard } from '../../components'
     expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'asset',
       fileName: 'layouts/default.js',
-      source: 'Component({})',
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
     }))
 
     const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []

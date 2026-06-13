@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   connectMiniProgram,
   connectOpenedAutomator,
+  resolveProjectAutomatorPort,
   takeScreenshot,
 } from 'weapp-ide-cli'
 import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
@@ -17,6 +18,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const READY_OUTPUT_RE = /✔ open/
@@ -52,8 +54,14 @@ interface AutomatorSessionMetadata {
   wsEndpoint: string
 }
 
-function resolveAutomatorSessionFile(projectPath: string) {
-  const encodedProjectPath = Buffer.from(path.resolve(projectPath)).toString('base64url')
+type TemplateDevProcess = typeof TEMPLATE_CASES[number] & {
+  dev: ReturnType<typeof startDevProcess>
+}
+
+function resolveAutomatorSessionFile(projectPath: string, port?: number) {
+  const normalizedProjectPath = path.resolve(projectPath)
+  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
+  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
   return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
 }
 
@@ -98,27 +106,34 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function isDevtoolsProtocolTimeout(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  const protocolError = error as Error & { code?: unknown, method?: unknown }
+  return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && (protocolError.method === 'App.getCurrentPage' || protocolError.method === 'App.getPageStack')
+}
+
 async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
   const start = Date.now()
   let lastError: unknown
+  const port = resolveProjectAutomatorPort(projectPath)
+  const wsEndpoint = `ws://127.0.0.1:${port}`
 
   while (Date.now() - start <= timeoutMs) {
     try {
-      const raw = await fs.readFile(resolveAutomatorSessionFile(projectPath), 'utf8')
-      const metadata = JSON.parse(raw) as Partial<AutomatorSessionMetadata>
-      if (path.resolve(metadata.projectPath ?? '') !== projectPath) {
-        throw new Error(`opened automator metadata project mismatch: ${JSON.stringify(metadata)}`)
-      }
-      if (typeof metadata.wsEndpoint !== 'string' || !/^ws:\/\/127\.0\.0\.1:\d+$/.test(metadata.wsEndpoint)) {
-        throw new Error(`opened automator endpoint missing: ${JSON.stringify(metadata)}`)
-      }
-
       const miniProgram = await connectOpenedAutomator({
         projectPath,
+        port,
         timeout: 30_000,
       })
       return {
-        metadata: metadata as AutomatorSessionMetadata,
+        metadata: {
+          projectPath,
+          updatedAt: new Date().toISOString(),
+          wsEndpoint,
+        } satisfies AutomatorSessionMetadata,
         miniProgram,
       }
     }
@@ -131,22 +146,42 @@ async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
-async function waitForPageText(miniProgram: any, route: string, text: string, timeoutMs = 90_000) {
+async function removeAutomatorSessionFiles(projectPath: string) {
+  await Promise.all([
+    fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
+    fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
+  ])
+}
+
+async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
   const start = Date.now()
   let latestWxml = ''
+  let lastProtocolTimeout = ''
+  let currentMiniProgram = miniProgram
 
   while (Date.now() - start <= timeoutMs) {
-    const page = await miniProgram.reLaunch(route)
-    await page.waitFor(500)
-    const root = await page.$('page')
-    latestWxml = root ? await root.outerWxml() : ''
-    if (latestWxml.includes(text)) {
-      return latestWxml
+    try {
+      const page = await currentMiniProgram.reLaunch(route)
+      await page.waitFor(500)
+      const root = await page.$('page')
+      latestWxml = root ? await root.outerWxml() : ''
+      if (latestWxml.includes(text)) {
+        return latestWxml
+      }
+    }
+    catch (error) {
+      if (!isDevtoolsProtocolTimeout(error)) {
+        throw error
+      }
+      lastProtocolTimeout = error.message
+      currentMiniProgram.disconnect?.()
+      currentMiniProgram = (await waitForOpenedAutomator(projectPath, 30_000)).miniProgram
     }
     await delay(1_000)
   }
 
-  throw new Error(`Timed out waiting for rendered text "${text}". Latest WXML:\n${latestWxml.slice(0, 1000)}`)
+  const timeoutDetail = lastProtocolTimeout ? `\nLatest DevTools protocol timeout: ${lastProtocolTimeout}` : ''
+  throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
 async function createRuntimeTools() {
@@ -170,9 +205,30 @@ async function createRuntimeTools() {
   }
 }
 
+async function startTemplateDevProcesses() {
+  const processes: TemplateDevProcess[] = []
+
+  for (const templateCase of TEMPLATE_CASES) {
+    const process = {
+      ...templateCase,
+      dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+        cwd: templateCase.root,
+        env: createDevProcessEnv(),
+        reject: false,
+      }),
+    }
+
+    processes.push(process)
+    await process.dev.waitForOutput(READY_OUTPUT_RE, `${process.name} dev:open ready`, 180_000)
+  }
+
+  return processes
+}
+
 describe.sequential('template TailwindCSS dev:open multi-project IDE integration', () => {
   beforeAll(async () => {
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {})))
+    await cleanupResidualIdeProcesses()
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await removeAutomatorSessionFiles(templateCase.root)))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png'), { force: true }).catch(() => {})))
@@ -182,34 +238,28 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     await cleanupTrackedDevProcesses()
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(templateCase.root).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
+    await cleanupResidualIdeProcesses()
   }, 60_000)
 
   it('keeps screenshot and MCP bound to each real template root after concurrent dev:open', async () => {
-    const processes = TEMPLATE_CASES.map(templateCase => ({
-      ...templateCase,
-      dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
-        cwd: templateCase.root,
-        env: createDevProcessEnv(),
-        reject: false,
-      }),
-    }))
+    const processes = await startTemplateDevProcesses()
 
     try {
-      await Promise.all(processes.map(async item => await item.dev.waitForOutput(READY_OUTPUT_RE, `${item.name} dev:open ready`, 180_000)))
-
       const runtimeTools = await createRuntimeTools()
       try {
         for (const templateCase of TEMPLATE_CASES) {
+          const port = resolveProjectAutomatorPort(templateCase.root)
           const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
           await expect(fs.access(resolveAutomatorWrapperProjectPath(templateCase.root))).rejects.toThrow()
-          await waitForPageText(miniProgram, INDEX_ROUTE, templateCase.expectedText)
+          await waitForPageText(miniProgram, templateCase.root, INDEX_ROUTE, templateCase.expectedText)
           await miniProgram.disconnect()
 
           const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-multi.png')
           const screenshot = await takeScreenshot({
             outputPath: screenshotPath,
+            port,
             preserveProjectRoot: true,
             projectPath: templateCase.root,
             sharedSession: true,
@@ -219,6 +269,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
           expect((await fs.stat(screenshotPath)).size).toBeGreaterThan(0)
 
           const connectResult = await getTool(runtimeTools.tools, 'weapp_devtools_connect')({
+            port,
             preserveProjectRoot: true,
             projectPath: templateCase.root,
             timeout: 60_000,
@@ -231,6 +282,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
           const capturePath = path.join('templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png')
           const captureResult = await getTool(runtimeTools.tools, 'weapp_devtools_capture')({
             outputPath: capturePath,
+            port,
             preserveProjectRoot: true,
             projectPath: templateCase.root,
             timeout: 60_000,
@@ -241,7 +293,10 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
         }
       }
       finally {
-        await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({ projectPath: templateCase.root }).catch(() => {})))
+        await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({
+          port: resolveProjectAutomatorPort(templateCase.root),
+          projectPath: templateCase.root,
+        }).catch(() => {})))
       }
     }
     finally {
@@ -250,8 +305,16 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
   }, 480_000)
 
   it('opens the next template after the previous dev:open process exits', async () => {
-    await fs.rm(resolveAutomatorSessionFile(PLAIN_TEMPLATE.root), { force: true }).catch(() => {})
-    await fs.rm(resolveAutomatorSessionFile(TDESIGN_TEMPLATE.root), { force: true }).catch(() => {})
+    await cleanupTrackedDevProcesses()
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
+      templateCase.root,
+      resolveProjectAutomatorPort(templateCase.root),
+    ).catch(() => {})))
+    await cleanupResidualIdeProcesses()
+    await removeAutomatorSessionFiles(PLAIN_TEMPLATE.root)
+    await removeAutomatorSessionFiles(TDESIGN_TEMPLATE.root)
+    const plainPort = resolveProjectAutomatorPort(PLAIN_TEMPLATE.root)
+    const tdesignPort = resolveProjectAutomatorPort(TDESIGN_TEMPLATE.root)
 
     const plainDev = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: PLAIN_TEMPLATE.root,
@@ -260,6 +323,8 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     })
     await plainDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss dev:open ready', 180_000)
     await plainDev.stop()
+    await closeSharedMiniProgram(PLAIN_TEMPLATE.root, plainPort).catch(() => {})
+    await delay(2_000)
 
     const tdesignDev = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: TDESIGN_TEMPLATE.root,
@@ -271,7 +336,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
       await tdesignDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss tdesign dev:open ready after plain exit', 180_000)
       const { miniProgram } = await waitForOpenedAutomator(TDESIGN_TEMPLATE.root)
       try {
-        await waitForPageText(miniProgram, INDEX_ROUTE, 'TDesign Button')
+        await waitForPageText(miniProgram, TDESIGN_TEMPLATE.root, INDEX_ROUTE, 'TDesign Button')
       }
       finally {
         await miniProgram.disconnect()
@@ -279,6 +344,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     }
     finally {
       await tdesignDev.stop().catch(() => {})
+      await closeSharedMiniProgram(TDESIGN_TEMPLATE.root, tdesignPort).catch(() => {})
     }
   }, 360_000)
 })

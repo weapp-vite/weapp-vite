@@ -100,6 +100,20 @@ function expectSfcKeepImportResolved(content: string) {
   expect(content).not.toContain(HMR_SFC_KEEP_IMPORT_DIRECTIVE)
 }
 
+function ensureSfcKeepImportSource(source: string) {
+  if (source.includes(HMR_SFC_KEEP_IMPORT_DIRECTIVE)) {
+    return source
+  }
+  const styleMarker = '/* HMR-SFC-STYLE */'
+  if (!source.includes(styleMarker)) {
+    throw new Error('HMR SFC fixture is missing the style baseline marker.')
+  }
+  return source.replace(
+    styleMarker,
+    `${styleMarker}\n/* stylelint-disable-next-line at-rule-no-unknown, scss/at-rule-no-unknown */\n@wv-keep-import '../hmr/index.wxss';`,
+  )
+}
+
 async function waitForIdeRecompileSettled(delayMs = 1_200) {
   await new Promise(resolve => setTimeout(resolve, delayMs))
 }
@@ -278,6 +292,11 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       LAYOUT_PAGE_STYLE,
     ]) {
       originalSources.set(filePath, await fs.readFile(filePath, 'utf8'))
+    }
+    const originalSfcSource = ensureSfcKeepImportSource(originalSources.get(HMR_SFC_PATH)!)
+    if (originalSfcSource !== originalSources.get(HMR_SFC_PATH)) {
+      await fs.writeFile(HMR_SFC_PATH, originalSfcSource, 'utf8')
+      originalSources.set(HMR_SFC_PATH, originalSfcSource)
     }
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {

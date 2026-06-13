@@ -50,7 +50,8 @@ exports[`wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML > we
       <text selectable="" class="details">
         { "name": "class-style", "ok": true, "checks": { "enabledUpdated": true,
         "classStateUpdated": true, "classArrayUpdated": true, "classFlagsUpdated": true,
-        "styleObjectUpdated": true, "styleArrayUpdated": true, "mapSlotWidthClassResolved": true,
+        "styleObjectUpdated": true, "styleArrayUpdated": true, "targetClassResolved": true,
+        "targetStyleResolved": true, "mapSlotWidthClassResolved": true,
         "mapSlotSelectedClassResolved": true, "mapSlotUnselectedClassResolved": true,
         "rootGuardClassResolved": true }, "details": { "classList": [ "root-a", "", [ "nested-a", {
         "nested-b": true } ] ], "classFlags": { "active": true, "disabled": false }, "styleObject":
@@ -60,8 +61,10 @@ exports[`wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML > we
         }, "classBindingEntries": [ [ "__wv_cls_0", "base state-ready root-a nested-a nested-b
         active ready" ], [ "__wv_cls_1", [ "relative h-[64rpx] flex items-center rounded-full
         p-[8rpx] shadow-lg w-[164rpx] bg-highlight-dark", "relative h-[64rpx] flex items-center
-        rounded-full p-[8rpx] shadow-lg w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ]
-        }}
+        rounded-full p-[8rpx] shadow-lg w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ],
+        "styleBindingEntries": [ [ "__wv_style_0",
+        "background-color:#f0f9ff;padding:8rpx;margin-top:10rpx;border-radius:12rpx;opacity:0.9;color:#0052d9;font-size:28rpx;line-height:1.6;--tokenColor:#0f62fe"
+        ] ] }}
       </text>
     </view>
   </view>
@@ -502,7 +505,8 @@ exports[`wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML > we
       <text selectable="" class="details">
         { "name": "class-style", "ok": true, "checks": { "enabledUpdated": true,
         "classStateUpdated": true, "classArrayUpdated": true, "classFlagsUpdated": true,
-        "styleObjectUpdated": true, "styleArrayUpdated": true, "mapSlotWidthClassResolved": true,
+        "styleObjectUpdated": true, "styleArrayUpdated": true, "targetClassResolved": true,
+        "targetStyleResolved": true, "mapSlotWidthClassResolved": true,
         "mapSlotSelectedClassResolved": true, "mapSlotUnselectedClassResolved": true,
         "rootGuardClassResolved": true }, "details": { "classList": [ "root-a", "", [ "nested-a", {
         "nested-b": true } ] ], "classFlags": { "active": true, "disabled": false }, "styleObject":
@@ -512,8 +516,10 @@ exports[`wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML > we
         }, "classBindingEntries": [ [ "__wv_cls_0", "base state-ready root-a nested-a nested-b
         active ready" ], [ "__wv_cls_1", [ "relative h-[64rpx] flex items-center rounded-full
         p-[8rpx] shadow-lg w-[164rpx] bg-highlight-dark", "relative h-[64rpx] flex items-center
-        rounded-full p-[8rpx] shadow-lg w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ]
-        }}
+        rounded-full p-[8rpx] shadow-lg w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ],
+        "styleBindingEntries": [ [ "__wv_style_0",
+        "background-color:#f0f9ff;padding:8rpx;margin-top:10rpx;border-radius:12rpx;opacity:0.9;color:#0052d9;font-size:28rpx;line-height:1.6;--tokenColor:#0f62fe"
+        ] ] }}
       </text>
     </view>
   </view>

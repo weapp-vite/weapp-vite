@@ -981,7 +981,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{ {default:true} }}"`)
-    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<Leaf')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')

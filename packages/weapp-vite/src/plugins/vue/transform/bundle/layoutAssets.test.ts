@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view><slot /></view>'))
@@ -641,6 +642,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       {},
       'dist//project/layouts/vue-default/index',
       'js',
+      SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
     )
   })
 })

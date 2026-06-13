@@ -7,27 +7,37 @@ text,
 ::before {
   --tw-duration: initial;
   --tw-ease: initial;
-  --tw-font-weight:;
-  --tw-gradient-from: #0000;
+  --tw-font-weight: initial;
+  --tw-gradient-from: transparent;
   --tw-gradient-from-position: 0%;
   --tw-gradient-position: initial;
   --tw-gradient-stops: initial;
-  --tw-gradient-to: #0000;
+  --tw-gradient-to: transparent;
   --tw-gradient-to-position: 100%;
+  --tw-gradient-via: transparent;
+  --tw-gradient-via-position: 50%;
   --tw-gradient-via-stops: initial;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
+  --tw-inset-ring-color: initial;
+  --tw-inset-ring-shadow: 0 0 transparent;
+  --tw-inset-shadow: 0 0 transparent;
+  --tw-inset-shadow-alpha: 100%;
+  --tw-inset-shadow-color: initial;
+  --tw-leading: initial;
+  --tw-ring-color: initial;
+  --tw-ring-inset: initial;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-offset-shadow: 0 0 transparent;
+  --tw-ring-offset-width: 0;
+  --tw-ring-shadow: 0 0 transparent;
   --tw-scale-x: 1;
   --tw-scale-y: 1;
   --tw-scale-z: 1;
-  --tw-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 transparent;
+  --tw-shadow-alpha: 100%;
   --tw-shadow-color: initial;
   --tw-space-x-reverse: 0;
   --tw-space-y-reverse: 0;
-  --tw-tracking:;
+  --tw-tracking: initial;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -151,16 +161,16 @@ wx-root-portal-content {
 .space-y-10 > text + view,
 .space-y-10 > text + text {
   --tw-space-y-reverse: 0;
-  margin-bottom: calc(var(--spacing) * 10 * var(--tw-space-y-reverse));
-  margin-top: calc(var(--spacing) * 10 * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc((var(--spacing) * 10) * var(--tw-space-y-reverse));
+  margin-top: calc((var(--spacing) * 10) * (1 - var(--tw-space-y-reverse)));
 }
 .space-x-8 > view + view,
 .space-x-8 > view + text,
 .space-x-8 > text + view,
 .space-x-8 > text + text {
   --tw-space-x-reverse: 0;
-  margin-left: calc(var(--spacing) * 8 * (1 - var(--tw-space-x-reverse)));
-  margin-right: calc(var(--spacing) * 8 * var(--tw-space-x-reverse));
+  margin-left: calc((var(--spacing) * 8) * (1 - var(--tw-space-x-reverse)));
+  margin-right: calc((var(--spacing) * 8) * var(--tw-space-x-reverse));
 }
 .rounded-2xl {
   border-radius: var(--radius-2xl);

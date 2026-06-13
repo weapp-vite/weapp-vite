@@ -45,8 +45,13 @@ async function createQrCodeBase64(content: string) {
 describe('util helpers', () => {
   it('keeps plugin path helpers compatible', () => {
     expect(isPluginPath('plugin-private://abc/pages/index')).toBe(true)
+    expect(isPluginPath('/pages/index/index')).toBe(false)
+    expect(isPluginPath(undefined)).toBe(false)
+    expect(isPluginPath(null)).toBe(false)
     expect(extractPluginId('plugin-private://abc/pages/index')).toBe('abc')
     expect(extractPluginId('/pages/index/index')).toBe('')
+    expect(extractPluginId(undefined)).toBe('')
+    expect(extractPluginId(null)).toBe('')
   })
 
   it('decodes qr code content from base64 png with sharp', async () => {

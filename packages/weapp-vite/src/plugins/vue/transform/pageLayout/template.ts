@@ -4,6 +4,9 @@ import {
   WEVU_LAYOUT_BIND_PREFIX,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
+  WEVU_SLOT_OWNER_ID_ATTR,
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
 } from '@weapp-core/constants'
 import {
   escapeDoubleQuotedAttr,
@@ -16,6 +19,8 @@ function toKebabAttrName(key: string) {
   return toKebabCase(key)
 }
 
+export const LAYOUT_SLOT_OWNER_ATTR = `${WEVU_SLOT_OWNER_ID_ATTR}="{{${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''}}"`
+
 export function hasDynamicExpressionLayoutProps(props: Record<string, LayoutPropValue> | undefined) {
   if (!props) {
     return false
@@ -24,11 +29,12 @@ export function hasDynamicExpressionLayoutProps(props: Record<string, LayoutProp
 }
 
 export function serializeLayoutProps(props: Record<string, LayoutPropValue> | undefined) {
+  const attrs = [LAYOUT_SLOT_OWNER_ATTR]
   if (!props || Object.keys(props).length === 0) {
-    return ''
+    return ` ${attrs.join(' ')}`
   }
 
-  const attrs = Object.entries(props).map(([key, value]) => {
+  attrs.push(...Object.entries(props).map(([key, value]) => {
     const attrName = toKebabAttrName(key)
     if (typeof value === 'string') {
       return `${attrName}="${escapeDoubleQuotedAttr(value)}"`
@@ -40,7 +46,7 @@ export function serializeLayoutProps(props: Record<string, LayoutPropValue> | un
       return `${attrName}="{{${String(value)}}}"`
     }
     return ''
-  }).filter(Boolean)
+  }).filter(Boolean))
 
   return attrs.length > 0 ? ` ${attrs.join(' ')}` : ''
 }
@@ -78,14 +84,16 @@ function buildDynamicLayoutAttrs(
   propKeys: string[],
   currentLayout: ResolvedPageLayout | undefined,
 ) {
+  const attrs = [LAYOUT_SLOT_OWNER_ATTR]
   if (propKeys.length === 0) {
-    return ''
+    return ` ${attrs.join(' ')}`
   }
 
-  return ` ${propKeys.map((key) => {
+  attrs.push(...propKeys.map((key) => {
     const attrName = toKebabAttrName(key)
     return `${attrName}="{{${serializeFallbackLayoutValue(currentLayout?.props?.[key], key)}}}"`
-  }).join(' ')}`
+  }))
+  return ` ${attrs.join(' ')}`
 }
 
 export function buildDynamicLayoutTemplate(

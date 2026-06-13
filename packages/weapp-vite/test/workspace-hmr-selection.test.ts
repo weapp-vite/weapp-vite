@@ -61,6 +61,34 @@ const githubIssuesResult: ProjectResult = {
   ],
 }
 
+const wevuRuntimeResult: ProjectResult = {
+  id: 'e2e-apps/wevu-runtime-e2e',
+  kind: 'e2e-apps',
+  platform: 'weapp',
+  source: 'e2e-apps/wevu-runtime-e2e',
+  scenarios: [
+    {
+      id: 'native-script',
+      label: 'native script',
+      source: 'e2e-apps/wevu-runtime-e2e/src/pages/composition-api/index.ts',
+      output: 'e2e-apps/wevu-runtime-e2e/dist/pages/composition-api/index.js',
+      totalMs: 8_707,
+      profile: {
+        dirtyCount: 1,
+        pendingCount: 23,
+        emittedCount: 23,
+      },
+      impact: [
+        { path: 'layouts/admin/index.wxss', status: 'modified' },
+        { path: 'layouts/default/index.wxss', status: 'modified' },
+        { path: 'pages/class-style/index.json', status: 'modified' },
+        { path: 'pages/composition-api/index.js', status: 'modified' },
+        { path: 'pages/composition-api/index.wxml', status: 'modified' },
+      ],
+    },
+  ],
+}
+
 async function fsMkdtemp(prefix: string) {
   return await mkdtemp(path.join(os.tmpdir(), prefix))
 }
@@ -258,5 +286,40 @@ describe('workspace HMR changed-file selection', () => {
     }
 
     expect(evaluateWorkspaceHmrThresholds([githubIssuesResult], { baseline }).issues).toHaveLength(0)
+  })
+
+  it('uses explicit wevu runtime baselines for changed-project timing budgets', () => {
+    const baseline = createWorkspaceHmrBaseline([templateResult], {
+      generatedAt: '2026-06-13T00:00:00.000Z',
+      mode: 'templates-baseline',
+      thresholds: {
+        maxScenarioMs: 1_000,
+        maxScenarioP95Ms: 1_000,
+        maxRegressionMs: 12_000,
+        maxRegressionRatio: 4,
+        maxPendingCount: 16,
+        maxEmittedCount: 16,
+        maxPendingDelta: 8,
+        maxEmittedDelta: 8,
+      },
+    })
+    baseline.projects[wevuRuntimeResult.id] = {
+      thresholds: {
+        maxPendingCount: 24,
+        maxEmittedCount: 24,
+        maxScenarioMs: 12_000,
+      },
+      scenarios: {
+        'native-script': {
+          totalMs: 1_155,
+          dirtyCount: 1,
+          pendingCount: 23,
+          emittedCount: 23,
+          impactFiles: 5,
+        },
+      },
+    }
+
+    expect(evaluateWorkspaceHmrThresholds([wevuRuntimeResult], { baseline }).issues).toHaveLength(0)
   })
 })

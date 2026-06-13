@@ -49,7 +49,7 @@ describe('ide devtools cleanup', () => {
     ])
   })
 
-  it('kills residual wechatdevtools processes on Windows and clears automator sessions', async () => {
+  it('kills residual wechatdevtools processes on Windows and clears automator artifacts', async () => {
     const { cleanupResidualDevtoolsProcesses } = await import('./ide-devtools-cleanup')
 
     const task = cleanupResidualDevtoolsProcesses('win32')
@@ -61,7 +61,7 @@ describe('ide devtools cleanup', () => {
       reject: false,
     }))
     expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
-    expect(fsRmMock).toHaveBeenCalledTimes(1)
+    expect(fsRmMock).toHaveBeenCalledTimes(2)
   })
 
   it('kills residual unix devtools processes by command pattern', async () => {
@@ -79,7 +79,7 @@ describe('ide devtools cleanup', () => {
       'wechatwebdevtools',
     ], 2_500)
     expect(execaMock).not.toHaveBeenCalled()
-    expect(fsRmMock).toHaveBeenCalledTimes(1)
+    expect(fsRmMock).toHaveBeenCalledTimes(2)
   })
 
   it('cleans devtools compile cache via wechat cli', async () => {
@@ -131,6 +131,6 @@ describe('ide devtools cleanup', () => {
 
     expect(cleanupResidualDevProcessesMock).toHaveBeenCalledTimes(1)
     expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledTimes(1)
-    expect(fsRmMock).toHaveBeenCalledTimes(1)
+    expect(fsRmMock).toHaveBeenCalledTimes(2)
   })
 })

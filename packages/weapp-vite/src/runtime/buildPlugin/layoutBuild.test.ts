@@ -263,9 +263,13 @@ describe('layout build regression', () => {
     const layoutJs = outputs.find(output => output.fileName === 'layouts/default.js')
     const layoutJson = outputs.find(output => output.fileName === 'layouts/default.json')
     const layoutWxml = outputs.find(output => output.fileName === 'layouts/default.wxml')
+    const layoutScript = layoutJs!.type === 'asset' ? String(layoutJs!.source) : layoutJs!.code
 
     expect(layoutJs).toBeTruthy()
-    expect(layoutJs!.type === 'asset' ? String(layoutJs.source).length : layoutJs.code.length).toBeGreaterThan(0)
+    expect(layoutScript.length).toBeGreaterThan(0)
+    expect(layoutScript).toContain('vueSlots')
+    expect(layoutScript).toContain('__wvSlotOwnerId')
+    expect(layoutScript).toContain('__wvSlotScope')
     expect(layoutJson).toBeTruthy()
     expect(layoutWxml).toBeTruthy()
   })

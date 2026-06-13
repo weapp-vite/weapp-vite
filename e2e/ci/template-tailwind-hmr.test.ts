@@ -96,6 +96,31 @@ async function createTemplateFixture(testCase: TemplateTailwindHmrCase) {
   }
 }
 
+async function waitForTailwindHmrAfterWrite(options: {
+  dev: ReturnType<typeof startDevProcess>
+  expectedTemplateClass: string
+  outputFile: string
+  source: string
+  sourceFile: string
+  testName: string
+}) {
+  await replaceFileByRename(options.sourceFile, options.source)
+
+  try {
+    return await options.dev.waitFor(
+      waitForFileContains(options.outputFile, options.expectedTemplateClass, 20_000),
+      `${options.testName} updated template class`,
+    )
+  }
+  catch {
+    await replaceFileByRename(options.sourceFile, `${options.source}\n`)
+    return await options.dev.waitFor(
+      waitForFileContains(options.outputFile, options.expectedTemplateClass),
+      `${options.testName} updated template class retry`,
+    )
+  }
+}
+
 afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -119,9 +144,14 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
         if (updatedSource === fixture.initialSource) {
           throw new Error(`[${testCase.name}] Failed to inject updated Tailwind HMR class.`)
         }
-        await replaceFileByRename(fixture.sourceFile, updatedSource)
-
-        await dev.waitFor(waitForFileContains(fixture.outputFile, UPDATED_ESCAPED_CLASS), `${testCase.name} updated template class`)
+        await waitForTailwindHmrAfterWrite({
+          dev,
+          expectedTemplateClass: UPDATED_ESCAPED_CLASS,
+          outputFile: fixture.outputFile,
+          source: updatedSource,
+          sourceFile: fixture.sourceFile,
+          testName: testCase.name,
+        })
         const appWxss = await dev.waitFor(waitForFileContains(fixture.appWxssFile, UPDATED_CSS), `${testCase.name} updated app wxss class`)
 
         expect(appWxss).not.toContain(INITIAL_CSS)

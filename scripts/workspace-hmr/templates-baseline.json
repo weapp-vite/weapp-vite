@@ -72,11 +72,56 @@
       }
     },
     "e2e-apps/wevu-runtime-e2e": {
+      "startupMs": 4408,
       "thresholds": {
+        "maxScenarioMs": 12000,
         "maxPendingCount": 24,
         "maxEmittedCount": 24
       },
-      "scenarios": {}
+      "scenarios": {
+        "native-template": {
+          "totalMs": 288,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-script": {
+          "totalMs": 1155,
+          "dirtyCount": 1,
+          "pendingCount": 23,
+          "emittedCount": 23,
+          "impactFiles": 5
+        },
+        "native-style": {
+          "totalMs": 271,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 3
+        },
+        "vue-template": {
+          "totalMs": 272,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-script": {
+          "totalMs": 913,
+          "dirtyCount": 1,
+          "pendingCount": 23,
+          "emittedCount": 23,
+          "impactFiles": 4
+        },
+        "vue-style": {
+          "totalMs": 278,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
     },
     "templates/weapp-vite-lib-template": {
       "startupMs": 1256,

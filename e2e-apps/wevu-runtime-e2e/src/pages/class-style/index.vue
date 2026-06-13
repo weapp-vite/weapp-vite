@@ -16,6 +16,24 @@ function flattenClassValues(value: any): string[] {
   return []
 }
 
+function flattenStyleValues(value: any): string[] {
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(item => flattenStyleValues(item))
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) => {
+      if (typeof item === 'string' || typeof item === 'number') {
+        return [`${key}:${item}`]
+      }
+      return flattenStyleValues(item)
+    })
+  }
+  return []
+}
+
 export default defineComponent({
   setup(_props, ctx) {
     const runE2E = async () => {
@@ -76,28 +94,42 @@ export default defineComponent({
       const data = target.data || {}
       const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
       const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
+      const styleBindingEntries = Object.entries(data).filter(([key]) => /^__wv_style_\d+$/.test(key))
+      const styleValues = styleBindingEntries.flatMap(([, value]) => flattenStyleValues(value))
+
+      const hasClassToken = (token: string) => classValues.some((value) => {
+        if (typeof value !== 'string') {
+          return false
+        }
+        return value.split(/\s+/).includes(token)
+      })
+
+      const hasStyleText = (text: string) => styleValues.some(value => value.includes(text))
 
       const checks = {
-        enabledUpdated: data.enabled === true,
-        classStateUpdated: data.toggleClass === 'state-ready',
-        classArrayUpdated: Array.isArray(data.classList),
-        classFlagsUpdated: Boolean(data.classFlags?.active) && !data.classFlags?.disabled,
-        styleObjectUpdated: data.styleObject?.fontSize === '28rpx',
-        styleArrayUpdated: Array.isArray(data.styleArray),
-        mapSlotWidthClassResolved: classValues.some(value => value.includes('w-[164rpx]')),
-        mapSlotSelectedClassResolved: classValues.some(value => value.includes('bg-highlight-dark')),
-        mapSlotUnselectedClassResolved: classValues.some(value => value.includes('bg-white')),
-        rootGuardClassResolved: classValues.some(value => value.includes('root-ready')),
+        enabledUpdated: state.enabled === true,
+        classStateUpdated: state.toggleClass === 'state-ready',
+        classArrayUpdated: Array.isArray(state.classList),
+        classFlagsUpdated: Boolean(state.classFlags?.active) && !state.classFlags?.disabled,
+        styleObjectUpdated: state.styleObject?.fontSize === '28rpx',
+        styleArrayUpdated: Array.isArray(state.styleArray),
+        targetClassResolved: hasClassToken('state-ready') && hasClassToken('active') && hasClassToken('ready'),
+        targetStyleResolved: hasStyleText('28rpx') && hasStyleText('#0052d9') && hasStyleText('padding:8rpx'),
+        mapSlotWidthClassResolved: hasClassToken('w-[164rpx]'),
+        mapSlotSelectedClassResolved: hasClassToken('bg-highlight-dark'),
+        mapSlotUnselectedClassResolved: hasClassToken('bg-white'),
+        rootGuardClassResolved: hasClassToken('root-ready'),
       }
 
       const result = buildResult('class-style', checks, {
-        classList: data.classList,
-        classFlags: data.classFlags,
-        styleObject: data.styleObject,
-        styleArray: data.styleArray,
-        styleText: data.styleText,
-        root: data.root,
+        classList: state.classList,
+        classFlags: state.classFlags,
+        styleObject: state.styleObject,
+        styleArray: state.styleArray,
+        styleText: state.styleText,
+        root: state.root,
         classBindingEntries,
+        styleBindingEntries,
       })
 
       state.__e2e = result
