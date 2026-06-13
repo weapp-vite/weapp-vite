@@ -120,7 +120,7 @@ export async function finalizeCompiledVueLikeResult(options: {
 
   const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
   const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
-  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
+  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
     const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
     if (injectedProps.transformed) {
       result.script = injectedProps.code

@@ -6,6 +6,7 @@ import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scanWxml } from '../../../wxml'
 import * as wxmlHandleModule from '../../../wxml/handle'
+import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
 import { emitVueBundleAssets } from './bundle'
 import {
   emitAlipayGenericPlaceholderAssets,
@@ -1373,8 +1374,8 @@ export default {
       assets.set(asset.fileName, String(asset.source))
     }
 
-    expect(assets.get('pages/layouts/default-demo/index.wxml')).toContain('<weapp-layout-default>')
-    expect(assets.get('pages/layouts/admin-demo/index.wxml')).toContain('<weapp-layout-admin sidebar="{{true}}" title="{{__wv_layout_bind_title}}">')
+    expect(assets.get('pages/layouts/default-demo/index.wxml')).toContain('<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}">')
+    expect(assets.get('pages/layouts/admin-demo/index.wxml')).toContain('<weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{true}}" title="{{__wv_layout_bind_title}}">')
     expect(assets.get('pages/layouts/no-layout-demo/index.wxml')).toBe('<view>plain page</view>')
 
     expect(JSON.parse(assets.get('pages/layouts/default-demo/index.json')!)).toEqual({
@@ -1492,9 +1493,9 @@ export default {
       component: true,
       styleIsolation: 'apply-shared',
     })
-    expect(assets.get('__weapp_vite_app_shell.js')).toBe('Component({})')
-    expect(assets.get('pages/app-shell/index.wxml')).toBe('<weapp-app-shell><weapp-layout-default><view>page content</view></weapp-layout-default></weapp-app-shell>')
-    expect(assets.get('pages/app-shell-no-layout/index.wxml')).toBe('<weapp-app-shell><view>plain content</view></weapp-app-shell>')
+    expect(assets.get('__weapp_vite_app_shell.js')).toBe(SLOT_HOST_SCRIPTLESS_COMPONENT_STUB)
+    expect(assets.get('pages/app-shell/index.wxml')).toBe('<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>page content</view></weapp-layout-default></weapp-app-shell>')
+    expect(assets.get('pages/app-shell-no-layout/index.wxml')).toBe('<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>plain content</view></weapp-app-shell>')
     expect(JSON.parse(assets.get('pages/app-shell/index.json')!)).toEqual({
       navigationBarTitleText: 'shell',
       usingComponents: {
@@ -1755,7 +1756,7 @@ export default {
       assets.set(asset.fileName, String(asset.source))
     }
 
-    expect(assets.get('pages/dashboard/index.wxml')).toContain('<weapp-layout-dashboard title="Rule Layout">')
+    expect(assets.get('pages/dashboard/index.wxml')).toContain('<weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" title="Rule Layout">')
     expect(JSON.parse(assets.get('pages/dashboard/index.json')!)).toEqual({
       navigationBarTitleText: 'route-rule',
       usingComponents: {
@@ -1832,7 +1833,7 @@ export default {
       assets.set(asset.fileName, String(asset.source))
     }
 
-    expect(assets.get('pages/dashboard/settings/index.wxml')).toContain('<weapp-layout-admin>')
+    expect(assets.get('pages/dashboard/settings/index.wxml')).toContain('<weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}">')
     expect(JSON.parse(assets.get('pages/dashboard/settings/index.json')!)).toEqual({
       navigationBarTitleText: 'settings',
       usingComponents: {
@@ -1908,7 +1909,7 @@ export default {
     const template = assets.get('pages/dynamic-layout/index.wxml')!
     expect(template).toContain(`${getPlatformLayoutConditionalDirective(0, 'weapp')}="{{__wv_page_layout_name === 'admin'}}"`)
     expect(template).toContain(`${getPlatformLayoutConditionalDirective(1, 'weapp')}="{{__wv_page_layout_name === 'dashboard'}}"`)
-    expect(template).toContain('<weapp-layout-dashboard title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}">')
+    expect(template).toContain('<weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}">')
     expect(template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
     expect(template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)
     expect(JSON.parse(assets.get('pages/dynamic-layout/index.json')!)).toEqual({
@@ -1990,7 +1991,7 @@ export default {
       }
     }
 
-    expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell sidebar="{{true}}" title="{{__wv_layout_bind_title}}">')
+    expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{true}}" title="{{__wv_layout_bind_title}}">')
     expect(JSON.parse(assets.get('pages/layouts/native-demo/index.json')!)).toEqual({
       navigationBarTitleText: 'native',
       usingComponents: {

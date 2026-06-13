@@ -546,7 +546,7 @@ export function transformComponentWithSlots(
     }
     const ownerIdExp = context.rewriteScopedSlot
       ? `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
-      : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
+      : `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
     mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(ownerIdExp, context)}"`)
   }
 

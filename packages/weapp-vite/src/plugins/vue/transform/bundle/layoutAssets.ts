@@ -8,7 +8,7 @@ import {
   resolveNativeLayoutOutputOptions,
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
-import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
+import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, collectNativeLayoutAssets } from '../pageLayout'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
@@ -184,9 +184,10 @@ export function emitScriptlessComponentJsFallbackIfMissing(options: {
   bundle: Record<string, any>
   relativeBase: string
   scriptExtension: string
+  source?: string
 }) {
-  const { pluginCtx, bundle, relativeBase, scriptExtension } = options
-  ensureScriptlessComponentAsset(pluginCtx, bundle, relativeBase, scriptExtension)
+  const { pluginCtx, bundle, relativeBase, scriptExtension, source } = options
+  ensureScriptlessComponentAsset(pluginCtx, bundle, relativeBase, scriptExtension, source)
 }
 
 export function resolveVueLayoutScriptFallbackState(options: {
@@ -276,6 +277,7 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     bundle,
     relativeBase: resolvedOptions.relativeBase,
     scriptExtension: resolvedOptions.scriptExtension,
+    source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
   })
 }
 
@@ -428,5 +430,6 @@ export function emitAppShellAssetsIfNeeded(options: {
     bundle: options.bundle,
     relativeBase,
     scriptExtension: options.scriptExtension,
+    source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
   })
 }

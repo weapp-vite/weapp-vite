@@ -4,11 +4,16 @@ import {
   ensureScriptlessComponentAsset,
   resolveScriptlessComponentFileName,
   SCRIPTLESS_COMPONENT_STUB,
+  SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
 } from './scriptlessComponent'
 
 describe('scriptless component helpers', () => {
   it('exposes the shared scriptless component stub', () => {
     expect(SCRIPTLESS_COMPONENT_STUB).toBe('Component({})')
+  })
+
+  it('exposes the slot host scriptless component stub', () => {
+    expect(SLOT_HOST_SCRIPTLESS_COMPONENT_STUB).toBe('Component({properties:{vueSlots:{type:null,value:null},__wvSlotOwnerId:{type:String,value:""},__wvSlotScope:{type:null,value:null}}})')
   })
 
   it('resolves the shared scriptless component file name', () => {

@@ -552,6 +552,9 @@ const _runE2E = runE2E
     <view class="title">
       wevu composition api vue sfc e2e
     </view>
+    <text class="bind-model-state">
+      {{ form.title }}
+    </text>
     <text class="result">
       {{ __e2eText }}
     </text>

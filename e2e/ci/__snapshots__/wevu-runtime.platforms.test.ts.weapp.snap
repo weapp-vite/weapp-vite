@@ -2,7 +2,7 @@
 
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/class-style/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Class Style</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -67,7 +67,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/diff/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Diff</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -101,7 +101,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">HMR</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -131,7 +131,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-html/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="hmr-html-page">
     <view class="title">HMR-HTML</view>
     <view class="content">HMR-HTML-TEMPLATE</view>
@@ -156,7 +156,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-sfc/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="hmr-sfc-page">
     <view class="title">HMR-SFC</view>
     <view class="marker">{{marker}}</view>
@@ -185,6 +185,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/layouts/index 1`] = `
 "<block wx:if="{{__wv_page_layout_name === 'admin'}}">
   <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
@@ -210,6 +211,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 </block>
 <block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
   <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
@@ -301,7 +303,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/reactivity/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Reactivity</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -331,7 +333,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/root-guard/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Root Guard Class</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -365,7 +367,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/runtime/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Runtime</view>
     <view id="runtime-ref" class="ref-target">template-ref</view>
@@ -408,7 +410,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Store</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -438,7 +440,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store-share/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Store Share</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -468,7 +470,7 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/style-matrix/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Style Matrix</view>
     <view class="summary">ok: {{__e2e.ok}}</view>

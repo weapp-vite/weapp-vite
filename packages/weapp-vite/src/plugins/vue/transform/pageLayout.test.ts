@@ -13,6 +13,7 @@ import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, 
 import { getPlatformLayoutConditionalDirective, getPlatformLayoutElseDirective } from './pageLayout/shared'
 
 const tempDirs: string[] = []
+const LAYOUT_SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
 
 async function createTempProject() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-layouts-'))
@@ -435,7 +436,7 @@ definePageMeta({
       },
     )
 
-    expect(result.template).toBe('<weapp-layout-default><view>content</view></weapp-layout-default>')
+    expect(result.template).toBe(`<weapp-layout-default ${LAYOUT_SLOT_OWNER_ATTR}><view>content</view></weapp-layout-default>`)
     expect(result.script).toBe('export default {}')
     expect(JSON.parse(result.config!)).toEqual({
       navigationBarTitleText: '首页',
@@ -468,7 +469,7 @@ definePageMeta({
       },
     )
 
-    expect(result.template).toBe('<weapp-layout-panel sidebar="{{true}}" title="Dashboard" count="{{3}}" empty="{{null}}"><view>content</view></weapp-layout-panel>')
+    expect(result.template).toBe(`<weapp-layout-panel ${LAYOUT_SLOT_OWNER_ATTR} sidebar="{{true}}" title="Dashboard" count="{{3}}" empty="{{null}}"><view>content</view></weapp-layout-panel>`)
   })
 
   it('renders runtime layout prop bindings and injects computed entries into script', () => {
@@ -498,7 +499,7 @@ definePageMeta({
       },
     )
 
-    expect(result.template).toBe('<weapp-layout-panel title="{{__wv_layout_bind_title}}" sidebar="{{__wv_layout_bind_sidebar}}"><view>content</view></weapp-layout-panel>')
+    expect(result.template).toBe(`<weapp-layout-panel ${LAYOUT_SLOT_OWNER_ATTR} title="{{__wv_layout_bind_title}}" sidebar="{{__wv_layout_bind_sidebar}}"><view>content</view></weapp-layout-panel>`)
     expect(result.script).toContain('__wv_layout_bind_title')
     expect(result.script).toContain('__wv_layout_bind_sidebar')
     expect(result.script).toContain('titleRef.value')
@@ -545,7 +546,7 @@ definePageMeta({
       },
     )
 
-    expect(result.template).toBe('<weapp-layout-native-shell><view>content</view></weapp-layout-native-shell>')
+    expect(result.template).toBe(`<weapp-layout-native-shell ${LAYOUT_SLOT_OWNER_ATTR}><view>content</view></weapp-layout-native-shell>`)
     expect(result.script).toBe('export default {}')
     expect(JSON.parse(result.config!)).toEqual({
       navigationBarTitleText: '原生布局',

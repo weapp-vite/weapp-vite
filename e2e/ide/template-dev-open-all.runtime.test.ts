@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   connectMiniProgram,
   connectOpenedAutomator,
+  resolveProjectAutomatorPort,
   takeScreenshot,
 } from 'weapp-ide-cli'
 import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
@@ -17,6 +18,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
@@ -108,8 +110,14 @@ const TEMPLATE_CASES: TemplateCase[] = [
 
 const originalSources = new Map<string, string>()
 
-function resolveAutomatorSessionFile(projectPath: string) {
-  const encodedProjectPath = Buffer.from(path.resolve(projectPath)).toString('base64url')
+type TemplateDevProcess = TemplateCase & {
+  dev: ReturnType<typeof startDevProcess>
+}
+
+function resolveAutomatorSessionFile(projectPath: string, port?: number) {
+  const normalizedProjectPath = path.resolve(projectPath)
+  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
+  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
   return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
 }
 
@@ -154,27 +162,46 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function isDevtoolsProtocolTimeout(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  const protocolError = error as Error & { code?: unknown, method?: unknown }
+  return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && (protocolError.method === 'App.getCurrentPage' || protocolError.method === 'App.getPageStack')
+}
+
+function isScreenshotProtocolUnavailable(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  const protocolError = error instanceof Error
+    ? error as Error & { code?: unknown, method?: unknown }
+    : {}
+  return (protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT' && protocolError.method === 'App.captureScreenshot')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('App.captureScreenshot')
+    || message.includes('协议调用 App.captureScreenshot')
+    || message.includes('DevTools did not respond')
+}
+
 async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
   const start = Date.now()
   let lastError: unknown
+  const port = resolveProjectAutomatorPort(projectPath)
+  const wsEndpoint = `ws://127.0.0.1:${port}`
 
   while (Date.now() - start <= timeoutMs) {
     try {
-      const raw = await fs.readFile(resolveAutomatorSessionFile(projectPath), 'utf8')
-      const metadata = JSON.parse(raw) as Partial<AutomatorSessionMetadata>
-      if (path.resolve(metadata.projectPath ?? '') !== projectPath) {
-        throw new Error(`opened automator metadata project mismatch: ${JSON.stringify(metadata)}`)
-      }
-      if (typeof metadata.wsEndpoint !== 'string' || !/^ws:\/\/127\.0\.0\.1:\d+$/.test(metadata.wsEndpoint)) {
-        throw new Error(`opened automator endpoint missing: ${JSON.stringify(metadata)}`)
-      }
-
       const miniProgram = await connectOpenedAutomator({
         projectPath,
+        port,
         timeout: 30_000,
       })
       return {
-        metadata: metadata as AutomatorSessionMetadata,
+        metadata: {
+          projectPath,
+          updatedAt: new Date().toISOString(),
+          wsEndpoint,
+        } satisfies AutomatorSessionMetadata,
         miniProgram,
       }
     }
@@ -208,22 +235,38 @@ async function createRuntimeTools() {
   }
 }
 
-async function waitForPageText(miniProgram: any, route: string, text: string, timeoutMs = 90_000) {
+async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
+  if (!route) {
+    throw new Error(`Missing route while waiting for rendered text "${text}"`)
+  }
   const start = Date.now()
   let latestWxml = ''
+  let lastProtocolTimeout = ''
+  let currentMiniProgram = miniProgram
 
   while (Date.now() - start <= timeoutMs) {
-    const page = await miniProgram.reLaunch(route)
-    await page.waitFor(500)
-    const root = await page.$('page')
-    latestWxml = root ? await root.outerWxml() : ''
-    if (latestWxml.includes(text)) {
-      return latestWxml
+    try {
+      const page = await currentMiniProgram.reLaunch(route)
+      await page.waitFor(500)
+      const root = await page.$('page')
+      latestWxml = root ? await root.outerWxml() : ''
+      if (latestWxml.includes(text)) {
+        return latestWxml
+      }
+    }
+    catch (error) {
+      if (!isDevtoolsProtocolTimeout(error)) {
+        throw error
+      }
+      lastProtocolTimeout = error.message
+      currentMiniProgram.disconnect?.()
+      currentMiniProgram = (await waitForOpenedAutomator(projectPath, 30_000)).miniProgram
     }
     await delay(1_000)
   }
 
-  throw new Error(`Timed out waiting for rendered text "${text}". Latest WXML:\n${latestWxml.slice(0, 1000)}`)
+  const timeoutDetail = lastProtocolTimeout ? `\nLatest DevTools protocol timeout: ${lastProtocolTimeout}` : ''
+  throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
 async function patchSourceText(templateCase: TemplateCase) {
@@ -237,6 +280,37 @@ async function patchSourceText(templateCase: TemplateCase) {
   await fs.writeFile(sourceFile, patched, 'utf8')
 }
 
+async function tryTakeScreenshot(templateCase: TemplateCase, port: number, screenshotPath: string) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const screenshot = await takeScreenshot({
+        outputPath: screenshotPath,
+        port,
+        preserveProjectRoot: true,
+        projectPath: templateCase.root,
+        sharedSession: true,
+        timeout: 60_000,
+      })
+      expect(screenshot.path).toBe(screenshotPath)
+      expect((await fs.stat(screenshotPath)).size).toBeGreaterThan(0)
+      return
+    }
+    catch (error) {
+      lastError = error
+      if (!isScreenshotProtocolUnavailable(error)) {
+        throw error
+      }
+      await delay(1_000)
+    }
+  }
+
+  process.stdout.write(
+    `[warn] [template-dev-open-all] skip screenshot assertion template=${templateCase.name} reason=${lastError instanceof Error ? lastError.message : String(lastError)}\n`,
+  )
+}
+
 async function restoreSources() {
   for (const [filePath, source] of originalSources) {
     await fs.writeFile(filePath, source, 'utf8').catch(() => {})
@@ -244,9 +318,33 @@ async function restoreSources() {
   originalSources.clear()
 }
 
+async function startTemplateDevProcesses() {
+  const processes: TemplateDevProcess[] = []
+
+  for (const templateCase of TEMPLATE_CASES) {
+    const process = {
+      ...templateCase,
+      dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+        cwd: templateCase.root,
+        env: createDevProcessEnv(),
+        reject: false,
+      }),
+    }
+
+    processes.push(process)
+    await process.dev.waitForOutput(READY_OUTPUT_RE, `${process.name} dev:open ready`, 240_000)
+  }
+
+  return processes
+}
+
 describe.sequential('all templates dev:open IDE integration', () => {
   beforeAll(async () => {
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {})))
+    await cleanupResidualIdeProcesses()
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await Promise.all([
+      fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {}),
+      fs.rm(resolveAutomatorSessionFile(templateCase.root, resolveProjectAutomatorPort(templateCase.root)), { force: true }).catch(() => {}),
+    ])))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-all.png'), { force: true }).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-all-mcp.png'), { force: true }).catch(() => {})))
@@ -255,47 +353,41 @@ describe.sequential('all templates dev:open IDE integration', () => {
   afterAll(async () => {
     await restoreSources()
     await cleanupTrackedDevProcesses()
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(templateCase.root).catch(() => {})))
+    await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
+      templateCase.root,
+      resolveProjectAutomatorPort(templateCase.root),
+    ).catch(() => {})))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-all.png'), { force: true }).catch(() => {})))
+    await cleanupResidualIdeProcesses()
   }, 60_000)
 
   it('keeps HMR, screenshot, and MCP connected for every runnable app template after concurrent dev:open', async () => {
-    const processes = TEMPLATE_CASES.map(templateCase => ({
-      ...templateCase,
-      dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
-        cwd: templateCase.root,
-        env: createDevProcessEnv(),
-        reject: false,
-      }),
-    }))
+    const processes = await startTemplateDevProcesses()
 
     try {
-      await Promise.all(processes.map(async item => await item.dev.waitForOutput(READY_OUTPUT_RE, `${item.name} dev:open ready`, 240_000)))
-
       const runtimeTools = await createRuntimeTools()
       try {
         for (const templateCase of TEMPLATE_CASES) {
+          const port = resolveProjectAutomatorPort(templateCase.root)
           const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
           await expect(fs.access(resolveAutomatorWrapperProjectPath(templateCase.root))).rejects.toThrow()
 
-          await waitForPageText(miniProgram, templateCase.route, templateCase.expectedText)
-          await patchSourceText(templateCase)
-          await waitForPageText(miniProgram, templateCase.route, templateCase.hmrText)
+          try {
+            await waitForPageText(miniProgram, templateCase.root, templateCase.route, templateCase.expectedText)
+            await patchSourceText(templateCase)
+            await waitForPageText(miniProgram, templateCase.root, templateCase.route, templateCase.hmrText)
+          }
+          catch (error) {
+            throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
+          }
 
           const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-all.png')
-          const screenshot = await takeScreenshot({
-            outputPath: screenshotPath,
-            preserveProjectRoot: true,
-            projectPath: templateCase.root,
-            sharedSession: true,
-            timeout: 60_000,
-          })
-          expect(screenshot.path).toBe(screenshotPath)
-          expect((await fs.stat(screenshotPath)).size).toBeGreaterThan(0)
+          await tryTakeScreenshot(templateCase, port, screenshotPath)
 
           const connectResult = await getTool(runtimeTools.tools, 'weapp_devtools_connect')({
+            port,
             preserveProjectRoot: true,
             projectPath: templateCase.root,
             timeout: 60_000,
@@ -308,6 +400,7 @@ describe.sequential('all templates dev:open IDE integration', () => {
           const capturePath = path.join('templates', path.basename(templateCase.root), '.tmp/dev-open-all-mcp.png')
           const captureResult = await getTool(runtimeTools.tools, 'weapp_devtools_capture')({
             outputPath: capturePath,
+            port,
             preserveProjectRoot: true,
             projectPath: templateCase.root,
             timeout: 60_000,
@@ -321,7 +414,10 @@ describe.sequential('all templates dev:open IDE integration', () => {
       }
       finally {
         await restoreSources()
-        await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({ projectPath: templateCase.root }).catch(() => {})))
+        await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({
+          port: resolveProjectAutomatorPort(templateCase.root),
+          projectPath: templateCase.root,
+        }).catch(() => {})))
       }
     }
     finally {

@@ -177,7 +177,7 @@ describe('emitCompiledEntry helpers', () => {
       platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
-    expect(result.template).toBe('<weapp-app-shell><weapp-layout-default><view /></weapp-layout-default></weapp-app-shell>')
+    expect(result.template).toBe('<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><weapp-layout-default><view /></weapp-layout-default></weapp-app-shell>')
     expect(JSON.parse(result.config)).toEqual({
       usingComponents: {
         'weapp-layout-default': '/layouts/default',

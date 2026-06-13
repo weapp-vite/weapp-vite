@@ -813,6 +813,32 @@ describe('vue transform plugin shared helpers', () => {
     expect(result.script).toContain('vueSlots')
   })
 
+  it('injects slot host properties when component template declares a slot outlet', async () => {
+    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<view><slot /></view>',
+        script: 'Component({ setup() { return {} } })',
+      } as any,
+      filename: '/project/src/layouts/default.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+    })
+
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(result.script).toContain('vueSlots')
+  })
+
   it('injects slot host properties when setup uses slots without template vueSlots fallback', async () => {
     mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(true)
     injectScopedSlotHostPropertiesInJsMock.mockReturnValue({

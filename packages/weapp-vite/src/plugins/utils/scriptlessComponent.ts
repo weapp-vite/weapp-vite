@@ -1,4 +1,5 @@
 export const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
+export const SLOT_HOST_SCRIPTLESS_COMPONENT_STUB = 'Component({properties:{vueSlots:{type:null,value:null},__wvSlotOwnerId:{type:String,value:""},__wvSlotScope:{type:null,value:null}}})'
 
 /**
  * 统一生成无脚本组件的脚本产物文件名。
@@ -15,11 +16,12 @@ export function emitScriptlessComponentAsset(
     emitFile: (file: { type: 'asset', fileName: string, source: string }) => void
   },
   fileName: string,
+  source = SCRIPTLESS_COMPONENT_STUB,
 ) {
   pluginCtx.emitFile({
     type: 'asset',
     fileName,
-    source: SCRIPTLESS_COMPONENT_STUB,
+    source,
   })
 }
 
@@ -33,19 +35,20 @@ export function ensureScriptlessComponentAsset(
   bundle: Record<string, any>,
   relativeBase: string,
   scriptExtension: string,
+  source = SCRIPTLESS_COMPONENT_STUB,
 ) {
   const fileName = resolveScriptlessComponentFileName(relativeBase, scriptExtension)
   const existing = bundle[fileName]
   if (existing) {
     if (existing.type === 'asset') {
       const current = existing.source?.toString?.() ?? ''
-      if (current !== SCRIPTLESS_COMPONENT_STUB) {
-        existing.source = SCRIPTLESS_COMPONENT_STUB
+      if (current !== source) {
+        existing.source = source
       }
     }
     return fileName
   }
 
-  emitScriptlessComponentAsset(pluginCtx, fileName)
+  emitScriptlessComponentAsset(pluginCtx, fileName, source)
   return fileName
 }

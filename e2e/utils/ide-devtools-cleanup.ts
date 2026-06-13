@@ -8,6 +8,7 @@ import { cleanupProcessesByCommandPatterns } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 
 const AUTOMATOR_SESSION_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
+const AUTOMATOR_PORT_LEASE_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-port-leases')
 const IDE_PROCESS_SETTLE_DELAY = 1_000
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
@@ -105,10 +106,16 @@ async function runCleanDevtoolsCacheCommand(
 }
 
 async function cleanupAutomatorSessionArtifacts() {
-  await fs.rm(AUTOMATOR_SESSION_DIR, {
-    recursive: true,
-    force: true,
-  }).catch(() => {})
+  await Promise.all([
+    fs.rm(AUTOMATOR_SESSION_DIR, {
+      recursive: true,
+      force: true,
+    }).catch(() => {}),
+    fs.rm(AUTOMATOR_PORT_LEASE_DIR, {
+      recursive: true,
+      force: true,
+    }).catch(() => {}),
+  ])
 
   await sleep(IDE_PROCESS_SETTLE_DELAY)
 }

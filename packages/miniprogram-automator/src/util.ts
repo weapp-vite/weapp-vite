@@ -18,11 +18,17 @@ export function printQrCode(content: string) {
   })
 }
 /** isPluginPath 的方法封装。 */
-export function isPluginPath(p: string) {
+export function isPluginPath(p: unknown) {
+  if (typeof p !== 'string') {
+    return false
+  }
   return startWith(p, 'plugin-private://')
 }
 /** extractPluginId 的方法封装。 */
-export function extractPluginId(p: string) {
+export function extractPluginId(p: unknown) {
+  if (typeof p !== 'string') {
+    return ''
+  }
   const match = p.match(regPluginId)
   return match ? match[1] : ''
 }

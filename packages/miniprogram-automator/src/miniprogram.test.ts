@@ -10,8 +10,12 @@ import * as util from './util'
 
 vi.mock('./util', () => ({
   decodeQrCode: vi.fn(async () => 'decoded-content'),
-  extractPluginId: vi.fn((value: string) => value.match(/^plugin-private:\/\/([^/]+)/)?.[1] || ''),
-  isPluginPath: vi.fn((value: string) => value.startsWith('plugin-private://')),
+  extractPluginId: vi.fn((value: unknown) =>
+    typeof value === 'string'
+      ? value.match(/^plugin-private:\/\/([^/]+)/)?.[1] || ''
+      : ''),
+  isPluginPath: vi.fn((value: unknown) =>
+    typeof value === 'string' && value.startsWith('plugin-private://')),
   printQrCode: vi.fn(async () => {}),
 }))
 
@@ -211,6 +215,34 @@ describe('MiniProgram', () => {
       timeout: 12_000,
     })
     expect(currentPageReads).toBeGreaterThanOrEqual(3)
+  })
+
+  it('keeps host route changes when DevTools returns a current page without path', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 2
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: undefined, query: {} }
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(600)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(util.isPluginPath).toHaveBeenCalledWith(undefined)
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
   })
 
   it('retries currentPage when App.getCurrentPage times out transiently', async () => {

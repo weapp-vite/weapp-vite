@@ -18,7 +18,7 @@ import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { addResolvedPageLayoutWatchFiles, expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
-import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
+import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
@@ -239,6 +239,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         emitScriptlessComponentAsset(
           this,
           resolveScriptlessComponentFileName(relativeLayoutBase, scriptExtension),
+          SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
         )
       }
     }

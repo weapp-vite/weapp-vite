@@ -24,6 +24,8 @@ const APP_WXML_DIST = path.join(DIST_ROOT, 'app.wxml')
 const PAGE_WXML_DIST = path.join(DIST_ROOT, 'pages/issue-338/index.wxml')
 const PAGE_JSON_DIST = path.join(DIST_ROOT, 'pages/issue-338/index.json')
 const INITIAL_APP_SHELL_MARKER = 'issue-563-app-shell'
+const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
+const APP_SHELL_LAYOUT_WRAPPER = `<weapp-app-shell ${SLOT_OWNER_ATTR}><weapp-layout-default ${SLOT_OWNER_ATTR}>`
 
 async function waitForFileNotExists(filePath: string, timeoutMs = 90_000) {
   const start = Date.now()
@@ -131,7 +133,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
       await dev.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, INITIAL_APP_SHELL_MARKER), 'initial app shell emitted')
       await dev.waitFor(waitForFileContains(APP_SHELL_JSON_DIST, '"component": true'), 'initial app shell json emitted')
       await dev.waitFor(waitForFileNotExists(APP_WXML_DIST), 'app.wxml is not emitted for app shell')
-      await dev.waitFor(waitForFileContains(PAGE_WXML_DIST, '<weapp-app-shell><weapp-layout-default>'), 'page wrapped with app shell and layout')
+      await dev.waitFor(waitForFileContains(PAGE_WXML_DIST, APP_SHELL_LAYOUT_WRAPPER), 'page wrapped with app shell and layout')
       await dev.waitFor(waitForPageUsingAppShell(), 'page json references app shell component')
 
       await sleep(1_000)
@@ -140,7 +142,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
       await dev.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, updateMarker), 'app shell template updates after app.vue edit')
       await dev.waitFor(waitForFileContains(APP_SHELL_JSON_DIST, '"component": true'), 'app shell json remains a component after update')
       await dev.waitFor(waitForFileNotExists(APP_WXML_DIST), 'app.wxml remains absent after app.vue edit')
-      await dev.waitFor(waitForFileContains(PAGE_WXML_DIST, '<weapp-app-shell><weapp-layout-default>'), 'page wrapper remains after app.vue edit')
+      await dev.waitFor(waitForFileContains(PAGE_WXML_DIST, APP_SHELL_LAYOUT_WRAPPER), 'page wrapper remains after app.vue edit')
       await dev.waitFor(waitForPageUsingAppShell(), 'page json keeps app shell component after app.vue edit')
 
       const pageWxml = await fs.readFile(PAGE_WXML_DIST, 'utf8')
@@ -166,7 +168,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-layout-default>'), 'initial template page emitted without app shell')
+      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, `<weapp-layout-default ${SLOT_OWNER_ATTR}>`), 'initial template page emitted without app shell')
       await dev.waitFor(waitForFileNotExists(TEMPLATE_APP_SHELL_WXML_DIST), 'initial template app shell is absent')
       await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell>'), 'initial template page is not wrapped with app shell')
       await sleep(1_000)
@@ -175,7 +177,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
 
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_SHELL_WXML_DIST, 'class="happy"'), 'template app shell emitted after app.vue template add')
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_WXSS_DIST, '.happy'), 'template app shell style stays in app wxss after app.vue template add')
-      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell><weapp-layout-default>'), 'template page wrapped with app shell after app.vue template add')
+      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, APP_SHELL_LAYOUT_WRAPPER), 'template page wrapped with app shell after app.vue template add')
       await dev.waitFor(waitForJsonUsingAppShell(TEMPLATE_PAGE_JSON_DIST), 'template page json references app shell after app.vue template add')
     }
     finally {
