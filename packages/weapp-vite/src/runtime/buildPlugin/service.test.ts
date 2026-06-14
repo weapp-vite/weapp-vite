@@ -451,7 +451,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()
     expect(loggerSuccessMock).toHaveBeenCalled()
-    expect(forceFullValues).toEqual(['1'])
+    expect(forceFullValues).toEqual([undefined])
   })
 
   it('keeps full snapshot fallback for sidecar topology changes', async () => {

@@ -125,6 +125,34 @@ describe('workspace HMR baseline thresholds', () => {
     ], { baseline }).issues).toHaveLength(0)
   })
 
+  it('fails fast when template HMR fanout exceeds the optimized pending budget', () => {
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        id: 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template',
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            id: 'vue-script',
+            profile: {
+              dirtyCount: 1,
+              pendingCount: 75,
+              emittedCount: 75,
+            },
+          },
+        ],
+      },
+    ], {
+      overrides: {
+        maxPendingCount: 12,
+        maxEmittedCount: 12,
+      },
+    })
+
+    expect(evaluation.issues.map(issue => issue.metric)).toEqual(['pendingCount', 'emittedCount'])
+    expect(renderThresholdMarkdown(evaluation)).toContain('templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
+  })
+
   it('uses a template baseline alias for mirrored e2e apps', () => {
     const baseline = createWorkspaceHmrBaseline([
       {
@@ -402,5 +430,73 @@ describe('workspace HMR baseline thresholds', () => {
 
     expect(evaluation.issues).toHaveLength(2)
     expect(evaluation.issues.every(issue => issue.metric === 'baseline')).toBe(true)
+  })
+
+  it('allows scenario-level impact budgets while still blocking extra emitted files', () => {
+    const baseline = createWorkspaceHmrBaseline([{
+      ...templateResult,
+      id: 'templates/weapp-vite-lib-template',
+      scenarios: [{
+        ...templateResult.scenarios[0]!,
+        id: 'native-script',
+        impact: [
+          { path: 'components/sfc-both/index.js', status: 'modified' },
+          { path: 'components/sfc-setup/index.js', status: 'modified' },
+          { path: 'pages/index/index.js', status: 'modified' },
+          { path: 'pages/index/index.wxml', status: 'modified' },
+        ],
+      }],
+    }], {
+      generatedAt: '2026-04-29T00:00:00.000Z',
+      mode: 'templates-baseline',
+      thresholds: {
+        maxImpactFileDelta: 2,
+      },
+    })
+    baseline.projects['templates/weapp-vite-lib-template']!.scenarios['native-script']!.thresholds = {
+      maxImpactFileDelta: 0,
+    }
+
+    const stable = evaluateWorkspaceHmrThresholds([{
+      ...templateResult,
+      id: 'templates/weapp-vite-lib-template',
+      scenarios: [{
+        ...templateResult.scenarios[0]!,
+        id: 'native-script',
+        impact: [
+          { path: 'components/sfc-both/index.js', status: 'modified' },
+          { path: 'components/sfc-setup/index.js', status: 'modified' },
+          { path: 'pages/index/index.js', status: 'modified' },
+          { path: 'pages/index/index.wxml', status: 'modified' },
+        ],
+      }],
+    }], { baseline })
+
+    expect(stable.issues).toHaveLength(0)
+
+    const regressed = evaluateWorkspaceHmrThresholds([{
+      ...templateResult,
+      id: 'templates/weapp-vite-lib-template',
+      scenarios: [{
+        ...templateResult.scenarios[0]!,
+        id: 'native-script',
+        impact: [
+          { path: 'components/sfc-both/index.js', status: 'modified' },
+          { path: 'components/sfc-setup/index.js', status: 'modified' },
+          { path: 'pages/index/index.js', status: 'modified' },
+          { path: 'pages/index/index.wxml', status: 'modified' },
+          { path: 'pages/index/index.wxss', status: 'modified' },
+        ],
+      }],
+    }], { baseline })
+
+    expect(regressed.issues).toMatchObject([{
+      project: 'templates/weapp-vite-lib-template',
+      scenario: 'native-script',
+      metric: 'impactFiles',
+      actual: 5,
+      limit: 4,
+      baseline: 4,
+    }])
   })
 })
