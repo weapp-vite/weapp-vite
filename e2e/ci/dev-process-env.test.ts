@@ -97,6 +97,16 @@ describe('dev process env isolation', () => {
     expect(env.WEAPP_VITE_DISABLE_SIDECAR_WATCH).toBe('1')
   })
 
+  it('allows explicit node options for memory diagnostics', async () => {
+    vi.stubEnv('NODE_OPTIONS', '--inspect')
+
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv({ nodeOptions: '--expose-gc --inspect=127.0.0.1:0' })
+
+    expect(env.NODE_OPTIONS).toBe('--expose-gc --inspect=127.0.0.1:0')
+  })
+
   it('starts child dev processes with extendEnv disabled so stripped vars stay removed', async () => {
     execaMock.mockReturnValue(createMockChild())
 

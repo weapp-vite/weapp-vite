@@ -29,6 +29,19 @@ function parseUsingComponents(config: string | undefined) {
   }
 }
 
+function createSfcStyleBlocksSignature(styleBlocks: SFCStyleBlock[] | undefined) {
+  if (!styleBlocks?.length) {
+    return ''
+  }
+  return JSON.stringify(styleBlocks.map(styleBlock => ({
+    attrs: styleBlock.attrs,
+    content: styleBlock.content,
+    lang: styleBlock.lang,
+    module: styleBlock.module,
+    scoped: styleBlock.scoped,
+  })))
+}
+
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
   pluginCtx: any
@@ -43,6 +56,7 @@ export async function transformVueLikeFile(options: {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
   styleBlocksCache: Map<string, SFCStyleBlock[]>
+  styleRefreshTokens: Map<string, number | string>
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
   classStyleRuntimeWarned: { value: boolean }
@@ -63,6 +77,7 @@ export async function transformVueLikeFile(options: {
     reExportResolutionCache,
     compileOptionsCache,
     styleBlocksCache,
+    styleRefreshTokens,
     scopedSlotModules,
     emittedScopedSlotChunks,
     classStyleRuntimeWarned,
@@ -89,6 +104,11 @@ export async function transformVueLikeFile(options: {
   }
 
   try {
+    const cachedCompilation = compilationCache.get(filename)
+    const previousStyleSignature = createSfcStyleBlocksSignature(
+      (cachedCompilation?.result.meta?.styleBlocks as SFCStyleBlock[] | undefined)
+      ?? styleBlocksCache.get(filename),
+    )
     const source = await measureStage('readSource', async () => await loadTransformSource({
       code,
       filename,
@@ -146,13 +166,26 @@ export async function transformVueLikeFile(options: {
       compileVueFile,
       compileJsxFile,
     })))
-    if (Array.isArray(result.meta?.styleBlocks)) {
-      styleBlocksCache.set(filename, result.meta.styleBlocks as SFCStyleBlock[])
+    const currentStyleBlocks = Array.isArray(result.meta?.styleBlocks)
+      ? result.meta.styleBlocks as SFCStyleBlock[]
+      : styleBlocksCache.get(filename)
+    if (currentStyleBlocks) {
+      styleBlocksCache.set(filename, currentStyleBlocks)
+    }
+    if (configService.isDev && ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds?.has(filename)) {
+      const currentStyleSignature = createSfcStyleBlocksSignature(currentStyleBlocks)
+      const hmrEventId = ctx.runtimeState.build.hmr.profile.eventId
+      if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
+        styleRefreshTokens.set(filename, hmrEventId)
+      }
+      else {
+        styleRefreshTokens.delete(filename)
+      }
     }
     const sfcStyleDependencies = syncVueSfcStyleDependencies(
       ctx,
       filename,
-      (result.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
+      currentStyleBlocks,
     )
     for (const dependency of sfcStyleDependencies) {
       addNormalizedWatchFile(pluginCtx, dependency)
@@ -186,9 +219,7 @@ export async function transformVueLikeFile(options: {
       isPage,
       isApp,
       isDev: configService.isDev,
-      hmrStyleToken: configService.isDev && ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds?.has(filename)
-        ? ctx.runtimeState.build.hmr.profile.eventId
-        : undefined,
+      hmrStyleToken: configService.isDev ? styleRefreshTokens.get(filename) : undefined,
     }))
 
     reportTiming(filename, isPage)

@@ -110,6 +110,7 @@ export function invalidatePageLayoutCaches(
   configService: NonNullable<CompilerContext['configService']> | undefined,
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
+  styleRefreshTokens?: Map<string, number | string>,
 ) {
   if (!configService) {
     return
@@ -120,6 +121,7 @@ export function invalidatePageLayoutCaches(
       cached.source = undefined
     }
     styleBlocksCache.delete(cachedId)
+    styleRefreshTokens?.delete(cachedId)
   }
 }
 
@@ -130,9 +132,11 @@ export function invalidateVueFileCaches(
   options: {
     existsSync: (filePath: string) => boolean
   },
+  styleRefreshTokens?: Map<string, number | string>,
 ) {
   if (!options.existsSync(file)) {
     compilationCache.delete(file)
+    styleRefreshTokens?.delete(file)
   }
   else {
     const cached = compilationCache.get(file)
@@ -150,17 +154,18 @@ export function handleTransformLayoutInvalidation(
     configService: NonNullable<CompilerContext['configService']> | undefined
     compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
+    styleRefreshTokens?: Map<string, number | string>
     isLayoutFile: (file: string, configService: NonNullable<CompilerContext['configService']>) => boolean
     invalidateResolvedPageLayoutsCache: (srcRoot: string) => void
   },
 ) {
-  const { configService, compilationCache, styleBlocksCache, isLayoutFile, invalidateResolvedPageLayoutsCache } = options
+  const { configService, compilationCache, styleBlocksCache, styleRefreshTokens, isLayoutFile, invalidateResolvedPageLayoutsCache } = options
   if (!configService || !isLayoutFile(file, configService)) {
     return false
   }
 
   invalidateResolvedPageLayoutsCache(configService.absoluteSrcRoot)
-  invalidatePageLayoutCaches(configService, compilationCache, styleBlocksCache)
+  invalidatePageLayoutCaches(configService, compilationCache, styleBlocksCache, styleRefreshTokens)
   return true
 }
 
@@ -169,6 +174,7 @@ export function handleTransformVueFileInvalidation(
   options: {
     compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
+    styleRefreshTokens?: Map<string, number | string>
     existsSync: (filePath: string) => boolean
   },
 ) {
@@ -178,7 +184,7 @@ export function handleTransformVueFileInvalidation(
 
   invalidateVueFileCaches(file, options.compilationCache, options.styleBlocksCache, {
     existsSync: options.existsSync,
-  })
+  }, options.styleRefreshTokens)
   return true
 }
 

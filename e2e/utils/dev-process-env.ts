@@ -2,6 +2,7 @@ import process from 'node:process'
 
 interface DevProcessEnvOptions {
   disableSidecarWatch?: boolean
+  nodeOptions?: string
   usePolling?: boolean
 }
 
@@ -26,6 +27,11 @@ export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.
   delete env.VITEST_MODE
   delete env.VITEST_POOL_ID
   delete env.VITEST_WORKER_ID
-  delete env.NODE_OPTIONS
+  if (options.nodeOptions) {
+    env.NODE_OPTIONS = options.nodeOptions
+  }
+  else {
+    delete env.NODE_OPTIONS
+  }
   return env
 }

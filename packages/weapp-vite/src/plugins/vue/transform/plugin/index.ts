@@ -27,6 +27,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
+  const styleRefreshTokens = new Map<string, number | string>()
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
@@ -96,6 +97,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           reExportResolutionCache,
           compileOptionsCache,
           styleBlocksCache,
+          styleRefreshTokens,
           scopedSlotModules,
           emittedScopedSlotChunks,
           classStyleRuntimeWarned,
@@ -127,12 +129,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         configService: ctx.configService,
         compilationCache,
         styleBlocksCache,
+        styleRefreshTokens,
         isLayoutFile,
         invalidateResolvedPageLayoutsCache,
       })
       handleTransformVueFileInvalidation(normalizedId, {
         compilationCache,
         styleBlocksCache,
+        styleRefreshTokens,
         existsSync: fs.existsSync,
       })
       const profile = ctx.runtimeState?.build?.hmr?.profile
@@ -149,6 +153,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         configService: ctx.configService,
         compilationCache,
         styleBlocksCache,
+        styleRefreshTokens,
         isLayoutFile,
         invalidateResolvedPageLayoutsCache,
       })) {
@@ -158,6 +163,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       if (!handleTransformVueFileInvalidation(file, {
         compilationCache,
         styleBlocksCache,
+        styleRefreshTokens,
         existsSync: fs.existsSync,
       })) {
         return

@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterEach, describe, expect, it } from 'vitest'
+import { formatMemoryMiB, sampleHeapAfterGc, waitForInspectorUrl } from '../utils/dev-memory'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -16,6 +17,8 @@ const INITIAL_ESCAPED_CLASS = 'bg-_b_h111111_B'
 const UPDATED_ESCAPED_CLASS = 'bg-_b_h222222_B'
 const INITIAL_CSS = 'background-color: #111111'
 const UPDATED_CSS = 'background-color: #222222'
+const MEMORY_GUARD_NODE_OPTIONS = '--expose-gc --inspect=127.0.0.1:0'
+const MAX_RETAINED_HEAP_GROWTH_BYTES = 160 * 1024 * 1024
 
 interface TemplateTailwindHmrCase {
   name: string
@@ -121,6 +124,24 @@ async function waitForTailwindHmrAfterWrite(options: {
   }
 }
 
+async function expectRetainedHeapWithinGuard(options: {
+  afterHeapUsed: number
+  beforeHeapUsed: number
+  testName: string
+}) {
+  const retainedGrowth = options.afterHeapUsed - options.beforeHeapUsed
+  expect(
+    retainedGrowth,
+    [
+      `[${options.testName}] Tailwind HMR retained heap grew too much after GC.`,
+      `before=${formatMemoryMiB(options.beforeHeapUsed)}`,
+      `after=${formatMemoryMiB(options.afterHeapUsed)}`,
+      `growth=${formatMemoryMiB(retainedGrowth)}`,
+      `limit=${formatMemoryMiB(MAX_RETAINED_HEAP_GROWTH_BYTES)}`,
+    ].join(' '),
+  ).toBeLessThanOrEqual(MAX_RETAINED_HEAP_GROWTH_BYTES)
+}
+
 afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -132,13 +153,15 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
 
       const dev = startDevProcess('node', [CLI_PATH, 'dev', fixture.fixtureRoot, '--platform', 'weapp'], {
         cwd: fixture.fixtureRoot,
-        env: createDevProcessEnv(),
-        stdio: 'inherit',
+        env: createDevProcessEnv({ nodeOptions: MEMORY_GUARD_NODE_OPTIONS }),
+        all: true,
       })
 
       try {
+        const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${testCase.name} dev inspector`)
         await dev.waitFor(waitForFileContains(fixture.outputFile, INITIAL_ESCAPED_CLASS), `${testCase.name} initial template class`)
         await dev.waitFor(waitForFileContains(fixture.appWxssFile, INITIAL_CSS), `${testCase.name} initial app wxss class`)
+        const beforeHeap = await sampleHeapAfterGc(inspectorUrl)
 
         const updatedSource = testCase.replaceUpdated(fixture.initialSource)
         if (updatedSource === fixture.initialSource) {
@@ -153,8 +176,14 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
           testName: testCase.name,
         })
         const appWxss = await dev.waitFor(waitForFileContains(fixture.appWxssFile, UPDATED_CSS), `${testCase.name} updated app wxss class`)
+        const afterHeap = await sampleHeapAfterGc(inspectorUrl)
 
         expect(appWxss).not.toContain(INITIAL_CSS)
+        await expectRetainedHeapWithinGuard({
+          afterHeapUsed: afterHeap.heapUsed,
+          beforeHeapUsed: beforeHeap.heapUsed,
+          testName: testCase.name,
+        })
       }
       finally {
         await dev.stop(3_000)

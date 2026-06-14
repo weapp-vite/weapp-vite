@@ -10,6 +10,7 @@ interface DevProcessExitInfo {
 }
 
 interface DevProcessController {
+  pid: number | undefined
   waitFor: <T>(task: Promise<T>, description: string) => Promise<T>
   waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
   getOutput: () => string
@@ -337,6 +338,7 @@ export function startDevProcess(
   }
 
   return {
+    pid: child.pid,
     waitFor,
     waitForOutput,
     getOutput: () => outputChunks.join(''),

@@ -148,6 +148,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     expect(transformVueLikeFileMock).toHaveBeenCalledWith(expect.objectContaining({
       code: 'code',
       id: '/project/src/demo.vue',
+      styleRefreshTokens: expect.any(Map),
     }))
   })
 
