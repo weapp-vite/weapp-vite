@@ -1,6 +1,6 @@
 {
   "name": "e2e-app-github-issues",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": true,
   "scripts": {
     "dev": "wv dev",

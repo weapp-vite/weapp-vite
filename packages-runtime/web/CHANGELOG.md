@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.3.31
+
+### Patch Changes
+
+- 🐛 **升级 workspace catalog 中的 rolldown、Vue、esbuild、sass 与 weapp-tailwindcss 版本，并同步 create-weapp-vite 模板 catalog。安装阶段现在会禁用 pnpm 11 的 optimistic repeat install 早退，确保重新执行 `pnpm i` 时仍会刷新受管 catalog 与 package.json 引用。** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d) by @sonofmagic
+- 📦 **Dependencies** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d)
+  → `rolldown-require@2.0.19`
+
 ## 1.3.30
 
 ### Patch Changes

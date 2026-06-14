@@ -1,5 +1,33 @@
 # weapp-vite
 
+## 6.16.44
+
+### Patch Changes
+
+- 🐛 **在 AI 开发环境中默认随 `wv dev` / `wv open` 自动启动项目级 MCP 服务，并支持通过 `--mcp`、`--no-mcp` 与 `WEAPP_VITE_MCP` 显式覆盖。** [`577a360`](https://github.com/weapp-vite/weapp-vite/commit/577a3606259f132e8a047a896ebb6203003a3cd0) by @sonofmagic
+
+- 🐛 **升级 workspace catalog 中的 rolldown、Vue、esbuild、sass 与 weapp-tailwindcss 版本，并同步 create-weapp-vite 模板 catalog。安装阶段现在会禁用 pnpm 11 的 optimistic repeat install 早退，确保重新执行 `pnpm i` 时仍会刷新受管 catalog 与 package.json 引用。** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d) by @sonofmagic
+
+- 🐛 **补齐 Web Runtime 的 File 兼容层，并让 FormData 的 append/set 支持文件名参数；weapp-vite 的请求全局被动绑定同步提供 File，避免第三方请求库在模块初始化阶段读取自由变量时缺少构造器。** [#678](https://github.com/weapp-vite/weapp-vite/pull/678) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 打开微信开发者工具时频繁提示不支持自动 engine build 刷新的问题。现在 HTTP engine build 接口不可用时会回退到官方 CLI 刷新项目，减少启动 warning 并避免模拟器继续读取旧状态。** [`c3cfed8`](https://github.com/weapp-vite/weapp-vite/commit/c3cfed863ba555c8b1a8a038de7c8325a64f7e07) by @sonofmagic
+
+- 🐛 **精简 `wv dev` 自动启动 MCP 时的终端输出，不再默认打印 runtime ready 与 AI 客户端初始化命令；相关 MCP 地址和初始化命令改为在开发快捷键帮助面板中查看。** [`41b89a7`](https://github.com/weapp-vite/weapp-vite/commit/41b89a743ef1ead5236431a99291871240fc7ea7) by @sonofmagic
+
+- 🐛 **修复微信多端项目构建后缺少 `app.miniapp.json` 的问题。存在项目根 `project.miniapp.json` 时，构建产物会同步生成运行时需要读取的 `app.miniapp.json`。** [`5307608`](https://github.com/weapp-vite/weapp-vite/commit/5307608966c903a1c3bdca93fb4221183a0f78d4) by @sonofmagic
+
+- 🐛 **修复反复执行 `wv dev -o` 时会无条件关闭并重开微信开发者工具的问题。现在 dev 启动期会优先复用并刷新已打开的目标项目，只有手动触发重开动作时才关闭当前窗口，减少连续启动/关闭后的 DevTools 连接抖动。** [`b44d56d`](https://github.com/weapp-vite/weapp-vite/commit/b44d56df6c54fb45ac83e57b9e7ecd2ab27d7681) by @sonofmagic
+
+- 🐛 **修复 wevu 页面布局、作用域插槽和无脚本组件在真实小程序运行时中的输出稳定性，并增强 DevTools 自动化连接、截图和 HMR fixture 的清理与恢复，避免 IDE 全量回归受残留会话或脏 fixture 状态影响。** [#679](https://github.com/weapp-vite/weapp-vite/pull/679) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 在开发模式下每次保存都会刷新虚拟样式请求的问题。现在只有 `<style>` 内容变化时才更新样式请求 HMR token，减少 Tailwind 模板反复保存时触发的 CSS 重处理和内存峰值；同时补充 Tailwind 模板与 e2e app 的 HMR 内存回归守卫。** [`68b44b9`](https://github.com/weapp-vite/weapp-vite/commit/68b44b968f8724361e686904fc5ef9eb1ad5fb0f) by @sonofmagic
+- 📦 Updated 8 dependencies [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/web@1.3.31`, `rolldown-require@2.0.19`, `wevu@6.16.44`, `@weapp-vite/miniprogram-automator@1.2.3`, `@wevu/web-apis@1.2.21`, `weapp-ide-cli@5.4.5`, `@weapp-vite/mcp@1.4.4`, `@weapp-vite/ast@6.16.44`
+
+  </details>
+
 ## 6.16.43
 
 ### Patch Changes

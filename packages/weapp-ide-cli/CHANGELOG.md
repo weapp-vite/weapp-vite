@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 5.4.5
+
+### Patch Changes
+
+- 🐛 **修复 `wv dev -o` 打开微信开发者工具时频繁提示不支持自动 engine build 刷新的问题。现在 HTTP engine build 接口不可用时会回退到官方 CLI 刷新项目，减少启动 warning 并避免模拟器继续读取旧状态。** [`c3cfed8`](https://github.com/weapp-vite/weapp-vite/commit/c3cfed863ba555c8b1a8a038de7c8325a64f7e07) by @sonofmagic
+- 📦 **Dependencies** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d)
+  → `@weapp-vite/miniprogram-automator@1.2.3`, `@weapp-vite/devtools-runtime@0.4.4`
+
 ## 5.4.4
 
 ### Patch Changes
