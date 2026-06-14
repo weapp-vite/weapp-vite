@@ -766,14 +766,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
         if (sidecarEntryId) {
           markSnapshotEntryDirty(sidecarEntryId)
-          process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
-          try {
-            await build(snapshotBuildOptions)
-            return 'snapshot'
-          }
-          finally {
-            delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
-          }
+          await build(snapshotBuildOptions)
+          return 'snapshot'
         }
         markSnapshotEntriesFullDirty()
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'

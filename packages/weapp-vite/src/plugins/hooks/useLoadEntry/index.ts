@@ -131,13 +131,13 @@ function resolvePendingEntryIds(options: {
     }
     for (const chunkId of chunkIds) {
       const isSourceSharedChunk = options.sourceSharedChunks?.has(chunkId) === true
+      const isStableSharedChunk = shouldExpandStableSharedChunk(chunkId, options.sharedChunkImporters?.get(chunkId))
       if (dirtyReason === 'metadata') {
         continue
       }
       if (
         dirtyReason === 'dependency'
-        || !isSourceSharedChunk
-        || shouldExpandStableSharedChunk(chunkId, options.sharedChunkImporters?.get(chunkId))
+        || (!isSourceSharedChunk && !isStableSharedChunk)
       ) {
         relatedChunkIds.add(chunkId)
       }
