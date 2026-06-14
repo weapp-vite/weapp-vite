@@ -1,5 +1,19 @@
 # @wevu/compiler
 
+## 6.16.44
+
+### Patch Changes
+
+- 🐛 **升级 workspace catalog 中的 rolldown、Vue、esbuild、sass 与 weapp-tailwindcss 版本，并同步 create-weapp-vite 模板 catalog。安装阶段现在会禁用 pnpm 11 的 optimistic repeat install 早退，确保重新执行 `pnpm i` 时仍会刷新受管 catalog 与 package.json 引用。** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d) by @sonofmagic
+
+- 🐛 **移除仅用于模板自动注册的小程序组件脚本占位标识，减少 `<script setup>` 组件导入生成的运行时代码体积；当脚本中真实引用该组件变量时仍会保留原始导入。** [`6fee6d8`](https://github.com/weapp-vite/weapp-vite/commit/6fee6d89cba631b7071031a6cdecad53625a2b84) by @sonofmagic
+
+- 🐛 **修复 wevu 页面布局、作用域插槽和无脚本组件在真实小程序运行时中的输出稳定性，并增强 DevTools 自动化连接、截图和 HMR fixture 的清理与恢复，避免 IDE 全量回归受残留会话或脏 fixture 状态影响。** [#679](https://github.com/weapp-vite/weapp-vite/pull/679) by @sonofmagic
+
+- 🐛 **修复仅使用 `<script setup>` 的 wevu 组件在构建时缺少默认导出的问题，避免页面通过默认导入引用组件时触发 bundler 的 missing export 错误。** [#678](https://github.com/weapp-vite/weapp-vite/pull/678) by @sonofmagic
+- 📦 **Dependencies** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d)
+  → `rolldown-require@2.0.19`, `@weapp-vite/ast@6.16.44`
+
 ## 6.16.43
 
 ### Patch Changes

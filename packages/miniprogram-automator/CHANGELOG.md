@@ -1,5 +1,18 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.2.3
+
+### Patch Changes
+
+- 🐛 **自动补充依赖升级发布记录。** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d) by @sonofmagic
+  涉及包：
+  - @weapp-vite/miniprogram-automator：devDependencies.sharp
+  - @weapp-vite/qr：dependencies.sharp
+
+- 🐛 **修复 wevu 页面布局、作用域插槽和无脚本组件在真实小程序运行时中的输出稳定性，并增强 DevTools 自动化连接、截图和 HMR fixture 的清理与恢复，避免 IDE 全量回归受残留会话或脏 fixture 状态影响。** [#679](https://github.com/weapp-vite/weapp-vite/pull/679) by @sonofmagic
+- 📦 **Dependencies** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d)
+  → `@weapp-vite/qr@1.1.1`
+
 ## 1.2.2
 
 ### Patch Changes

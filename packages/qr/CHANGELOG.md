@@ -1,5 +1,14 @@
 # @weapp-vite/qr
 
+## 1.1.1
+
+### Patch Changes
+
+- 🐛 **自动补充依赖升级发布记录。** [`7df6ac4`](https://github.com/weapp-vite/weapp-vite/commit/7df6ac4c8dfc677aeb63b370c6a835a5baa0c51d) by @sonofmagic
+  涉及包：
+  - @weapp-vite/miniprogram-automator：devDependencies.sharp
+  - @weapp-vite/qr：dependencies.sharp
+
 ## 1.1.0
 
 ### Minor Changes

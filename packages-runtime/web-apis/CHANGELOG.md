@@ -1,5 +1,13 @@
 # @wevu/web-apis
 
+## 1.2.21
+
+### Patch Changes
+
+- 🐛 **补齐 Web Runtime 的 File 兼容层，并让 FormData 的 append/set 支持文件名参数；weapp-vite 的请求全局被动绑定同步提供 File，避免第三方请求库在模块初始化阶段读取自由变量时缺少构造器。** [#678](https://github.com/weapp-vite/weapp-vite/pull/678) by @sonofmagic
+
+- 🐛 **修复 fetch 通过小程序 request 桥发送 FormData 时不支持 multipart body 的问题，支持 Blob/File 文件字段上传并保留文件名与内容类型。** [#680](https://github.com/weapp-vite/weapp-vite/pull/680) by @sonofmagic
+
 ## 1.2.20
 
 ### Patch Changes
