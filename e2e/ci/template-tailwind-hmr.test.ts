@@ -2,7 +2,7 @@ import { mkdtemp } from 'node:fs/promises'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterEach, describe, expect, it } from 'vitest'
-import { formatMemoryMiB, sampleHeapAfterGc, waitForInspectorUrl } from '../utils/dev-memory'
+import { formatMemoryGuardReport, formatMemoryMiB, sampleHeapAfterGc, waitForInspectorUrl } from '../utils/dev-memory'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -125,17 +125,23 @@ async function waitForTailwindHmrAfterWrite(options: {
 }
 
 async function expectRetainedHeapWithinGuard(options: {
-  afterHeapUsed: number
-  beforeHeapUsed: number
+  after: Awaited<ReturnType<typeof sampleHeapAfterGc>>
+  before: Awaited<ReturnType<typeof sampleHeapAfterGc>>
   testName: string
 }) {
-  const retainedGrowth = options.afterHeapUsed - options.beforeHeapUsed
+  const retainedGrowth = options.after.heapUsed - options.before.heapUsed
+  process.stdout.write(`${formatMemoryGuardReport({
+    after: options.after,
+    before: options.before,
+    label: `template:${options.testName}`,
+    limitBytes: MAX_RETAINED_HEAP_GROWTH_BYTES,
+  })}\n`)
   expect(
     retainedGrowth,
     [
       `[${options.testName}] Tailwind HMR retained heap grew too much after GC.`,
-      `before=${formatMemoryMiB(options.beforeHeapUsed)}`,
-      `after=${formatMemoryMiB(options.afterHeapUsed)}`,
+      `before=${formatMemoryMiB(options.before.heapUsed)}`,
+      `after=${formatMemoryMiB(options.after.heapUsed)}`,
       `growth=${formatMemoryMiB(retainedGrowth)}`,
       `limit=${formatMemoryMiB(MAX_RETAINED_HEAP_GROWTH_BYTES)}`,
     ].join(' '),
@@ -180,8 +186,8 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
 
         expect(appWxss).not.toContain(INITIAL_CSS)
         await expectRetainedHeapWithinGuard({
-          afterHeapUsed: afterHeap.heapUsed,
-          beforeHeapUsed: beforeHeap.heapUsed,
+          after: afterHeap,
+          before: beforeHeap,
           testName: testCase.name,
         })
       }

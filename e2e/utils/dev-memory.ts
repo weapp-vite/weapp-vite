@@ -128,3 +128,23 @@ export async function sampleHeapAfterGc(inspectorUrl: string): Promise<DevHeapUs
 export function formatMemoryMiB(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`
 }
+
+export function formatMemoryGuardReport(options: {
+  after: DevHeapUsage
+  before: DevHeapUsage
+  label: string
+  limitBytes: number
+}) {
+  const heapGrowth = options.after.heapUsed - options.before.heapUsed
+  const rssGrowth = options.after.rss - options.before.rss
+  return [
+    `[memory-guard] label=${options.label}`,
+    `heapBefore=${formatMemoryMiB(options.before.heapUsed)}`,
+    `heapAfter=${formatMemoryMiB(options.after.heapUsed)}`,
+    `heapGrowth=${formatMemoryMiB(heapGrowth)}`,
+    `heapLimit=${formatMemoryMiB(options.limitBytes)}`,
+    `rssBefore=${formatMemoryMiB(options.before.rss)}`,
+    `rssAfter=${formatMemoryMiB(options.after.rss)}`,
+    `rssGrowth=${formatMemoryMiB(rssGrowth)}`,
+  ].join(' ')
+}
