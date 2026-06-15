@@ -38,7 +38,8 @@
     "**/dist-web/**",
     "**/docs/reports/**",
     "**/miniprogram_npm/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    "**/packages/ast-native/target/**"
   ],
   "typescript.preferences.includePackageJsonAutoImports": "off",
   "javascript.preferences.includePackageJsonAutoImports": "off",
@@ -61,7 +62,8 @@
     "coverage",
     "dist",
     "docs/reports",
-    "node_modules"
+    "node_modules",
+    "target"
   ],
   "git.detectSubmodules": false,
   "git.detectSubmodulesLimit": 0,
@@ -181,7 +183,8 @@
     "**/.weapp-vite/**": true,
     "**/.wevu-config/**": true,
     "**/__temp__/**": true,
-    "**/docs/reports/**": true
+    "**/docs/reports/**": true,
+    "**/packages/ast-native/target/**": true
   },
   "files.exclude": {
     "node_modules": true,
@@ -208,7 +211,8 @@
     "**/.weapp-vite": true,
     "**/.wevu-config": true,
     "**/__temp__": true,
-    "**/docs/reports": true
+    "**/docs/reports": true,
+    "**/packages/ast-native/target": true
   },
   "search.exclude": {
     "**/node_modules/**": true,
@@ -235,7 +239,8 @@
     "**/.weapp-vite/**": true,
     "**/.wevu-config/**": true,
     "**/__temp__/**": true,
-    "**/docs/reports/**": true
+    "**/docs/reports/**": true,
+    "**/packages/ast-native/target/**": true
   },
   "tailwindCSS.files.exclude": [
     "**/.git/**",
@@ -264,6 +269,7 @@
     "**/build/**",
     "**/coverage/**",
     "**/miniprogram_npm/**",
+    "**/packages/ast-native/target/**",
     "templates/weapp-vite-template/**",
     "templates/weapp-vite-wevu-template/**",
     "templates/weapp-vite-lib-template/**",

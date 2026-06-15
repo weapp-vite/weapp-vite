@@ -48,6 +48,7 @@ yarn-error.log*
 
 dist
 dist-plugin
+packages/ast-native/target/
 .wevu
 .wevu-config
 **/.weapp-vite/auto-routes.cache.json
