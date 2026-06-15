@@ -1,0 +1,21 @@
+[package]
+name = "weapp-vite-ast-native"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "3.9.2", default-features = false, features = ["napi4"] }
+napi-derive = "3.5.6"
+oxc_allocator = "0.136.0"
+oxc_ast = "0.136.0"
+oxc_ast_visit = "0.136.0"
+oxc_parser = "0.136.0"
+oxc_span = "0.136.0"
+oxc_syntax = "0.136.0"
+
+[build-dependencies]
+napi-build = "2.2.3"

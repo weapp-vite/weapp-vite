@@ -1,0 +1,69 @@
+{
+  "name": "@weapp-vite/ast-native",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "weapp-vite Rust/Oxc native AST analysis prototype",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "homepage": "https://vite.icebreaker.top/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/ast-native"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "ast",
+    "native",
+    "oxc",
+    "rust",
+    "weapp-vite"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "files": [
+    "*.node",
+    "index.d.ts",
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "native:build": "napi build --esm --platform --release --no-js --dts target/index.d.ts",
+    "native:build:debug": "napi build --esm --platform --no-js --dts target/index.d.ts",
+    "native:test": "pnpm native:build:debug && vitest run --config ./native.vitest.config.ts",
+    "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.7.2",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "vitest": "4.1.9"
+  },
+  "napi": {
+    "binaryName": "weapp_vite_ast_native",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  }
+}
