@@ -1,0 +1,36 @@
+{
+  "name": "forward-console-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "用于展示 weapp.forwardConsole 日志桥接能力的演示项目",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/forward-console-demo"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "forward-console",
+    "weapp-vite",
+    "debug"
+  ],
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
+    "ide:logs": "wv ide logs --open",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

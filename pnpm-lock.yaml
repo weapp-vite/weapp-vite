@@ -632,6 +632,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  apps/forward-console-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.1
+      sass:
+        specifier: 'catalog:'
+        version: 1.101.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/hmr-lab:
     devDependencies:
       miniprogram-api-typings:

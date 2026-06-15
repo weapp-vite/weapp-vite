@@ -1,0 +1,75 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-copy">
+      <view class="eyebrow">weapp.forwardConsole</view>
+      <view class="title">{{title}}</view>
+      <view class="description">{{description}}</view>
+      <view class="command-card">
+        <view class="command-label">启动命令</view>
+        <view class="command-line">{{command}}</view>
+        <button
+          class="ghost-button"
+          size="mini"
+          data-command="{{command}}"
+          bind:tap="onCopyCommand"
+        >
+          复制
+        </button>
+      </view>
+    </view>
+
+    <view class="terminal">
+      <view class="terminal-top">
+        <view class="terminal-title">Terminal output</view>
+        <view class="terminal-count">{{eventCount}} events</view>
+      </view>
+      <view class="terminal-line muted">$ {{logsCommand}}</view>
+      <view class="terminal-line active">{{lastTerminalLine}}</view>
+      <view class="terminal-help">点击下方按钮后，在命令行观察对应 [mini:*] 日志。</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">日志按钮</view>
+    <view class="action-grid">
+      <button
+        wx:for="{{actions}}"
+        wx:key="key"
+        class="action-button action-{{item.level}}"
+        data-level="{{item.level}}"
+        bind:tap="onEmitLog"
+      >
+        <view class="action-title">{{item.title}}</view>
+        <view class="action-desc">{{item.description}}</view>
+      </button>
+    </view>
+  </view>
+
+  <view class="split-section">
+    <view class="tool-panel">
+      <view class="section-title">组合场景</view>
+      <button class="wide-button" bind:tap="onEmitBatch">
+        <view class="wide-title">连续输出</view>
+        <view class="wide-desc">一次点击发送 log、info、warn。</view>
+      </button>
+      <button class="wide-button danger" bind:tap="onEmitUnhandledError">
+        <view class="wide-title">未捕获异常</view>
+        <view class="wide-desc">验证 unhandledErrors 是否进入终端。</view>
+      </button>
+    </view>
+
+    <view class="timeline-panel">
+      <view class="section-title">页面事件</view>
+      <view wx:for="{{timeline}}" wx:key="id" class="timeline-item">
+        <view class="timeline-dot dot-{{item.level}}"></view>
+        <view class="timeline-body">
+          <view class="timeline-row">
+            <view class="timeline-label">{{item.label}}</view>
+            <view class="timeline-time">{{item.time}}</view>
+          </view>
+          <view class="timeline-terminal">{{item.terminal}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

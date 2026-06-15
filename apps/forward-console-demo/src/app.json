@@ -1,0 +1,15 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Forward Console",
+    "navigationBarBackgroundColor": "#eef4ef",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#eef4ef"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}
