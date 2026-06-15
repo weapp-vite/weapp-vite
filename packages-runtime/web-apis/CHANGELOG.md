@@ -1,5 +1,11 @@
 # @wevu/web-apis
 
+## 1.2.22
+
+### Patch Changes
+
+- 🐛 **修复 `RequestPolyfill` 携带 `FormData` 请求体时被字符串化的问题，确保 `fetch(new Request(...))` 与直接传入 `FormData` 一样生成 multipart 请求体和对应请求头。** [#685](https://github.com/weapp-vite/weapp-vite/pull/685) by @sonofmagic
+
 ## 1.2.21
 
 ### Patch Changes
