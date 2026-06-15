@@ -245,13 +245,17 @@ function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options:
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
-  const useAutomatorOpen = options.useAutomatorOpen !== false
+  const useAutomatorOpen = options.useAutomatorOpen === true
+  const normalizedOptions: OpenIdeOptions = {
+    ...options,
+    useAutomatorOpen,
+  }
 
   if (platform === 'weapp' && projectPath) {
     try {
       bootstrapResult = await bootstrapWechatDevtoolsSettings({
         projectPath,
-        trustProject: options.trustProject,
+        trustProject: normalizedOptions.trustProject,
       })
     }
     catch (error) {
@@ -264,14 +268,14 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
     logger.warn('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
   }
 
-  if (platform === 'weapp' && projectPath && options.trustProject !== false && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {
+  if (platform === 'weapp' && projectPath && normalizedOptions.trustProject !== false && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {
     try {
-      const openResult = await tryOpenWechatIdeByAutomator(projectPath, options)
+      const openResult = await tryOpenWechatIdeByAutomator(projectPath, normalizedOptions)
       if (openResult === 'reused') {
         return
       }
       if (openResult) {
-        await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, options)
+        await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
         return
       }
     }
@@ -286,18 +290,18 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       }
     }
   }
-  else if (platform === 'weapp' && projectPath && options.reuseOpenedProject === false) {
+  else if (platform === 'weapp' && projectPath && normalizedOptions.reuseOpenedProject === false) {
     const closed = await closeIde()
     if (!closed) {
       logger.warn('关闭当前微信开发者工具失败，仍继续尝试打开目标项目。')
     }
   }
 
-  await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, options))
+  await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, normalizedOptions))
   if (platform === 'weapp' && projectPath) {
-    await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, options)
-    if (options.useAutomatorOpen === false && bootstrapResult?.servicePortEnabled !== false) {
-      await prepareOpenedWechatIdeAutomatorSession(projectPath, options)
+    await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
+    if (!useAutomatorOpen && bootstrapResult?.servicePortEnabled !== false) {
+      await prepareOpenedWechatIdeAutomatorSession(projectPath, normalizedOptions)
     }
   }
 }

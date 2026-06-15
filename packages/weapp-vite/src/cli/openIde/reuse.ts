@@ -16,6 +16,7 @@ function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
 
 async function openWechatIdeByAutomator(projectPath: string) {
   const miniProgram = await launchAutomator({
+    preserveProjectRoot: true,
     projectPath,
     trustProject: true,
   }) as DisconnectableMiniProgram
