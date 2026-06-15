@@ -210,12 +210,13 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
     })
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
   })
 
@@ -317,11 +318,15 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
+    })
+    expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
     })
   })
 
@@ -348,11 +353,15 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
+    })
+    expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
     })
   })
 
@@ -369,12 +378,13 @@ describe('openIde', () => {
       '-p',
       'dist/dev/mp-weixin',
     ])
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
     })
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       persistAsDefaultSession: true,
       preserveProjectRoot: true,
@@ -412,7 +422,7 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
@@ -421,9 +431,9 @@ describe('openIde', () => {
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
   })
 
-  it('does not fall back to automator wrapper when plain open stabilization http compile fails', async () => {
+  it('does not fall back to automator wrapper when plain open stabilization reset fails', async () => {
     const { openIde } = await import('./openIde')
-    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
+    resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))
 
     await openIde('weapp', 'dist/dev/mp-weixin', {
       useAutomatorOpen: false,
@@ -436,6 +446,7 @@ describe('openIde', () => {
       '--trust-project',
     ])
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       persistAsDefaultSession: true,
       preserveProjectRoot: true,

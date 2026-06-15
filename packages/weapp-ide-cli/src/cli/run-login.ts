@@ -11,10 +11,13 @@ import {
 } from './retry'
 import { resolveLoginRetryConfig } from './run-login-config'
 import { runRetryableCommand } from './run-login-executor'
+import { setRuntimeWechatDevtoolsServicePort } from './wechatDevtoolsRuntimePort'
 
 type WechatCliExecutionResult
   = { kind: 'result', value: unknown }
     | { error: unknown, kind: 'retryable' }
+
+const IDE_SERVER_STARTED_RE = /IDE server has started,\s*listening on\s+https?:\/\/127\.0\.0\.1:(\d+)/i
 
 function unwrapWechatCliExecutionError(result: WechatCliExecutionResult) {
   return result.kind === 'retryable' ? result.error : result.value
@@ -67,6 +70,25 @@ function flushExecutionOutput(result: unknown) {
   }
 }
 
+function captureWechatDevtoolsServicePort(result: unknown) {
+  if (!result || typeof result !== 'object') {
+    return
+  }
+
+  const candidate = result as { stderr?: unknown, stdout?: unknown }
+  const output = [
+    typeof candidate.stdout === 'string' ? candidate.stdout : '',
+    typeof candidate.stderr === 'string' ? candidate.stderr : '',
+  ].join('\n')
+  const match = output.match(IDE_SERVER_STARTED_RE)
+  if (!match?.[1]) {
+    return
+  }
+
+  const port = Number.parseInt(match[1], 10)
+  setRuntimeWechatDevtoolsServicePort(port)
+}
+
 /**
  * @description 运行微信开发者工具 CLI，并在登录失效时允许按键重试。
  */
@@ -114,5 +136,6 @@ export async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
     throw createWechatIdeLoginRequiredExitError(result.value)
   }
 
+  captureWechatDevtoolsServicePort(result.value)
   flushExecutionOutput(result.value)
 }

@@ -5,6 +5,7 @@ const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const createWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
 const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
+const setRuntimeWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
   info: vi.fn(),
@@ -33,6 +34,10 @@ vi.mock('../src/cli/inputCoordinator', () => ({
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
 }))
 
+vi.mock('../src/cli/wechatDevtoolsRuntimePort', () => ({
+  setRuntimeWechatDevtoolsServicePort: setRuntimeWechatDevtoolsServicePortMock,
+}))
+
 describe('runWechatCliWithRetry', () => {
   let originalStdinIsTTY: PropertyDescriptor | undefined
 
@@ -51,6 +56,7 @@ describe('runWechatCliWithRetry', () => {
     isWechatIdeLoginRequiredErrorMock.mockReset()
     createWechatIdeLoginRequiredExitErrorMock.mockReset()
     runWithSuspendedSharedInputMock.mockReset()
+    setRuntimeWechatDevtoolsServicePortMock.mockReset()
     loggerMock.error.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -84,5 +90,17 @@ describe('runWechatCliWithRetry', () => {
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+  })
+
+  it('captures runtime service port from successful cli output', async () => {
+    executeMock.mockResolvedValue({
+      stderr: '',
+      stdout: '- initialize\n\n✔ IDE server has started, listening on http://127.0.0.1:44650\n- preparing\n✔ open',
+    })
+
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+    await runWechatCliWithRetry('/Applications/wechat-cli', ['open', '--project', '/project'])
+
+    expect(setRuntimeWechatDevtoolsServicePortMock).toHaveBeenCalledWith(44650)
   })
 })

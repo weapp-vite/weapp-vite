@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { getRuntimeWechatDevtoolsServicePort } from './wechatDevtoolsRuntimePort'
 import { detectWechatDevtoolsServicePort } from './wechatDevtoolsSettings'
 
 const DEFAULT_WECHAT_DEVTOOLS_HTTP_PORT = 9420
@@ -37,6 +38,11 @@ function createWechatDevtoolsHttpError(message: string, code: string) {
 async function resolveWechatDevtoolsHttpPort(port?: number) {
   if (typeof port === 'number' && Number.isInteger(port) && port > 0) {
     return port
+  }
+
+  const runtimePort = getRuntimeWechatDevtoolsServicePort()
+  if (runtimePort) {
+    return runtimePort
   }
 
   const detected = await detectWechatDevtoolsServicePort()

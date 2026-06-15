@@ -7,7 +7,6 @@ import {
   isWechatIdeEngineBuildEndpointMissingError,
   isWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredExitError,
-  openWechatIdeProjectByHttp,
   parse,
   promptWechatIdeLoginRetry,
   quitWechatIde,
@@ -90,15 +89,6 @@ async function tryExecuteWechatIdeCliCommandByHttp(
   const command = argv[0]
   if (!command) {
     return false
-  }
-
-  if (command === 'compile') {
-    if (!projectPath) {
-      return false
-    }
-
-    await openWechatIdeProjectByHttp(projectPath)
-    return true
   }
 
   if (command === 'reset-fileutils') {

@@ -141,32 +141,22 @@ describe('executeWechatIdeCliCommand', () => {
     expect(promptWechatIdeLoginRetryMock).not.toHaveBeenCalled()
   })
 
-  it('prefers http open for compile when projectPath is provided', async () => {
+  it('prefers automator compile when projectPath is provided', async () => {
     const { executeWechatIdeCliCommand } = await import('./execute')
 
     await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
       projectPath: '/project/dist',
     })
 
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('/project/dist')
-    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
-    expect(parseMock).not.toHaveBeenCalled()
-  })
-
-  it('throws http error when httpMode is require', async () => {
-    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
-    const { executeWechatIdeCliCommand } = await import('./execute')
-
-    await expect(executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
-      httpMode: 'require',
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
       projectPath: '/project/dist',
-    })).rejects.toThrow('http open failed')
-
+    })
     expect(parseMock).not.toHaveBeenCalled()
   })
 
-  it('falls back to automator compile helper when http compile fails', async () => {
-    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
+  it('falls back to parse when automator compile fails', async () => {
+    compileWechatIdeByAutomatorMock.mockRejectedValueOnce(new Error('automator compile failed'))
     const { executeWechatIdeCliCommand } = await import('./execute')
 
     await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
@@ -176,11 +166,10 @@ describe('executeWechatIdeCliCommand', () => {
     expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
       projectPath: '/project/dist',
     })
-    expect(parseMock).not.toHaveBeenCalled()
+    expect(parseMock).toHaveBeenCalledWith(['compile', '--project', '/project/dist'])
   })
 
   it('skips automator fallback when automator mode is disabled', async () => {
-    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(new Error('http open failed'))
     const { executeWechatIdeCliCommand } = await import('./execute')
 
     await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
