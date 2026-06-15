@@ -3,18 +3,19 @@ import type {
   WeapiMiniProgramSocketTask,
 } from '@wevu/api'
 import type { WebSocketMiniProgramOptions } from './networkDefaults'
+import type { RequestGlobalsBlobLike } from './shared'
 import { wpi } from '@wevu/api'
 import { resolveUrlConstructor as resolveHostUrlConstructor, resolveTextEncoderConstructor } from './constructors'
 import {
   resolveWebSocketMiniProgramOptions,
 
 } from './networkDefaults'
-import { cloneArrayBuffer, cloneArrayBufferView, RequestGlobalsEventTarget } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, isArrayBufferLike, isBlobLike, RequestGlobalsEventTarget } from './shared'
 import { URLPolyfill } from './url'
 import { BlobPolyfill } from './web'
 
 type WebSocketBinaryType = 'blob' | 'arraybuffer'
-type WebSocketSendData = string | ArrayBuffer | ArrayBufferView | Blob
+type WebSocketSendData = string | ArrayBuffer | ArrayBufferView | Blob | RequestGlobalsBlobLike
 type WebSocketMessageData = string | ArrayBuffer | Blob | BlobPolyfill
 
 const WHITESPACE_RE = /\s/u
@@ -156,13 +157,13 @@ function toBinaryPayload(data: WebSocketSendData) {
   if (typeof data === 'string') {
     return data
   }
-  if (data instanceof ArrayBuffer) {
+  if (isArrayBufferLike(data)) {
     return cloneArrayBuffer(data)
   }
   if (ArrayBuffer.isView(data)) {
     return cloneArrayBufferView(data)
   }
-  if (typeof Blob !== 'undefined' && data instanceof Blob) {
+  if (isBlobLike(data)) {
     return data.arrayBuffer()
   }
   throw new TypeError('Failed to execute send: data must be a string, ArrayBuffer, ArrayBufferView or Blob')

@@ -25,6 +25,41 @@ function setGlobalValue(key: string, value: unknown) {
   })
 }
 
+function countBodyByteSequence(body: Uint8Array, expected: Uint8Array) {
+  if (expected.byteLength === 0 || body.byteLength < expected.byteLength) {
+    return 0
+  }
+
+  let count = 0
+  for (let offset = 0; offset <= body.byteLength - expected.byteLength; offset++) {
+    let matched = true
+    for (let index = 0; index < expected.byteLength; index++) {
+      if (body[offset + index] !== expected[index]) {
+        matched = false
+        break
+      }
+    }
+    if (matched) {
+      count += 1
+    }
+  }
+  return count
+}
+
+function bodyContainsBytes(body: Uint8Array, expected: Uint8Array) {
+  return countBodyByteSequence(body, expected) > 0
+}
+
+function createBlobLike(buffer: ArrayBuffer, type = 'application/octet-stream') {
+  return {
+    size: buffer.byteLength,
+    type,
+    async arrayBuffer() {
+      return buffer.slice(0)
+    },
+  }
+}
+
 function createMockSocketTask() {
   let openListener: (() => void) | undefined
   let messageListener: ((result: { data: string | ArrayBuffer }) => void) | undefined
@@ -453,6 +488,121 @@ describe('request globals runtime', () => {
     expect(multipartBody).toContain('file payload')
   })
 
+  it('preserves host ArrayBuffer-like values in Blob and File multipart bodies', async () => {
+    let requestOptions: Record<string, any> | undefined
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptions = options
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    const original = Uint8Array.from([0, 1, 2, 3, 0xF0, 0x9F, 0x94, 0xA5, 0xFF]).buffer
+    const hostBuffer = {} as ArrayBuffer
+    Object.defineProperties(hostBuffer, {
+      byteLength: {
+        configurable: true,
+        value: original.byteLength,
+      },
+      slice: {
+        configurable: true,
+        value: original.slice.bind(original),
+      },
+      [Symbol.toStringTag]: {
+        configurable: true,
+        value: 'ArrayBuffer',
+      },
+    })
+
+    expect(hostBuffer).not.toBeInstanceOf(ArrayBuffer)
+
+    const formData = new globalThis.FormData()
+    formData.append('blob-file', new globalThis.Blob([hostBuffer], { type: 'application/octet-stream' }), 'downloaded-blob.bin')
+    formData.append('file-file', new globalThis.File([hostBuffer], 'downloaded-file.bin', { type: 'application/octet-stream' }))
+
+    const response = await globalThis.fetch('https://request-globals.invalid/upload', {
+      body: formData,
+      method: 'POST',
+    })
+
+    expect(await response.json()).toEqual({ ok: true })
+    expect(requestOptions?.data).toBeInstanceOf(ArrayBuffer)
+
+    const body = new Uint8Array(requestOptions?.data)
+    const encodedString = new TextEncoder().encode('[object ArrayBuffer]')
+    const expectedBytes = new Uint8Array(original)
+    expect(bodyContainsBytes(body, encodedString)).toBe(false)
+    expect(countBodyByteSequence(body, expectedBytes)).toBe(2)
+  })
+
+  it('preserves binary fetch bodies through init and Request polyfill inputs', async () => {
+    const requestOptionsList: Array<Record<string, any>> = []
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptionsList.push(options)
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch', 'Request'],
+    })
+
+    const bytes = Uint8Array.from([0, 1, 2, 3, 0xF0, 0x9F, 0x94, 0xA5, 0xFF])
+    const buffer = bytes.buffer
+    const view = new DataView(buffer)
+    const blobLike = createBlobLike(buffer)
+    const url = 'https://request-globals.invalid/raw-upload'
+    const cases: Array<[string, Parameters<typeof globalThis.fetch>[0], Parameters<typeof globalThis.fetch>[1] | undefined]> = [
+      ['arraybuffer-init', url, { body: buffer, method: 'POST' }],
+      ['uint8array-init', url, { body: bytes, method: 'POST' }],
+      ['dataview-init', url, { body: view, method: 'POST' }],
+      ['blob-init', url, { body: new globalThis.Blob([buffer], { type: 'application/octet-stream' }), method: 'POST' }],
+      ['file-init', url, { body: new globalThis.File([buffer], 'raw-file.bin', { type: 'application/octet-stream' }), method: 'POST' }],
+      ['blob-like-init', url, { body: blobLike as BodyInit, method: 'POST' }],
+      ['arraybuffer-request', new globalThis.Request(url, { body: buffer, method: 'POST' }), undefined],
+      ['blob-request', new globalThis.Request(url, { body: new globalThis.Blob([buffer], { type: 'application/octet-stream' }), method: 'POST' }), undefined],
+      ['blob-like-request', new globalThis.Request(url, { body: blobLike as BodyInit, method: 'POST' }), undefined],
+    ]
+
+    for (const [, input, init] of cases) {
+      const response = await globalThis.fetch(input, init)
+      expect(await response.json()).toEqual({ ok: true })
+    }
+
+    expect(requestOptionsList).toHaveLength(cases.length)
+    for (const [index, [caseName]] of cases.entries()) {
+      const requestOptions = requestOptionsList[index]
+      expect(requestOptions?.data, caseName).toBeInstanceOf(ArrayBuffer)
+      expect(new Uint8Array(requestOptions?.data), caseName).toEqual(bytes)
+    }
+    expect(requestOptionsList[3]?.header['content-type']).toBe('application/octet-stream')
+    expect(requestOptionsList[4]?.header['content-type']).toBe('application/octet-stream')
+    expect(requestOptionsList[5]?.header['content-type']).toBe('application/octet-stream')
+    expect(requestOptionsList[7]?.header['content-type']).toBe('application/octet-stream')
+    expect(requestOptionsList[8]?.header['content-type']).toBe('application/octet-stream')
+  })
+
   it('preserves FormData bodies when fetch receives a Request polyfill', async () => {
     let requestOptions: Record<string, any> | undefined
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
@@ -493,6 +643,41 @@ describe('request globals runtime', () => {
     expect(multipartBody).toContain('hello')
     expect(multipartBody).toContain('name="file"; filename="file.txt"')
     expect(multipartBody).toContain('file payload')
+  })
+
+  it('does not treat generic arrayBuffer readers as Blob-like fetch bodies', async () => {
+    let requestOptions: Record<string, any> | undefined
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptions = options
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    const genericBody = {
+      async arrayBuffer() {
+        return Uint8Array.from([1, 2, 3]).buffer
+      },
+    }
+    const response = await globalThis.fetch('https://request-globals.invalid/raw-upload', {
+      body: genericBody as BodyInit,
+      method: 'POST',
+    })
+
+    expect(await response.json()).toEqual({ ok: true })
+    expect(requestOptions?.data).toBe('[object Object]')
   })
 
   it('installs request globals onto additional mini-program host globals discovered from shared platform registry', async () => {

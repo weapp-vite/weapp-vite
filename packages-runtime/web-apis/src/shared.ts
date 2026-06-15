@@ -101,8 +101,35 @@ export function installRequestGlobalBinding(name: string, value: unknown) {
   }
 }
 
+export function isArrayBufferLike(value: unknown): value is ArrayBuffer {
+  return Object.prototype.toString.call(value) === '[object ArrayBuffer]'
+    && typeof (value as ArrayBuffer).byteLength === 'number'
+}
+
+export interface RequestGlobalsBlobLike {
+  readonly size?: number
+  readonly type?: string
+  arrayBuffer: () => Promise<ArrayBuffer>
+}
+
+export function isBlobLike(value: unknown): value is RequestGlobalsBlobLike {
+  return value != null
+    && typeof value === 'object'
+    && typeof (value as RequestGlobalsBlobLike).arrayBuffer === 'function'
+    && (
+      typeof (value as RequestGlobalsBlobLike).size === 'number'
+      || typeof (value as RequestGlobalsBlobLike).type === 'string'
+    )
+}
+
 export function cloneArrayBuffer(buffer: ArrayBuffer) {
-  return buffer.slice(0)
+  if (typeof buffer.slice === 'function') {
+    return buffer.slice(0)
+  }
+
+  const copied = new Uint8Array(buffer.byteLength)
+  copied.set(new Uint8Array(buffer))
+  return copied.buffer
 }
 
 export function cloneArrayBufferView(view: ArrayBufferView) {

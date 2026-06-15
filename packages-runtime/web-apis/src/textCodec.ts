@@ -1,4 +1,4 @@
-import { decodeTextFallback, encodeTextFallback } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, decodeTextFallback, encodeTextFallback, isArrayBufferLike } from './shared'
 
 type TextDecoderInput = ArrayBuffer | ArrayBufferView | null | undefined
 
@@ -6,13 +6,11 @@ function normalizeTextDecoderInput(input?: TextDecoderInput) {
   if (input == null) {
     return new ArrayBuffer(0)
   }
-  if (input instanceof ArrayBuffer) {
-    return input.slice(0)
+  if (isArrayBufferLike(input)) {
+    return cloneArrayBuffer(input)
   }
   if (ArrayBuffer.isView(input)) {
-    const copied = new Uint8Array(input.byteLength)
-    copied.set(new Uint8Array(input.buffer, input.byteOffset, input.byteLength))
-    return copied.buffer
+    return cloneArrayBufferView(input)
   }
   return new ArrayBuffer(0)
 }

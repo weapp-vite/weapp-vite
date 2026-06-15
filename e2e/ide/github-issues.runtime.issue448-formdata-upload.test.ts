@@ -71,9 +71,21 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
 
       const result = await page.callMethod('_runFormDataUploadE2E')
       const runtime = await page.callMethod('_runE2E')
+      const rawFetch = result?.payload?.rawFetch ?? []
 
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
       expect(result?.status).toBe('passed')
+      expect(rawFetch.map((item: { caseName: string }) => item.caseName)).toEqual([
+        'arraybuffer-init',
+        'uint8array-init',
+        'dataview-init',
+        'blob-init',
+        'file-init',
+        'blob-like-init',
+        'arraybuffer-request',
+        'blob-request',
+        'blob-like-request',
+      ])
       expect(result?.payload?.blob).toMatchObject({
         contentType: 'application/octet-stream',
         filename: 'downloaded-blob.bin',
@@ -95,11 +107,26 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
       expect(result?.payload?.blob?.size).toBeGreaterThan(0)
       expect(result?.payload?.file?.size).toBe(result?.payload?.blob?.size)
       expect(result?.payload?.request?.size).toBe(result?.payload?.blob?.size)
+      expect(result?.payload?.readKind).toBe('arraybuffer')
+      for (const item of rawFetch) {
+        expect(item.sha256).toBe(item.expectedSha256)
+        expect(item.size).toBe(result?.payload?.blob?.size)
+      }
+      expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'blob-init')?.contentType).toBe('application/octet-stream')
+      expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'file-init')?.contentType).toBe('application/octet-stream')
+      expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'blob-like-init')?.contentType).toBe('application/octet-stream')
+      expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'blob-request')?.contentType).toBe('application/octet-stream')
+      expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'blob-like-request')?.contentType).toBe('application/octet-stream')
       expect(runtime.formDataUploadStatus).toBe('passed')
+      expect(runtime.rawFetchUploadStatus).toBe('passed')
+      expect(runtime.formDataReadKind).toBe('arraybuffer')
       expect(runtime.formDataUploadPayload).toContain('downloaded-blob.bin')
       expect(runtime.formDataUploadPayload).toContain('downloaded-file.bin')
       expect(runtime.formDataUploadPayload).toContain('downloaded-request.bin')
+      expect(runtime.rawFetchUploadPayload).toContain('arraybuffer-init')
+      expect(runtime.rawFetchUploadPayload).toContain('blob-request')
       expect(serverHandle?.requestCounts.formDataUpload).toBe(3)
+      expect(serverHandle?.requestCounts.rawUpload).toBe(9)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

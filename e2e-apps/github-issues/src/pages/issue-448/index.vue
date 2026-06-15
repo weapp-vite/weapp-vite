@@ -36,6 +36,9 @@ const microtaskState = ref('pending')
 const baseUrl = ref('')
 const formDataUploadStatus = ref('idle')
 const formDataUploadPayload = ref('')
+const rawFetchUploadStatus = ref('idle')
+const rawFetchUploadPayload = ref('')
+const formDataReadKind = ref('')
 
 queueMicrotask(() => {
   microtaskState.value = 'flushed'
@@ -60,6 +63,20 @@ interface MultipartUploadPayload {
   path: string
 }
 
+interface RawFetchUploadPayload {
+  contentType: string
+  expectedSha256: string
+  path: string
+  sha256: string
+  size: number
+}
+
+interface BlobLikeBody {
+  readonly size: number
+  readonly type: string
+  arrayBuffer: () => Promise<ArrayBuffer>
+}
+
 type UploadFormDataInput = Parameters<typeof fetch>[0]
 type UploadFormDataInit = Parameters<typeof fetch>[1]
 
@@ -71,7 +88,6 @@ interface Issue448WxApi {
   }) => void
   getFileSystemManager: () => {
     readFile: (options: {
-      encoding?: 'binary'
       fail?: (error: unknown) => void
       filePath: string
       success?: (result: { data: string | ArrayBuffer }) => void
@@ -98,11 +114,11 @@ function downloadFile(url: string) {
 function readDownloadedFile(filePath: string) {
   return new Promise<ArrayBuffer>((resolve, reject) => {
     wxApi.getFileSystemManager().readFile({
-      encoding: 'binary',
       fail: reject,
       filePath,
       success(result) {
         if (typeof result.data === 'string') {
+          formDataReadKind.value = 'string'
           const bytes = new Uint8Array(result.data.length)
           for (let index = 0; index < result.data.length; index++) {
             bytes[index] = result.data.charCodeAt(index) & 0xFF
@@ -110,6 +126,7 @@ function readDownloadedFile(filePath: string) {
           resolve(bytes.buffer)
           return
         }
+        formDataReadKind.value = 'arraybuffer'
         resolve(result.data)
       },
     })
@@ -140,18 +157,99 @@ async function uploadFormData(input: UploadFormDataInput, init?: UploadFormDataI
   return await response.json() as MultipartUploadPayload
 }
 
+function assertRawUploadPayload(caseName: string, payload: RawFetchUploadPayload) {
+  if (payload.path !== '/issue-448/raw-upload') {
+    throw new Error(`unexpected raw upload path for ${caseName}: ${payload.path}`)
+  }
+  if (payload.sha256 !== payload.expectedSha256) {
+    throw new Error(`unexpected raw upload sha256 for ${caseName}: ${payload.sha256}, size: ${payload.size}`)
+  }
+  if (payload.size <= 0) {
+    throw new Error(`unexpected raw upload size for ${caseName}: ${payload.size}`)
+  }
+}
+
+async function uploadRawFetchCase(caseName: string, input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) {
+  const response = await fetch(input, init)
+  const payload = await response.json() as RawFetchUploadPayload
+  assertRawUploadPayload(caseName, payload)
+  return {
+    ...payload,
+    caseName,
+  }
+}
+
+function createBlobLikeBody(buffer: ArrayBuffer): BlobLikeBody {
+  return {
+    size: buffer.byteLength,
+    type: 'application/octet-stream',
+    async arrayBuffer() {
+      return buffer.slice(0)
+    },
+  }
+}
+
+async function uploadDownloadedFileAsRawFetch(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer)
+  const view = new DataView(buffer)
+  const blobLikeBody = createBlobLikeBody(buffer)
+  const url = `${baseUrl.value}/issue-448/raw-upload`
+  const cases = [
+    await uploadRawFetchCase('arraybuffer-init', url, {
+      body: buffer,
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('uint8array-init', url, {
+      body: bytes,
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('dataview-init', url, {
+      body: view,
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('blob-init', url, {
+      body: new Blob([buffer], { type: 'application/octet-stream' }),
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('file-init', url, {
+      body: new File([buffer], 'raw-file.bin', { type: 'application/octet-stream' }),
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('blob-like-init', url, {
+      body: blobLikeBody as BodyInit,
+      method: 'POST',
+    }),
+    await uploadRawFetchCase('arraybuffer-request', new Request(url, {
+      body: buffer,
+      method: 'POST',
+    })),
+    await uploadRawFetchCase('blob-request', new Request(url, {
+      body: new Blob([buffer], { type: 'application/octet-stream' }),
+      method: 'POST',
+    })),
+    await uploadRawFetchCase('blob-like-request', new Request(url, {
+      body: blobLikeBody as BodyInit,
+      method: 'POST',
+    })),
+  ]
+  return cases
+}
+
 async function uploadDownloadedFileAsFormData() {
   if (!baseUrl.value) {
     throw new Error('missing issue-448 baseUrl')
   }
 
   formDataUploadStatus.value = 'running'
+  rawFetchUploadStatus.value = 'running'
   const download = await downloadFile(`${baseUrl.value}/issue-448/download.bin`)
   if (download.statusCode && download.statusCode !== 200) {
     throw new Error(`downloadFile failed with status ${download.statusCode}`)
   }
 
   const buffer = await readDownloadedFile(download.tempFilePath)
+  const rawFetchPayload = await uploadDownloadedFileAsRawFetch(buffer)
+
   const blobFormData = new FormData()
   blobFormData.append('blob-file', new Blob([buffer], { type: 'application/octet-stream' }), 'downloaded-blob.bin')
   const blobPayload = await uploadFormData(`${baseUrl.value}/issue-448/upload`, {
@@ -180,8 +278,12 @@ async function uploadDownloadedFileAsFormData() {
     blob: blobPayload.files.find(item => item.name === 'blob-file'),
     expectedSha256: blobPayload.expectedSha256,
     file: filePayload.files.find(item => item.name === 'file-file'),
+    readKind: formDataReadKind.value,
     request: requestPayload.files.find(item => item.name === 'request-file'),
+    rawFetch: rawFetchPayload,
   }
+  rawFetchUploadPayload.value = JSON.stringify(rawFetchPayload)
+  rawFetchUploadStatus.value = 'passed'
   formDataUploadPayload.value = JSON.stringify(payload)
   formDataUploadStatus.value = 'passed'
   return payload
@@ -198,7 +300,9 @@ async function _runFormDataUploadE2E() {
   }
   catch (error) {
     formDataUploadStatus.value = 'failed'
+    rawFetchUploadStatus.value = 'failed'
     formDataUploadPayload.value = error instanceof Error ? error.message : String(error)
+    rawFetchUploadPayload.value = formDataUploadPayload.value
     return {
       error: formDataUploadPayload.value,
       ok: false,
@@ -230,6 +334,9 @@ function _runE2E() {
     errorResponseType: errorResponse.type,
     formDataUploadPayload: formDataUploadPayload.value,
     formDataUploadStatus: formDataUploadStatus.value,
+    formDataReadKind: formDataReadKind.value,
+    rawFetchUploadPayload: rawFetchUploadPayload.value,
+    rawFetchUploadStatus: rawFetchUploadStatus.value,
     microtaskState: microtaskState.value,
   }
 }
@@ -250,8 +357,11 @@ function _runE2E() {
     <text class="issue448-line">cookies = {{ cookieCount }}</text>
     <text class="issue448-line">json = {{ jsonResponseContentType }}</text>
     <text class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
+    <text class="issue448-line">read = {{ formDataReadKind }}</text>
     <text class="issue448-line">upload = {{ formDataUploadStatus }}</text>
     <text class="issue448-line">uploadPayload = {{ formDataUploadPayload }}</text>
+    <text class="issue448-line">rawFetch = {{ rawFetchUploadStatus }}</text>
+    <text class="issue448-line">rawFetchPayload = {{ rawFetchUploadPayload }}</text>
     <text class="issue448-line">microtask = {{ microtaskState }}</text>
   </view>
 </template>

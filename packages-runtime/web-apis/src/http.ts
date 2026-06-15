@@ -1,3 +1,4 @@
+import type { RequestGlobalsBlobLike } from './shared'
 import type { URLPolyfill } from './url'
 import { isUrlInstance } from './constructors'
 import {
@@ -5,6 +6,8 @@ import {
   cloneArrayBufferView,
   decodeText,
   encodeText,
+  isArrayBufferLike,
+  isBlobLike,
   normalizeHeaderName,
 } from './shared'
 import { FormDataPolyfill } from './web'
@@ -118,17 +121,17 @@ export class HeadersPolyfill {
   }
 }
 
-type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | FormData | FormDataPolyfill | null | undefined
+type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | RequestGlobalsBlobLike | FormData | FormDataPolyfill | null | undefined
 const requestBodyStore = new WeakMap<RequestPolyfill, RequestBodyLike>()
 const requestBodyUsedStore = new WeakMap<RequestPolyfill, boolean>()
 const responseBodyStore = new WeakMap<ResponsePolyfill, RequestBodyLike>()
 const responseBodyUsedStore = new WeakMap<ResponsePolyfill, boolean>()
 
 function normalizeBody(body: unknown): RequestBodyLike {
-  if (body == null || typeof body === 'string' || body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
+  if (body == null || typeof body === 'string' || isArrayBufferLike(body) || ArrayBuffer.isView(body)) {
     return body as RequestBodyLike
   }
-  if (typeof Blob !== 'undefined' && body instanceof Blob) {
+  if (isBlobLike(body)) {
     return body
   }
   if (typeof FormData !== 'undefined' && body instanceof FormData) {
@@ -147,13 +150,13 @@ async function readBodyAsArrayBuffer(body: RequestBodyLike): Promise<ArrayBuffer
   if (typeof body === 'string') {
     return encodeText(body)
   }
-  if (body instanceof ArrayBuffer) {
+  if (isArrayBufferLike(body)) {
     return cloneArrayBuffer(body)
   }
   if (ArrayBuffer.isView(body)) {
     return cloneArrayBufferView(body)
   }
-  if (typeof Blob !== 'undefined' && body instanceof Blob) {
+  if (isBlobLike(body)) {
     return body.arrayBuffer()
   }
   return encodeText(String(body))
