@@ -212,7 +212,7 @@
     "@vue/runtime-core": "^3.5.38",
     "@weapp-core/constants": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
-    "axios": "^1.17.0",
+    "axios": "^1.18.0",
     "bundle-require": "catalog:",
     "cheerio": "^1.2.0",
     "ci-info": "^4.4.0",
