@@ -3,7 +3,8 @@
   "projectname": "template-wevu-tdesign-regression",
   "setting": {
     "compileHotReLoad": true,
-    "skylineRenderEnable": false
+    "skylineRenderEnable": false,
+    "urlCheck": false
   },
   "condition": {
     "miniprogram": {

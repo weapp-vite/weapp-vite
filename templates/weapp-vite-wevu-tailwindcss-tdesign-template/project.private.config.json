@@ -3,7 +3,8 @@
   "projectname": "weapp-vite-wevu-tailwindcss-tdesign-template",
   "setting": {
     "compileHotReLoad": true,
-    "skylineRenderEnable": false
+    "skylineRenderEnable": false,
+    "urlCheck": false
   },
   "condition": {
     "miniprogram": {

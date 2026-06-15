@@ -2,7 +2,8 @@
   "projectname": "wevu-vue-demo",
   "setting": {
     "compileHotReLoad": true,
-    "ignoreDeviceOrientation": false
+    "ignoreDeviceOrientation": false,
+    "urlCheck": false
   },
   "condition": {
     "search": {

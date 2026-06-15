@@ -2,7 +2,8 @@
   "projectname": "hmr-lab",
   "setting": {
     "compileHotReLoad": true,
-    "ignoreDeviceOrientation": false
+    "ignoreDeviceOrientation": false,
+    "urlCheck": false
   },
   "condition": {
     "miniprogram": {

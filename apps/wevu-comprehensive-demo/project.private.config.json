@@ -2,7 +2,8 @@
   "description": "项目私有配置文件",
   "projectname": "wevu-comprehensive-demo",
   "setting": {
-    "compileHotReLoad": true
+    "compileHotReLoad": true,
+    "urlCheck": false
   },
   "libVersion": "3.15.0"
 }

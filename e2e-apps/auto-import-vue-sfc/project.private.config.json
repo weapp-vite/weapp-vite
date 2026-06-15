@@ -20,7 +20,8 @@
     }
   },
   "setting": {
-    "compileHotReLoad": true
+    "compileHotReLoad": true,
+    "urlCheck": false
   },
   "libVersion": "3.15.0"
 }

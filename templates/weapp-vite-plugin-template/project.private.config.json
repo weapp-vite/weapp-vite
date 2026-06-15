@@ -3,6 +3,7 @@
   "libVersion": "3.15.0",
   "projectname": "weapp-vite-plugin-template",
   "setting": {
-    "compileHotReLoad": true
+    "compileHotReLoad": true,
+    "urlCheck": false
   }
 }
