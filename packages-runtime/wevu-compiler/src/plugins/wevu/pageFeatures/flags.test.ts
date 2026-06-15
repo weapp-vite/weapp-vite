@@ -1,8 +1,11 @@
 import * as t from '@weapp-vite/ast/babelTypes'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import * as pageFeatureOps from '../../../ast/operations/pageFeatures'
 import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
 import { generate, parseJsLike } from '../../../utils/babel'
+import * as babelUtils from '../../../utils/babel'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
+import * as moduleAnalysis from './moduleAnalysis'
 import { collectTargetOptionsObjects } from './optionsObjects'
 
 describe('pageFeatures flags', () => {
@@ -31,6 +34,47 @@ wevu.onPageScroll(() => ({}))
 
     expect(enabled.has('enableOnShareTimeline')).toBe(true)
     expect(enabled.has('enableOnPageScroll')).toBe(true)
+  })
+
+  it('fast rejects unrelated source before babel parsing', () => {
+    const parseSpy = vi.spyOn(babelUtils, 'parseJsLike')
+    const enabled = collectWevuPageFeatureFlagsFromCode(`
+import { ref } from 'vue'
+
+export function useCounter() {
+  return ref(1)
+}
+    `.trim(), {
+      astEngine: 'babel',
+    })
+
+    expect(enabled.size).toBe(0)
+    expect(parseSpy).not.toHaveBeenCalled()
+
+    parseSpy.mockRestore()
+  })
+
+  it('collects internal runtime flags with one oxc module analysis pass', () => {
+    const analysisSpy = vi.spyOn(moduleAnalysis, 'createModuleAnalysisFromCode')
+    const featureSpy = vi.spyOn(pageFeatureOps, 'collectWevuPageFeatureFlagsFromCode')
+    const enabled = collectWevuPageFeatureFlagsFromCode(`
+import { onPageScroll, onResize } from 'wevu/internal-runtime'
+
+onPageScroll(() => {})
+onResize?.(() => {})
+    `.trim(), {
+      astEngine: 'oxc',
+    })
+
+    expect([...enabled].sort()).toEqual([
+      'enableOnPageScroll',
+      'enableOnResize',
+    ])
+    expect(analysisSpy).toHaveBeenCalledTimes(1)
+    expect(featureSpy).toHaveBeenCalledTimes(1)
+
+    analysisSpy.mockRestore()
+    featureSpy.mockRestore()
   })
 
   it('injects features object before setup and merges existing object', () => {
