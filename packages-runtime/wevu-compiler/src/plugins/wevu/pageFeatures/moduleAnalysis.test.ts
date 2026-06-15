@@ -74,7 +74,10 @@ export function useA() {
 
     expect(fromCode.id).toBe('/project/src/page.ts')
     expect(fromCode.engine).toBe('oxc')
-    expect(fromCode.ast).toBeUndefined()
+    expect(fromCode.ast).toMatchObject({
+      type: 'Program',
+      sourceType: 'module',
+    })
     expect(fromCode.wevuNamedHookLocals.get('onScroll')).toBe('enableOnPageScroll')
     expect(fromCode.localFunctions.has('useA')).toBe(true)
     expect(fromCode.exports.get('useA')).toMatchObject({

@@ -153,7 +153,7 @@ export function setupStore() {
     parseSpy.mockRestore()
   })
 
-  it('keeps babel fallback when wevu factory call is textually present', () => {
+  it('collects oxc options objects without babel fallback when wevu factory call is present', () => {
     const parseSpy = vi.spyOn(babelUtils, 'parseJsLike')
     const source = `
 import * as wevu from 'wevu'
@@ -161,15 +161,19 @@ import * as wevu from 'wevu'
 wevu.defineComponent({
   setup() {},
 })
+wevu.createWevuComponent?.(Object.assign({}, {
+  setup: () => {},
+}))
     `.trim()
 
     const result = collectTargetOptionsObjectsFromCode(source, '/project/src/page.ts', {
       astEngine: 'oxc',
     })
 
-    expect(result.optionsObjects).toHaveLength(1)
+    expect(result.optionsObjects).toHaveLength(2)
     expect(getSetupFunctionFromOptionsObject(result.optionsObjects[0])).toBeTruthy()
-    expect(parseSpy).toHaveBeenCalledTimes(1)
+    expect(getSetupFunctionFromOptionsObject(result.optionsObjects[1])).toBeTruthy()
+    expect(parseSpy).not.toHaveBeenCalled()
 
     parseSpy.mockRestore()
   })

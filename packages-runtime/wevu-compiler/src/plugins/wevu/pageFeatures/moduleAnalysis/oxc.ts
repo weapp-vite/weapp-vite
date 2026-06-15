@@ -148,6 +148,7 @@ export function createModuleAnalysisWithOxc(id: string, code: string): ModuleAna
   return {
     id,
     engine: 'oxc',
+    ast,
     wevuNamedHookLocals,
     wevuNamespaceLocals,
     importedBindings,

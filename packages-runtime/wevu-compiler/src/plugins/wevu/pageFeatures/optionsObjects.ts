@@ -2,7 +2,7 @@ import type { AstEngineName } from '../../../ast/types'
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { isWevuRuntimeModuleId, WE_VU_RUNTIME_APIS } from '../../../constants'
-import { parseJsLike, traverse } from '../../../utils/babel'
+import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
 import { createEmptyModuleAnalysis, createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
 
@@ -11,6 +11,7 @@ const WEVU_FACTORY_NAMES = new Set([
   WE_VU_RUNTIME_APIS.createWevuComponent,
 ])
 type WevuFactoryName = typeof WE_VU_RUNTIME_APIS.defineComponent | typeof WE_VU_RUNTIME_APIS.createWevuComponent
+type OptionsObject = t.ObjectExpression | { type: 'ObjectExpression', properties: any[], [key: string]: any }
 const REGEXP_META_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function escapeRegExp(value: string) {
@@ -94,7 +95,20 @@ function resolveOptionsObjectFromExpression(node: t.Expression): t.ObjectExpress
   return null
 }
 
-export function getSetupFunctionFromOptionsObject(options: t.ObjectExpression): FunctionLike | null {
+function getOxcStaticPropertyName(node: any): string | undefined {
+  if (node?.type === 'Identifier') {
+    return node.name
+  }
+  if (
+    (node?.type === 'StringLiteral' || node?.type === 'Literal')
+    && typeof node.value === 'string'
+  ) {
+    return node.value
+  }
+  return undefined
+}
+
+export function getSetupFunctionFromOptionsObject(options: OptionsObject): FunctionLike | null {
   for (const prop of options.properties) {
     if (t.isObjectProperty(prop) && !prop.computed && isStaticObjectKeyMatch(prop.key, 'setup')) {
       if (t.isFunctionExpression(prop.value) || t.isArrowFunctionExpression(prop.value)) {
@@ -103,6 +117,11 @@ export function getSetupFunctionFromOptionsObject(options: t.ObjectExpression): 
     }
     else if (t.isObjectMethod(prop) && !prop.computed && isStaticObjectKeyMatch(prop.key, 'setup')) {
       return prop
+    }
+    else if (prop?.type === 'Property' && !prop.computed && getOxcStaticPropertyName(prop.key) === 'setup') {
+      if (prop.value?.type === 'FunctionExpression' || prop.value?.type === 'ArrowFunctionExpression') {
+        return prop.value
+      }
     }
   }
   return null
@@ -245,6 +264,141 @@ function collectTargetOptionsObjectsWithModule(
   return { optionsObjects, module }
 }
 
+function unwrapOxcTypeLikeExpression(node: any): any {
+  if (
+    node?.type === 'TSAsExpression'
+    || node?.type === 'TSSatisfiesExpression'
+    || node?.type === 'TSNonNullExpression'
+    || node?.type === 'TSTypeAssertion'
+    || node?.type === 'ParenthesizedExpression'
+  ) {
+    return unwrapOxcTypeLikeExpression(node.expression)
+  }
+  return node
+}
+
+function getOxcCallExpression(node: any): any {
+  if (node?.type === 'ChainExpression') {
+    return getOxcCallExpression(node.expression)
+  }
+  if (node?.type === 'CallExpression') {
+    return node
+  }
+  return null
+}
+
+function resolveOxcOptionsObjectFromExpression(node: any, bindings: Map<string, OptionsObject>): OptionsObject | null {
+  const normalized = unwrapOxcTypeLikeExpression(node)
+  if (normalized?.type === 'ObjectExpression') {
+    return normalized
+  }
+  if (normalized?.type === 'Identifier') {
+    return bindings.get(normalized.name) ?? null
+  }
+  if (normalized?.type !== 'CallExpression') {
+    return null
+  }
+
+  const callee = unwrapOxcTypeLikeExpression(normalized.callee)
+  if (
+    callee?.type !== 'MemberExpression'
+    || callee.computed
+    || callee.object?.type !== 'Identifier'
+    || callee.object.name !== 'Object'
+    || callee.property?.type !== 'Identifier'
+    || callee.property.name !== 'assign'
+  ) {
+    return null
+  }
+
+  for (let index = normalized.arguments.length - 1; index >= 0; index -= 1) {
+    const argument = normalized.arguments[index]
+    if (argument?.type === 'SpreadElement') {
+      continue
+    }
+    const candidate = resolveOxcOptionsObjectFromExpression(argument, bindings)
+    if (candidate) {
+      return candidate
+    }
+  }
+  return null
+}
+
+function isOxcWevuFactoryCall(call: any, module: ModuleAnalysis) {
+  const callee = unwrapOxcTypeLikeExpression(call.callee)
+  if (callee?.type === 'Identifier') {
+    const binding = module.importedBindings.get(callee.name)
+    return binding?.kind === 'named'
+      && isWevuRuntimeModuleId(binding.source)
+      && WEVU_FACTORY_NAMES.has(binding.importedName as WevuFactoryName)
+  }
+
+  if (
+    callee?.type === 'MemberExpression'
+    && !callee.computed
+    && callee.object?.type === 'Identifier'
+    && callee.property?.type === 'Identifier'
+  ) {
+    const binding = module.importedBindings.get(callee.object.name)
+    return binding?.kind === 'namespace'
+      && isWevuRuntimeModuleId(binding.source)
+      && WEVU_FACTORY_NAMES.has(callee.property.name as WevuFactoryName)
+  }
+
+  return false
+}
+
+function collectTargetOptionsObjectsWithOxcModule(
+  ast: any,
+  module: ModuleAnalysis,
+): { optionsObjects: OptionsObject[], module: ModuleAnalysis } {
+  const optionsObjects: OptionsObject[] = []
+  const constObjectBindings = new Map<string, OptionsObject>()
+  const pendingConstObjectRefs: string[] = []
+
+  for (const stmt of ast?.body ?? []) {
+    if (stmt?.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations ?? []) {
+        if (decl?.id?.type === 'Identifier' && decl.init?.type === 'ObjectExpression') {
+          constObjectBindings.set(decl.id.name, decl.init)
+        }
+      }
+      continue
+    }
+
+    if (stmt?.type !== 'ExpressionStatement') {
+      continue
+    }
+
+    const call = getOxcCallExpression(stmt.expression)
+    if (!call || !isOxcWevuFactoryCall(call, module)) {
+      continue
+    }
+
+    const first = call.arguments?.[0]
+    if (!first) {
+      continue
+    }
+
+    const inlineObject = resolveOxcOptionsObjectFromExpression(first, constObjectBindings)
+    if (inlineObject) {
+      optionsObjects.push(inlineObject)
+    }
+    else if (first.type === 'Identifier') {
+      pendingConstObjectRefs.push(first.name)
+    }
+  }
+
+  for (const name of pendingConstObjectRefs) {
+    const target = constObjectBindings.get(name)
+    if (target) {
+      optionsObjects.push(target)
+    }
+  }
+
+  return { optionsObjects, module }
+}
+
 export function collectTargetOptionsObjects(
   ast: t.File,
   moduleId: string,
@@ -259,7 +413,7 @@ export function collectTargetOptionsObjectsFromCode(
   options?: {
     astEngine?: AstEngineName
   },
-): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
+): { optionsObjects: OptionsObject[], module: ModuleAnalysis } {
   if (options?.astEngine === 'oxc') {
     const mayReferenceWevuFactory = code.includes('wevu')
       && (
@@ -301,14 +455,9 @@ export function collectTargetOptionsObjectsFromCode(
       }
     }
 
-    // options 对象抽取仍然依赖 Babel AST 可变结构，暂时保持这条链路不变。
-    const result = collectTargetOptionsObjects(parseJsLike(code), moduleId)
-    return {
-      optionsObjects: result.optionsObjects,
-      module,
-    }
+    return collectTargetOptionsObjectsWithOxcModule(module.ast, module)
   }
 
   const module = createModuleAnalysisFromCode(moduleId, code, options)
-  return collectTargetOptionsObjectsWithModule(module.ast!, module)
+  return collectTargetOptionsObjectsWithModule(module.ast as t.File, module)
 }

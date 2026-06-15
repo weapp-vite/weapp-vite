@@ -19,10 +19,12 @@ export type ImportBinding
     | { kind: 'default', source: string }
     | { kind: 'namespace', source: string }
 
+export type ModuleAst = t.File | { type: string, [key: string]: any }
+
 export interface ModuleAnalysis {
   id: string
   engine: AstEngineName
-  ast?: t.File
+  ast?: ModuleAst
   wevuNamedHookLocals: Map<string, WevuPageFeatureFlag>
   wevuNamespaceLocals: Set<string>
   importedBindings: Map<string, ImportBinding>
