@@ -10,7 +10,7 @@ import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
 import { getRequestBodyValue, HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
 import { encodeMultipartFormData } from './multipart'
 import { resolveRequestMiniProgramOptions } from './networkDefaults'
-import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, isArrayBufferLike, normalizeHeaderName } from './shared'
 import { FormDataPolyfill } from './web'
 
 export type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
@@ -199,7 +199,7 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
     }
     return body.toString()
   }
-  if (body instanceof ArrayBuffer) {
+  if (isArrayBufferLike(body)) {
     return cloneArrayBuffer(body)
   }
   if (ArrayBuffer.isView(body)) {

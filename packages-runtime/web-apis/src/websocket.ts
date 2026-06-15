@@ -9,7 +9,7 @@ import {
   resolveWebSocketMiniProgramOptions,
 
 } from './networkDefaults'
-import { cloneArrayBuffer, cloneArrayBufferView, RequestGlobalsEventTarget } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, isArrayBufferLike, RequestGlobalsEventTarget } from './shared'
 import { URLPolyfill } from './url'
 import { BlobPolyfill } from './web'
 
@@ -156,7 +156,7 @@ function toBinaryPayload(data: WebSocketSendData) {
   if (typeof data === 'string') {
     return data
   }
-  if (data instanceof ArrayBuffer) {
+  if (isArrayBufferLike(data)) {
     return cloneArrayBuffer(data)
   }
   if (ArrayBuffer.isView(data)) {

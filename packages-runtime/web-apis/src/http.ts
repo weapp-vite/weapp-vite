@@ -5,6 +5,7 @@ import {
   cloneArrayBufferView,
   decodeText,
   encodeText,
+  isArrayBufferLike,
   normalizeHeaderName,
 } from './shared'
 import { FormDataPolyfill } from './web'
@@ -125,7 +126,7 @@ const responseBodyStore = new WeakMap<ResponsePolyfill, RequestBodyLike>()
 const responseBodyUsedStore = new WeakMap<ResponsePolyfill, boolean>()
 
 function normalizeBody(body: unknown): RequestBodyLike {
-  if (body == null || typeof body === 'string' || body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
+  if (body == null || typeof body === 'string' || isArrayBufferLike(body) || ArrayBuffer.isView(body)) {
     return body as RequestBodyLike
   }
   if (typeof Blob !== 'undefined' && body instanceof Blob) {
@@ -147,7 +148,7 @@ async function readBodyAsArrayBuffer(body: RequestBodyLike): Promise<ArrayBuffer
   if (typeof body === 'string') {
     return encodeText(body)
   }
-  if (body instanceof ArrayBuffer) {
+  if (isArrayBufferLike(body)) {
     return cloneArrayBuffer(body)
   }
   if (ArrayBuffer.isView(body)) {

@@ -1,4 +1,4 @@
-import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText, isArrayBufferLike } from './shared'
 
 export interface BlobLikePart {
   readonly size?: number
@@ -24,7 +24,7 @@ function normalizeBlobPart(part: BlobPart): Promise<ArrayBuffer> {
   if (part && typeof part === 'object' && typeof (part as BlobPolyfill).arrayBuffer === 'function') {
     return (part as BlobLikePart).arrayBuffer()
   }
-  if (part instanceof ArrayBuffer) {
+  if (isArrayBufferLike(part)) {
     return Promise.resolve(cloneArrayBuffer(part))
   }
   if (ArrayBuffer.isView(part)) {
@@ -48,7 +48,7 @@ export class BlobPolyfill {
       if (part && typeof part === 'object' && typeof (part as BlobLikePart).size === 'number') {
         return total + Number((part as BlobLikePart).size)
       }
-      if (part instanceof ArrayBuffer) {
+      if (isArrayBufferLike(part)) {
         return total + part.byteLength
       }
       if (ArrayBuffer.isView(part)) {

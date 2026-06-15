@@ -36,6 +36,7 @@ const microtaskState = ref('pending')
 const baseUrl = ref('')
 const formDataUploadStatus = ref('idle')
 const formDataUploadPayload = ref('')
+const formDataReadKind = ref('')
 
 queueMicrotask(() => {
   microtaskState.value = 'flushed'
@@ -71,7 +72,6 @@ interface Issue448WxApi {
   }) => void
   getFileSystemManager: () => {
     readFile: (options: {
-      encoding?: 'binary'
       fail?: (error: unknown) => void
       filePath: string
       success?: (result: { data: string | ArrayBuffer }) => void
@@ -98,11 +98,11 @@ function downloadFile(url: string) {
 function readDownloadedFile(filePath: string) {
   return new Promise<ArrayBuffer>((resolve, reject) => {
     wxApi.getFileSystemManager().readFile({
-      encoding: 'binary',
       fail: reject,
       filePath,
       success(result) {
         if (typeof result.data === 'string') {
+          formDataReadKind.value = 'string'
           const bytes = new Uint8Array(result.data.length)
           for (let index = 0; index < result.data.length; index++) {
             bytes[index] = result.data.charCodeAt(index) & 0xFF
@@ -110,6 +110,7 @@ function readDownloadedFile(filePath: string) {
           resolve(bytes.buffer)
           return
         }
+        formDataReadKind.value = 'arraybuffer'
         resolve(result.data)
       },
     })
@@ -180,6 +181,7 @@ async function uploadDownloadedFileAsFormData() {
     blob: blobPayload.files.find(item => item.name === 'blob-file'),
     expectedSha256: blobPayload.expectedSha256,
     file: filePayload.files.find(item => item.name === 'file-file'),
+    readKind: formDataReadKind.value,
     request: requestPayload.files.find(item => item.name === 'request-file'),
   }
   formDataUploadPayload.value = JSON.stringify(payload)
@@ -230,6 +232,7 @@ function _runE2E() {
     errorResponseType: errorResponse.type,
     formDataUploadPayload: formDataUploadPayload.value,
     formDataUploadStatus: formDataUploadStatus.value,
+    formDataReadKind: formDataReadKind.value,
     microtaskState: microtaskState.value,
   }
 }
@@ -250,6 +253,7 @@ function _runE2E() {
     <text class="issue448-line">cookies = {{ cookieCount }}</text>
     <text class="issue448-line">json = {{ jsonResponseContentType }}</text>
     <text class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
+    <text class="issue448-line">read = {{ formDataReadKind }}</text>
     <text class="issue448-line">upload = {{ formDataUploadStatus }}</text>
     <text class="issue448-line">uploadPayload = {{ formDataUploadPayload }}</text>
     <text class="issue448-line">microtask = {{ microtaskState }}</text>
