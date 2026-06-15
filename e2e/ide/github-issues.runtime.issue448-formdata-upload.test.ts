@@ -52,7 +52,7 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
     }
   })
 
-  it('uploads wx.downloadFile data as Blob and File FormData bodies in real DevTools', async (ctx) => {
+  it('uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools', async (ctx) => {
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)
     }
@@ -84,14 +84,22 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
         filename: 'downloaded-file.bin',
         name: 'file-file',
       })
+      expect(result?.payload?.request).toMatchObject({
+        contentType: 'application/octet-stream',
+        filename: 'downloaded-request.bin',
+        name: 'request-file',
+      })
       expect(result?.payload?.blob?.sha256).toBe(result?.payload?.expectedSha256)
       expect(result?.payload?.file?.sha256).toBe(result?.payload?.expectedSha256)
+      expect(result?.payload?.request?.sha256).toBe(result?.payload?.expectedSha256)
       expect(result?.payload?.blob?.size).toBeGreaterThan(0)
       expect(result?.payload?.file?.size).toBe(result?.payload?.blob?.size)
+      expect(result?.payload?.request?.size).toBe(result?.payload?.blob?.size)
       expect(runtime.formDataUploadStatus).toBe('passed')
       expect(runtime.formDataUploadPayload).toContain('downloaded-blob.bin')
       expect(runtime.formDataUploadPayload).toContain('downloaded-file.bin')
-      expect(serverHandle?.requestCounts.formDataUpload).toBe(2)
+      expect(runtime.formDataUploadPayload).toContain('downloaded-request.bin')
+      expect(serverHandle?.requestCounts.formDataUpload).toBe(3)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

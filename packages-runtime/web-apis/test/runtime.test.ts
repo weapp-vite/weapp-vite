@@ -453,6 +453,48 @@ describe('request globals runtime', () => {
     expect(multipartBody).toContain('file payload')
   })
 
+  it('preserves FormData bodies when fetch receives a Request polyfill', async () => {
+    let requestOptions: Record<string, any> | undefined
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptions = options
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch', 'Request'],
+    })
+
+    const formData = new globalThis.FormData()
+    formData.append('message', 'hello')
+    formData.append('file', new globalThis.File(['file payload'], 'file.txt', { type: 'text/plain' }))
+
+    const request = new globalThis.Request('https://request-globals.invalid/upload', {
+      body: formData,
+      method: 'POST',
+    })
+    const response = await globalThis.fetch(request)
+
+    expect(await response.json()).toEqual({ ok: true })
+    expect(requestOptions?.header['content-type']).toMatch(/^multipart\/form-data; boundary=----weapp-vite-formdata-/)
+    expect(requestOptions?.data).toBeInstanceOf(ArrayBuffer)
+
+    const multipartBody = new TextDecoder().decode(requestOptions?.data)
+    expect(multipartBody).toContain('name="message"')
+    expect(multipartBody).toContain('hello')
+    expect(multipartBody).toContain('name="file"; filename="file.txt"')
+    expect(multipartBody).toContain('file payload')
+  })
+
   it('installs request globals onto additional mini-program host globals discovered from shared platform registry', async () => {
     ;(globalThis as Record<string, any>).swan = {}
 

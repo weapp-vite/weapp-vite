@@ -7,6 +7,7 @@ import {
   encodeText,
   normalizeHeaderName,
 } from './shared'
+import { FormDataPolyfill } from './web'
 
 type HeaderTuple = readonly [string, string]
 type HeaderRecord = Record<string, string>
@@ -117,7 +118,7 @@ export class HeadersPolyfill {
   }
 }
 
-type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | null | undefined
+type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | FormData | FormDataPolyfill | null | undefined
 const requestBodyStore = new WeakMap<RequestPolyfill, RequestBodyLike>()
 const requestBodyUsedStore = new WeakMap<RequestPolyfill, boolean>()
 const responseBodyStore = new WeakMap<ResponsePolyfill, RequestBodyLike>()
@@ -128,6 +129,12 @@ function normalizeBody(body: unknown): RequestBodyLike {
     return body as RequestBodyLike
   }
   if (typeof Blob !== 'undefined' && body instanceof Blob) {
+    return body
+  }
+  if (typeof FormData !== 'undefined' && body instanceof FormData) {
+    return body
+  }
+  if (body instanceof FormDataPolyfill) {
     return body
   }
   return String(body)
@@ -160,7 +167,7 @@ async function readBodyAsText(body: RequestBodyLike) {
   return decodeText(buffer)
 }
 
-function getRequestBodyValue(request?: RequestPolyfill) {
+export function getRequestBodyValue(request?: RequestPolyfill) {
   return request ? requestBodyStore.get(request) : undefined
 }
 

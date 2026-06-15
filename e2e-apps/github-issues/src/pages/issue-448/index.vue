@@ -60,6 +60,9 @@ interface MultipartUploadPayload {
   path: string
 }
 
+type UploadFormDataInput = Parameters<typeof fetch>[0]
+type UploadFormDataInit = Parameters<typeof fetch>[1]
+
 interface Issue448WxApi {
   downloadFile: (options: {
     fail?: (error: unknown) => void
@@ -132,6 +135,11 @@ function assertUploadPayload(payload: MultipartUploadPayload, expectedNames: str
   }
 }
 
+async function uploadFormData(input: UploadFormDataInput, init?: UploadFormDataInit) {
+  const response = await fetch(input, init)
+  return await response.json() as MultipartUploadPayload
+}
+
 async function uploadDownloadedFileAsFormData() {
   if (!baseUrl.value) {
     throw new Error('missing issue-448 baseUrl')
@@ -146,26 +154,33 @@ async function uploadDownloadedFileAsFormData() {
   const buffer = await readDownloadedFile(download.tempFilePath)
   const blobFormData = new FormData()
   blobFormData.append('blob-file', new Blob([buffer], { type: 'application/octet-stream' }), 'downloaded-blob.bin')
-  const blobResponse = await fetch(`${baseUrl.value}/issue-448/upload`, {
+  const blobPayload = await uploadFormData(`${baseUrl.value}/issue-448/upload`, {
     body: blobFormData,
     method: 'POST',
   })
-  const blobPayload = await blobResponse.json() as MultipartUploadPayload
   assertUploadPayload(blobPayload, ['blob-file'])
 
   const fileFormData = new FormData()
   fileFormData.append('file-file', new File([buffer], 'downloaded-file.bin', { type: 'application/octet-stream' }))
-  const fileResponse = await fetch(`${baseUrl.value}/issue-448/upload`, {
+  const filePayload = await uploadFormData(`${baseUrl.value}/issue-448/upload`, {
     body: fileFormData,
     method: 'POST',
   })
-  const filePayload = await fileResponse.json() as MultipartUploadPayload
   assertUploadPayload(filePayload, ['file-file'])
+
+  const requestFormData = new FormData()
+  requestFormData.append('request-file', new File([buffer], 'downloaded-request.bin', { type: 'application/octet-stream' }))
+  const requestPayload = await uploadFormData(new Request(`${baseUrl.value}/issue-448/upload`, {
+    body: requestFormData,
+    method: 'POST',
+  }))
+  assertUploadPayload(requestPayload, ['request-file'])
 
   const payload = {
     blob: blobPayload.files.find(item => item.name === 'blob-file'),
     expectedSha256: blobPayload.expectedSha256,
     file: filePayload.files.find(item => item.name === 'file-file'),
+    request: requestPayload.files.find(item => item.name === 'request-file'),
   }
   formDataUploadPayload.value = JSON.stringify(payload)
   formDataUploadStatus.value = 'passed'
