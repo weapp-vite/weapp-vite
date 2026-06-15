@@ -93,6 +93,7 @@ const iterations = readPositiveIntegerEnv('HMR_LAB_ITERATIONS', 2)
 const timeoutMs = readPositiveIntegerEnv('HMR_LAB_TIMEOUT_MS', 30_000)
 const filter = process.env.HMR_LAB_FILTER?.trim()
 const failOnError = process.env.HMR_LAB_FAIL_ON_ERROR === '1'
+const astEngine = process.env.HMR_LAB_AST_ENGINE === 'oxc' ? 'oxc' : 'babel'
 const SCENARIOS: ScenarioCase[] = [
   createReplaceScenario('app-json', 'app.json', 'src/app.json', 'HMR_LAB_APP_JSON_MARKER', fileWait('app.json')),
   createReplaceScenario('app-wxss', 'app.wxss', 'src/app.wxss', 'app-style-marker', fileWait('app.wxss'), cssExpected),
@@ -165,6 +166,7 @@ async function main() {
     const report = {
       generatedAt: new Date().toISOString(),
       app: 'apps/hmr-lab',
+      astEngine,
       iterations,
       timeoutMs,
       startupMs,
@@ -414,7 +416,7 @@ async function waitForHmrProfileSample(sourcePath: string, startLineCount: numbe
     if (matched) {
       return formatProfileSample(matched)
     }
-    const latest = samples.at(-1)
+    const latest = samples[samples.length - 1]
     if (latest) {
       return formatProfileSample(latest)
     }
@@ -471,6 +473,7 @@ async function pathExists(filePath: string) {
 function renderMarkdown(report: {
   generatedAt: string
   app: string
+  astEngine: string
   iterations: number
   timeoutMs: number
   startupMs: number
@@ -481,6 +484,7 @@ function renderMarkdown(report: {
     '',
     `- generatedAt: ${report.generatedAt}`,
     `- app: ${report.app}`,
+    `- astEngine: ${report.astEngine}`,
     `- startup: ${formatMs(report.startupMs)}`,
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,

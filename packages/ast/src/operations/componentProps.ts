@@ -8,9 +8,11 @@ import { parseJsLikeWithEngine } from '../engine'
 export type ComponentPropMap = Map<string, string>
 
 const COMPONENT_PROPS_TEXT_HINTS = ['properties', 'props']
+const COMPONENT_OPTIONS_CALL_HINT_RE = /\b[a-z_$][\w$]*(?:\s*<[^(){};]+>)?\s*(?:\?\.\s*)?\(/i
 
 export function mayContainComponentPropsShape(code: string) {
   return COMPONENT_PROPS_TEXT_HINTS.some(hint => code.includes(hint))
+    && COMPONENT_OPTIONS_CALL_HINT_RE.test(code)
 }
 
 const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
@@ -319,6 +321,7 @@ export function collectComponentPropsWithOxc(code: string): ComponentPropMap {
   walk(ast, {
     enter(node) {
       if (resolved) {
+        this.skip()
         return
       }
 
@@ -344,6 +347,7 @@ export function collectComponentPropsWithOxc(code: string): ComponentPropMap {
       for (const [key, value] of extractComponentProperties(optionsObject)) {
         props.set(key, value)
       }
+      this.skip()
     },
   })
 

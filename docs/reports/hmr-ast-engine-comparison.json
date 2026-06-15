@@ -1,0 +1,289 @@
+{
+  "summary": {
+    "generatedAt": "2026-06-15T14:04:24.805Z",
+    "iterations": 2,
+    "stableScenarioCount": 20,
+    "babelStartupMs": 1507.263292,
+    "oxcStartupMs": 1507.521041,
+    "babelAverageMs": 47.13790212499883,
+    "oxcAverageMs": 48.3087479750002,
+    "averageDeltaMs": 1.1708458500013705,
+    "averageSpeedupPercent": 1.983339955826858,
+    "babelFailures": [
+      {
+        "id": "app-script",
+        "error": "Timed out waiting for apps/hmr-lab/dist/app.js to contain marker: HMR_LAB_APP_SCRIPT_1"
+      },
+      {
+        "id": "shared-scss",
+        "error": "Timed out waiting for dist to contain marker: hmr-lab-shared-scss-1"
+      },
+      {
+        "id": "shared-template-import",
+        "error": "Timed out waiting for apps/hmr-lab/dist/shared/templates/card.wxml to contain marker: HMR_LAB_SHARED_TEMPLATE_IMPORT_1"
+      }
+    ],
+    "oxcFailures": [
+      {
+        "id": "app-script",
+        "error": "Timed out waiting for apps/hmr-lab/dist/app.js to contain marker: HMR_LAB_APP_SCRIPT_1"
+      },
+      {
+        "id": "shared-scss",
+        "error": "Timed out waiting for dist to contain marker: hmr-lab-shared-scss-1"
+      },
+      {
+        "id": "shared-template-include",
+        "error": "Timed out waiting for apps/hmr-lab/dist/shared/templates/partial.wxml to contain marker: HMR_LAB_SHARED_TEMPLATE_INCLUDE_1"
+      }
+    ],
+    "optimizationNotes": [
+      "Component prop extraction rejects sources that only mention props/properties but never call a component/options factory.",
+      "Feature flag extraction requires relevant module/hook text plus a call-expression shape before parsing, while aliased hook calls remain supported.",
+      "OXC component prop traversal stops after the first resolved options object.",
+      "HMR lab can switch AST engine with HMR_LAB_AST_ENGINE=babel|oxc and records the engine in reports."
+    ]
+  },
+  "rows": [
+    {
+      "id": "app-json",
+      "source": "src/app.json",
+      "babel": 22.72762499999999,
+      "oxc": 20.900541499999804,
+      "delta": -1.8270835000001853,
+      "speedup": 8.0390427948375,
+      "bTransform": 0.099874499999828,
+      "oTransform": 0.131770500000016,
+      "bWrite": 0.6230420000000549,
+      "oWrite": 0.8272504999997636
+    },
+    {
+      "id": "app-wxss",
+      "source": "src/app.wxss",
+      "babel": 18.21131249999985,
+      "oxc": 16.367500000000064,
+      "delta": -1.8438124999997854,
+      "speedup": 10.124544839916402,
+      "bTransform": 0.07902100000001155,
+      "oTransform": 0.08204200000045603,
+      "bWrite": 0.8192085000000588,
+      "oWrite": 0.7475419999998394
+    },
+    {
+      "id": "native-template",
+      "source": "src/pages/native/index.wxml",
+      "babel": 23.837375499999325,
+      "oxc": 22.745667000002868,
+      "delta": -1.0917084999964572,
+      "speedup": 4.579818361280956,
+      "bTransform": 0.12618750000183354,
+      "oTransform": 0.11895800000274903,
+      "bWrite": 1.5564380000032543,
+      "oWrite": 1.3027499999989232
+    },
+    {
+      "id": "native-style",
+      "source": "src/pages/native/index.wxss",
+      "babel": 23.509812500000407,
+      "oxc": 23.37174999999843,
+      "delta": -0.13806250000197906,
+      "speedup": 0.5872547898966727,
+      "bTransform": 0.11820849999639904,
+      "oTransform": 0.10449999999764259,
+      "bWrite": 1.2794374999975844,
+      "oWrite": 0.9682289999982459
+    },
+    {
+      "id": "native-script",
+      "source": "src/pages/native/index.ts",
+      "babel": 47.64114650000192,
+      "oxc": 47.928208000004815,
+      "delta": 0.287061500002892,
+      "speedup": -0.6025495209332974,
+      "bTransform": 0.5753554999973858,
+      "oTransform": 0.6136664999867207,
+      "bWrite": 0.8965834999980871,
+      "oWrite": 0.8751664999981585
+    },
+    {
+      "id": "native-json",
+      "source": "src/pages/native/index.json",
+      "babel": 21.884208000003127,
+      "oxc": 23.671479500000714,
+      "delta": 1.787271499997587,
+      "speedup": -8.16694622897631,
+      "bTransform": 0.0943749999969441,
+      "oTransform": 0.12608299999919836,
+      "bWrite": 1.628916499998013,
+      "oWrite": 1.234042000000045
+    },
+    {
+      "id": "component-template",
+      "source": "src/components/probe-card/index.wxml",
+      "babel": 19.532145500001207,
+      "oxc": 19.179833500002132,
+      "delta": -0.35231199999907403,
+      "speedup": 1.8037547385618864,
+      "bTransform": 0.10547949999818229,
+      "oTransform": 0.13727099999960046,
+      "bWrite": 0.8858124999969732,
+      "oWrite": 0.8864789999970526
+    },
+    {
+      "id": "component-style",
+      "source": "src/components/probe-card/index.wxss",
+      "babel": 33.90239599999768,
+      "oxc": 22.12029149999944,
+      "delta": -11.78210449999824,
+      "speedup": 34.75301421173609,
+      "bTransform": 0.18997899999521906,
+      "oTransform": 0.10104199999841512,
+      "bWrite": 1.1096044999976584,
+      "oWrite": 2.6351455000003625
+    },
+    {
+      "id": "component-script",
+      "source": "src/components/probe-card/index.ts",
+      "babel": 46.1484169999967,
+      "oxc": 40.951208999998926,
+      "delta": -5.197207999997772,
+      "speedup": 11.261942094347773,
+      "bTransform": 0.3026239999962854,
+      "oTransform": 0.2637284999982512,
+      "bWrite": 0.8509379999995872,
+      "oWrite": 0.8320834999976796
+    },
+    {
+      "id": "component-json",
+      "source": "src/components/probe-card/index.json",
+      "babel": 20.966208499998174,
+      "oxc": 19.220541500002582,
+      "delta": -1.745666999995592,
+      "speedup": 8.326097682352744,
+      "bTransform": 0.1282085000020743,
+      "oTransform": 0.09789599999930942,
+      "bWrite": 0.9255835000003572,
+      "oWrite": 0.9202915000023495
+    },
+    {
+      "id": "sfc-template",
+      "source": "src/pages/sfc/index.vue",
+      "babel": 168.2503125000003,
+      "oxc": 172.21687550000206,
+      "delta": 3.96656300000177,
+      "speedup": -2.3575367802076226,
+      "bTransform": 12.830833999996685,
+      "oTransform": 12.705478999996558,
+      "bWrite": 2.657374999998865,
+      "oWrite": 1.7736874999973224
+    },
+    {
+      "id": "sfc-script",
+      "source": "src/pages/sfc/index.vue",
+      "babel": 125.13922949999687,
+      "oxc": 127.66018750000148,
+      "delta": 2.5209580000046117,
+      "speedup": -2.014522552262218,
+      "bTransform": 6.107625000011467,
+      "oTransform": 5.675915499999974,
+      "bWrite": 2.4599374999997963,
+      "oWrite": 1.3367289999987406
+    },
+    {
+      "id": "sfc-style",
+      "source": "src/pages/sfc/index.vue",
+      "babel": 117.65052099999593,
+      "oxc": 143.20143749999988,
+      "delta": 25.55091650000395,
+      "speedup": -21.71763990743809,
+      "bTransform": 3.5171440000121947,
+      "oTransform": 4.015604000011081,
+      "bWrite": 2.349812499996915,
+      "oWrite": 1.7137704999986454
+    },
+    {
+      "id": "html-template",
+      "source": "src/pages/html/index.html",
+      "babel": 17.36627099999896,
+      "oxc": 20.414770499999577,
+      "delta": 3.0484995000006165,
+      "speedup": -17.554139861118134,
+      "bTransform": 0.1756874999991851,
+      "oTransform": 0.10152050000033341,
+      "bWrite": 0.8032079999975394,
+      "oWrite": 0.8112915000019711
+    },
+    {
+      "id": "shared-ts",
+      "source": "src/shared/tokens.ts",
+      "babel": 131.32870799999728,
+      "oxc": 136.49024999999892,
+      "delta": 5.161542000001646,
+      "speedup": -3.9302465383286593,
+      "bTransform": 6.47835400000622,
+      "oTransform": 6.475042500009295,
+      "bWrite": 1.635687499998312,
+      "oWrite": 1.6994579999991402
+    },
+    {
+      "id": "shared-wxs",
+      "source": "src/shared/wxs/format.wxs",
+      "babel": 22.24810399999842,
+      "oxc": 19.38529149999522,
+      "delta": -2.8628125000032014,
+      "speedup": 12.867669532664017,
+      "bTransform": 0.11527049999131123,
+      "oTransform": 0.06379199999355478,
+      "bWrite": 5.061166999999841,
+      "oWrite": 5.191770499994163
+    },
+    {
+      "id": "subpackage-template",
+      "source": "src/subpackages/lab/pages/sub-native/index.wxml",
+      "babel": 14.203791500003717,
+      "oxc": 11.55102099999931,
+      "delta": -2.652770500004408,
+      "speedup": 18.676495638532245,
+      "bTransform": 0.0836254999958328,
+      "oTransform": 0.07054150000476511,
+      "bWrite": 0.948499999998603,
+      "oWrite": 0.5609584999983781
+    },
+    {
+      "id": "subpackage-style",
+      "source": "src/subpackages/lab/pages/sub-native/index.wxss",
+      "babel": 13.804249499989965,
+      "oxc": 12.618083500005014,
+      "delta": -1.1861659999849508,
+      "speedup": 8.59275978738151,
+      "bTransform": 0.07735399999364745,
+      "oTransform": 0.05675100001099054,
+      "bWrite": 0.6823749999966822,
+      "oWrite": 0.7102914999995846
+    },
+    {
+      "id": "subpackage-script",
+      "source": "src/subpackages/lab/pages/sub-native/index.ts",
+      "babel": 41.29437499999767,
+      "oxc": 54.011478999993415,
+      "delta": 12.717103999995743,
+      "speedup": -30.796213770026693,
+      "bTransform": 0.34547749999910593,
+      "oTransform": 0.30791649999446236,
+      "bWrite": 0.8111040000003413,
+      "oWrite": 0.8979589999944437
+    },
+    {
+      "id": "subpackage-json",
+      "source": "src/subpackages/lab/pages/sub-native/index.json",
+      "babel": 13.111833499999193,
+      "oxc": 12.168541999999434,
+      "delta": -0.9432914999997593,
+      "speedup": 7.194199804320404,
+      "bTransform": 0.08049999999639113,
+      "oTransform": 0.051833500001521315,
+      "bWrite": 0.6607919999951264,
+      "oWrite": 0.5757914999994682
+    }
+  ]
+}

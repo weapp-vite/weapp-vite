@@ -397,6 +397,8 @@ export function useCounter() {
 
     expect(collectComponentPropsFromCode(source, { astEngine: 'babel' })).toEqual(new Map())
     expect(collectComponentPropsFromCode(source, { astEngine: 'oxc' })).toEqual(new Map())
+    expect(collectComponentPropsFromCode('export const properties = {}', { astEngine: 'babel' })).toEqual(new Map())
+    expect(collectComponentPropsFromCode('export const props = {}', { astEngine: 'oxc' })).toEqual(new Map())
     expect(babelParseSpy).not.toHaveBeenCalled()
     expect(engineParseSpy).not.toHaveBeenCalled()
 
@@ -472,6 +474,8 @@ export function useCounter() {
     }
 
     expect(mayContainComponentPropsShape('Component({ properties: { title: String } })')).toBe(true)
+    expect(mayContainComponentPropsShape('const properties = {}')).toBe(false)
+    expect(mayContainComponentPropsShape('const meta = { props: {} }')).toBe(false)
     expect(mayContainComponentPropsShape('const value = ref(1)')).toBe(false)
     expect(mapConstructorName('String')).toBe('string')
     expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
@@ -613,6 +617,14 @@ wevuNs.onShow?.(() => {})
       ...options,
       astEngine: 'oxc',
     })).toEqual(expected)
+    expect(collectFeatureFlagsFromCode(`import { onLoad as useLoad } from 'wevu'\nuseLoad(() => {})`, {
+      ...options,
+      astEngine: 'babel',
+    })).toEqual(new Set(['enableShare']))
+    expect(collectFeatureFlagsFromCode(`import { onLoad as useLoad } from 'wevu'\nuseLoad(() => {})`, {
+      ...options,
+      astEngine: 'oxc',
+    })).toEqual(new Set(['enableShare']))
   })
 
   it('fast rejects unrelated feature flag sources before parsing', () => {
@@ -638,6 +650,14 @@ export function useCounter() {
       astEngine: 'babel',
     })).toEqual(new Set())
     expect(collectFeatureFlagsFromCode(source, {
+      ...options,
+      astEngine: 'oxc',
+    })).toEqual(new Set())
+    expect(collectFeatureFlagsFromCode(`import { onLoad } from 'wevu'\nexport { onLoad }`, {
+      ...options,
+      astEngine: 'babel',
+    })).toEqual(new Set())
+    expect(collectFeatureFlagsFromCode(`import { onShow } from 'wevu'\nconst hook = onShow`, {
       ...options,
       astEngine: 'oxc',
     })).toEqual(new Set())
@@ -668,7 +688,8 @@ wevuNs.onShow(() => {})
 `, 'wevu', hookToFeature)).toEqual(new Set(['enableLoad', 'enableShow']))
     expect(collectFeatureFlagsWithBabel('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
     expect(collectFeatureFlagsWithOxc('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
-    expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(true)
+    expect(mayContainFeatureFlagHints(`import { onLoad as useLoad } from 'wevu'\nuseLoad(() => {})`, 'wevu', hookToFeature)).toBe(true)
+    expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
     expect(mayContainFeatureFlagHints(`import { onReady } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
     expect(mayContainFeatureFlagHints(`import { onLoad } from 'vue'`, 'wevu', hookToFeature)).toBe(false)
 

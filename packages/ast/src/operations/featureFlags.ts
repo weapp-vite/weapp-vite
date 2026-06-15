@@ -4,6 +4,8 @@ import { walk } from 'oxc-walker'
 import { parseJsLike, traverse } from '../babel'
 import { parseJsLikeWithEngine } from '../engine'
 
+const CALL_EXPRESSION_TEXT_RE = /\b[a-z_$][\w$]*(?:\s*<[^(){};]+>)?\s*(?:\?\.\s*)?\(/i
+
 export interface FeatureFlagOptions<TFeature extends string> {
   astEngine?: AstEngineName
   moduleId: string
@@ -18,7 +20,8 @@ export function mayContainFeatureFlagHints<TFeature extends string>(
   if (!code.includes(moduleId)) {
     return false
   }
-  return Object.keys(hookToFeature).some(hookName => code.includes(hookName))
+  return CALL_EXPRESSION_TEXT_RE.test(code)
+    && Object.keys(hookToFeature).some(hookName => code.includes(hookName))
 }
 
 export function consumeNamedFeatureFlag<TFeature extends string>(
