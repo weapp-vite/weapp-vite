@@ -1,4 +1,5 @@
 import type { PageScrollInspection } from './types'
+import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../../engine'
 import {
   createLineStartOffsets,
@@ -11,6 +12,10 @@ import {
   isOxcOnPageScrollCallee,
 } from './shared'
 
+function isOxcNestedFunctionBoundary(node: any) {
+  return isOxcFunctionLike(node) || node?.type === 'FunctionDeclaration'
+}
+
 export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
   const inspection: PageScrollInspection = {
     empty: node.body?.type === 'BlockStatement' && node.body.body.length === 0,
@@ -19,17 +24,25 @@ export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspect
   }
 
   const root = node.body?.type === 'BlockStatement' ? node.body : node.body
+  if (!root) {
+    return inspection
+  }
 
-  function visit(current: any, allowNestedFunctions = false) {
-    if (!current) {
-      return
-    }
+  walk(root, {
+    enter(node) {
+      const current = node as any
+      if (
+        current !== root
+        && isOxcNestedFunctionBoundary(current)
+      ) {
+        this.skip()
+        return
+      }
 
-    if (!allowNestedFunctions && (current.type === 'FunctionExpression' || current.type === 'ArrowFunctionExpression')) {
-      return
-    }
+      if (current.type !== 'CallExpression') {
+        return
+      }
 
-    if (current.type === 'CallExpression') {
       const calleeName = getOxcCallExpressionCalleeName(current.callee)
       if (calleeName === 'setData') {
         inspection.hasSetDataCall = true
@@ -40,32 +53,8 @@ export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspect
           inspection.syncApis.add(`wx.${propertyName}`)
         }
       }
-    }
-    else if (current.type === 'ChainExpression') {
-      visit(current.expression, allowNestedFunctions)
-      return
-    }
-
-    for (const value of Object.values(current)) {
-      if (!value) {
-        continue
-      }
-      if (Array.isArray(value)) {
-        for (const child of value) {
-          if (child && typeof child === 'object' && typeof child.type === 'string') {
-            visit(child)
-          }
-        }
-      }
-      else if (typeof value === 'object' && typeof (value as any).type === 'string') {
-        visit(value)
-      }
-    }
-  }
-
-  if (root) {
-    visit(root, true)
-  }
+    },
+  })
 
   return inspection
 }
@@ -126,52 +115,30 @@ export function collectOnPageScrollWarningsWithOxc(
     }
   }
 
-  function visit(node: any) {
-    if (!node) {
-      return
-    }
-    if (node.type === 'Property' && !node.computed && getOxcStaticPropertyName(node.key) === 'onPageScroll' && isOxcFunctionLike(node.value)) {
-      const startOffset = node.method ? node.key?.end : node.value.start
-      reportInspection(node.value, 'onPageScroll', startOffset)
-    }
-    else if (
-      node.type === 'CallExpression'
-      && isOxcOnPageScrollCallee(node.callee, onPageScrollHookNames, namespaceImports)
-    ) {
-      const arg0 = node.arguments?.[0]
-      if (arg0 && arg0.type !== 'SpreadElement' && isOxcFunctionLike(arg0)) {
-        reportInspection(arg0, 'onPageScroll(...)')
-      }
-    }
-    else if (node.type === 'ChainExpression' && node.expression?.type === 'CallExpression') {
-      const arg0 = node.expression.arguments?.[0]
+  walk(ast, {
+    enter(node) {
+      const current = node as any
       if (
-        isOxcOnPageScrollCallee(node.expression.callee, onPageScrollHookNames, namespaceImports)
-        && arg0
-        && arg0.type !== 'SpreadElement'
-        && isOxcFunctionLike(arg0)
+        current.type === 'Property'
+        && !current.computed
+        && getOxcStaticPropertyName(current.key) === 'onPageScroll'
+        && isOxcFunctionLike(current.value)
       ) {
-        reportInspection(arg0, 'onPageScroll(...)')
+        const startOffset = current.method ? current.key?.end : current.value.start
+        reportInspection(current.value, 'onPageScroll', startOffset)
+        this.skip()
       }
-    }
-
-    for (const value of Object.values(node)) {
-      if (!value) {
-        continue
-      }
-      if (Array.isArray(value)) {
-        for (const child of value) {
-          if (child && typeof child === 'object' && typeof child.type === 'string') {
-            visit(child)
-          }
+      else if (
+        current.type === 'CallExpression'
+        && isOxcOnPageScrollCallee(current.callee, onPageScrollHookNames, namespaceImports)
+      ) {
+        const arg0 = current.arguments?.[0]
+        if (arg0 && arg0.type !== 'SpreadElement' && isOxcFunctionLike(arg0)) {
+          reportInspection(arg0, 'onPageScroll(...)')
+          this.skip()
         }
       }
-      else if (typeof value === 'object' && typeof (value as any).type === 'string') {
-        visit(value)
-      }
-    }
-  }
-
-  visit(ast)
+    },
+  })
   return warnings
 }

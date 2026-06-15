@@ -1056,6 +1056,25 @@ onPageScroll(() => {
     expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })).toEqual([])
   })
 
+  it('keeps oxc onPageScroll inspection bounded to the current callback body', () => {
+    const source = `import * as wevu from 'wevu'
+
+wevu.onPageScroll?.(() => {
+  function run() {
+    this.setData({ nested: true })
+    wx.getStorageSync('nested')
+  }
+
+  wx.getSystemInfoSync()
+})`
+
+    const warnings = collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })
+
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('wx.getSystemInfoSync')
+    expect(warnings[0]).not.toContain('wx.getStorageSync')
+  })
+
   it('fast rejects onPageScroll diagnostics when source text is absent', () => {
     const parseSpy = vi.spyOn(babelModule, 'parseJsLike')
     const source = `
