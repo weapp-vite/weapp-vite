@@ -1,5 +1,13 @@
 # @weapp-vite/ast
 
+## 6.16.47
+
+### Patch Changes
+
+- 🐛 **修正 Oxc 引擎下 `onPageScroll` 性能诊断的遍历边界，避免重复扫描已命中的回调体，并跳过嵌套函数声明中的调用，降低 HMR 热路径上的无效 AST 遍历。** [`dda8c7a`](https://github.com/weapp-vite/weapp-vite/commit/dda8c7a917017407e314839a9799b0faf13f5a8a) by @sonofmagic
+
+- 🐛 **优化 HMR 热路径中的 AST 预检逻辑，减少组件属性和页面特性分析在无关源码上的 Babel/Oxc 解析开销，并为 HMR lab 增加 Babel/Oxc 引擎横向对比报告能力。** [`477ca39`](https://github.com/weapp-vite/weapp-vite/commit/477ca391b93313286412a62a468b854c4b3ccbf2) by @sonofmagic
+
 ## 6.16.46
 
 ## 6.16.45

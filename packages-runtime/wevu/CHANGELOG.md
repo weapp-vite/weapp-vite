@@ -1,5 +1,13 @@
 # wevu
 
+## 6.16.47
+
+### Patch Changes
+
+- 🐛 **修复小程序宿主返回的 ArrayBuffer 放入 Blob/File 后被 FormData multipart 序列化为 `[object ArrayBuffer]` 的问题，并补齐 ArrayBuffer、ArrayBufferView、Blob、File 与 Blob-like 对象作为 fetch body 时的二进制保真处理。** [#686](https://github.com/weapp-vite/weapp-vite/pull/686) by @sonofmagic
+- 📦 **Dependencies** [`2c1cd18`](https://github.com/weapp-vite/weapp-vite/commit/2c1cd185723bce707adc5caa51a3092d82f07434)
+  → `@wevu/web-apis@1.2.23`, `@wevu/compiler@6.16.47`
+
 ## 6.16.46
 
 ### Patch Changes
