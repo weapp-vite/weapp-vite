@@ -106,6 +106,22 @@ export function isArrayBufferLike(value: unknown): value is ArrayBuffer {
     && typeof (value as ArrayBuffer).byteLength === 'number'
 }
 
+export interface RequestGlobalsBlobLike {
+  readonly size?: number
+  readonly type?: string
+  arrayBuffer: () => Promise<ArrayBuffer>
+}
+
+export function isBlobLike(value: unknown): value is RequestGlobalsBlobLike {
+  return value != null
+    && typeof value === 'object'
+    && typeof (value as RequestGlobalsBlobLike).arrayBuffer === 'function'
+    && (
+      typeof (value as RequestGlobalsBlobLike).size === 'number'
+      || typeof (value as RequestGlobalsBlobLike).type === 'string'
+    )
+}
+
 export function cloneArrayBuffer(buffer: ArrayBuffer) {
   if (typeof buffer.slice === 'function') {
     return buffer.slice(0)

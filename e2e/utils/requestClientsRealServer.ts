@@ -27,6 +27,7 @@ export interface RequestClientsRealServerState {
   axios: number
   fetch: number
   formDataUpload: number
+  rawUpload: number
   graphql: number
   socketIo: number
   vueQuery: number
@@ -58,6 +59,7 @@ function createRequestCounts(): RequestClientsRealServerState {
     axios: 0,
     fetch: 0,
     formDataUpload: 0,
+    rawUpload: 0,
     graphql: 0,
     socketIo: 0,
     vueQuery: 0,
@@ -204,6 +206,21 @@ export async function startRequestClientsRealServer(
       method: c.req.method,
       path: '/issue-448/upload',
       requestCount: requestCounts.formDataUpload,
+    })
+  })
+
+  app.post('/issue-448/raw-upload', async (c) => {
+    requestCounts.rawUpload += 1
+    const body = await readRequestBuffer(c.req.raw)
+
+    return c.json({
+      contentType: c.req.header('content-type') ?? '',
+      expectedSha256: FORM_DATA_BINARY_FIXTURE_SHA256,
+      method: c.req.method,
+      path: '/issue-448/raw-upload',
+      requestCount: requestCounts.rawUpload,
+      sha256: createHash('sha256').update(body).digest('hex'),
+      size: body.byteLength,
     })
   })
 

@@ -1,10 +1,7 @@
-import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText, isArrayBufferLike } from './shared'
+import type { RequestGlobalsBlobLike } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText, isArrayBufferLike, isBlobLike } from './shared'
 
-export interface BlobLikePart {
-  readonly size?: number
-  readonly type?: string
-  arrayBuffer: () => Promise<ArrayBuffer>
-}
+export type BlobLikePart = RequestGlobalsBlobLike
 
 export type BlobPart = ArrayBuffer | ArrayBufferView | BlobLikePart | string
 export type FormDataEntryValue = FilePolyfill | BlobPolyfill | string
@@ -21,8 +18,8 @@ function normalizeBlobPart(part: BlobPart): Promise<ArrayBuffer> {
   if (typeof part === 'string') {
     return Promise.resolve(encodeText(part))
   }
-  if (part && typeof part === 'object' && typeof (part as BlobPolyfill).arrayBuffer === 'function') {
-    return (part as BlobLikePart).arrayBuffer()
+  if (isBlobLike(part)) {
+    return part.arrayBuffer()
   }
   if (isArrayBufferLike(part)) {
     return Promise.resolve(cloneArrayBuffer(part))
