@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.54
+
+### Patch Changes
+
+- 🐛 **修复小程序宿主返回的 ArrayBuffer 放入 Blob/File 后被 FormData multipart 序列化为 `[object ArrayBuffer]` 的问题，并补齐 ArrayBuffer、ArrayBufferView、Blob、File 与 Blob-like 对象作为 fetch body 时的二进制保真处理。** [#686](https://github.com/weapp-vite/weapp-vite/pull/686) by @sonofmagic
+
+- 🐛 **优化 HMR 热路径中的 AST 预检逻辑，减少组件属性和页面特性分析在无关源码上的 Babel/Oxc 解析开销，并为 HMR lab 增加 Babel/Oxc 引擎横向对比报告能力。** [`477ca39`](https://github.com/weapp-vite/weapp-vite/commit/477ca391b93313286412a62a468b854c4b3ccbf2) by @sonofmagic
+
 ## 2.3.53
 
 ### Patch Changes

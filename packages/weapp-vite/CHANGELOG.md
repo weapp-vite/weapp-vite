@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.16.47
+
+### Patch Changes
+
+- 🐛 **优化 HMR 热路径中的 AST 预检逻辑，减少组件属性和页面特性分析在无关源码上的 Babel/Oxc 解析开销，并为 HMR lab 增加 Babel/Oxc 引擎横向对比报告能力。** [`477ca39`](https://github.com/weapp-vite/weapp-vite/commit/477ca391b93313286412a62a468b854c4b3ccbf2) by @sonofmagic
+- 📦 **Dependencies** [`2c1cd18`](https://github.com/weapp-vite/weapp-vite/commit/2c1cd185723bce707adc5caa51a3092d82f07434)
+  → `@wevu/web-apis@1.2.23`, `wevu@6.16.47`, `@weapp-vite/ast@6.16.47`
+
 ## 6.16.46
 
 ### Patch Changes

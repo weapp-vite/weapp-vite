@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.16.47
+
+### Patch Changes
+
+- 🐛 **优化 wevu 页面特性收集的 AST 热路径：无关源码先通过统一文本预检早退，OXC 模式下复用一次 module analysis 同时覆盖 `wevu` 与 `wevu/internal-runtime`，避免内部运行时导入触发重复解析。** [`14fef78`](https://github.com/weapp-vite/weapp-vite/commit/14fef78fae60b55f7b2d2b4272deeb8974526677) by @sonofmagic
+
+- 🐛 **优化 OXC AST 引擎下的 wevu 页面特性预检：命中组件工厂调用时直接复用 OXC AST 抽取 options 对象，避免再次进入 Babel 解析链路，降低 HMR 分析阶段的重复解析成本。** [`22a7e72`](https://github.com/weapp-vite/weapp-vite/commit/22a7e7241851ab9b775d9cb868034b3f568132bb) by @sonofmagic
+- 📦 **Dependencies** [`dda8c7a`](https://github.com/weapp-vite/weapp-vite/commit/dda8c7a917017407e314839a9799b0faf13f5a8a)
+  → `@weapp-vite/ast@6.16.47`
+
 ## 6.16.46
 
 ### Patch Changes
