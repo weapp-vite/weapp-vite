@@ -194,6 +194,48 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
   })
 
+  it('narrows wxml emit targets during incremental hmr renderStart', async () => {
+    const state = createState({
+      entriesMap: new Map([
+        ['pages/hmr/index', {
+          templatePath: '/project/src/pages/hmr/index.wxml',
+        }],
+      ]),
+      ctx: {
+        configService: {
+          isDev: true,
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                file: '/project/src/pages/hmr/index.wxml',
+              },
+            },
+          },
+          wxml: {
+            emittedCode: new Map(),
+          },
+        },
+      },
+      hmrState: {
+        hasBuiltOnce: true,
+        didEmitAllEntries: false,
+        lastHmrEntryIds: new Set(['/project/src/pages/hmr/index.ts']),
+      },
+    })
+    const hook = createRenderStartHook(state)
+
+    await hook.call({ emitFile: vi.fn() })
+
+    expect(emitWxmlAssetsWithCacheMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetIds: new Set(['/project/src/pages/hmr/index.wxml']),
+      }),
+    )
+  })
+
   it('emits changed style sidecar assets during metadata-only hmr', async () => {
     const state = createState({
       ctx: {

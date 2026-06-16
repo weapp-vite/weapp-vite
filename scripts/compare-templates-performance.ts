@@ -277,7 +277,9 @@ function createHmrRows(baseline: TemplatesHmrReport, optimized: TemplatesHmrRepo
       baseline: baseStats,
       optimized: optStats,
       averageFasterPercent: comparable ? fasterPercent(baseStats.averageMs, optStats.averageMs) : null,
+      bestFasterPercent: comparable ? fasterPercent(baseStats.bestMs, optStats.bestMs) : null,
       wallFasterPercent: comparable ? fasterPercent(baseStats.averageWallMs, optStats.averageWallMs) : null,
+      bestWallFasterPercent: comparable ? fasterPercent(baseStats.bestWallMs, optStats.bestWallMs) : null,
       transformFasterPercent: comparable ? fasterPercent(baseStats.transformAverageMs, optStats.transformAverageMs) : null,
     }
   })
@@ -328,10 +330,11 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     `- Build：${buildAggregate.templateCount} 个共同模板，平均 ${formatMs(buildAggregate.totalAverageBaselineMs)} -> ${formatMs(buildAggregate.totalAverageOptimizedMs)}（${formatPercent(buildAggregate.totalFasterPercent)}）。`,
     `- Warm build：${formatMs(warmBuildBaseline.totalAverageMs)} -> ${formatMs(warmBuildOptimized.totalAverageMs)}（${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))}）。`,
-    `- HMR：${hmrAggregate.scenarioCount} 个共同成功场景，profile 平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}），wall 平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
+    `- HMR：${hmrAggregate.scenarioCount} 个共同成功场景，profile best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），profile 平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    `- HMR wall：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
     `- HMR transform/plugin：${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
     '',
-    '正数代表 optimized 更快，负数代表更慢。CI 环境会有文件系统和 watcher 抖动，结论优先看共同成功模板/场景的平均值与 transform 阶段。',
+    '正数代表 optimized 更快，负数代表更慢。HMR best 表示同一场景多次真实编辑/恢复循环中的最短 profile，用于观察开发态快路径；平均值用于观察稳定性。',
     '',
     '## Build 汇总',
     '',
@@ -351,15 +354,15 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     '## HMR 汇总',
     '',
-    '| 范围 | 场景数 | profile 平均 | profile 变化 | wall 变化 | transform 变化 |',
-    '|---|---:|---:|---:|---:|---:|',
+    '| 范围 | 场景数 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | transform 变化 |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|',
     renderHmrAggregateRow('全部共同成功场景', hmrAggregate),
     ...report.hmr.groups.map(group => renderHmrAggregateRow(`group:${group.group}`, group)),
     '',
     '## HMR 场景明细',
     '',
-    '| template | scenario | profile avg | profile 变化 | wall avg | wall 变化 | transform | transform 变化 |',
-    '|---|---|---:|---:|---:|---:|---:|---:|',
+    '| template | scenario | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | transform | transform 变化 |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...report.hmr.rows
       .filter(row => row.comparable)
       .sort((a, b) => a.template.localeCompare(b.template) || a.scenario.localeCompare(b.scenario) || a.label.localeCompare(b.label))
@@ -388,11 +391,11 @@ function renderBuildRow(row: BuildComparisonRow) {
 }
 
 function renderHmrAggregateRow(label: string, stats: HmrAggregateStats) {
-  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallFasterPercent)} | ${formatPercent(stats.transformFasterPercent)} |`
+  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.bestBaselineMs)} -> ${formatMs(stats.bestOptimizedMs)} | ${formatPercent(stats.bestFasterPercent)} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallBestFasterPercent)} | ${formatPercent(stats.transformFasterPercent)} |`
 }
 
 function renderHmrRow(row: HmrComparisonRow) {
-  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.averageWallMs)} -> ${formatMs(row.optimized.averageWallMs)} | ${formatPercent(row.wallFasterPercent)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
+  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.bestMs)} -> ${formatMs(row.optimized.bestMs)} | ${formatPercent(row.bestFasterPercent)} | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.bestWallMs)} -> ${formatMs(row.optimized.bestWallMs)} | ${formatPercent(row.bestWallFasterPercent)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
 }
 
 function aggregateBuildRows(rows: BuildComparisonRow[]): BuildAggregateStats {
@@ -416,8 +419,12 @@ function aggregateBuildRows(rows: BuildComparisonRow[]): BuildAggregateStats {
 function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
   const baselineTotals = rows.flatMap(row => row.baseline.samples)
   const optimizedTotals = rows.flatMap(row => row.optimized.samples)
+  const baselineBests = rows.map(row => row.baseline.bestMs).filter(isFiniteNumber)
+  const optimizedBests = rows.map(row => row.optimized.bestMs).filter(isFiniteNumber)
   const baselineWalls = rows.flatMap(row => row.baseline.wallSamples)
   const optimizedWalls = rows.flatMap(row => row.optimized.wallSamples)
+  const baselineBestWalls = rows.map(row => row.baseline.bestWallMs).filter(isFiniteNumber)
+  const optimizedBestWalls = rows.map(row => row.optimized.bestWallMs).filter(isFiniteNumber)
   const baselineTransforms = rows.flatMap(row => row.baseline.transformSamples)
   const optimizedTransforms = rows.flatMap(row => row.optimized.transformSamples)
   return {
@@ -425,9 +432,15 @@ function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
     averageBaselineMs: average(baselineTotals),
     averageOptimizedMs: average(optimizedTotals),
     averageFasterPercent: fasterPercent(average(baselineTotals), average(optimizedTotals)),
+    bestBaselineMs: average(baselineBests),
+    bestOptimizedMs: average(optimizedBests),
+    bestFasterPercent: fasterPercent(average(baselineBests), average(optimizedBests)),
     wallAverageBaselineMs: average(baselineWalls),
     wallAverageOptimizedMs: average(optimizedWalls),
     wallFasterPercent: fasterPercent(average(baselineWalls), average(optimizedWalls)),
+    wallBestBaselineMs: average(baselineBestWalls),
+    wallBestOptimizedMs: average(optimizedBestWalls),
+    wallBestFasterPercent: fasterPercent(average(baselineBestWalls), average(optimizedBestWalls)),
     transformAverageBaselineMs: average(baselineTransforms),
     transformAverageOptimizedMs: average(optimizedTransforms),
     transformFasterPercent: fasterPercent(average(baselineTransforms), average(optimizedTransforms)),
@@ -469,7 +482,9 @@ function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
   const transformSamples = scenario?.samples.map(sample => sample.transformMs).filter(isFiniteNumber) ?? []
   return {
     averageMs: average(samples),
+    bestMs: min(samples),
     averageWallMs: average(wallSamples),
+    bestWallMs: min(wallSamples),
     samples,
     wallSamples,
     transformAverageMs: average(transformSamples),
@@ -500,6 +515,10 @@ function median(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b)
   const middle = Math.floor(sorted.length / 2)
   return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+function min(values: number[]) {
+  return values.length === 0 ? null : Math.min(...values)
 }
 
 function fasterPercent(baseline: number | null, optimized: number | null) {
@@ -663,7 +682,9 @@ interface BuildComparisonRow {
 
 interface HmrScenarioStats {
   averageMs: number | null
+  bestMs: number | null
   averageWallMs: number | null
+  bestWallMs: number | null
   samples: number[]
   wallSamples: number[]
   transformAverageMs: number | null
@@ -682,7 +703,9 @@ interface HmrComparisonRow {
   baseline: HmrScenarioStats
   optimized: HmrScenarioStats
   averageFasterPercent: number | null
+  bestFasterPercent: number | null
   wallFasterPercent: number | null
+  bestWallFasterPercent: number | null
   transformFasterPercent: number | null
 }
 
@@ -701,9 +724,15 @@ interface HmrAggregateStats {
   averageBaselineMs: number | null
   averageOptimizedMs: number | null
   averageFasterPercent: number | null
+  bestBaselineMs: number | null
+  bestOptimizedMs: number | null
+  bestFasterPercent: number | null
   wallAverageBaselineMs: number | null
   wallAverageOptimizedMs: number | null
   wallFasterPercent: number | null
+  wallBestBaselineMs: number | null
+  wallBestOptimizedMs: number | null
+  wallBestFasterPercent: number | null
   transformAverageBaselineMs: number | null
   transformAverageOptimizedMs: number | null
   transformFasterPercent: number | null

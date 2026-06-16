@@ -26,7 +26,7 @@ on:
       templates-hmr-iterations:
         description: templates HMR iterations per scenario
         required: false
-        default: '1'
+        default: '2'
       templates-build-iterations:
         description: templates build iterations per ref
         required: false
@@ -172,7 +172,7 @@ jobs:
           INPUT_HMR_STARTUP_TIMEOUT_MS: ${{ github.event.inputs['templates-hmr-startup-timeout-ms'] || '' }}
           TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/templates-performance-report
         run: |
-          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-1}"
+          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-2}"
           export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
           export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-}"
           export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE:-6}"

@@ -85,6 +85,26 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(emitFile).toHaveBeenCalledTimes(2)
   })
 
+  it('filters emitted wxml assets by target ids during incremental hmr', () => {
+    const otherFilePath = '/project/src/pages/other/index.wxml'
+    ctx.wxmlService!.tokenMap.set(otherFilePath, ctx.wxmlService!.analyze('<view>other</view>'))
+    ctx.wxmlService!.depsMap.set(otherFilePath, new Set())
+    const emitFile = vi.fn()
+
+    const result = emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+      targetIds: new Set([filePath]),
+    })
+
+    expect(result).toEqual(['pages/index/index.wxml'])
+    expect(emitFile).toHaveBeenCalledTimes(1)
+    expect(emitFile.mock.calls[0]?.[0]).toEqual(expect.objectContaining({
+      fileName: 'pages/index/index.wxml',
+    }))
+  })
+
   it('resolves emit context and throws when required services are missing', () => {
     expect(resolveWxmlEmitContext(ctx as any)).toEqual(expect.objectContaining({
       wxmlService: ctx.wxmlService,
