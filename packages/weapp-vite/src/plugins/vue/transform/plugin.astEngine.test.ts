@@ -380,7 +380,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
   })
 
-  it('still runs page feature injection for pages without direct page hook hints', async () => {
+  it('skips page feature injection for pages without hook or wevu runtime hints', async () => {
     compileVueFileMock.mockResolvedValueOnce({
       script: 'export default { setup() { const count = 1; return { count } } }',
       template: '<view>{{ count }}</view>',
@@ -422,8 +422,54 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       addWatchFile: vi.fn(),
     } as any, '<template><view>{{ count }}</view></template>', '/project/src/pages/home/index.vue')
 
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
     expect(collectOnPageScrollPerformanceWarningsMock).not.toHaveBeenCalled()
+  })
+
+  it('still runs page feature injection when page script references wevu runtime', async () => {
+    compileVueFileMock.mockResolvedValueOnce({
+      script: `import { defineComponent } from 'wevu'
+export default defineComponent({ setup() { usePageFeatureHooks() } })`,
+      template: '<view />',
+      meta: {},
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    pageMatcherIsPageFileMock.mockResolvedValue(true)
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: false,
+        },
+        weappViteConfig: {},
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => ({
+          json: {
+            pages: ['pages/home/index'],
+          },
+        })),
+        loadSubPackages: vi.fn(() => []),
+        pluginJson: undefined,
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await getHookHandler(plugin.transform as any).call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/pages/home/index.vue')
+
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
   })
 
   it('runs page scroll diagnostics only when onPageScroll hint exists', async () => {

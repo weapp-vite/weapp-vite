@@ -25,6 +25,12 @@ const PAGE_FEATURE_HOOK_HINTS = [
   'onSaveExitState',
 ]
 const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
+const WEVU_RUNTIME_MODULE_HINTS = [
+  '\'wevu\'',
+  '"wevu"',
+  '\'wevu/internal-runtime\'',
+  '"wevu/internal-runtime"',
+]
 
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
   return isPage ? 'Page({})' : 'Component({})'
@@ -57,7 +63,8 @@ export function mayNeedTransformSetDataPick(
 }
 
 export function mayNeedTransformPageFeatureInjection(script: string) {
-  return PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
+  return WEVU_RUNTIME_MODULE_HINTS.some(hint => script.includes(hint))
+    || PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
 }
 
 export function mayNeedTransformPageScrollDiagnostics(script: string) {

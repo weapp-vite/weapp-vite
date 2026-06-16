@@ -467,6 +467,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(mayNeedTransformSetDataPick('<view />')).toBe(false)
     expect(mayNeedTransformSetDataPick('<view a:if="visible" />', { platform: 'alipay' })).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('export default { onReachBottom() {} }')).toBe(true)
+    expect(mayNeedTransformPageFeatureInjection('import { defineComponent } from "wevu"; export default defineComponent({})')).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('export default {}')).toBe(false)
     expect(mayNeedTransformPageScrollDiagnostics('export default { onPageScroll() {} }')).toBe(true)
     expect(mayNeedTransformPageScrollDiagnostics('export default {}')).toBe(false)

@@ -266,7 +266,6 @@ export async function finalizeTransformCompiledResult(options: {
     configService,
     isPage,
     isApp,
-    forcePageFeatureInjection: isPage,
   })
 
   compilationCache.set(filename, {
