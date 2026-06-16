@@ -259,6 +259,7 @@ export function useLoadEntry(
   const entryLayoutDependencies = ctx.runtimeState.build.hmr.entryLayoutDependencies
   const lastActualEmittedEntryIds = new Set<string>()
   const lastChunkEmittedEntryIds = new Set<string>()
+  const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
   const metadataEntryIds = new Set<string>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
@@ -291,6 +292,9 @@ export function useLoadEntry(
       }
       const entryType = entriesMap.get(entryId)?.type === 'page' ? 'page' : 'component'
       await loadEntry.call(this, resolvedId.id, entryType)
+    },
+    (fileName) => {
+      lastEmittedChunkFileNames.add(fileName)
     },
   )
   const applyAutoImports = createAutoImportAugmenter(
@@ -411,6 +415,7 @@ export function useLoadEntry(
       const pending: ResolvedId[] = []
       lastActualEmittedEntryIds.clear()
       lastChunkEmittedEntryIds.clear()
+      lastEmittedChunkFileNames.clear()
       metadataEntryIds.clear()
 
       for (const entryId of pendingEntryIds) {

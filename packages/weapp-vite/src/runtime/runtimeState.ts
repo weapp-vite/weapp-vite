@@ -129,6 +129,7 @@ export interface RuntimeState {
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
+      lastEmittedChunkFileNames: Set<string>
       recentProfiles: Array<{
         timestamp?: string
         totalMs: number
@@ -266,6 +267,7 @@ export function createRuntimeState(): RuntimeState {
         didEmitAllEntries: false,
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),
+        lastEmittedChunkFileNames: new Set<string>(),
         recentProfiles: [],
         profile: {},
       },
