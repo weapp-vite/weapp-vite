@@ -64,6 +64,7 @@ async function normalizeWatchEvent(
   id: string,
   event: ChangeEvent,
   options: {
+    emittedJsonPaths?: Set<string>
     loadedEntrySet: Set<string>
     resolvedEntryMap: Map<string, unknown>
   },
@@ -81,6 +82,10 @@ async function normalizeWatchEvent(
       if (primaryScriptId && options.resolvedEntryMap.has(primaryScriptId)) {
         return 'update' satisfies ChangeEvent
       }
+    }
+
+    if (options.emittedJsonPaths?.has(id)) {
+      return 'update' satisfies ChangeEvent
     }
   }
 
@@ -298,6 +303,23 @@ async function processChangedFile(
     }
     markEntryDirtyWithCause(normalizedId, reason, cause)
   }
+  const markAppEntryForJsonEmit = () => {
+    const appEntryId = scanService.appEntry?.path
+      ? normalizeFsResolvedId(scanService.appEntry.path)
+      : undefined
+    if (!appEntryId || !resolvedEntryMap.has(appEntryId)) {
+      return false
+    }
+
+    for (const jsonEmitRecord of state.jsonEmitFilesMap.values()) {
+      if (jsonEmitRecord.entry.jsonPath && normalizeFsResolvedId(jsonEmitRecord.entry.jsonPath) === normalizedId) {
+        markEntryDirtyWithCause(appEntryId, 'metadata', 'json-sidecar')
+        return true
+      }
+    }
+
+    return false
+  }
 
   const addCssImporterEntries = async (startId: string) => {
     const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
@@ -387,6 +409,9 @@ async function processChangedFile(
       const primaryScript = await findJsEntry(basePath)
       if (primaryScript.path) {
         markScriptDirty(primaryScript.path, configSuffix ? 'json-sidecar' : isStyleFile ? 'style-sidecar' : 'sidecar-direct')
+        handledSidecarMetadataUpdate = true
+      }
+      else if (configSuffix && markAppEntryForJsonEmit()) {
         handledSidecarMetadataUpdate = true
       }
       else if (isStyleFile) {
@@ -577,6 +602,11 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     const event = await normalizeWatchEvent(normalizedId, change.event, {
+      emittedJsonPaths: new Set(
+        [...state.jsonEmitFilesMap.values()]
+          .map(record => record.entry.jsonPath ? normalizeFsResolvedId(record.entry.jsonPath) : '')
+          .filter(Boolean),
+      ),
       loadedEntrySet: state.loadedEntrySet,
       resolvedEntryMap: state.resolvedEntryMap,
     })

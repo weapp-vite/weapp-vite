@@ -10,7 +10,7 @@ import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED
 import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../../utils'
-import { normalizePreprocessorStyleAssets } from '../../../outputFinalizer'
+import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
 import {
   filterPluginBundleOutputs,
   flushIndependentBuilds,
@@ -188,6 +188,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         state.hmrState.hasBuiltOnce = true
       }
       prunePartialHmrStableSharedChunks(rolldownBundle, state)
+      pruneUneventedDevHmrChunks(ctx, rolldownBundle)
 
       if (assetOnlyDevHmrBundle) {
         normalizePreprocessorStyleAssets(

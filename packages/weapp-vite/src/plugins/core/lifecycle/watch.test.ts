@@ -104,6 +104,7 @@ function createState(overrides: Record<string, any> = {}) {
     buildTarget: 'app',
     loadedEntrySet: new Set<string>(),
     entriesMap: new Map<string, { type: string }>(),
+    jsonEmitFilesMap: new Map(),
     layoutEntryDependents: new Map<string, Set<string>>(),
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
@@ -194,6 +195,75 @@ describe('core lifecycle watch hook', () => {
 
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/components/x-child/index.ts', 'metadata')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
+
+  it('maps emitted app side json updates back to the app entry', async () => {
+    const appEntry = '/project/src/app.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+      ]),
+      jsonEmitFilesMap: new Map([
+        [
+          'sitemap.json',
+          {
+            fileName: 'sitemap.json',
+            entry: {
+              fileName: 'sitemap.json',
+              jsonPath: '/project/src/sitemap.json',
+              json: {},
+              type: 'page',
+            },
+          },
+        ],
+      ]),
+    })
+    state.ctx.scanService.appEntry = {
+      path: appEntry,
+    }
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/sitemap.json', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
+  })
+
+  it('normalizes transient create events on emitted app side json back to updates', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    const appEntry = '/project/src/app.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+      ]),
+      jsonEmitFilesMap: new Map([
+        [
+          'sitemap.json',
+          {
+            fileName: 'sitemap.json',
+            entry: {
+              fileName: 'sitemap.json',
+              jsonPath: '/project/src/sitemap.json',
+              json: {},
+              type: 'page',
+            },
+          },
+        ],
+      ]),
+    })
+    state.ctx.scanService.appEntry = {
+      path: appEntry,
+    }
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/sitemap.json', { event: 'create' })
+
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
   })
 
   it('marks css importers direct dirty when imported style dependencies change', async () => {
