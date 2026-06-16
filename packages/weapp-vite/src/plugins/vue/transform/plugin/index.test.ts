@@ -77,6 +77,10 @@ vi.mock('../../../utils/vueSfc', () => ({
   readAndParseSfc: vi.fn(),
 }))
 
+function getHookHandler<T extends (...args: any[]) => any>(hook: T | { handler: T } | undefined): T {
+  return typeof hook === 'function' ? hook : hook!.handler
+}
+
 describe('createVueTransformPlugin lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -119,7 +123,8 @@ describe('createVueTransformPlugin lifecycle', () => {
       configService: { cwd: '/project' },
     } as any)
 
-    const result = await plugin.load!.call({ loader: true } as any, 'virtual:style')
+    const load = getHookHandler(plugin.load as any)
+    const result = await load.call({ loader: true } as any, 'virtual:style')
 
     expect(loadTransformStyleBlockMock).toHaveBeenCalledTimes(1)
     expect(loadTransformStyleBlockMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -138,8 +143,9 @@ describe('createVueTransformPlugin lifecycle', () => {
       configService: { cwd: '/project' },
     } as any)
 
-    await expect(plugin.transform!.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.ts')).resolves.toBeNull()
-    await expect(plugin.transform!.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.vue')).resolves.toEqual({
+    const transform = getHookHandler(plugin.transform as any)
+    await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.ts')).resolves.toBeNull()
+    await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.vue')).resolves.toEqual({
       code: 'transformed',
       map: null,
     })
@@ -215,7 +221,38 @@ describe('createVueTransformPlugin lifecycle', () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({} as any)
 
-    expect(plugin.resolveId!('virtual:slot')).toBe('resolved:virtual:slot')
+    const resolveId = getHookHandler(plugin.resolveId as any)
+    expect(resolveId('virtual:slot')).toBe('resolved:virtual:slot')
     expect(resolveScopedSlotVirtualIdMock).toHaveBeenCalledWith('virtual:slot')
+  })
+
+  it('declares rolldown filters for hot transform paths', async () => {
+    const { createVueTransformPlugin } = await import('./index')
+    const plugin = createVueTransformPlugin({} as any)
+
+    expect(plugin.transform).toEqual(expect.objectContaining({
+      filter: {
+        id: expect.any(RegExp),
+      },
+      handler: expect.any(Function),
+    }))
+    expect(plugin.load).toEqual(expect.objectContaining({
+      filter: {
+        id: expect.any(RegExp),
+      },
+      handler: expect.any(Function),
+    }))
+    expect(plugin.resolveId).toEqual(expect.objectContaining({
+      filter: {
+        id: expect.any(RegExp),
+      },
+      handler: expect.any(Function),
+    }))
+
+    expect((plugin.transform as any).filter.id.test('/project/src/pages/home.vue')).toBe(true)
+    expect((plugin.transform as any).filter.id.test('/project/src/utils/plain.ts')).toBe(false)
+    expect((plugin.load as any).filter.id.test('\0weapp-vite:scoped-slot:pages/home.__scoped-slot-0')).toBe(true)
+    expect((plugin.load as any).filter.id.test('/project/src/pages/home.vue?weapp-vite-vue&type=style&index=0')).toBe(true)
+    expect((plugin.resolveId as any).filter.id.test('\0weapp-vite:scoped-slot:pages/home.__scoped-slot-0')).toBe(true)
   })
 })
