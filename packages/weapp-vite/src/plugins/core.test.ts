@@ -408,6 +408,76 @@ describe('weapp-vite:pre load', () => {
     expect(Array.from(mocked.sharedChunkImporters?.get('common-next.js') ?? [])).toEqual([dataEntry])
   })
 
+  it('prunes chunks outside the current hmr event before post plugins', async () => {
+    mocked.loadEntry.mockClear()
+    mocked.loadedEntrySet.clear()
+    mocked.resolvedEntryMap.clear()
+
+    const dataEntry = '/project/src/pages/data/index.ts'
+    const indexEntry = '/project/src/pages/index/index.ts'
+    mocked.resolvedEntryMap.set(dataEntry, { id: dataEntry })
+    mocked.resolvedEntryMap.set(indexEntry, { id: indexEntry })
+
+    const runtimeState = {
+      build: {
+        hmr: {
+          profile: {
+            event: 'update',
+          },
+          lastEmittedChunkFileNames: new Set(['pages/data/index.js']),
+        },
+      },
+    }
+    const plugins = weappVite({
+      currentBuildTarget: 'app',
+      runtimeState,
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        weappViteConfig: {
+          hmr: { sharedChunks: 'auto' },
+          chunks: { sharedStrategy: 'hoist' },
+        },
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      } as any,
+      buildService: {} as any,
+    } as any)
+
+    const core = plugins.find(p => p.name === 'weapp-vite:pre')!
+    mocked.setLastEmittedEntries?.(new Set([dataEntry]))
+    mocked.setLastHmrEntries?.(new Set([dataEntry]))
+    const bundle = {
+      'pages/data/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        fileName: 'pages/data/index.js',
+        facadeModuleId: dataEntry,
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        fileName: 'pages/index/index.js',
+        facadeModuleId: indexEntry,
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, bundle)
+
+    expect(bundle['pages/data/index.js']).toBeDefined()
+    expect(bundle['pages/index/index.js']).toBeUndefined()
+  })
+
   it('skips shared chunk importer refresh when hmr emitted no js chunks', async () => {
     mocked.loadEntry.mockClear()
     mocked.loadedEntrySet.clear()

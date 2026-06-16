@@ -60,6 +60,30 @@ export function normalizePreprocessorStyleAssets(
   }
 }
 
+export function pruneUneventedDevHmrChunks(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+) {
+  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+  if (
+    !ctx.configService?.isDev
+    || ctx.runtimeState?.build?.hmr?.profile?.event === undefined
+    || !emittedChunkFileNames?.size
+  ) {
+    return
+  }
+
+  for (const [fileName, output] of Object.entries(bundle)) {
+    if (
+      output?.type === 'chunk'
+      && !emittedChunkFileNames.has(fileName)
+      && !emittedChunkFileNames.has(output.fileName)
+    ) {
+      delete bundle[fileName]
+    }
+  }
+}
+
 export function pruneUnchangedDevHmrOutputs(
   ctx: CompilerContext,
   bundle: OutputBundle,
@@ -70,19 +94,8 @@ export function pruneUnchangedDevHmrOutputs(
   }
 
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
-  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+  pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
-    if (
-      isHmrBuild
-      && output?.type === 'chunk'
-      && emittedChunkFileNames?.size
-      && !emittedChunkFileNames.has(fileName)
-      && !emittedChunkFileNames.has(output.fileName)
-    ) {
-      delete bundle[fileName]
-      continue
-    }
-
     const source = outputSourceToString(output)
     if (isHmrBuild && cache.get(fileName) === source) {
       delete bundle[fileName]
