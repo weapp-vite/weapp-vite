@@ -667,14 +667,17 @@ function isProfileSampleForSource(template: TemplateCase, sample: HmrProfileJson
     normalizePath(path.relative(template.workspaceRoot, sourceFile)),
     normalizePath(path.relative(template.sourceRoot, sourceFile)),
   ])
-  const expectedWithoutExt = new Set([...expected].map(removeFileExtension))
   const candidates = [sample.file, sample.relativeFile, sample.sourceRootFile]
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
     .map(normalizePath)
+  const canMatchWithoutExtension = sourceFile.endsWith('.vue')
+  const expectedWithoutExt = canMatchWithoutExtension
+    ? new Set([...expected].map(removeFileExtension))
+    : undefined
 
   return candidates.some((candidate) => {
     return expected.has(candidate)
-      || expectedWithoutExt.has(removeFileExtension(candidate))
+      || (canMatchWithoutExtension && expectedWithoutExt?.has(removeFileExtension(candidate)))
       || [...expected].some(item => item.endsWith(`/${candidate}`))
       || [...expected].some(item => candidate.endsWith(`/${item}`))
   })
