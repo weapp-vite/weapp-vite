@@ -51,6 +51,7 @@ export function resetEmittedOutputCaches(
   runtimeState.json.emittedSource.clear()
   runtimeState.asset.emittedBuffer.clear()
   runtimeState.asset.scopedSlotGenerics.clear()
+  runtimeState.build?.output?.emittedSource.clear()
   runtimeState.css.emittedSource.clear()
   runtimeState.wxml.emittedCode.clear()
 }

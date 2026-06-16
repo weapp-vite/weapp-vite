@@ -163,6 +163,11 @@ describe('buildPlugin outputs', () => {
 
   it('clears emitted output caches after output cleanup', () => {
     const runtimeState = {
+      build: {
+        output: {
+          emittedSource: new Map([['app.js', 'App({})']]),
+        },
+      },
       json: {
         emittedSource: new Map([['app.json', '{}']]),
       },
@@ -180,6 +185,7 @@ describe('buildPlugin outputs', () => {
 
     resetEmittedOutputCaches(runtimeState)
 
+    expect(runtimeState.build.output.emittedSource.size).toBe(0)
     expect(runtimeState.json.emittedSource.size).toBe(0)
     expect(runtimeState.asset.emittedBuffer.size).toBe(0)
     expect(runtimeState.asset.scopedSlotGenerics.size).toBe(0)

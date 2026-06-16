@@ -36,10 +36,6 @@ function isSourceStyleAsset(fileName: string) {
   return SOURCE_STYLE_ASSET_RE.test(fileName)
 }
 
-function hasChunkOutput(bundle: OutputBundle) {
-  return Object.values(bundle).some(output => output?.type === 'chunk')
-}
-
 function hasStyleAssetOutput(bundle: OutputBundle) {
   return Object.entries(bundle).some(([bundleKey, output]) => {
     if (output?.type !== 'asset') {
@@ -50,7 +46,15 @@ function hasStyleAssetOutput(bundle: OutputBundle) {
   })
 }
 
-function isNonStyleAssetOnlyHmrBundle(
+function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
+  return dirtyReasonSummary.some(reason =>
+    reason.startsWith('style-sidecar:')
+    || reason.startsWith('css-importer:')
+    || reason.startsWith('entry-local-asset:'),
+  )
+}
+
+function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
   bundle: OutputBundle,
 ) {
@@ -63,7 +67,7 @@ function isNonStyleAssetOnlyHmrBundle(
     return false
   }
 
-  return !hasChunkOutput(bundle) && !hasStyleAssetOutput(bundle)
+  return !hasStyleDirtyReason(dirtyReasonSummary) && !hasStyleAssetOutput(bundle)
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -492,7 +496,7 @@ export function css(ctx: CompilerContext): Plugin[] {
         resolvedConfig = config
       },
       async generateBundle(_opts, bundle) {
-        if (isNonStyleAssetOnlyHmrBundle(ctx, bundle as unknown as OutputBundle)) {
+        if (shouldSkipUnchangedStyleHmrBundle(ctx, bundle as unknown as OutputBundle)) {
           return
         }
         await generateBundleSharedCss.call(this, ctx, configService, bundle, resolvedConfig)
