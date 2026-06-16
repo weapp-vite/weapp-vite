@@ -102,6 +102,32 @@ function resolveOutputStyleFileName(
   )
 }
 
+function isUnchangedDevHmrStyleAsset(
+  ctx: CompilerContext,
+  normalizedFileName: string,
+  current: string,
+  source: string,
+) {
+  const hmrState = ctx.runtimeState?.build?.hmr
+  const currentHmrFile = hmrState?.profile.file
+  if (typeof currentHmrFile === 'string') {
+    const currentOutputFile = resolveOutputStyleFileName(ctx.configService, currentHmrFile)
+    if (currentOutputFile && toPosixPath(currentOutputFile) === normalizedFileName) {
+      return false
+    }
+  }
+  const isDevHmr = ctx.configService?.isDev === true
+    && (
+      hmrState?.didEmitAllEntries === true
+      || (hmrState?.lastHmrEntryIds?.size ?? 0) > 0
+      || (hmrState?.lastEmittedEntryIds?.size ?? 0) > 0
+      || hmrState?.profile.event !== undefined
+    )
+  return isDevHmr
+    && current === source
+    && ctx.runtimeState?.css?.emittedSource.get(normalizedFileName) === source
+}
+
 function emitCssAssetIfChanged(
   ctx: CompilerContext,
   pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
@@ -115,6 +141,10 @@ function emitCssAssetIfChanged(
 
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
+    if (isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, source)) {
+      delete bundle[fileName]
+      return false
+    }
     if (current !== source) {
       existing.source = source
     }
@@ -275,9 +305,13 @@ async function handleBundleEntry(
         delete bundle[bundleKey]
         emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
       }
+      else if (isUnchangedDevHmrStyleAsset(ctx, toPosixPath(fileName), source, processedCss)) {
+        delete bundle[bundleKey]
+      }
       else if (processedCss !== source) {
         asset.source = processedCss
       }
+      ctx.runtimeState?.css?.emittedSource.set(toPosixPath(fileName), processedCss)
     }
 
     return

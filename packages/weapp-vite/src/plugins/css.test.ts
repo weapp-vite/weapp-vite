@@ -133,6 +133,11 @@ describe('css plugin shared style injection', () => {
   const ctx = {
     configService,
     scanService,
+    runtimeState: {
+      css: {
+        emittedSource: new Map(),
+      },
+    },
   } as unknown as CompilerContext
 
   const resolvedConfig = {
@@ -162,6 +167,7 @@ describe('css plugin shared style injection', () => {
     pathExistsMock.mockReset()
     pathExistsMock.mockResolvedValue(true)
     pluginContext.addWatchFile.mockClear()
+    ;(ctx as any).runtimeState.css.emittedSource.clear()
   })
 
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
@@ -362,7 +368,92 @@ describe('css plugin shared style injection', () => {
       resolvedConfig,
     )
     expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:red}')
+    expect((ctx as any).runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:red}')
     expect(emitted.find(asset => asset.fileName === 'pages/index/index.scss')).toBeUndefined()
+  })
+
+  it('drops unchanged existing style assets during dev hmr writes', async () => {
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState: {
+        css: {
+          emittedSource: new Map([
+            ['pages/index/index.wxss', '.page .title{color:red}'],
+          ]),
+        },
+        build: {
+          hmr: {
+            didEmitAllEntries: false,
+            lastHmrEntryIds: new Set([resolve(absoluteSrcRoot, 'pages/index/index.ts')]),
+            lastEmittedEntryIds: new Set(),
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        source: '.page .title{color:red}',
+        originalFileNames: [resolve(absoluteSrcRoot, 'pages/index/index.scss')],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(bundle['pages/index/index.wxss']).toBeUndefined()
+    expect(emitted.find(asset => asset.fileName === 'pages/index/index.wxss')).toBeUndefined()
+  })
+
+  it('keeps the current style sidecar output even when the cache was prewarmed', async () => {
+    const appCssPath = resolve(absoluteSrcRoot, 'app.css')
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState: {
+        css: {
+          emittedSource: new Map([
+            ['app.wxss', '.app{color:red}'],
+          ]),
+        },
+        build: {
+          hmr: {
+            didEmitAllEntries: false,
+            lastHmrEntryIds: new Set([appCssPath]),
+            lastEmittedEntryIds: new Set(),
+            profile: {
+              event: 'update',
+              file: appCssPath,
+            },
+          },
+        },
+      },
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: '.app{color:red}',
+        originalFileNames: [appCssPath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(bundle['app.wxss']).toBeDefined()
+    expect(bundle['app.wxss'].source).toBe('.app{color:red}')
   })
 
   it('emits style sidecars as wxss and preprocesses raw scss during dev updates', async () => {
