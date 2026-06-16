@@ -565,6 +565,7 @@ async function processChangedFile(
 export function createWatchChangeHook(state: CorePluginState) {
   return async function watchChange(id: string, change: { event: ChangeEvent }) {
     const startedAt = performance.now()
+    const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)
     if (isSkippableResolvedId(normalizedId)) {
       return
@@ -579,10 +580,16 @@ export function createWatchChangeHook(state: CorePluginState) {
       loadedEntrySet: state.loadedEntrySet,
       resolvedEntryMap: state.resolvedEntryMap,
     })
+    state.ctx.runtimeState.build.hmr.profile = {
+      ...state.ctx.runtimeState.build.hmr.profile,
+      eventId,
+      event,
+      file: normalizedId,
+    }
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,
-      eventId: createHmrProfileEventId(),
+      eventId,
       event,
       file: normalizedId,
       watchToDirtyMs: performance.now() - startedAt,
