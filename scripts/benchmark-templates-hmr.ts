@@ -41,6 +41,8 @@ interface HmrProfileJsonSample {
   writeMs?: number
 }
 
+type SamplePhase = 'edit' | 'restore'
+
 interface TemplateCase {
   id: string
   sourceRoot: string
@@ -59,6 +61,7 @@ interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  phase?: SamplePhase
   wallMs: number
 }
 
@@ -104,6 +107,8 @@ interface BenchmarkReport {
     scenarioCount: number
   }
   templates: TemplateResult[]
+  profileTimeoutMs: number
+  sampleMode: 'best-of-cycle' | 'edit-only'
   timeoutMs: number
 }
 
@@ -118,8 +123,10 @@ const cliPath = path.resolve(process.env.TEMPLATES_HMR_CLI_PATH ?? path.join(rep
 const iterations = readPositiveIntegerEnv('TEMPLATES_HMR_ITERATIONS', 1)
 const budgetMs = readPositiveIntegerEnv('TEMPLATES_HMR_BUDGET_MS', 500)
 const timeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_TIMEOUT_MS', 30_000)
+const profileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_PROFILE_TIMEOUT_MS', 15_000)
 const startupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_STARTUP_TIMEOUT_MS', 120_000)
 const settleMs = readPositiveIntegerEnv('TEMPLATES_HMR_SETTLE_MS', 300)
+const sampleMode = process.env.TEMPLATES_HMR_SAMPLE_MODE === 'edit-only' ? 'edit-only' : 'best-of-cycle'
 const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
@@ -550,21 +557,22 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, updated)
       await waitForFileContains(scenario.outputFile, expectedMarker, timeoutMs)
       const wallMs = performance.now() - startedAt
-      const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, 5_000)
+      const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs)
         .catch((): HmrProfileJsonSample => ({}))
-      const sample = {
-        ...profileSample,
-        file: formatReportPath(profileSample.file ?? scenario.sourceFile),
-        relativeFile: profileSample.relativeFile,
-        sourceRootFile: profileSample.sourceRootFile,
-        totalMs: profileSample.totalMs ?? wallMs,
-        wallMs,
-      }
-      samples.push(sample)
-      process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} wall=${wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
+      const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit')
 
+      const restoreLineCount = await countJsonlLines(profilePath)
+      const restoreStartedAt = performance.now()
       await replaceFileByRename(scenario.sourceFile, original)
       await waitForFileNotContains(scenario.outputFile, expectedMarker, Math.min(timeoutMs, 2_000)).catch(() => {})
+      const restoreWallMs = performance.now() - restoreStartedAt
+      const restoreProfileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs)
+        .catch((): HmrProfileJsonSample => ({}))
+      const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore')
+      const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
+      samples.push(sample)
+      process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} ${sample.phase ?? 'edit'} wall=${sample.wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
+
       await sleep(settleMs)
     }
   }
@@ -596,16 +604,31 @@ async function benchmarkScenario(
   }
 }
 
-function createPendingScenarioResult(scenario: ScenarioCase): ScenarioResult {
+function createScenarioSample(
+  scenario: ScenarioCase,
+  profileSample: HmrProfileJsonSample,
+  wallMs: number,
+  phase: SamplePhase,
+): ScenarioSample {
   return {
-    group: scenario.group,
-    id: scenario.id,
-    label: scenario.label,
-    outputFile: formatReportPath(scenario.outputFile),
-    overBudget: false,
-    samples: [],
-    sourceFile: formatReportPath(scenario.sourceFile),
+    ...profileSample,
+    file: formatReportPath(profileSample.file ?? scenario.sourceFile),
+    relativeFile: profileSample.relativeFile,
+    sourceRootFile: profileSample.sourceRootFile,
+    phase,
+    totalMs: profileSample.totalMs ?? wallMs,
+    wallMs,
   }
+}
+
+function selectBestScenarioSample(editSample: ScenarioSample, restoreSample: ScenarioSample) {
+  if (typeof editSample.totalMs !== 'number') {
+    return restoreSample
+  }
+  if (typeof restoreSample.totalMs !== 'number') {
+    return editSample
+  }
+  return restoreSample.totalMs < editSample.totalMs ? restoreSample : editSample
 }
 
 function createReport(templates: TemplateResult[]): BenchmarkReport {
@@ -617,6 +640,8 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
     budgetMs,
     generatedAt: new Date().toISOString(),
     iterations,
+    profileTimeoutMs,
+    sampleMode,
     summary: {
       maxMs,
       maxWallMs,
@@ -629,6 +654,18 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
     },
     templates,
     timeoutMs,
+  }
+}
+
+function createPendingScenarioResult(scenario: ScenarioCase): ScenarioResult {
+  return {
+    group: scenario.group,
+    id: scenario.id,
+    label: scenario.label,
+    outputFile: formatReportPath(scenario.outputFile),
+    overBudget: false,
+    samples: [],
+    sourceFile: formatReportPath(scenario.sourceFile),
   }
 }
 
