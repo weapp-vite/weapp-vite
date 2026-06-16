@@ -439,19 +439,21 @@ describe('runtime buildPlugin service', () => {
     nowSpy.mockRestore()
   })
 
-  it('runs a stable narrow snapshot build for direct sidecar updates', async () => {
+  it('runs a stable narrow metadata snapshot build for direct sidecar updates', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const forceFullValues: Array<string | undefined> = []
+    const dirtySummaries: Array<string[] | undefined> = []
+    const ctx = createMockContext()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
         forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
         return { output: [] }
       })
     findJsEntryMock.mockResolvedValue({ path: '/project/src/pages/logs/index.ts' })
-    const ctx = createMockContext()
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
       id: '/project/src/pages/logs/index.ts',
     })
@@ -474,7 +476,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(['/project/src/pages/logs/index.ts']))
-    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get('/project/src/pages/logs/index.ts')).toBe('direct')
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get('/project/src/pages/logs/index.ts')).toBe('metadata')
+    expect(dirtySummaries).toEqual([['sidecar-direct:1']])
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()

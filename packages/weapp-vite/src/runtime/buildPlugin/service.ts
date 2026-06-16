@@ -86,6 +86,22 @@ interface SnapshotBuildReason {
   file?: string
 }
 
+function resolveSnapshotSidecarDirtySummary(filePath: string) {
+  const normalizedFile = normalizeFsResolvedId(filePath)
+  const configSuffix = configSuffixes.find(suffix => normalizedFile.endsWith(suffix))
+  if (configSuffix) {
+    return 'json-sidecar:1'
+  }
+  const ext = path.extname(normalizedFile)
+  if (ext && watchedCssExts.has(ext)) {
+    return 'style-sidecar:1'
+  }
+  if (ext && watchedTemplateExts.has(ext)) {
+    return 'sidecar-direct:1'
+  }
+  return 'sidecar-direct:1'
+}
+
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
 
 function shouldHandleSnapshotSidecarFile(filePath: string, configService: ActiveConfigService) {
@@ -742,14 +758,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
     }
 
-    function markSnapshotEntryDirty(entryId: string) {
+    function markSnapshotEntryDirty(entryId: string, reason?: SnapshotBuildReason) {
       ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
-      ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
+      ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'metadata')
       ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
       ctx.runtimeState.build.hmr.profile = {
         ...ctx.runtimeState.build.hmr.profile,
         dirtyCount: ctx.runtimeState.build.hmr.dirtyEntrySet.size,
-        dirtyReasonSummary: ['sidecar-direct:1'],
+        dirtyReasonSummary: reason?.file
+          ? [resolveSnapshotSidecarDirtySummary(reason.file)]
+          : ['sidecar-direct:1'],
       }
     }
 
@@ -776,7 +794,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
         if (sidecarEntryId) {
-          markSnapshotEntryDirty(sidecarEntryId)
+          markSnapshotEntryDirty(sidecarEntryId, reason)
           await build(snapshotBuildOptions)
           return 'snapshot'
         }
