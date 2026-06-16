@@ -12,6 +12,7 @@ export function createChunkEmitter(
   trackEmittedChunkId?: (entryId: string) => void,
   shouldEmitEntryChunk?: (entryId: string, resolvedId: ResolvedId) => boolean,
   preloadAssetOnlyEntry?: (this: PluginContext, resolvedId: ResolvedId, entryId: string) => Promise<void>,
+  trackEmittedChunkFileName?: (fileName: string) => void,
 ) {
   return function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId) => {
@@ -45,6 +46,7 @@ export function createChunkEmitter(
           preserveSignature: 'exports-only',
         })
         trackEmittedChunkId?.(normalizedId)
+        trackEmittedChunkFileName?.(fileName)
       }
       trackEmittedEntryId?.(normalizedId)
 

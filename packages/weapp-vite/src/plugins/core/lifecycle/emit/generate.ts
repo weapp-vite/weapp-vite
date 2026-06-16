@@ -187,6 +187,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         }
         state.hmrState.hasBuiltOnce = true
       }
+      prunePartialHmrStableSharedChunks(rolldownBundle, state)
 
       if (assetOnlyDevHmrBundle) {
         normalizePreprocessorStyleAssets(
@@ -467,7 +468,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     stabilizeWevuRuntimeChunkAccess(rolldownBundle)
     syncChunkImportsFromRequireCalls(rolldownBundle)
-    prunePartialHmrStableSharedChunks(rolldownBundle, state)
     normalizePreprocessorStyleAssets(
       rolldownBundle,
       state.ctx.configService.outputExtensions?.wxss,

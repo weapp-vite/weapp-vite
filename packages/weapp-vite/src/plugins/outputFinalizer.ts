@@ -70,7 +70,19 @@ export function pruneUnchangedDevHmrOutputs(
   }
 
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   for (const [fileName, output] of Object.entries(bundle)) {
+    if (
+      isHmrBuild
+      && output?.type === 'chunk'
+      && emittedChunkFileNames?.size
+      && !emittedChunkFileNames.has(fileName)
+      && !emittedChunkFileNames.has(output.fileName)
+    ) {
+      delete bundle[fileName]
+      continue
+    }
+
     const source = outputSourceToString(output)
     if (isHmrBuild && cache.get(fileName) === source) {
       delete bundle[fileName]
