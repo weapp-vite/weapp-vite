@@ -1,9 +1,9 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -91,11 +91,7 @@ export default defineComponent({
         return { id: request } as any
       }
 
-      const transformed = await plugin.transform!.call(
-        { resolve: resolver } as any,
-        source,
-        pageFile,
-      )
+      const transformed = await callPluginHook(plugin.transform as any, { resolve: resolver } as any, source, pageFile)
 
       expect(transformed?.code).toBeDefined()
 
@@ -162,11 +158,7 @@ export default defineComponent({
         return { id: request } as any
       }
 
-      const transformed = await plugin.transform!.call(
-        { resolve: resolver } as any,
-        source,
-        pageFile,
-      )
+      const transformed = await callPluginHook(plugin.transform as any, { resolve: resolver } as any, source, pageFile)
 
       expect(transformed?.code).toBeDefined()
 

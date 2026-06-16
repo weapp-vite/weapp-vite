@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
+import { callPluginHook } from '../pluginHook'
 
 const createPageEntryMatcherMock = vi.fn()
 const injectWevuPageFeaturesMock = vi.fn()
@@ -52,14 +52,10 @@ describe('wevu page features plugin', () => {
       },
     } as any)
 
-    await plugin.transform!.call(
-      { resolve: async () => null } as any,
-      `import { onPageScroll } from 'wevu'
+    await callPluginHook(plugin.transform as any, { resolve: async () => null } as any, `import { onPageScroll } from 'wevu'
 onPageScroll(() => {
   wx.getStorageSync('token')
-})`,
-      '/src/pages/index/index.ts',
-    )
+})`, '/src/pages/index/index.ts')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('wx.getStorageSync'))
     expect(injectWevuPageFeaturesMock).toHaveBeenCalledTimes(1)

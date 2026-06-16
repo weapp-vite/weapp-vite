@@ -1,7 +1,7 @@
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -56,11 +56,7 @@ import Child from '../child/index.vue'
 </script>
     `.trim()
 
-    const transformed = await plugin.transform!.call(
-      { resolve: createResolver() } as any,
-      sfc,
-      '/root/src/components/parent/index.vue',
-    )
+    const transformed = await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, '/root/src/components/parent/index.vue')
 
     expect(transformed?.code).toBeDefined()
     expect(String(transformed!.code)).not.toContain('../child/index.vue')
@@ -107,11 +103,7 @@ import Child from '../child/index.vue'
 </json>
     `.trim()
 
-    await plugin.transform!.call(
-      { resolve: createResolver() } as any,
-      sfc,
-      '/root/src/components/parent2/index.vue',
-    )
+    await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, '/root/src/components/parent2/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(

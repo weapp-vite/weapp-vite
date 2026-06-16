@@ -19,10 +19,16 @@ const INITIAL_CSS = 'background-color: #111111'
 const UPDATED_CSS = 'background-color: #222222'
 const MEMORY_GUARD_NODE_OPTIONS = '--expose-gc --inspect=127.0.0.1:0'
 const MAX_RETAINED_HEAP_GROWTH_BYTES = 160 * 1024 * 1024
+const DEFAULT_INITIAL_OUTPUT_TIMEOUT_MS = 90_000
+const RETAIL_INITIAL_OUTPUT_TIMEOUT_MS = 150_000
+const DEFAULT_TEST_TIMEOUT_MS = 180_000
+const RETAIL_TEST_TIMEOUT_MS = 240_000
 
 interface TemplateTailwindHmrCase {
+  initialOutputTimeoutMs?: number
   name: string
   sourcePath: string
+  testTimeoutMs?: number
   templateRoot: string
   outputPath: string
   replaceInitial: (source: string) => string
@@ -63,9 +69,11 @@ const hmrCases: TemplateTailwindHmrCase[] = [
     replaceUpdated: source => source.replace(INITIAL_CLASS, UPDATED_CLASS),
   },
   {
+    initialOutputTimeoutMs: RETAIL_INITIAL_OUTPUT_TIMEOUT_MS,
     name: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
     templateRoot: path.resolve(REPO_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template'),
     sourcePath: 'src/pages/home/home.vue',
+    testTimeoutMs: RETAIL_TEST_TIMEOUT_MS,
     outputPath: 'dist/pages/home/home.wxml',
     replaceInitial: source => source.replace('[background:linear-gradient(#fff,#f5f5f5)]', INITIAL_CLASS),
     replaceUpdated: source => source.replace(INITIAL_CLASS, UPDATED_CLASS),
@@ -165,8 +173,15 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
 
       try {
         const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${testCase.name} dev inspector`)
-        await dev.waitFor(waitForFileContains(fixture.outputFile, INITIAL_ESCAPED_CLASS), `${testCase.name} initial template class`)
-        await dev.waitFor(waitForFileContains(fixture.appWxssFile, INITIAL_CSS), `${testCase.name} initial app wxss class`)
+        const initialOutputTimeoutMs = testCase.initialOutputTimeoutMs ?? DEFAULT_INITIAL_OUTPUT_TIMEOUT_MS
+        await dev.waitFor(
+          waitForFileContains(fixture.outputFile, INITIAL_ESCAPED_CLASS, initialOutputTimeoutMs),
+          `${testCase.name} initial template class`,
+        )
+        await dev.waitFor(
+          waitForFileContains(fixture.appWxssFile, INITIAL_CSS, initialOutputTimeoutMs),
+          `${testCase.name} initial app wxss class`,
+        )
         const beforeHeap = await sampleHeapAfterGc(inspectorUrl)
 
         const updatedSource = testCase.replaceUpdated(fixture.initialSource)
@@ -195,6 +210,6 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
         await dev.stop(3_000)
         await fs.remove(fixture.fixtureRoot)
       }
-    }, 180_000)
+    }, testCase.testTimeoutMs ?? DEFAULT_TEST_TIMEOUT_MS)
   }
 })

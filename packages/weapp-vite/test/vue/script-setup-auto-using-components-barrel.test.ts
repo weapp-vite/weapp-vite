@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -67,11 +67,7 @@ import { VueCard } from '../../components'
 </script>
       `.trim()
 
-      const transformed = await plugin.transform!.call(
-        { resolve: resolver } as any,
-        sfc,
-        pageFile,
-      )
+      const transformed = await callPluginHook(plugin.transform as any, { resolve: resolver } as any, sfc, pageFile)
 
       expect(transformed?.code).toBeDefined()
       const js = String(transformed!.code)

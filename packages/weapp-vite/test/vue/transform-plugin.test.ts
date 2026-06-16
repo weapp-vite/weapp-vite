@@ -3,10 +3,10 @@ import os from 'node:os'
 
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { normalizeWatchPath } from '../../src/utils/path'
+import { callPluginHook } from '../pluginHook'
 
 const compileVueFileMock = vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
@@ -179,7 +179,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleWxsSrc).toBe('../../__weapp_vite_class_style.wxs')
@@ -214,7 +214,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleRuntime).toBe('js')
@@ -251,7 +251,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.objectLiteralBindMode).toBe('inline')
@@ -288,7 +288,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.mustacheInterpolation).toBe('spaced')
@@ -310,7 +310,7 @@ describe('vue transform plugin', () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    const result = await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    const result = await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     expect(result).toBeTruthy()
     expect(result?.code).toContain('weapp-vite:vue-style:')
@@ -345,7 +345,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleWxsSrc).toBe('./__weapp_vite_class_style.wxs')
@@ -379,7 +379,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleWxsSrc).toBe('../../__weapp_vite_class_style.wxs')
@@ -406,7 +406,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleRuntime).toBe('js')
@@ -434,7 +434,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.classStyleWxsSrc).toBeUndefined()
@@ -475,7 +475,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
     await plugin.generateBundle!.call({} as any, {}, bundle)
@@ -526,7 +526,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
     await plugin.generateBundle!.call({} as any, {}, bundle)
@@ -570,7 +570,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const bundle: OutputBundle = {}
     await plugin.generateBundle!.call({} as any, {}, bundle)
@@ -614,7 +614,7 @@ describe('vue transform plugin', () => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
     await plugin.generateBundle!.call({} as any, {}, bundle)
@@ -631,10 +631,10 @@ describe('vue transform plugin', () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await expect(plugin.load!.call({}, vuePath!)).resolves.toBeNull()
-    await expect(plugin.load!.call({}, `${vuePath}?weapp-vite-vue&type=script&index=0`)).resolves.toBeNull()
-    await expect(plugin.load!.call({}, `${vuePath}?type=style&index=0`)).resolves.toBeNull()
-    await expect(plugin.load!.call({}, `${vuePath}?weapp-vite-vue&type=style&index=-1`)).resolves.toBeNull()
+    await expect(callPluginHook(plugin.load as any, {}, vuePath!)).resolves.toBeNull()
+    await expect(callPluginHook(plugin.load as any, {}, `${vuePath}?weapp-vite-vue&type=script&index=0`)).resolves.toBeNull()
+    await expect(callPluginHook(plugin.load as any, {}, `${vuePath}?type=style&index=0`)).resolves.toBeNull()
+    await expect(callPluginHook(plugin.load as any, {}, `${vuePath}?weapp-vite-vue&type=style&index=-1`)).resolves.toBeNull()
   })
 
   it('load() returns cached style block content', async () => {
@@ -643,9 +643,9 @@ describe('vue transform plugin', () => {
 
     compileVueFileMock.mockResolvedValue({ script: '', meta: {} })
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
-    const res = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 1))
+    const res = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 1))
     expect(res).toEqual({ code: '.b{color:blue}', map: null })
   })
 
@@ -653,7 +653,7 @@ describe('vue transform plugin', () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    const res = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    const res = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
     expect(res).toEqual({ code: '.a{color:red}', map: null })
     expect(readAndParseSfcMock).toHaveBeenCalled()
     expect(readAndParseSfcMock).toHaveBeenCalledWith(vuePath!)
@@ -664,17 +664,17 @@ describe('vue transform plugin', () => {
     const plugin = createVueTransformPlugin(createCtx() as any)
 
     await expect(
-      plugin.load!.call({}, buildWeappVueStyleRequest(path.join(tmpDir!, 'missing.vue'), { lang: 'css' } as any, 0)),
+      callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(path.join(tmpDir!, 'missing.vue'), { lang: 'css' } as any, 0)),
     ).resolves.toBeNull()
-    await expect(plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 99))).resolves.toBeNull()
+    await expect(callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 99))).resolves.toBeNull()
   })
 
   it('transform() returns null for non-vue or missing configService', async () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
 
     const plugin = createVueTransformPlugin(createCtx({ configService: undefined }) as any)
-    await expect(plugin.transform!.call({}, '', 'a.js')).resolves.toBeNull()
-    await expect(plugin.transform!.call({}, '', 'a.vue')).resolves.toBeNull()
+    await expect(callPluginHook(plugin.transform as any, {}, '', 'a.js')).resolves.toBeNull()
+    await expect(callPluginHook(plugin.transform as any, {}, '', 'a.vue')).resolves.toBeNull()
   })
 
   it('transform() compiles Vue, injects style imports, macro hash, and page features', async () => {
@@ -699,11 +699,7 @@ export default {}`,
     const plugin = createVueTransformPlugin(ctx as any)
 
     const addWatchFile = vi.fn()
-    const res = await plugin.transform!.call(
-      { addWatchFile } as any,
-      await fs.readFile(vuePath!, 'utf8'),
-      vuePath!,
-    )
+    const res = await callPluginHook(plugin.transform as any, { addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(vuePath!))
     expect(pageMatcher.markDirty).toHaveBeenCalledTimes(1)
@@ -744,7 +740,7 @@ onPageScroll(() => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('onPageScroll(...) 内调用 setData'))
   })
@@ -756,7 +752,7 @@ onPageScroll(() => {
     const ctx = createCtx({ autoImportService: undefined })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     await expect(options.autoImportTags.resolveUsingComponent('t-cell-group', vuePath!)).resolves.toBeUndefined()
@@ -800,11 +796,7 @@ onPageScroll(() => {
     const emitFile = vi.fn()
 
     await plugin.buildStart?.call({})
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn(), emitFile } as any,
-      await fs.readFile(vuePath!, 'utf8'),
-      vuePath!,
-    )
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
       type: 'chunk',
@@ -812,7 +804,7 @@ onPageScroll(() => {
     }))
 
     const virtualId = '\0weapp-vite:scoped-slot:page.__scoped-slot-default-0'
-    const loaded = await plugin.load!.call({}, virtualId)
+    const loaded = await callPluginHook(plugin.load as any, {}, virtualId)
     expect(loaded).toEqual(expect.stringContaining('createWevuScopedSlotComponent'))
     expect(loaded).toContain('from \'wevu/internal-runtime\'')
     expect(loaded).toContain('from \'wevu/internal-template\'')
@@ -910,11 +902,7 @@ onPageScroll(() => {
     const plugin = createVueTransformPlugin(ctx as any)
     const transformEmitFile = vi.fn()
 
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn(), emitFile: transformEmitFile } as any,
-      await fs.readFile(pageFile, 'utf8'),
-      pageFile,
-    )
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile: transformEmitFile } as any, await fs.readFile(pageFile, 'utf8'), pageFile)
 
     const generateBundleEmitFile = vi.fn((payload: any) => {
       if (payload.type === 'chunk') {
@@ -967,7 +955,7 @@ onPageScroll(() => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await expect(plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)).rejects.toThrow('boom')
+    await expect(callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)).rejects.toThrow('boom')
   })
 
   it('generateBundle() emits cached results and fallback results', async () => {
@@ -1002,13 +990,13 @@ onPageScroll(() => {
 
     const appVue = path.join(tmpDir!, 'app.vue')
     await fs.writeFile(appVue, '<script setup>const app = true</script>', 'utf8')
-    await plugin.transform!.call({}, await fs.readFile(appVue, 'utf8'), appVue)
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(appVue, 'utf8'), appVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const skipVue = path.join(tmpDir!, 'skip/page.vue')
     await fs.ensureDir(path.dirname(skipVue))
     await fs.writeFile(skipVue, '<template><view/></template>', 'utf8')
-    await plugin.transform!.call({}, await fs.readFile(skipVue, 'utf8'), skipVue)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(skipVue, 'utf8'), skipVue)
 
     const fallbackEntry = path.join(tmpDir!, 'fallback/page')
     const fallbackVue = `${fallbackEntry}.vue`
@@ -1068,11 +1056,7 @@ onPageScroll(() => {
     const ctx = createCtx({ wxmlService })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn(), emitFile: vi.fn() } as any,
-      await fs.readFile(vuePath!, 'utf8'),
-      vuePath!,
-    )
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile: vi.fn() } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -1136,11 +1120,7 @@ onPageScroll(() => {
     }
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn(), emitFile: vi.fn() } as any,
-      await fs.readFile(vuePath!, 'utf8'),
-      vuePath!,
-    )
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile: vi.fn() } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -1225,21 +1205,21 @@ onPageScroll(() => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
-    const firstLoad = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    const firstLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
     expect(firstLoad).toEqual({ code: '.a{color:red}', map: null })
     const beforeReadCalls = readAndParseSfcMock.mock.calls.length
 
     plugin.watchChange?.call({}, vuePath!)
 
-    const secondLoad = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    const secondLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
     expect(secondLoad).toEqual({ code: '.a{color:red}', map: null })
     expect(readAndParseSfcMock.mock.calls.length).toBeGreaterThan(beforeReadCalls)
 
     await fs.remove(vuePath!)
     plugin.watchChange?.call({}, vuePath!)
-    const afterRemove = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    const afterRemove = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
     expect(afterRemove).toBeNull()
   })
 
@@ -1248,7 +1228,7 @@ onPageScroll(() => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
     await expect(plugin.handleHotUpdate!.call({}, { file: vuePath! } as any)).resolves.toEqual([])
 
     await fs.remove(vuePath!)
@@ -1275,15 +1255,11 @@ onPageScroll(() => {
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn() } as any,
-      `
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn() } as any, `
 import routesRef from 'virtual:weapp-vite-auto-routes'
 const lazy = () => import('weapp-vite/auto-routes')
 export default {}
-`,
-      appVuePath,
-    )
+`, appVuePath)
 
     expect(ensureFresh).toHaveBeenCalledTimes(1)
     const [transformedSource] = compileVueFileMock.mock.calls.at(-1)!
@@ -1312,15 +1288,11 @@ export default {}
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call(
-      { addWatchFile: vi.fn() } as any,
-      `
+    await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn() } as any, `
 import autoRoutes from 'weapp-vite/auto-routes'
 const lazy = () => import('weapp-vite/auto-routes')
 export default autoRoutes
-`,
-      normalVuePath,
-    )
+`, normalVuePath)
 
     expect(ensureFresh).not.toHaveBeenCalled()
     const [transformedSource] = compileVueFileMock.mock.calls.at(-1)!
@@ -1357,7 +1329,7 @@ export default autoRoutes
     })
     const plugin = createVueTransformPlugin(ctx as any)
 
-    await plugin.transform!.call({ addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await callPluginHook(plugin.transform as any, { addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     expect(analyze).toHaveBeenCalledWith('<view><t-cell /></view>')
     expect(tokenMap.has(vuePath!)).toBe(true)

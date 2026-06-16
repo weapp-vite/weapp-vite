@@ -1,9 +1,9 @@
 import path from 'pathe'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { vuePlugin } from '../../src/plugins/vue'
 import { createVueResolverPlugin, getSourceFromVirtualId, getVirtualModuleId } from '../../src/plugins/vue/resolver'
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { createVueWatchPlugin } from '../../src/plugins/vue/watch'
+import { callPluginHook } from '../pluginHook'
 
 const {
   compilerPathExistsMock,
@@ -47,7 +47,7 @@ describe('vue plugin misc coverage', () => {
     expect(resolvedVueId).toBe('/root/src/foo.vue')
 
     // 非虚拟模块时，交给 Vite 默认 loader 处理
-    expect(await plugin.load!(resolvedVueId as string)).toBeNull()
+    expect(await callPluginHook(plugin.load as any, {}, resolvedVueId as string)).toBeNull()
 
     const styleRequestId = buildWeappVueStyleRequest('/root/src/pages/index/index.vue', { lang: 'css' } as any, 0)
     const resolvedStyleId = await plugin.resolveId!(styleRequestId, '/root/src/app.vue')
@@ -58,7 +58,7 @@ describe('vue plugin misc coverage', () => {
 
     // 仍兼容读取虚拟模块（用于历史兼容与工具函数覆盖）
     const virtualId = `\0vue:/root/src/foo.vue`
-    const loaded = await plugin.load!(virtualId)
+    const loaded = await callPluginHook(plugin.load as any, {}, virtualId)
     expect(compilerReadFileMock).toHaveBeenCalledWith('/root/src/foo.vue', {
       checkMtime: false,
       encoding: 'utf-8',

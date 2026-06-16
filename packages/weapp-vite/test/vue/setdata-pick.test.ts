@@ -2,8 +2,8 @@ import os from 'node:os'
 import { WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string, weappViteConfig: Record<string, any> = {}) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -58,8 +58,7 @@ describe('auto setData.pick injection', () => {
       }))
       const file = path.join(srcRoot, 'components/card.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <view>{{ count }}</view>
   <view wx:for="{{ list }}" wx:for-item="row">{{ row.label }}</view>
@@ -72,9 +71,7 @@ const list = ref([{ label: 'a' }])
 const sayHello = () => 'hi'
 const text = computed(() => list.value.length)
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('setData')
       expect(transformed?.code).toContain('pick')
@@ -95,8 +92,7 @@ const text = computed(() => list.value.length)
       const plugin = createVueTransformPlugin(createCtx(root))
       const file = path.join(srcRoot, 'components/card.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <view>{{ count }}</view>
 </template>
@@ -104,9 +100,7 @@ const text = computed(() => list.value.length)
 import { ref } from 'wevu'
 const count = ref(0)
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).not.toContain('setData')
       expect(transformed?.code).not.toContain('pick')
@@ -128,8 +122,7 @@ const count = ref(0)
       }))
       const file = path.join(srcRoot, 'pages/index/index.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <SlotCell
     :p0="{ value: count }"
@@ -142,9 +135,7 @@ import SlotCell from '../../components/SlotCell/index.vue'
 
 const count = 1
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       const pickSection = getSetDataPickSection(transformed?.code)
       expect(transformed?.code).toContain('setData')
@@ -173,8 +164,7 @@ const count = 1
       }))
       const file = path.join(srcRoot, 'pages/index/index.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <view>{{ count }}</view>
   <SlotCell
@@ -187,9 +177,7 @@ import SlotCell from '../../components/SlotCell/index.vue'
 
 const count = 1
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       const pickSection = getSetDataPickSection(transformed?.code)
       expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
@@ -217,8 +205,7 @@ const count = 1
       }))
       const file = path.join(srcRoot, 'components/card.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <view>{{ count }}</view>
 </template>
@@ -226,9 +213,7 @@ const count = 1
 import { ref } from 'wevu'
 const count = ref(0)
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('setData')
       expect(transformed?.code).toContain('pick')
@@ -252,8 +237,7 @@ const count = ref(0)
       }))
       const file = path.join(srcRoot, 'components/card.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template>
   <view>{{ count }}</view>
 </template>
@@ -261,9 +245,7 @@ const count = ref(0)
 import { ref } from 'wevu'
 const count = ref(0)
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('setData')
       expect(transformed?.code).not.toContain('pick:')

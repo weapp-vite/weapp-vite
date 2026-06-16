@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(
   root: string,
@@ -63,15 +63,12 @@ describe('wevu defaults compile-time merge', () => {
       }))
       const file = path.join(srcRoot, 'components', 'demo', 'index.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>ok</view></template>
 <script setup lang="ts">
 const count = 0
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('virtualHost')
       expect(transformed?.code).toContain('apply-shared')
@@ -99,15 +96,12 @@ const count = 0
       }))
       const file = path.join(srcRoot, 'components', 'demo', 'index.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>{{ title }}</view></template>
 <script setup lang="ts">
 const props = defineProps<{ title?: string }>()
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).not.toContain('allowNullPropInput: true')
       expect(transformed?.code).toContain('allowNullPropInput: false')
@@ -136,15 +130,12 @@ const props = defineProps<{ title?: string }>()
       }))
       const file = path.join(srcRoot, 'pages', 'home', 'index.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>page</view></template>
 <script setup lang="ts">
 const count = 0
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toMatch(/virtualHost:\s*false/)
     }

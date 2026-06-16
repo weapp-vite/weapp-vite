@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string, weappViteConfig: Record<string, any> = {}) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -44,16 +44,13 @@ describe('app.vue transform', () => {
       const plugin = createVueTransformPlugin(createCtx(root))
       const file = path.join(srcRoot, 'app.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>app</view></template>
 <script setup lang="ts">
 import { onShow } from 'wevu'
 onShow(() => {})
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('createApp')
       expect(transformed?.code).toContain('onShow')
@@ -87,16 +84,13 @@ onShow(() => {})
       }))
       const file = path.join(srcRoot, 'app.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>app</view></template>
 <script setup lang="ts">
 import { onShow } from 'wevu'
 onShow(() => {})
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('setWevuDefaults')
       expect(transformed?.code).toContain('addGlobalClass')
@@ -122,16 +116,13 @@ onShow(() => {})
       }))
       const file = path.join(srcRoot, 'app.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>app</view></template>
 <script setup lang="ts">
 import { onShow } from 'wevu'
 onShow(() => {})
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).toContain('setWevuDefaults')
       expect(transformed?.code).toContain('suspendWhenHidden')
