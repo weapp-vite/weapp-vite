@@ -209,7 +209,7 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
   })
 
-  it('skips shared style work for non-style asset-only dev hmr bundles', async () => {
+  it('skips shared style work for hmr bundles without style changes', async () => {
     const plugin = css({
       configService: {
         ...configService,
@@ -227,6 +227,19 @@ describe('css plugin shared style injection', () => {
       scanService,
     } as unknown as CompilerContext)[0]
     const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
       'subpackages/foo/pages/list.wxml': {
         type: 'asset',
         fileName: 'subpackages/foo/pages/list.wxml',

@@ -17,6 +17,7 @@ describe('hmrProfileMetricsPlugin', () => {
     } as any
     const plugin = createHmrProfileMetricsPlugin(ctx)
 
+    expect(plugin.enforce).toBe('post')
     plugin.generateBundle?.call({} as any, {} as any, {} as any, true)
     plugin.writeBundle?.call({} as any, {} as any, {} as any)
 

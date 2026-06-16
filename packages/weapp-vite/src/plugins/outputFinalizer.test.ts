@@ -1,6 +1,6 @@
 import type { OutputBundle } from 'rolldown'
 import { describe, expect, it } from 'vitest'
-import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets } from './outputFinalizer'
+import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -108,5 +108,56 @@ describe('weapp-vite output finalizer', () => {
       type: 'asset',
       fileName: 'app.wxss',
     })
+  })
+
+  it('drops unchanged outputs during dev hmr writes', () => {
+    const emittedSource = new Map([
+      ['app.js', 'App({})'],
+      ['pages/index/index.wxml', '<view />'],
+    ])
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'Page({})',
+      },
+      'pages/index/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxml',
+        source: '<view />',
+      },
+    } as unknown as OutputBundle
+
+    pruneUnchangedDevHmrOutputs({
+      configService: {
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any, bundle)
+
+    expect(bundle['app.js']).toBeUndefined()
+    expect(bundle['pages/index/index.wxml']).toBeUndefined()
+    expect(bundle['pages/index/index.js']).toMatchObject({
+      type: 'chunk',
+      fileName: 'pages/index/index.js',
+      code: 'Page({})',
+    })
+    expect(emittedSource.get('pages/index/index.js')).toBe('Page({})')
   })
 })

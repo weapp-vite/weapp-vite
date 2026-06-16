@@ -317,35 +317,63 @@ describe('runtime buildPlugin service', () => {
     process.env.VITEST = 'false'
     delete process.env.NODE_ENV
 
+    const watcher = createManualWatcher()
     checkWorkersOptionsMock.mockReturnValue({
       hasWorkersDir: true,
       workersDir: 'workers',
     })
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
-      .mockResolvedValueOnce(createWatcher(['START', 'END']))
-      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
-    await service.build()
-    await service.build()
+    const buildPromise = service.build()
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    watcher.emit('START')
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['style-sidecar:1']
+    watcher.emit('END')
+    await waitForMockCalls(touchMock, 1)
 
     expect(process.env.NODE_ENV).toBe('development')
-    expect(cleanOutputsMock).toHaveBeenCalledTimes(2)
+    expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
       outDir: '/project/dist',
       projectConfigPath: '/project/project.config.json',
       projectPrivateConfigPath: '/project/project.private.config.json',
       enabled: false,
     })
-    expect(ctx.npmService.build).toHaveBeenCalledTimes(2)
+    expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
     expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
-    expect(watchWorkersMock).toHaveBeenCalledTimes(2)
+    expect(watchWorkersMock).toHaveBeenCalledTimes(1)
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
+  })
+
+  it('does not touch app wxss for non-style hmr updates', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
+    expect(touchMock).not.toHaveBeenCalled()
   })
 
   it('forces dev watch builds to keep writing files to outDir', async () => {

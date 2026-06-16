@@ -10,6 +10,7 @@ export function createHmrProfileMetricsPlugin(ctx: MutableCompilerContext): Plug
 
   return {
     name: 'weapp-vite:hmr-profile-metrics',
+    enforce: 'post',
 
     generateBundle(_options, _bundle, isWrite) {
       if (!ctx.configService?.isDev || !isWrite) {

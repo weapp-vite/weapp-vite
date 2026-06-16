@@ -110,6 +110,9 @@ export interface RuntimeState {
     independent: {
       outputs: Map<string, RolldownOutput>
     }
+    output: {
+      emittedSource: Map<string, string>
+    }
     hmr: {
       loadedEntrySet: Set<string>
       dirtyEntrySet: Set<string>
@@ -243,6 +246,9 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+      },
+      output: {
+        emittedSource: new Map<string, string>(),
       },
       hmr: {
         loadedEntrySet: new Set<string>(),

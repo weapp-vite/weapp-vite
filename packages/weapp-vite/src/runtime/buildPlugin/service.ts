@@ -557,6 +557,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   } = createIndependentBuilder(configService, buildState)
 
   function shouldTouchAppWxss() {
+    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
+    if (
+      dirtyReasonSummary?.length
+      && !dirtyReasonSummary.some(reason =>
+        reason.startsWith('style-sidecar:')
+        || reason.startsWith('css-importer:')
+        || reason.startsWith('entry-local-asset:'),
+      )
+    ) {
+      return false
+    }
     const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
     if (option === true) {
       return true
@@ -854,14 +865,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             })
             logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
+            if (appWxssPath && shouldTouchAppWxss()) {
+              void touch(appWxssPath).catch(() => {})
+            }
           }
           else {
             firstBuildCompleted = true
           }
           resetHmrProfile()
-          if (appWxssPath && shouldTouchAppWxss()) {
-            void touch(appWxssPath).catch(() => {})
-          }
           resolveWatcher(e)
         })().catch((error) => {
           resetHmrProfile()
