@@ -73,6 +73,13 @@ function hasChunkOutputs(bundle: OutputBundle) {
   return Object.values(bundle).some(output => output?.type === 'chunk')
 }
 
+function isAssetOnlyDevHmrBundle(bundle: OutputBundle, state: CorePluginState) {
+  return state.ctx.configService.isDev
+    && state.hmrState.hasBuiltOnce
+    && state.hmrState.skipSharedChunkRefresh
+    && !hasChunkOutputs(bundle)
+}
+
 function isStableHmrSharedChunk(fileName: string) {
   return fileName.startsWith('weapp-vendors/')
     || (!fileName.includes('/') && fileName !== 'app.js')
@@ -126,6 +133,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     const rolldownBundle = bundle as unknown as OutputBundle
     await flushIndependentBuilds.call(this, state)
     pruneHmrMetadataOnlyChunks(rolldownBundle, state)
+    const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(rolldownBundle, state)
 
     if (isPluginBuild) {
       filterPluginBundleOutputs(rolldownBundle, configService)
@@ -159,10 +167,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
         const forceFullSharedChunkRefresh = process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS === '1'
         if (
-          state.hmrState.skipSharedChunkRefresh
-          && state.hmrState.hasBuiltOnce
+          assetOnlyDevHmrBundle
           && !forceFullSharedChunkRefresh
-          && !hasChunkOutputs(rolldownBundle)
         ) {
           // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
           // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
@@ -180,6 +186,16 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastEmittedEntryIds)
         }
         state.hmrState.hasBuiltOnce = true
+      }
+
+      if (assetOnlyDevHmrBundle) {
+        normalizePreprocessorStyleAssets(
+          rolldownBundle,
+          state.ctx.configService.outputExtensions?.wxss,
+          asset => this.emitFile(asset),
+        )
+        refreshModuleGraph(this, state)
+        return
       }
 
       function matchSubPackage(filePath: string) {
