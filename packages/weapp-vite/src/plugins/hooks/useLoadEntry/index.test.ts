@@ -123,6 +123,29 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
   })
 
+  it('only emits dirty entries from the current hmr event', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {})
+    const previousId = '/project/src/pages/previous.js'
+    const currentId = '/project/src/pages/current.js'
+    seedResolvedEntries(hook.resolvedEntryMap, [previousId, currentId])
+
+    ctx.runtimeState.build.hmr.profile.eventId = 'event-1'
+    hook.markEntryDirty(previousId, 'direct')
+    ctx.runtimeState.build.hmr.profile.eventId = 'event-2'
+    hook.markEntryDirty(currentId, 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      id: currentId,
+    }))
+    expect(hook.dirtyEntrySet.has(previousId)).toBe(true)
+    expect(hook.dirtyEntrySet.has(currentId)).toBe(false)
+  })
+
   it('marks shared chunk refresh as skipped when no dirty entries exist', async () => {
     const ctx = createContext()
     const setDidEmitAllEntries = vi.fn()

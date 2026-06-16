@@ -253,6 +253,7 @@ export function useLoadEntry(
   const loadedEntrySet = ctx.runtimeState.build.hmr.loadedEntrySet
   const dirtyEntrySet = ctx.runtimeState.build.hmr.dirtyEntrySet
   const dirtyEntryReasons = ctx.runtimeState.build.hmr.dirtyEntryReasons as Map<string, DirtyEntryReason>
+  const dirtyEntryEventIds = new Map<string, string | undefined>()
   const resolvedEntryMap = ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, ResolvedId>
   const layoutEntryDependents = ctx.runtimeState.build.hmr.layoutEntryDependents
   const entryLayoutDependencies = ctx.runtimeState.build.hmr.entryLayoutDependencies
@@ -360,6 +361,7 @@ export function useLoadEntry(
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
+      dirtyEntryEventIds.set(entryId, ctx.runtimeState.build.hmr.profile.eventId)
       const previous = dirtyEntryReasons.get(entryId)
       const nextReason = previous === 'dependency' || reason === 'dependency'
         ? 'dependency'
@@ -379,12 +381,26 @@ export function useLoadEntry(
       }
 
       const emitStartedAt = performance.now()
-      const dirtyCount = dirtyEntrySet.size
+      const currentEventId = ctx.runtimeState.build.hmr.profile.eventId
+      const activeDirtyEntrySet = currentEventId
+        ? new Set([...dirtyEntrySet].filter((entryId) => {
+            const eventId = dirtyEntryEventIds.get(entryId)
+            return eventId === undefined || eventId === currentEventId
+          }))
+        : dirtyEntrySet
+      if (!activeDirtyEntrySet.size) {
+        options?.hmr?.setDidEmitAllEntries?.(false)
+        options?.hmr?.setLastEmittedEntries?.(new Set())
+        options?.hmr?.setLastHmrEntries?.(new Set())
+        options?.hmr?.setSkipSharedChunkRefresh?.(true)
+        return
+      }
+      const dirtyCount = activeDirtyEntrySet.size
       const pendingResolution = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
         mode: hmrSharedChunksMode,
         resolvedEntryMap,
-        dirtyEntrySet,
+        dirtyEntrySet: activeDirtyEntrySet,
         dirtyEntryReasons,
         dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
@@ -404,6 +420,7 @@ export function useLoadEntry(
         }
         dirtyEntrySet.delete(entryId)
         dirtyEntryReasons.delete(entryId)
+        dirtyEntryEventIds.delete(entryId)
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
           continue
