@@ -6,6 +6,8 @@ import { createLoadHook, createOptionsHook } from './load'
 import { createTransformHook } from './transform'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
+const CORE_TRANSFORM_FILTER_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/
+
 export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const isPluginBuild = state.buildTarget === 'plugin'
 
@@ -19,7 +21,12 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     watchChange: createWatchChangeHook(state),
     options: createOptionsHook(state),
     load: createLoadHook(state),
-    transform: createTransformHook(state),
+    transform: {
+      filter: {
+        id: CORE_TRANSFORM_FILTER_RE,
+      },
+      handler: createTransformHook(state),
+    },
     renderStart: createRenderStartHook(state),
     generateBundle: createGenerateBundleHook(state, isPluginBuild),
     buildEnd: createBuildEndHook(state),

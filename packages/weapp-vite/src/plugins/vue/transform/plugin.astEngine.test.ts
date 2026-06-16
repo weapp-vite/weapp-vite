@@ -112,6 +112,10 @@ vi.mock('../../../logger', () => ({
   },
 }))
 
+function getHookHandler<T extends (...args: any[]) => any>(hook: T | { handler: T } | undefined): T {
+  return typeof hook === 'function' ? hook : hook!.handler
+}
+
 describe('createVueTransformPlugin ast engine smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -159,7 +163,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await expect(plugin.transform!.call({
+    await expect(getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')).resolves.toBeNull()
   })
@@ -187,7 +191,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await expect(plugin.transform!.call({
+    await expect(getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')).resolves.toBeNull()
   })
@@ -217,7 +221,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    const result = await plugin.transform!.call({
+    const result = await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')
 
@@ -257,7 +261,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    const result = await plugin.transform!.call({
+    const result = await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/empty-shell.vue')
 
@@ -296,7 +300,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await plugin.transform!.call({
+    await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/timing.vue')
 
@@ -333,7 +337,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await plugin.transform!.call({
+    await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template><style>.a{}</style>', '/project/src/components/with-style.vue')
 
@@ -368,7 +372,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await plugin.transform!.call({
+    await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view>static</view></template>', '/project/src/components/static-only.vue')
 
@@ -414,7 +418,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await plugin.transform!.call({
+    await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view>{{ count }}</view></template>', '/project/src/pages/home/index.vue')
 
@@ -460,7 +464,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await plugin.transform!.call({
+    await getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/pages/home/index.vue')
 
@@ -490,7 +494,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       },
     } as any)
 
-    await expect(plugin.transform!.call({
+    await expect(getHookHandler(plugin.transform as any).call({
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')).rejects.toThrow('compile exploded')
 

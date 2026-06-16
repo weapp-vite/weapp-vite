@@ -16,6 +16,7 @@ import { readFile as readFileCached } from './utils/cache'
 import { createViteResolverAdapter } from './utils/viteResolverAdapter'
 
 const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
+const JS_LIKE_SOURCE_FILTER_RE = /\.[cm]?[jt]sx?(?:\?.*)?$/
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -24,94 +25,99 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   return {
     name: 'weapp-vite:wevu:page-features',
     enforce: 'pre',
-    async transform(code, id) {
-      const configService = ctx.configService
-      const scanService = ctx.scanService
-      if (!configService || !scanService) {
-        return null
-      }
+    transform: {
+      filter: {
+        id: JS_LIKE_SOURCE_FILTER_RE,
+      },
+      async handler(code, id) {
+        const configService = ctx.configService
+        const scanService = ctx.scanService
+        if (!configService || !scanService) {
+          return null
+        }
 
-      const pageMatcher = matcher ?? (matcher = createPageEntryMatcher({
-        srcRoot: configService.absoluteSrcRoot,
-        loadEntries: async () => {
-          const appEntry = await scanService.loadAppEntry()
-          const subPackages = scanService.loadSubPackages().map(meta => ({
-            root: meta.subPackage.root,
-            pages: meta.subPackage.pages,
-          }))
-          const pluginPages = scanService.pluginJson
-            ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
-            : []
-          return {
-            pages: appEntry.json?.pages ?? [],
-            subPackages,
-            pluginPages,
+        const pageMatcher = matcher ?? (matcher = createPageEntryMatcher({
+          srcRoot: configService.absoluteSrcRoot,
+          loadEntries: async () => {
+            const appEntry = await scanService.loadAppEntry()
+            const subPackages = scanService.loadSubPackages().map(meta => ({
+              root: meta.subPackage.root,
+              pages: meta.subPackage.pages,
+            }))
+            const pluginPages = scanService.pluginJson
+              ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+              : []
+            return {
+              pages: appEntry.json?.pages ?? [],
+              subPackages,
+              pluginPages,
+            }
+          },
+          warn: (message: string) => logger.warn(message),
+        }))
+
+        // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
+        if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {
+          pageMatcher.markDirty()
+          scanDirtySynced = true
+        }
+        else if (!ctx.runtimeState.scan.isDirty && scanDirtySynced) {
+          scanDirtySynced = false
+        }
+
+        const sourceId = normalizeFsResolvedId(id)
+        if (!sourceId) {
+          return null
+        }
+        if (sourceId.endsWith('.vue')) {
+          return null
+        }
+        if (!JS_LIKE_SOURCE_RE.test(sourceId)) {
+          return null
+        }
+
+        const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
+        if (!filename || !path.isAbsolute(filename)) {
+          return null
+        }
+        const startedAt = performance.now()
+
+        try {
+          if (!(await pageMatcher.isPageFile(filename))) {
+            return null
           }
-        },
-        warn: (message: string) => logger.warn(message),
-      }))
 
-      // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
-      if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {
-        pageMatcher.markDirty()
-        scanDirtySynced = true
-      }
-      else if (!ctx.runtimeState.scan.isDirty && scanDirtySynced) {
-        scanDirtySynced = false
-      }
+          for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
+            engine: resolveAstEngine(configService.weappViteConfig),
+          })) {
+            logger.warn(warning)
+          }
 
-      const sourceId = normalizeFsResolvedId(id)
-      if (!sourceId) {
-        return null
-      }
-      if (sourceId.endsWith('.vue')) {
-        return null
-      }
-      if (!JS_LIKE_SOURCE_RE.test(sourceId)) {
-        return null
-      }
-
-      const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
-      if (!filename || !path.isAbsolute(filename)) {
-        return null
-      }
-      const startedAt = performance.now()
-
-      try {
-        if (!(await pageMatcher.isPageFile(filename))) {
-          return null
-        }
-
-        for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
-          engine: resolveAstEngine(configService.weappViteConfig),
-        })) {
-          logger.warn(warning)
-        }
-
-        const result = await injectWevuPageFeaturesInJsWithResolver(code, {
-          id: filename,
-          resolver: createViteResolverAdapter(
-            {
-              resolve: async (source, importer) => {
-                return await this.resolve(source, importer) as any
+          const result = await injectWevuPageFeaturesInJsWithResolver(code, {
+            id: filename,
+            resolver: createViteResolverAdapter(
+              {
+                resolve: async (source, importer) => {
+                  return await this.resolve(source, importer) as any
+                },
               },
-            },
-            { readFile: readFileCached },
-            { checkMtime: getReadFileCheckMtime(configService) },
-          ),
-        })
-        if (!result.transformed) {
-          return null
-        }
+              { readFile: readFileCached },
+              { checkMtime: getReadFileCheckMtime(configService) },
+            ),
+          })
+          if (!result.transformed) {
+            return null
+          }
 
-        return {
-          code: result.code,
-          map: null,
+          return {
+            code: result.code,
+            map: null,
+          }
         }
-      }
-      finally {
-        recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
-      }
+        finally {
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+        }
+      },
     },
   }
 }

@@ -19,6 +19,10 @@ import { parseWeappVueStyleRequest } from '../styleRequest'
 import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
+const VUE_TRANSFORM_FILTER_RE = /\.(?:vue|tsx|jsx)(?:\?.*)?$/
+const VUE_LOAD_FILTER_RE = /^(?:\0weapp-vite:scoped-slot:|.*[?&]weapp-vite-vue(?:[=&]|$))/
+const SCOPED_SLOT_VIRTUAL_ID_RE = /^\0weapp-vite:scoped-slot:/
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
@@ -54,60 +58,75 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       })
     },
 
-    resolveId(id) {
-      return resolveScopedSlotVirtualId(id)
+    resolveId: {
+      filter: {
+        id: SCOPED_SLOT_VIRTUAL_ID_RE,
+      },
+      handler(id) {
+        return resolveScopedSlotVirtualId(id)
+      },
     },
 
-    async load(id) {
-      return await loadTransformStyleBlock({
-        id,
-        pluginCtx: this,
-        ctx,
-        configService: ctx.configService,
-        styleBlocksCache,
-        loadScopedSlotModule: (id) => {
-          const loaded = loadScopedSlotModule(id, scopedSlotModules)
-          return loaded?.code ?? null
-        },
-        scopedSlotModules,
-        parseWeappVueStyleRequest: id => parseWeappVueStyleRequest(id) ?? null,
-        readAndParseSfc,
-        createReadAndParseSfcOptions,
-      })
-    },
-
-    async transform(code, id) {
-      if (!isVueLikeId(id)) {
-        return null
-      }
-      const startedAt = performance.now()
-
-      try {
-        return await transformVueLikeFile({
-          ctx,
-          pluginCtx: this,
-          code,
+    load: {
+      filter: {
+        id: VUE_LOAD_FILTER_RE,
+      },
+      async handler(id) {
+        return await loadTransformStyleBlock({
           id,
-          compilationCache,
-          setAppShell: shell => (appShell = shell),
-          pageMatcher,
-          setPageMatcher: matcher => (pageMatcher = matcher),
-          scanDirtySynced,
-          setScanDirtySynced: synced => (scanDirtySynced = synced),
-          reExportResolutionCache,
-          compileOptionsCache,
+          pluginCtx: this,
+          ctx,
+          configService: ctx.configService,
           styleBlocksCache,
-          styleRefreshTokens,
+          loadScopedSlotModule: (id) => {
+            const loaded = loadScopedSlotModule(id, scopedSlotModules)
+            return loaded?.code ?? null
+          },
           scopedSlotModules,
-          emittedScopedSlotChunks,
-          classStyleRuntimeWarned,
+          parseWeappVueStyleRequest: id => parseWeappVueStyleRequest(id) ?? null,
           readAndParseSfc,
           createReadAndParseSfcOptions,
         })
-      }
-      finally {
-        recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
-      }
+      },
+    },
+
+    transform: {
+      filter: {
+        id: VUE_TRANSFORM_FILTER_RE,
+      },
+      async handler(code, id) {
+        if (!isVueLikeId(id)) {
+          return null
+        }
+        const startedAt = performance.now()
+
+        try {
+          return await transformVueLikeFile({
+            ctx,
+            pluginCtx: this,
+            code,
+            id,
+            compilationCache,
+            setAppShell: shell => (appShell = shell),
+            pageMatcher,
+            setPageMatcher: matcher => (pageMatcher = matcher),
+            scanDirtySynced,
+            setScanDirtySynced: synced => (scanDirtySynced = synced),
+            reExportResolutionCache,
+            compileOptionsCache,
+            styleBlocksCache,
+            styleRefreshTokens,
+            scopedSlotModules,
+            emittedScopedSlotChunks,
+            classStyleRuntimeWarned,
+            readAndParseSfc,
+            createReadAndParseSfcOptions,
+          })
+        }
+        finally {
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+        }
+      },
     },
 
     async generateBundle(_options, bundle) {
