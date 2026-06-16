@@ -122,6 +122,18 @@ const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MA
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
 const filter = process.env.TEMPLATES_HMR_FILTER?.trim()
+const scenarioGroupPriority: ScenarioGroup[] = [
+  'app-json',
+  'vue-script',
+  'native-script',
+  'vue-style',
+  'native-template',
+  'vue-template',
+  'native-style',
+  'json',
+  'vue-json',
+  'app-style',
+]
 
 export async function main() {
   await mkdir(reportRoot, { recursive: true })
@@ -207,9 +219,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
   await rm(profilePath, { force: true }).catch(() => {})
 
-  const scenarios = maxScenariosPerTemplate
-    ? (await discoverScenarios(workspace)).slice(0, maxScenariosPerTemplate)
-    : await discoverScenarios(workspace)
+  const scenarios = selectScenarios(await discoverScenarios(workspace), maxScenariosPerTemplate)
   result.scenarioCount = scenarios.length
   result.scenarios = scenarios.map(createPendingScenarioResult)
 
@@ -859,6 +869,37 @@ function dedupeScenarios(scenarios: ScenarioCase[]) {
     result.push(scenario)
   }
   return result
+}
+
+function selectScenarios(scenarios: ScenarioCase[], limit: number | undefined) {
+  if (!limit || scenarios.length <= limit) {
+    return scenarios
+  }
+
+  const selected: ScenarioCase[] = []
+  const remaining = new Set(scenarios)
+  for (const group of scenarioGroupPriority) {
+    const scenario = scenarios.find(item => remaining.has(item) && item.group === group)
+    if (!scenario) {
+      continue
+    }
+    selected.push(scenario)
+    remaining.delete(scenario)
+    if (selected.length >= limit) {
+      return selected
+    }
+  }
+
+  for (const scenario of scenarios) {
+    if (!remaining.has(scenario)) {
+      continue
+    }
+    selected.push(scenario)
+    if (selected.length >= limit) {
+      break
+    }
+  }
+  return selected
 }
 
 function insertBeforeClosingTag(source: string, tagName: string, insertion: string) {
