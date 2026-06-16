@@ -236,9 +236,74 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
+  it('skips json asset scan for script-only incremental hmr renderStart', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                dirtyReasonSummary: ['entry-direct:1'],
+              },
+            },
+          },
+          wxml: {
+            emittedCode: new Map(),
+          },
+        },
+      },
+      hmrState: {
+        hasBuiltOnce: true,
+        didEmitAllEntries: false,
+      },
+    })
+    const hook = createRenderStartHook(state)
+
+    await hook.call({ emitFile: vi.fn() })
+
+    expect(emitJsonAssetsMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps json asset scan for json-only incremental hmr renderStart', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                dirtyReasonSummary: ['entry-json-only:1'],
+              },
+            },
+          },
+          wxml: {
+            emittedCode: new Map(),
+          },
+        },
+      },
+      hmrState: {
+        hasBuiltOnce: true,
+        didEmitAllEntries: false,
+      },
+    })
+    const hook = createRenderStartHook(state)
+
+    await hook.call({ emitFile: vi.fn() })
+
+    expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
+  })
+
   it('emits changed style sidecar assets during metadata-only hmr', async () => {
     const state = createState({
       ctx: {
+        configService: {
+          isDev: true,
+        },
         runtimeState: {
           build: {
             hmr: {
@@ -253,6 +318,10 @@ describe('core lifecycle emit hook extra branches', () => {
           },
         },
       },
+      hmrState: {
+        hasBuiltOnce: true,
+        didEmitAllEntries: false,
+      },
     })
     const hook = createRenderStartHook(state)
     const emitFile = vi.fn()
@@ -266,7 +335,7 @@ describe('core lifecycle emit hook extra branches', () => {
       '/project/src/pages/hmr/index.wxss',
       undefined,
     )
-    expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
+    expect(emitJsonAssetsMock).not.toHaveBeenCalled()
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
