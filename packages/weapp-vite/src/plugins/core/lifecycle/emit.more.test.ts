@@ -292,6 +292,11 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/hmr/index.wxml']).toBeDefined()
     expect(refreshSharedChunkImportersMock).not.toHaveBeenCalled()
     expect(refreshPartialSharedChunkImportersMock).not.toHaveBeenCalled()
+    expect(applySharedChunkStrategyMock).not.toHaveBeenCalled()
+    expect(applyRuntimeChunkLocalizationMock).not.toHaveBeenCalled()
+    expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
+    expect(syncChunkImportsFromRequireCallsMock).not.toHaveBeenCalled()
+    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
   })
 
   it('drops incomplete stable shared chunks during partial dev hmr rebuilds', async () => {

@@ -36,6 +36,36 @@ function isSourceStyleAsset(fileName: string) {
   return SOURCE_STYLE_ASSET_RE.test(fileName)
 }
 
+function hasChunkOutput(bundle: OutputBundle) {
+  return Object.values(bundle).some(output => output?.type === 'chunk')
+}
+
+function hasStyleAssetOutput(bundle: OutputBundle) {
+  return Object.entries(bundle).some(([bundleKey, output]) => {
+    if (output?.type !== 'asset') {
+      return false
+    }
+    const fileName = output.fileName || bundleKey
+    return isSourceStyleAsset(fileName)
+  })
+}
+
+function isNonStyleAssetOnlyHmrBundle(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+) {
+  if (!ctx.configService?.isDev) {
+    return false
+  }
+
+  const dirtyReasonSummary = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
+  if (!dirtyReasonSummary?.length) {
+    return false
+  }
+
+  return !hasChunkOutput(bundle) && !hasStyleAssetOutput(bundle)
+}
+
 function shouldPreprocessWithVite(fileName: string) {
   return VITE_PREPROCESS_STYLE_RE.test(fileName)
 }
@@ -80,7 +110,7 @@ function emitCssAssetIfChanged(
   source: string,
 ) {
   const normalizedFileName = toPosixPath(fileName)
-  const cache = ctx.runtimeState?.css.emittedSource
+  const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
 
   if (existing?.type === 'asset') {
@@ -428,6 +458,9 @@ export function css(ctx: CompilerContext): Plugin[] {
         resolvedConfig = config
       },
       async generateBundle(_opts, bundle) {
+        if (isNonStyleAssetOnlyHmrBundle(ctx, bundle as unknown as OutputBundle)) {
+          return
+        }
         await generateBundleSharedCss.call(this, ctx, configService, bundle, resolvedConfig)
       },
     },

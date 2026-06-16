@@ -203,6 +203,71 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
   })
 
+  it('skips shared style work for non-style asset-only dev hmr bundles', async () => {
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              dirtyReasonSummary: ['sidecar-direct:1'],
+            },
+          },
+        },
+      },
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.wxml': {
+        type: 'asset',
+        fileName: 'subpackages/foo/pages/list.wxml',
+        source: '<view />',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(renderSharedStyleEntry).not.toHaveBeenCalled()
+    expect(processCssWithCache).not.toHaveBeenCalled()
+    expect(emitted).toEqual([])
+  })
+
+  it('keeps style asset processing during asset-only dev hmr bundles', async () => {
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              dirtyReasonSummary: ['style-sidecar:1'],
+            },
+          },
+        },
+      },
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.wxss': {
+        type: 'asset',
+        fileName: 'subpackages/foo/pages/list.wxss',
+        source: '.page{color:red}',
+        originalFileNames: [resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.wxss')],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(processCssWithCache).toHaveBeenCalled()
+  })
+
   it('emits wxss from css asset via chunk viteMetadata (no originalFileNames)', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
