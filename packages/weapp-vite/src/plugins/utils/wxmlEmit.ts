@@ -26,6 +26,7 @@ export interface EmitWxmlOptions {
   subPackageMeta?: SubPackageMetaValue
   emittedCodeCache: Map<string, string>
   buildTarget?: BuildTarget
+  targetIds?: Set<string>
 }
 
 export function resolveWxmlEmitContext(compiler: CompilerContext) {
@@ -54,9 +55,13 @@ export function resolveWxmlEmitTargets(options: {
   compiler: CompilerContext
   subPackageMeta?: SubPackageMetaValue
   buildTarget?: BuildTarget
+  targetIds?: Set<string>
 }) {
   const { compiler, subPackageMeta, buildTarget = 'app' } = options
   const { wxmlService, configService, scanService, templateExtension } = resolveWxmlEmitContext(compiler)
+  const targetIds = options.targetIds?.size
+    ? new Set(Array.from(options.targetIds, normalizeWatchPath))
+    : undefined
 
   return Array.from(wxmlService.tokenMap.entries())
     .filter(([id]) => isTemplate(id))
@@ -69,6 +74,9 @@ export function resolveWxmlEmitTargets(options: {
       }
     })
     .filter(({ id, fileName }) => {
+      if (targetIds?.size && !targetIds.has(normalizeWatchPath(id))) {
+        return false
+      }
       if (subPackageMeta) {
         return fileName.startsWith(subPackageMeta.subPackage.root)
       }
@@ -133,6 +141,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     compiler,
     subPackageMeta,
     buildTarget,
+    targetIds: options.targetIds,
   })
 
   const emittedFiles: string[] = []
