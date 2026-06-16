@@ -17,10 +17,34 @@ import { createViteResolverAdapter } from './utils/viteResolverAdapter'
 
 const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 const JS_LIKE_SOURCE_FILTER_RE = /\.[cm]?[jt]sx?(?:\?.*)?$/
+const WEVU_RUNTIME_MODULE_HINTS = [
+  '\'wevu\'',
+  '"wevu"',
+  '\'wevu/internal-runtime\'',
+  '"wevu/internal-runtime"',
+]
+const PAGE_FEATURE_HOOK_HINTS = [
+  'onPageScroll',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onRouteDone',
+  'onTabItemTap',
+  'onResize',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onAddToFavorites',
+  'onSaveExitState',
+]
+
+function mayNeedPageFeatureWork(code: string) {
+  return WEVU_RUNTIME_MODULE_HINTS.some(hint => code.includes(hint))
+    || PAGE_FEATURE_HOOK_HINTS.some(hint => code.includes(hint))
+}
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
+  const pageFileCache = new Map<string, boolean>()
 
   return {
     name: 'weapp-vite:wevu:page-features',
@@ -59,6 +83,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
         if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {
           pageMatcher.markDirty()
+          pageFileCache.clear()
           scanDirtySynced = true
         }
         else if (!ctx.runtimeState.scan.isDirty && scanDirtySynced) {
@@ -83,18 +108,30 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         const startedAt = performance.now()
 
         try {
-          if (!(await pageMatcher.isPageFile(filename))) {
+          let isPageFile = pageFileCache.get(filename)
+          if (isPageFile === undefined) {
+            isPageFile = await pageMatcher.isPageFile(filename)
+            pageFileCache.set(filename, isPageFile)
+          }
+          if (!isPageFile) {
+            return null
+          }
+          if (!mayNeedPageFeatureWork(code)) {
             return null
           }
 
-          for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
-            engine: resolveAstEngine(configService.weappViteConfig),
-          })) {
-            logger.warn(warning)
+          const astEngine = resolveAstEngine(configService.weappViteConfig)
+          if (code.includes('onPageScroll')) {
+            for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
+              engine: astEngine,
+            })) {
+              logger.warn(warning)
+            }
           }
 
           const result = await injectWevuPageFeaturesInJsWithResolver(code, {
             id: filename,
+            astEngine,
             resolver: createViteResolverAdapter(
               {
                 resolve: async (source, importer) => {
