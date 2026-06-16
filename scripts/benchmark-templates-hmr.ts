@@ -5,6 +5,8 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+/* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
+import { execa } from 'execa'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
@@ -214,6 +216,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   }
 
   await prepareWorkspace(template)
+  await prepareWorkspaceSupportFiles(template)
   await cleanupProcessesByCommandPatterns([template.workspaceRoot], 2_500).catch(() => {})
 
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
@@ -283,24 +286,34 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   return result
 }
 
+async function prepareWorkspaceSupportFiles(template: TemplateCase) {
+  await runCli([
+    'prepare',
+    normalizePath(path.relative(repoRoot, template.workspaceRoot)),
+  ])
+}
+
 async function prepareWorkspace(template: TemplateCase) {
   await rm(template.workspaceRoot, { recursive: true, force: true })
+  await mkdir(template.workspaceRoot, { recursive: true })
   await cp(template.templateRoot, template.workspaceRoot, {
     recursive: true,
-    filter: source => !isIgnoredCopyPath(source),
+    filter: source => !isIgnoredCopyPath(template.templateRoot, source),
   })
 
   const originalNodeModules = path.join(template.templateRoot, 'node_modules')
   if (await pathExists(originalNodeModules)) {
-    await symlink(originalNodeModules, path.join(template.workspaceRoot, 'node_modules'), 'dir')
+    const workspaceNodeModules = path.join(template.workspaceRoot, 'node_modules')
+    if (!(await pathExists(workspaceNodeModules))) {
+      await symlink(originalNodeModules, workspaceNodeModules, 'dir')
+    }
   }
 }
 
-function isIgnoredCopyPath(source: string) {
+function isIgnoredCopyPath(root: string, source: string) {
   const ignoredDirs = ['dist', 'dist-lib', 'dist-plugin', '.turbo', '.tmp', '.weapp-vite', 'node_modules']
-  return ignoredDirs.some((dir) => {
-    return source.includes(`${path.sep}${dir}${path.sep}`) || source.endsWith(`${path.sep}${dir}`)
-  })
+  const relative = normalizePath(path.relative(root, source))
+  return relative.split('/').some(segment => ignoredDirs.includes(segment))
 }
 
 async function discoverScenarios(template: TemplateCase): Promise<ScenarioCase[]> {
@@ -917,6 +930,16 @@ function removeFileExtension(filePath: string) {
 
 function createMarker(templateId: string, scenarioId: string, index: number) {
   return `HMR_BENCH_${toIdentifier(templateId)}_${toIdentifier(scenarioId)}_${index + 1}_${Date.now().toString(36)}`
+}
+
+async function runCli(args: string[]) {
+  await execa(process.execPath, [cliPath, ...args], {
+    cwd: repoRoot,
+    env: createDevProcessEnv({
+      disableSidecarWatch: true,
+    }),
+    stdio: 'inherit',
+  })
 }
 
 function toIdentifier(value: string) {
