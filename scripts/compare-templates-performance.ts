@@ -16,6 +16,7 @@ const buildIterations = readPositiveIntegerEnv('TEMPLATES_PERF_BUILD_ITERATIONS'
 const hmrFilter = process.env.TEMPLATES_PERF_HMR_FILTER?.trim() || null
 const maxHmrScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const hmrStartupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS', 45_000)
+const hmrProfileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS', 15_000)
 const reportJsonPath = path.join(reportRootDir, 'report.json')
 const reportMdPath = path.join(reportRootDir, 'report.md')
 
@@ -71,6 +72,7 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
     TEMPLATES_HMR_REPO_ROOT: cwd,
     TEMPLATES_HMR_FILTER: hmrFilter ?? '',
     TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE: maxHmrScenariosPerTemplate?.toString() ?? '',
+    TEMPLATES_HMR_PROFILE_TIMEOUT_MS: String(hmrProfileTimeoutMs),
     TEMPLATES_HMR_STARTUP_TIMEOUT_MS: String(hmrStartupTimeoutMs),
   })
 
