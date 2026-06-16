@@ -1,9 +1,9 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -93,8 +93,8 @@ definePageJson({
 </script>
       `.trim()
 
-      const a = await plugin.transform!(base('首页'), file)
-      const b = await plugin.transform!(base('222'), file)
+      const a = await callPluginHook(plugin.transform as any, {}, base('首页'), file)
+      const b = await callPluginHook(plugin.transform as any, {}, base('222'), file)
 
       expect(a?.code).toContain('__weappViteJsonMacroHash')
       expect(b?.code).toContain('__weappViteJsonMacroHash')
@@ -113,8 +113,7 @@ definePageJson({
       const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
 
       const file = path.join(srcRoot, 'components/foo/index.vue')
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>ok</view></template>
 <script setup lang="ts">
 defineComponentJson({
@@ -133,9 +132,7 @@ defineComponentJson({
   }
 }
 </json>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       expect(transformed?.code).not.toContain('defineComponentJson')
 
@@ -191,7 +188,7 @@ defineComponentJson({
 </script>
       `.trim()
 
-      await plugin.transform!(withMacro, file)
+      await callPluginHook(plugin.transform as any, {}, withMacro, file)
       await plugin.generateBundle!.call({ emitFile }, {}, bundle)
 
       const first = JSON.parse(bundle['components/hello/index.json'].source)
@@ -205,7 +202,7 @@ const foo = 1
 </script>
       `.trim()
 
-      await plugin.transform!(withoutMacro, file)
+      await callPluginHook(plugin.transform as any, {}, withoutMacro, file)
       await plugin.generateBundle!.call({ emitFile }, {}, bundle)
 
       const next = JSON.parse(bundle['components/hello/index.json'].source)
@@ -225,16 +222,13 @@ const foo = 1
       const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
       const file = path.join(srcRoot, 'app.vue')
 
-      await plugin.transform!(
-        `
+      await callPluginHook(plugin.transform as any, {}, `
 <script setup lang="ts">
 defineAppJson({
   style: 'v3'
 })
 </script>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       const bundle: Record<string, any> = {
         'app.json': {
@@ -288,7 +282,7 @@ definePageJson({
 </script>
       `.trim()
 
-      await plugin.transform!(sfc, file)
+      await callPluginHook(plugin.transform as any, {}, sfc, file)
 
       const emitted: Array<{ fileName: string, source: string }> = []
       await plugin.generateBundle!.call(
@@ -402,8 +396,8 @@ definePageJson({
 
       try {
         await Promise.all([
-          plugin.transform!(base('A'), fileA),
-          plugin.transform!(base('B'), fileB),
+          callPluginHook(plugin.transform as any, {}, base('A'), fileA),
+          callPluginHook(plugin.transform as any, {}, base('B'), fileB),
         ])
       }
       finally {

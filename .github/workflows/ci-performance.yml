@@ -23,6 +23,32 @@ on:
         description: comma-separated resolver component counts
         required: false
         default: '1,20,50,100'
+      templates-hmr-iterations:
+        description: templates HMR iterations per scenario
+        required: false
+        default: '1'
+      templates-build-iterations:
+        description: templates build iterations per ref
+        required: false
+        default: '1'
+      templates-hmr-filter:
+        description: optional templates HMR template filter
+        required: false
+      templates-hmr-max-scenarios-per-template:
+        description: optional max HMR scenarios per template
+        required: false
+        default: '6'
+      templates-hmr-startup-timeout-ms:
+        description: templates HMR dev startup timeout in milliseconds
+        required: false
+        default: '120000'
+      templates-baseline-ref:
+        description: templates performance baseline ref for workflow_dispatch
+        required: false
+        default: main
+      templates-head-ref:
+        description: templates performance head ref for workflow_dispatch
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
@@ -89,4 +115,100 @@ jobs:
         with:
           name: auto-import-performance-report
           path: ${{ runner.temp }}/auto-import-performance-report
+          if-no-files-found: warn
+
+  templates-performance:
+    name: Templates Performance (${{ matrix.os }} / Node 24)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Check out head
+        uses: actions/checkout@v6
+        with:
+          path: head
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs['templates-head-ref'] || github.sha }}
+
+      - name: Check out baseline
+        uses: actions/checkout@v6
+        with:
+          path: baseline
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.inputs['templates-baseline-ref'] || github.event.repository.default_branch }}
+
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.6.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: head/pnpm-lock.yaml
+
+      - name: Install head dependencies
+        shell: bash
+        working-directory: head
+        run: pnpm install --frozen-lockfile
+
+      - name: Install baseline dependencies
+        shell: bash
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve templates benchmark inputs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_HMR_ITERATIONS: ${{ github.event.inputs['templates-hmr-iterations'] || '' }}
+          INPUT_BUILD_ITERATIONS: ${{ github.event.inputs['templates-build-iterations'] || '' }}
+          INPUT_HMR_FILTER: ${{ github.event.inputs['templates-hmr-filter'] || '' }}
+          INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE: ${{ github.event.inputs['templates-hmr-max-scenarios-per-template'] || '' }}
+          INPUT_HMR_STARTUP_TIMEOUT_MS: ${{ github.event.inputs['templates-hmr-startup-timeout-ms'] || '' }}
+          TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/templates-performance-report
+        run: |
+          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-1}"
+          export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
+          export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-}"
+          export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE:-6}"
+          export TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS="${INPUT_HMR_STARTUP_TIMEOUT_MS:-120000}"
+
+          {
+            echo "TEMPLATES_PERF_HMR_ITERATIONS=${TEMPLATES_PERF_HMR_ITERATIONS}"
+            echo "TEMPLATES_PERF_BUILD_ITERATIONS=${TEMPLATES_PERF_BUILD_ITERATIONS}"
+            echo "TEMPLATES_PERF_HMR_FILTER=${TEMPLATES_PERF_HMR_FILTER}"
+            echo "TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE=${TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE}"
+            echo "TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS=${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}"
+            echo "TEMPLATES_PERF_REPORT_DIR=${TEMPLATES_PERF_REPORT_DIR}"
+          } >> "$GITHUB_ENV"
+
+          {
+            echo "### templates benchmark inputs"
+            echo "- event: \`${EVENT_NAME}\`"
+            echo "- benchmark: \`templates/*\`"
+            echo "- HMR iterations: \`${TEMPLATES_PERF_HMR_ITERATIONS}\`"
+            echo "- build iterations: \`${TEMPLATES_PERF_BUILD_ITERATIONS}\`"
+            echo "- HMR filter: \`${TEMPLATES_PERF_HMR_FILTER:-all}\`"
+            echo "- HMR max scenarios/template: \`${TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE:-all}\`"
+            echo "- HMR startup timeout: \`${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}ms\`"
+            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；手动触发可调高迭代或清空 max scenarios 跑全量诊断"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run templates performance benchmark
+        working-directory: head
+        env:
+          TEMPLATES_PERF_BASELINE_DIR: ${{ github.workspace }}/baseline
+          TEMPLATES_PERF_OPTIMIZED_DIR: ${{ github.workspace }}/head
+        run: pnpm exec tsx scripts/compare-templates-performance.ts
+
+      - name: Upload templates performance report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: templates-performance-report-${{ matrix.os }}
+          path: ${{ runner.temp }}/templates-performance-report
           if-no-files-found: warn

@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWatchPath } from '../../src/utils/path'
+import { callPluginHook } from '../pluginHook'
 
 vi.mock('wevu/compiler', async () => {
   const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
@@ -136,13 +136,9 @@ describe('vue transform plugin: watch .vue files', () => {
       },
     } as any)
 
-    await plugin.transform?.call(
-      {
-        addWatchFile: (file: string) => watchedFiles.push(file),
-      } as any,
-      '<template><view /></template>',
-      `\0vue:${pageVueRelative}`,
-    )
+    await callPluginHook(plugin.transform as any, {
+      addWatchFile: (file: string) => watchedFiles.push(file),
+    } as any, '<template><view /></template>', `\0vue:${pageVueRelative}`)
 
     expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
   })

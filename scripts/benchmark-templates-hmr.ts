@@ -9,7 +9,17 @@ import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 
-type ScenarioGroup = 'app' | 'json' | 'native-page' | 'vue'
+type ScenarioGroup
+  = | 'app-json'
+    | 'app-style'
+    | 'json'
+    | 'native-script'
+    | 'native-style'
+    | 'native-template'
+    | 'vue-json'
+    | 'vue-script'
+    | 'vue-style'
+    | 'vue-template'
 
 interface HmrProfileJsonSample {
   buildCoreMs?: number
@@ -96,7 +106,7 @@ interface BenchmarkReport {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(__dirname, '..')
+const repoRoot = path.resolve(process.env.TEMPLATES_HMR_REPO_ROOT ?? path.resolve(__dirname, '..'))
 const templatesRoot = path.join(repoRoot, 'templates')
 const workspaceRoot = path.resolve(process.env.TEMPLATES_HMR_WORKSPACE_ROOT ?? path.join(repoRoot, '.tmp/templates-hmr-workspaces'))
 const reportRoot = path.resolve(process.env.TEMPLATES_HMR_REPORT_DIR ?? path.join(repoRoot, '.tmp/templates-hmr-report'))
@@ -288,29 +298,23 @@ async function discoverScenarios(template: TemplateCase): Promise<ScenarioCase[]
   const scenarios: ScenarioCase[] = []
   const deferredScenarios: ScenarioCase[] = []
 
-  const appVue = path.join(template.sourceRoot, 'app.vue')
-  if (await pathExists(appVue)) {
-    const appVueSource = await readFile(appVue, 'utf8')
-    pushIfPresent(scenarios, createVueJsonMacroScenario(template, appVue, appVueSource, 'vue-app-json-macro', 'app defineAppJson', 'app.json'))
-  }
-
-  const pageVue = findPreferredVueSource(files, template.sourceRoot)
-  if (pageVue) {
+  const vueScenariosByGroup = new Map<ScenarioGroup, ScenarioCase>()
+  for (const pageVue of findPreferredSources(files, template.sourceRoot, isVueSource)) {
     const pageVueSource = await readFile(pageVue, 'utf8')
-    scenarios.push(...createVueScenarios(template, pageVue, pageVueSource))
+    for (const scenario of createVueScenarios(template, pageVue, pageVueSource)) {
+      if (!vueScenariosByGroup.has(scenario.group)) {
+        vueScenariosByGroup.set(scenario.group, scenario)
+      }
+    }
   }
+  scenarios.push(...vueScenariosByGroup.values())
 
-  pushIfPresent(scenarios, await createJsonScenario(template, 'app-json', 'app', 'app.json', 'app.json'))
-  pushIfPresent(scenarios, await createScriptScenario(template, 'app-script', 'app', 'app.ts', 'app.js'))
-  pushIfPresent(scenarios, await createStyleScenario(template, 'app-style', 'app', 'app.css', 'app.wxss'))
-  pushIfPresent(scenarios, await createStyleScenario(template, 'app-style', 'app', 'app.scss', 'app.wxss'))
+  pushIfPresent(scenarios, await createJsonScenario(template, 'app-json', 'app-json', 'app.json', 'app.json'))
+  pushIfPresent(scenarios, await createFirstExistingStyleScenario(template, 'app-style', 'app-style', ['app.css', 'app.scss', 'app.less'], 'app.wxss'))
 
-  const nativeTemplate = findPreferredSource(files, template.sourceRoot, isNativeTemplate)
-  const nativeScript = findPreferredSource(files, template.sourceRoot, isNativePageScript)
-  const nativeStyle = findPreferredSource(files, template.sourceRoot, isNativePageStyle)
-  pushIfPresent(scenarios, createNativeTemplateScenario(template, nativeTemplate))
-  pushIfPresent(scenarios, createNativeScriptScenario(template, nativeScript))
-  pushIfPresent(scenarios, createNativeStyleScenario(template, nativeStyle))
+  pushIfPresent(scenarios, createNativeTemplateScenario(template, findPreferredSource(files, template.sourceRoot, isNativeTemplate)))
+  pushIfPresent(scenarios, createNativeScriptScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageScript)))
+  pushIfPresent(scenarios, createNativeStyleScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageStyle)))
 
   pushIfPresent(deferredScenarios, await createJsonScenario(template, 'json-sitemap', 'json', 'sitemap.json', 'sitemap.json'))
   pushIfPresent(deferredScenarios, await createJsonScenario(template, 'json-theme', 'json', 'theme.json', 'theme.json'))
@@ -339,27 +343,6 @@ async function createJsonScenario(
   }
 }
 
-async function createScriptScenario(
-  template: TemplateCase,
-  id: string,
-  group: ScenarioGroup,
-  sourceRelativePath: string,
-  outputRelativePath: string,
-): Promise<ScenarioCase | undefined> {
-  const sourceFile = path.join(template.sourceRoot, sourceRelativePath)
-  if (!(await pathExists(sourceFile))) {
-    return undefined
-  }
-  return {
-    id,
-    group,
-    label: sourceRelativePath,
-    sourceFile,
-    outputFile: path.join(template.workspaceRoot, 'dist', outputRelativePath),
-    mutate: (source, marker) => `${source.trimEnd()}\nconsole.log('${marker}')\n`,
-  }
-}
-
 async function createStyleScenario(
   template: TemplateCase,
   id: string,
@@ -382,13 +365,28 @@ async function createStyleScenario(
   }
 }
 
+async function createFirstExistingStyleScenario(
+  template: TemplateCase,
+  id: string,
+  group: ScenarioGroup,
+  sourceRelativePaths: string[],
+  outputRelativePath: string,
+): Promise<ScenarioCase | undefined> {
+  for (const sourceRelativePath of sourceRelativePaths) {
+    const scenario = await createStyleScenario(template, id, group, sourceRelativePath, outputRelativePath)
+    if (scenario) {
+      return scenario
+    }
+  }
+}
+
 function createNativeTemplateScenario(template: TemplateCase, sourceFile: string | undefined): ScenarioCase | undefined {
   if (!sourceFile) {
     return undefined
   }
   return {
     id: 'native-page-template',
-    group: 'native-page',
+    group: 'native-template',
     label: formatSourceLabel(template, sourceFile),
     sourceFile,
     outputFile: resolveOutputPath(template, sourceFile, 'wxml'),
@@ -402,7 +400,7 @@ function createNativeScriptScenario(template: TemplateCase, sourceFile: string |
   }
   return {
     id: 'native-page-script',
-    group: 'native-page',
+    group: 'native-script',
     label: formatSourceLabel(template, sourceFile),
     sourceFile,
     outputFile: resolveOutputPath(template, sourceFile, 'js'),
@@ -416,34 +414,13 @@ function createNativeStyleScenario(template: TemplateCase, sourceFile: string | 
   }
   return {
     id: 'native-page-style',
-    group: 'native-page',
+    group: 'native-style',
     label: formatSourceLabel(template, sourceFile),
     sourceFile,
     outputFile: resolveOutputPath(template, sourceFile, 'wxss'),
     outputMarker: marker => toCssIdent(marker),
     mutate: (source, marker) => `${source.trimEnd()}\n.hmr-bench-${toCssIdent(marker)} { color: #0f766e; }\n`,
   }
-}
-
-function createVueJsonMacroScenario(
-  template: TemplateCase,
-  sourceFile: string,
-  source: string,
-  id: string,
-  label: string,
-  outputRelativePath: string,
-) {
-  if (!source.includes('navigationBarTitleText')) {
-    return undefined
-  }
-  return {
-    id,
-    group: 'vue',
-    label,
-    sourceFile,
-    outputFile: path.join(template.workspaceRoot, 'dist', outputRelativePath),
-    mutate: mutateNavigationBarTitleText,
-  } satisfies ScenarioCase
 }
 
 function createVueScenarios(template: TemplateCase, sourceFile: string, source: string): ScenarioCase[] {
@@ -454,7 +431,7 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   if (source.includes('navigationBarTitleText')) {
     scenarios.push({
       id: 'vue-page-json-macro',
-      group: 'vue',
+      group: 'vue-json',
       label: `${sourceLabel} definePageJson`,
       sourceFile,
       outputFile: `${outputBase}.json`,
@@ -464,7 +441,7 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   if (source.includes('</template>')) {
     scenarios.push({
       id: 'vue-page-template',
-      group: 'vue',
+      group: 'vue-template',
       label: `${sourceLabel} template`,
       sourceFile,
       outputFile: `${outputBase}.wxml`,
@@ -474,7 +451,7 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   if (source.includes('</script>')) {
     scenarios.push({
       id: 'vue-page-script',
-      group: 'vue',
+      group: 'vue-script',
       label: `${sourceLabel} script`,
       sourceFile,
       outputFile: `${outputBase}.js`,
@@ -484,7 +461,7 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   if (source.includes('</style>')) {
     scenarios.push({
       id: 'vue-page-style',
-      group: 'vue',
+      group: 'vue-style',
       label: `${sourceLabel} style`,
       sourceFile,
       outputFile: `${outputBase}.wxss`,
@@ -564,7 +541,7 @@ async function benchmarkScenario(
       process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} wall=${wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
 
       await replaceFileByRename(scenario.sourceFile, original)
-      await waitForFileNotContains(scenario.outputFile, expectedMarker, timeoutMs).catch(() => {})
+      await waitForFileNotContains(scenario.outputFile, expectedMarker, Math.min(timeoutMs, 2_000)).catch(() => {})
       await sleep(settleMs)
     }
   }
@@ -795,18 +772,23 @@ function findPreferredSource(
   sourceRoot: string,
   predicate: (filePath: string) => boolean,
 ) {
+  return findPreferredSources(files, sourceRoot, predicate)[0]
+}
+
+function findPreferredSources(
+  files: string[],
+  sourceRoot: string,
+  predicate: (filePath: string) => boolean,
+) {
   return files
     .filter(filePath => predicate(filePath) && isPageLikeSource(sourceRoot, filePath))
     .sort((left, right) => scoreSourceFile(sourceRoot, left) - scoreSourceFile(sourceRoot, right)
-      || left.localeCompare(right))[0]
+      || statSize(left) - statSize(right)
+      || left.localeCompare(right))
 }
 
-function findPreferredVueSource(files: string[], sourceRoot: string) {
-  return files
-    .filter(filePath => filePath.endsWith('.vue') && isPageLikeSource(sourceRoot, filePath))
-    .sort((left, right) => scoreSourceFile(sourceRoot, left) - scoreSourceFile(sourceRoot, right)
-      || statSize(left) - statSize(right)
-      || left.localeCompare(right))[0]
+function isVueSource(filePath: string) {
+  return filePath.endsWith('.vue')
 }
 
 function scoreSourceFile(sourceRoot: string, filePath: string) {
@@ -849,7 +831,7 @@ function isNativePageScript(filePath: string) {
 }
 
 function isNativePageStyle(filePath: string) {
-  return filePath.endsWith('.wxss') || filePath.endsWith('.scss') || filePath.endsWith('.css')
+  return filePath.endsWith('.wxss') || filePath.endsWith('.scss') || filePath.endsWith('.css') || filePath.endsWith('.less')
 }
 
 function resolveOutputPath(template: TemplateCase, sourceFile: string, outputExt: string) {

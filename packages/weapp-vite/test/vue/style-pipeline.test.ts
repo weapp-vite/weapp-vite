@@ -1,9 +1,9 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -44,8 +44,7 @@ describe('Vue SFC style pipeline', () => {
       const plugin = createVueTransformPlugin(createCtx(root))
       const file = path.join(srcRoot, 'app.vue')
 
-      const transformed = await plugin.transform!(
-        `
+      const transformed = await callPluginHook(plugin.transform as any, {}, `
 <template><view>app</view></template>
 <script setup lang="ts">
 defineAppJson({ pages: ['pages/index/index'] })
@@ -53,9 +52,7 @@ defineAppJson({ pages: ['pages/index/index'] })
 <style lang="scss">
 .a { color: red; }
 </style>
-        `.trim(),
-        file,
-      )
+        `.trim(), file)
 
       const match = transformed?.code.match(/import\s+("([^"]+)");/)
       expect(match?.[1]).toBeTruthy()
@@ -63,9 +60,7 @@ defineAppJson({ pages: ['pages/index/index'] })
       expect(styleRequestId.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)).toBe(true)
       expect(styleRequestId).toContain('?weapp-vite-vue&type=style&index=0&lang.scss')
 
-      const loaded = await plugin.load!(
-        styleRequestId,
-      ) as any
+      const loaded = await callPluginHook(plugin.load as any, {}, styleRequestId) as any
 
       expect(loaded?.code).toContain('.a { color: red; }')
     }

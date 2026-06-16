@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -33,10 +33,7 @@ describe('vue transform emits default component json', () => {
   it('emits { component: true } for Vue SFC components without config', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
-    await plugin.transform!(
-      `<template><view>ok</view></template><script setup>const a = 1</script>`,
-      '/root/src/components/foo/index.vue',
-    )
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script setup>const a = 1</script>`, '/root/src/components/foo/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -57,10 +54,7 @@ describe('vue transform emits default component json', () => {
   it('emits { component: true } for template-only Vue components', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
-    await plugin.transform!(
-      `<template><view>ok</view></template>`,
-      '/root/src/components/pure/index.vue',
-    )
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template>`, '/root/src/components/pure/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -81,10 +75,7 @@ describe('vue transform emits default component json', () => {
   it('emits { component: true } when script contains Component(...)', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
-    await plugin.transform!(
-      `<template><view>ok</view></template><script>export default Component({})</script>`,
-      '/root/src/components/mp/index.vue',
-    )
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script>export default Component({})</script>`, '/root/src/components/mp/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -105,8 +96,7 @@ describe('vue transform emits default component json', () => {
   it('merges <json> blocks with { component: true } for components', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
-    await plugin.transform!(
-      `
+    await callPluginHook(plugin.transform as any, {}, `
 <template><view>ok</view></template>
 <script setup>const a = 1</script>
 <json>
@@ -116,9 +106,7 @@ describe('vue transform emits default component json', () => {
   }
 }
 </json>
-      `.trim(),
-      '/root/src/components/bar/index.vue',
-    )
+      `.trim(), '/root/src/components/bar/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(
@@ -144,10 +132,7 @@ describe('vue transform emits default component json', () => {
   it('does not emit default component json for declared pages', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
-    await plugin.transform!(
-      `<template><view>page</view></template><script>export default Component({})</script>`,
-      '/root/src/pages/home/index.vue',
-    )
+    await callPluginHook(plugin.transform as any, {}, `<template><view>page</view></template><script>export default Component({})</script>`, '/root/src/pages/home/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
     await plugin.generateBundle!.call(

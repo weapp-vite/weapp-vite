@@ -21,6 +21,7 @@ import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
+  const injectOptions = resolveInjectWeapiOptions(configService)
   const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
     appPrelude: configService.weappViteConfig?.appPrelude,
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
@@ -76,7 +77,6 @@ export function createTransformHook(state: CorePluginState) {
   }
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
-    const injectOptions = resolveInjectWeapiOptions(configService)
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true

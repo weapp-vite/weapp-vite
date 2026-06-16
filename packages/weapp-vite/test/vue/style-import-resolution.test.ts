@@ -8,6 +8,7 @@ import {
   parseWeappVueStyleRequest,
   WEAPP_VUE_STYLE_VIRTUAL_PREFIX,
 } from '../../src/plugins/vue/transform/styleRequest'
+import { callPluginHook } from '../pluginHook'
 
 function createCtx(root: string) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -75,7 +76,9 @@ describe('vue style import resolution', () => {
       const transformPlugin = createVueTransformPlugin(ctx)
       const resolverPlugin = createVueResolverPlugin(ctx)
 
-      const transformed = await transformPlugin.transform!(
+      const transformed = await callPluginHook(
+        transformPlugin.transform as any,
+        {},
         await fs.readFile(vueFile, 'utf8'),
         vueFile,
       ) as any
@@ -105,7 +108,7 @@ describe('vue style import resolution', () => {
         expect(path.resolve(resolvedPath)).toBe(path.resolve(vueFile))
         expect(path.dirname(resolvedPath)).toBe(pageDir)
         if (parsedRequest?.index === 2) {
-          const loaded = await transformPlugin.load!(request) as any
+          const loaded = await callPluginHook(transformPlugin.load as any, {}, request) as any
           expect(loaded?.code).toContain('.external-src')
         }
       }
