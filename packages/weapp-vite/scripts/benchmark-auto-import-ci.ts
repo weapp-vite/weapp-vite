@@ -4,6 +4,7 @@ import process from 'node:process'
 /* eslint-disable-next-line e18e/ban-dependencies -- benchmark orchestration uses child processes to run dedicated scripts and collect reports. */
 import { execa } from 'execa'
 import path from 'pathe'
+import { formatMemoryMiB } from './utils/process-memory'
 
 const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '25')
 const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '200')
@@ -243,8 +244,8 @@ function renderMarkdown(report: {
     '',
     '## 构建',
     '',
-    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 阈值结果 |',
-    '| --- | ---: | ---: | ---: | --- |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | peak RSS | 阈值结果 |',
+    '| --- | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const result of report.build.results) {
@@ -252,22 +253,22 @@ function renderMarkdown(report: {
       ? '失败'
       : '通过'
     lines.push(
-      `| ${result.usedCount} 个组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} 个组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${formatMemoryMiB(result.baselineMemory?.mean)} -> ${formatMemoryMiB(result.currentMemory?.mean)} | ${status} |`,
     )
   }
 
   lines.push('')
   lines.push('## HMR')
   lines.push('')
-  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 阈值结果 |')
-  lines.push('| --- | ---: | ---: | ---: | --- |')
+  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | heap | rss | 阈值结果 |')
+  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | --- |')
 
   for (const result of report.hmr.results) {
     const status = result.update.delta.extraPercent > report.thresholdPercent && result.update.delta.extraMs > report.minExtraMs
       ? '失败'
       : '通过'
     lines.push(
-      `| ${result.usedCount} 个组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} 个组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${formatMemoryMiB(result.update.baselineMemory?.heapUsed.mean)} -> ${formatMemoryMiB(result.update.currentMemory?.heapUsed.mean)} | ${formatMemoryMiB(result.update.baselineMemory?.rss.mean)} -> ${formatMemoryMiB(result.update.currentMemory?.rss.mean)} | ${status} |`,
     )
   }
 
@@ -392,13 +393,27 @@ interface SummaryStats {
   median: number
 }
 
+interface MemorySummaryStats {
+  min: number | null
+  max: number | null
+  mean: number | null
+  samples: number[]
+}
+
+interface HeapMemorySummaryStats {
+  heapUsed: MemorySummaryStats
+  rss: MemorySummaryStats
+}
+
 interface BuildBenchmarkReport {
   iterations: number
   generatedAt: string
   results: Array<{
     usedCount: number
     baseline: SummaryStats
+    baselineMemory?: MemorySummaryStats
     current: SummaryStats
+    currentMemory?: MemorySummaryStats
     delta: {
       extraMs: number
       extraPercent: number
@@ -414,7 +429,9 @@ interface HmrBenchmarkReport {
     usedCount: number
     startup: {
       baseline: SummaryStats
+      baselineMemory?: HeapMemorySummaryStats
       current: SummaryStats
+      currentMemory?: HeapMemorySummaryStats
       delta: {
         extraMs: number
         extraPercent: number
@@ -423,7 +440,9 @@ interface HmrBenchmarkReport {
     }
     update: {
       baseline: SummaryStats
+      baselineMemory?: HeapMemorySummaryStats
       current: SummaryStats
+      currentMemory?: HeapMemorySummaryStats
       delta: {
         extraMs: number
         extraPercent: number

@@ -1,15 +1,18 @@
 /* eslint-disable ts/no-use-before-define */
+import type { DevHeapUsage } from '../../../e2e/utils/dev-memory'
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
+import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { patchProjectConfigFile } from './utils/config-file'
+import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
@@ -43,6 +46,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
 const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
 const HMR_ACTIVITY_RE = /hmr emit dirty=\d+ resolved=\d+ emitAll=(true|false) pending=\d+|loadEntry src\/pages\/bench-hmr-auto-import\/index\.vue 耗时/
+const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
@@ -82,15 +86,23 @@ async function runScenario(usedCount: number) {
   const currentStartupSamples: number[] = []
   const baselineUpdateSamples: number[] = []
   const currentUpdateSamples: number[] = []
+  const baselineStartupMemorySamples: Array<DevHeapUsage | undefined> = []
+  const currentStartupMemorySamples: Array<DevHeapUsage | undefined> = []
+  const baselineUpdateMemorySamples: Array<DevHeapUsage | undefined> = []
+  const currentUpdateMemorySamples: Array<DevHeapUsage | undefined> = []
 
   for (let i = 0; i < iterations; i += 1) {
     const baseline = await measureHmr({ usedTags, mode: 'baseline', iteration: i })
     baselineStartupSamples.push(baseline.startupMs)
     baselineUpdateSamples.push(baseline.updateMs)
+    baselineStartupMemorySamples.push(baseline.startupMemory)
+    baselineUpdateMemorySamples.push(baseline.updateMemory)
 
     const current = await measureHmr({ usedTags, mode: 'current', iteration: i })
     currentStartupSamples.push(current.startupMs)
     currentUpdateSamples.push(current.updateMs)
+    currentStartupMemorySamples.push(current.startupMemory)
+    currentUpdateMemorySamples.push(current.updateMemory)
   }
 
   const baselineStartup = summarizeNumbers(baselineStartupSamples)
@@ -102,7 +114,9 @@ async function runScenario(usedCount: number) {
     usedCount,
     startup: {
       baseline: baselineStartup,
+      baselineMemory: summarizeHeapSamples(baselineStartupMemorySamples),
       current: currentStartup,
+      currentMemory: summarizeHeapSamples(currentStartupMemorySamples),
       delta: {
         extraMs: currentStartup.mean - baselineStartup.mean,
         extraPercent: baselineStartup.mean > 0 ? ((currentStartup.mean - baselineStartup.mean) / baselineStartup.mean) * 100 : 0,
@@ -111,7 +125,9 @@ async function runScenario(usedCount: number) {
     },
     update: {
       baseline: baselineUpdate,
+      baselineMemory: summarizeHeapSamples(baselineUpdateMemorySamples),
       current: currentUpdate,
+      currentMemory: summarizeHeapSamples(currentUpdateMemorySamples),
       delta: {
         extraMs: currentUpdate.mean - baselineUpdate.mean,
         extraPercent: baselineUpdate.mean > 0 ? ((currentUpdate.mean - baselineUpdate.mean) / baselineUpdate.mean) * 100 : 0,
@@ -142,7 +158,7 @@ async function measureHmr(options: {
     const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
-        ...createDevProcessEnv(),
+        ...createDevProcessEnv({ nodeOptions: memoryNodeOptions }),
         DEBUG: 'weapp-vite:load-entry',
         PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
       },
@@ -154,6 +170,8 @@ async function measureHmr(options: {
     try {
       await dev.waitForOutput(INITIAL_BUILD_READY_RE, `${mode} initial bench output`, DEV_TIMEOUT_MS)
       const startupMs = performance.now() - startupStart
+      const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${mode} auto-import HMR benchmark`, DEV_TIMEOUT_MS)
+      const startupMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
       const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`
       const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
@@ -165,10 +183,13 @@ async function measureHmr(options: {
         `${mode} hmr marker`,
       )
       const updateMs = performance.now() - updateStart
+      const updateMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
       return {
         startupMs,
+        startupMemory,
         updateMs,
+        updateMemory,
       }
     }
     finally {
@@ -454,13 +475,22 @@ function summarizeNumbers(values: number[]) {
   }
 }
 
+function summarizeHeapSamples(samples: Array<DevHeapUsage | undefined>) {
+  return {
+    heapUsed: summarizeOptionalMemory(samples.map(sample => sample?.heapUsed)),
+    rss: summarizeOptionalMemory(samples.map(sample => sample?.rss)),
+  }
+}
+
 function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
   console.log(`\n[hmr-scenario] used resolver components=${result.usedCount}`)
   console.log(`startup baseline | avg ${result.startup.baseline.mean.toFixed(2)}ms`)
   console.log(`startup current  | avg ${result.startup.current.mean.toFixed(2)}ms`)
+  console.log(`startup memory   | heap ${formatMemoryMiB(result.startup.baselineMemory.heapUsed.mean)} -> ${formatMemoryMiB(result.startup.currentMemory.heapUsed.mean)} | rss ${formatMemoryMiB(result.startup.baselineMemory.rss.mean)} -> ${formatMemoryMiB(result.startup.currentMemory.rss.mean)}`)
   console.log(`startup delta    | extra ${result.startup.delta.extraMs.toFixed(2)}ms | extra ${result.startup.delta.extraPercent.toFixed(2)}%`)
   console.log(`update baseline  | avg ${result.update.baseline.mean.toFixed(2)}ms`)
   console.log(`update current   | avg ${result.update.current.mean.toFixed(2)}ms`)
+  console.log(`update memory    | heap ${formatMemoryMiB(result.update.baselineMemory.heapUsed.mean)} -> ${formatMemoryMiB(result.update.currentMemory.heapUsed.mean)} | rss ${formatMemoryMiB(result.update.baselineMemory.rss.mean)} -> ${formatMemoryMiB(result.update.currentMemory.rss.mean)}`)
   console.log(`update delta     | extra ${result.update.delta.extraMs.toFixed(2)}ms | extra ${result.update.delta.extraPercent.toFixed(2)}%`)
 }
 
@@ -472,25 +502,25 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
     '',
     '## 启动阶段',
     '',
-    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |',
-    '| --- | ---: | ---: | ---: | ---: |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | heap | rss | 比例 |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.startup.baseline.mean.toFixed(2)} ms | ${result.startup.current.mean.toFixed(2)} ms | ${result.startup.delta.extraMs.toFixed(2)} ms (${result.startup.delta.extraPercent.toFixed(2)}%) | ${result.startup.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.startup.baseline.mean.toFixed(2)} ms | ${result.startup.current.mean.toFixed(2)} ms | ${result.startup.delta.extraMs.toFixed(2)} ms (${result.startup.delta.extraPercent.toFixed(2)}%) | ${formatMemoryMiB(result.startup.baselineMemory.heapUsed.mean)} -> ${formatMemoryMiB(result.startup.currentMemory.heapUsed.mean)} | ${formatMemoryMiB(result.startup.baselineMemory.rss.mean)} -> ${formatMemoryMiB(result.startup.currentMemory.rss.mean)} | ${result.startup.delta.ratio.toFixed(2)}x |`,
     )
   }
 
   lines.push('')
   lines.push('## HMR 更新阶段')
   lines.push('')
-  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |')
-  lines.push('| --- | ---: | ---: | ---: | ---: |')
+  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | heap | rss | 比例 |')
+  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: |')
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${result.update.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${formatMemoryMiB(result.update.baselineMemory.heapUsed.mean)} -> ${formatMemoryMiB(result.update.currentMemory.heapUsed.mean)} | ${formatMemoryMiB(result.update.baselineMemory.rss.mean)} -> ${formatMemoryMiB(result.update.currentMemory.rss.mean)} | ${result.update.delta.ratio.toFixed(2)}x |`,
     )
   }
 
@@ -501,6 +531,7 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('- `current`：开启当前自动导入实现后启动 dev 并执行相同模板改动。')
   lines.push('- `startup` 表示从启动 dev 到首个 benchmark 页面产物可见的耗时。')
   lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新标记的耗时。')
+  lines.push('- `heap` / `rss` 为触发 GC 后的 dev 进程内存均值，原始 samples 保存在 JSON 报告中。')
   lines.push('')
 
   return `${lines.join('\n')}\n`
