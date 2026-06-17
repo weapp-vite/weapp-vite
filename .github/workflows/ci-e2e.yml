@@ -25,22 +25,26 @@ jobs:
           - platform: weapp
             os: ubuntu-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci
           - platform: weapp
             os: ubuntu-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci
           - platform: weapp
             os: windows-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:windows
           - platform: weapp
             os: macos-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:macos
       max-parallel: 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
-      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:non-hmr
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true
@@ -53,13 +57,20 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            build-command: pnpm build:pkgs:ci
+          - os: windows-latest
+            build-command: pnpm build:pkgs:ci:windows
+          - os: macos-latest
+            build-command: pnpm build:pkgs:ci:macos
       max-parallel: 3
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 30
-      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp
       increase_ulimit: true
@@ -76,27 +87,33 @@ jobs:
           - platform: weapp
             os: ubuntu-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci
           - platform: weapp
             os: windows-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:windows
           - platform: weapp
             os: macos-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:macos
           - platform: weapp
             os: ubuntu-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci
           - platform: weapp
             os: windows-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci:windows
           - platform: weapp
             os: macos-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
-      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:non-hmr
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true
@@ -112,22 +129,28 @@ jobs:
         include:
           - os: ubuntu-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci
           - os: windows-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:windows
           - os: macos-latest
             node-version: 22
+            build-command: pnpm build:pkgs:ci:macos
           - os: ubuntu-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci
           - os: windows-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci:windows
           - os: macos-latest
             node-version: 24
+            build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
-      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp
       increase_ulimit: true
