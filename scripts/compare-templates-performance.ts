@@ -17,6 +17,7 @@ const hmrFilter = process.env.TEMPLATES_PERF_HMR_FILTER?.trim() || null
 const maxHmrScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const hmrStartupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS', 45_000)
 const hmrProfileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS', 15_000)
+const hmrSampleMode = process.env.TEMPLATES_PERF_HMR_SAMPLE_MODE === 'best-of-cycle' ? 'best-of-cycle' : 'edit-only'
 const reportJsonPath = path.join(reportRootDir, 'report.json')
 const reportMdPath = path.join(reportRootDir, 'report.md')
 
@@ -74,6 +75,7 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
     TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE: maxHmrScenariosPerTemplate?.toString() ?? '',
     TEMPLATES_HMR_PROFILE_TIMEOUT_MS: String(hmrProfileTimeoutMs),
     TEMPLATES_HMR_STARTUP_TIMEOUT_MS: String(hmrStartupTimeoutMs),
+    TEMPLATES_HMR_SAMPLE_MODE: hmrSampleMode,
   })
 
   const hmr = JSON.parse(await readFile(path.join(hmrReportDir, 'report.json'), 'utf8')) as TemplatesHmrReport
@@ -214,6 +216,7 @@ function createReport(baseline: CheckoutResult, optimized: CheckoutResult): Perf
     buildIterations,
     hmrFilter,
     maxHmrScenariosPerTemplate,
+    hmrSampleMode,
     hmrStartupTimeoutMs,
     baseline,
     optimized,
@@ -324,6 +327,7 @@ function renderMarkdown(report: PerformanceReport) {
     `- build 迭代：\`${report.buildIterations}\` 次/模板`,
     `- HMR filter：\`${report.hmrFilter ?? 'all'}\``,
     `- HMR max scenarios/template：\`${report.maxHmrScenariosPerTemplate ?? 'all'}\``,
+    `- HMR sample mode：\`${report.hmrSampleMode}\``,
     `- HMR startup timeout：\`${report.hmrStartupTimeoutMs}ms\``,
     '',
     '## 结论',
@@ -334,7 +338,9 @@ function renderMarkdown(report: PerformanceReport) {
     `- HMR wall：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
     `- HMR transform/plugin：${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
     '',
-    '正数代表 optimized 更快，负数代表更慢。HMR best 表示同一场景多次真实编辑/恢复循环中的最短 profile，用于观察开发态快路径；平均值用于观察稳定性。',
+    report.hmrSampleMode === 'edit-only'
+      ? '正数代表 optimized 更快，负数代表更慢。HMR 指标只统计真实编辑阶段，用于观察开发态保存后的快路径；平均值用于观察稳定性。'
+      : '正数代表 optimized 更快，负数代表更慢。HMR best 表示同一场景多次真实编辑/恢复循环中的最短 profile，用于观察开发态快路径；平均值用于观察稳定性。',
     '',
     '## Build 汇总',
     '',
@@ -749,6 +755,7 @@ interface PerformanceReport {
   buildIterations: number
   hmrFilter: string | null
   maxHmrScenariosPerTemplate: number | undefined
+  hmrSampleMode: 'best-of-cycle' | 'edit-only'
   hmrStartupTimeoutMs: number
   baseline: CheckoutResult
   optimized: CheckoutResult
