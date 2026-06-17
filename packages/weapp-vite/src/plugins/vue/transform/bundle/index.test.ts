@@ -201,6 +201,52 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it('keeps app.vue during inline auto-routes HMR refreshes even when the emitted entry set is page-only', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        scanService: {},
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'update',
+                file: '/project/src/pages/logs/hmr-added.vue',
+                dirtyReasonSummary: ['entry-auto-routes:1'],
+              },
+              didEmitAllEntries: false,
+              lastHmrEntryIds: new Set(['/project/src/pages/logs/hmr-added.vue']),
+              dirtyVueEntryIds: new Set<string>(),
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/app.vue', {
+          result: {},
+          source: 'import routes from "weapp-vite/auto-routes"\nconsole.log(routes.pages)',
+          isPage: false,
+          autoRoutesSignature: 'old-routes',
+        }],
+        ['/project/src/pages/logs/hmr-added.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/app.vue', {
+          result: {},
+          source: 'import routes from "weapp-vite/auto-routes"\nconsole.log(routes.pages)',
+          isPage: false,
+          autoRoutesSignature: 'old-routes',
+        }],
+        ['/project/src/pages/logs/hmr-added.vue', { result: {}, isPage: true }],
+      ],
+      emittedEntryIds: new Set(['/project/src/pages/logs/hmr-added.vue']),
+    })
+  })
+
   it('keeps all compiled entries during app.vue HMR updates so app shell assets are emitted', () => {
     expect(resolveVueBundleEmitState({
       ctx: {
