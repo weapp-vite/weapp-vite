@@ -9,6 +9,10 @@ export { emitNativeLayoutScriptChunkIfNeeded } from './layoutAssets'
 
 export type { CompilationCacheEntry, VueBundleState } from './shared'
 
+function isAutoRoutesTopologyHmrUpdate(hmrState: NonNullable<VueBundleState['ctx']['runtimeState']>['build']['hmr'] | undefined) {
+  return hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('auto-routes-topology:')) === true
+}
+
 export function resolveVueBundleEmitState(state: VueBundleState) {
   const { ctx, compilationCache } = state
   const { configService, scanService } = ctx
@@ -22,11 +26,13 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     ? resolveAppShellLayout(configService)
     : undefined
   const hmrState = ctx.runtimeState?.build?.hmr
+  const currentHmrFile = hmrState?.profile?.file
   const isAppVueHmrUpdate = Boolean(
     configService.isDev
-    && hmrState?.profile?.file
-    && isAppVueFile(hmrState.profile.file),
+    && typeof currentHmrFile === 'string'
+    && isAppVueFile(normalizeFsResolvedId(currentHmrFile)),
   )
+  const isAutoRoutesTopologyUpdate = configService.isDev && isAutoRoutesTopologyHmrUpdate(hmrState)
   const shouldFilterHmrEntries = Boolean(
     configService.isDev
     && hmrState
@@ -50,10 +56,12 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
         && typeof currentAutoRoutesSignature === 'string'
         && cached.autoRoutesSignature !== currentAutoRoutesSignature,
       )
+      const isAutoRoutesTopologyAppEntry = isAutoRoutesTopologyUpdate && isAppVueFile(normalizedId)
       return !emittedEntryIds
         || emittedEntryIds.has(normalizedId)
         || dirtyVueEntryIds?.has(normalizedId)
         || isStaleAutoRoutesAppEntry
+        || isAutoRoutesTopologyAppEntry
     }),
     emittedEntryIds,
   }

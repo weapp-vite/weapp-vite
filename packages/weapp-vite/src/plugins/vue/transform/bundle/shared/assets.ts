@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../../../context'
 import type { JsonMergeStrategy } from '../../../../../types'
 import type { ClassStyleWxsAsset } from './types'
 import { getClassStyleWxsSource } from 'wevu/compiler'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { processCssWithCache } from '../../../../css/shared/preprocessor'
 import { resolveClassStyleWxsLocationForBase } from '../../classStyle'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../../emitAssets'
@@ -364,7 +365,8 @@ export async function emitCompiledEntryBundleAssets(options: {
   const isAppVueHmrUpdate = Boolean(
     isAppVue
     && options.configService.isDev
-    && hmrState?.profile?.file === options.filename,
+    && typeof hmrState?.profile?.file === 'string'
+    && normalizeFsResolvedId(hmrState.profile.file) === normalizeFsResolvedId(options.filename),
   )
   const sfcStyle = options.result.style
   const shouldEmitSfcStyleAsset = typeof sfcStyle === 'string' && sfcStyle.length > 0 && (
