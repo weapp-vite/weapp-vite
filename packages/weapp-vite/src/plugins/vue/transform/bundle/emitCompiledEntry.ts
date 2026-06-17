@@ -42,6 +42,11 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     && configService.isDev
     && hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')),
   )
+  const isAppAutoRoutesTopologyRefresh = Boolean(
+    isAppVueFile(filename)
+    && configService.isDev
+    && hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('auto-routes-topology:')),
+  )
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
     emitAppShellAssetsIfNeeded({
@@ -106,7 +111,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     platformAssetOptions: options.platformAssetOptions,
   })
 
-  if (isAppAutoRoutesRefresh && result.script?.trim()) {
+  if ((isAppAutoRoutesRefresh || isAppAutoRoutesTopologyRefresh) && result.script?.trim()) {
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,
