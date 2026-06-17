@@ -157,8 +157,10 @@ describe('emitCompiledEntry helpers', () => {
           build: {
             hmr: {
               profile: {
+                event: 'create',
                 dirtyReasonSummary: ['entry-auto-routes:1'],
               },
+              lastEmittedChunkFileNames: new Set<string>(),
             },
           },
         },
@@ -198,6 +200,7 @@ describe('emitCompiledEntry helpers', () => {
       'App({ routes: ["pages/logs/hmr-added"] })',
       'js',
     )
+    expect(state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(true)
   })
 
   it('replaces app script assets during auto-routes topology refreshes', async () => {

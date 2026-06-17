@@ -25,6 +25,16 @@ function shouldReplaceAppScriptBundleEntry(options: {
   ) === true
 }
 
+function retainReplacedDevHmrScriptChunk(state: VueBundleState, fileName: string) {
+  const hmrState = state.ctx.runtimeState?.build?.hmr
+  if (!state.ctx.configService?.isDev || hmrState?.profile?.event === undefined) {
+    return
+  }
+
+  hmrState.lastEmittedChunkFileNames ??= new Set<string>()
+  hmrState.lastEmittedChunkFileNames.add(fileName)
+}
+
 export async function emitResolvedCompiledVueEntryAssets(options: {
   bundle: Record<string, any>
   state: VueBundleState
@@ -130,6 +140,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
       result.script,
       options.scriptExtension,
     )
+    retainReplacedDevHmrScriptChunk(state, `${relativeBase}.${options.scriptExtension}`)
   }
 
   if (shouldEmitComponentJson && !result.script?.trim()) {
