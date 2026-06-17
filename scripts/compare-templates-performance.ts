@@ -404,6 +404,7 @@ function createHmrRows(baseline: TemplatesHmrReport, optimized: TemplatesHmrRepo
       bestFasterPercent: comparable ? fasterPercent(baseStats.bestMs, optStats.bestMs) : null,
       wallFasterPercent: comparable ? fasterPercent(baseStats.averageWallMs, optStats.averageWallMs) : null,
       bestWallFasterPercent: comparable ? fasterPercent(baseStats.bestWallMs, optStats.bestWallMs) : null,
+      coreFasterPercent: comparable ? fasterPercent(baseStats.coreAverageMs, optStats.coreAverageMs) : null,
       transformFasterPercent: comparable ? fasterPercent(baseStats.transformAverageMs, optStats.transformAverageMs) : null,
     }
   })
@@ -457,14 +458,14 @@ function renderMarkdown(report: PerformanceReport) {
     `- Build：${buildAggregate.templateCount} 个共同模板，平均 ${formatMs(buildAggregate.totalAverageBaselineMs)} -> ${formatMs(buildAggregate.totalAverageOptimizedMs)}（${formatPercent(buildAggregate.totalFasterPercent)}）。`,
     `- Warm build：${formatMs(warmBuildBaseline.totalAverageMs)} -> ${formatMs(warmBuildOptimized.totalAverageMs)}（${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))}）。`,
     `- Build 内存：峰值 RSS 均值 ${formatMemoryMiB(buildAggregate.rssPeakAverageBaselineBytes)} -> ${formatMemoryMiB(buildAggregate.rssPeakAverageOptimizedBytes)}（${formatPercent(buildAggregate.rssPeakReducedPercent)}）。`,
-    `- HMR：${hmrAggregate.scenarioCount} 个共同成功场景，profile best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），profile 平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
-    `- HMR wall：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
+    `- HMR core：${hmrAggregate.scenarioCount} 个共同成功场景，build/transform/write/emit 平均 ${formatMs(hmrAggregate.coreAverageBaselineMs)} -> ${formatMs(hmrAggregate.coreAverageOptimizedMs)}（${formatPercent(hmrAggregate.coreFasterPercent)}），transform/plugin ${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
+    `- HMR profile 诊断：best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    `- HMR wall 诊断：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
     `- HMR 内存：heapUsed 均值 ${formatMemoryMiB(hmrAggregate.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.heapUsedAverageOptimizedBytes)}，RSS 均值 ${formatMemoryMiB(hmrAggregate.rssAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.rssAverageOptimizedBytes)}。`,
-    `- HMR transform/plugin：${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
     '',
     report.hmrSampleMode === 'edit-only'
-      ? '正数代表 optimized 更快，负数代表更慢。HMR 指标只统计真实编辑阶段，用于观察开发态保存后的快路径；平均值用于观察稳定性。'
-      : '正数代表 optimized 更快，负数代表更慢。HMR best 表示同一场景多次真实编辑/恢复循环中的最短 profile，用于观察开发态快路径；平均值用于观察稳定性。',
+      ? '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态保存后的核心处理路径；profile/wall 保留为 runner I/O 与文件监听抖动诊断。'
+      : '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态快路径；profile best/average 与 wall 保留为 runner I/O 与文件监听抖动诊断。',
     '',
     '## Build 汇总',
     '',
@@ -485,15 +486,15 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     '## HMR 汇总',
     '',
-    '| 范围 | 场景数 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
-    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| 范围 | 场景数 | core 平均 | core 变化 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     renderHmrAggregateRow('全部共同成功场景', hmrAggregate),
     ...report.hmr.groups.map(group => renderHmrAggregateRow(`group:${group.group}`, group)),
     '',
     '## HMR 场景明细',
     '',
-    '| template | scenario | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| template | scenario | core avg | core 变化 | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...report.hmr.rows
       .filter(row => row.comparable)
       .sort((a, b) => a.template.localeCompare(b.template) || a.scenario.localeCompare(b.scenario) || a.label.localeCompare(b.label))
@@ -522,11 +523,11 @@ function renderBuildRow(row: BuildComparisonRow) {
 }
 
 function renderHmrAggregateRow(label: string, stats: HmrAggregateStats) {
-  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.bestBaselineMs)} -> ${formatMs(stats.bestOptimizedMs)} | ${formatPercent(stats.bestFasterPercent)} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallBestFasterPercent)} | ${formatMemoryMiB(stats.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(stats.heapUsedAverageOptimizedBytes)} | ${formatMemoryMiB(stats.rssAverageBaselineBytes)} -> ${formatMemoryMiB(stats.rssAverageOptimizedBytes)} | ${formatPercent(stats.transformFasterPercent)} |`
+  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.coreAverageBaselineMs)} -> ${formatMs(stats.coreAverageOptimizedMs)} | ${formatPercent(stats.coreFasterPercent)} | ${formatMs(stats.bestBaselineMs)} -> ${formatMs(stats.bestOptimizedMs)} | ${formatPercent(stats.bestFasterPercent)} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallBestFasterPercent)} | ${formatMemoryMiB(stats.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(stats.heapUsedAverageOptimizedBytes)} | ${formatMemoryMiB(stats.rssAverageBaselineBytes)} -> ${formatMemoryMiB(stats.rssAverageOptimizedBytes)} | ${formatPercent(stats.transformFasterPercent)} |`
 }
 
 function renderHmrRow(row: HmrComparisonRow) {
-  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.bestMs)} -> ${formatMs(row.optimized.bestMs)} | ${formatPercent(row.bestFasterPercent)} | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.bestWallMs)} -> ${formatMs(row.optimized.bestWallMs)} | ${formatPercent(row.bestWallFasterPercent)} | ${formatMemoryMiB(row.baseline.heapUsedAverageBytes)} -> ${formatMemoryMiB(row.optimized.heapUsedAverageBytes)} | ${formatMemoryMiB(row.baseline.rssAverageBytes)} -> ${formatMemoryMiB(row.optimized.rssAverageBytes)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
+  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.coreAverageMs)} -> ${formatMs(row.optimized.coreAverageMs)} | ${formatPercent(row.coreFasterPercent)} | ${formatMs(row.baseline.bestMs)} -> ${formatMs(row.optimized.bestMs)} | ${formatPercent(row.bestFasterPercent)} | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.bestWallMs)} -> ${formatMs(row.optimized.bestWallMs)} | ${formatPercent(row.bestWallFasterPercent)} | ${formatMemoryMiB(row.baseline.heapUsedAverageBytes)} -> ${formatMemoryMiB(row.optimized.heapUsedAverageBytes)} | ${formatMemoryMiB(row.baseline.rssAverageBytes)} -> ${formatMemoryMiB(row.optimized.rssAverageBytes)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
 }
 
 function aggregateBuildRows(rows: BuildComparisonRow[]): BuildAggregateStats {
@@ -561,6 +562,8 @@ function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
   const optimizedWalls = rows.flatMap(row => row.optimized.wallSamples)
   const baselineBestWalls = rows.map(row => row.baseline.bestWallMs).filter(isFiniteNumber)
   const optimizedBestWalls = rows.map(row => row.optimized.bestWallMs).filter(isFiniteNumber)
+  const baselineCore = rows.flatMap(row => row.baseline.coreSamples)
+  const optimizedCore = rows.flatMap(row => row.optimized.coreSamples)
   const baselineTransforms = rows.flatMap(row => row.baseline.transformSamples)
   const optimizedTransforms = rows.flatMap(row => row.optimized.transformSamples)
   const baselineHeapUsed = rows.flatMap(row => row.baseline.heapUsedSamples)
@@ -581,6 +584,9 @@ function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
     wallBestBaselineMs: average(baselineBestWalls),
     wallBestOptimizedMs: average(optimizedBestWalls),
     wallBestFasterPercent: fasterPercent(average(baselineBestWalls), average(optimizedBestWalls)),
+    coreAverageBaselineMs: average(baselineCore),
+    coreAverageOptimizedMs: average(optimizedCore),
+    coreFasterPercent: fasterPercent(average(baselineCore), average(optimizedCore)),
     transformAverageBaselineMs: average(baselineTransforms),
     transformAverageOptimizedMs: average(optimizedTransforms),
     transformFasterPercent: fasterPercent(average(baselineTransforms), average(optimizedTransforms)),
@@ -626,6 +632,7 @@ function summarizeBuild(samples: TemplateBuildSample[]): BuildStats {
 function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
   const samples = scenario?.samples.map(sample => sample.totalMs).filter(isFiniteNumber) ?? []
   const wallSamples = scenario?.samples.map(sample => sample.wallMs).filter(isFiniteNumber) ?? []
+  const coreSamples = scenario?.samples.map(getHmrCoreMs).filter(isFiniteNumber) ?? []
   const transformSamples = scenario?.samples.map(sample => sample.transformMs).filter(isFiniteNumber) ?? []
   const heapUsedSamples = scenario?.samples.map(sample => sample.heapUsedBytes).filter(isFiniteNumber) ?? []
   const rssSamples = scenario?.samples.map(sample => sample.rssBytes).filter(isFiniteNumber) ?? []
@@ -636,6 +643,8 @@ function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
     bestWallMs: min(wallSamples),
     samples,
     wallSamples,
+    coreAverageMs: average(coreSamples),
+    coreSamples,
     transformAverageMs: average(transformSamples),
     transformSamples,
     heapUsedAverageBytes: average(heapUsedSamples),
@@ -643,6 +652,13 @@ function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
     rssAverageBytes: average(rssSamples),
     rssSamples,
   }
+}
+
+function getHmrCoreMs(sample: TemplateHmrScenario['samples'][number]) {
+  const segments = [sample.buildCoreMs, sample.transformMs, sample.writeMs, sample.emitMs]
+  return segments.every(isFiniteNumber)
+    ? segments.reduce((sum, value) => sum + value, 0)
+    : null
 }
 
 function emptyBuildStats(): BuildStats {
@@ -841,11 +857,14 @@ interface TemplateHmrScenario {
   id: string
   label: string
   samples: Array<{
+    buildCoreMs?: number
+    emitMs?: number
     heapUsedBytes?: number
     rssBytes?: number
     totalMs?: number
     transformMs?: number
     wallMs?: number
+    writeMs?: number
   }>
 }
 
@@ -874,6 +893,8 @@ interface HmrScenarioStats {
   bestWallMs: number | null
   samples: number[]
   wallSamples: number[]
+  coreAverageMs: number | null
+  coreSamples: number[]
   transformAverageMs: number | null
   transformSamples: number[]
   heapUsedAverageBytes: number | null
@@ -897,6 +918,7 @@ interface HmrComparisonRow {
   bestFasterPercent: number | null
   wallFasterPercent: number | null
   bestWallFasterPercent: number | null
+  coreFasterPercent: number | null
   transformFasterPercent: number | null
 }
 
@@ -927,6 +949,9 @@ interface HmrAggregateStats {
   wallBestBaselineMs: number | null
   wallBestOptimizedMs: number | null
   wallBestFasterPercent: number | null
+  coreAverageBaselineMs: number | null
+  coreAverageOptimizedMs: number | null
+  coreFasterPercent: number | null
   transformAverageBaselineMs: number | null
   transformAverageOptimizedMs: number | null
   transformFasterPercent: number | null
