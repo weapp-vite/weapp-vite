@@ -974,6 +974,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')
     expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
+    expect(state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature).toBeUndefined()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
