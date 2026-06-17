@@ -1227,6 +1227,74 @@ describe('emitSharedVueEntryAssets', () => {
     expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
+  it('treats windows style current app.vue hmr file as the active app update', async () => {
+    const result = await emitCompiledEntryBundleAssets({
+      bundle: {
+        'app.js': {
+          type: 'chunk',
+          fileName: 'app.js',
+          code: 'App({})',
+          imports: [],
+          dynamicImports: [],
+        },
+      },
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                file: '\\project\\src\\app.vue',
+                dirtyReasonSummary: ['auto-routes-topology:1'],
+              },
+              lastHmrEntryIds: new Set(['/project/src/app.vue']),
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/app.vue',
+      relativeBase: 'app',
+      result: {
+        script: 'App({})',
+        template: '<slot />',
+        style: '.app { color: red; }',
+      } as any,
+      isPage: false,
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      templateExtension: '.wxml',
+      jsonExtension: '.json',
+      outputExtensions: {
+        json: '.json',
+        template: '.wxml',
+        script: '.js',
+        style: '.wxss',
+        wxss: '.wxss',
+      } as any,
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: '.wxml',
+      },
+    })
+
+    expect(result).toEqual({
+      isAppVue: true,
+      shouldEmitComponentJson: false,
+    })
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'app',
+      '.app { color: red; }',
+      '.wxss',
+      { updateExisting: false },
+    )
+  })
+
   it('falls back to cached compiled result when dev refresh recompilation fails', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },
