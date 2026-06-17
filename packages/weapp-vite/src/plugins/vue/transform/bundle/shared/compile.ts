@@ -179,13 +179,12 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const normalizedDirtyFilename = normalizeFsResolvedId(filename)
-    const currentRefreshToken = (cached.refreshToken ?? 0)
-      + (dirtyVueEntryIds?.has(normalizedDirtyFilename) ? 1 : 0)
     if (
       source === cached.source
       && transformed.signature === cached.autoRoutesSignature
-      && currentRefreshToken === 0
     ) {
+      cached.refreshToken = 0
+      dirtyVueEntryIds?.delete(normalizedDirtyFilename)
       return cached.result
     }
 
