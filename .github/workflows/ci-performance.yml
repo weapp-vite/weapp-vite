@@ -45,7 +45,7 @@ on:
       templates-hmr-sample-mode:
         description: templates HMR sample mode, edit-only or best-of-cycle
         required: false
-        default: edit-only
+        default: best-of-cycle
       templates-baseline-ref:
         description: templates performance baseline ref for workflow_dispatch
         required: false
@@ -183,7 +183,7 @@ jobs:
           export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE:-6}"
           export TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS="${INPUT_HMR_PROFILE_TIMEOUT_MS:-15000}"
           export TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS="${INPUT_HMR_STARTUP_TIMEOUT_MS:-120000}"
-          export TEMPLATES_PERF_HMR_SAMPLE_MODE="${INPUT_HMR_SAMPLE_MODE:-edit-only}"
+          export TEMPLATES_PERF_HMR_SAMPLE_MODE="${INPUT_HMR_SAMPLE_MODE:-best-of-cycle}"
 
           {
             echo "TEMPLATES_PERF_HMR_ITERATIONS=${TEMPLATES_PERF_HMR_ITERATIONS}"
@@ -207,7 +207,7 @@ jobs:
             echo "- HMR profile timeout: \`${TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS}ms\`"
             echo "- HMR startup timeout: \`${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}ms\`"
             echo "- HMR sample mode: \`${TEMPLATES_PERF_HMR_SAMPLE_MODE}\`"
-            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；手动触发可调高迭代或清空 max scenarios 跑全量诊断"
+            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；默认报告同一场景真实编辑/恢复循环中的快路径，手动触发可改为 edit-only 或调高迭代跑全量诊断"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run templates performance benchmark
