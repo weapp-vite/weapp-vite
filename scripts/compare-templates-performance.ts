@@ -99,10 +99,13 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
       await rm(path.join(template.root, 'dist-plugin'), { recursive: true, force: true }).catch(() => {})
 
       const startedAt = performance.now()
-      const result = await execa('pnpm', ['--filter', template.packageName, 'build'], {
+      const child = execa('pnpm', ['--filter', template.packageName, 'build'], {
         cwd,
         reject: false,
       })
+      const memorySampler = createPeakRssSampler(child.pid)
+      const result = await child
+      const memory = await memorySampler.stop()
       const output = `${result.stdout}\n${result.stderr}`
       const sanitizedOutput = sanitizeCheckoutOutput(cwd, output)
       process.stdout.write(sanitizedOutput)
@@ -112,6 +115,7 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         packageName: template.packageName,
         totalMs: performance.now() - startedAt,
         cliBuildMs: parseCliBuildMs(output),
+        rssPeakBytes: memory.rssPeakBytes,
         status: result.exitCode ?? 0,
         error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
       }
@@ -179,6 +183,118 @@ async function run(command: string, args: string[], cwd: string, env: NodeJS.Pro
       ...env,
     },
   })
+}
+
+function createPeakRssSampler(rootPid: number | undefined) {
+  let rssPeakBytes: number | null = null
+
+  const sample = async () => {
+    if (typeof rootPid !== 'number') {
+      return
+    }
+    const current = await sampleProcessTreeRssBytes(rootPid).catch(() => null)
+    if (current != null) {
+      rssPeakBytes = Math.max(rssPeakBytes ?? 0, current)
+    }
+  }
+
+  const timer = setInterval(() => {
+    void sample()
+  }, 100)
+  void sample()
+
+  return {
+    async stop() {
+      clearInterval(timer)
+      await sample()
+      return { rssPeakBytes }
+    },
+  }
+}
+
+async function sampleProcessTreeRssBytes(rootPid: number) {
+  if (process.platform === 'win32') {
+    return await sampleWindowsProcessTreeRssBytes(rootPid)
+  }
+  return await sampleUnixProcessTreeRssBytes(rootPid)
+}
+
+async function sampleUnixProcessTreeRssBytes(rootPid: number) {
+  const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,rss='], {
+    reject: false,
+    stdin: 'ignore',
+  })
+  const entries = stdout
+    .split('\n')
+    .map((line) => {
+      const [pid, ppid, rssKb] = line.trim().split(/\s+/).map(value => Number.parseInt(value, 10))
+      return Number.isFinite(pid) && Number.isFinite(ppid) && Number.isFinite(rssKb)
+        ? { pid, ppid, rssBytes: rssKb * 1024 }
+        : undefined
+    })
+    .filter((entry): entry is { pid: number, ppid: number, rssBytes: number } => entry !== undefined)
+  return sumProcessTreeRss(rootPid, entries)
+}
+
+async function sampleWindowsProcessTreeRssBytes(rootPid: number) {
+  const { stdout } = await execa('powershell', [
+    '-NoProfile',
+    '-Command',
+    'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress',
+  ], {
+    reject: false,
+    stdin: 'ignore',
+  })
+  if (!stdout.trim()) {
+    return null
+  }
+  const parsed = JSON.parse(stdout) as unknown
+  const items = Array.isArray(parsed) ? parsed : [parsed]
+  const entries = items
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return undefined
+      }
+      const record = item as Record<string, unknown>
+      const pid = Number(record.ProcessId)
+      const ppid = Number(record.ParentProcessId)
+      const rssBytes = Number(record.WorkingSetSize)
+      return Number.isFinite(pid) && Number.isFinite(ppid) && Number.isFinite(rssBytes)
+        ? { pid, ppid, rssBytes }
+        : undefined
+    })
+    .filter((entry): entry is { pid: number, ppid: number, rssBytes: number } => entry !== undefined)
+  return sumProcessTreeRss(rootPid, entries)
+}
+
+function sumProcessTreeRss(
+  rootPid: number,
+  entries: Array<{ pid: number, ppid: number, rssBytes: number }>,
+) {
+  const childrenByParent = new Map<number, Array<{ pid: number, rssBytes: number }>>()
+  const rssByPid = new Map<number, number>()
+  for (const entry of entries) {
+    rssByPid.set(entry.pid, entry.rssBytes)
+    const children = childrenByParent.get(entry.ppid) ?? []
+    children.push({ pid: entry.pid, rssBytes: entry.rssBytes })
+    childrenByParent.set(entry.ppid, children)
+  }
+
+  const visited = new Set<number>()
+  const stack = [rootPid]
+  let total = 0
+  while (stack.length) {
+    const pid = stack.pop()!
+    if (visited.has(pid)) {
+      continue
+    }
+    visited.add(pid)
+    total += rssByPid.get(pid) ?? 0
+    for (const child of childrenByParent.get(pid) ?? []) {
+      stack.push(child.pid)
+    }
+  }
+  return total || null
 }
 
 function toReportTemplate(cwd: string, template: TemplateCase): TemplateCase {
@@ -334,8 +450,10 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     `- Build：${buildAggregate.templateCount} 个共同模板，平均 ${formatMs(buildAggregate.totalAverageBaselineMs)} -> ${formatMs(buildAggregate.totalAverageOptimizedMs)}（${formatPercent(buildAggregate.totalFasterPercent)}）。`,
     `- Warm build：${formatMs(warmBuildBaseline.totalAverageMs)} -> ${formatMs(warmBuildOptimized.totalAverageMs)}（${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))}）。`,
+    `- Build 内存：峰值 RSS 均值 ${formatMemoryMiB(buildAggregate.rssPeakAverageBaselineBytes)} -> ${formatMemoryMiB(buildAggregate.rssPeakAverageOptimizedBytes)}（${formatPercent(buildAggregate.rssPeakReducedPercent)}）。`,
     `- HMR：${hmrAggregate.scenarioCount} 个共同成功场景，profile best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），profile 平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
     `- HMR wall：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
+    `- HMR 内存：heapUsed 均值 ${formatMemoryMiB(hmrAggregate.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.heapUsedAverageOptimizedBytes)}，RSS 均值 ${formatMemoryMiB(hmrAggregate.rssAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.rssAverageOptimizedBytes)}。`,
     `- HMR transform/plugin：${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
     '',
     report.hmrSampleMode === 'edit-only'
@@ -349,26 +467,27 @@ function renderMarkdown(report: PerformanceReport) {
     `| raw total avg | ${formatMs(report.baseline.build.raw.totalAverageMs)} | ${formatMs(report.optimized.build.raw.totalAverageMs)} | ${formatPercent(fasterPercent(report.baseline.build.raw.totalAverageMs, report.optimized.build.raw.totalAverageMs))} |`,
     `| warm total avg | ${formatMs(warmBuildBaseline.totalAverageMs)} | ${formatMs(warmBuildOptimized.totalAverageMs)} | ${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))} |`,
     `| raw CLI build avg | ${formatMs(report.baseline.build.raw.cliAverageMs)} | ${formatMs(report.optimized.build.raw.cliAverageMs)} | ${formatPercent(fasterPercent(report.baseline.build.raw.cliAverageMs, report.optimized.build.raw.cliAverageMs))} |`,
+    `| peak RSS avg | ${formatMemoryMiB(report.baseline.build.raw.rssPeakAverageBytes)} | ${formatMemoryMiB(report.optimized.build.raw.rssPeakAverageBytes)} | ${formatPercent(reducedPercent(report.baseline.build.raw.rssPeakAverageBytes, report.optimized.build.raw.rssPeakAverageBytes))} |`,
     '',
     '## Build 模板明细',
     '',
-    '| template | total avg | 变化 | CLI build | CLI 变化 |',
-    '|---|---:|---:|---:|---:|',
+    '| template | total avg | 变化 | CLI build | CLI 变化 | peak RSS |',
+    '|---|---:|---:|---:|---:|---:|',
     ...report.build.rows
       .filter(row => row.comparable)
       .map(renderBuildRow),
     '',
     '## HMR 汇总',
     '',
-    '| 范围 | 场景数 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | transform 变化 |',
-    '|---|---:|---:|---:|---:|---:|---:|---:|',
+    '| 范围 | 场景数 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     renderHmrAggregateRow('全部共同成功场景', hmrAggregate),
     ...report.hmr.groups.map(group => renderHmrAggregateRow(`group:${group.group}`, group)),
     '',
     '## HMR 场景明细',
     '',
-    '| template | scenario | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | transform | transform 变化 |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| template | scenario | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...report.hmr.rows
       .filter(row => row.comparable)
       .sort((a, b) => a.template.localeCompare(b.template) || a.scenario.localeCompare(b.scenario) || a.label.localeCompare(b.label))
@@ -393,18 +512,20 @@ function renderMarkdown(report: PerformanceReport) {
 }
 
 function renderBuildRow(row: BuildComparisonRow) {
-  return `| ${row.id} | ${formatMs(row.baseline.totalAverageMs)} -> ${formatMs(row.optimized.totalAverageMs)} | ${formatPercent(row.totalFasterPercent)} | ${formatMs(row.baseline.cliAverageMs)} -> ${formatMs(row.optimized.cliAverageMs)} | ${formatPercent(row.cliFasterPercent)} |`
+  return `| ${row.id} | ${formatMs(row.baseline.totalAverageMs)} -> ${formatMs(row.optimized.totalAverageMs)} | ${formatPercent(row.totalFasterPercent)} | ${formatMs(row.baseline.cliAverageMs)} -> ${formatMs(row.optimized.cliAverageMs)} | ${formatPercent(row.cliFasterPercent)} | ${formatMemoryMiB(row.baseline.rssPeakAverageBytes)} -> ${formatMemoryMiB(row.optimized.rssPeakAverageBytes)} |`
 }
 
 function renderHmrAggregateRow(label: string, stats: HmrAggregateStats) {
-  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.bestBaselineMs)} -> ${formatMs(stats.bestOptimizedMs)} | ${formatPercent(stats.bestFasterPercent)} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallBestFasterPercent)} | ${formatPercent(stats.transformFasterPercent)} |`
+  return `| ${label} | ${stats.scenarioCount} | ${formatMs(stats.bestBaselineMs)} -> ${formatMs(stats.bestOptimizedMs)} | ${formatPercent(stats.bestFasterPercent)} | ${formatMs(stats.averageBaselineMs)} -> ${formatMs(stats.averageOptimizedMs)} | ${formatPercent(stats.averageFasterPercent)} | ${formatPercent(stats.wallBestFasterPercent)} | ${formatMemoryMiB(stats.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(stats.heapUsedAverageOptimizedBytes)} | ${formatMemoryMiB(stats.rssAverageBaselineBytes)} -> ${formatMemoryMiB(stats.rssAverageOptimizedBytes)} | ${formatPercent(stats.transformFasterPercent)} |`
 }
 
 function renderHmrRow(row: HmrComparisonRow) {
-  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.bestMs)} -> ${formatMs(row.optimized.bestMs)} | ${formatPercent(row.bestFasterPercent)} | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.bestWallMs)} -> ${formatMs(row.optimized.bestWallMs)} | ${formatPercent(row.bestWallFasterPercent)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
+  return `| ${row.template} | ${row.scenario} (${row.label}) | ${formatMs(row.baseline.bestMs)} -> ${formatMs(row.optimized.bestMs)} | ${formatPercent(row.bestFasterPercent)} | ${formatMs(row.baseline.averageMs)} -> ${formatMs(row.optimized.averageMs)} | ${formatPercent(row.averageFasterPercent)} | ${formatMs(row.baseline.bestWallMs)} -> ${formatMs(row.optimized.bestWallMs)} | ${formatPercent(row.bestWallFasterPercent)} | ${formatMemoryMiB(row.baseline.heapUsedAverageBytes)} -> ${formatMemoryMiB(row.optimized.heapUsedAverageBytes)} | ${formatMemoryMiB(row.baseline.rssAverageBytes)} -> ${formatMemoryMiB(row.optimized.rssAverageBytes)} | ${formatSmallMs(row.baseline.transformAverageMs)} -> ${formatSmallMs(row.optimized.transformAverageMs)} | ${formatPercent(row.transformFasterPercent)} |`
 }
 
 function aggregateBuildRows(rows: BuildComparisonRow[]): BuildAggregateStats {
+  const baselineRssPeaks = rows.map(row => row.baseline.rssPeakAverageBytes).filter(isFiniteNumber)
+  const optimizedRssPeaks = rows.map(row => row.optimized.rssPeakAverageBytes).filter(isFiniteNumber)
   return {
     templateCount: rows.length,
     totalAverageBaselineMs: average(rows.map(row => row.baseline.totalAverageMs).filter(isFiniteNumber)),
@@ -419,6 +540,9 @@ function aggregateBuildRows(rows: BuildComparisonRow[]): BuildAggregateStats {
       average(rows.map(row => row.baseline.cliAverageMs).filter(isFiniteNumber)),
       average(rows.map(row => row.optimized.cliAverageMs).filter(isFiniteNumber)),
     ),
+    rssPeakAverageBaselineBytes: average(baselineRssPeaks),
+    rssPeakAverageOptimizedBytes: average(optimizedRssPeaks),
+    rssPeakReducedPercent: reducedPercent(average(baselineRssPeaks), average(optimizedRssPeaks)),
   }
 }
 
@@ -433,6 +557,10 @@ function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
   const optimizedBestWalls = rows.map(row => row.optimized.bestWallMs).filter(isFiniteNumber)
   const baselineTransforms = rows.flatMap(row => row.baseline.transformSamples)
   const optimizedTransforms = rows.flatMap(row => row.optimized.transformSamples)
+  const baselineHeapUsed = rows.flatMap(row => row.baseline.heapUsedSamples)
+  const optimizedHeapUsed = rows.flatMap(row => row.optimized.heapUsedSamples)
+  const baselineRss = rows.flatMap(row => row.baseline.rssSamples)
+  const optimizedRss = rows.flatMap(row => row.optimized.rssSamples)
   return {
     scenarioCount: rows.length,
     averageBaselineMs: average(baselineTotals),
@@ -450,6 +578,10 @@ function aggregateHmrRows(rows: HmrComparisonRow[]): HmrAggregateStats {
     transformAverageBaselineMs: average(baselineTransforms),
     transformAverageOptimizedMs: average(optimizedTransforms),
     transformFasterPercent: fasterPercent(average(baselineTransforms), average(optimizedTransforms)),
+    heapUsedAverageBaselineBytes: average(baselineHeapUsed),
+    heapUsedAverageOptimizedBytes: average(optimizedHeapUsed),
+    rssAverageBaselineBytes: average(baselineRss),
+    rssAverageOptimizedBytes: average(optimizedRss),
   }
 }
 
@@ -471,11 +603,14 @@ function summarizeBuild(samples: TemplateBuildSample[]): BuildStats {
   const successfulSamples = samples.filter(sample => sample.status === 0)
   const totals = successfulSamples.map(sample => sample.totalMs)
   const cliBuilds = successfulSamples.map(sample => sample.cliBuildMs).filter(isFiniteNumber)
+  const rssPeaks = successfulSamples.map(sample => sample.rssPeakBytes).filter(isFiniteNumber)
   return {
     totalAverageMs: average(totals),
     totalMedianMs: median(totals),
     cliAverageMs: average(cliBuilds),
     cliMedianMs: median(cliBuilds),
+    rssPeakAverageBytes: average(rssPeaks),
+    rssPeakMaxBytes: max(rssPeaks),
     count: successfulSamples.length,
     errors: samples.map(sample => sample.error).filter((error): error is string => typeof error === 'string'),
     failedCount: samples.filter(sample => sample.status !== 0).length,
@@ -486,6 +621,8 @@ function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
   const samples = scenario?.samples.map(sample => sample.totalMs).filter(isFiniteNumber) ?? []
   const wallSamples = scenario?.samples.map(sample => sample.wallMs).filter(isFiniteNumber) ?? []
   const transformSamples = scenario?.samples.map(sample => sample.transformMs).filter(isFiniteNumber) ?? []
+  const heapUsedSamples = scenario?.samples.map(sample => sample.heapUsedBytes).filter(isFiniteNumber) ?? []
+  const rssSamples = scenario?.samples.map(sample => sample.rssBytes).filter(isFiniteNumber) ?? []
   return {
     averageMs: average(samples),
     bestMs: min(samples),
@@ -495,6 +632,10 @@ function summarizeHmrScenario(scenario?: FlatHmrScenario): HmrScenarioStats {
     wallSamples,
     transformAverageMs: average(transformSamples),
     transformSamples,
+    heapUsedAverageBytes: average(heapUsedSamples),
+    heapUsedSamples,
+    rssAverageBytes: average(rssSamples),
+    rssSamples,
   }
 }
 
@@ -504,6 +645,8 @@ function emptyBuildStats(): BuildStats {
     totalMedianMs: null,
     cliAverageMs: null,
     cliMedianMs: null,
+    rssPeakAverageBytes: null,
+    rssPeakMaxBytes: null,
     count: 0,
     errors: [],
     failedCount: 0,
@@ -527,8 +670,16 @@ function min(values: number[]) {
   return values.length === 0 ? null : Math.min(...values)
 }
 
+function max(values: number[]) {
+  return values.length === 0 ? null : Math.max(...values)
+}
+
 function fasterPercent(baseline: number | null, optimized: number | null) {
   return baseline && optimized != null ? (baseline - optimized) / baseline * 100 : null
+}
+
+function reducedPercent(baseline: number | null, optimized: number | null) {
+  return fasterPercent(baseline, optimized)
 }
 
 function parseCliBuildMs(output: string) {
@@ -582,6 +733,10 @@ function formatPercent(value: number | null) {
   return value == null ? '-' : `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`
 }
 
+function formatMemoryMiB(value: number | null) {
+  return value == null ? '-' : `${(value / 1024 / 1024).toFixed(1)} MiB`
+}
+
 function formatBuildPairStatus(stats: BuildStats, error: string | undefined) {
   if (error) {
     return 'failed'
@@ -612,6 +767,7 @@ interface TemplateBuildSample {
   packageName: string
   totalMs: number
   cliBuildMs: number | null
+  rssPeakBytes: number | null
   error?: string
   status: number
 }
@@ -621,6 +777,8 @@ interface BuildStats {
   totalMedianMs: number | null
   cliAverageMs: number | null
   cliMedianMs: number | null
+  rssPeakAverageBytes: number | null
+  rssPeakMaxBytes: number | null
   count: number
   errors: string[]
   failedCount: number
@@ -662,6 +820,8 @@ interface TemplateHmrScenario {
   id: string
   label: string
   samples: Array<{
+    heapUsedBytes?: number
+    rssBytes?: number
     totalMs?: number
     transformMs?: number
     wallMs?: number
@@ -695,6 +855,10 @@ interface HmrScenarioStats {
   wallSamples: number[]
   transformAverageMs: number | null
   transformSamples: number[]
+  heapUsedAverageBytes: number | null
+  heapUsedSamples: number[]
+  rssAverageBytes: number | null
+  rssSamples: number[]
 }
 
 interface HmrComparisonRow {
@@ -723,6 +887,9 @@ interface BuildAggregateStats {
   cliAverageBaselineMs: number | null
   cliAverageOptimizedMs: number | null
   cliFasterPercent: number | null
+  rssPeakAverageBaselineBytes: number | null
+  rssPeakAverageOptimizedBytes: number | null
+  rssPeakReducedPercent: number | null
 }
 
 interface HmrAggregateStats {
@@ -742,6 +909,10 @@ interface HmrAggregateStats {
   transformAverageBaselineMs: number | null
   transformAverageOptimizedMs: number | null
   transformFasterPercent: number | null
+  heapUsedAverageBaselineBytes: number | null
+  heapUsedAverageOptimizedBytes: number | null
+  rssAverageBaselineBytes: number | null
+  rssAverageOptimizedBytes: number | null
 }
 
 interface HmrGroupAggregateStats extends HmrAggregateStats {

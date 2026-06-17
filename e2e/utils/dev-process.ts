@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e dev 进程控制需要 execa 驱动子进程并清理残留 watcher。 */
+import type { Options } from 'execa'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { execa } from 'execa'
@@ -236,7 +237,7 @@ export async function cleanupProcessesByCommandPatterns(
 export function startDevProcess(
   command: string,
   args: readonly string[],
-  options?: Parameters<typeof execa>[2],
+  options?: Options,
 ): DevProcessController {
   const child = execa(command, args, {
     ...options,
@@ -262,13 +263,13 @@ export function startDevProcess(
   child.stderr?.on('data', appendOutput)
   child.all?.on('data', appendOutput)
 
-  const settledExit = child.then<DevProcessExitInfo>(
-    result => ({
+  const settledExit: Promise<DevProcessExitInfo> = child
+    .then(result => ({
       exitCode: result.exitCode,
       signal: result.signal ?? undefined,
       reason: 'process exited unexpectedly',
-    }),
-    (error: unknown) => {
+    }))
+    .catch((error: unknown) => {
       const candidate = error as {
         exitCode?: number | null
         signal?: string
@@ -281,8 +282,7 @@ export function startDevProcess(
         signal: candidate.signal,
         reason,
       }
-    },
-  )
+    })
 
   void settledExit.finally(() => {
     if (typeof child.pid === 'number') {
