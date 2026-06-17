@@ -1139,7 +1139,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result).toBe(cached.result)
   })
 
-  it('reuses compiled cache when unchanged source only needs dev emit refresh', async () => {
+  it('refreshes dirty compiled entries even when source is unchanged in dev', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },
       source: '<view />',
@@ -1181,10 +1181,11 @@ describe('emitSharedVueEntryAssets', () => {
       },
     })
 
-    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(cached.refreshToken).toBe(0)
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(result).toBe(cached.result)
+    expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
   it('refreshes compiled cache when source changes in dev', async () => {

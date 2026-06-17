@@ -1,5 +1,4 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
-import { createDebugger } from '../../../../debugger'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
@@ -10,22 +9,15 @@ import {
 } from './layoutAssets'
 import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
 
-const debug = createDebugger('weapp-vite:load-entry')
-
 function shouldReplaceAppScriptBundleEntry(options: {
   filename: string
   isDev: boolean
-  dirtyReasonSummary?: string[]
+  hasDevHmrEvent: boolean
 }) {
-  if (!isAppVueFile(options.filename) || !options.isDev) {
+  if (!isAppVueFile(options.filename) || !options.isDev || !options.hasDevHmrEvent) {
     return false
   }
-  return options.dirtyReasonSummary?.some(item =>
-    item.startsWith('entry-auto-routes:')
-    || item.startsWith('auto-routes-topology:')
-    || item.startsWith('entry-direct:')
-    || item.startsWith('entry-json-only:'),
-  ) === true
+  return true
 }
 
 function retainReplacedDevHmrScriptChunk(state: VueBundleState, fileName: string) {
@@ -69,7 +61,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   const shouldReplaceAppScript = shouldReplaceAppScriptBundleEntry({
     filename,
     isDev: configService.isDev,
-    dirtyReasonSummary: hmrState?.profile?.dirtyReasonSummary,
+    hasDevHmrEvent: hmrState?.profile?.event !== undefined,
   })
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
@@ -137,8 +129,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
 
   if (shouldReplaceAppScript && result.script?.trim()) {
     const scriptFileName = `${relativeBase}.${options.scriptExtension}`
-    const existing = bundle[scriptFileName]
-    debug?.(`replace app script ${scriptFileName} existing=${existing?.type ?? 'none'} oldHasAdded=${String((existing?.code ?? existing?.source ?? '').includes?.('pages/logs/hmr-added'))} nextHasAdded=${String(result.script.includes('pages/logs/hmr-added'))} nextLen=${result.script.length}`)
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,
