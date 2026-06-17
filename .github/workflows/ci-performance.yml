@@ -26,7 +26,7 @@ on:
       templates-hmr-iterations:
         description: templates HMR iterations per scenario
         required: false
-        default: '1'
+        default: '2'
       templates-build-iterations:
         description: templates build iterations per ref
         required: false
@@ -177,7 +177,7 @@ jobs:
           INPUT_HMR_SAMPLE_MODE: ${{ github.event.inputs['templates-hmr-sample-mode'] || '' }}
           TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/templates-performance-report
         run: |
-          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-1}"
+          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-2}"
           export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
           export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-}"
           export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE:-6}"
@@ -207,7 +207,7 @@ jobs:
             echo "- HMR profile timeout: \`${TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS}ms\`"
             echo "- HMR startup timeout: \`${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}ms\`"
             echo "- HMR sample mode: \`${TEMPLATES_PERF_HMR_SAMPLE_MODE}\`"
-            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；默认报告同一场景真实编辑/恢复循环中的快路径，手动触发可改为 edit-only 或调高迭代跑全量诊断"
+            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；默认跑 2 轮真实编辑/恢复循环并报告快路径，手动触发可改为 edit-only 或调高迭代跑全量诊断"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run templates performance benchmark
