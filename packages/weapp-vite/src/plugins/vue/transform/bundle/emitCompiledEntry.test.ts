@@ -139,7 +139,7 @@ describe('emitCompiledEntry helpers', () => {
     expect(emitScriptlessComponentJsFallbackIfMissingMock).not.toHaveBeenCalled()
   })
 
-  it('replaces app script assets during inline auto-routes refreshes', async () => {
+  it('replaces app script assets whenever app.vue participates in dev HMR emission', async () => {
     const bundle = {
       'app.js': {
         type: 'chunk',
@@ -158,7 +158,6 @@ describe('emitCompiledEntry helpers', () => {
             hmr: {
               profile: {
                 event: 'create',
-                dirtyReasonSummary: ['entry-auto-routes:1'],
               },
               lastEmittedChunkFileNames: new Set<string>(),
             },
@@ -221,6 +220,7 @@ describe('emitCompiledEntry helpers', () => {
           build: {
             hmr: {
               profile: {
+                event: 'create',
                 dirtyReasonSummary: ['auto-routes-topology:1'],
               },
             },
@@ -282,6 +282,7 @@ describe('emitCompiledEntry helpers', () => {
           build: {
             hmr: {
               profile: {
+                event: 'update',
                 dirtyReasonSummary: ['entry-direct:1'],
               },
             },
@@ -343,6 +344,7 @@ describe('emitCompiledEntry helpers', () => {
           build: {
             hmr: {
               profile: {
+                event: 'update',
                 dirtyReasonSummary: ['entry-json-only:1'],
               },
             },
