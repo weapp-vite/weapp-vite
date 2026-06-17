@@ -220,8 +220,11 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
     })
 
     try {

@@ -57,8 +57,8 @@ function appendRecentOutput(message: string, outputChunks: string[]) {
     return message
   }
 
-  const recentOutput = output.length > 4000
-    ? output.slice(-4000)
+  const recentOutput = output.length > 12000
+    ? output.slice(-12000)
     : output
 
   return `${message}\n\nRecent dev output:\n${recentOutput}`
