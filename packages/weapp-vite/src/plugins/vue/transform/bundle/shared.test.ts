@@ -1139,7 +1139,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result).toBe(cached.result)
   })
 
-  it('refreshes compiled cache when an unchanged source was invalidated in dev', async () => {
+  it('reuses compiled cache when unchanged source only needs dev emit refresh', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },
       source: '<view />',
@@ -1152,10 +1152,18 @@ describe('emitSharedVueEntryAssets', () => {
       code: 'Page({ refreshed: true })',
     })
 
+    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
     const result = await refreshCompiledVueEntryCacheInDev({
       filename: '/project/src/pages/index/index.vue',
       cached,
       ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+            },
+          },
+        },
         autoImportService: {
           resolve: () => undefined,
         },
@@ -1173,10 +1181,10 @@ describe('emitSharedVueEntryAssets', () => {
       },
     })
 
-    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(compileVueFileMock).not.toHaveBeenCalled()
     expect(cached.refreshToken).toBe(0)
-    expect(cached.result).toBe(result)
-    expect((result as any).script).toBe('Page({ refreshed: true })')
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(result).toBe(cached.result)
   })
 
   it('refreshes compiled cache when source changes in dev', async () => {
