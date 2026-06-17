@@ -13,6 +13,7 @@ const optimizedDir = path.resolve(process.env.TEMPLATES_PERF_OPTIMIZED_DIR ?? pr
 const reportRootDir = path.resolve(process.env.TEMPLATES_PERF_REPORT_DIR ?? path.join(optimizedDir, '.tmp/templates-performance'))
 const hmrIterations = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_ITERATIONS', 1)
 const buildIterations = readPositiveIntegerEnv('TEMPLATES_PERF_BUILD_ITERATIONS', 1)
+const templateFilter = parseFilterEnv(process.env.TEMPLATES_PERF_TEMPLATE_FILTER)
 const hmrFilter = process.env.TEMPLATES_PERF_HMR_FILTER?.trim() || null
 const maxHmrScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const hmrStartupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS', 45_000)
@@ -148,6 +149,9 @@ async function discoverTemplates(cwd: string): Promise<TemplateCase[]> {
   const names = await readdir(templatesRoot)
   const templates: TemplateCase[] = []
   for (const name of names.sort()) {
+    if (!matchesFilter(name, templateFilter)) {
+      continue
+    }
     const root = path.join(templatesRoot, name)
     const packageJsonPath = path.join(root, 'package.json')
     const configPath = path.join(root, 'weapp-vite.config.ts')
@@ -328,6 +332,7 @@ function createReport(baseline: CheckoutResult, optimized: CheckoutResult): Perf
   return {
     generatedAt: new Date().toISOString(),
     benchmark: 'templates/*',
+    templateFilter,
     hmrIterations,
     buildIterations,
     hmrFilter,
@@ -439,6 +444,7 @@ function renderMarkdown(report: PerformanceReport) {
     `- baseline: \`${report.baseline.commit}\``,
     `- optimized: \`${report.optimized.commit}\``,
     `- templates: \`${report.baseline.templates.length}\` baseline / \`${report.optimized.templates.length}\` optimized`,
+    `- template filter：\`${formatFilter(report.templateFilter)}\``,
     `- HMR 迭代：\`${report.hmrIterations}\` 次/场景`,
     `- build 迭代：\`${report.buildIterations}\` 次/模板`,
     `- HMR filter：\`${report.hmrFilter ?? 'all'}\``,
@@ -707,6 +713,17 @@ function readOptionalPositiveIntegerEnv(name: string) {
   return value
 }
 
+function parseFilterEnv(raw: string | undefined) {
+  return raw
+    ?.split(',')
+    .map(item => item.trim())
+    .filter(Boolean) ?? []
+}
+
+function matchesFilter(value: string, filters: string[]) {
+  return filters.length === 0 || filters.some(filter => value.includes(filter))
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
@@ -731,6 +748,10 @@ function formatSmallMs(value: number | null) {
 
 function formatPercent(value: number | null) {
   return value == null ? '-' : `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`
+}
+
+function formatFilter(value: string[]) {
+  return value.length === 0 ? 'all' : value.join(', ')
 }
 
 function formatMemoryMiB(value: number | null) {
@@ -922,6 +943,7 @@ interface HmrGroupAggregateStats extends HmrAggregateStats {
 interface PerformanceReport {
   generatedAt: string
   benchmark: string
+  templateFilter: string[]
   hmrIterations: number
   buildIterations: number
   hmrFilter: string | null

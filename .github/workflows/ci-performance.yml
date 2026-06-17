@@ -31,6 +31,9 @@ on:
         description: templates build iterations per ref
         required: false
         default: '1'
+      templates-filter:
+        description: optional comma-separated templates benchmark filter
+        required: false
       templates-hmr-filter:
         description: optional templates HMR template filter
         required: false
@@ -168,6 +171,8 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          RUNNER_OS: ${{ runner.os }}
+          INPUT_TEMPLATE_FILTER: ${{ github.event.inputs['templates-filter'] || '' }}
           INPUT_HMR_ITERATIONS: ${{ github.event.inputs['templates-hmr-iterations'] || '' }}
           INPUT_BUILD_ITERATIONS: ${{ github.event.inputs['templates-build-iterations'] || '' }}
           INPUT_HMR_FILTER: ${{ github.event.inputs['templates-hmr-filter'] || '' }}
@@ -177,15 +182,31 @@ jobs:
           INPUT_HMR_SAMPLE_MODE: ${{ github.event.inputs['templates-hmr-sample-mode'] || '' }}
           TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/templates-performance-report
         run: |
-          export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS:-2}"
+          if [[ -n "${INPUT_TEMPLATE_FILTER}" ]]; then
+            export TEMPLATES_PERF_TEMPLATE_FILTER="${INPUT_TEMPLATE_FILTER}"
+          elif [[ "${RUNNER_OS}" == "Windows" ]]; then
+            export TEMPLATES_PERF_TEMPLATE_FILTER="weapp-vite-lib-template,weapp-vite-template,weapp-vite-wevu-template,weapp-vite-tailwindcss-tdesign-template"
+          else
+            export TEMPLATES_PERF_TEMPLATE_FILTER=""
+          fi
+
+          if [[ -n "${INPUT_HMR_ITERATIONS}" ]]; then
+            export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS}"
+          elif [[ "${RUNNER_OS}" == "Windows" ]]; then
+            export TEMPLATES_PERF_HMR_ITERATIONS="2"
+          else
+            export TEMPLATES_PERF_HMR_ITERATIONS="3"
+          fi
+
           export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
-          export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-}"
+          export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-${TEMPLATES_PERF_TEMPLATE_FILTER}}"
           export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE:-6}"
           export TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS="${INPUT_HMR_PROFILE_TIMEOUT_MS:-15000}"
           export TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS="${INPUT_HMR_STARTUP_TIMEOUT_MS:-120000}"
           export TEMPLATES_PERF_HMR_SAMPLE_MODE="${INPUT_HMR_SAMPLE_MODE:-best-of-cycle}"
 
           {
+            echo "TEMPLATES_PERF_TEMPLATE_FILTER=${TEMPLATES_PERF_TEMPLATE_FILTER}"
             echo "TEMPLATES_PERF_HMR_ITERATIONS=${TEMPLATES_PERF_HMR_ITERATIONS}"
             echo "TEMPLATES_PERF_BUILD_ITERATIONS=${TEMPLATES_PERF_BUILD_ITERATIONS}"
             echo "TEMPLATES_PERF_HMR_FILTER=${TEMPLATES_PERF_HMR_FILTER}"
@@ -200,6 +221,7 @@ jobs:
             echo "### templates benchmark inputs"
             echo "- event: \`${EVENT_NAME}\`"
             echo "- benchmark: \`templates/*\`"
+            echo "- template filter: \`${TEMPLATES_PERF_TEMPLATE_FILTER:-all}\`"
             echo "- HMR iterations: \`${TEMPLATES_PERF_HMR_ITERATIONS}\`"
             echo "- build iterations: \`${TEMPLATES_PERF_BUILD_ITERATIONS}\`"
             echo "- HMR filter: \`${TEMPLATES_PERF_HMR_FILTER:-all}\`"
@@ -207,7 +229,7 @@ jobs:
             echo "- HMR profile timeout: \`${TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS}ms\`"
             echo "- HMR startup timeout: \`${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}ms\`"
             echo "- HMR sample mode: \`${TEMPLATES_PERF_HMR_SAMPLE_MODE}\`"
-            echo "- note: PR 默认覆盖所有模板，HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；默认跑 2 轮真实编辑/恢复循环并报告快路径，手动触发可改为 edit-only 或调高迭代跑全量诊断"
+            echo "- note: Linux/macOS PR 默认覆盖所有模板并跑 3 轮 HMR，Windows PR 默认覆盖代表模板并跑 2 轮 HMR 以避免 runner 超时，手动触发可将 template filter 置空跑 Windows 全量。HMR 每模板最多取 6 个稳定代表场景，优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；默认报告真实编辑/恢复循环中的快路径，手动触发可改为 edit-only 或调高迭代跑全量诊断"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run templates performance benchmark
