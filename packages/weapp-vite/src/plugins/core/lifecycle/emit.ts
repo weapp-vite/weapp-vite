@@ -69,7 +69,7 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
     ]
     for (const candidate of candidates) {
       const entry = entriesMap.get(candidate)
-      if (entry?.templatePath) {
+      if (entry && 'templatePath' in entry && entry.templatePath) {
         targets.add(normalizeWatchPath(entry.templatePath))
       }
     }

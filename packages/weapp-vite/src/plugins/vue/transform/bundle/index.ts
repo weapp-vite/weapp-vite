@@ -37,10 +37,12 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
   const emittedEntryIds = shouldFilterHmrEntries && hmrState
     ? (hmrState.lastHmrEntryIds?.size ? hmrState.lastHmrEntryIds : hmrState.lastEmittedEntryIds)
     : undefined
+  const dirtyVueEntryIds = hmrState?.dirtyVueEntryIds
 
   return {
     compilationEntries: Array.from(compilationCache.entries()).filter(([id]) => {
-      return !emittedEntryIds || emittedEntryIds.has(normalizeFsResolvedId(id))
+      const normalizedId = normalizeFsResolvedId(id)
+      return !emittedEntryIds || emittedEntryIds.has(normalizedId) || dirtyVueEntryIds?.has(normalizedId)
     }),
     emittedEntryIds,
   }

@@ -125,6 +125,7 @@ export interface RuntimeState {
       vueEntryHasTemplate: Map<string, boolean>
       vueEntryNonJsonSignatures: Map<string, string>
       vueEntryScriptSignatures: Map<string, string>
+      appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
@@ -263,6 +264,7 @@ export function createRuntimeState(): RuntimeState {
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntryNonJsonSignatures: new Map<string, string>(),
         vueEntryScriptSignatures: new Map<string, string>(),
+        appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
         didEmitAllEntries: false,
         lastHmrEntryIds: new Set<string>(),

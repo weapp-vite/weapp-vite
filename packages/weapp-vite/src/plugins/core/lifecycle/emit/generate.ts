@@ -114,6 +114,40 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       .every(entryId => activeEntryIds?.has(entryId))
     if (!isCompleteSharedChunkRefresh) {
       delete bundle[fileName]
+      continue
+    }
+
+    const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+    if (emittedChunkFileNames) {
+      emittedChunkFileNames.add(fileName)
+      if (output.fileName) {
+        emittedChunkFileNames.add(output.fileName)
+      }
+    }
+  }
+}
+
+function retainFullEntryHmrChunks(bundle: OutputBundle, state: CorePluginState) {
+  if (
+    !state.ctx.configService.isDev
+    || !state.hmrState.hasBuiltOnce
+    || !state.hmrState.didEmitAllEntries
+  ) {
+    return
+  }
+
+  const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+  if (!emittedChunkFileNames?.size) {
+    return
+  }
+
+  for (const [fileName, output] of Object.entries(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+    emittedChunkFileNames.add(fileName)
+    if (output.fileName) {
+      emittedChunkFileNames.add(output.fileName)
     }
   }
 }
@@ -188,6 +222,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         state.hmrState.hasBuiltOnce = true
       }
       prunePartialHmrStableSharedChunks(rolldownBundle, state)
+      retainFullEntryHmrChunks(rolldownBundle, state)
       pruneUneventedDevHmrChunks(ctx, rolldownBundle)
 
       if (assetOnlyDevHmrBundle) {

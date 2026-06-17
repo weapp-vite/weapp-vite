@@ -23,6 +23,24 @@ const VUE_TRANSFORM_FILTER_RE = /\.(?:vue|tsx|jsx)(?:\?.*)?$/
 const VUE_LOAD_FILTER_RE = /^(?:\0weapp-vite:scoped-slot:|.*[?&]weapp-vite-vue(?:[=&]|$))/
 const SCOPED_SLOT_VIRTUAL_ID_RE = /^\0weapp-vite:scoped-slot:/
 
+export function invalidateDirtyVueEntryCaches(
+  dirtyVueEntryIds: Set<string> | undefined,
+  compilationCache: Map<string, { source?: string, refreshToken?: number }>,
+) {
+  if (!dirtyVueEntryIds?.size) {
+    return
+  }
+
+  for (const entryId of dirtyVueEntryIds) {
+    const cached = compilationCache.get(entryId)
+    if (!cached) {
+      continue
+    }
+    cached.source = undefined
+    cached.refreshToken = (cached.refreshToken ?? 0) + 1
+  }
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
@@ -158,6 +176,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         styleRefreshTokens,
         existsSync: fs.existsSync,
       })
+      invalidateDirtyVueEntryCaches(ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds, compilationCache)
       const profile = ctx.runtimeState?.build?.hmr?.profile
       if (profile && !profile.file) {
         profile.eventId = createHmrProfileEventId()

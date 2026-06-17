@@ -495,6 +495,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     })
 
     if (type === 'app' && !shouldSkipAppEntries && appResult) {
+      ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = autoRoutesSignature
       appEntryOutputCache.current = {
         appSignature: appResult.appSignature,
         appVueNonJsonSignature,

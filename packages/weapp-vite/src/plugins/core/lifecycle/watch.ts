@@ -8,6 +8,7 @@ import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
+import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesAliasTargets, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
@@ -48,6 +49,32 @@ function isAutoRoutesGeneratedFileChange(state: CorePluginState, normalizedId: s
     absoluteSrcRoot: configService.absoluteSrcRoot,
     managedOutputPaths: resolveAutoRoutesManagedOutputPaths(state.ctx),
   })
+}
+
+function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: string) {
+  const configService = state.ctx.configService
+  if (!configService) {
+    return false
+  }
+
+  const { autoRoutesConfig, subPackageRoots } = resolveAutoRoutesMatcherContext(state.ctx)
+  return isAutoRoutesPagesRelatedPath(normalizedId, {
+    cwd: configService.cwd,
+    absoluteSrcRoot: configService.absoluteSrcRoot,
+    include: autoRoutesConfig.include,
+    managedOutputPaths: resolveAutoRoutesManagedOutputPaths(state.ctx),
+    subPackageRoots,
+  })
+}
+
+function invalidateAutoRoutesModuleCache(state: CorePluginState) {
+  invalidateFileCache('weapp-vite/auto-routes')
+  invalidateFileCache('virtual:weapp-vite-auto-routes')
+  invalidateFileCache('\0weapp-vite:auto-routes')
+
+  for (const target of resolveAutoRoutesAliasTargets(state.ctx.configService?.packageInfo?.rootPath)) {
+    invalidateFileCache(normalizeFsResolvedId(target))
+  }
 }
 
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
@@ -190,6 +217,18 @@ async function isAppShellTopologyUpdate(state: CorePluginState, normalizedId: st
   }
 }
 
+function isAppEntryAutoRoutesSignatureStale(state: CorePluginState, normalizedId: string) {
+  if (!isAppVueFile(normalizedId)) {
+    return false
+  }
+
+  const currentSignature = state.ctx.autoRoutesService?.getSignature?.()
+  const previousSignature = state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature
+  return typeof currentSignature === 'string'
+    && typeof previousSignature === 'string'
+    && currentSignature !== previousSignature
+}
+
 async function processChangedFile(
   state: CorePluginState,
   id: string,
@@ -320,6 +359,20 @@ async function processChangedFile(
 
     return false
   }
+  const markAppEntryForAutoRoutesTopology = () => {
+    const appEntryId = scanService.appEntry?.path
+      ? normalizeFsResolvedId(scanService.appEntry.path)
+      : undefined
+    if (!appEntryId || !resolvedEntryMap.has(appEntryId)) {
+      return false
+    }
+
+    invalidateFileCache(appEntryId)
+    invalidateAutoRoutesModuleCache(state)
+    ;(loadEntry as any)?.invalidateResolveCache?.()
+    markEntryDirtyWithCause(appEntryId, 'direct', 'auto-routes-topology')
+    return true
+  }
 
   const addCssImporterEntries = async (startId: string) => {
     const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
@@ -348,13 +401,22 @@ async function processChangedFile(
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
     const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
     if (didChangeRoutes) {
-      dirtyReasonStats.set('auto-routes-topology', 1)
-      const appEntryId = scanService.appEntry?.path
-        ? normalizeFsResolvedId(scanService.appEntry.path)
-        : undefined
-      if (appEntryId && resolvedEntryMap.has(appEntryId)) {
-        state.markEntryDirty(appEntryId, 'direct')
-      }
+      markAppEntryForAutoRoutesTopology()
+    }
+  }
+  else if (
+    (event === 'create' || isDeletedMissingSelf)
+    && isAutoRoutesPagesRelatedChange(state, normalizedId)
+  ) {
+    const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event === 'create' ? 'create' : 'delete')
+    const currentSignature = ctx.autoRoutesService?.getSignature?.()
+    const appEntrySignature = ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature
+    if (didChangeRoutes || (
+      typeof currentSignature === 'string'
+      && typeof appEntrySignature === 'string'
+      && currentSignature !== appEntrySignature
+    )) {
+      markAppEntryForAutoRoutesTopology()
     }
   }
 
@@ -364,11 +426,15 @@ async function processChangedFile(
     && resolvedEntryMap.size
   ) {
     const isJsonOnlyVueEntryUpdate = await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
     isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await isAppShellTopologyUpdate(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
       && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
-    if (!isJsonOnlyVueEntryUpdate && !isLocalAssetOnlyVueEntryUpdate) {
+    if (isAutoRoutesStaleAppEntry) {
+      ;(loadEntry as any)?.invalidateResolveCache?.()
+    }
+    else if (!isJsonOnlyVueEntryUpdate && !isLocalAssetOnlyVueEntryUpdate) {
       ;(loadEntry as any)?.invalidateResolveCache?.()
       for (const entryId of resolvedEntryMap.keys()) {
         if (entryId === normalizedId || entryId === concreteChangedEntryId) {
@@ -479,14 +545,15 @@ async function processChangedFile(
     )
   ) {
     const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
       && event === 'update'
       && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
     markChangedEntryDirty(
-      isJsonOnlyVueEntryUpdate || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
+      (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
-        ? 'entry-json-only'
+        ? isAutoRoutesStaleAppEntry ? 'entry-auto-routes' : 'entry-json-only'
         : isAppShellTopologyChanged
           ? 'entry-direct'
           : isLocalAssetOnlyVueEntryUpdate

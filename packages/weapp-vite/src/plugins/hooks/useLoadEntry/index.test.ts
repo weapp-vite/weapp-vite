@@ -87,6 +87,29 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(second.resolvedEntryMap.has('/project/src/pages/logs/index.vue')).toBe(true)
   })
 
+  it('keeps direct dirty reason when a metadata update arrives before emit', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {})
+    const id = '/project/src/app.vue'
+    hook.entriesMap.set(id, {
+      type: 'app',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+
+    hook.markEntryDirty(id, 'direct')
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+  })
+
   it('emits all entries in full mode', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
@@ -1002,5 +1025,46 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['auto-routes-topology'])
+  })
+
+  it('retains app chunk filenames for inline auto-routes refreshes', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['entry-auto-routes:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const id = '/project/src/app.vue'
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+
+    await hook.emitDirtyEntries.call(createPluginContext())
+
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/app.js')).toBe(true)
+  })
+
+  it('retains root input chunk filenames for auto-routes topology refreshes', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['auto-routes-topology:1'],
+    }
+    const id = '/project/src/app.vue'
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+        rootInputIds: new Set([id]),
+      },
+    })
+
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+
+    await hook.emitDirtyEntries.call(createPluginContext())
+
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/app.js')).toBe(true)
   })
 })

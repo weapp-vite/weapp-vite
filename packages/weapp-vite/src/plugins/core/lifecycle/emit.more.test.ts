@@ -467,9 +467,17 @@ describe('core lifecycle emit hook extra branches', () => {
 
   it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {
     const emittedEntryIds = new Set(['pages/runtime/index.ts', 'pages/hmr/index.ts'])
+    const emittedChunkFileNames = new Set<string>()
     const state = createState({
       subPackageMeta: undefined,
       ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames: emittedChunkFileNames,
+            },
+          },
+        },
         configService: {
           isDev: true,
         },
@@ -497,6 +505,53 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
+    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
+  })
+
+  it('keeps shared chunks during full-entry dev hmr refreshes', async () => {
+    const emittedChunkFileNames = new Set<string>(['app.js'])
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames: emittedChunkFileNames,
+            },
+          },
+        },
+        configService: {
+          isDev: true,
+        },
+      },
+      hmrState: {
+        didEmitAllEntries: true,
+        hasBuiltOnce: true,
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'exports.default = {}',
+        imports: ['./common.js'],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'exports.shared = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.js']).toBeDefined()
+    expect(bundle['common.js']).toBeDefined()
+    expect(emittedChunkFileNames.has('common.js')).toBe(true)
   })
 
   it('handles shared/runtime chunk diagnostics and watcher service watch files', async () => {

@@ -703,6 +703,51 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
+  it('upgrades app.vue json-only updates when inline auto-routes changed', async () => {
+    const appEntry = '/project/src/app.vue'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
+
+defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' } })
+</script>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([appEntry]),
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+      ctx: {
+        ...createState().ctx,
+        autoRoutesService: {
+          isRouteFile: vi.fn(() => false),
+          handleFileChange: vi.fn(async () => false),
+          getSignature: vi.fn(() => 'new-routes'),
+        },
+      },
+    })
+    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appEntry,
+      resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-auto-routes:1'])
+  })
+
   it('keeps app.vue style-only updates scoped to the app entry', async () => {
     const appEntry = '/project/src/app.vue'
     const pageEntry = '/project/src/pages/hmr/index.vue'
@@ -886,6 +931,49 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 
     expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'delete')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith(appEntry)
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith('virtual:weapp-vite-auto-routes')
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith('\0weapp-vite:auto-routes')
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
+  })
+
+  it('marks app entry dirty when a created auto-routes page was already synced by sidecar watcher', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    const entryId = '/project/src/pages/logs/hmr-added.vue'
+    const appEntry = '/project/src/app.vue'
+    const baseState = createState()
+    const state = {
+      ...baseState,
+      resolvedEntryMap: new Map([[appEntry, { id: appEntry }]]),
+      ctx: {
+        ...baseState.ctx,
+        scanService: {
+          ...baseState.ctx.scanService,
+          appEntry: {
+            path: appEntry,
+          },
+        },
+        autoRoutesService: {
+          isRouteFile: vi.fn(() => false),
+          handleFileChange: vi.fn(async () => false),
+          getSignature: vi.fn(() => 'synced-routes'),
+        },
+      },
+    }
+    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'create' })
+
+    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'create')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith(appEntry)
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
