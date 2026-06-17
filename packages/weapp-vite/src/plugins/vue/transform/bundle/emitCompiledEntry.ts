@@ -9,6 +9,21 @@ import {
 } from './layoutAssets'
 import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
 
+function shouldReplaceAppScriptBundleEntry(options: {
+  filename: string
+  isDev: boolean
+  dirtyReasonSummary?: string[]
+}) {
+  if (!isAppVueFile(options.filename) || !options.isDev) {
+    return false
+  }
+  return options.dirtyReasonSummary?.some(item =>
+    item.startsWith('entry-auto-routes:')
+    || item.startsWith('auto-routes-topology:')
+    || item.startsWith('entry-direct:'),
+  ) === true
+}
+
 export async function emitResolvedCompiledVueEntryAssets(options: {
   bundle: Record<string, any>
   state: VueBundleState
@@ -37,16 +52,11 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     return
   }
   const hmrState = ctx.runtimeState?.build?.hmr
-  const isAppAutoRoutesRefresh = Boolean(
-    isAppVueFile(filename)
-    && configService.isDev
-    && hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')),
-  )
-  const isAppAutoRoutesTopologyRefresh = Boolean(
-    isAppVueFile(filename)
-    && configService.isDev
-    && hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('auto-routes-topology:')),
-  )
+  const shouldReplaceAppScript = shouldReplaceAppScriptBundleEntry({
+    filename,
+    isDev: configService.isDev,
+    dirtyReasonSummary: hmrState?.profile?.dirtyReasonSummary,
+  })
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
     emitAppShellAssetsIfNeeded({
@@ -111,7 +121,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     platformAssetOptions: options.platformAssetOptions,
   })
 
-  if ((isAppAutoRoutesRefresh || isAppAutoRoutesTopologyRefresh) && result.script?.trim()) {
+  if (shouldReplaceAppScript && result.script?.trim()) {
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,
