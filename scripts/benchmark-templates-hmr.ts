@@ -7,6 +7,7 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
 import { execa } from 'execa'
+import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
@@ -62,6 +63,8 @@ interface ScenarioCase {
 
 interface ScenarioSample extends HmrProfileJsonSample {
   phase?: SamplePhase
+  heapUsedBytes?: number
+  rssBytes?: number
   wallMs: number
 }
 
@@ -131,6 +134,7 @@ const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MA
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
 const filter = process.env.TEMPLATES_HMR_FILTER?.trim()
+const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 const scenarioGroupPriority: ScenarioGroup[] = [
   'app-json',
   'vue-script',
@@ -250,6 +254,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     env: {
       ...createDevProcessEnv({
         disableSidecarWatch: true,
+        nodeOptions: memoryNodeOptions,
       }),
       WEAPP_VITE_HMR_PROFILE_JSON: '1',
     },
@@ -262,6 +267,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     const startupStartedAt = performance.now()
     await dev.waitFor(waitForFile(path.join(template.workspaceRoot, 'dist/app.json'), startupTimeoutMs), `${template.id} app.json generated`)
     result.startupMs = performance.now() - startupStartedAt
+    const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
 
     const runnableScenarios = []
     for (const scenario of scenarios) {
@@ -275,7 +281,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
-      scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario))
+      scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl))
     }
     result.scenarios = scenarioResults
   }
@@ -532,6 +538,7 @@ async function benchmarkScenario(
   template: TemplateCase,
   profilePath: string,
   scenario: ScenarioCase,
+  inspectorUrl: string,
 ): Promise<ScenarioResult> {
   if (!(await pathExists(scenario.sourceFile))) {
     return {
@@ -559,7 +566,8 @@ async function benchmarkScenario(
       const wallMs = performance.now() - startedAt
       const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs)
         .catch((): HmrProfileJsonSample => ({}))
-      const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit')
+      const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
+      const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
 
       const restoreLineCount = await countJsonlLines(profilePath)
       const restoreStartedAt = performance.now()
@@ -568,7 +576,8 @@ async function benchmarkScenario(
       const restoreWallMs = performance.now() - restoreStartedAt
       const restoreProfileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs)
         .catch((): HmrProfileJsonSample => ({}))
-      const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore')
+      const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
+      const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
       samples.push(sample)
       process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} ${sample.phase ?? 'edit'} wall=${sample.wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
@@ -609,11 +618,14 @@ function createScenarioSample(
   profileSample: HmrProfileJsonSample,
   wallMs: number,
   phase: SamplePhase,
+  memorySample?: { heapUsed: number, rss: number },
 ): ScenarioSample {
   return {
     ...profileSample,
     file: formatReportPath(profileSample.file ?? scenario.sourceFile),
+    heapUsedBytes: memorySample?.heapUsed,
     relativeFile: profileSample.relativeFile,
+    rssBytes: memorySample?.rss,
     sourceRootFile: profileSample.sourceRootFile,
     phase,
     totalMs: profileSample.totalMs ?? wallMs,
@@ -679,11 +691,25 @@ async function waitForHmrProfileSample(
   const startedAt = Date.now()
   while (Date.now() - startedAt < waitMs) {
     const samples = await readJsonlSamplesSince(profilePath, startLineCount)
-    const matched = samples.findLast(sample => isProfileSampleForSource(template, sample, sourceFile))
+    let matched: HmrProfileJsonSample | undefined
+    for (let index = samples.length - 1; index >= 0; index -= 1) {
+      const sample = samples[index]
+      if (isProfileSampleForSource(template, sample, sourceFile)) {
+        matched = sample
+        break
+      }
+    }
     if (matched) {
       return matched
     }
-    const unattributed = samples.findLast(isUnattributedProfileSample)
+    let unattributed: HmrProfileJsonSample | undefined
+    for (let index = samples.length - 1; index >= 0; index -= 1) {
+      const sample = samples[index]
+      if (isUnattributedProfileSample(sample)) {
+        unattributed = sample
+        break
+      }
+    }
     if (unattributed) {
       return {
         ...unattributed,
@@ -1038,6 +1064,13 @@ function formatMetric(value: number | undefined) {
   return value.toFixed(2)
 }
 
+function formatMemoryMiB(value: number | undefined) {
+  if (value === undefined || !Number.isFinite(value)) {
+    return '-'
+  }
+  return `${(value / 1024 / 1024).toFixed(1)} MiB`
+}
+
 function summarizeReasons(samples: ScenarioSample[], key: 'dirtyReasonSummary' | 'pendingReasonSummary') {
   const reasons = samples.flatMap(sample => sample[key] ?? [])
   if (!reasons.length) {
@@ -1064,8 +1097,8 @@ function renderMarkdown(report: BenchmarkReport) {
     `- failed templates: ${report.summary.failedTemplateCount}`,
     `- failed scenarios: ${report.summary.failedScenarioCount}`,
     '',
-    '| template | startup | scenarios | max profile | max wall | failures |',
-    '| --- | ---: | ---: | ---: | ---: | --- |',
+    '| template | startup | scenarios | max profile | max wall | avg heap | avg rss | failures |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const template of report.templates) {
@@ -1079,6 +1112,8 @@ function renderMarkdown(report: BenchmarkReport) {
       String(template.scenarios.length),
       formatMetric(maxOptional(template.scenarios.map(scenario => scenario.maxMs))),
       formatMetric(maxOptional(template.scenarios.map(scenario => scenario.maxWallMs))),
+      formatMemoryMiB(averageOptional(template.scenarios.flatMap(scenario => scenario.samples.map(sample => sample.heapUsedBytes)))),
+      formatMemoryMiB(averageOptional(template.scenarios.flatMap(scenario => scenario.samples.map(sample => sample.rssBytes)))),
       failures.length ? failures.join('<br>') : '-',
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
   }
@@ -1088,8 +1123,8 @@ function renderMarkdown(report: BenchmarkReport) {
     if (template.error) {
       lines.push(`- project error: ${template.error}`, '')
     }
-    lines.push('| group | scenario | avg profile | max profile | avg wall | max wall | pending | emitted | dirty reason | pending reason | status |')
-    lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |')
+    lines.push('| group | scenario | avg profile | max profile | avg wall | max wall | avg heap | avg rss | pending | emitted | dirty reason | pending reason | status |')
+    lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |')
     for (const scenario of template.scenarios) {
       const latestSample = scenario.samples[scenario.samples.length - 1]
       lines.push([
@@ -1099,6 +1134,8 @@ function renderMarkdown(report: BenchmarkReport) {
         formatMs(scenario.maxMs),
         formatMs(scenario.averageWallMs),
         formatMs(scenario.maxWallMs),
+        formatMemoryMiB(averageOptional(scenario.samples.map(sample => sample.heapUsedBytes))),
+        formatMemoryMiB(averageOptional(scenario.samples.map(sample => sample.rssBytes))),
         latestSample?.pendingCount == null ? '-' : String(latestSample.pendingCount),
         latestSample?.emittedCount == null ? '-' : String(latestSample.emittedCount),
         summarizeReasons(scenario.samples, 'dirtyReasonSummary'),
