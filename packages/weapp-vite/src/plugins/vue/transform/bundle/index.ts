@@ -48,7 +48,6 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
         cached
         && isAppVueFile(normalizedId)
         && typeof currentAutoRoutesSignature === 'string'
-        && typeof cached.autoRoutesSignature === 'string'
         && cached.autoRoutesSignature !== currentAutoRoutesSignature,
       )
       return !emittedEntryIds
