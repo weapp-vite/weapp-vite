@@ -1,5 +1,6 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
+import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
   emitAppShellAssetsIfNeeded,
@@ -35,6 +36,12 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   if (!configService) {
     return
   }
+  const hmrState = ctx.runtimeState?.build?.hmr
+  const isAppAutoRoutesRefresh = Boolean(
+    isAppVueFile(filename)
+    && configService.isDev
+    && hmrState?.profile?.dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')),
+  )
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
     emitAppShellAssetsIfNeeded({
@@ -98,6 +105,16 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
   })
+
+  if (isAppAutoRoutesRefresh && result.script?.trim()) {
+    emitSfcScriptAssetReplacingBundleEntry(
+      pluginCtx,
+      bundle,
+      relativeBase,
+      result.script,
+      options.scriptExtension,
+    )
+  }
 
   if (shouldEmitComponentJson && !result.script?.trim()) {
     emitScriptlessComponentJsFallbackIfMissing({
