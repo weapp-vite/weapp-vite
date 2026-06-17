@@ -27,6 +27,11 @@ const resolveVueBundleAssetContextMock = vi.hoisted(() => vi.fn(() => ({
 const emitBundlePageLayoutsIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
 const emitAppShellAssetsIfNeededMock = vi.hoisted(() => vi.fn())
 const emitScriptlessComponentJsFallbackIfMissingMock = vi.hoisted(() => vi.fn())
+const emitSfcScriptAssetReplacingBundleEntryMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../emitAssets', () => ({
+  emitSfcScriptAssetReplacingBundleEntry: emitSfcScriptAssetReplacingBundleEntryMock,
+}))
 
 vi.mock('./layoutAssets', () => ({
   emitAppShellAssetsIfNeeded: emitAppShellAssetsIfNeededMock,
@@ -68,6 +73,7 @@ describe('emitCompiledEntry helpers', () => {
     emitBundlePageLayoutsIfNeededMock.mockResolvedValue(undefined)
     emitAppShellAssetsIfNeededMock.mockReset()
     emitScriptlessComponentJsFallbackIfMissingMock.mockReset()
+    emitSfcScriptAssetReplacingBundleEntryMock.mockReset()
   })
 
   it('emits resolved compiled page entries through shared layout flow', async () => {
@@ -131,6 +137,67 @@ describe('emitCompiledEntry helpers', () => {
       platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
     expect(emitScriptlessComponentJsFallbackIfMissingMock).not.toHaveBeenCalled()
+  })
+
+  it('replaces app script assets during inline auto-routes refreshes', async () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({ old: true })',
+      },
+    }
+    const state = {
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: DEFAULT_MP_PLATFORM,
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                dirtyReasonSummary: ['entry-auto-routes:1'],
+              },
+            },
+          },
+        },
+      },
+      pluginCtx: {},
+    } as any
+    const cached = {
+      isPage: false,
+      source: '<script setup />',
+    } as any
+    const compileOptionsState = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    }
+    const result = { script: 'App({ routes: ["pages/logs/hmr-added"] })' } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle,
+      state,
+      filename: '/project/src/app.vue',
+      cached,
+      result,
+      relativeBase: 'app',
+      compileOptionsState,
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitSfcScriptAssetReplacingBundleEntryMock).toHaveBeenCalledWith(
+      state.pluginCtx,
+      bundle,
+      'app',
+      'App({ routes: ["pages/logs/hmr-added"] })',
+      'js',
+    )
   })
 
   it('wraps compiled page templates with the app shell after page layouts', async () => {
