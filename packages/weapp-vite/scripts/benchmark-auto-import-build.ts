@@ -9,6 +9,7 @@ import vantComponents from '../src/auto-import-components/resolvers/json/vant.js
 import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { patchProjectConfigFile } from './utils/config-file'
+import { createPeakRssSampler, formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
@@ -69,8 +70,8 @@ async function main() {
 
 async function runScenario(usedCount: number) {
   const usedTags = allResolverTags.slice(0, usedCount)
-  const baselineSamples = []
-  const currentSamples = []
+  const baselineSamples: BuildSample[] = []
+  const currentSamples: BuildSample[] = []
 
   for (let i = 0; i < iterations; i += 1) {
     baselineSamples.push(await measureBuild({ usedTags, mode: 'baseline', iteration: i }))
@@ -79,11 +80,15 @@ async function runScenario(usedCount: number) {
 
   const baseline = summarizeNumbers(baselineSamples)
   const current = summarizeNumbers(currentSamples)
+  const baselineMemory = summarizeOptionalMemory(baselineSamples.map(sample => sample.rssPeakBytes))
+  const currentMemory = summarizeOptionalMemory(currentSamples.map(sample => sample.rssPeakBytes))
 
   return {
     usedCount,
     baseline,
+    baselineMemory,
     current,
+    currentMemory,
     delta: {
       extraMs: current.mean - baseline.mean,
       extraPercent: baseline.mean > 0 ? ((current.mean - baseline.mean) / baseline.mean) * 100 : 0,
@@ -109,8 +114,11 @@ async function measureBuild(options: {
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
     const start = performance.now()
-    await runBuild(project.tempDir)
-    return performance.now() - start
+    const memory = await runBuild(project.tempDir)
+    return {
+      durationMs: performance.now() - start,
+      rssPeakBytes: memory.rssPeakBytes,
+    }
   }
   finally {
     await project.cleanup()
@@ -304,7 +312,7 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
 async function runBuild(cwd: string) {
   const cliPath = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
   const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
-  await new Promise<void>((resolve, reject) => {
+  return await new Promise<{ rssPeakBytes: number | null }>((resolve, reject) => {
     const child = spawn(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
@@ -313,6 +321,7 @@ async function runBuild(cwd: string) {
       },
       stdio: 'pipe',
     })
+    const memorySampler = createPeakRssSampler(child.pid)
 
     let stderr = ''
     child.stderr.on('data', (chunk) => {
@@ -321,11 +330,13 @@ async function runBuild(cwd: string) {
 
     child.on('error', reject)
     child.on('exit', (code) => {
-      if (code === 0) {
-        resolve()
-        return
-      }
-      reject(new Error(`build failed with code ${code}\n${stderr}`))
+      void memorySampler.stop().then((memory) => {
+        if (code === 0) {
+          resolve(memory)
+          return
+        }
+        reject(new Error(`build failed with code ${code}\n${stderr}`))
+      }, reject)
     })
   })
 }
@@ -381,14 +392,15 @@ function parseScenarioValues(input: string | undefined) {
   return parsed
 }
 
-function summarizeNumbers(values: number[]) {
-  const sorted = [...values].sort((a, b) => a - b)
-  const total = values.reduce((sum, value) => sum + value, 0)
+function summarizeNumbers(values: Array<number | BuildSample>) {
+  const numericValues = values.map(value => typeof value === 'number' ? value : value.durationMs)
+  const sorted = [...numericValues].sort((a, b) => a - b)
+  const total = numericValues.reduce((sum, value) => sum + value, 0)
   const mid = Math.floor(sorted.length / 2)
   return {
     min: sorted[0] ?? 0,
     max: sorted.at(-1) ?? 0,
-    mean: values.length ? total / values.length : 0,
+    mean: numericValues.length ? total / numericValues.length : 0,
     median: sorted.length % 2 === 0
       ? ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2
       : (sorted[mid] ?? 0),
@@ -399,6 +411,7 @@ function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
   console.log(`\n[build-scenario] used resolver components=${result.usedCount}`)
   console.log(`baseline | avg ${result.baseline.mean.toFixed(2)}ms | median ${result.baseline.median.toFixed(2)}ms`)
   console.log(`current  | avg ${result.current.mean.toFixed(2)}ms | median ${result.current.median.toFixed(2)}ms`)
+  console.log(`memory   | peak RSS avg ${formatMemoryMiB(result.baselineMemory.mean)} -> ${formatMemoryMiB(result.currentMemory.mean)}`)
   console.log(`delta    | extra ${result.delta.extraMs.toFixed(2)}ms | extra ${result.delta.extraPercent.toFixed(2)}% | ratio ${result.delta.ratio.toFixed(2)}x`)
 }
 
@@ -408,13 +421,13 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
     '',
     `- 迭代次数：\`${iterations}\``,
     '',
-    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |',
-    '| --- | ---: | ---: | ---: | ---: |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | peak RSS | 比例 |',
+    '| --- | ---: | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${result.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${formatMemoryMiB(result.baselineMemory.mean)} -> ${formatMemoryMiB(result.currentMemory.mean)} | ${result.delta.ratio.toFixed(2)}x |`,
     )
   }
 
@@ -427,6 +440,11 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('')
 
   return `${lines.join('\n')}\n`
+}
+
+interface BuildSample {
+  durationMs: number
+  rssPeakBytes: number | null
 }
 
 function formatTimestamp(date: Date) {
