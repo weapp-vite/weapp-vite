@@ -38,11 +38,23 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     ? (hmrState.lastHmrEntryIds?.size ? hmrState.lastHmrEntryIds : hmrState.lastEmittedEntryIds)
     : undefined
   const dirtyVueEntryIds = hmrState?.dirtyVueEntryIds
+  const currentAutoRoutesSignature = ctx.autoRoutesService?.getSignature?.()
 
   return {
     compilationEntries: Array.from(compilationCache.entries()).filter(([id]) => {
       const normalizedId = normalizeFsResolvedId(id)
-      return !emittedEntryIds || emittedEntryIds.has(normalizedId) || dirtyVueEntryIds?.has(normalizedId)
+      const cached = compilationCache.get(id)
+      const isStaleAutoRoutesAppEntry = Boolean(
+        cached
+        && isAppVueFile(normalizedId)
+        && typeof currentAutoRoutesSignature === 'string'
+        && typeof cached.autoRoutesSignature === 'string'
+        && cached.autoRoutesSignature !== currentAutoRoutesSignature,
+      )
+      return !emittedEntryIds
+        || emittedEntryIds.has(normalizedId)
+        || dirtyVueEntryIds?.has(normalizedId)
+        || isStaleAutoRoutesAppEntry
     }),
     emittedEntryIds,
   }

@@ -370,6 +370,7 @@ async function processChangedFile(
     invalidateFileCache(appEntryId)
     invalidateAutoRoutesModuleCache(state)
     ;(loadEntry as any)?.invalidateResolveCache?.()
+    ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
     markEntryDirtyWithCause(appEntryId, 'direct', 'auto-routes-topology')
     return true
   }
