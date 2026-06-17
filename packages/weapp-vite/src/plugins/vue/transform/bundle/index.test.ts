@@ -73,6 +73,40 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it('includes dirty vue entries while filtering partial dev HMR bundle assets', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        scanService: {},
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'create',
+              },
+              didEmitAllEntries: false,
+              lastHmrEntryIds: new Set(['/project/src/pages/logs/hmr-added.vue']),
+              dirtyVueEntryIds: new Set(['/project/src/app.vue']),
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/app.vue', { result: {}, isPage: false }],
+        ['/project/src/pages/logs/hmr-added.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/app.vue', { result: {}, isPage: false }],
+        ['/project/src/pages/logs/hmr-added.vue', { result: {}, isPage: true }],
+      ],
+      emittedEntryIds: new Set(['/project/src/pages/logs/hmr-added.vue']),
+    })
+  })
+
   it('keeps all compiled entries during app.vue HMR updates so app shell assets are emitted', () => {
     expect(resolveVueBundleEmitState({
       ctx: {

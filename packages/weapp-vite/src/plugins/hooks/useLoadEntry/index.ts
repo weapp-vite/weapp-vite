@@ -3,6 +3,7 @@ import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { createDebugger } from '../../../debugger'
+import { changeFileExtension } from '../../../utils'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
 import { createExtendedLibManager } from './extendedLib'
@@ -72,6 +73,10 @@ function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
   }
 
   return pendingReasonSummary
+}
+
+function isEntryAutoRoutesRefresh(dirtyReasonSummary?: string[]) {
+  return dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')) === true
 }
 
 function resolvePendingEntryIds(options: {
@@ -450,6 +455,17 @@ export function useLoadEntry(
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
       const actualChunkEmittedEntryIds = new Set(lastChunkEmittedEntryIds)
+      for (const entryId of actualEmittedEntryIds) {
+        if (!rootInputIds?.has(entryId)) {
+          continue
+        }
+        lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+      }
+      if (isEntryAutoRoutesRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+        for (const entryId of actualChunkEmittedEntryIds) {
+          lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+        }
+      }
       const hmrEntryIds = new Set(actualEmittedEntryIds)
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
       const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (

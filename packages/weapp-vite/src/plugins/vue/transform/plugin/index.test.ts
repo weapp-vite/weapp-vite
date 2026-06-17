@@ -95,6 +95,31 @@ describe('createVueTransformPlugin lifecycle', () => {
     normalizeFsResolvedIdMock.mockImplementation((id: string) => id)
   })
 
+  it('invalidates cached compiled vue entries marked dirty by HMR', async () => {
+    const { invalidateDirtyVueEntryCaches } = await import('./index')
+    const compilationCache = new Map<string, any>([
+      ['/project/src/app.vue', {
+        source: '<template />',
+        refreshToken: 1,
+      }],
+      ['/project/src/pages/index.vue', {
+        source: '<template />',
+        refreshToken: 0,
+      }],
+    ])
+
+    invalidateDirtyVueEntryCaches(new Set(['/project/src/app.vue']), compilationCache)
+
+    expect(compilationCache.get('/project/src/app.vue')).toEqual({
+      source: undefined,
+      refreshToken: 2,
+    })
+    expect(compilationCache.get('/project/src/pages/index.vue')).toEqual({
+      source: '<template />',
+      refreshToken: 0,
+    })
+  })
+
   it('preloads native layout entries during buildStart', async () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({
