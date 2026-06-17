@@ -4,6 +4,7 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './type
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { createDebugger } from '../../../../../debugger'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { createCompileVueFileOptions } from '../../compileOptions'
@@ -14,6 +15,8 @@ import { resolveTransformAutoRoutesSource } from '../../plugin/shared'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
+
+const debug = createDebugger('weapp-vite:load-entry')
 
 export async function compileVueLikeFile(options: {
   source: string
@@ -177,6 +180,9 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
           signature: undefined,
         }
     const source = transformed.source
+    if (isApp) {
+      debug?.(`refresh app cache ${configService.relativeAbsoluteSrcRoot(filename)} cachedSig=${cached.autoRoutesSignature ?? 'none'} nextSig=${transformed.signature ?? 'none'} sourceHasAdded=${String(source.includes('pages/logs/hmr-added'))}`)
+    }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const normalizedDirtyFilename = normalizeFsResolvedId(filename)
     if (
@@ -204,6 +210,9 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     cached.refreshToken = 0
     dirtyVueEntryIds?.delete(normalizedDirtyFilename)
     cached.result = compiled
+    if (isApp) {
+      debug?.(`compiled app cache ${configService.relativeAbsoluteSrcRoot(filename)} scriptHasAdded=${String(compiled.script?.includes('pages/logs/hmr-added'))} scriptLen=${compiled.script?.length ?? 0}`)
+    }
     return compiled
   }
   catch {

@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { createDebugger } from '../../../../debugger'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
@@ -8,6 +9,8 @@ import {
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
 import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
+
+const debug = createDebugger('weapp-vite:load-entry')
 
 function shouldReplaceAppScriptBundleEntry(options: {
   filename: string
@@ -133,6 +136,9 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   })
 
   if (shouldReplaceAppScript && result.script?.trim()) {
+    const scriptFileName = `${relativeBase}.${options.scriptExtension}`
+    const existing = bundle[scriptFileName]
+    debug?.(`replace app script ${scriptFileName} existing=${existing?.type ?? 'none'} oldHasAdded=${String((existing?.code ?? existing?.source ?? '').includes?.('pages/logs/hmr-added'))} nextHasAdded=${String(result.script.includes('pages/logs/hmr-added'))} nextLen=${result.script.length}`)
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,
@@ -140,7 +146,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
       result.script,
       options.scriptExtension,
     )
-    retainReplacedDevHmrScriptChunk(state, `${relativeBase}.${options.scriptExtension}`)
+    retainReplacedDevHmrScriptChunk(state, scriptFileName)
   }
 
   if (shouldEmitComponentJson && !result.script?.trim()) {
