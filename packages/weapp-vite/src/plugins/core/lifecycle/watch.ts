@@ -224,9 +224,11 @@ function isAppEntryAutoRoutesSignatureStale(state: CorePluginState, normalizedId
 
   const currentSignature = state.ctx.autoRoutesService?.getSignature?.()
   const previousSignature = state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature
-  return typeof currentSignature === 'string'
-    && typeof previousSignature === 'string'
-    && currentSignature !== previousSignature
+  if (typeof currentSignature !== 'string') {
+    return false
+  }
+
+  return previousSignature !== currentSignature
 }
 
 async function processChangedFile(
