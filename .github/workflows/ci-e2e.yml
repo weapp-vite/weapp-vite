@@ -41,8 +41,27 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
       build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
-      main_command: pnpm e2e:ci
+      main_command: pnpm e2e:ci:non-hmr
       e2e_platform: ${{ matrix.platform }}
+      increase_ulimit: true
+    secrets: inherit
+
+  miniapp-hmr-ci-pr:
+    if: github.event_name != 'schedule'
+    name: Miniapp HMR Guard (${{ matrix.os }} / Node 22 / weapp)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      max-parallel: 3
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '22'
+      timeout_minutes: 30
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      main_command: pnpm e2e:ci:hmr
+      e2e_platform: weapp
       increase_ulimit: true
     secrets: inherit
 
@@ -78,8 +97,39 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
       build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
-      main_command: pnpm e2e:ci
+      main_command: pnpm e2e:ci:non-hmr
       e2e_platform: ${{ matrix.platform }}
+      increase_ulimit: true
+    secrets: inherit
+
+  miniapp-hmr-ci-full:
+    if: github.event_name == 'schedule'
+    name: Miniapp HMR Guard (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node-version: 22
+          - os: windows-latest
+            node-version: 22
+          - os: macos-latest
+            node-version: 22
+          - os: ubuntu-latest
+            node-version: 24
+          - os: windows-latest
+            node-version: 24
+          - os: macos-latest
+            node-version: 24
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 30
+      build_command: pnpm ${{ matrix.os == 'macos-latest' && 'build:pkgs:ci:macos' || 'build:pkgs:ci' }}
+      main_command: pnpm e2e:ci:hmr
+      e2e_platform: weapp
       increase_ulimit: true
     secrets: inherit
 

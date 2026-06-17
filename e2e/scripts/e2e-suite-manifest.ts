@@ -1,6 +1,7 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 套件清单需要 fast-glob 收集测试文件。 */
 import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
+import process from 'node:process'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_SPECIAL_CASES } from './hmr-guard-manifest'
@@ -83,6 +84,7 @@ const BUILD_ONLY_EXCLUDES = new Set([
   'ci/style-import-vue.test.ts',
   'ci/wevu-runtime.hmr.test.ts',
 ])
+export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
 interface SuiteTaskFactoryOptions {
   skipDiskBackedDevProbe?: boolean
@@ -156,6 +158,10 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
     onlyFiles: true,
     ignore: Array.from(BUILD_ONLY_EXCLUDES),
   }).sort()
+
+  if (process.env[SKIP_CI_HMR_GUARD_ENV] === '1') {
+    return buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath))
+  }
 
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),

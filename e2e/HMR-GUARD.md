@@ -90,4 +90,5 @@ pnpm --filter weapp-vite build
 - 对单页直接编辑场景，优先补日志级断言，防止退化成全量 HMR。
 - 新增 HMR 回归时，先决定它属于稳定子集、smoke 子集，还是像 `auto-import-vue-sfc` / `shared-chunks-auto` 一样必须作为特例独立运行；然后更新 `e2e/scripts/hmr-guard-manifest.ts`，让入口、清单和文档保持同源。
 - `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-import-vue-sfc`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这四条入口覆盖，应视为 CI 漏挂。
+- CI workflow 会把常规小程序 E2E 与 HMR guard 拆成独立 job：常规 job 使用 `pnpm e2e:ci:non-hmr`，HMR job 使用 `pnpm e2e:ci:hmr`。这样保留跨平台 HMR 覆盖，同时避免 Windows 单个 job 被常规 E2E 与全量 HMR guard 共同耗尽超时预算。
 - `e2e:hmr:guard` 与 `e2e:hmr:guard:smoke` 由 `e2e/scripts/run-hmr-guard-suite.ts` 统一驱动，采用“单文件 `vitest run` 串行 + 每段前显式 cleanup”的方式执行；不要把整组 HMR dev-watch 用例直接塞进同一个 Vitest 进程，否则不同文件的清理逻辑容易互相污染。
