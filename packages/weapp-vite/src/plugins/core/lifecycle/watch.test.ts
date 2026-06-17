@@ -748,6 +748,51 @@ defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' 
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-auto-routes:1'])
   })
 
+  it('upgrades app.vue json-only updates when auto-routes signature needs confirmation', async () => {
+    const appEntry = '/project/src/app.vue'
+    const pageEntry = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
+
+defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' } })
+</script>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([appEntry]),
+      resolvedEntryMap: new Map([
+        [appEntry, { id: appEntry }],
+        [pageEntry, { id: pageEntry }],
+      ]),
+      ctx: {
+        ...createState().ctx,
+        autoRoutesService: {
+          isRouteFile: vi.fn(() => false),
+          handleFileChange: vi.fn(async () => false),
+          getSignature: vi.fn(() => 'new-routes'),
+        },
+      },
+    })
+    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      appEntry,
+      resolveVueSfcNonJsonSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      appEntry,
+      resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(appEntry, { event: 'update' })
+
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-auto-routes:1'])
+  })
+
   it('keeps app.vue style-only updates scoped to the app entry', async () => {
     const appEntry = '/project/src/app.vue'
     const pageEntry = '/project/src/pages/hmr/index.vue'
