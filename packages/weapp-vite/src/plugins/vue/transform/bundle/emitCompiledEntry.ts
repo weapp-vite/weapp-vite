@@ -20,7 +20,8 @@ function shouldReplaceAppScriptBundleEntry(options: {
   return options.dirtyReasonSummary?.some(item =>
     item.startsWith('entry-auto-routes:')
     || item.startsWith('auto-routes-topology:')
-    || item.startsWith('entry-direct:'),
+    || item.startsWith('entry-direct:')
+    || item.startsWith('entry-json-only:'),
   ) === true
 }
 

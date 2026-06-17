@@ -322,6 +322,67 @@ describe('emitCompiledEntry helpers', () => {
     )
   })
 
+  it('replaces app script assets during app json-only refreshes', async () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({ old: true })',
+      },
+    }
+    const state = {
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: DEFAULT_MP_PLATFORM,
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                dirtyReasonSummary: ['entry-json-only:1'],
+              },
+            },
+          },
+        },
+      },
+      pluginCtx: {},
+    } as any
+    const cached = {
+      isPage: false,
+      source: '<script setup />',
+    } as any
+    const compileOptionsState = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    }
+    const result = { script: 'App({ routes: ["pages/logs/hmr-added"] })' } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle,
+      state,
+      filename: '/project/src/app.vue',
+      cached,
+      result,
+      relativeBase: 'app',
+      compileOptionsState,
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitSfcScriptAssetReplacingBundleEntryMock).toHaveBeenCalledWith(
+      state.pluginCtx,
+      bundle,
+      'app',
+      'App({ routes: ["pages/logs/hmr-added"] })',
+      'js',
+    )
+  })
+
   it('wraps compiled page templates with the app shell after page layouts', async () => {
     handleCompiledEntryPageLayoutsMock.mockImplementation(async ({ result, emitLayouts }: any) => {
       result.template = '<weapp-layout-default><view /></weapp-layout-default>'
