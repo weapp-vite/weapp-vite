@@ -52,6 +52,7 @@
     "e2e": "node --import tsx ./e2e/scripts/run-e2e-suite.ts full",
     "e2e:full": "node --import tsx ./e2e/scripts/run-e2e-suite.ts full-regression",
     "e2e:ci": "node --import tsx ./e2e/scripts/run-e2e-suite.ts ci",
+    "e2e:ci:non-hmr": "cross-env WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD=1 node --import tsx ./e2e/scripts/run-e2e-suite.ts ci",
     "e2e:ci:build-only": "vitest run -c ./e2e/vitest.e2e.ci.build-only.config.ts",
     "e2e:ci:hmr": "pnpm run e2e:ci:hmr:all",
     "e2e:ci:hmr:core": "pnpm run e2e:hmr:guard && pnpm run e2e:hmr:guard:auto-import-vue-sfc && pnpm run e2e:hmr:guard:shared-chunks-auto",

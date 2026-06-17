@@ -3,12 +3,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
-import { getCiTasks } from './e2e-suite-manifest'
+import { getCiTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
 import { HMR_GUARD_ALL_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const REPO_ROOT = path.resolve(ROOT, '..')
 const DEV_SCRIPT_ALLOWLIST = new Set([
+  'apps/socket-io-chat#dev',
+  'apps/socket-io-chat#dev:web',
   'apps/rollup-watcher#dev',
 ])
 
@@ -65,6 +67,27 @@ describe('hmr-guard manifest', () => {
     expect(labels).toContain('hmr-guard:auto-import-vue-sfc')
     expect(labels).toContain('hmr-guard:auto-routes-hmr')
     expect(labels).toContain('hmr-guard:shared-chunks-auto')
+  })
+
+  it('allows CI workflows to split non-HMR and HMR guard jobs', async () => {
+    const previous = process.env[SKIP_CI_HMR_GUARD_ENV]
+    process.env[SKIP_CI_HMR_GUARD_ENV] = '1'
+
+    try {
+      const ciTasks = await getCiTasks({ skipDiskBackedDevProbe: true })
+      const labels = ciTasks.map(task => task.label)
+
+      expect(labels.some(label => label.startsWith('hmr-guard:'))).toBe(false)
+      expect(labels.length).toBeGreaterThan(0)
+    }
+    finally {
+      if (previous === undefined) {
+        delete process.env[SKIP_CI_HMR_GUARD_ENV]
+      }
+      else {
+        process.env[SKIP_CI_HMR_GUARD_ENV] = previous
+      }
+    }
   })
 
   it('keeps apps and e2e-apps dev scripts on the weapp-vite dev watch path', () => {
