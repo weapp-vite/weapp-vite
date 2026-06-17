@@ -133,7 +133,7 @@ const sampleMode = process.env.TEMPLATES_HMR_SAMPLE_MODE === 'edit-only' ? 'edit
 const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
-const filter = process.env.TEMPLATES_HMR_FILTER?.trim()
+const filter = parseFilterEnv(process.env.TEMPLATES_HMR_FILTER)
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 const scenarioGroupPriority: ScenarioGroup[] = [
   'app-json',
@@ -155,7 +155,7 @@ export async function main() {
 
   const templates = await discoverTemplates()
   const selectedTemplates = templates.filter((template) => {
-    return !filter || template.id.includes(filter)
+    return matchesFilter(template.id, filter)
   })
   const results: TemplateResult[] = []
 
@@ -1050,6 +1050,21 @@ function maxOptional(values: Array<number | undefined>) {
   return present.length ? Math.max(...present) : undefined
 }
 
+function parseFilterEnv(raw: string | undefined) {
+  return raw
+    ?.split(',')
+    .map(item => item.trim())
+    .filter(Boolean) ?? []
+}
+
+function matchesFilter(value: string, filters: string[]) {
+  return filters.length === 0 || filters.some(filter => value.includes(filter))
+}
+
+function formatFilter(value: string[]) {
+  return value.length === 0 ? 'all' : value.join(', ')
+}
+
 function formatMs(value: number | undefined) {
   if (value === undefined || !Number.isFinite(value)) {
     return '-'
@@ -1086,6 +1101,7 @@ function renderMarkdown(report: BenchmarkReport) {
     '# Templates HMR Benchmark',
     '',
     `- generatedAt: ${report.generatedAt}`,
+    `- filter: ${formatFilter(filter)}`,
     `- templates: ${report.summary.templateCount}`,
     `- scenarios: ${report.summary.measuredScenarioCount}/${report.summary.scenarioCount}`,
     `- iterations: ${report.iterations}`,
