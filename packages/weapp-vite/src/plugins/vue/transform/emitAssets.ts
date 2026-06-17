@@ -207,8 +207,15 @@ export function emitSfcScriptAssetReplacingBundleEntry(
   extension = 'js',
 ) {
   const jsFileName = resolveSfcAssetFileName(relativeBase, extension)
-  if (bundle[jsFileName]) {
-    delete bundle[jsFileName]
+  const existing = bundle[jsFileName]
+  if (existing) {
+    if (existing.type === 'chunk') {
+      existing.code = code
+    }
+    else {
+      existing.source = code
+    }
+    return
   }
   ctx.emitFile({ type: 'asset', fileName: jsFileName, source: code })
 }
