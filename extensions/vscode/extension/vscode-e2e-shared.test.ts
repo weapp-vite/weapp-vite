@@ -2,16 +2,24 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { afterEach, it } from 'vitest'
 import {
   DEFAULT_VSCODE_USER_SETTINGS,
   ensureVscodeUserSettings,
+  getVscodeE2ETempRoot,
 } from '../scripts/vscode-e2e-shared'
 
 const tempDirs: string[] = []
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { force: true, recursive: true })))
+})
+
+it('uses a short temp root for vscode e2e sessions on unix platforms', () => {
+  const tempRoot = getVscodeE2ETempRoot()
+
+  assert.equal(tempRoot, process.platform === 'win32' ? os.tmpdir() : '/tmp')
 })
 
 it('writes default user settings for isolated vscode sessions', async () => {

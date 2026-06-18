@@ -41,6 +41,18 @@ export const DEFAULT_VSCODE_USER_SETTINGS = {
   'security.workspace.trust.enabled': false,
 }
 
+export function getVscodeE2ETempRoot() {
+  return process.platform === 'win32' ? os.tmpdir() : '/tmp'
+}
+
+function getScenarioTempPrefix(scenarioId: VscodeE2EScenarioId) {
+  return scenarioId === 'vue-official' ? 'wv-v-u-' : 'wv-s-u-'
+}
+
+function getScenarioExtensionsTempPrefix(scenarioId: VscodeE2EScenarioId) {
+  return scenarioId === 'vue-official' ? 'wv-v-e-' : 'wv-s-e-'
+}
+
 function isScenarioId(value: string): value is VscodeE2EScenarioId {
   return value === 'standalone' || value === 'vue-official'
 }
@@ -150,8 +162,9 @@ export async function prepareVscodeScenario(scenarioId: VscodeE2EScenarioId): Pr
   const fixturePath = path.join(extensionRoot, 'scripts', 'fixtures', 'vscode-host-smoke')
   const harnessPath = path.join(extensionRoot, 'scripts', 'fixtures', 'vscode-vsix-test-harness')
   const vsixPath = path.join(extensionRoot, '.artifacts', 'weapp-vite.vsix')
-  const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `weapp-vite-vscode-${scenario.id}-user-`))
-  const extensionsDir = await fs.mkdtemp(path.join(os.tmpdir(), `weapp-vite-vscode-${scenario.id}-exts-`))
+  const tempRoot = getVscodeE2ETempRoot()
+  const userDataDir = await fs.mkdtemp(path.join(tempRoot, getScenarioTempPrefix(scenario.id)))
+  const extensionsDir = await fs.mkdtemp(path.join(tempRoot, getScenarioExtensionsTempPrefix(scenario.id)))
 
   try {
     await fs.access(vsixPath)
