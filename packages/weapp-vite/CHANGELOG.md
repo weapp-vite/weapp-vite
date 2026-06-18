@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.17.1
+
+### Patch Changes
+
+- 🐛 **修正微信开发者工具自动恢复边界：自动化会话预热失败时不再自动关闭并重开 IDE，避免 `dev:open` 在项目已打开后被误判为不稳定状态而回到项目选择页；自动关闭重开仅保留给项目索引刷新失败这类打开状态不可信的场景。** [`b99ec6e`](https://github.com/weapp-vite/weapp-vite/commit/b99ec6e9e5c7e6f9635d65569e73ddff650b969a) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.17.1`, `wevu@6.17.1`
+
 ## 6.17.0
 
 ### Minor Changes
