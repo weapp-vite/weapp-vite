@@ -299,9 +299,6 @@ function formatWechatIdeOpenHealthReason(result: Exclude<WechatIdeOpenHealthResu
   if (result.reason === 'index-refresh-failed') {
     return '项目索引刷新失败'
   }
-  if (result.reason === 'automator-session-failed') {
-    return '自动化会话准备失败'
-  }
   return '服务端口未开启'
 }
 
@@ -313,6 +310,10 @@ async function recoverOpenedWechatIdeProject(
   failedResult: Exclude<WechatIdeOpenHealthResult, { ok: true }>,
 ) {
   if (failedResult.reason === 'service-port-disabled') {
+    return failedResult
+  }
+  if (failedResult.reason === 'automator-session-failed') {
+    logger.warn('已跳过微信开发者工具自动恢复；自动化会话预热失败不影响当前项目打开，截图、MCP 或 IDE 联动命令首次运行时会重新连接。')
     return failedResult
   }
   if (isWechatIdeOpenRecoveryDisabled(options)) {
