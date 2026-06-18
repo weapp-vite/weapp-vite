@@ -28,9 +28,9 @@ describe('reachability calls', () => {
         t.expressionStatement(t.callExpression(t.identifier('localFn'), [])),
         t.expressionStatement(
           t.optionalCallExpression(
-            t.memberExpression(t.identifier('helpers'), t.identifier('useShare')),
+            t.optionalMemberExpression(t.identifier('helpers'), t.identifier('useShare'), false, true),
             [],
-            false,
+            true,
           ),
         ),
       ]),

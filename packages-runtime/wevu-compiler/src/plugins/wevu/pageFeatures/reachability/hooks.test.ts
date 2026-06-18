@@ -25,9 +25,9 @@ describe('reachability hooks', () => {
           [],
         )),
         t.expressionStatement(t.optionalCallExpression(
-          t.memberExpression(t.identifier('wevu'), t.identifier('onReachBottom')),
+          t.optionalMemberExpression(t.identifier('wevu'), t.identifier('onReachBottom'), false, true),
           [],
-          false,
+          true,
         )),
       ]),
     )!

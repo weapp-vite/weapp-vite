@@ -53,6 +53,12 @@ export function rewriteJsLikeImportsForTempDir(source: string, fromDir: string, 
         rewriteLiteral(sourceNode, sourceNode.value)
       }
     },
+    ImportExpression(p: any) {
+      const sourceNode = p.node?.source
+      if (sourceNode && t.isStringLiteral(sourceNode)) {
+        rewriteLiteral(sourceNode, sourceNode.value)
+      }
+    },
     CallExpression(p: any) {
       const callee = p.node?.callee
       if (!callee) {

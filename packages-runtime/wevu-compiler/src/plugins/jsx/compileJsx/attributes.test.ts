@@ -30,7 +30,6 @@ describe('compileJsx attributes helpers', () => {
       ),
       null,
       [],
-      true,
     )
 
     expect(extractJsxKeyExpression({ openingElement: stringKeyElement } as any)).toBe('static')
@@ -154,7 +153,6 @@ describe('compileJsx attributes helpers', () => {
             t.jsxOpeningElement(t.jsxIdentifier('text'), [], true),
             null,
             [],
-            true,
           ),
         ),
         t.jsxAttribute(

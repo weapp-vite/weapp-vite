@@ -1,5 +1,4 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
-import type * as t from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
@@ -9,6 +8,7 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { collectSetDataPickKeysFromTemplateCode } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
@@ -23,7 +23,10 @@ export function isAutoSetDataPickEnabled(config?: WeappViteConfig): boolean {
   return isAutoSetDataPickEnabledWithPreset(config)
 }
 
-function isKnownWevuComponentCallee(callee: t.Expression | t.V8IntrinsicIdentifier): boolean {
+function isKnownWevuComponentCallee(callee: t.CallExpression['callee']): boolean {
+  if (!t.isExpression(callee) && !t.isV8IntrinsicIdentifier(callee)) {
+    return false
+  }
   if (callee.type === 'Identifier') {
     return callee.name === 'createWevuComponent' || callee.name === 'defineComponent'
   }
@@ -397,7 +400,9 @@ function transformTargetWevuOptionsInJs(
       if (!firstArg || firstArg.type === 'SpreadElement') {
         return
       }
-      const resolvedOptions = resolveOptionsObjectExpression(firstArg as t.Expression, path.scope)
+      const resolvedOptions = t.isExpression(firstArg)
+        ? resolveOptionsObjectExpression(firstArg, path.scope)
+        : null
       if (resolvedOptions && (isKnownWevuComponentCallee(path.node.callee) || hasCompiledWevuOptionsMarker(resolvedOptions))) {
         candidateOptions.add(resolvedOptions)
       }

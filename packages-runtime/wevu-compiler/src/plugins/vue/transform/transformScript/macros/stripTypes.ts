@@ -2,6 +2,19 @@ import type { TransformState } from '../utils'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { stripOptionalFlag, stripOptionalFromPattern } from './optional'
 
+function stripTypeArguments(node: { typeParameters?: unknown, typeArguments?: unknown }) {
+  let stripped = false
+  if (node.typeParameters) {
+    node.typeParameters = null
+    stripped = true
+  }
+  if (node.typeArguments) {
+    node.typeArguments = null
+    stripped = true
+  }
+  return stripped
+}
+
 export function createStripTypesVisitors(state: TransformState) {
   return {
     ExportNamedDeclaration(path: any) {
@@ -38,15 +51,13 @@ export function createStripTypesVisitors(state: TransformState) {
           return
         }
       }
-      if (path.node.typeParameters) {
-        path.node.typeParameters = null
+      if (stripTypeArguments(path.node)) {
         state.transformed = true
       }
     },
 
     NewExpression(path: any) {
-      if (path.node.typeParameters) {
-        path.node.typeParameters = null
+      if (stripTypeArguments(path.node)) {
         state.transformed = true
       }
     },
@@ -121,8 +132,7 @@ export function createStripTypesVisitors(state: TransformState) {
         path.node.returnType = null
         state.transformed = true
       }
-      if (path.node.typeParameters) {
-        path.node.typeParameters = null
+      if (stripTypeArguments(path.node)) {
         state.transformed = true
       }
       for (const param of path.node.params) {

@@ -5,9 +5,6 @@ import { createRequire } from 'node:module'
 export const BABEL_TS_MODULE_PLUGINS: ParserPlugin[] = [
   'typescript',
   'decorators-legacy',
-  'classProperties',
-  'classPrivateProperties',
-  'classPrivateMethods',
   'jsx',
 ]
 
@@ -99,9 +96,6 @@ export function parseJsLike(source: string): t.File {
     sourceType: 'module',
     plugins: [
       ...BABEL_TS_MODULE_PLUGINS,
-      'dynamicImport',
-      'optionalChaining',
-      'nullishCoalescingOperator',
     ],
   }) as unknown as t.File
 }

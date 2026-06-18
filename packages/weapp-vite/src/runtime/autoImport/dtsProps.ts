@@ -22,7 +22,7 @@ function getPropertyName(name: t.Node): string | undefined {
 }
 
 function unwrapTypeAnnotation(
-  annotation: t.Noop | t.TSTypeAnnotation | t.TypeAnnotation | null | undefined,
+  annotation: t.TSTypeAnnotation | t.TypeAnnotation | null | undefined,
 ): t.TSType | undefined {
   if (!annotation) {
     return undefined
@@ -300,7 +300,13 @@ export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
       if (!path.node.callee || path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'defineProps') {
         return
       }
-      const typeParameter = path.node.typeParameters?.params?.[0]
+      const typeArguments = (path.node as {
+        typeParameters?: { params?: t.Node[] | null } | null
+        typeArguments?: { params?: t.Node[] | null } | null
+      }).typeParameters ?? (path.node as {
+        typeArguments?: { params?: t.Node[] | null } | null
+      }).typeArguments
+      const typeParameter = typeArguments?.params?.[0]
       if (!typeParameter) {
         return
       }
