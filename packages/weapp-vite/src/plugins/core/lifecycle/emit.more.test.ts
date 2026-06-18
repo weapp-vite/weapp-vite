@@ -35,6 +35,7 @@ const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
+const rewriteWevuInternalRuntimeImportsMock = vi.hoisted(() => vi.fn())
 const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
 const emitStyleSidecarAssetMock = vi.hoisted(() => vi.fn(async () => true))
 const loggerInfoMock = vi.hoisted(() => vi.fn())
@@ -72,6 +73,7 @@ vi.mock('../helpers', () => ({
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+  rewriteWevuInternalRuntimeImports: rewriteWevuInternalRuntimeImportsMock,
   stabilizeWevuRuntimeChunkAccess: vi.fn(),
   syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
 }))

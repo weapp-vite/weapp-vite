@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { rewriteWevuInternalRuntimeImportCode } from '../../../core/helpers'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
@@ -129,11 +130,16 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
 
   if (shouldReplaceAppScript && result.script?.trim()) {
     const scriptFileName = `${relativeBase}.${options.scriptExtension}`
+    const script = rewriteWevuInternalRuntimeImportCode(
+      scriptFileName,
+      result.script,
+      ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
+    )
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,
       relativeBase,
-      result.script,
+      script,
       options.scriptExtension,
     )
     retainReplacedDevHmrScriptChunk(state, scriptFileName)

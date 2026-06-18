@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterPluginBundleOutputs, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
+import { filterPluginBundleOutputs, rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
 
 describe('core helper bundle', () => {
   it('keeps plugin assets intact in pluginOnly mode', () => {
@@ -77,6 +77,89 @@ describe('core helper bundle', () => {
     expect(bundle['weapp-vendors/request-globals-runtime.js'].imports).toEqual([
       'weapp-vendors/web-apis-shared.js',
     ])
+  })
+
+  it('rewrites bare wevu internal runtime imports to emitted vendor requires', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { setWevuDefaults, createApp as createRuntimeApp } from "wevu/internal-runtime";',
+          'setWevuDefaults({});',
+          'createRuntimeApp({});',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/internal-runtime"')
+    expect(bundle['app.js'].code).toContain('const { setWevuDefaults, createApp: createRuntimeApp } = require("./weapp-vendors/wevu-watch.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
+  it('rewrites partial hmr wevu runtime imports with a previously resolved vendor file', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { setWevuDefaults, createApp } from "wevu/internal-runtime";',
+          'setWevuDefaults({});',
+          'createApp({});',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+    })
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/internal-runtime"')
+    expect(bundle['app.js'].code).toContain('const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
+  it('records emitted wevu internal runtime chunks even when no bare import is rewritten', () => {
+    let runtimeFileName: string | undefined
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'const runtime = require("./weapp-vendors/wevu-watch.js");runtime.createApp({});',
+        imports: ['weapp-vendors/wevu-watch.js'],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      onRuntimeFileName(fileName) {
+        runtimeFileName = fileName
+      },
+    })
+
+    expect(runtimeFileName).toBe('weapp-vendors/wevu-watch.js')
+    expect(bundle['app.js'].code).toBe('const runtime = require("./weapp-vendors/wevu-watch.js");runtime.createApp({});')
   })
 
   it('adds stable wevu runtime exports and rewrites page chunk access with old-alias fallback', () => {

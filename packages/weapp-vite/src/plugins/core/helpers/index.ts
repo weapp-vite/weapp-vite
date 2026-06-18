@@ -2,6 +2,8 @@ export {
   emitJsonAssets,
   filterPluginBundleOutputs,
   removeImplicitPagePreloads,
+  rewriteWevuInternalRuntimeImportCode,
+  rewriteWevuInternalRuntimeImports,
   stabilizeWevuRuntimeChunkAccess,
   syncChunkImportsFromRequireCalls,
 } from './bundle'

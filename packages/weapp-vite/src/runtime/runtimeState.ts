@@ -112,6 +112,7 @@ export interface RuntimeState {
     }
     output: {
       emittedSource: Map<string, string>
+      wevuInternalRuntimeFileName?: string
     }
     hmr: {
       loadedEntrySet: Set<string>
@@ -251,6 +252,7 @@ export function createRuntimeState(): RuntimeState {
       },
       output: {
         emittedSource: new Map<string, string>(),
+        wevuInternalRuntimeFileName: undefined,
       },
       hmr: {
         loadedEntrySet: new Set<string>(),

@@ -1,8 +1,10 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
+import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
 import { changeFileExtension } from '../utils'
+import { rewriteWevuInternalRuntimeImports } from './core/helpers'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 type EmitAsset = (asset: EmittedAsset) => void
@@ -87,6 +89,7 @@ export function pruneUneventedDevHmrChunks(
 export function pruneUnchangedDevHmrOutputs(
   ctx: CompilerContext,
   bundle: OutputBundle,
+  rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
 ) {
   const cache = ctx.runtimeState?.build?.output?.emittedSource
   if (!ctx.configService?.isDev || !cache) {
@@ -94,6 +97,7 @@ export function pruneUnchangedDevHmrOutputs(
   }
 
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
   pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
     const source = outputSourceToString(output)
@@ -106,16 +110,29 @@ export function pruneUnchangedDevHmrOutputs(
 }
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
+  const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
+    get runtimeFileName() {
+      return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
+    },
+    onRuntimeFileName(fileName) {
+      const outputState = ctx.runtimeState?.build?.output
+      if (outputState) {
+        outputState.wevuInternalRuntimeFileName = fileName
+      }
+    },
+  }
+
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
     generateBundle(_options, bundle) {
+      rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
       normalizePreprocessorStyleAssets(
         bundle as unknown as OutputBundle,
         ctx.configService.outputExtensions?.wxss,
         asset => this.emitFile(asset),
       )
-      pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle)
+      pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
     },
   }
 }

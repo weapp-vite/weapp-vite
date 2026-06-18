@@ -202,6 +202,67 @@ describe('emitCompiledEntry helpers', () => {
     expect(state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(true)
   })
 
+  it('rewrites replaced app script assets with the remembered wevu runtime chunk', async () => {
+    const bundle = {}
+    const state = {
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: DEFAULT_MP_PLATFORM,
+        },
+        runtimeState: {
+          build: {
+            output: {
+              wevuInternalRuntimeFileName: 'weapp-vendors/wevu-watch.js',
+            },
+            hmr: {
+              profile: {
+                event: 'update',
+              },
+              lastEmittedChunkFileNames: new Set<string>(),
+            },
+          },
+        },
+      },
+      pluginCtx: {},
+    } as any
+    const cached = {
+      isPage: false,
+      source: '<script setup />',
+    } as any
+    const compileOptionsState = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    }
+    const result = {
+      script: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";setWevuDefaults({});createApp({});',
+    } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle,
+      state,
+      filename: '/project/src/app.vue',
+      cached,
+      result,
+      relativeBase: 'app',
+      compileOptionsState,
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitSfcScriptAssetReplacingBundleEntryMock).toHaveBeenCalledWith(
+      state.pluginCtx,
+      bundle,
+      'app',
+      'const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");setWevuDefaults({});createApp({});',
+      'js',
+    )
+  })
+
   it('replaces app script assets during auto-routes topology refreshes', async () => {
     const bundle = {
       'app.js': {

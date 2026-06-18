@@ -19,6 +19,7 @@ import {
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
+  rewriteWevuInternalRuntimeImports,
   stabilizeWevuRuntimeChunkAccess,
   syncChunkImportsFromRequireCalls,
 } from '../../helpers'
@@ -502,6 +503,15 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
     }
 
+    rewriteWevuInternalRuntimeImports(rolldownBundle, {
+      runtimeFileName: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
+      onRuntimeFileName(fileName) {
+        const outputState = state.ctx.runtimeState?.build?.output
+        if (outputState) {
+          outputState.wevuInternalRuntimeFileName = fileName
+        }
+      },
+    })
     stabilizeWevuRuntimeChunkAccess(rolldownBundle)
     syncChunkImportsFromRequireCalls(rolldownBundle)
     normalizePreprocessorStyleAssets(
