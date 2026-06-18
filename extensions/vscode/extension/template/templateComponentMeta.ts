@@ -51,14 +51,12 @@ function getNodeSummary(node: t.Node | null | undefined, sourceText: string) {
   return normalizeSummary(sourceText.slice(node.start, node.end))
 }
 
-function unwrapTypeAnnotation(
-  annotation: t.Noop | t.TSTypeAnnotation | t.TypeAnnotation | null | undefined,
-): t.TSType | undefined {
+function unwrapTypeAnnotation(annotation: { typeAnnotation?: t.Node | null } | null | undefined): t.TSType | undefined {
   if (!annotation) {
     return undefined
   }
 
-  if ('typeAnnotation' in annotation) {
+  if (annotation.typeAnnotation) {
     return annotation.typeAnnotation as unknown as t.TSType
   }
 
@@ -330,6 +328,24 @@ function getFunctionParameterSummary(parameter: t.FunctionParameter, sourceText:
   return getNodeSummary(parameter, sourceText)
 }
 
+function getCallTypeParameter(node: t.CallExpression) {
+  const call = node as t.CallExpression & {
+    typeArguments?: t.TSTypeParameterInstantiation | null
+    typeParameters?: t.TSTypeParameterInstantiation | null
+  }
+
+  return (call.typeArguments ?? call.typeParameters)?.params?.[0]
+}
+
+function getCallSignatureParameters(node: t.TSCallSignatureDeclaration): t.FunctionParameter[] {
+  const signature = node as t.TSCallSignatureDeclaration & {
+    parameters?: t.FunctionParameter[]
+    params?: t.FunctionParameter[]
+  }
+
+  return signature.params ?? signature.parameters ?? []
+}
+
 function collectEventDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
   const details = new Map<string, string | null>()
 
@@ -338,7 +354,8 @@ function collectEventDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: s
       continue
     }
 
-    const parameter = member.parameters[0]
+    const parameters = getCallSignatureParameters(member)
+    const parameter = parameters[0]
 
     if (parameter?.type !== 'Identifier') {
       continue
@@ -347,7 +364,7 @@ function collectEventDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: s
     const type = unwrapTypeAnnotation(parameter.typeAnnotation)
 
     if (type?.type === 'TSLiteralType' && type.literal.type === 'StringLiteral') {
-      const payloadSummary = member.parameters
+      const payloadSummary = parameters
         .slice(1)
         .map(parameter => getFunctionParameterSummary(parameter, sourceText))
         .filter((value): value is string => Boolean(value))
@@ -368,7 +385,7 @@ function collectEventOffsetsFromTypeLiteral(node: t.TSTypeLiteral) {
       continue
     }
 
-    const parameter = member.parameters[0]
+    const parameter = getCallSignatureParameters(member)[0]
 
     if (parameter?.type !== 'Identifier') {
       continue
@@ -454,7 +471,7 @@ function collectModelDetails(ast: t.File, sourceText: string) {
       }
 
       const firstArgument = path.node.arguments[0]
-      const typeParameter = path.node.typeParameters?.params?.[0]
+      const typeParameter = getCallTypeParameter(path.node)
       const summary = getNodeSummary(typeParameter, sourceText)
 
       if (firstArgument?.type === 'StringLiteral') {
@@ -596,7 +613,7 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
       }
 
       if (path.node.callee.name === 'defineProps') {
-        const typeParameter = path.node.typeParameters?.params?.[0]
+        const typeParameter = getCallTypeParameter(path.node)
 
         if (typeParameter?.type === 'TSTypeLiteral') {
           addDetailEntries(props, propDetails, collectPropDetailsFromTypeLiteral(typeParameter, scriptSource))
@@ -627,7 +644,7 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
       }
 
       if (path.node.callee.name === 'defineEmits') {
-        const typeParameter = path.node.typeParameters?.params?.[0]
+        const typeParameter = getCallTypeParameter(path.node)
 
         if (typeParameter?.type === 'TSTypeLiteral') {
           addDetailEntries(emits, emitDetails, collectEventDetailsFromTypeLiteral(typeParameter, scriptSource))
