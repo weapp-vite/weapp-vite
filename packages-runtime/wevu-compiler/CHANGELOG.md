@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.16.48
+
+### Patch Changes
+
+- 🐛 **升级 Babel 相关依赖到 8.x，并同步适配 Babel 8 的 AST 与 ESM 导出变化。WXS 转换继续保持 CommonJS/ES5 输出，Vue SFC 编译和 VS Code 扩展中的动态 import、泛型剥离、可选链调用识别、组件宏元数据提取和脚手架依赖目录也同步兼容新的 Babel 行为。** [#690](https://github.com/weapp-vite/weapp-vite/pull/690) by @sonofmagic
+- 📦 **Dependencies** [`1913990`](https://github.com/weapp-vite/weapp-vite/commit/1913990553bbe8da9bb2ba577db8a35d337a77c3)
+  → `@weapp-vite/ast@6.16.48`
+
 ## 6.16.47
 
 ### Patch Changes

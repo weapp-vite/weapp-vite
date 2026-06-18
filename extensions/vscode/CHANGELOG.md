@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.3.5
+
+### Patch Changes
+
+- 🐛 **升级 Babel 相关依赖到 8.x，并同步适配 Babel 8 的 AST 与 ESM 导出变化。WXS 转换继续保持 CommonJS/ES5 输出，Vue SFC 编译和 VS Code 扩展中的动态 import、泛型剥离、可选链调用识别、组件宏元数据提取和脚手架依赖目录也同步兼容新的 Babel 行为。** [#690](https://github.com/weapp-vite/weapp-vite/pull/690) by @sonofmagic
+
 ## 0.3.4
 
 ### Patch Changes
