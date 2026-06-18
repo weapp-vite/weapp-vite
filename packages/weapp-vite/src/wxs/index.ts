@@ -1,3 +1,5 @@
+import babelPresetEnv from '@babel/preset-env'
+import babelPresetTypescript from '@babel/preset-typescript'
 import * as babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeWxsFilename } from './utils'
@@ -52,8 +54,8 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     babelrc: false,
     configFile: false,
     presets: [
-      ['@babel/preset-env', { modules: 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
-      '@babel/preset-typescript' as BabelPresetItem,
+      [babelPresetEnv, { modules: 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
+      babelPresetTypescript as BabelPresetItem,
     ],
     filename,
     plugins: [

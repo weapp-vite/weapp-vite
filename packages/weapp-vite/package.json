@@ -108,6 +108,8 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
+    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
     "@vercel/detect-agent": "^1.2.3",
     "@volar/typescript": "^2.4.28",
