@@ -18,7 +18,7 @@
   "dependencies": {
     "axios": "^1.18.0",
     "express": "^5.2.1",
-    "graphql": "^16.14.2",
+    "graphql": "^17.0.1",
     "graphql-request": "^7.3.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",

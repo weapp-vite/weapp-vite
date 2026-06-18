@@ -69,7 +69,7 @@
     "svgo": "^4.0.1",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite-imagetools": "^10.0.0",
+    "vite-imagetools": "^10.0.1",
     "vite-plugin-image-optimizer": "^2.0.3",
     "vite-plugin-inspect": "catalog:",
     "weapp-tailwindcss": "catalog:",

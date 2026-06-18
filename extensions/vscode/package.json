@@ -762,7 +762,7 @@
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
     "@types/node": "catalog:",
-    "@types/vscode": "^1.120.0",
+    "@types/vscode": "^1.125.0",
     "@vscode/test-electron": "^3.0.0",
     "@weapp-vite/ast": "workspace:*"
   }
