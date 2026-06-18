@@ -1,5 +1,13 @@
 # @weapp-vite/mcp
 
+## 1.4.5
+
+### Patch Changes
+
+- 🐛 **增强 DevTools 截图链路的超时与可恢复失败重试能力，避免 IDE 自动化、MCP runtime 截图和 `weapp-ide-cli screenshot` 在 `App.captureScreenshot` 暂时无响应或返回截图失败时直接中断。** [`1e8dc3d`](https://github.com/weapp-vite/weapp-vite/commit/1e8dc3d5dfa0cbbb409b304c2dc3ebac97b7443b) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/devtools-runtime@0.4.5`
+
 ## 1.4.4
 
 ### Patch Changes
