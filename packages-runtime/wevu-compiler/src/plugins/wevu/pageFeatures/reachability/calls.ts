@@ -16,6 +16,9 @@ export function getCallCalleeName(callee: t.CallExpression['callee']): CallCalle
   if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
     return { type: 'member', object: callee.object.name, property: callee.property.name }
   }
+  if (t.isOptionalMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
+    return { type: 'member', object: callee.object.name, property: callee.property.name }
+  }
   return null
 }
 

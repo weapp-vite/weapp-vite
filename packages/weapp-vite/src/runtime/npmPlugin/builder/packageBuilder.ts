@@ -177,7 +177,7 @@ export function createPackageBuilder(
           output: {
             exports: 'named',
           },
-        },
+        } as any,
       },
     })
     const resolvedOptions = ctx.configService?.weappViteConfig?.npm?.buildOptions?.(

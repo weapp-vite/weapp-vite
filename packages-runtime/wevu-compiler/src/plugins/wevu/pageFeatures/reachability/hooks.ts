@@ -3,6 +3,27 @@ import type { WevuPageFeatureFlag, WevuPageHookName } from '../types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
 
+function getMemberHookName(callee: t.CallExpression['callee']): { object: string, hook: WevuPageHookName } | null {
+  if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
+    return { object: callee.object.name, hook: callee.property.name as WevuPageHookName }
+  }
+  if (t.isOptionalMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
+    return { object: callee.object.name, hook: callee.property.name as WevuPageHookName }
+  }
+  return null
+}
+
+function addNamespaceHookFeature(module: ModuleAnalysis, callee: t.CallExpression['callee'], enabled: Set<WevuPageFeatureFlag>) {
+  const memberHook = getMemberHookName(callee)
+  if (!memberHook || !module.wevuNamespaceLocals.has(memberHook.object)) {
+    return
+  }
+  const matched = WE_VU_PAGE_HOOK_TO_FEATURE[memberHook.hook]
+  if (matched) {
+    enabled.add(matched)
+  }
+}
+
 export function collectWevuHookCallsInFunctionBody(module: ModuleAnalysis, fn: FunctionLike): Set<WevuPageFeatureFlag> {
   const enabled = new Set<WevuPageFeatureFlag>()
 
@@ -70,16 +91,7 @@ export function collectWevuHookCallsInFunctionBody(module: ModuleAnalysis, fn: F
         }
         return
       }
-      if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
-        if (!module.wevuNamespaceLocals.has(callee.object.name)) {
-          return
-        }
-        const hook = callee.property.name as WevuPageHookName
-        const matched = WE_VU_PAGE_HOOK_TO_FEATURE[hook]
-        if (matched) {
-          enabled.add(matched)
-        }
-      }
+      addNamespaceHookFeature(module, callee, enabled)
     }
     else if (t.isOptionalCallExpression(node)) {
       const callee = node.callee
@@ -90,16 +102,7 @@ export function collectWevuHookCallsInFunctionBody(module: ModuleAnalysis, fn: F
         }
         return
       }
-      if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
-        if (!module.wevuNamespaceLocals.has(callee.object.name)) {
-          return
-        }
-        const hook = callee.property.name as WevuPageHookName
-        const matched = WE_VU_PAGE_HOOK_TO_FEATURE[hook]
-        if (matched) {
-          enabled.add(matched)
-        }
-      }
+      addNamespaceHookFeature(module, callee, enabled)
     }
   })
 

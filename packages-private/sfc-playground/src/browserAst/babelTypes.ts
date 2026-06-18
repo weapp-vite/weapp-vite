@@ -1,4 +1,4 @@
-import babelTypes from '@babel/types'
+import * as babelTypes from '@babel/types'
 
 export type * from '@babel/types'
 
@@ -17,22 +17,17 @@ export const ClassPrivateMethod = babelTypes.ClassPrivateMethod
 export const ClassPrivateProperty = babelTypes.ClassPrivateProperty
 export const ClassProperty = babelTypes.ClassProperty
 export const ConditionalExpression = babelTypes.ConditionalExpression
-export const Declaration = babelTypes.Declaration
 export const ExportDefaultDeclaration = babelTypes.ExportDefaultDeclaration
-export const Expression = babelTypes.Expression
 export const File = babelTypes.File
 export const FunctionDeclaration = babelTypes.FunctionDeclaration
 export const FunctionExpression = babelTypes.FunctionExpression
-export const FunctionParameter = babelTypes.FunctionParameter
 export const Identifier = babelTypes.Identifier
 export const ImportDeclaration = babelTypes.ImportDeclaration
 export const ImportDefaultSpecifier = babelTypes.ImportDefaultSpecifier
 export const ImportNamespaceSpecifier = babelTypes.ImportNamespaceSpecifier
 export const ImportSpecifier = babelTypes.ImportSpecifier
 export const JSXMemberExpression = babelTypes.JSXMemberExpression
-export const LVal = babelTypes.LVal
 export const LogicalExpression = babelTypes.LogicalExpression
-export const Node = babelTypes.Node
 export const NumericLiteral = babelTypes.NumericLiteral
 export const ObjectExpression = babelTypes.ObjectExpression
 export const ObjectMethod = babelTypes.ObjectMethod
@@ -40,12 +35,10 @@ export const ObjectPattern = babelTypes.ObjectPattern
 export const ObjectProperty = babelTypes.ObjectProperty
 export const OptionalCallExpression = babelTypes.OptionalCallExpression
 export const OptionalMemberExpression = babelTypes.OptionalMemberExpression
-export const PatternLike = babelTypes.PatternLike
 export const PrivateName = babelTypes.PrivateName
 export const Program = babelTypes.Program
 export const RestElement = babelTypes.RestElement
 export const SpreadElement = babelTypes.SpreadElement
-export const Statement = babelTypes.Statement
 export const StringLiteral = babelTypes.StringLiteral
 export const TSParameterProperty = babelTypes.TSParameterProperty
 export const TemplateLiteral = babelTypes.TemplateLiteral

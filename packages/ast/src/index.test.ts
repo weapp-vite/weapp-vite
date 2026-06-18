@@ -1002,7 +1002,6 @@ export default page
           t.jsxOpeningElement(t.jsxIdentifier('TButton'), [], true),
           null,
           [],
-          true,
         ),
         t.jsxExpressionContainer(
           t.conditionalExpression(
@@ -1011,13 +1010,11 @@ export default page
               t.jsxOpeningElement(t.jsxIdentifier('FooCell'), [], true),
               null,
               [],
-              true,
             ),
             t.jsxElement(
               t.jsxOpeningElement(t.jsxIdentifier('view'), [], true),
               null,
               [],
-              true,
             ),
           ),
         ),

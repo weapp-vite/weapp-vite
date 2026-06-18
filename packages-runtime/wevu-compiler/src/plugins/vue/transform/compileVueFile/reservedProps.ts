@@ -150,7 +150,13 @@ function detectDefinePropsReservedName(scriptSetupCode: string): ReservedPropsWa
           path.stop()
           return
         }
-        const typeParam = path.node.typeParameters?.params?.[0]
+        const typeArguments = (path.node as {
+          typeParameters?: { params?: t.Node[] | null } | null
+          typeArguments?: { params?: t.Node[] | null } | null
+        }).typeParameters ?? (path.node as {
+          typeArguments?: { params?: t.Node[] | null } | null
+        }).typeArguments
+        const typeParam = typeArguments?.params?.[0] as PropsTypeNode | undefined
         if (typePropsContainReservedName(typeParam, typeScope)) {
           result = {
             location: getDefinePropsLocation(path.node),

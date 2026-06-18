@@ -25,6 +25,10 @@ function isTruthyEnvValue(value: string | undefined) {
   return normalized !== '' && normalized !== '0' && normalized !== 'false' && normalized !== 'no'
 }
 
+function isNonEmptyEnvValue(value: string | undefined): value is string {
+  return isTruthyEnvValue(value)
+}
+
 /**
  * @description 判断当前命令是否由 AI 开发代理触发。
  */
@@ -38,9 +42,10 @@ export function isAiDevelopmentEnvironment(env: NodeJS.ProcessEnv = process.env)
 export function resolveAiDevelopmentEnvironmentFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): AiDevelopmentEnvironment {
-  if (isTruthyEnvValue(env.WEAPP_VITE_AI)) {
+  const explicitAgentName = env.WEAPP_VITE_AI
+  if (isNonEmptyEnvValue(explicitAgentName)) {
     return {
-      agentName: env.WEAPP_VITE_AI.trim(),
+      agentName: explicitAgentName.trim(),
       isAgent: true,
     }
   }

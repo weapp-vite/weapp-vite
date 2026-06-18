@@ -1,6 +1,9 @@
-import babel from '@weapp-vite/ast/babelCore'
+import * as babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeWxsFilename } from './utils'
+
+type BabelPluginItem = NonNullable<babel.TransformOptions['plugins']>[number]
+type BabelPresetItem = NonNullable<babel.TransformOptions['presets']>[number]
 
 export interface TransformWxsCodeOptions {
   filename?: string
@@ -49,20 +52,20 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     babelrc: false,
     configFile: false,
     presets: [
-      ['@babel/preset-env'],
-      ['@babel/preset-typescript'],
+      ['@babel/preset-env', { modules: 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
+      '@babel/preset-typescript' as BabelPresetItem,
     ],
     filename,
     plugins: [
       {
         visitor: {
           Directive: {
-            enter(p) {
+            enter(p: babel.NodePath<t.Directive>) {
               p.remove()
             },
           },
           CallExpression: {
-            enter(p) {
+            enter(p: babel.NodePath<t.CallExpression>) {
               const node = p.node
               if (!t.isIdentifier(node.callee, { name: 'require' })) {
                 return
@@ -81,7 +84,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
               // 待办：模板字符串
             },
           },
-          ExpressionStatement(p) {
+          ExpressionStatement(p: babel.NodePath<t.ExpressionStatement>) {
             const expression = p.node.expression
 
             if (
@@ -101,7 +104,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
             }
           },
           NewExpression: {
-            enter(p) {
+            enter(p: babel.NodePath<t.NewExpression>) {
               const node = p.node
               if (t.isIdentifier(node.callee, { name: 'RegExp' })) {
                 p.replaceWith(
@@ -122,7 +125,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
             },
           },
           RegExpLiteral: {
-            enter(p) {
+            enter(p: babel.NodePath<t.RegExpLiteral>) {
               const args = [t.stringLiteral(p.node.pattern)]
               if (p.node.flags) {
                 args.push(t.stringLiteral(p.node.flags))
@@ -133,7 +136,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
             },
           },
           MemberExpression: {
-            enter(p) {
+            enter(p: babel.NodePath<t.MemberExpression>) {
               const node = p.node
               if (!t.isIdentifier(node.object, { name: 'exports' })) {
                 return
@@ -144,19 +147,18 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
                   moduleExports,
                   node.property as any,
                   node.computed,
-                  (node as any).optional,
                 ),
               )
             },
           },
           ImportDeclaration: {
-            enter(p) {
+            enter(p: babel.NodePath<t.ImportDeclaration>) {
               maybePushImportee(p.node.source.value)
             },
           },
 
         },
-      },
+      } as unknown as BabelPluginItem,
     ],
   })
 
