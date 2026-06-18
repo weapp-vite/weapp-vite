@@ -500,6 +500,9 @@ describe('openIde', () => {
       '--trust-project',
     ])
     expect(loggerMock.warn).toHaveBeenCalledWith('准备当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('微信开发者工具打开后状态可能不稳定：无法建立当前项目的自动化会话'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('执行 `wv close` 关闭当前开发者工具窗口'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前目标项目目录：dist/dev/mp-weixin'))
     expect(loggerMock.error).not.toHaveBeenCalledWith(error)
   })
 
@@ -535,7 +538,9 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
-    expect(loggerMock.warn).toHaveBeenCalledWith('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('设置 -> 安全设置 -> 服务端口'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前目标项目目录：dist/dev/mp-weixin'))
     expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledWith([
       'open',

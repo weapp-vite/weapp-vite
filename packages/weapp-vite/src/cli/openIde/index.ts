@@ -17,6 +17,10 @@ import {
 } from '../../platform'
 import { createInlineConfig } from '../runtime'
 import { closeIde as closeWechatIde } from './close'
+import {
+  logWechatIdeRecoveryHint,
+  logWechatIdeServicePortDisabledHint,
+} from './diagnostics'
 import { executeWechatIdeCliCommand, isWechatIdeLoginRequiredExitError } from './execute'
 import {
   openWechatIdeByAutomator,
@@ -146,6 +150,10 @@ async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, optio
   }
   catch (error) {
     logger.warn('准备当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
+    logWechatIdeRecoveryHint({
+      projectPath,
+      reason: '无法建立当前项目的自动化会话，常见原因是 DevTools 服务端口未就绪、窗口停留在项目选择页，或存在残留 DevTools 会话。',
+    })
     if (shouldLogAutomatorFallbackError()) {
       logger.error(error)
     }
@@ -207,6 +215,10 @@ async function stabilizeOpenedWechatIdeProject(
     }
 
     logger.warn('刷新微信开发者工具项目索引失败，已保留当前打开状态；如模拟器仍显示旧状态，可手动刷新一次。')
+    logWechatIdeRecoveryHint({
+      projectPath,
+      reason: '打开项目后的文件索引刷新失败，DevTools 可能仍在使用旧项目状态或内部服务未就绪。',
+    })
     if (shouldLogAutomatorFallbackError()) {
       logger.error(error)
     }
@@ -258,7 +270,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   }
 
   if (platform === 'weapp' && projectPath && bootstrapResult?.servicePortEnabled === false) {
-    logger.warn('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
+    logWechatIdeServicePortDisabledHint(projectPath)
   }
 
   if (platform === 'weapp' && projectPath && normalizedOptions.trustProject !== false && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {

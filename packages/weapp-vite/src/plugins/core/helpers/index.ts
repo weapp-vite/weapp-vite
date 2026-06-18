@@ -8,6 +8,10 @@ export {
   syncChunkImportsFromRequireCalls,
 } from './bundle'
 
+export type {
+  RewriteWevuInternalRuntimeImportsOptions,
+} from './bundle'
+
 export { formatBytes } from './bytes'
 
 export {
