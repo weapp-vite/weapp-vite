@@ -23,7 +23,7 @@ function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
 }
 
 export function shouldCleanupIdeBeforeEachTask(mode: string) {
-  return /^ide(?:$|-|:)(?!headless)/.test(mode)
+  return mode === 'hmr-regression' || /^ide(?:$|-|:)(?!headless)/.test(mode)
 }
 
 export function shouldStopIdeSuiteAfterTaskFailure(mode: string) {

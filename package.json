@@ -56,6 +56,7 @@
     "e2e:ci:build-only": "vitest run -c ./e2e/vitest.e2e.ci.build-only.config.ts",
     "e2e:ci:hmr": "pnpm run e2e:ci:hmr:all",
     "e2e:ci:hmr:core": "pnpm run e2e:hmr:guard && pnpm run e2e:hmr:guard:auto-import-vue-sfc && pnpm run e2e:hmr:guard:shared-chunks-auto",
+    "e2e:hmr:regression": "node --import tsx ./e2e/scripts/run-e2e-suite.ts hmr-regression",
     "e2e:hmr:guard:auto-import-vue-sfc": "node --import tsx ./e2e/scripts/run-hmr-guard-suite.ts auto-import-vue-sfc",
     "e2e:hmr:guard:auto-routes-hmr": "node --import tsx ./e2e/scripts/run-hmr-guard-suite.ts auto-routes-hmr",
     "e2e:ci:hmr:runtime": "pnpm vitest run --pool forks -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/wevu-runtime.hmr.test.ts",

@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
-import { getCiTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
+import { getCiTasks, getSuiteTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
 import { HMR_GUARD_ALL_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -67,6 +67,26 @@ describe('hmr-guard manifest', () => {
     expect(labels).toContain('hmr-guard:auto-import-vue-sfc')
     expect(labels).toContain('hmr-guard:auto-routes-hmr')
     expect(labels).toContain('hmr-guard:shared-chunks-auto')
+  })
+
+  it('wires the complete HMR regression flow into a single runnable suite', async () => {
+    const tasks = await getSuiteTasks('hmr-regression')
+    const labels = tasks.map(task => task.label)
+
+    expect(labels).toEqual([
+      'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
+      'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+      'hmr-guard:smoke',
+      'hmr-guard:full',
+      'hmr-guard:auto-import-vue-sfc',
+      'hmr-guard:shared-chunks-auto',
+    ])
+  })
+
+  it('exposes the complete HMR regression flow as a package script', () => {
+    const scripts = readPackageScripts(path.join(REPO_ROOT, 'package.json'))
+
+    expect(scripts['e2e:hmr:regression']).toBe('node --import tsx ./e2e/scripts/run-e2e-suite.ts hmr-regression')
   })
 
   it('allows CI workflows to split non-HMR and HMR guard jobs', async () => {

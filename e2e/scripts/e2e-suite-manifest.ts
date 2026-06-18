@@ -60,6 +60,10 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ]
+const IDE_HMR_PATTERNS = [
+  'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+]
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
 ])
@@ -245,6 +249,32 @@ export function getIdeChunkModesTasks() {
   return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
 }
 
+export function getHmrRegressionTasks() {
+  return [
+    ...getIdePatternTasks(IDE_HMR_PATTERNS),
+    {
+      label: 'hmr-guard:smoke',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'smoke'],
+    },
+    {
+      label: 'hmr-guard:full',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'full'],
+    },
+    {
+      label: 'hmr-guard:auto-import-vue-sfc',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'auto-import-vue-sfc'],
+    },
+    {
+      label: 'hmr-guard:shared-chunks-auto',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'shared-chunks-auto'],
+    },
+  ] satisfies SuiteTask[]
+}
+
 export function getFullTasks() {
   return [
     {
@@ -335,6 +365,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-full:chunk-modes',
     description: 'IDE regression suite focused on chunk-modes runtime matrix coverage',
     tasks: getIdeChunkModesTasks,
+  },
+  'hmr-regression': {
+    name: 'hmr-regression',
+    description: 'Complete HMR regression flow: IDE template HMR plus CI dev-watch HMR guards',
+    tasks: getHmrRegressionTasks,
   },
   'full': {
     name: 'full',

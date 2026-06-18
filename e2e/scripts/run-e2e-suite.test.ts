@@ -8,6 +8,7 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(shouldCleanupIdeBeforeEachTask('ide-gate')).toBe(true)
     expect(shouldCleanupIdeBeforeEachTask('ide-full')).toBe(true)
     expect(shouldCleanupIdeBeforeEachTask('ide-full:templates')).toBe(true)
+    expect(shouldCleanupIdeBeforeEachTask('hmr-regression')).toBe(true)
   })
 
   it('skips cleanup hooks for non-devtools or headless suites', () => {
@@ -22,6 +23,7 @@ describe('run-e2e-suite ide cleanup hooks', () => {
   it('stops devtools-backed ide suites after the first failed task', () => {
     expect(shouldStopIdeSuiteAfterTaskFailure('ide-full')).toBe(true)
     expect(shouldStopIdeSuiteAfterTaskFailure('ide-full:github-issues')).toBe(true)
+    expect(shouldStopIdeSuiteAfterTaskFailure('hmr-regression')).toBe(true)
     expect(shouldStopIdeSuiteAfterTaskFailure('ide-headless-full')).toBe(false)
     expect(shouldStopIdeSuiteAfterTaskFailure('ci')).toBe(false)
   })
