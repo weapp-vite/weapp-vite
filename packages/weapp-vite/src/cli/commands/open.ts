@@ -18,6 +18,7 @@ export function registerOpenCommand(cli: CAC) {
     .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
     .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
     .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
+    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
     .option('--mcp', '[boolean] auto start MCP service before opening IDE')
     .option('--no-mcp', '[boolean] disable MCP service before opening IDE')
     .action(async (root: string | undefined, options: GlobalCLIOptions) => {
@@ -52,6 +53,7 @@ export function registerOpenCommand(cli: CAC) {
         loginRetry: options.loginRetry,
         loginRetryTimeout: options.loginRetryTimeout,
         nonInteractive: options.nonInteractive,
+        openRecovery: options.openRecovery,
         trustProject: options.trustProject,
       })
     })

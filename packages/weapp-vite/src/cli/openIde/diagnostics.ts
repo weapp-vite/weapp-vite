@@ -13,7 +13,7 @@ export function logWechatIdeRecoveryHint(options: WechatIdeRecoveryHintOptions) 
     `微信开发者工具打开后状态可能不稳定：${options.reason}`,
     '可按下面顺序恢复：',
     '1. 在微信开发者工具中确认：设置 -> 安全设置 -> 服务端口已开启。',
-    '2. 执行 `wv close` 关闭当前开发者工具窗口，然后重新执行当前 dev/open 命令。',
+    '2. 默认会自动关闭并重开一次当前目标项目；如需跳过，传入 `--no-open-recovery` 或设置 `WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY=1`。',
     '3. 如果仍然回到项目选择页，手动导入 project.config.json 所在目录，并关闭多余的微信开发者工具窗口后重试。',
     '4. 需要查看底层错误时，设置 `WEAPP_VITE_DEBUG_AUTOMATOR_OPEN=1` 后重试。',
   ]

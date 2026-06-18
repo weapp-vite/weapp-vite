@@ -95,6 +95,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   if (options.open) {
     await openIde(resolved.platform, resolved.projectPath, {
+      openRecovery: options.openRecovery,
       trustProject: options.trustProject,
     })
   }
@@ -187,6 +188,7 @@ export function registerIdeCommand(cli: CAC) {
     .option('--project-config <path>', '[string] project config path (miniprogram only)')
     .option('--ticket <value>', '[string] ticket used by `ide ticket:set`')
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
+    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
     .action(async (action: string | undefined, root: string | undefined, options: GlobalCLIOptions) => {
       await runIdeCommand(action, root, options)
     })

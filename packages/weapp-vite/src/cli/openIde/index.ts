@@ -49,13 +49,30 @@ export interface OpenIdeOptions {
   trustProject?: boolean
   reuseOpenedProject?: boolean
   useAutomatorOpen?: boolean
+  openRecovery?: boolean
   loginRetry?: string
   loginRetryTimeout?: string
   nonInteractive?: boolean
 }
 
+type WechatIdeOpenHealthResult
+  = | { ok: true }
+    | {
+      ok: false
+      reason: 'automator-session-failed' | 'index-refresh-failed' | 'service-port-disabled'
+      error?: unknown
+    }
+
 function shouldLogAutomatorFallbackError() {
   const flag = process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
+  return flag === '1' || flag === 'true'
+}
+
+function isWechatIdeOpenRecoveryDisabled(options: OpenIdeOptions) {
+  if (options.openRecovery === false) {
+    return true
+  }
+  const flag = process.env.WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY
   return flag === '1' || flag === 'true'
 }
 
@@ -136,7 +153,30 @@ function appendLoginRetryArgv(argv: string[], options: OpenIdeOptions) {
   return argv
 }
 
-async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions) {
+function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  const argv = ['open', '-p']
+  if (projectPath) {
+    argv.push(projectPath)
+  }
+  if (platform === 'weapp' && options.trustProject !== false) {
+    argv.push('--trust-project')
+  }
+  if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
+    argv.push('--platform', platform)
+  }
+  if (options.nonInteractive) {
+    argv.push('--non-interactive')
+  }
+  if (options.loginRetry) {
+    argv.push('--login-retry', options.loginRetry)
+  }
+  if (options.loginRetryTimeout) {
+    argv.push('--login-retry-timeout', options.loginRetryTimeout)
+  }
+  return argv
+}
+
+async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions): Promise<WechatIdeOpenHealthResult> {
   try {
     const miniProgram = await launchAutomator({
       persistAsDefaultSession: true,
@@ -147,6 +187,7 @@ async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, optio
       trustProject: options.trustProject !== false,
     }) as { disconnect?: () => void }
     miniProgram.disconnect?.()
+    return { ok: true }
   }
   catch (error) {
     logger.warn('准备当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
@@ -157,6 +198,11 @@ async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, optio
     if (shouldLogAutomatorFallbackError()) {
       logger.error(error)
     }
+    return {
+      ok: false,
+      reason: 'automator-session-failed',
+      error,
+    }
   }
 }
 
@@ -164,15 +210,18 @@ async function stabilizeOpenedWechatIdeProject(
   projectPath: string,
   servicePortEnabled?: boolean,
   options: OpenIdeOptions = {},
-) {
+): Promise<WechatIdeOpenHealthResult> {
   if (servicePortEnabled === false) {
-    return
+    return {
+      ok: false,
+      reason: 'service-port-disabled',
+    }
   }
 
   try {
     await executeWechatIdeCliCommand(appendLoginRetryArgv(['reset-fileutils', '-p', projectPath], options), {
       automatorMode: options.useAutomatorOpen === false ? 'skip' : 'prefer',
-      httpMode: 'prefer',
+      httpMode: 'require',
       onNonLoginError: error => logger.error(error),
       preserveProjectRoot: options.useAutomatorOpen === false,
       projectPath,
@@ -208,6 +257,7 @@ async function stabilizeOpenedWechatIdeProject(
         }
       }
     }
+    return { ok: true }
   }
   catch (error) {
     if (isWechatIdeLoginRequiredExitError(error)) {
@@ -222,30 +272,80 @@ async function stabilizeOpenedWechatIdeProject(
     if (shouldLogAutomatorFallbackError()) {
       logger.error(error)
     }
+    return {
+      ok: false,
+      reason: 'index-refresh-failed',
+      error,
+    }
   }
 }
 
-function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
-  const argv = ['open', '-p']
-  if (projectPath) {
-    argv.push(projectPath)
+async function verifyOpenedWechatIdeProject(
+  projectPath: string,
+  servicePortEnabled: boolean | undefined,
+  options: OpenIdeOptions,
+): Promise<WechatIdeOpenHealthResult> {
+  const stabilizeResult = await stabilizeOpenedWechatIdeProject(projectPath, servicePortEnabled, options)
+  if (!stabilizeResult.ok) {
+    return stabilizeResult
   }
-  if (platform === 'weapp' && options.trustProject !== false) {
-    argv.push('--trust-project')
+  if (options.useAutomatorOpen === false && servicePortEnabled !== false) {
+    return await prepareOpenedWechatIdeAutomatorSession(projectPath, options)
   }
-  if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
-    argv.push('--platform', platform)
+  return stabilizeResult
+}
+
+function formatWechatIdeOpenHealthReason(result: Exclude<WechatIdeOpenHealthResult, { ok: true }>) {
+  if (result.reason === 'index-refresh-failed') {
+    return '项目索引刷新失败'
   }
-  if (options.nonInteractive) {
-    argv.push('--non-interactive')
+  if (result.reason === 'automator-session-failed') {
+    return '自动化会话准备失败'
   }
-  if (options.loginRetry) {
-    argv.push('--login-retry', options.loginRetry)
+  return '服务端口未开启'
+}
+
+async function recoverOpenedWechatIdeProject(
+  platform: MpPlatform | undefined,
+  projectPath: string,
+  servicePortEnabled: boolean | undefined,
+  options: OpenIdeOptions,
+  failedResult: Exclude<WechatIdeOpenHealthResult, { ok: true }>,
+) {
+  if (failedResult.reason === 'service-port-disabled') {
+    return failedResult
   }
-  if (options.loginRetryTimeout) {
-    argv.push('--login-retry-timeout', options.loginRetryTimeout)
+  if (isWechatIdeOpenRecoveryDisabled(options)) {
+    logger.warn('已跳过微信开发者工具自动恢复；请按上方提示手动关闭并重新打开目标项目。')
+    return failedResult
   }
-  return argv
+
+  logger.info(`检测到微信开发者工具打开后状态不稳定（${formatWechatIdeOpenHealthReason(failedResult)}），正在自动关闭并重新打开目标项目...`)
+  const closed = await closeIde()
+  if (!closed) {
+    logger.warn('自动恢复时关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
+  }
+  await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, options))
+  const recoveredResult = await verifyOpenedWechatIdeProject(projectPath, servicePortEnabled, options)
+  if (recoveredResult.ok) {
+    logger.info('微信开发者工具已完成自动恢复。')
+  }
+  else {
+    logger.warn('微信开发者工具自动恢复未完成；可设置 `WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY=1` 或传入 `--no-open-recovery` 跳过自动关闭重开，并按提示手动处理。')
+  }
+  return recoveredResult
+}
+
+async function verifyAndRecoverOpenedWechatIdeProject(
+  platform: MpPlatform | undefined,
+  projectPath: string,
+  servicePortEnabled: boolean | undefined,
+  options: OpenIdeOptions,
+) {
+  const healthResult = await verifyOpenedWechatIdeProject(projectPath, servicePortEnabled, options)
+  if (!healthResult.ok) {
+    await recoverOpenedWechatIdeProject(platform, projectPath, servicePortEnabled, options, healthResult)
+  }
 }
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
@@ -280,7 +380,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
         return
       }
       if (openResult) {
-        await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
+        await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
         return
       }
     }
@@ -304,10 +404,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
 
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, normalizedOptions))
   if (platform === 'weapp' && projectPath) {
-    await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
-    if (!useAutomatorOpen && bootstrapResult?.servicePortEnabled !== false) {
-      await prepareOpenedWechatIdeAutomatorSession(projectPath, normalizedOptions)
-    }
+    await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
   }
 }
 

@@ -70,6 +70,7 @@ export function registerBuildCommand(cli: CAC) {
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
+    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
@@ -185,6 +186,7 @@ export function registerBuildCommand(cli: CAC) {
           },
         ])
         await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot), {
+          openRecovery: options.openRecovery,
           trustProject: options.trustProject,
         })
       }
