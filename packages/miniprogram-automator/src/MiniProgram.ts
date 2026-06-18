@@ -13,6 +13,7 @@ import { decodeQrCode, extractPluginId, isPluginPath, printQrCode } from './util
 
 interface IScreenshotOptions {
   path?: string
+  timeout?: number
 }
 interface IAuditsOptions {
   path?: string
@@ -39,6 +40,8 @@ const CHANGE_ROUTE_POLL_DELAY = 500
 const APP_READY_TIMEOUT = 20_000
 const APP_READY_PROBE_TIMEOUT = 3_000
 const APP_READY_POLL_DELAY = 500
+const SCREENSHOT_RETRIES = 2
+const SCREENSHOT_RETRY_DELAY = 500
 const CHANGE_ROUTE_DEBUG_ENABLED = process.env.WEAPP_VITE_E2E_CHANGE_ROUTE_DEBUG === '1'
 
 function sleep(ms: number) {
@@ -96,6 +99,24 @@ function isCallWxMethodProtocolTimeout(error: unknown) {
     && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
     && 'method' in error
     && error.method === 'App.callWxMethod'
+}
+
+function isCaptureScreenshotRecoverableError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  if (
+    'code' in error
+    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error
+    && error.method === 'App.captureScreenshot'
+  ) {
+    return true
+  }
+
+  return error.message.includes('fail to capture screenshot')
+    || error.message.includes('App.captureScreenshot')
 }
 
 function isRouteContextProbeError(error: unknown) {
@@ -352,11 +373,30 @@ export default class MiniProgram extends EventEmitter {
   }
 
   async screenshot(options: IScreenshotOptions = {}) {
-    const { data } = await this.send('App.captureScreenshot')
-    if (!options.path) {
-      return data
+    const sendOptions = options.timeout ? { timeout: options.timeout } : undefined
+    let lastError: unknown
+    let data: string
+
+    for (let attempt = 1; attempt <= SCREENSHOT_RETRIES; attempt += 1) {
+      try {
+        const result = await this.send('App.captureScreenshot', {}, sendOptions)
+        data = result.data
+        if (!options.path) {
+          return data
+        }
+        await fs.writeFile(options.path, data, 'base64')
+        return
+      }
+      catch (error) {
+        lastError = error
+        if (!isCaptureScreenshotRecoverableError(error) || attempt === SCREENSHOT_RETRIES) {
+          throw error
+        }
+        await sleep(SCREENSHOT_RETRY_DELAY)
+      }
     }
-    await fs.writeFile(options.path, data, 'base64')
+
+    throw lastError
   }
 
   async testAccounts() {

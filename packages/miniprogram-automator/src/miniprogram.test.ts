@@ -147,6 +147,39 @@ describe('MiniProgram', () => {
     })
   })
 
+  it('forwards request scoped timeout when taking screenshots', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    connection.send.mockResolvedValueOnce({ data: 'base64-data' })
+    await expect(miniProgram.screenshot({ timeout: 12_000 })).resolves.toBe('base64-data')
+
+    expect(connection.send).toHaveBeenCalledWith('App.captureScreenshot', {}, {
+      timeout: 12_000,
+    })
+  })
+
+  it('retries recoverable screenshot capture failures', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    connection.send
+      .mockRejectedValueOnce(new Error('fail to capture screenshot'))
+      .mockResolvedValueOnce({ data: 'base64-data' })
+
+    const pending = miniProgram.screenshot({ timeout: 12_000 })
+    await vi.advanceTimersByTimeAsync(600)
+
+    await expect(pending).resolves.toBe('base64-data')
+    expect(connection.send).toHaveBeenCalledTimes(2)
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.captureScreenshot', {}, {
+      timeout: 12_000,
+    })
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.captureScreenshot', {}, {
+      timeout: 12_000,
+    })
+  })
+
   it('forwards raw Tool domain commands through tool()', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)

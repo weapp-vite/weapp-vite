@@ -241,6 +241,34 @@ describe('runtime MCP tools', () => {
     })
   })
 
+  it('retries DevTools capture after a screenshot protocol timeout', async () => {
+    const fixture = createMiniProgram()
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.captureScreenshot within 60000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.captureScreenshot',
+      },
+    )
+    fixture.miniProgram.screenshot
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce(Buffer.from('png').toString('base64'))
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    const result = await getTool(tools, 'weapp_devtools_capture')({
+      projectPath: 'apps/demo',
+      timeout: 60_000,
+    })
+
+    expect(readStructuredResult(result)).toMatchObject({
+      bytes: 3,
+    })
+    expect(fixture.miniProgram.screenshot).toHaveBeenCalledTimes(2)
+    expect(fixture.miniProgram.screenshot).toHaveBeenCalledWith({ timeout: 60_000 })
+    expect(fixture.miniProgram.currentPage).toHaveBeenCalled()
+  })
+
   it('invokes page and component methods through automator callMethod', async () => {
     const fixture = createMiniProgram()
     const element = createElement({

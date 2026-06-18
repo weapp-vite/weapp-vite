@@ -156,6 +156,7 @@ async function removeAutomatorSessionFiles(projectPath: string) {
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
   const start = Date.now()
   let latestWxml = ''
+  let emptyPageReads = 0
   let lastProtocolTimeout = ''
   let currentMiniProgram = miniProgram
 
@@ -167,6 +168,17 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       latestWxml = root ? await root.outerWxml() : ''
       if (latestWxml.includes(text)) {
         return latestWxml
+      }
+      if (latestWxml.trim() === '<page></page>') {
+        emptyPageReads += 1
+        if (emptyPageReads >= 2) {
+          currentMiniProgram.disconnect?.()
+          currentMiniProgram = (await waitForOpenedAutomator(projectPath, 30_000)).miniProgram
+          emptyPageReads = 0
+        }
+      }
+      else {
+        emptyPageReads = 0
       }
     }
     catch (error) {

@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type {
   RuntimeSessionManager,
 } from './shared'
-import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
@@ -10,8 +9,10 @@ import { toToolError, toToolResult } from '../../utils'
 import {
   buildUrl,
   callRequiredMethod,
+  captureMiniProgramScreenshot,
   compactObject,
   connectionInputSchema,
+  DEFAULT_SCREENSHOT_TIMEOUT,
   toSerializableValue,
 } from './shared'
 
@@ -172,8 +173,10 @@ export function registerDevtoolsRuntimeTools(
   }, async ({ outputPath, ...connection }) => {
     try {
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
-        const screenshot = await miniProgram.screenshot()
-        const buffer = typeof screenshot === 'string' ? Buffer.from(screenshot, 'base64') : Buffer.from(screenshot)
+        const buffer = await captureMiniProgramScreenshot(
+          miniProgram,
+          connection.timeout ?? DEFAULT_SCREENSHOT_TIMEOUT,
+        )
 
         if (outputPath) {
           const resolvedOutputPath = manager.resolveWorkspacePath(outputPath)

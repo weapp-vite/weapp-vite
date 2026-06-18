@@ -7,38 +7,27 @@ text,
 ::before {
   --tw-duration: initial;
   --tw-ease: initial;
-  --tw-font-weight: initial;
-  --tw-gradient-from: transparent;
+  --tw-font-weight:;
+  --tw-gradient-from: #0000;
   --tw-gradient-from-position: 0%;
   --tw-gradient-position: initial;
   --tw-gradient-stops: initial;
-  --tw-gradient-to: transparent;
+  --tw-gradient-to: #0000;
   --tw-gradient-to-position: 100%;
-  --tw-gradient-via: transparent;
-  --tw-gradient-via-position: 50%;
-  --tw-gradient-via-stops: initial;
-  --tw-inset-ring-color: initial;
-  --tw-inset-ring-shadow: 0 0 transparent;
-  --tw-inset-shadow: 0 0 transparent;
-  --tw-inset-shadow-alpha: 100%;
-  --tw-inset-shadow-color: initial;
-  --tw-leading: initial;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-leading:;
   --tw-outline-style: solid;
-  --tw-ring-color: initial;
-  --tw-ring-inset: initial;
-  --tw-ring-offset-color: #fff;
-  --tw-ring-offset-shadow: 0 0 transparent;
-  --tw-ring-offset-width: 0;
-  --tw-ring-shadow: 0 0 transparent;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
   --tw-scale-x: 1;
   --tw-scale-y: 1;
   --tw-scale-z: 1;
-  --tw-shadow: 0 0 transparent;
-  --tw-shadow-alpha: 100%;
+  --tw-shadow: 0 0 #0000;
   --tw-shadow-color: initial;
   --tw-space-x-reverse: 0;
   --tw-space-y-reverse: 0;
-  --tw-tracking: initial;
+  --tw-tracking:;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -159,16 +148,16 @@ wx-root-portal-content {
 .space-y-10 > text + view,
 .space-y-10 > text + text {
   --tw-space-y-reverse: 0;
-  margin-bottom: calc((var(--spacing) * 10) * var(--tw-space-y-reverse));
-  margin-top: calc((var(--spacing) * 10) * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(var(--spacing) * 10 * var(--tw-space-y-reverse));
+  margin-top: calc(var(--spacing) * 10 * (1 - var(--tw-space-y-reverse)));
 }
 .space-x-8 > view + view,
 .space-x-8 > view + text,
 .space-x-8 > text + view,
 .space-x-8 > text + text {
   --tw-space-x-reverse: 0;
-  margin-left: calc((var(--spacing) * 8) * (1 - var(--tw-space-x-reverse)));
-  margin-right: calc((var(--spacing) * 8) * var(--tw-space-x-reverse));
+  margin-left: calc(var(--spacing) * 8 * (1 - var(--tw-space-x-reverse)));
+  margin-right: calc(var(--spacing) * 8 * var(--tw-space-x-reverse));
 }
 .rounded-2xl {
   border-radius: var(--radius-2xl);
@@ -196,8 +185,6 @@ wx-root-portal-content {
 }
 .bg-linear-to-r {
   --tw-gradient-position: to right;
-}
-.bg-linear-to-r {
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
 .bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B {
@@ -208,20 +195,14 @@ wx-root-portal-content {
 }
 .from-green-400 {
   --tw-gradient-from: var(--color-green-400);
-  --tw-gradient-stops: var(
-    --tw-gradient-via-stops,
-    var(--tw-gradient-position),
-    var(--tw-gradient-from) var(--tw-gradient-from-position),
-    var(--tw-gradient-to) var(--tw-gradient-to-position)
-  );
+  --tw-gradient-stops:
+    var(--tw-gradient-via-stops, var(--tw-gradient-position)),
+    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
 }
 .to-sky-400 {
-  --tw-gradient-stops: var(
-    --tw-gradient-via-stops,
-    var(--tw-gradient-position),
-    var(--tw-gradient-from) var(--tw-gradient-from-position),
-    var(--tw-gradient-to) var(--tw-gradient-to-position)
-  );
+  --tw-gradient-stops:
+    var(--tw-gradient-via-stops, var(--tw-gradient-position)),
+    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
   --tw-gradient-to: var(--color-sky-400);
 }
 .bg-_blength_c100_v_100_v_B {

@@ -80,7 +80,7 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
 
   if (!pageHeight || !viewportHeight) {
     const screenshot = await runWithTimeout(
-      miniProgram.screenshot(),
+      miniProgram.screenshot({ timeout: timeoutMs }),
       timeoutMs,
       screenshotTimeoutMessage,
       'DEVTOOLS_SCREENSHOT_TIMEOUT',
@@ -99,7 +99,7 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
       await page.waitFor(150)
 
       const rawScreenshot = await runWithTimeout(
-        miniProgram.screenshot(),
+        miniProgram.screenshot({ timeout: timeoutMs }),
         timeoutMs,
         screenshotTimeoutMessage,
         'DEVTOOLS_SCREENSHOT_TIMEOUT',

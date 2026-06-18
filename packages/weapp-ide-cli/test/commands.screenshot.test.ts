@@ -87,6 +87,23 @@ describe('captureScreenshotBuffer', () => {
     await assertion
   })
 
+  it('forwards the configured timeout to miniProgram.screenshot', async () => {
+    const screenshot = vi.fn().mockResolvedValue(Buffer.from('png-data').toString('base64'))
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        screenshot,
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      timeout: 4321,
+    })
+
+    expect(screenshot).toHaveBeenCalledWith({ timeout: 4321 })
+  })
+
   it('returns the decoded png buffer when DevTools responds with base64', async () => {
     const expected = Buffer.from('png-data')
     withMiniProgramMock.mockImplementation(async (_options, runner) => {
@@ -348,6 +365,39 @@ describe('captureScreenshotBuffer', () => {
     })
 
     expect(result).toEqual({ base64: expected.toString('base64') })
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+  })
+
+  it('retries once when screenshot capture times out after the DevTools request hangs', async () => {
+    const expected = Buffer.from('png-data')
+    let callCount = 0
+
+    withMiniProgramMock.mockImplementation(async (options, runner) => {
+      callCount += 1
+
+      if (callCount === 1) {
+        return await runner({
+          screenshot: () => new Promise(() => {}),
+        })
+      }
+
+      expect(options.sharedSession).toBe(false)
+      expect(options.preferOpenedSession).toBe(false)
+      return await runner({
+        screenshot: () => Promise.resolve(expected.toString('base64')),
+      })
+    })
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+    const pending = takeScreenshot({
+      projectPath: '/workspace/project',
+    })
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    await expect(pending).resolves.toEqual({ base64: expected.toString('base64') })
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')

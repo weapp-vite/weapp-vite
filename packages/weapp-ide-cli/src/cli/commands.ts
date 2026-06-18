@@ -120,6 +120,14 @@ function isScreenshotNavigationTimeoutError(error: unknown) {
   return error instanceof Error && Reflect.get(error, 'code') === 'DEVTOOLS_SCREENSHOT_NAVIGATION_TIMEOUT'
 }
 
+function isScreenshotRequestTimeoutError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  return error.message === 'DEVTOOLS_SCREENSHOT_TIMEOUT'
+    || Reflect.get(error, 'code') === 'DEVTOOLS_SCREENSHOT_TIMEOUT'
+}
+
 async function reLaunchForScreenshot(miniProgram: MiniProgramLike, page: string) {
   const routeOptions = { url: page }
   if (typeof miniProgram.callWxMethod === 'function') {
@@ -435,7 +443,7 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
 
     logger.info(i18nText('正在截图...', 'Taking screenshot...'))
     const screenshot = await withCommandTimeout(
-      miniProgram.screenshot(),
+      miniProgram.screenshot({ timeout: commandTimeout }),
       commandTimeout,
       screenshotTimeoutMessage,
       'DEVTOOLS_SCREENSHOT_TIMEOUT',
@@ -468,7 +476,12 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
     catch (error) {
       const isProtocolTimeout = error instanceof Error && error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
       const isNavigationTimeout = isScreenshotNavigationTimeoutError(error)
-      const canRetryWithFreshSession = Boolean(!nextOptions.miniProgram && (isProtocolTimeout || isNavigationTimeout) && !hasRetriedWithFreshSession)
+      const isScreenshotTimeout = isScreenshotRequestTimeoutError(error)
+      const canRetryWithFreshSession = Boolean(
+        !nextOptions.miniProgram
+        && (isProtocolTimeout || isNavigationTimeout || isScreenshotTimeout)
+        && !hasRetriedWithFreshSession,
+      )
 
       if (!canRetryWithFreshSession) {
         throw error

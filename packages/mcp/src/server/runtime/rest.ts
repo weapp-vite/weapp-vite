@@ -7,7 +7,9 @@ import { z } from 'zod'
 import {
   buildUrl,
   callRequiredMethod,
+  captureMiniProgramScreenshot,
   compactObject,
+  DEFAULT_SCREENSHOT_TIMEOUT,
   toSerializableValue,
 } from './shared'
 
@@ -315,8 +317,10 @@ async function handlePageStack(req: IncomingMessage, res: ServerResponse, contex
 async function handleCapture(req: IncomingMessage, res: ServerResponse, manager: RuntimeSessionManager) {
   const input = captureBodySchema.parse(await readJsonBody(req))
   const result = await manager.withMiniProgram(input, async (miniProgram) => {
-    const screenshot = await miniProgram.screenshot()
-    const buffer = typeof screenshot === 'string' ? Buffer.from(screenshot, 'base64') : Buffer.from(screenshot)
+    const buffer = await captureMiniProgramScreenshot(
+      miniProgram,
+      input.timeout ?? DEFAULT_SCREENSHOT_TIMEOUT,
+    )
 
     if (input.outputPath) {
       const resolvedOutputPath = manager.resolveWorkspacePath(input.outputPath)

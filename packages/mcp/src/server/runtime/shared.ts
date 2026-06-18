@@ -2,6 +2,7 @@
 import type {
   DevtoolsRuntimeHooks,
 } from '@weapp-vite/devtools-runtime'
+import { Buffer } from 'node:buffer'
 import {
   acquireSharedMiniProgram,
   closeSharedMiniProgram,
@@ -42,7 +43,7 @@ export interface MiniProgramLike {
   reLaunch: (url: string) => Promise<MiniProgramPage>
   switchTab: (url: string) => Promise<MiniProgramPage>
   navigateBack: () => Promise<MiniProgramPage>
-  screenshot: () => Promise<string | Uint8Array>
+  screenshot: (options?: { timeout?: number }) => Promise<string | Uint8Array>
   callWxMethod: (method: string, ...args: unknown[]) => Promise<unknown>
 }
 
@@ -60,6 +61,9 @@ export interface RuntimeToolOptions {
   workspaceRoot: string
   runtimeHooks?: DevtoolsRuntimeHooks
 }
+
+export const DEFAULT_SCREENSHOT_TIMEOUT = 60_000
+const SCREENSHOT_RETRY_DELAY = 500
 
 export interface RuntimeConsoleLogEntry {
   level: string
@@ -235,6 +239,43 @@ export function buildUrl(pagePath: string, query?: Record<string, string>) {
   }
 
   return `${normalizedPath}${normalizedPath.includes('?') ? '&' : '?'}${search}`
+}
+
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function isCaptureScreenshotProtocolTimeout(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error
+    && error.method === 'App.captureScreenshot'
+}
+
+export async function captureMiniProgramScreenshot(
+  miniProgram: MiniProgramLike,
+  timeout = DEFAULT_SCREENSHOT_TIMEOUT,
+) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const screenshot = await miniProgram.screenshot({ timeout })
+      return typeof screenshot === 'string' ? Buffer.from(screenshot, 'base64') : Buffer.from(screenshot)
+    }
+    catch (error) {
+      lastError = error
+      if (!isCaptureScreenshotProtocolTimeout(error) || attempt === 2) {
+        throw error
+      }
+
+      await miniProgram.currentPage().catch(() => undefined)
+      await sleep(SCREENSHOT_RETRY_DELAY)
+    }
+  }
+
+  throw lastError
 }
 
 export function parseSelectorWithIndex(selector: string) {
