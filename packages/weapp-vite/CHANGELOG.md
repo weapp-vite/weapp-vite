@@ -1,5 +1,33 @@
 # weapp-vite
 
+## 6.17.0
+
+### Minor Changes
+
+- ✨ **升级 Babel 相关依赖到 8.x，并同步适配 Babel 8 的 AST 与 ESM 导出变化。WXS 转换继续保持 CommonJS/ES5 输出，Vue SFC 编译和 VS Code 扩展中的动态 import、泛型剥离、可选链调用识别、组件宏元数据提取和脚手架依赖目录也同步兼容新的 Babel 行为。** [#690](https://github.com/weapp-vite/weapp-vite/pull/690) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **为 weapp-vite 的高频构建与 HMR 插件钩子补充 Rolldown hook filter，并跳过无页面特性提示的 wevu 页面脚本解析；同时在模板、脚本、JSON 等非样式 HMR 中跳过共享样式后处理、复用已生成输出剔除未变化文件，并只在样式相关 HMR 后触发 app.wxss touch，减少无关模块和样式文件进入写出尾段，提升增量更新体验。** [#688](https://github.com/weapp-vite/weapp-vite/pull/688) by @sonofmagic
+  - 修复自动路由新增/删除和共享依赖更新时 HMR 输出白名单遗漏根入口与运行时 shared chunk 的问题，确保 app.js、运行时 chunk、typed-router 与页面产物在增量构建中同步写出。
+  - 复用源码未变化的 Vue SFC 编译缓存，避免 dev emit 刷新阶段重复编译页面入口，降低多平台模板 HMR 的增量等待时间。
+  - 修复自动路由拓扑变化后紧接 app.vue 宏更新时 app.js 可能复用旧 routes 快照的问题，确保 Windows 等文件事件顺序更敏感的平台也能稳定同步新增页面。
+  - 模板性能对比报告新增 build 峰值 RSS、HMR GC 后 heapUsed 与 RSS 指标，便于在同一份报告里同时观察构建耗时、增量更新耗时和内存占用变化。
+
+- 🐛 **为 `dev -o`、`open`、`build -o` 和 `ide --open` 增加微信开发者工具自动恢复：当打开后项目索引刷新或自动化会话准备失败时，默认自动关闭并重开一次目标项目，并提供 `--no-open-recovery` 与 `WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY=1` 用于禁用该行为。** [`ed39b50`](https://github.com/weapp-vite/weapp-vite/commit/ed39b50d80c90869ae136713815bab5f74218906) by @sonofmagic
+
+- 🐛 **优化微信开发者工具打开后的异常提示：当服务端口关闭、项目索引刷新失败或自动化会话无法建立时，CLI 会输出可直接执行的恢复步骤，引导用户开启服务端口、关闭并重新打开 DevTools、手动导入项目目录或开启调试日志。** [`af4e02c`](https://github.com/weapp-vite/weapp-vite/commit/af4e02c01bfb2fa2ce4c73197861a4ed2ad14db1) by @sonofmagic
+
+- 🐛 **修复开发模式下自动路由 HMR 更新 app 脚本时，部分平台可能未将 `app.js` 作为本轮 HMR 输出保留，导致新增路由已经进入 `app.json` 但 `globalData` 里的自动路由数据仍然滞后的问题。** [#688](https://github.com/weapp-vite/weapp-vite/pull/688) by @sonofmagic
+
+- 🐛 **修复 wevu + Tailwind CSS 模板开发态热更新后 `app.js` 可能残留裸 `wevu/internal-runtime` 导入的问题。现在编译产物会在写盘前统一改写到 bundler 已产出的 wevu vendor chunk，避免微信开发者工具在修改 `bg-white` 到 `bg-[red]` 等样式类后报 `module 'wevu/internal-runtime.js' is not defined`，并补充真实 DevTools HMR 回归覆盖。** [`8d3e842`](https://github.com/weapp-vite/weapp-vite/commit/8d3e8429f6acbfd84131666ab04f289b86165923) by @sonofmagic
+- 📦 Updated 5 dependencies [`1913990`](https://github.com/weapp-vite/weapp-vite/commit/1913990553bbe8da9bb2ba577db8a35d337a77c3)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/ast@6.17.0`, `@weapp-vite/miniprogram-automator@1.2.4`, `@weapp-vite/mcp@1.4.5`, `weapp-ide-cli@5.4.7`, `wevu@6.17.0`
+
+  </details>
+
 ## 6.16.47
 
 ### Patch Changes
