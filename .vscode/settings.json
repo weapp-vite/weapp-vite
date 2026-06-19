@@ -321,7 +321,7 @@
   "stylelint.lintFiles.glob": "{packages,packages-runtime,packages-private,mpcore,apps,website}/**/*.{vue,css,scss}",
   "stylelint.ignorePath": ".vscode/stylelintignore",
   "terminal.integrated.env.linux": {
-    "COREPACK_NPM_REGISTRY": "https://registry.npmmirror.com",
+    "COREPACK_NPM_REGISTRY": "https://registry.npmjs.org",
     "EDGEDRIVER_CDNURL": "https://npmmirror.com/mirrors/edgedriver",
     "NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
     "NVM_NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
@@ -405,7 +405,7 @@
     }
   ],
   "terminal.integrated.env.windows": {
-    "COREPACK_NPM_REGISTRY": "https://registry.npmmirror.com",
+    "COREPACK_NPM_REGISTRY": "https://registry.npmjs.org",
     "EDGEDRIVER_CDNURL": "https://npmmirror.com/mirrors/edgedriver",
     "NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
     "NVM_NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
@@ -433,7 +433,7 @@
     "npm_config_robotjs_binary_host": "https://cdn.npmmirror.com/binaries/robotjs"
   },
   "terminal.integrated.env.osx": {
-    "COREPACK_NPM_REGISTRY": "https://registry.npmmirror.com",
+    "COREPACK_NPM_REGISTRY": "https://registry.npmjs.org",
     "EDGEDRIVER_CDNURL": "https://npmmirror.com/mirrors/edgedriver",
     "NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
     "NVM_NODEJS_ORG_MIRROR": "https://cdn.npmmirror.com/binaries/node",
