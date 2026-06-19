@@ -546,6 +546,227 @@ function findBalancedSection(sourceText: string, startOffset: number, openChar: 
   return null
 }
 
+function skipScriptWhitespace(sourceText: string, startOffset: number, endOffset = sourceText.length) {
+  let index = startOffset
+
+  while (index < endOffset && /\s/u.test(sourceText[index])) {
+    index += 1
+  }
+
+  return index
+}
+
+function skipScriptString(sourceText: string, startOffset: number) {
+  const quote = sourceText[startOffset]
+  let index = startOffset + 1
+
+  while (index < sourceText.length) {
+    if (sourceText[index] === '\\') {
+      index += 2
+      continue
+    }
+
+    if (sourceText[index] === quote) {
+      return index + 1
+    }
+
+    index += 1
+  }
+
+  return sourceText.length
+}
+
+function skipScriptValue(sourceText: string, startOffset: number, endOffset: number) {
+  let index = startOffset
+
+  while (index < endOffset) {
+    const char = sourceText[index]
+
+    if (char === '\'' || char === '"' || char === '`') {
+      index = skipScriptString(sourceText, index)
+      continue
+    }
+
+    const closeChar = char === '{'
+      ? '}'
+      : char === '['
+        ? ']'
+        : char === '('
+          ? ')'
+          : null
+
+    if (closeChar) {
+      const section = findBalancedSection(sourceText, index, char, closeChar)
+
+      if (!section) {
+        return endOffset
+      }
+
+      index = section.end + 1
+      continue
+    }
+
+    if (char === ',') {
+      return index + 1
+    }
+
+    index += 1
+  }
+
+  return index
+}
+
+function readObjectPropertyNameAt(sourceText: string, startOffset: number, endOffset: number) {
+  const quote = sourceText[startOffset]
+
+  if (quote === '\'' || quote === '"') {
+    let index = startOffset + 1
+
+    while (index < endOffset && sourceText[index] !== quote) {
+      if (sourceText[index] === '\\') {
+        index += 2
+        continue
+      }
+
+      index += 1
+    }
+
+    if (sourceText[index] !== quote) {
+      return null
+    }
+
+    return {
+      end: index + 1,
+      name: sourceText.slice(startOffset + 1, index),
+      nameEnd: index,
+      nameStart: startOffset + 1,
+    }
+  }
+
+  const match = /^[A-Za-z_$][\w$]*/u.exec(sourceText.slice(startOffset, endOffset))
+
+  if (!match) {
+    return null
+  }
+
+  return {
+    end: startOffset + match[0].length,
+    name: match[0],
+    nameEnd: startOffset + match[0].length,
+    nameStart: startOffset,
+  }
+}
+
+function findTopLevelObjectProperty(sourceText: string, objectStartOffset: number, objectEndOffset: number, propertyName: string) {
+  let index = objectStartOffset + 1
+
+  while (index < objectEndOffset) {
+    while (index < objectEndOffset && (/\s/u.test(sourceText[index]) || sourceText[index] === ',')) {
+      index += 1
+    }
+
+    const property = readObjectPropertyNameAt(sourceText, index, objectEndOffset)
+
+    if (!property) {
+      index += 1
+      continue
+    }
+
+    let cursor = skipScriptWhitespace(sourceText, property.end, objectEndOffset)
+
+    if (sourceText[cursor] === '?') {
+      cursor = skipScriptWhitespace(sourceText, cursor + 1, objectEndOffset)
+    }
+
+    if (property.name === propertyName) {
+      return {
+        nameStart: property.nameStart,
+        valueStart: cursor,
+      }
+    }
+
+    if (sourceText[cursor] === ':') {
+      index = skipScriptValue(sourceText, cursor + 1, objectEndOffset)
+      continue
+    }
+
+    if (sourceText[cursor] === '(') {
+      const params = findBalancedSection(sourceText, cursor, '(', ')')
+      const bodyStart = params
+        ? skipScriptWhitespace(sourceText, params.end + 1, objectEndOffset)
+        : cursor + 1
+
+      if (sourceText[bodyStart] === '{') {
+        const body = findBalancedSection(sourceText, bodyStart, '{', '}')
+
+        index = body ? body.end + 1 : objectEndOffset
+        continue
+      }
+    }
+
+    index = skipScriptValue(sourceText, cursor, objectEndOffset)
+  }
+
+  return null
+}
+
+function getOptionsObjectSections(sourceText: string) {
+  const sections: Array<{ end: number, start: number }> = []
+  const callPattern = /\b(?:Page|Component)\s*\(/gu
+
+  for (const match of sourceText.matchAll(callPattern)) {
+    const callStart = match.index ?? -1
+
+    if (callStart < 0) {
+      continue
+    }
+
+    const objectStart = skipScriptWhitespace(sourceText, callStart + match[0].length)
+
+    if (sourceText[objectStart] !== '{') {
+      continue
+    }
+
+    const section = findBalancedSection(sourceText, objectStart, '{', '}')
+
+    if (section) {
+      sections.push({ end: section.end, start: section.start })
+    }
+  }
+
+  return sections
+}
+
+function findOptionsDataDefinitionOffset(sourceText: string, symbolName: string) {
+  for (const optionsSection of getOptionsObjectSections(sourceText)) {
+    const dataProperty = findTopLevelObjectProperty(sourceText, optionsSection.start, optionsSection.end, 'data')
+
+    if (!dataProperty || sourceText[dataProperty.valueStart] !== ':') {
+      continue
+    }
+
+    const dataObjectStart = skipScriptWhitespace(sourceText, dataProperty.valueStart + 1, optionsSection.end)
+
+    if (sourceText[dataObjectStart] !== '{') {
+      continue
+    }
+
+    const dataSection = findBalancedSection(sourceText, dataObjectStart, '{', '}')
+
+    if (!dataSection) {
+      continue
+    }
+
+    const property = findTopLevelObjectProperty(sourceText, dataSection.start, dataSection.end, symbolName)
+
+    if (property) {
+      return property.nameStart
+    }
+  }
+
+  return null
+}
+
 function collectObjectLikePropNames(sourceText: string) {
   const names = new Set<string>()
 
@@ -653,6 +874,15 @@ function getPositionAtOffset(text: string, offset: number) {
 
 function findScriptDefinitionOffset(sourceText: string, symbolName: string, definitionType: 'method' | 'prop') {
   const escapedName = escapeRegExp(symbolName)
+
+  if (definitionType === 'prop') {
+    const optionsDataOffset = findOptionsDataDefinitionOffset(sourceText, symbolName)
+
+    if (optionsDataOffset != null) {
+      return optionsDataOffset
+    }
+  }
+
   const patterns = definitionType === 'method'
     ? [
         new RegExp(`\\bfunction\\s+${escapedName}\\s*\\(`, 'u'),

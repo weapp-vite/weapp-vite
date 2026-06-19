@@ -924,6 +924,131 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   assert.equal(getLocationLine(implicitItemMemberDefinition), 3)
 })
 
+it('prefers Page data fields over later local variables for wxml prop definitions', async () => {
+  const files = new Map<string, string>([
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.ts'), [
+      'const initialTimeline = []',
+      '',
+      'Page({',
+      '  data: {',
+      '    timeline: initialTimeline,',
+      '  },',
+      '',
+      '  pushTimeline() {',
+      '    const timeline = []',
+      '    this.setData({ timeline })',
+      '  },',
+      '})',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: MockUri, range: MockRange) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: MockPosition, end: MockPosition) {
+          this.start = start
+          this.end = end
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+  } = await import('./templateProviders')
+
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const document = createTextDocument(
+    'wxml',
+    '<view wx:for="{{timeline}}">{{item.time}}</view>',
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
+  )
+  const position = document.positionAt(document.getText().indexOf('timeline') + 2)
+  const definition = await definitionProvider.provideDefinition(document as any, position as any)
+
+  assert.equal(definition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
+  assert.equal(getLocationLine(definition), 4)
+})
+
 it('provides references and rename edits across template and companion script files', async () => {
   const files = new Map<string, string>([
     [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
