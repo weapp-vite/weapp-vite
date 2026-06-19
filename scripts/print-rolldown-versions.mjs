@@ -348,7 +348,7 @@ function collectViteRolldownVersions(lockfile) {
     }
     const resolvedVersion = stripPeerSuffix(version)
     const requiredBy = versions.get(resolvedVersion) ?? new Set()
-    requiredBy.add(snapshotKey)
+    requiredBy.add(createNodeLabel('vite', snapshotKey.slice('vite@'.length)))
     versions.set(resolvedVersion, requiredBy)
   }
 
@@ -548,6 +548,25 @@ function verifySingleRolldownVersion(versions) {
       ].join('\n'),
     )
   }
+}
+
+function collectNonViteRolldownVersions(versions, viteVersions) {
+  const nonViteVersions = new Map()
+
+  for (const [version, requiredBy] of versions) {
+    const viteRequiredBy = viteVersions.get(version) ?? new Set()
+    const nonViteRequiredBy = [...requiredBy].filter(source => !viteRequiredBy.has(source))
+    if (nonViteRequiredBy.length === 0) {
+      continue
+    }
+    nonViteVersions.set(version, new Set(nonViteRequiredBy))
+  }
+
+  return nonViteVersions
+}
+
+function verifySingleWorkspaceRolldownVersion(versions, viteVersions = new Map()) {
+  verifySingleRolldownVersion(collectNonViteRolldownVersions(versions, viteVersions))
 }
 
 function collectWorkspacePackageJsonPaths(projectRoot) {
@@ -802,6 +821,7 @@ function main(options = {}) {
     const lockfile = readLockfile(projectRoot)
     const workspaceManifest = readWorkspaceManifest(projectRoot)
     const versions = collectRolldownVersions(lockfile)
+    const viteVersions = collectViteRolldownVersions(lockfile)
     const dependencyMatrix = collectRolldownDependencyMatrix(projectRoot)
     console.log(`${formatRolldownVersionReport(projectRoot, versions)}\n${formatRolldownDependencyMatrix(dependencyMatrix)}`.trimEnd())
     if (mode === 'report') {
@@ -819,7 +839,7 @@ function main(options = {}) {
     }
     verifyRolldownCatalogReferences(projectRoot)
     verifyRolldownRequirePeer(projectRoot, workspaceManifest)
-    verifySingleRolldownVersion(versions)
+    verifySingleWorkspaceRolldownVersion(versions, viteVersions)
     verifyRolldownPublishArtifacts(projectRoot, { workspaceManifest })
   }
   catch (error) {
@@ -833,6 +853,7 @@ function main(options = {}) {
 }
 
 export {
+  collectNonViteRolldownVersions,
   collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,
   collectRolldownPublishArtifactIssues,
@@ -859,6 +880,7 @@ export {
   verifyRolldownPublishArtifacts,
   verifyRolldownRequirePeer,
   verifySingleRolldownVersion,
+  verifySingleWorkspaceRolldownVersion,
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

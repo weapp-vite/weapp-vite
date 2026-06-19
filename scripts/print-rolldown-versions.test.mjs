@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
 import {
+  collectNonViteRolldownVersions,
   collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,
   collectRolldownPublishArtifactIssues,
@@ -25,6 +26,7 @@ import {
   syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
   verifySingleRolldownVersion,
+  verifySingleWorkspaceRolldownVersion,
 } from './print-rolldown-versions.mjs'
 
 const ANSI_ESCAPE_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g')
@@ -57,6 +59,36 @@ it('verifySingleRolldownVersion accepts a single resolved rolldown version', () 
       ['1.0.0-rc.10', new Set(['packages/weapp-vite', 'packages/rolldown-require'])],
     ]))
   })
+})
+
+it('verifySingleWorkspaceRolldownVersion allows vite to keep its declared internal rolldown version', () => {
+  const versions = new Map([
+    ['1.0.3', new Set(['vite@8.0.16'])],
+    ['1.1.2', new Set(['packages/weapp-vite', 'packages/rolldown-require'])],
+  ])
+  const viteVersions = new Map([
+    ['1.0.3', new Set(['vite@8.0.16'])],
+  ])
+
+  assert.deepEqual([...collectNonViteRolldownVersions(versions, viteVersions).keys()], ['1.1.2'])
+  assert.doesNotThrow(() => {
+    verifySingleWorkspaceRolldownVersion(versions, viteVersions)
+  })
+})
+
+it('verifySingleWorkspaceRolldownVersion still rejects split workspace rolldown versions', () => {
+  const versions = new Map([
+    ['1.0.3', new Set(['vite@8.0.16'])],
+    ['1.1.1', new Set(['packages/weapp-vite'])],
+    ['1.1.2', new Set(['packages/rolldown-require'])],
+  ])
+  const viteVersions = new Map([
+    ['1.0.3', new Set(['vite@8.0.16'])],
+  ])
+
+  assert.throws(() => {
+    verifySingleWorkspaceRolldownVersion(versions, viteVersions)
+  }, /multiple rolldown versions detected/)
 })
 
 it('collectViteRolldownVersions only keeps vite snapshots that depend on rolldown', () => {
@@ -383,7 +415,7 @@ it('packWorkspacePackageJson reads the packed manifest using pnpm pack output', 
   const packedPackageJson = packWorkspacePackageJson(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../packages/rolldown-require'))
 
   assert.equal(packedPackageJson.name, 'rolldown-require')
-  assert.equal(packedPackageJson.peerDependencies.rolldown, '1.0.0-rc.11')
+  assert.equal(packedPackageJson.peerDependencies.rolldown, '1.1.2')
 })
 
 it('readPackedPackageJsonFromTarball reads package/package.json from a pnpm pack tarball', () => {

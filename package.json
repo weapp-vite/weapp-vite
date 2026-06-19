@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@11.6.0",
+  "packageManager": "pnpm@11.8.0",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
@@ -182,7 +182,7 @@
   "devDependencies": {
     "@babel/core": "catalog:",
     "@babel/parser": "catalog:",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
@@ -263,7 +263,7 @@
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.8.4",
     "repoctl": "^4.0.13",
-    "rolldown": "1.1.1",
+    "rolldown": "catalog:",
     "rollup": "^4.62.0",
     "rollup-plugin-dts": "^6.4.1",
     "rollup-plugin-visualizer": "^7.0.1",
