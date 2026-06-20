@@ -6,6 +6,10 @@ export default defineConfig({
       logLevel: 'verbose',
       profileJson: true,
     },
+    mcp: {
+      enabled: true,
+      autoStart: true,
+    },
     // weapp-vite options
   },
 })
