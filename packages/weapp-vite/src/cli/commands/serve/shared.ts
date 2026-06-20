@@ -48,6 +48,7 @@ export function createServeMiniProgramDevActions(
       }
 
       await options.openIde(projectPath, openOptions)
+      await options.tryReuseForwardConsole?.()
       return openOptions.forceReopen
         ? '已重新打开微信开发者工具项目'
         : '已打开或复用微信开发者工具项目'

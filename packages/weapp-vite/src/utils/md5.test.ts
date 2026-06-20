@@ -11,4 +11,17 @@ describe('utils/md5', () => {
     const message = Buffer.from('mini program')
     expect(md5(message)).toBe(md5('mini program'))
   })
+
+  it('accepts array buffers and produces matching results', () => {
+    const message = Buffer.from('array buffer')
+    expect(md5(message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength))).toBe(md5('array buffer'))
+  })
+
+  it('accepts shared array buffers and produces matching results', () => {
+    const message = Buffer.from('shared array buffer')
+    const shared = new SharedArrayBuffer(message.byteLength)
+    new Uint8Array(shared).set(message)
+
+    expect(md5(shared)).toBe(md5('shared array buffer'))
+  })
 })

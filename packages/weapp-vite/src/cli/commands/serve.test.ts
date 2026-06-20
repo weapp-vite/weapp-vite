@@ -458,7 +458,7 @@ describe('serve cli command', () => {
     ])
   })
 
-  it('opens ide during serve startup even when forward console can attach', async () => {
+  it('attaches forward console after opening ide during serve startup', async () => {
     const action = createServeActionHandler()
     maybeStartForwardConsoleMock.mockResolvedValueOnce(true)
 
@@ -470,11 +470,20 @@ describe('serve cli command', () => {
     fakeProcess.emit('SIGINT')
     await actionPromise
 
-    expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       reuseOpenedProject: true,
       trustProject: true,
       useAutomatorOpen: false,
+    })
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
+      platform: 'weapp',
+      mpDistRoot: '/project/dist',
+      cwd: '/project',
+      weappViteConfig: {
+        analyze: {
+          history: false,
+        },
+      },
     })
   })
 

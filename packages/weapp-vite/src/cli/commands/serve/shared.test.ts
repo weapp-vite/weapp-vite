@@ -35,8 +35,8 @@ describe('serve shared helpers', () => {
 
     await expect(actions.openIde({ forceOpen: true })).resolves.toBe('已打开或复用微信开发者工具项目')
 
-    expect(tryReuseForwardConsole).not.toHaveBeenCalled()
     expect(openIde).toHaveBeenCalledWith('/project/dist-root', { forceOpen: true })
+    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to reopening and rebuilding current mini program project', async () => {
@@ -56,5 +56,6 @@ describe('serve shared helpers', () => {
     expect(actions.projectPath).toBe('/project')
     expect(build).toHaveBeenCalledTimes(1)
     expect(openIde).toHaveBeenCalledWith('/project', {})
+    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(2)
   })
 })
