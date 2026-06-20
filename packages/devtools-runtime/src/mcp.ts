@@ -13,6 +13,7 @@ export type AutomatorElement = InstanceType<typeof Element> & {
 
 export interface DevtoolsRuntimeSessionOptions {
   miniProgram?: AutomatorMiniProgram
+  openedOnly?: boolean
   preferOpenedSession?: boolean
   preserveProjectRoot?: boolean
   port?: number
@@ -30,6 +31,7 @@ export interface DevtoolsRuntimeHooks {
 export interface DevtoolsConnectionInput {
   projectPath: string
   timeout?: number
+  openedOnly?: boolean
   port?: number
   preferOpenedSession?: boolean
   preserveProjectRoot?: boolean

@@ -104,6 +104,21 @@ describe('automator session diagnostics', () => {
     })
   })
 
+  it('does not launch a new automator session when opened-only mode is enabled', async () => {
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+
+    await expect(connectMiniProgram({
+      openedOnly: true,
+      projectPath: '/workspace/project',
+    })).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      openedOnly: true,
+      projectPath: '/workspace/project',
+    })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
   it('retries automator connection after login is restored', async () => {
     const disconnectMock = vi.fn()
     const loginError = new Error('code: 10 need re-login')

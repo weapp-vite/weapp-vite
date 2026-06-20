@@ -128,6 +128,15 @@ function isScreenshotRequestTimeoutError(error: unknown) {
     || Reflect.get(error, 'code') === 'DEVTOOLS_SCREENSHOT_TIMEOUT'
 }
 
+function toScreenshotBuffer(screenshot: string | Buffer | undefined) {
+  if (screenshot === undefined) {
+    return Buffer.alloc(0)
+  }
+  return typeof screenshot === 'string'
+    ? Buffer.from(screenshot, 'base64')
+    : Buffer.from(screenshot)
+}
+
 async function reLaunchForScreenshot(miniProgram: MiniProgramLike, page: string) {
   const routeOptions = { url: page }
   if (typeof miniProgram.callWxMethod === 'function') {
@@ -448,9 +457,7 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
       screenshotTimeoutMessage,
       'DEVTOOLS_SCREENSHOT_TIMEOUT',
     )
-    const buffer = typeof screenshot === 'string'
-      ? Buffer.from(screenshot, 'base64')
-      : Buffer.from(screenshot)
+    const buffer = toScreenshotBuffer(screenshot)
 
     if (buffer.length === 0) {
       throw new Error(i18nText('截图失败', 'Failed to capture screenshot'))

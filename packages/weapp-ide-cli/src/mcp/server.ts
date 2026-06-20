@@ -331,7 +331,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
     try {
       const result = await withConnectedMiniProgram(options.runtimeHooks, workspaceRoot, input, async (miniProgram) => {
         const screenshot = await miniProgram.screenshot()
-        const base64 = typeof screenshot === 'string' ? screenshot : Buffer.from(screenshot).toString('base64')
+        const base64 = typeof screenshot === 'string' ? screenshot : Buffer.from(screenshot ?? '').toString('base64')
         const buffer = Buffer.from(base64, 'base64')
         if (input.outputPath) {
           const resolvedOutputPath = createResolvedOutputPath(workspaceRoot, input.outputPath)

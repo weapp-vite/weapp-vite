@@ -19,6 +19,14 @@ vi.mock('weapp-ide-cli', () => ({
 
 vi.mock('../logger', () => ({
   default: loggerMock,
+  colors: {
+    bold: (value: string) => value,
+    cyan: (value: string) => value,
+    dim: (value: string) => value,
+    green: (value: string) => value,
+    red: (value: string) => value,
+    yellow: (value: string) => value,
+  },
 }))
 
 describe('forwardConsole', () => {
@@ -88,6 +96,7 @@ describe('forwardConsole', () => {
     expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
       logLevels: ['log', 'info', 'warn', 'error'],
+      openedOnly: true,
       unhandledErrors: true,
     }))
   })

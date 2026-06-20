@@ -15,7 +15,12 @@ vi.mock('../src/cli/automator-session', () => ({
 vi.mock('../src/logger', () => ({
   default: loggerMock,
   colors: {
+    bold: (value: string) => value,
+    cyan: (value: string) => value,
     dim: (value: string) => value,
+    green: (value: string) => value,
+    red: (value: string) => value,
+    yellow: (value: string) => value,
   },
 }))
 

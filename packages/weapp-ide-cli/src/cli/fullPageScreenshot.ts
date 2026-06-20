@@ -9,7 +9,11 @@ interface FullPageCaptureOptions {
   screenshotTimeoutMessage: string
 }
 
-function decodeScreenshotBuffer(raw: string | Buffer) {
+function decodeScreenshotBuffer(raw: string | Buffer | undefined) {
+  if (raw === undefined) {
+    throw new Error('Failed to capture screenshot')
+  }
+
   const buffer = typeof raw === 'string'
     ? Buffer.from(raw, 'base64')
     : Buffer.from(raw)

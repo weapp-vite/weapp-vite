@@ -158,6 +158,9 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
       }
       catch (error) {
         const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
+        if (options.openedOnly) {
+          throw normalizedOpenSessionError
+        }
         if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {
           throw normalizedOpenSessionError
         }
