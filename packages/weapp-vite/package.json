@@ -144,7 +144,7 @@
     "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.26.0",
     "rolldown-require": "workspace:*",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-performance": "workspace:*",

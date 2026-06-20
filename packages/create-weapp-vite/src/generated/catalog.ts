@@ -15,7 +15,7 @@ export const TEMPLATE_CATALOG = {
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
   '@tailwindcss/vite': '^4.3.1',
-  '@types/node': '^25.9.3',
+  '@types/node': '^26.0.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.7',

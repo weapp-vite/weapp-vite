@@ -51,7 +51,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "sharp": "^0.35.1"
+    "sharp": "^0.35.2"
   },
   "publishConfig": {
     "access": "public",
