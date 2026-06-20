@@ -1,0 +1,16 @@
+<view class="command-layout" data-layout="command">
+  <view class="command-layout__top">
+    <view class="command-layout__title-row">
+      <text class="command-layout__title">{{title}}</text>
+      <text class="command-layout__badge">{{mode}}</text>
+    </view>
+    <view class="command-layout__slots">
+      <text class="command-layout__slot">global shell</text>
+      <text class="command-layout__slot">route props</text>
+      <text class="command-layout__slot">page slot</text>
+    </view>
+  </view>
+  <view class="command-layout__body">
+    <slot />
+  </view>
+</view>

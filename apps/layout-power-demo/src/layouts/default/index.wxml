@@ -1,0 +1,8 @@
+<view class="default-layout" data-layout="default">
+  <view class="default-layout__rail">
+    <text class="default-layout__rail-text">default layout</text>
+  </view>
+  <view class="default-layout__body">
+    <slot />
+  </view>
+</view>

@@ -668,6 +668,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  apps/layout-power-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: catalog:latest
+        version: 5.2.1
+      typescript:
+        specifier: catalog:latest
+        version: 6.0.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/mcp-demo:
     devDependencies:
       '@weapp-vite/dashboard':

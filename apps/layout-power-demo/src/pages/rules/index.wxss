@@ -1,0 +1,49 @@
+.rules-page {
+  padding: 0 18rpx 18rpx;
+}
+
+.rules-page__panel {
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 8rpx;
+  box-shadow: 0 10rpx 28rpx rgb(23 32 51 / 10%);
+}
+
+.rules-page__eyebrow,
+.rules-page__title,
+.rules-page__desc {
+  display: block;
+}
+
+.rules-page__eyebrow {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #2f6bff;
+  text-transform: uppercase;
+}
+
+.rules-page__title {
+  margin-top: 10rpx;
+  font-size: 34rpx;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #101827;
+}
+
+.rules-page__desc {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #667085;
+}
+
+.rules-page__button {
+  padding: 14rpx 20rpx;
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  background: #172033;
+  border-radius: 8rpx;
+}

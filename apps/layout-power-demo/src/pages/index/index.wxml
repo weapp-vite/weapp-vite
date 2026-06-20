@@ -1,0 +1,75 @@
+<view class="demo">
+  <view class="hero">
+    <view class="hero__copy">
+      <text class="hero__eyebrow">weapp-vite native layouts</text>
+      <text class="hero__title">一个屏幕，四种 layout 控制权</text>
+      <text class="hero__desc">默认壳、命名壳、路由规则、运行时切换同时可见。</text>
+    </view>
+    <view class="hero__meter">
+      <text class="hero__meter-value">{{currentLayout}}</text>
+      <text class="hero__meter-label">current layout</text>
+    </view>
+  </view>
+
+  <view class="workspace">
+    <view class="preview">
+      <view class="preview__top">
+        <text class="preview__tab preview__tab--active">layout shell</text>
+        <text class="preview__tab">page slot</text>
+        <text class="preview__tab">runtime</text>
+      </view>
+      <view class="preview__screen">
+        <view class="preview__nav">
+          <text class="preview__dot preview__dot--green" />
+          <text class="preview__dot preview__dot--blue" />
+          <text class="preview__dot preview__dot--orange" />
+          <text class="preview__nav-text">/pages/index/index</text>
+        </view>
+        <view class="preview__content">
+          <view class="preview__aside">
+            <text class="preview__aside-label">layout</text>
+            <text class="preview__aside-value">{{currentLayout}}</text>
+          </view>
+          <view class="preview__main">
+            <text class="preview__main-title">页面内容被 slot 注入</text>
+            <text class="preview__main-desc">外壳可替换，业务主体不动。</text>
+            <view class="preview__chips">
+              <text wx:for="{{layoutStates}}" wx:key="label" class="{{item.className}}">
+                {{item.label}}: {{item.state}}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="matrix">
+      <view wx:for="{{capabilities}}" wx:key="title" class="ability">
+        <view class="ability__head">
+          <text class="ability__title">{{item.title}}</text>
+          <text class="ability__tag">{{item.tag}}</text>
+        </view>
+        <text class="ability__desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="controls">
+    <button class="control control--dark" bindtap="applyCommandLayout">
+      <text class="control__title">command</text>
+      <text class="control__desc">命名壳 + props</text>
+    </button>
+    <button class="control control--light" bindtap="applyDefaultLayout">
+      <text class="control__title">default</text>
+      <text class="control__desc">基础外壳</text>
+    </button>
+    <button class="control control--danger" bindtap="disableLayout">
+      <text class="control__title">none</text>
+      <text class="control__desc">layout=false</text>
+    </button>
+    <button class="control control--blue" bindtap="openRouteRulesDemo">
+      <text class="control__title">rules</text>
+      <text class="control__desc">配置级布局</text>
+    </button>
+  </view>
+</view>

@@ -1,0 +1,5 @@
+Page({
+  backToHome() {
+    wx.navigateBack()
+  },
+})

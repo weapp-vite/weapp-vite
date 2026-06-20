@@ -1,0 +1,54 @@
+.command-layout {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #101827 0%, #dfe7f1 54%, #eef2f7 100%);
+}
+
+.command-layout__top {
+  padding: 34rpx 32rpx 26rpx;
+  color: #fff;
+}
+
+.command-layout__title-row {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+}
+
+.command-layout__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.command-layout__badge {
+  max-width: 220rpx;
+  padding: 8rpx 14rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #06281f;
+  white-space: nowrap;
+  background: #34d399;
+  border-radius: 8rpx;
+}
+
+.command-layout__slots {
+  display: flex;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+
+.command-layout__slot {
+  padding: 7rpx 10rpx;
+  font-size: 20rpx;
+  color: rgb(255 255 255 / 86%);
+  border: 1rpx solid rgb(255 255 255 / 24%);
+  border-radius: 6rpx;
+}
+
+.command-layout__body {
+  padding: 0 18rpx 18rpx;
+}
