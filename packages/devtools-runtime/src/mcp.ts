@@ -5,6 +5,7 @@ import path from 'node:path'
 export type AutomatorMiniProgram = InstanceType<typeof MiniProgram>
   & {
     callWxMethod?: (method: string, ...args: unknown[]) => Promise<unknown>
+    enableLog?: () => Promise<void>
   }
 export type AutomatorPage = InstanceType<typeof Page>
 export type AutomatorElement = InstanceType<typeof Element> & {

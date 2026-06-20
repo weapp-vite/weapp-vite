@@ -126,6 +126,7 @@ function resolveWindowsBatchSpawn(cliPath: string, args: string[]) {
 
 export interface IConnectOptions {
   wsEndpoint: string
+  timeout?: number
   platform?: MiniprogramAutomatorPlatform
 }
 /** ILaunchOptions 的类型定义。 */
@@ -290,6 +291,7 @@ export default class Launcher {
             return true
           }
           const candidate = await this.connectTool({
+            timeout: 3_000,
             wsEndpoint: `ws://127.0.0.1:${port}`,
           })
           try {
@@ -364,7 +366,7 @@ export default class Launcher {
 
   private async connectTool(options: IConnectOptions) {
     try {
-      const connection = await Connection.create(options.wsEndpoint)
+      const connection = await Connection.create(options.wsEndpoint, options.timeout)
       return new MiniProgram(connection)
     }
     catch {

@@ -103,8 +103,31 @@ describe('forwardConsole', () => {
     expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
       logLevels: ['log', 'info', 'warn', 'error'],
-      openedOnly: true,
+      openedOnly: undefined,
       unhandledErrors: true,
+    }))
+  })
+
+  it('can restrict console forwarding to an opened automator session', async () => {
+    determineAgentMock.mockResolvedValue({
+      isAgent: true,
+      agent: {
+        name: 'codex',
+      },
+    })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const started = await maybeStartForwardConsole({
+      openedOnly: true,
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {},
+    })
+
+    expect(started).toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
+      openedOnly: true,
+      projectPath: 'dist/dev',
     }))
   })
 

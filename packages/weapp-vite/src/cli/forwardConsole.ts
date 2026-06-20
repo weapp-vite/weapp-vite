@@ -12,6 +12,7 @@ export interface ResolvedForwardConsoleOptions {
 }
 
 export interface MaybeStartForwardConsoleOptions {
+  openedOnly?: boolean
   platform?: string
   mpDistRoot?: string
   cwd?: string
@@ -237,7 +238,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
       color: !resolved.agentName,
       projectPath,
       logLevels: resolved.logLevels,
-      openedOnly: true,
+      openedOnly: options.openedOnly,
       unhandledErrors: resolved.unhandledErrors,
       onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
     })

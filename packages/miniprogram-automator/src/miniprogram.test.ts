@@ -110,6 +110,15 @@ describe('MiniProgram', () => {
     expect(onConsole).toHaveBeenCalledWith({ msg: 'hello' })
   })
 
+  it('exposes an awaitable console log enable hook', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    await miniProgram.enableLog()
+
+    expect(connection.send).toHaveBeenCalledWith('App.enableLog', {})
+  })
+
   it('checks sdk version compatibility', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)

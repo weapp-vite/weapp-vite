@@ -10,6 +10,7 @@ import Transport from './Transport'
 const debugProtocol = createDebug('automator:protocol')
 const closeErrTip = 'Connection closed, check if wechat web devTools is still running'
 const REQUEST_TIMEOUT = 30_000
+const CONNECT_TIMEOUT = 30_000
 interface PendingCallback {
   resolve: (value: any) => void
   reject: (error: Error) => void
@@ -98,13 +99,34 @@ export default class Connection extends EventEmitter {
     this.callbacks.clear()
   }
 
-  static create(url: string) {
+  static create(url: string, timeout = CONNECT_TIMEOUT) {
     return new Promise<Connection>((resolve, reject) => {
       const ws = new WebSocket(url)
+      let settled = false
+      const timer = setTimeout(() => {
+        if (settled) {
+          return
+        }
+        settled = true
+        ws.close()
+        reject(new Error(`Timed out connecting to DevTools websocket ${url} after ${timeout}ms`))
+      }, timeout)
       ws.on('open', () => {
+        if (settled) {
+          return
+        }
+        settled = true
+        clearTimeout(timer)
         resolve(new Connection(new Transport(ws)))
       })
-      ws.on('error', reject)
+      ws.on('error', (error) => {
+        if (settled) {
+          return
+        }
+        settled = true
+        clearTimeout(timer)
+        reject(error)
+      })
     })
   }
 }

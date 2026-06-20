@@ -201,7 +201,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: true,
     })
     expect(connectOpenedAutomatorMock).not.toHaveBeenCalled()
@@ -258,7 +258,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: true,
     })
     expect(parseMock).toHaveBeenCalledWith([
@@ -391,7 +391,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: false,
     })
   })
@@ -412,7 +412,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: true,
     })
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
@@ -473,7 +473,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: true,
     })
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
@@ -530,7 +530,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
-      timeout: 30000,
+      timeout: 8000,
       trustProject: true,
     })
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()

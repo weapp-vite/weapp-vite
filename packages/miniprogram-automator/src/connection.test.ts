@@ -4,11 +4,33 @@
 import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const webSocketInstances = vi.hoisted(() => [] as Array<EventEmitter & {
+  close: ReturnType<typeof vi.fn>
+  url: string
+}>)
+
 vi.mock('./internal/compat', () => ({
   dateFormat: () => '2026-03-30 00:00:00:000',
   stringify: JSON.stringify,
   uuid: () => 'fixed-id',
 }))
+
+vi.mock('ws', async () => {
+  const { EventEmitter } = await import('node:events')
+  function MockWebSocket(this: EventEmitter & {
+    close: ReturnType<typeof vi.fn>
+    url: string
+  }, url: string) {
+    this.url = url
+    this.close = vi.fn()
+    webSocketInstances.push(this)
+  }
+  MockWebSocket.prototype = Object.create(EventEmitter.prototype)
+  MockWebSocket.prototype.constructor = MockWebSocket
+  return {
+    default: MockWebSocket,
+  }
+})
 
 class FakeTransport extends EventEmitter {
   send = vi.fn()
@@ -18,6 +40,7 @@ class FakeTransport extends EventEmitter {
 describe('Connection', () => {
   beforeEach(() => {
     vi.resetModules()
+    webSocketInstances.length = 0
   })
 
   it('sends protocol payloads and resolves matching responses', async () => {
@@ -95,6 +118,23 @@ describe('Connection', () => {
         id: 'fixed-id',
         result: { pageId: 1 },
       }))
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('rejects websocket connections that never open', async () => {
+    vi.useFakeTimers()
+    try {
+      const { default: Connection } = await import('./Connection')
+
+      const pending = Connection.create('ws://127.0.0.1:1234', 1_000)
+      const assertion = expect(pending).rejects.toThrow('Timed out connecting to DevTools websocket ws://127.0.0.1:1234 after 1000ms')
+
+      await vi.advanceTimersByTimeAsync(1_000)
+      await assertion
+      expect(webSocketInstances[0]?.close).toHaveBeenCalledTimes(1)
     }
     finally {
       vi.useRealTimers()

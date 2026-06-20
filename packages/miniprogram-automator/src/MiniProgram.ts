@@ -139,6 +139,7 @@ function logChangeRouteDebug(message: string) {
 /** MiniProgram 的实现。 */
 export default class MiniProgram extends EventEmitter {
   private appBindings = new Map<string, AutomatorCallable>()
+  private logEnabled = false
   private pageMap = new Map<number, Page>()
   private nativeIns?: Native
   constructor(private connection: Connection) {
@@ -324,9 +325,14 @@ export default class MiniProgram extends EventEmitter {
     this.connection.dispose()
   }
 
+  async enableLog() {
+    await this.send('App.enableLog')
+    this.logEnabled = true
+  }
+
   override on(event: string | symbol, listener: (...args: any[]) => void): this {
-    if (event === 'console') {
-      this.send('App.enableLog').catch(() => {})
+    if (event === 'console' && !this.logEnabled) {
+      this.enableLog().catch(() => {})
     }
     super.on(event, listener)
     return this

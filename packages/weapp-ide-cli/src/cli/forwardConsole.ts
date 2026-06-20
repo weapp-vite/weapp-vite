@@ -23,6 +23,8 @@ export interface ForwardConsoleSession {
 }
 
 const DEFAULT_FORWARD_CONSOLE_LEVELS: ForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
+const ENABLE_LOG_RETRY_DELAY_MS = 500
+const ENABLE_LOG_RETRY_TIMES = 5
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined
@@ -170,6 +172,32 @@ function normalizeExceptionEvent(payload: unknown): ForwardConsoleEvent {
   }
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function enableMiniProgramConsoleLog(miniProgram: MiniProgramLike) {
+  if (typeof miniProgram.enableLog !== 'function') {
+    return
+  }
+
+  let lastError: unknown
+  for (let attempt = 0; attempt <= ENABLE_LOG_RETRY_TIMES; attempt += 1) {
+    try {
+      await miniProgram.enableLog()
+      return
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < ENABLE_LOG_RETRY_TIMES) {
+        await sleep(ENABLE_LOG_RETRY_DELAY_MS)
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
 /**
  * @description 启动小程序控制台日志转发，并保持 automator 会话常驻。
  */
@@ -190,22 +218,30 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
     }
     logHandler(normalizeExceptionEvent(payload))
   }
+  let closed = false
+  const closeSession = async () => {
+    if (closed) {
+      return
+    }
+    closed = true
+    detachMiniProgramListener(miniProgram, 'console', onConsole)
+    detachMiniProgramListener(miniProgram, 'exception', onException)
+    await miniProgram.close()
+  }
+
+  try {
+    await enableMiniProgramConsoleLog(miniProgram)
+  }
+  catch (error) {
+    await closeSession()
+    throw error
+  }
 
   miniProgram.on('console', onConsole)
   miniProgram.on('exception', onException)
   options.onReady?.()
 
-  let closed = false
-
   return {
-    async close() {
-      if (closed) {
-        return
-      }
-      closed = true
-      detachMiniProgramListener(miniProgram, 'console', onConsole)
-      detachMiniProgramListener(miniProgram, 'exception', onException)
-      await miniProgram.close()
-    },
+    close: closeSession,
   }
 }

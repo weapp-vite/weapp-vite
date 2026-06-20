@@ -37,6 +37,7 @@ function createMiniProgramMock() {
       listeners.get(event)?.delete(listener)
       return miniProgram
     }),
+    enableLog: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
     emit(event: string, payload: unknown) {
       for (const listener of listeners.get(event) ?? []) {
@@ -175,5 +176,43 @@ describe('forwardConsole', () => {
 
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
     expect(miniProgram.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for App.enableLog before reporting ready', async () => {
+    const miniProgram = createMiniProgramMock()
+    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    const onReady = vi.fn()
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    await startForwardConsole({
+      projectPath: '/tmp/demo',
+      onReady,
+    })
+
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(1)
+    expect(onReady).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans up when App.enableLog cannot be enabled', async () => {
+    vi.useFakeTimers()
+    const miniProgram = createMiniProgramMock()
+    miniProgram.enableLog.mockRejectedValue(new Error('enable log failed'))
+    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    const onReady = vi.fn()
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    const promise = startForwardConsole({
+      projectPath: '/tmp/demo',
+      onReady,
+    }).catch((error: unknown) => error)
+    await vi.runAllTimersAsync()
+
+    await expect(promise).resolves.toEqual(expect.objectContaining({
+      message: 'enable log failed',
+    }))
+    expect(onReady).not.toHaveBeenCalled()
+    expect(miniProgram.off).toHaveBeenCalledTimes(2)
+    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })

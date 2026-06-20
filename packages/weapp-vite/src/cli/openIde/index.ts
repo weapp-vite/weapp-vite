@@ -50,6 +50,7 @@ export interface OpenIdeOptions {
   reuseOpenedProject?: boolean
   useAutomatorOpen?: boolean
   openRecovery?: boolean
+  prepareAutomatorSession?: boolean
   skipPostOpenHealthCheck?: boolean
   loginRetry?: string
   loginRetryTimeout?: string
@@ -68,6 +69,8 @@ function shouldLogAutomatorFallbackError() {
   const flag = process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
   return flag === '1' || flag === 'true'
 }
+
+const PREPARE_AUTOMATOR_SESSION_TIMEOUT = 8_000
 
 function isWechatIdeOpenRecoveryDisabled(options: OpenIdeOptions) {
   if (options.openRecovery === false) {
@@ -184,7 +187,7 @@ async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, optio
       preserveProjectRoot: true,
       projectPath,
       port: resolveProjectAutomatorPort(projectPath),
-      timeout: 30_000,
+      timeout: PREPARE_AUTOMATOR_SESSION_TIMEOUT,
       trustProject: options.trustProject !== false,
     }) as { disconnect?: () => void }
     miniProgram.disconnect?.()
@@ -405,6 +408,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   }
 
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, normalizedOptions))
+  if (platform === 'weapp' && projectPath && normalizedOptions.prepareAutomatorSession) {
+    await prepareOpenedWechatIdeAutomatorSession(projectPath, normalizedOptions)
+  }
   if (platform === 'weapp' && projectPath && !normalizedOptions.skipPostOpenHealthCheck) {
     await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
   }

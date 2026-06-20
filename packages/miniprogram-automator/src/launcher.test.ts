@@ -102,6 +102,19 @@ describe('Launcher', () => {
     expect(result).toEqual({ checkVersion })
   })
 
+  it('passes explicit connect timeout to websocket creation', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    connectCreateMock.mockResolvedValueOnce(new EventEmitter())
+    const launcher = new Launcher()
+
+    await (launcher as any).connectTool({
+      timeout: 1_234,
+      wsEndpoint: 'ws://127.0.0.1:1234',
+    }).catch(() => {})
+
+    expect(connectCreateMock).toHaveBeenCalledWith('ws://127.0.0.1:1234', 1_234)
+  })
+
   it('rejects occupied custom ports before spawning', async () => {
     const { default: Launcher } = await loadLauncherModule()
     acquirePortLeaseMock.mockRejectedValueOnce(new Error('Port 9420 is in use, please specify another port'))
@@ -169,6 +182,10 @@ describe('Launcher', () => {
       cwd: undefined,
     })
     expect(checkVersion).toHaveBeenCalledTimes(1)
+    expect((launcher as any).connectTool).toHaveBeenCalledWith({
+      timeout: 3_000,
+      wsEndpoint: 'ws://127.0.0.1:9420',
+    })
     expect(sleepMock).toHaveBeenCalledWith(5000)
     expect(result).toEqual({
       checkVersion,
