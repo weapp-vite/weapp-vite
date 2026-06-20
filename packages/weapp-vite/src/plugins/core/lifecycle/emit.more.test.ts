@@ -467,7 +467,7 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
-  it('keeps active weapp-vite runtime vendor chunks during partial dev hmr rebuilds', async () => {
+  it('keeps active runtime vendor chunks during partial dev hmr rebuilds', async () => {
     const emittedChunkFileNames = new Set<string>()
     const state = createState({
       subPackageMeta: undefined,
@@ -491,6 +491,9 @@ describe('core lifecycle emit hook extra branches', () => {
       },
       hmrSharedChunkImporters: new Map([
         ['weapp-vendors/weapp-vite-runtime.js', new Set(['app.ts', 'pages/index/index.ts'])],
+        ['weapp-vendors/request-globals-runtime.js', new Set(['app.ts', 'pages/index/index.ts'])],
+        ['weapp-vendors/request-runtime.js', new Set(['app.ts', 'pages/index/index.ts'])],
+        ['weapp-vendors/wevu-src.js', new Set(['app.ts', 'pages/index/index.ts'])],
       ]),
     })
     const hook = createGenerateBundleHook(state, false)
@@ -499,8 +502,18 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'pages/index/index.js',
         facadeModuleId: 'pages/index/index.ts',
-        code: 'const runtime = require("../../weapp-vendors/weapp-vite-runtime.js")',
-        imports: ['../../weapp-vendors/weapp-vite-runtime.js'],
+        code: [
+          'const layoutRuntime = require("../../weapp-vendors/weapp-vite-runtime.js")',
+          'const requestGlobalsRuntime = require("../../weapp-vendors/request-globals-runtime.js")',
+          'const requestRuntime = require("../../weapp-vendors/request-runtime.js")',
+          'const wevu = require("../../weapp-vendors/wevu-src.js")',
+        ].join('\n'),
+        imports: [
+          '../../weapp-vendors/weapp-vite-runtime.js',
+          '../../weapp-vendors/request-globals-runtime.js',
+          '../../weapp-vendors/request-runtime.js',
+          '../../weapp-vendors/wevu-src.js',
+        ],
         dynamicImports: [],
       },
       'weapp-vendors/weapp-vite-runtime.js': {
@@ -510,13 +523,40 @@ describe('core lifecycle emit hook extra branches', () => {
         imports: [],
         dynamicImports: [],
       },
+      'weapp-vendors/request-globals-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-globals-runtime.js',
+        code: 'Object.defineProperty(exports, "install", { get: function() { return install } })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/request-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-runtime.js',
+        code: 'Object.defineProperty(exports, "request", { get: function() { return request } })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: 'Object.defineProperty(exports, "createApp", { get: function() { return createApp } })',
+        imports: [],
+        dynamicImports: [],
+      },
     } as any
 
     await hook.call({}, {}, bundle)
 
     expect(bundle['pages/index/index.js']).toBeDefined()
     expect(bundle['weapp-vendors/weapp-vite-runtime.js']).toBeDefined()
+    expect(bundle['weapp-vendors/request-globals-runtime.js']).toBeDefined()
+    expect(bundle['weapp-vendors/request-runtime.js']).toBeDefined()
+    expect(bundle['weapp-vendors/wevu-src.js']).toBeUndefined()
     expect(emittedChunkFileNames.has('weapp-vendors/weapp-vite-runtime.js')).toBe(true)
+    expect(emittedChunkFileNames.has('weapp-vendors/request-globals-runtime.js')).toBe(true)
+    expect(emittedChunkFileNames.has('weapp-vendors/request-runtime.js')).toBe(true)
+    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(false)
   })
 
   it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {

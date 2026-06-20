@@ -86,9 +86,9 @@ function isStableHmrSharedChunk(fileName: string) {
     || (!fileName.includes('/') && fileName !== 'app.js')
 }
 
-function isWeappViteRuntimeSharedChunk(fileName: string) {
+function isRuntimeVendorSharedChunk(fileName: string) {
   return fileName.startsWith('weapp-vendors/')
-    && /(?:^|[-/])weapp-vite-runtime(?:[-.]|$)/.test(fileName)
+    && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName)
 }
 
 function resolveImportedChunkId(importerFileName: string, imported: string) {
@@ -158,9 +158,9 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     const activeEntryIds = state.hmrState.lastHmrEntryIds?.size
       ? state.hmrState.lastHmrEntryIds
       : state.hmrState.lastEmittedEntryIds
-    const isActiveWeappViteRuntimeChunk = isWeappViteRuntimeSharedChunk(fileName)
+    const isActiveRuntimeVendorChunk = isRuntimeVendorSharedChunk(fileName)
       && isImportedByActiveHmrChunk(fileName, bundle, activeEntryIds)
-    if (isActiveWeappViteRuntimeChunk) {
+    if (isActiveRuntimeVendorChunk) {
       const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
       if (emittedChunkFileNames) {
         emittedChunkFileNames.add(fileName)
