@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.17.1
+
+### Patch Changes
+
+- 🐛 **修复升级 rolldown 后因全局覆盖 Vite 内部 rolldown 版本导致的构建失败；现在保留 Vite 声明的内部 rolldown 版本，同时继续校验工作区直接使用的 rolldown 版本保持一致。** [`ba39ecc`](https://github.com/weapp-vite/weapp-vite/commit/ba39ecc7ca44117428bf8fba9a19c4684d0623dc) by @sonofmagic
+
 ## 6.17.0
 
 ### Minor Changes

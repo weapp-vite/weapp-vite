@@ -1,5 +1,12 @@
 # @weapp-vite/mcp
 
+## 1.4.6
+
+### Patch Changes
+
+- 📦 **Dependencies** [`cd13a17`](https://github.com/weapp-vite/weapp-vite/commit/cd13a176f129a82cf6e4b58a5ba7449d77bd2175)
+  → `@weapp-vite/devtools-runtime@0.4.6`
+
 ## 1.4.5
 
 ### Patch Changes

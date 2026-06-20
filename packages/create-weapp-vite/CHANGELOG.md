@@ -1,5 +1,16 @@
 # create-weapp-vite
 
+## 2.4.1
+
+### Patch Changes
+
+- 🐛 **修复 `dev -o` / `dev:open` 场景下 forwardConsole 可能显示已连接但无法持续收到微信开发者工具控制台日志的问题。现在日志桥会优先绑定项目专属 automator 会话，并在普通 open 回退场景下自动连接已打开的开发者工具会话，同时保持日志订阅可用，避免打开或编译后的页面上下文刷新导致终端不再收到小程序日志。** [`3a549d7`](https://github.com/weapp-vite/weapp-vite/commit/3a549d758d7493d59e1395a6dc59b3c5dab82423) by @sonofmagic
+  - 同时调整微信开发者工具打开后的项目稳定流程，默认不再调用 DevTools `/v2/resetfileutils`，避免每次打开项目时触发 `wx.saveFile` / `wx.removeSavedFile` 废弃 API 警告；如确需恢复旧的 fileutils 重置行为，可通过 `WEAPP_VITE_RESET_IDE_FILEUTILS=1` 显式开启。
+
+- 🐛 **修复 `wv dev -o` 打开微信开发者工具后没有稳定接入 `forwardConsole` 的问题，避免日志桥接在自动化会话未就绪时二次拉起开发者工具，并优化小程序日志的终端颜色展示。** [`cd13a17`](https://github.com/weapp-vite/weapp-vite/commit/cd13a176f129a82cf6e4b58a5ba7449d77bd2175) by @sonofmagic
+
+- 🐛 **修复升级 rolldown 后因全局覆盖 Vite 内部 rolldown 版本导致的构建失败；现在保留 Vite 声明的内部 rolldown 版本，同时继续校验工作区直接使用的 rolldown 版本保持一致。** [`ba39ecc`](https://github.com/weapp-vite/weapp-vite/commit/ba39ecc7ca44117428bf8fba9a19c4684d0623dc) by @sonofmagic
+
 ## 2.4.0
 
 ### Minor Changes
