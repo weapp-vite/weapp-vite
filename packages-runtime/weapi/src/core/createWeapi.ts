@@ -26,6 +26,8 @@ const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   kuaishou: 'ks',
 }
 
+const WECHAT_FILE_SYSTEM_MANAGER_METHODS = new Set(['saveFile', 'removeSavedFile'])
+
 function normalizePlatformName(value?: string) {
   const normalized = normalizeMiniProgramPlatform(value)
   if (!normalized) {
@@ -81,14 +83,30 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     return platformName
   }
 
+  const resolveRuntimeMethod = (runtimeAdapter: TAdapter | undefined, platform: string | undefined, methodName: string) => {
+    if (!runtimeAdapter) {
+      return undefined
+    }
+    if (platform === 'wx' && WECHAT_FILE_SYSTEM_MANAGER_METHODS.has(methodName)) {
+      const getFileSystemManager = (runtimeAdapter as Record<string, any>).getFileSystemManager
+      if (typeof getFileSystemManager !== 'function') {
+        return undefined
+      }
+      const fileSystemManager = getFileSystemManager.call(runtimeAdapter)
+      const fileSystemMethod = fileSystemManager?.[methodName]
+      return typeof fileSystemMethod === 'function'
+        ? fileSystemMethod.bind(fileSystemManager)
+        : undefined
+    }
+    return (runtimeAdapter as Record<string, any>)[methodName]
+  }
+
   const resolveTarget = (methodName: string): WeapiResolvedTarget => {
     const runtimeAdapter = resolveAdapter()
     const platform = getPlatform()
     const mappingInfo = resolveMethodMappingWithMeta(platform, methodName, { allowFallback })
     const target = mappingInfo?.target ?? methodName
-    const targetMethod = runtimeAdapter
-      ? (runtimeAdapter as Record<string, any>)[target]
-      : undefined
+    const targetMethod = resolveRuntimeMethod(runtimeAdapter, platform, target)
     const supported = typeof targetMethod === 'function'
     const supportLevel = !supported
       ? 'unsupported'
@@ -162,7 +180,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         ? resolveMethodMappingWithMeta(platform, prop, { allowFallback })
         : undefined
       const methodName = mappingRule?.target ?? (prop as string)
-      const value = (currentAdapter as Record<string, any>)[methodName]
+      const value = resolveRuntimeMethod(currentAdapter, platform, methodName)
       if (typeof value !== 'function') {
         if (value === undefined && typeof prop === 'string') {
           const missing = (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
@@ -179,9 +197,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         const mappingInfo = resolveMethodMappingWithMeta(platform, prop as string, { allowFallback })
         const mappingRule = mappingInfo?.rule
         const methodName = mappingInfo?.target ?? (prop as string)
-        const runtimeMethod = runtimeAdapter
-          ? (runtimeAdapter as Record<string, any>)[methodName]
-          : undefined
+        const runtimeMethod = resolveRuntimeMethod(runtimeAdapter, platform, methodName)
         let runtimeArgs = args
         try {
           runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args

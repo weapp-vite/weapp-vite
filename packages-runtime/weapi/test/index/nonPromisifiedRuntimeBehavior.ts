@@ -39,5 +39,56 @@ export function registerWeapiIndexNonPromisifiedRuntimeBehaviorTests() {
       expect(api.getLogManager({ level: 1 })).toBe(logManager)
       expect(api.createVideoContext('demo')).toBe(videoContext)
     })
+
+    it('uses WeChat FileSystemManager file APIs without touching deprecated wx file methods', async () => {
+      const saveFile = vi.fn((options: any) => {
+        options.success?.({ errMsg: 'saveFile:ok', savedFilePath: '/saved/demo.txt' })
+      })
+      const removeSavedFile = vi.fn((options: any) => {
+        options.success?.({ errMsg: 'removeSavedFile:ok' })
+      })
+      const deprecatedSaveFileAccess = vi.fn()
+      const deprecatedRemoveSavedFileAccess = vi.fn()
+      const adapter: Record<string, any> = {
+        getFileSystemManager: vi.fn(() => ({
+          removeSavedFile,
+          saveFile,
+        })),
+      }
+
+      Object.defineProperties(adapter, {
+        removeSavedFile: {
+          get() {
+            deprecatedRemoveSavedFileAccess()
+            return vi.fn()
+          },
+        },
+        saveFile: {
+          get() {
+            deprecatedSaveFileAccess()
+            return vi.fn()
+          },
+        },
+      })
+
+      const api = createTestWeapi({
+        adapter,
+        platform: 'wx',
+      }) as Record<string, any>
+
+      expect(api.supports('saveFile')).toBe(true)
+      expect(api.supports('removeSavedFile')).toBe(true)
+      await expect(api.saveFile({ tempFilePath: '/tmp/demo.txt' })).resolves.toMatchObject({
+        errMsg: 'saveFile:ok',
+        savedFilePath: '/saved/demo.txt',
+      })
+      await expect(api.removeSavedFile({ filePath: '/saved/demo.txt' })).resolves.toMatchObject({
+        errMsg: 'removeSavedFile:ok',
+      })
+      expect(saveFile).toHaveBeenCalledWith(expect.objectContaining({ tempFilePath: '/tmp/demo.txt' }))
+      expect(removeSavedFile).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/saved/demo.txt' }))
+      expect(deprecatedSaveFileAccess).not.toHaveBeenCalled()
+      expect(deprecatedRemoveSavedFileAccess).not.toHaveBeenCalled()
+    })
   })
 }
