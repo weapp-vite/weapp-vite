@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.4.1
+
+### Patch Changes
+
+- 🐛 **修复独立 WXML 模板变量跳转时被同伴脚本中后续同名局部变量抢占的问题；现在页面 `data` 字段会优先作为模板数据变量的定义位置。** [`c1aa3f5`](https://github.com/weapp-vite/weapp-vite/commit/c1aa3f5d1bed06ece991e1ff11933bb42be1fbe5) by @sonofmagic
+
 ## 0.4.0
 
 ### Minor Changes
