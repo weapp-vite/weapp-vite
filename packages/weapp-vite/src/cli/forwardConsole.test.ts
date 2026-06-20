@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const determineAgentMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
@@ -17,6 +17,7 @@ const colorsMock = vi.hoisted(() => ({
   red: vi.fn((value: string) => value),
   yellow: vi.fn((value: string) => value),
 }))
+let stdoutWriteSpy: ReturnType<typeof vi.spyOn>
 
 vi.mock('@vercel/detect-agent', () => ({
   determineAgent: determineAgentMock,
@@ -35,6 +36,7 @@ vi.mock('../logger', () => ({
 describe('forwardConsole', () => {
   beforeEach(() => {
     vi.resetModules()
+    stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     determineAgentMock.mockReset()
     resolveProjectAutomatorPortMock.mockReset()
     startForwardConsoleMock.mockReset()
@@ -55,6 +57,10 @@ describe('forwardConsole', () => {
     startForwardConsoleMock.mockResolvedValue({
       close: vi.fn(),
     })
+  })
+
+  afterEach(() => {
+    stdoutWriteSpy.mockRestore()
   })
 
   it('enables auto mode when running in an AI terminal', async () => {
@@ -211,7 +217,9 @@ describe('forwardConsole', () => {
       message: 'plain warning',
     })
 
-    expect(loggerMock.warn).toHaveBeenCalledWith('[mini:warn ] plain warning')
+    expect(stdoutWriteSpy).toHaveBeenCalledWith('[mini:warn ] plain warning\n')
+    expect(loggerMock.log).not.toHaveBeenCalled()
+    expect(loggerMock.warn).not.toHaveBeenCalled()
     expect(colorsMock.yellow).not.toHaveBeenCalled()
     expect(colorsMock.bold).not.toHaveBeenCalled()
   })
@@ -232,8 +240,33 @@ describe('forwardConsole', () => {
       message: 'colored warning',
     })
 
-    expect(loggerMock.warn).toHaveBeenCalledWith('[mini:warn ] colored warning')
+    expect(stdoutWriteSpy).toHaveBeenCalledWith('[mini:warn ] colored warning\n')
+    expect(loggerMock.log).not.toHaveBeenCalled()
+    expect(loggerMock.warn).not.toHaveBeenCalled()
     expect(colorsMock.yellow).toHaveBeenCalled()
+    expect(colorsMock.bold).toHaveBeenCalled()
+  })
+
+  it('writes forwarded errors as raw mini log lines without logger error framing', async () => {
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+    const onLog = startForwardConsoleMock.mock.calls[0]?.[0].onLog
+    onLog({
+      level: 'error',
+      message: 'colored error',
+    })
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith('[mini:error] colored error\n')
+    expect(loggerMock.log).not.toHaveBeenCalled()
+    expect(loggerMock.error).not.toHaveBeenCalled()
+    expect(colorsMock.red).toHaveBeenCalled()
     expect(colorsMock.bold).toHaveBeenCalled()
   })
 

@@ -1,4 +1,5 @@
 import type { WeappForwardConsoleLogLevel, WeappViteConfig } from '../types'
+import process from 'node:process'
 import { determineAgent } from '@vercel/detect-agent'
 import { resolveProjectAutomatorPort, startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
@@ -85,6 +86,10 @@ function formatForwardConsoleMessage(level: WeappForwardConsoleLogLevel, message
     return colors.dim(message)
   }
   return message
+}
+
+function writeForwardConsoleLine(line: string) {
+  process.stdout.write(`${line}\n`)
 }
 
 function isDevtoolsPortNotReadyError(error: unknown) {
@@ -194,19 +199,7 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
       },
       onLog: (event) => {
         const line = `${formatForwardConsolePrefix(event.level, color)} ${formatForwardConsoleMessage(event.level, event.message, color)}`
-        if (event.level === 'error') {
-          logger.error(line)
-          return
-        }
-        if (event.level === 'warn') {
-          logger.warn(line)
-          return
-        }
-        if (event.level === 'info') {
-          logger.info(line)
-          return
-        }
-        logger.log(line)
+        writeForwardConsoleLine(line)
       },
     })
   })
