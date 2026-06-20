@@ -20,6 +20,7 @@ export interface MaybeStartForwardConsoleOptions {
 
 export interface StartForwardConsoleBridgeOptions {
   agentName?: string
+  color?: boolean
   logLevels: WeappForwardConsoleLogLevel[]
   onReadyMessage: string
   openedOnly?: boolean
@@ -48,8 +49,11 @@ async function detectAgent() {
   }
 }
 
-function formatForwardConsolePrefix(level: WeappForwardConsoleLogLevel) {
+function formatForwardConsolePrefix(level: WeappForwardConsoleLogLevel, color: boolean) {
   const label = `[mini:${level.padEnd(5)}]`
+  if (!color) {
+    return label
+  }
   if (level === 'error') {
     return colors.bold(colors.red(label))
   }
@@ -65,7 +69,10 @@ function formatForwardConsolePrefix(level: WeappForwardConsoleLogLevel) {
   return colors.bold(colors.green(label))
 }
 
-function formatForwardConsoleMessage(level: WeappForwardConsoleLogLevel, message: string) {
+function formatForwardConsoleMessage(level: WeappForwardConsoleLogLevel, message: string, color: boolean) {
+  if (!color) {
+    return message
+  }
   if (level === 'error') {
     return colors.red(message)
   }
@@ -172,6 +179,7 @@ export async function resolveForwardConsoleOptions(
  */
 export async function startForwardConsoleBridge(options: StartForwardConsoleBridgeOptions) {
   return await withForwardConsoleRetry(async () => {
+    const color = options.color ?? true
     return await startWechatForwardConsole({
       projectPath: options.projectPath,
       logLevels: options.logLevels,
@@ -182,7 +190,7 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
         logger.info(`${options.onReadyMessage}${suffix}`)
       },
       onLog: (event) => {
-        const line = `${formatForwardConsolePrefix(event.level)} ${formatForwardConsoleMessage(event.level, event.message)}`
+        const line = `${formatForwardConsolePrefix(event.level, color)} ${formatForwardConsoleMessage(event.level, event.message, color)}`
         if (event.level === 'error') {
           logger.error(line)
           return
@@ -226,6 +234,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
   try {
     activeForwardConsoleSession = await startForwardConsoleBridge({
       agentName: resolved.agentName,
+      color: !resolved.agentName,
       projectPath,
       logLevels: resolved.logLevels,
       openedOnly: true,

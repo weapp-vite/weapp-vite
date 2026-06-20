@@ -8,6 +8,14 @@ const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
   log: vi.fn(),
 }))
+const colorsMock = vi.hoisted(() => ({
+  bold: vi.fn((value: string) => value),
+  cyan: vi.fn((value: string) => value),
+  dim: vi.fn((value: string) => value),
+  green: vi.fn((value: string) => value),
+  red: vi.fn((value: string) => value),
+  yellow: vi.fn((value: string) => value),
+}))
 
 vi.mock('@vercel/detect-agent', () => ({
   determineAgent: determineAgentMock,
@@ -19,14 +27,7 @@ vi.mock('weapp-ide-cli', () => ({
 
 vi.mock('../logger', () => ({
   default: loggerMock,
-  colors: {
-    bold: (value: string) => value,
-    cyan: (value: string) => value,
-    dim: (value: string) => value,
-    green: (value: string) => value,
-    red: (value: string) => value,
-    yellow: (value: string) => value,
-  },
+  colors: colorsMock,
 }))
 
 describe('forwardConsole', () => {
@@ -38,6 +39,12 @@ describe('forwardConsole', () => {
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
     loggerMock.log.mockReset()
+    colorsMock.bold.mockClear()
+    colorsMock.cyan.mockClear()
+    colorsMock.dim.mockClear()
+    colorsMock.green.mockClear()
+    colorsMock.red.mockClear()
+    colorsMock.yellow.mockClear()
     determineAgentMock.mockResolvedValue({
       isAgent: false,
     })
@@ -99,6 +106,69 @@ describe('forwardConsole', () => {
       openedOnly: true,
       unhandledErrors: true,
     }))
+  })
+
+  it('keeps colors enabled for explicitly enabled user terminals', async () => {
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const started = await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+
+    expect(started).toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
+      projectPath: 'dist/dev',
+    }))
+  })
+
+  it('formats AI terminal forwarded logs without ANSI colors', async () => {
+    determineAgentMock.mockResolvedValue({
+      isAgent: true,
+      agent: {
+        name: 'codex',
+      },
+    })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {},
+    })
+    const onLog = startForwardConsoleMock.mock.calls[0]?.[0].onLog
+    onLog({
+      level: 'warn',
+      message: 'plain warning',
+    })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('[mini:warn ] plain warning')
+    expect(colorsMock.yellow).not.toHaveBeenCalled()
+    expect(colorsMock.bold).not.toHaveBeenCalled()
+  })
+
+  it('formats user terminal forwarded logs with colors', async () => {
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+    const onLog = startForwardConsoleMock.mock.calls[0]?.[0].onLog
+    onLog({
+      level: 'warn',
+      message: 'colored warning',
+    })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('[mini:warn ] colored warning')
+    expect(colorsMock.yellow).toHaveBeenCalled()
+    expect(colorsMock.bold).toHaveBeenCalled()
   })
 
   it('skips non-weapp platforms', async () => {
