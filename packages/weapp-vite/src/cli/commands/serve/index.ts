@@ -107,10 +107,11 @@ export function registerServeCommand(cli: CAC) {
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
             openRecovery: false,
+            prepareAutomatorSession: true,
             reuseOpenedProject: !openOptions?.forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
-            useAutomatorOpen: false,
+            useAutomatorOpen: true,
           })
           writePostOpenSeparator()
         },

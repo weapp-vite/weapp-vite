@@ -114,6 +114,7 @@ describe('openIde', () => {
     colorsMock.bold.mockClear()
     delete process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
     delete process.env.WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY
+    delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
 
     parseMock.mockResolvedValue(undefined)
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
@@ -212,7 +213,7 @@ describe('openIde', () => {
       '--trust-project',
     ])
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
@@ -238,6 +239,24 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
+  })
+
+  it('keeps fileutils reset opt-in to avoid DevTools deprecated file API warnings during open', async () => {
+    process.env.WEAPP_VITE_RESET_IDE_FILEUTILS = '1'
+    const { openIde } = await import('./openIde')
+
+    try {
+      await openIde('weapp', 'dist/dev/mp-weixin')
+    }
+    finally {
+      delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
+    }
+
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: true,
+      logPath: undefined,
+    })
   })
 
   it('skips automator reuse by default so plain open always targets the real project root', async () => {
@@ -282,6 +301,7 @@ describe('openIde', () => {
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 3000,
     })
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。')
@@ -307,6 +327,7 @@ describe('openIde', () => {
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 3000,
     })
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
@@ -315,12 +336,14 @@ describe('openIde', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
     expect(loggerMock.info).toHaveBeenCalledWith('正在关闭当前已打开项目，并重新拉起微信开发者工具...')
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
@@ -344,18 +367,21 @@ describe('openIde', () => {
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       timeout: 3000,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
@@ -380,7 +406,7 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
     ])
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
@@ -424,7 +450,7 @@ describe('openIde', () => {
       '--trust-project',
     ])
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
       fallbackToCli: true,
       logPath: undefined,
@@ -452,13 +478,41 @@ describe('openIde', () => {
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
   })
 
-  it('does not fall back to automator wrapper when plain open stabilization reset fails', async () => {
+  it('skips post-open health check after automator open when explicitly requested', async () => {
+    connectOpenedAutomatorMock.mockRejectedValueOnce(new Error('not opened'))
     const { openIde } = await import('./openIde')
-    resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))
 
     await openIde('weapp', 'dist/dev/mp-weixin', {
-      useAutomatorOpen: false,
+      skipPostOpenHealthCheck: true,
+      useAutomatorOpen: true,
     })
+
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
+      trustProject: true,
+    })
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('does not fall back to automator wrapper when plain open stabilization fails', async () => {
+    const { openIde } = await import('./openIde')
+    process.env.WEAPP_VITE_RESET_IDE_FILEUTILS = '1'
+    resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))
+
+    try {
+      await openIde('weapp', 'dist/dev/mp-weixin', {
+        useAutomatorOpen: false,
+      })
+    }
+    finally {
+      delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
+    }
 
     expect(parseMock).toHaveBeenCalledWith([
       'open',
@@ -483,12 +537,18 @@ describe('openIde', () => {
 
   it('skips automatic recovery when disabled by option', async () => {
     const { openIde } = await import('./openIde')
+    process.env.WEAPP_VITE_RESET_IDE_FILEUTILS = '1'
     resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))
 
-    await openIde('weapp', 'dist/dev/mp-weixin', {
-      openRecovery: false,
-      useAutomatorOpen: false,
-    })
+    try {
+      await openIde('weapp', 'dist/dev/mp-weixin', {
+        openRecovery: false,
+        useAutomatorOpen: false,
+      })
+    }
+    finally {
+      delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
+    }
 
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledTimes(1)
@@ -499,6 +559,7 @@ describe('openIde', () => {
   it('skips automatic recovery when disabled by environment', async () => {
     process.env.WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY = '1'
     const { openIde } = await import('./openIde')
+    process.env.WEAPP_VITE_RESET_IDE_FILEUTILS = '1'
     resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))
 
     try {
@@ -508,6 +569,7 @@ describe('openIde', () => {
     }
     finally {
       delete process.env.WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY
+      delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
     }
 
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()

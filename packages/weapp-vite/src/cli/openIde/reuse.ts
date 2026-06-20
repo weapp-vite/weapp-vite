@@ -1,4 +1,4 @@
-import { connectOpenedAutomator, launchAutomator, promptRetryKeypress } from 'weapp-ide-cli'
+import { connectOpenedAutomator, launchAutomator, promptRetryKeypress, resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
 
 interface DisconnectableMiniProgram {
@@ -16,8 +16,10 @@ function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
 
 async function openWechatIdeByAutomator(projectPath: string) {
   const miniProgram = await launchAutomator({
+    persistAsDefaultSession: true,
     preserveProjectRoot: true,
     projectPath,
+    port: resolveProjectAutomatorPort(projectPath),
     trustProject: true,
   }) as DisconnectableMiniProgram
   disconnectMiniProgram(miniProgram)
@@ -27,6 +29,7 @@ async function connectOpenedProject(projectPath: string) {
   try {
     return await connectOpenedAutomator({
       projectPath,
+      port: resolveProjectAutomatorPort(projectPath),
       timeout: 3_000,
     }) as DisconnectableMiniProgram
   }

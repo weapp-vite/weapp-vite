@@ -2,9 +2,10 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   launchAutomator,
+  resolveProjectAutomatorPort,
   startForwardConsole,
 } from 'weapp-ide-cli'
 import {
@@ -22,6 +23,7 @@ const INDEX_WXML = path.resolve(APP_ROOT, 'src/pages/index/index.wxml')
 const DIST_INDEX_JS = path.resolve(APP_ROOT, 'dist/pages/index/index.js')
 const DIST_INDEX_WXML = path.resolve(APP_ROOT, 'dist/pages/index/index.wxml')
 const INDEX_ROUTE = '/pages/index/index'
+const APP_AUTOMATOR_PORT = resolveProjectAutomatorPort(APP_ROOT)
 const INITIAL_DESCRIPTION = '点击按钮，日志同步回当前终端。'
 const DESCRIPTION_BINDING = '{{description}}'
 const LOG_CLICKED_RE = /\[mini:log\s*\]\s+\[forward-console-demo\] Log clicked/
@@ -38,20 +40,21 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function waitForForwardedLog(
-  forwardedMessages: string[],
+async function waitForOutputAfter(
+  getOutput: () => string,
   since: number,
   matcher: RegExp,
   timeoutMs = 30_000,
 ) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    if (forwardedMessages.slice(since).some(message => matcher.test(message))) {
+    const nextOutput = getOutput().slice(since)
+    if (matcher.test(nextOutput)) {
       return
     }
     await delay(200)
   }
-  throw new Error(`Timed out waiting for forwarded log; recent logs=${forwardedMessages.slice(since).join('\n')}`)
+  throw new Error(`Timed out waiting for output; recent output=${getOutput().slice(since)}`)
 }
 
 async function waitForIndexPage(miniProgram: any, timeoutMs = 30_000) {
@@ -110,20 +113,7 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
   let forwardConsoleSession: Awaited<ReturnType<typeof startForwardConsole>> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 
-  beforeAll(async () => {
-    const [indexTs, indexWxml] = await Promise.all([
-      fs.readFile(INDEX_TS, 'utf8'),
-      fs.readFile(INDEX_WXML, 'utf8'),
-    ])
-    originalIndexTs = indexTs
-    originalIndexWxml = indexWxml
-    await cleanupResidualIdeProcesses()
-    await Promise.all([
-      fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
-    ])
-  }, 60_000)
-
-  afterAll(async () => {
+  async function cleanupTestState() {
     if (originalIndexTs) {
       await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8').catch(() => {})
     }
@@ -138,6 +128,27 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     devProcess = undefined
     await cleanupTrackedDevProcesses()
     await cleanupResidualIdeProcesses()
+  }
+
+  beforeAll(async () => {
+    const [indexTs, indexWxml] = await Promise.all([
+      fs.readFile(INDEX_TS, 'utf8'),
+      fs.readFile(INDEX_WXML, 'utf8'),
+    ])
+    originalIndexTs = indexTs
+    originalIndexWxml = indexWxml
+    await cleanupResidualIdeProcesses()
+    await Promise.all([
+      fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
+    ])
+  }, 60_000)
+
+  afterEach(async () => {
+    await cleanupTestState()
+  }, 60_000)
+
+  afterAll(async () => {
+    await cleanupTestState()
   }, 60_000)
 
   it('keeps forwarding console output after dev HMR updates the current page', async () => {
@@ -156,12 +167,14 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
       persistAsDefaultSession: true,
       preserveProjectRoot: true,
       projectPath: APP_ROOT,
+      port: APP_AUTOMATOR_PORT,
       timeout: 60_000,
       trustProject: true,
     })
     const forwardedMessages: string[] = []
     forwardConsoleSession = await startForwardConsole({
       projectPath: APP_ROOT,
+      port: APP_AUTOMATOR_PORT,
       logLevels: ['log', 'info', 'warn', 'error'],
       onLog(event) {
         forwardedMessages.push(`[mini:${event.level.padEnd(5)}] ${event.message}`)
@@ -172,9 +185,7 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
 
     expect(logButton).toBeTruthy()
     await logButton.tap()
-
-    await waitForForwardedLog(forwardedMessages, 0, LOG_CLICKED_MESSAGE_RE)
-    expect(forwardedMessages.join('\n')).toMatch(LOG_CLICKED_RE)
+    await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)
 
     const hmrDescription = `HMR forwardConsole ${Date.now()}`
     await fs.writeFile(INDEX_WXML, replaceTemplateDescription(originalIndexWxml, hmrDescription), 'utf8')
@@ -184,10 +195,10 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     )
     const updatedPage = await waitForPageDescription(miniProgram, hmrDescription, 90_000)
     const updatedLogButton = await updatedPage.$('.action-log')
-    const messageCountBeforeHmrTap = forwardedMessages.length
+    const outputBeforeHmrTap = forwardedMessages.join('\n').length
 
     expect(updatedLogButton).toBeTruthy()
     await updatedLogButton.tap()
-    await waitForForwardedLog(forwardedMessages, messageCountBeforeHmrTap, LOG_CLICKED_MESSAGE_RE)
+    await waitForOutputAfter(() => forwardedMessages.join('\n'), outputBeforeHmrTap, LOG_CLICKED_MESSAGE_RE)
   }, 360_000)
 })

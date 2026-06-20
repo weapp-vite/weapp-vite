@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const determineAgentMock = vi.hoisted(() => vi.fn())
+const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('@vercel/detect-agent', () => ({
 }))
 
 vi.mock('weapp-ide-cli', () => ({
+  resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   startForwardConsole: startForwardConsoleMock,
 }))
 
@@ -34,6 +36,7 @@ describe('forwardConsole', () => {
   beforeEach(() => {
     vi.resetModules()
     determineAgentMock.mockReset()
+    resolveProjectAutomatorPortMock.mockReset()
     startForwardConsoleMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -48,6 +51,7 @@ describe('forwardConsole', () => {
     determineAgentMock.mockResolvedValue({
       isAgent: false,
     })
+    resolveProjectAutomatorPortMock.mockReturnValue(10261)
     startForwardConsoleMock.mockResolvedValue({
       close: vi.fn(),
     })
@@ -102,10 +106,12 @@ describe('forwardConsole', () => {
     expect(started).toBe(true)
     expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
+      port: 10261,
       logLevels: ['log', 'info', 'warn', 'error'],
       openedOnly: undefined,
       unhandledErrors: true,
     }))
+    expect(resolveProjectAutomatorPortMock).toHaveBeenCalledWith('dist/dev')
   })
 
   it('can restrict console forwarding to an opened automator session', async () => {
@@ -128,7 +134,44 @@ describe('forwardConsole', () => {
     expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
       openedOnly: true,
       projectPath: 'dist/dev',
+      port: 10261,
     }))
+  })
+
+  it('falls back to the opened default automator session when project port is unavailable', async () => {
+    vi.useFakeTimers()
+    determineAgentMock.mockResolvedValue({
+      isAgent: true,
+      agent: {
+        name: 'codex',
+      },
+    })
+    for (let index = 0; index < 6; index += 1) {
+      startForwardConsoleMock.mockRejectedValueOnce(new Error('DEVTOOLS_WS_CONNECT_ERROR'))
+    }
+    startForwardConsoleMock.mockResolvedValueOnce({
+      close: vi.fn(),
+    })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const promise = maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {},
+    })
+    await vi.runAllTimersAsync()
+
+    await expect(promise).resolves.toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      projectPath: 'dist/dev',
+      port: 10261,
+    }))
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(7, expect.objectContaining({
+      openedOnly: true,
+      projectPath: 'dist/dev',
+      port: undefined,
+    }))
+    vi.useRealTimers()
   })
 
   it('keeps colors enabled for explicitly enabled user terminals', async () => {

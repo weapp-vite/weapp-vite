@@ -1,7 +1,7 @@
 import type { AutomatorSessionOptions, MiniProgramEventMap, MiniProgramLike } from './automator-session'
 import { inspect } from 'node:util'
 import logger, { colors } from '../logger'
-import { connectMiniProgram } from './automator-session'
+import { acquireSharedMiniProgram, connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
 
 export type ForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
 
@@ -25,6 +25,9 @@ export interface ForwardConsoleSession {
 const DEFAULT_FORWARD_CONSOLE_LEVELS: ForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
 const ENABLE_LOG_RETRY_DELAY_MS = 500
 const ENABLE_LOG_RETRY_TIMES = 5
+const ENABLE_LOG_REFRESH_INTERVAL_MS = 2000
+const AUXILIARY_FORWARD_CONSOLE_DELAY_MS = 2500
+const DUPLICATE_LOG_SUPPRESS_MS = 800
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined
@@ -198,35 +201,89 @@ async function enableMiniProgramConsoleLog(miniProgram: MiniProgramLike) {
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
+async function refreshOpenedMiniProgramConsoleLog(options: ForwardConsoleOptions) {
+  const miniProgram = await connectMiniProgram({
+    ...options,
+    openedOnly: true,
+  })
+  try {
+    await enableMiniProgramConsoleLog(miniProgram)
+  }
+  finally {
+    miniProgram.disconnect()
+  }
+}
+
+function startEnableLogRefresh(miniProgram: MiniProgramLike, options: ForwardConsoleOptions) {
+  if (typeof miniProgram.enableLog !== 'function') {
+    return undefined
+  }
+
+  const timer = setInterval(() => {
+    void miniProgram.enableLog().catch(() => {})
+    void refreshOpenedMiniProgramConsoleLog(options).catch(() => {})
+  }, ENABLE_LOG_REFRESH_INTERVAL_MS)
+
+  return () => {
+    clearInterval(timer)
+  }
+}
+
 /**
  * @description 启动小程序控制台日志转发，并保持 automator 会话常驻。
  */
 export async function startForwardConsole(options: ForwardConsoleOptions): Promise<ForwardConsoleSession> {
-  const miniProgram = await connectMiniProgram(options)
+  const miniProgram = await acquireSharedMiniProgram(options)
   const logLevels = new Set(options.logLevels?.length ? options.logLevels : DEFAULT_FORWARD_CONSOLE_LEVELS)
   const logHandler = options.onLog ?? printForwardConsoleEvent
+  const recentLogTimes = new Map<string, number>()
+  const emitLog = (event: ForwardConsoleEvent) => {
+    const key = `${event.level}\0${event.message}`
+    const now = Date.now()
+    const lastEmittedAt = recentLogTimes.get(key) ?? 0
+    if (now - lastEmittedAt < DUPLICATE_LOG_SUPPRESS_MS) {
+      return
+    }
+    recentLogTimes.set(key, now)
+    logHandler(event)
+  }
   const onConsole: MiniProgramEventMap['console'] = (payload) => {
     const event = normalizeConsoleEvent(payload)
     if (!logLevels.has(event.level)) {
       return
     }
-    logHandler(event)
+    emitLog(event)
   }
   const onException: MiniProgramEventMap['exception'] = (payload) => {
     if (options.unhandledErrors === false) {
       return
     }
-    logHandler(normalizeExceptionEvent(payload))
+    emitLog(normalizeExceptionEvent(payload))
   }
   let closed = false
+  let stopEnableLogRefresh: (() => void) | undefined
+  let auxiliaryMiniProgram: MiniProgramLike | undefined
+  let auxiliaryTimer: ReturnType<typeof setTimeout> | undefined
   const closeSession = async () => {
     if (closed) {
       return
     }
     closed = true
+    if (auxiliaryTimer) {
+      clearTimeout(auxiliaryTimer)
+      auxiliaryTimer = undefined
+    }
+    stopEnableLogRefresh?.()
+    stopEnableLogRefresh = undefined
     detachMiniProgramListener(miniProgram, 'console', onConsole)
     detachMiniProgramListener(miniProgram, 'exception', onException)
-    await miniProgram.close()
+    if (auxiliaryMiniProgram) {
+      detachMiniProgramListener(auxiliaryMiniProgram, 'console', onConsole)
+      detachMiniProgramListener(auxiliaryMiniProgram, 'exception', onException)
+      auxiliaryMiniProgram.disconnect()
+      auxiliaryMiniProgram = undefined
+    }
+    releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
   }
 
   try {
@@ -239,6 +296,23 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
 
   miniProgram.on('console', onConsole)
   miniProgram.on('exception', onException)
+  stopEnableLogRefresh = startEnableLogRefresh(miniProgram, options)
+  auxiliaryTimer = setTimeout(() => {
+    void (async () => {
+      const openedMiniProgram = await connectMiniProgram({
+        ...options,
+        openedOnly: true,
+      })
+      if (closed) {
+        openedMiniProgram.disconnect()
+        return
+      }
+      auxiliaryMiniProgram = openedMiniProgram
+      await enableMiniProgramConsoleLog(openedMiniProgram)
+      openedMiniProgram.on('console', onConsole)
+      openedMiniProgram.on('exception', onException)
+    })().catch(() => {})
+  }, AUXILIARY_FORWARD_CONSOLE_DELAY_MS)
   options.onReady?.()
 
   return {

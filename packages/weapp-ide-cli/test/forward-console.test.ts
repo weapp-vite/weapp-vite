@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const acquireSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const connectMiniProgramMock = vi.hoisted(() => vi.fn())
+const releaseSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -9,7 +11,9 @@ const loggerMock = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/cli/automator-session', () => ({
+  acquireSharedMiniProgram: acquireSharedMiniProgramMock,
   connectMiniProgram: connectMiniProgramMock,
+  releaseSharedMiniProgram: releaseSharedMiniProgramMock,
 }))
 
 vi.mock('../src/logger', () => ({
@@ -39,6 +43,7 @@ function createMiniProgramMock() {
     }),
     enableLog: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn(),
     emit(event: string, payload: unknown) {
       for (const listener of listeners.get(event) ?? []) {
         listener(payload)
@@ -52,7 +57,9 @@ function createMiniProgramMock() {
 describe('forwardConsole', () => {
   beforeEach(() => {
     vi.resetModules()
+    acquireSharedMiniProgramMock.mockReset()
     connectMiniProgramMock.mockReset()
+    releaseSharedMiniProgramMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -61,7 +68,9 @@ describe('forwardConsole', () => {
 
   it('forwards console events with normalized levels', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    const refreshMiniProgram = createMiniProgramMock()
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
+    connectMiniProgramMock.mockResolvedValue(refreshMiniProgram)
     const onLog = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -93,7 +102,7 @@ describe('forwardConsole', () => {
 
   it('filters out disabled log levels', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const onLog = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -113,7 +122,7 @@ describe('forwardConsole', () => {
 
   it('forwards unhandled exceptions by default', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const onLog = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -143,7 +152,7 @@ describe('forwardConsole', () => {
 
   it('can disable unhandled exception forwarding', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const onLog = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -164,7 +173,7 @@ describe('forwardConsole', () => {
 
   it('detaches listeners and closes automator session', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
     const session = await startForwardConsole({
@@ -175,12 +184,13 @@ describe('forwardConsole', () => {
     await session.close()
 
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
-    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined)
+    expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
   it('waits for App.enableLog before reporting ready', async () => {
     const miniProgram = createMiniProgramMock()
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const onReady = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -193,11 +203,38 @@ describe('forwardConsole', () => {
     expect(onReady).toHaveBeenCalledTimes(1)
   })
 
+  it('refreshes App.enableLog while the session is open and stops on close', async () => {
+    vi.useFakeTimers()
+    const miniProgram = createMiniProgramMock()
+    const refreshMiniProgram = createMiniProgramMock()
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
+    connectMiniProgramMock.mockResolvedValue(refreshMiniProgram)
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    const session = await startForwardConsole({
+      projectPath: '/tmp/demo',
+    })
+    await vi.advanceTimersByTimeAsync(6_100)
+
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(4)
+    expect(connectMiniProgramMock).toHaveBeenCalledWith(expect.objectContaining({
+      openedOnly: true,
+      projectPath: '/tmp/demo',
+    }))
+    expect(refreshMiniProgram.enableLog).toHaveBeenCalledTimes(4)
+
+    await session.close()
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(4)
+    vi.useRealTimers()
+  })
+
   it('cleans up when App.enableLog cannot be enabled', async () => {
     vi.useFakeTimers()
     const miniProgram = createMiniProgramMock()
     miniProgram.enableLog.mockRejectedValue(new Error('enable log failed'))
-    connectMiniProgramMock.mockResolvedValue(miniProgram)
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
     const onReady = vi.fn()
     const { startForwardConsole } = await import('../src/cli/forwardConsole')
 
@@ -212,7 +249,8 @@ describe('forwardConsole', () => {
     }))
     expect(onReady).not.toHaveBeenCalled()
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
-    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined)
+    expect(miniProgram.close).not.toHaveBeenCalled()
     vi.useRealTimers()
   })
 })

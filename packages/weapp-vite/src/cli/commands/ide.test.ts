@@ -10,6 +10,7 @@ const getWechatIdeTestAccountsMock = vi.hoisted(() => vi.fn())
 const getWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const getWechatIdeToolInfoMock = vi.hoisted(() => vi.fn())
 const refreshWechatIdeTicketMock = vi.hoisted(() => vi.fn())
+const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const setWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('weapp-ide-cli', () => ({
   getWechatIdeTicket: getWechatIdeTicketMock,
   getWechatIdeToolInfo: getWechatIdeToolInfoMock,
   refreshWechatIdeTicket: refreshWechatIdeTicketMock,
+  resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   setWechatIdeTicket: setWechatIdeTicketMock,
 }))
 
@@ -63,6 +65,7 @@ describe('ide logs command', () => {
     getWechatIdeTicketMock.mockReset()
     getWechatIdeToolInfoMock.mockReset()
     refreshWechatIdeTicketMock.mockReset()
+    resolveProjectAutomatorPortMock.mockReset()
     setWechatIdeTicketMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -103,6 +106,7 @@ describe('ide logs command', () => {
     getWechatIdeTicketMock.mockResolvedValue({ ticket: 'ticket-a' })
     getWechatIdeToolInfoMock.mockResolvedValue({ SDKVersion: '3.0.0' })
     refreshWechatIdeTicketMock.mockResolvedValue(undefined)
+    resolveProjectAutomatorPortMock.mockReturnValue(10261)
     setWechatIdeTicketMock.mockResolvedValue(undefined)
     startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -122,6 +126,7 @@ describe('ide logs command', () => {
 
     expect(startForwardConsoleBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
+      port: 10261,
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
     }))

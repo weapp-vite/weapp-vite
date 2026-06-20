@@ -7,6 +7,7 @@ import {
   getWechatIdeTicket,
   getWechatIdeToolInfo,
   refreshWechatIdeTicket,
+  resolveProjectAutomatorPort,
   setWechatIdeTicket,
 } from 'weapp-ide-cli'
 import logger from '../../logger'
@@ -165,6 +166,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   const session = await startForwardConsoleBridge({
     projectPath: resolved.projectPath,
+    port: resolveProjectAutomatorPort(resolved.projectPath),
     agentName: undefined,
     logLevels: forwardConsoleOptions.logLevels,
     unhandledErrors: forwardConsoleOptions.unhandledErrors,

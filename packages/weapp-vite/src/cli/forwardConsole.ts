@@ -1,6 +1,6 @@
 import type { WeappForwardConsoleLogLevel, WeappViteConfig } from '../types'
 import { determineAgent } from '@vercel/detect-agent'
-import { startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
+import { resolveProjectAutomatorPort, startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
 import { resolveIdeProjectPath } from './openIde'
 
@@ -25,6 +25,7 @@ export interface StartForwardConsoleBridgeOptions {
   logLevels: WeappForwardConsoleLogLevel[]
   onReadyMessage: string
   openedOnly?: boolean
+  port?: number
   projectPath: string
   unhandledErrors: boolean
 }
@@ -185,6 +186,7 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
       projectPath: options.projectPath,
       logLevels: options.logLevels,
       openedOnly: options.openedOnly,
+      port: options.port,
       unhandledErrors: options.unhandledErrors,
       onReady: () => {
         const suffix = options.agentName ? `（AI 终端：${options.agentName}）` : ''
@@ -232,22 +234,42 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     return true
   }
 
+  const bridgeOptions: StartForwardConsoleBridgeOptions = {
+    agentName: resolved.agentName,
+    color: !resolved.agentName,
+    projectPath,
+    port: resolveProjectAutomatorPort(projectPath),
+    logLevels: resolved.logLevels,
+    openedOnly: options.openedOnly,
+    unhandledErrors: resolved.unhandledErrors,
+    onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
+  }
+
   try {
-    activeForwardConsoleSession = await startForwardConsoleBridge({
-      agentName: resolved.agentName,
-      color: !resolved.agentName,
-      projectPath,
-      logLevels: resolved.logLevels,
-      openedOnly: options.openedOnly,
-      unhandledErrors: resolved.unhandledErrors,
-      onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
-    })
+    activeForwardConsoleSession = await startForwardConsoleBridge(bridgeOptions)
     return true
   }
   catch (error) {
-    activeForwardConsoleSession = undefined
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
-    return false
+    if (!isDevtoolsPortNotReadyError(error)) {
+      activeForwardConsoleSession = undefined
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+      return false
+    }
+
+    try {
+      activeForwardConsoleSession = await startForwardConsoleBridge({
+        ...bridgeOptions,
+        openedOnly: true,
+        port: undefined,
+      })
+      return true
+    }
+    catch (fallbackError) {
+      activeForwardConsoleSession = undefined
+      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+      return false
+    }
   }
 }

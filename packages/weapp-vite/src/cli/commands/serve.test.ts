@@ -422,10 +422,11 @@ describe('serve cli command', () => {
       loginRetryTimeout: '1000',
       nonInteractive: true,
       openRecovery: false,
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipPostOpenHealthCheck: true,
       trustProject: false,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(devHotkeysSuspendMock).toHaveBeenCalledTimes(1)
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
@@ -474,10 +475,11 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
       platform: 'weapp',
@@ -504,10 +506,11 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
   })
 
@@ -570,10 +573,11 @@ describe('serve cli command', () => {
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
+      prepareAutomatorSession: true,
       reuseOpenedProject: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 
@@ -623,10 +627,11 @@ describe('serve cli command', () => {
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
       openRecovery: false,
+      prepareAutomatorSession: true,
       reuseOpenedProject: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 

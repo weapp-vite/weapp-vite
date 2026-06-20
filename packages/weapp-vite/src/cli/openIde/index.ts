@@ -71,12 +71,18 @@ function shouldLogAutomatorFallbackError() {
 }
 
 const PREPARE_AUTOMATOR_SESSION_TIMEOUT = 8_000
+const RESET_FILEUTILS_ENV = 'WEAPP_VITE_RESET_IDE_FILEUTILS'
 
 function isWechatIdeOpenRecoveryDisabled(options: OpenIdeOptions) {
   if (options.openRecovery === false) {
     return true
   }
   const flag = process.env.WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY
+  return flag === '1' || flag === 'true'
+}
+
+function shouldResetWechatIdeFileUtils() {
+  const flag = process.env[RESET_FILEUTILS_ENV]
   return flag === '1' || flag === 'true'
 }
 
@@ -223,13 +229,15 @@ async function stabilizeOpenedWechatIdeProject(
   }
 
   try {
-    await executeWechatIdeCliCommand(appendLoginRetryArgv(['reset-fileutils', '-p', projectPath], options), {
-      automatorMode: options.useAutomatorOpen === false ? 'skip' : 'prefer',
-      httpMode: 'require',
-      onNonLoginError: error => logger.error(error),
-      preserveProjectRoot: options.useAutomatorOpen === false,
-      projectPath,
-    })
+    if (shouldResetWechatIdeFileUtils()) {
+      await executeWechatIdeCliCommand(appendLoginRetryArgv(['reset-fileutils', '-p', projectPath], options), {
+        automatorMode: options.useAutomatorOpen === false ? 'skip' : 'prefer',
+        httpMode: 'require',
+        onNonLoginError: error => logger.error(error),
+        preserveProjectRoot: options.useAutomatorOpen === false,
+        projectPath,
+      })
+    }
     try {
       await executeWechatIdeCliCommand(appendLoginRetryArgv(['engine', 'build', projectPath], options), {
         automatorMode: options.useAutomatorOpen === false ? 'skip' : 'prefer',
@@ -385,7 +393,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
         return
       }
       if (openResult) {
-        await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
+        if (!normalizedOptions.skipPostOpenHealthCheck) {
+          await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
+        }
         return
       }
     }
