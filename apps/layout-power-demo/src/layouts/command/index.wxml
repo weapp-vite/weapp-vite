@@ -1,4 +1,11 @@
 <view class="command-layout" data-layout="command">
+  <view class="command-layout__nav">
+    <view class="command-layout__nav-main">
+      <text class="command-layout__nav-kicker">weapp-vite</text>
+      <text class="command-layout__nav-title">Layout Power Demo</text>
+    </view>
+    <text class="command-layout__nav-pill">native</text>
+  </view>
   <view class="command-layout__top">
     <view class="command-layout__title-row">
       <text class="command-layout__title">{{title}}</text>

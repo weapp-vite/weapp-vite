@@ -1,19 +1,19 @@
 .demo {
-  padding-bottom: 18rpx;
+  padding-bottom: 28rpx;
 }
 
 .hero {
   display: flex;
-  gap: 18rpx;
+  gap: 20rpx;
   align-items: stretch;
-  padding: 0 0 16rpx;
+  padding: 0 0 20rpx;
   color: #172033;
 }
 
 .hero__copy {
   flex: 1;
   min-width: 0;
-  padding: 22rpx;
+  padding: 30rpx;
   background: #fff;
   border-radius: 8rpx;
   box-shadow: 0 10rpx 28rpx rgb(23 32 51 / 10%);
@@ -21,7 +21,7 @@
 
 .hero__eyebrow {
   display: block;
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 800;
   color: #2f6bff;
   text-transform: uppercase;
@@ -29,8 +29,8 @@
 
 .hero__title {
   display: block;
-  margin-top: 8rpx;
-  font-size: 34rpx;
+  margin-top: 10rpx;
+  font-size: 46rpx;
   font-weight: 900;
   line-height: 1.16;
   color: #101827;
@@ -38,8 +38,8 @@
 
 .hero__desc {
   display: block;
-  margin-top: 8rpx;
-  font-size: 22rpx;
+  margin-top: 10rpx;
+  font-size: 28rpx;
   line-height: 1.45;
   color: #667085;
 }
@@ -48,8 +48,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 176rpx;
-  padding: 20rpx;
+  width: 218rpx;
+  padding: 24rpx;
   color: #fff;
   background: #172033;
   border-radius: 8rpx;
@@ -58,21 +58,21 @@
 .hero__meter-value {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 28rpx;
+  font-size: 38rpx;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .hero__meter-label {
-  margin-top: 8rpx;
-  font-size: 18rpx;
+  margin-top: 10rpx;
+  font-size: 22rpx;
   color: rgb(255 255 255 / 64%);
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: 1fr 232rpx;
-  gap: 14rpx;
+  grid-template-columns: 1fr;
+  gap: 18rpx;
 }
 
 .preview,
@@ -89,17 +89,18 @@
 
 .preview__top {
   display: flex;
-  gap: 8rpx;
-  padding: 14rpx;
+  gap: 10rpx;
+  padding: 18rpx;
   background: #f3f6fb;
 }
 
 .preview__tab {
   flex: 1;
-  padding: 9rpx 8rpx;
+  padding: 14rpx 10rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18rpx;
+  font-size: 24rpx;
+  font-weight: 800;
   color: #536274;
   text-align: center;
   white-space: nowrap;
@@ -113,21 +114,21 @@
 }
 
 .preview__screen {
-  padding: 14rpx;
+  padding: 18rpx;
 }
 
 .preview__nav {
   display: flex;
-  gap: 8rpx;
+  gap: 10rpx;
   align-items: center;
-  padding: 10rpx;
+  padding: 16rpx;
   background: #101827;
   border-radius: 6rpx;
 }
 
 .preview__dot {
-  width: 12rpx;
-  height: 12rpx;
+  width: 16rpx;
+  height: 16rpx;
   border-radius: 50%;
 }
 
@@ -144,42 +145,43 @@
 }
 
 .preview__nav-text {
-  margin-left: 8rpx;
+  margin-left: 10rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18rpx;
+  font-size: 24rpx;
+  font-weight: 700;
   color: rgb(255 255 255 / 72%);
   white-space: nowrap;
 }
 
 .preview__content {
   display: flex;
-  min-height: 210rpx;
-  margin-top: 12rpx;
+  min-height: 268rpx;
+  margin-top: 16rpx;
   overflow: hidden;
   border: 1rpx solid #d7dee8;
   border-radius: 8rpx;
 }
 
 .preview__aside {
-  width: 146rpx;
-  padding: 18rpx 12rpx;
+  width: 180rpx;
+  padding: 24rpx 16rpx;
   color: #fff;
   background: #23324a;
 }
 
 .preview__aside-label {
   display: block;
-  font-size: 18rpx;
+  font-size: 22rpx;
   color: rgb(255 255 255 / 56%);
 }
 
 .preview__aside-value {
   display: block;
-  margin-top: 10rpx;
+  margin-top: 12rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 26rpx;
+  font-size: 34rpx;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -187,36 +189,37 @@
 .preview__main {
   flex: 1;
   min-width: 0;
-  padding: 18rpx;
+  padding: 26rpx;
   background: #f8fafc;
 }
 
 .preview__main-title {
   display: block;
-  font-size: 26rpx;
+  font-size: 36rpx;
   font-weight: 800;
   color: #101827;
 }
 
 .preview__main-desc {
   display: block;
-  margin-top: 8rpx;
-  font-size: 20rpx;
+  margin-top: 10rpx;
+  font-size: 26rpx;
   color: #667085;
 }
 
 .preview__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 18rpx;
+  gap: 10rpx;
+  margin-top: 24rpx;
 }
 
 .preview__chip {
-  padding: 6rpx 8rpx;
+  padding: 10rpx 12rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18rpx;
+  font-size: 22rpx;
+  font-weight: 800;
   color: #536274;
   white-space: nowrap;
   background: #e5eaf1;
@@ -230,12 +233,13 @@
 
 .matrix {
   display: grid;
-  gap: 10rpx;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
 }
 
 .ability {
-  min-height: 104rpx;
-  padding: 12rpx;
+  min-height: 146rpx;
+  padding: 18rpx;
   background: #fff;
   border-radius: 8rpx;
   box-shadow: 0 10rpx 28rpx rgb(23 32 51 / 8%);
@@ -243,7 +247,7 @@
 
 .ability__head {
   display: flex;
-  gap: 8rpx;
+  gap: 10rpx;
   align-items: center;
 }
 
@@ -252,15 +256,16 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 22rpx;
+  font-size: 30rpx;
   font-weight: 900;
   color: #101827;
   white-space: nowrap;
 }
 
 .ability__tag {
-  padding: 4rpx 7rpx;
-  font-size: 16rpx;
+  padding: 7rpx 10rpx;
+  font-size: 20rpx;
+  font-weight: 800;
   color: #2f6bff;
   background: #edf2ff;
   border-radius: 6rpx;
@@ -268,22 +273,22 @@
 
 .ability__desc {
   display: block;
-  margin-top: 8rpx;
-  font-size: 18rpx;
-  line-height: 1.34;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.38;
   color: #667085;
 }
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12rpx;
-  margin-top: 14rpx;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin-top: 18rpx;
 }
 
 .control {
-  min-height: 92rpx;
-  padding: 14rpx 12rpx;
+  min-height: 118rpx;
+  padding: 18rpx 16rpx;
   text-align: left;
   border-radius: 8rpx;
 }
@@ -297,6 +302,22 @@
   color: #172033;
   background: #fff;
   box-shadow: inset 0 0 0 1rpx #d7dee8;
+}
+
+.control--studio {
+  color: #1d1a16;
+  background: #fff8ef;
+  box-shadow: inset 0 0 0 2rpx #1d1a16;
+}
+
+.control--split {
+  color: #064e3b;
+  background: #d1fae5;
+}
+
+.control--poster {
+  color: #111827;
+  background: #facc15;
 }
 
 .control--danger {
@@ -317,16 +338,16 @@
 .control__title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 24rpx;
+  font-size: 30rpx;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .control__desc {
-  margin-top: 6rpx;
+  margin-top: 8rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18rpx;
+  font-size: 22rpx;
   white-space: nowrap;
   opacity: 0.72;
 }

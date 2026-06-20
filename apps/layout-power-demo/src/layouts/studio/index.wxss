@@ -1,0 +1,65 @@
+.studio-layout {
+  min-height: 100vh;
+  padding: 66rpx 24rpx 24rpx;
+  background: #f6f0e8;
+}
+
+.studio-layout__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 26rpx;
+  color: #1d1a16;
+  background: #fff8ef;
+  border: 2rpx solid #1d1a16;
+  border-radius: 8rpx;
+  box-shadow: 8rpx 8rpx 0 #1d1a16;
+}
+
+.studio-layout__brand {
+  font-size: 38rpx;
+  font-weight: 900;
+}
+
+.studio-layout__mode {
+  padding: 8rpx 14rpx;
+  font-size: 22rpx;
+  font-weight: 900;
+  color: #fff8ef;
+  background: #d94627;
+  border-radius: 6rpx;
+}
+
+.studio-layout__stage {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 26rpx;
+}
+
+.studio-layout__rail {
+  display: grid;
+  gap: 12rpx;
+  align-content: start;
+  width: 78rpx;
+}
+
+.studio-layout__rail-item {
+  padding: 18rpx 0;
+  font-size: 24rpx;
+  font-weight: 900;
+  color: #1d1a16;
+  text-align: center;
+  background: #fff8ef;
+  border: 2rpx solid #1d1a16;
+  border-radius: 8rpx;
+}
+
+.studio-layout__rail-item--active {
+  color: #fff;
+  background: #1d1a16;
+}
+
+.studio-layout__body {
+  flex: 1;
+  min-width: 0;
+}

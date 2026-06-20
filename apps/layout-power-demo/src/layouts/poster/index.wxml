@@ -1,0 +1,10 @@
+<view class="poster-layout" data-layout="poster">
+  <view class="poster-layout__mast">
+    <text class="poster-layout__mark">LAYOUT</text>
+    <text class="poster-layout__title">{{title}}</text>
+    <text class="poster-layout__mode">{{mode}}</text>
+  </view>
+  <view class="poster-layout__sheet">
+    <slot />
+  </view>
+</view>

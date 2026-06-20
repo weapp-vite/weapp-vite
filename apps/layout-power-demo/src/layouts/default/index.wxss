@@ -8,13 +8,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44rpx;
+  width: 58rpx;
   background: #d7dee8;
 }
 
 .default-layout__rail-text {
   width: 260rpx;
-  font-size: 20rpx;
+  font-size: 24rpx;
+  font-weight: 800;
   color: #42526b;
   text-align: center;
   transform: rotate(-90deg);
@@ -23,4 +24,28 @@
 .default-layout__body {
   flex: 1;
   min-width: 0;
+  padding: 70rpx 28rpx 28rpx;
+}
+
+.default-layout__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18rpx 22rpx;
+  margin-bottom: 20rpx;
+  color: #172033;
+  background: #fff;
+  border-radius: 8rpx;
+  box-shadow: 0 10rpx 28rpx rgb(23 32 51 / 8%);
+}
+
+.default-layout__nav-title {
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.default-layout__nav-desc {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #2f6bff;
 }

@@ -1,0 +1,10 @@
+<view class="split-layout" data-layout="split">
+  <view class="split-layout__side">
+    <text class="split-layout__label">layout</text>
+    <text class="split-layout__title">{{title}}</text>
+    <text class="split-layout__mode">{{mode}}</text>
+  </view>
+  <view class="split-layout__body">
+    <slot />
+  </view>
+</view>

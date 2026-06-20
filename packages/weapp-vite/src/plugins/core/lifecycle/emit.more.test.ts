@@ -467,6 +467,58 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
+  it('keeps active weapp-vite runtime vendor chunks during partial dev hmr rebuilds', async () => {
+    const emittedChunkFileNames = new Set<string>()
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames: emittedChunkFileNames,
+            },
+          },
+        },
+        configService: {
+          isDev: true,
+        },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['pages/index/index.ts']),
+        lastHmrEntryIds: new Set(['pages/index/index.ts']),
+      },
+      hmrSharedChunkImporters: new Map([
+        ['weapp-vendors/weapp-vite-runtime.js', new Set(['app.ts', 'pages/index/index.ts'])],
+      ]),
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: 'pages/index/index.ts',
+        code: 'const runtime = require("../../weapp-vendors/weapp-vite-runtime.js")',
+        imports: ['../../weapp-vendors/weapp-vite-runtime.js'],
+        dynamicImports: [],
+      },
+      'weapp-vendors/weapp-vite-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/weapp-vite-runtime.js',
+        code: 'Object.defineProperty(exports, "setPageLayout", { get: function() { return setPageLayout } })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.js']).toBeDefined()
+    expect(bundle['weapp-vendors/weapp-vite-runtime.js']).toBeDefined()
+    expect(emittedChunkFileNames.has('weapp-vendors/weapp-vite-runtime.js')).toBe(true)
+  })
+
   it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {
     const emittedEntryIds = new Set(['pages/runtime/index.ts', 'pages/hmr/index.ts'])
     const emittedChunkFileNames = new Set<string>()

@@ -1,9 +1,9 @@
 .rules-page {
-  padding: 0 18rpx 18rpx;
+  padding: 0 28rpx 28rpx;
 }
 
 .rules-page__panel {
-  padding: 28rpx;
+  padding: 34rpx;
   background: #fff;
   border-radius: 8rpx;
   box-shadow: 0 10rpx 28rpx rgb(23 32 51 / 10%);
@@ -16,31 +16,31 @@
 }
 
 .rules-page__eyebrow {
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 800;
   color: #2f6bff;
   text-transform: uppercase;
 }
 
 .rules-page__title {
-  margin-top: 10rpx;
-  font-size: 34rpx;
+  margin-top: 12rpx;
+  font-size: 42rpx;
   font-weight: 900;
   line-height: 1.2;
   color: #101827;
 }
 
 .rules-page__desc {
-  margin-top: 12rpx;
-  font-size: 22rpx;
+  margin-top: 16rpx;
+  font-size: 28rpx;
   line-height: 1.5;
   color: #667085;
 }
 
 .rules-page__button {
-  padding: 14rpx 20rpx;
-  margin-top: 24rpx;
-  font-size: 24rpx;
+  padding: 18rpx 24rpx;
+  margin-top: 28rpx;
+  font-size: 30rpx;
   font-weight: 800;
   color: #fff;
   text-align: center;

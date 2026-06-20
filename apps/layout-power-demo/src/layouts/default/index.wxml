@@ -3,6 +3,10 @@
     <text class="default-layout__rail-text">default layout</text>
   </view>
   <view class="default-layout__body">
+    <view class="default-layout__nav">
+      <text class="default-layout__nav-title">Default Layout</text>
+      <text class="default-layout__nav-desc">runtime shell</text>
+    </view>
     <slot />
   </view>
 </view>

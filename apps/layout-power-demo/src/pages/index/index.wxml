@@ -2,8 +2,8 @@
   <view class="hero">
     <view class="hero__copy">
       <text class="hero__eyebrow">weapp-vite native layouts</text>
-      <text class="hero__title">一个屏幕，四种 layout 控制权</text>
-      <text class="hero__desc">默认壳、命名壳、路由规则、运行时切换同时可见。</text>
+      <text class="hero__title">一个页面，切换多种完全不同的 layout</text>
+      <text class="hero__desc">同一份页面内容，通过 setPageLayout 进入不同原生外壳。</text>
     </view>
     <view class="hero__meter">
       <text class="hero__meter-value">{{currentLayout}}</text>
@@ -57,7 +57,19 @@
   <view class="controls">
     <button class="control control--dark" bindtap="applyCommandLayout">
       <text class="control__title">command</text>
-      <text class="control__desc">命名壳 + props</text>
+      <text class="control__desc">深色控制台</text>
+    </button>
+    <button class="control control--studio" bindtap="applyStudioLayout">
+      <text class="control__title">studio</text>
+      <text class="control__desc">描边工作台</text>
+    </button>
+    <button class="control control--split" bindtap="applySplitLayout">
+      <text class="control__title">split</text>
+      <text class="control__desc">固定侧栏</text>
+    </button>
+    <button class="control control--poster" bindtap="applyPosterLayout">
+      <text class="control__title">poster</text>
+      <text class="control__desc">海报外壳</text>
     </button>
     <button class="control control--light" bindtap="applyDefaultLayout">
       <text class="control__title">default</text>

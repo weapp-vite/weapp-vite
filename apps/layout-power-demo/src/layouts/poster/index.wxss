@@ -1,0 +1,44 @@
+.poster-layout {
+  min-height: 100vh;
+  padding: 64rpx 28rpx 28rpx;
+  background: #111827;
+}
+
+.poster-layout__mast {
+  padding: 30rpx 28rpx 92rpx;
+  color: #111827;
+  background: #facc15;
+  border-radius: 8rpx 8rpx 0 0;
+}
+
+.poster-layout__mark,
+.poster-layout__title,
+.poster-layout__mode {
+  display: block;
+}
+
+.poster-layout__mark {
+  font-size: 24rpx;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.poster-layout__title {
+  margin-top: 12rpx;
+  font-size: 54rpx;
+  font-weight: 900;
+  line-height: 1.02;
+}
+
+.poster-layout__mode {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.poster-layout__sheet {
+  margin-top: -64rpx;
+  background: #f8fafc;
+  border-radius: 8rpx;
+  box-shadow: 0 16rpx 40rpx rgb(0 0 0 / 28%);
+}

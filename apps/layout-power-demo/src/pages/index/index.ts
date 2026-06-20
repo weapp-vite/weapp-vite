@@ -1,6 +1,6 @@
 import { setPageLayout } from 'weapp-vite/runtime'
 
-type LayoutMode = 'command' | 'default' | 'none'
+type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default' | 'none'
 
 interface LayoutState {
   label: string
@@ -10,38 +10,61 @@ interface LayoutState {
 
 const capabilities = [
   {
-    title: '默认布局',
-    desc: 'src/layouts/default 存在时，页面可直接进入基础外壳。',
-    tag: 'default',
+    title: 'Command',
+    desc: '深色控制台外壳，展示 props、slot 与页面主体组合。',
+    tag: 'dark',
   },
   {
-    title: '命名布局',
-    desc: 'Page 调用 setPageLayout("command", props) 切进命名外壳。',
-    tag: 'named',
+    title: 'Studio',
+    desc: '带侧向步骤栏和描边风格，适合强调工作台形态。',
+    tag: 'editor',
   },
   {
-    title: '路由规则',
-    desc: 'vite.config.ts 的 routeRules 可从项目层指定 appLayout。',
-    tag: 'routeRules',
+    title: 'Split',
+    desc: '固定左栏 + 右侧内容区，展示布局可重塑页面骨架。',
+    tag: 'sidebar',
   },
   {
-    title: '运行时切换',
-    desc: 'setPageLayout 可切换 command/default/false，业务主体不动。',
-    tag: 'runtime',
+    title: 'Poster',
+    desc: '海报式 masthead + 浮层内容，用同一页面换完整视觉语境。',
+    tag: 'poster',
   },
 ]
+
+const layoutCopy: Record<Exclude<LayoutMode, 'none'>, { title: string, mode: string }> = {
+  command: {
+    title: 'Runtime Command Shell',
+    mode: 'command',
+  },
+  studio: {
+    title: 'Studio Layout',
+    mode: 'workbench',
+  },
+  split: {
+    title: 'Split Layout',
+    mode: 'sidebar',
+  },
+  poster: {
+    title: 'Poster Layout',
+    mode: 'campaign',
+  },
+  default: {
+    title: 'Default Layout',
+    mode: 'default',
+  },
+}
 
 function createLayoutStates(currentLayout: LayoutMode): LayoutState[] {
   return [
     {
-      label: 'routeRules',
-      state: 'command',
-      className: currentLayout === 'command' ? 'preview__chip preview__chip--active' : 'preview__chip',
+      label: 'layout name',
+      state: currentLayout,
+      className: currentLayout === 'none' ? 'preview__chip' : 'preview__chip preview__chip--active',
     },
     {
-      label: 'native Page',
-      state: 'props',
-      className: currentLayout === 'command' ? 'preview__chip preview__chip--active' : 'preview__chip',
+      label: 'props',
+      state: currentLayout === 'none' ? 'off' : 'on',
+      className: currentLayout === 'none' ? 'preview__chip' : 'preview__chip preview__chip--active',
     },
     {
       label: 'setPageLayout',
@@ -70,25 +93,33 @@ Page({
     })
   },
   applyCommandLayout() {
-    const runtimeEvents = this.data.runtimeEvents + 1
-
-    this.setData({
-      currentLayout: 'command',
-      runtimeEvents,
-      layoutStates: createLayoutStates('command'),
-    })
-    setPageLayout('command', {
-      mode: `runtime ${runtimeEvents}`,
-      title: 'Runtime Command Shell',
-    })
+    this.applyNamedLayout('command')
+  },
+  applyStudioLayout() {
+    this.applyNamedLayout('studio')
+  },
+  applySplitLayout() {
+    this.applyNamedLayout('split')
+  },
+  applyPosterLayout() {
+    this.applyNamedLayout('poster')
   },
   applyDefaultLayout() {
+    this.applyNamedLayout('default')
+  },
+  applyNamedLayout(layout: Exclude<LayoutMode, 'none'>) {
+    const runtimeEvents = this.data.runtimeEvents + 1
+    const copy = layoutCopy[layout]
+
     this.setData({
-      currentLayout: 'default',
-      runtimeEvents: this.data.runtimeEvents + 1,
-      layoutStates: createLayoutStates('default'),
+      currentLayout: layout,
+      runtimeEvents,
+      layoutStates: createLayoutStates(layout),
     })
-    setPageLayout('default')
+    setPageLayout(layout, {
+      mode: `${copy.mode} ${runtimeEvents}`,
+      title: copy.title,
+    })
   },
   disableLayout() {
     this.setData({

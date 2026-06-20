@@ -1,0 +1,49 @@
+.split-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #e9f6f2;
+}
+
+.split-layout__side {
+  width: 230rpx;
+  padding: 78rpx 24rpx 24rpx;
+  color: #fff;
+  background: #0f3d34;
+}
+
+.split-layout__label,
+.split-layout__title,
+.split-layout__mode {
+  display: block;
+}
+
+.split-layout__label {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: rgb(255 255 255 / 58%);
+  text-transform: uppercase;
+}
+
+.split-layout__title {
+  margin-top: 18rpx;
+  font-size: 42rpx;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.split-layout__mode {
+  padding: 10rpx 14rpx;
+  margin-top: 22rpx;
+  font-size: 22rpx;
+  font-weight: 900;
+  color: #0f3d34;
+  text-align: center;
+  background: #a7f3d0;
+  border-radius: 8rpx;
+}
+
+.split-layout__body {
+  flex: 1;
+  min-width: 0;
+  padding: 78rpx 24rpx 24rpx;
+}

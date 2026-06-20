@@ -86,6 +86,53 @@ function isStableHmrSharedChunk(fileName: string) {
     || (!fileName.includes('/') && fileName !== 'app.js')
 }
 
+function isWeappViteRuntimeSharedChunk(fileName: string) {
+  return fileName.startsWith('weapp-vendors/')
+    && /(?:^|[-/])weapp-vite-runtime(?:[-.]|$)/.test(fileName)
+}
+
+function resolveImportedChunkId(importerFileName: string, imported: string) {
+  if (!imported.startsWith('.')) {
+    return imported
+  }
+  const importerSegments = importerFileName.split('/')
+  importerSegments.pop()
+  for (const segment of imported.split('/')) {
+    if (!segment || segment === '.') {
+      continue
+    }
+    if (segment === '..') {
+      importerSegments.pop()
+      continue
+    }
+    importerSegments.push(segment)
+  }
+  return importerSegments.join('/')
+}
+
+function isImportedByActiveHmrChunk(fileName: string, bundle: OutputBundle, activeEntryIds?: Set<string>) {
+  if (!activeEntryIds?.size) {
+    return false
+  }
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+    const chunk = output as OutputChunk
+    if (!chunk.facadeModuleId || !activeEntryIds.has(chunk.facadeModuleId)) {
+      continue
+    }
+    const imports = [
+      ...(Array.isArray(chunk.imports) ? chunk.imports : []),
+      ...(Array.isArray(chunk.dynamicImports) ? chunk.dynamicImports : []),
+    ]
+    if (imports.some(imported => resolveImportedChunkId(chunk.fileName, imported) === fileName)) {
+      return true
+    }
+  }
+  return false
+}
+
 function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePluginState) {
   if (
     !state.ctx.configService.isDev
@@ -111,6 +158,19 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     const activeEntryIds = state.hmrState.lastHmrEntryIds?.size
       ? state.hmrState.lastHmrEntryIds
       : state.hmrState.lastEmittedEntryIds
+    const isActiveWeappViteRuntimeChunk = isWeappViteRuntimeSharedChunk(fileName)
+      && isImportedByActiveHmrChunk(fileName, bundle, activeEntryIds)
+    if (isActiveWeappViteRuntimeChunk) {
+      const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+      if (emittedChunkFileNames) {
+        emittedChunkFileNames.add(fileName)
+        if (output.fileName) {
+          emittedChunkFileNames.add(output.fileName)
+        }
+      }
+      continue
+    }
+
     const isCompleteSharedChunkRefresh = Array.from(knownImporters)
       .every(entryId => activeEntryIds?.has(entryId))
     if (!isCompleteSharedChunkRefresh) {
