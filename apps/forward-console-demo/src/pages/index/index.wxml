@@ -37,9 +37,9 @@
       <view class="wide-title">连续输出</view>
       <view class="wide-desc">log / info / warn</view>
     </button>
-    <button class="wide-button danger" bind:tap="onEmitUnhandledError">
-      <view class="wide-title">未捕获异常</view>
-      <view class="wide-desc">unhandledErrors</view>
+    <button class="wide-button danger" bind:tap="onEmitErrorLog">
+      <view class="wide-title">错误日志</view>
+      <view class="wide-desc">console.error</view>
     </button>
   </view>
 

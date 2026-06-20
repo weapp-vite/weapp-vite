@@ -125,20 +125,20 @@ Page({
     }, nextCount)
   },
 
-  onEmitUnhandledError() {
+  onEmitErrorLog() {
     const nextCount = this.data.eventCount + 1
-    const error = new Error(`forward console demo exception #${nextCount}`)
 
-    setTimeout(() => {
-      throw error
-    }, 0)
+    console.error('[forward-console-demo] handled error log', {
+      count: nextCount,
+      source: 'error-log-button',
+    })
 
     this.pushTimeline({
-      key: 'exception',
+      key: 'error-log',
       level: 'error',
-      title: 'Exception',
-      description: '未捕获异常',
-      terminal: '[mini:error] forward console demo exception',
+      title: 'Error Log',
+      description: '错误日志',
+      terminal: '[mini:error] handled error log',
     }, nextCount)
   },
 
