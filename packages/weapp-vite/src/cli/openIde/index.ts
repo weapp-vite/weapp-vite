@@ -50,6 +50,7 @@ export interface OpenIdeOptions {
   reuseOpenedProject?: boolean
   useAutomatorOpen?: boolean
   openRecovery?: boolean
+  skipPostOpenHealthCheck?: boolean
   loginRetry?: string
   loginRetryTimeout?: string
   nonInteractive?: boolean
@@ -404,7 +405,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   }
 
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, normalizedOptions))
-  if (platform === 'weapp' && projectPath) {
+  if (platform === 'weapp' && projectPath && !normalizedOptions.skipPostOpenHealthCheck) {
     await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
   }
 }

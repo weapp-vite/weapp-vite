@@ -432,6 +432,26 @@ describe('openIde', () => {
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
   })
 
+  it('skips post-open health check when explicitly requested', async () => {
+    const { openIde } = await import('./openIde')
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      skipPostOpenHealthCheck: true,
+      useAutomatorOpen: false,
+    })
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+  })
+
   it('does not fall back to automator wrapper when plain open stabilization reset fails', async () => {
     const { openIde } = await import('./openIde')
     resetWechatIdeFileUtilsByHttpMock.mockRejectedValueOnce(new Error('http reset failed'))

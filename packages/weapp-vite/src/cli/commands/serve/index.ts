@@ -18,6 +18,10 @@ import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../
 import { createAnalyzeController } from './analyze'
 import { createServeMiniProgramDevActions, resolveWebHost, waitForServeShutdownSignal } from './shared'
 
+function writePostOpenSeparator() {
+  process.stdout?.write?.('\n')
+}
+
 export function registerServeCommand(cli: CAC) {
   cli
     .command('[root]', 'start dev server') // 默认命令
@@ -102,11 +106,13 @@ export function registerServeCommand(cli: CAC) {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
-            openRecovery: options.openRecovery,
+            openRecovery: false,
             reuseOpenedProject: !openOptions?.forceReopen,
+            skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
             useAutomatorOpen: false,
           })
+          writePostOpenSeparator()
         },
         projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
         tryReuseForwardConsole: async () => {

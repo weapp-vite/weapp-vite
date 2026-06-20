@@ -421,7 +421,9 @@ describe('serve cli command', () => {
       loginRetry: 'never',
       loginRetryTimeout: '1000',
       nonInteractive: true,
+      openRecovery: false,
       reuseOpenedProject: true,
+      skipPostOpenHealthCheck: true,
       trustProject: false,
       useAutomatorOpen: false,
     })
@@ -471,7 +473,9 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      openRecovery: false,
       reuseOpenedProject: true,
+      skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: false,
     })
@@ -499,7 +503,9 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      openRecovery: false,
       reuseOpenedProject: true,
+      skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: false,
     })
@@ -563,7 +569,9 @@ describe('serve cli command', () => {
       forceReopen: true,
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      openRecovery: false,
       reuseOpenedProject: false,
+      skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: false,
     })
@@ -614,7 +622,9 @@ describe('serve cli command', () => {
       forceReopen: true,
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
+      openRecovery: false,
       reuseOpenedProject: false,
+      skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: false,
     })
