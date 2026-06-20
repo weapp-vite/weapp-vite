@@ -23,35 +23,35 @@ const logActions: LogAction[] = [
     key: 'debug',
     level: 'debug',
     title: 'Debug',
-    description: '输出调试细节，适合检查页面内部状态。',
+    description: '调试细节',
     terminal: '[mini:debug] forward demo debug',
   },
   {
     key: 'log',
     level: 'log',
     title: 'Log',
-    description: '输出普通事件，适合确认按钮与页面行为。',
+    description: '普通事件',
     terminal: '[mini:log] forward demo click',
   },
   {
     key: 'info',
     level: 'info',
     title: 'Info',
-    description: '输出结构化信息，适合观察对象序列化。',
+    description: '结构化信息',
     terminal: '[mini:info] forward demo payload',
   },
   {
     key: 'warn',
     level: 'warn',
     title: 'Warn',
-    description: '输出警告，适合展示终端里的黄色告警流。',
+    description: '告警输出',
     terminal: '[mini:warn] forward demo warning',
   },
   {
     key: 'error',
     level: 'error',
     title: 'Error',
-    description: '输出错误，适合检查终端错误通道。',
+    description: '错误通道',
     terminal: '[mini:error] forward demo error',
   },
 ]
@@ -69,14 +69,12 @@ const initialTimeline: TimelineItem[] = [
 Page({
   data: {
     title: 'Forward Console Lab',
-    description: '在小程序里点击按钮，日志会通过 weapp.forwardConsole 映射回命令行。',
+    description: '点击按钮，日志同步回当前终端。',
     actions: logActions,
     timeline: initialTimeline,
     activeLevel: 'info' as ConsoleLevel,
     eventCount: 0,
     lastTerminalLine: '[mini:info] forward demo ready',
-    command: 'pnpm --filter forward-console-demo run dev:open',
-    logsCommand: 'pnpm --filter forward-console-demo run ide:logs',
   },
 
   onLoad() {
@@ -112,7 +110,7 @@ Page({
     console.log('[forward-console-demo] batch start', { count: nextCount })
     console.info('[forward-console-demo] batch payload', {
       route: 'pages/index/index',
-      command: this.data.command,
+      source: 'batch',
     })
     console.warn('[forward-console-demo] batch warning', {
       reason: 'demo warning from batch button',
@@ -122,7 +120,7 @@ Page({
       key: 'batch',
       level: 'warn',
       title: 'Batch',
-      description: '连续输出 log、info、warn 三条日志。',
+      description: '连续输出',
       terminal: '[mini:log] batch start / [mini:info] batch payload / [mini:warn] batch warning',
     }, nextCount)
   },
@@ -139,32 +137,9 @@ Page({
       key: 'exception',
       level: 'error',
       title: 'Exception',
-      description: '触发未捕获异常，验证 unhandledErrors 转发。',
+      description: '未捕获异常',
       terminal: '[mini:error] forward console demo exception',
     }, nextCount)
-  },
-
-  async onCopyCommand(event: WechatMiniprogram.CustomEvent<{ command: string }>) {
-    const command = event.currentTarget.dataset.command
-
-    if (!command) {
-      return
-    }
-
-    try {
-      await wx.setClipboardData({ data: command })
-      wx.showToast({
-        title: '已复制',
-        icon: 'success',
-        duration: 1200,
-      })
-    }
-    catch {
-      wx.showToast({
-        title: '复制失败',
-        icon: 'none',
-      })
-    }
   },
 
   printConsole(level: ConsoleLevel, message: string, payload: unknown) {
@@ -199,7 +174,7 @@ Page({
       time: this.formatTime(),
       terminal: action.terminal,
     }
-    const timeline = [nextItem, ...this.data.timeline].slice(0, 6)
+    const timeline = [nextItem, ...this.data.timeline].slice(0, 4)
 
     this.setData({
       activeLevel: action.level,
