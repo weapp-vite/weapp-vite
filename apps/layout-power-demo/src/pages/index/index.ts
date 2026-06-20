@@ -54,6 +54,8 @@ const layoutCopy: Record<Exclude<LayoutMode, 'none'>, { title: string, mode: str
   },
 }
 
+const e2eRuntimeVendorMarker = 'runtime-vendor-hmr-baseline'
+
 function createLayoutStates(currentLayout: LayoutMode): LayoutState[] {
   return [
     {
@@ -84,6 +86,7 @@ Page({
     currentLayout: 'command' as LayoutMode,
     runtimeEvents: 1,
     capabilities,
+    e2eRuntimeVendorMarker,
     layoutStates: createLayoutStates('command'),
   },
   onLoad() {
@@ -133,5 +136,14 @@ Page({
     wx.navigateTo({
       url: '/pages/rules/index',
     })
+  },
+  runE2E() {
+    const ok = this.data.currentLayout === 'command'
+      && this.data.e2eRuntimeVendorMarker === e2eRuntimeVendorMarker
+    return {
+      currentLayout: this.data.currentLayout,
+      marker: this.data.e2eRuntimeVendorMarker,
+      ok,
+    }
   },
 })
