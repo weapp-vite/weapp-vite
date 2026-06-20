@@ -1,87 +1,47 @@
 <view class="demo">
   <view class="hero">
     <view class="hero__copy">
-      <text class="hero__eyebrow">weapp-vite native layouts</text>
-      <text class="hero__title">一个页面，切换多种完全不同的 layout</text>
-      <text class="hero__desc">同一份页面内容，通过 setPageLayout 进入不同原生外壳。</text>
+      <text class="hero__eyebrow">weapp-vite layout</text>
+      <text class="hero__title">一屏切换不同页面外壳</text>
     </view>
-    <view class="hero__meter">
-      <text class="hero__meter-value">{{currentLayout}}</text>
-      <text class="hero__meter-label">current layout</text>
+    <view class="hero__badge">
+      <text class="hero__badge-value">{{currentLayout}}</text>
+      <text class="hero__badge-label">{{runtimeEvents}} changes</text>
     </view>
   </view>
 
-  <view class="workspace">
-    <view class="preview">
-      <view class="preview__top">
-        <text class="preview__tab preview__tab--active">layout shell</text>
-        <text class="preview__tab">page slot</text>
-        <text class="preview__tab">runtime</text>
-      </view>
-      <view class="preview__screen">
-        <view class="preview__nav">
-          <text class="preview__dot preview__dot--green" />
-          <text class="preview__dot preview__dot--blue" />
-          <text class="preview__dot preview__dot--orange" />
-          <text class="preview__nav-text">/pages/index/index</text>
-        </view>
-        <view class="preview__content">
-          <view class="preview__aside">
-            <text class="preview__aside-label">layout</text>
-            <text class="preview__aside-value">{{currentLayout}}</text>
-          </view>
-          <view class="preview__main">
-            <text class="preview__main-title">页面内容被 slot 注入</text>
-            <text class="preview__main-desc">外壳可替换，业务主体不动。</text>
-            <view class="preview__chips">
-              <text wx:for="{{layoutStates}}" wx:key="label" class="{{item.className}}">
-                {{item.label}}: {{item.state}}
-              </text>
-            </view>
-          </view>
-        </view>
-      </view>
+  <view class="stage">
+    <view class="stage__header">
+      <text class="stage__label">current shell</text>
+      <text class="stage__mode">{{layoutMode}}</text>
     </view>
-
-    <view class="matrix">
-      <view wx:for="{{capabilities}}" wx:key="title" class="ability">
-        <view class="ability__head">
-          <text class="ability__title">{{item.title}}</text>
-          <text class="ability__tag">{{item.tag}}</text>
+    <view class="stage__body">
+      <view class="stage__rail">
+        <text class="stage__rail-dot stage__rail-dot--active" />
+        <text class="stage__rail-dot" />
+        <text class="stage__rail-dot" />
+      </view>
+      <view class="stage__main">
+        <text class="stage__title">{{layoutTitle}}</text>
+        <text class="stage__desc">同一个 page slot 不变，只替换外层 layout、props 和视觉骨架。</text>
+        <view class="stage__facts">
+          <text class="stage__fact">setPageLayout</text>
+          <text class="stage__fact">slot</text>
+          <text class="stage__fact">{{currentLayout}}</text>
         </view>
-        <text class="ability__desc">{{item.desc}}</text>
       </view>
     </view>
   </view>
 
-  <view class="controls">
-    <button class="control control--dark" bindtap="applyCommandLayout">
-      <text class="control__title">command</text>
-      <text class="control__desc">深色控制台</text>
-    </button>
-    <button class="control control--studio" bindtap="applyStudioLayout">
-      <text class="control__title">studio</text>
-      <text class="control__desc">描边工作台</text>
-    </button>
-    <button class="control control--split" bindtap="applySplitLayout">
-      <text class="control__title">split</text>
-      <text class="control__desc">固定侧栏</text>
-    </button>
-    <button class="control control--poster" bindtap="applyPosterLayout">
-      <text class="control__title">poster</text>
-      <text class="control__desc">海报外壳</text>
-    </button>
-    <button class="control control--light" bindtap="applyDefaultLayout">
-      <text class="control__title">default</text>
-      <text class="control__desc">基础外壳</text>
-    </button>
-    <button class="control control--danger" bindtap="disableLayout">
-      <text class="control__title">none</text>
-      <text class="control__desc">layout=false</text>
-    </button>
-    <button class="control control--blue" bindtap="openRouteRulesDemo">
-      <text class="control__title">rules</text>
-      <text class="control__desc">配置级布局</text>
+  <view class="switches">
+    <button
+      wx:for="{{layoutOptions}}"
+      wx:key="value"
+      class="{{item.className}}"
+      data-layout="{{item.value}}"
+      bindtap="switchLayout"
+    >
+      {{item.label}}
     </button>
   </view>
 </view>

@@ -1,23 +1,23 @@
-<view class="command-layout" data-layout="command">
-  <view class="command-layout__nav">
-    <view class="command-layout__nav-main">
-      <text class="command-layout__nav-kicker">weapp-vite</text>
-      <text class="command-layout__nav-title">Layout Power Demo</text>
-    </view>
-    <text class="command-layout__nav-pill">native</text>
+<view class="theme-layout theme-layout--command" data-layout="command">
+  <view class="theme-layout__navbar">
+    <text class="theme-layout__navbar-title">Layout Power</text>
+    <text class="theme-layout__navbar-theme">COMMAND</text>
   </view>
-  <view class="command-layout__top">
-    <view class="command-layout__title-row">
-      <text class="command-layout__title">{{title}}</text>
-      <text class="command-layout__badge">{{mode}}</text>
+
+  <view class="theme-layout__nav">
+    <view class="theme-layout__brand">
+      <text class="theme-layout__kicker">layout host</text>
+      <text class="theme-layout__title">{{title}}</text>
     </view>
-    <view class="command-layout__slots">
-      <text class="command-layout__slot">global shell</text>
-      <text class="command-layout__slot">route props</text>
-      <text class="command-layout__slot">page slot</text>
-    </view>
+    <text class="theme-layout__mode">{{mode}}</text>
   </view>
-  <view class="command-layout__body">
+
+  <view class="theme-layout__content">
     <slot />
+  </view>
+
+  <view class="theme-layout__globals">
+    <text class="theme-layout__toast">#t-toast host</text>
+    <text class="theme-layout__safe-area">safe-area</text>
   </view>
 </view>

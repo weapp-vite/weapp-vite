@@ -1,98 +1,86 @@
 import { setPageLayout } from 'weapp-vite/runtime'
 
-type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default' | 'none'
+type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default'
 
-interface LayoutState {
+interface LayoutOption {
   label: string
-  state: string
+  value: LayoutMode
   className: string
 }
 
-const capabilities = [
+const layoutOptions: LayoutOption[] = [
   {
-    title: 'Command',
-    desc: '深色控制台外壳，展示 props、slot 与页面主体组合。',
-    tag: 'dark',
+    label: 'Command',
+    value: 'command',
+    className: 'switch switch--active',
   },
   {
-    title: 'Studio',
-    desc: '带侧向步骤栏和描边风格，适合强调工作台形态。',
-    tag: 'editor',
+    label: 'Studio',
+    value: 'studio',
+    className: 'switch',
   },
   {
-    title: 'Split',
-    desc: '固定左栏 + 右侧内容区，展示布局可重塑页面骨架。',
-    tag: 'sidebar',
+    label: 'Split',
+    value: 'split',
+    className: 'switch',
   },
   {
-    title: 'Poster',
-    desc: '海报式 masthead + 浮层内容，用同一页面换完整视觉语境。',
-    tag: 'poster',
+    label: 'Poster',
+    value: 'poster',
+    className: 'switch',
+  },
+  {
+    label: 'Default',
+    value: 'default',
+    className: 'switch',
   },
 ]
 
-const layoutCopy: Record<Exclude<LayoutMode, 'none'>, { title: string, mode: string }> = {
+const layoutCopy: Record<LayoutMode, { title: string, mode: string }> = {
   command: {
-    title: 'Runtime Command Shell',
-    mode: 'command',
+    title: 'Neon Command',
+    mode: 'cyber host',
   },
   studio: {
-    title: 'Studio Layout',
-    mode: 'workbench',
+    title: 'Ink Studio',
+    mode: 'paper host',
   },
   split: {
-    title: 'Split Layout',
-    mode: 'sidebar',
+    title: 'Mint Ops',
+    mode: 'ops host',
   },
   poster: {
-    title: 'Poster Layout',
-    mode: 'campaign',
+    title: 'Solar Poster',
+    mode: 'poster host',
   },
   default: {
-    title: 'Default Layout',
-    mode: 'default',
+    title: 'Cloud Default',
+    mode: 'clean host',
   },
 }
 
 const e2eRuntimeVendorMarker = 'runtime-vendor-hmr-baseline'
 
-function createLayoutStates(currentLayout: LayoutMode): LayoutState[] {
-  return [
-    {
-      label: 'layout name',
-      state: currentLayout,
-      className: currentLayout === 'none' ? 'preview__chip' : 'preview__chip preview__chip--active',
-    },
-    {
-      label: 'props',
-      state: currentLayout === 'none' ? 'off' : 'on',
-      className: currentLayout === 'none' ? 'preview__chip' : 'preview__chip preview__chip--active',
-    },
-    {
-      label: 'setPageLayout',
-      state: currentLayout,
-      className: 'preview__chip preview__chip--active',
-    },
-    {
-      label: 'layout=false',
-      state: currentLayout === 'none' ? 'on' : 'ready',
-      className: currentLayout === 'none' ? 'preview__chip preview__chip--active' : 'preview__chip',
-    },
-  ]
+function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
+  return layoutOptions.map(option => ({
+    ...option,
+    className: option.value === currentLayout ? 'switch switch--active' : 'switch',
+  }))
 }
 
 Page({
   data: {
     currentLayout: 'command' as LayoutMode,
     runtimeEvents: 1,
-    capabilities,
+    layoutTitle: 'Neon Command',
+    layoutMode: 'cyber host',
     e2eRuntimeVendorMarker,
-    layoutStates: createLayoutStates('command'),
+    layoutOptions: createLayoutOptions('command'),
   },
   onLoad() {
     setPageLayout('command', {
       mode: 'native Page',
-      title: 'Layout Power Demo',
+      title: 'Neon Command',
     })
   },
   applyCommandLayout() {
@@ -110,31 +98,24 @@ Page({
   applyDefaultLayout() {
     this.applyNamedLayout('default')
   },
-  applyNamedLayout(layout: Exclude<LayoutMode, 'none'>) {
+  switchLayout(event: WechatMiniprogram.TouchEvent<{ layout: LayoutMode }>) {
+    const layout = event.currentTarget.dataset.layout
+    this.applyNamedLayout(layout)
+  },
+  applyNamedLayout(layout: LayoutMode) {
     const runtimeEvents = this.data.runtimeEvents + 1
     const copy = layoutCopy[layout]
 
     this.setData({
       currentLayout: layout,
       runtimeEvents,
-      layoutStates: createLayoutStates(layout),
+      layoutTitle: copy.title,
+      layoutMode: copy.mode,
+      layoutOptions: createLayoutOptions(layout),
     })
     setPageLayout(layout, {
       mode: `${copy.mode} ${runtimeEvents}`,
       title: copy.title,
-    })
-  },
-  disableLayout() {
-    this.setData({
-      currentLayout: 'none',
-      runtimeEvents: this.data.runtimeEvents + 1,
-      layoutStates: createLayoutStates('none'),
-    })
-    setPageLayout(false)
-  },
-  openRouteRulesDemo() {
-    wx.navigateTo({
-      url: '/pages/rules/index',
     })
   },
   runE2E() {

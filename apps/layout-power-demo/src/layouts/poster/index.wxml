@@ -1,10 +1,23 @@
-<view class="poster-layout" data-layout="poster">
-  <view class="poster-layout__mast">
-    <text class="poster-layout__mark">LAYOUT</text>
-    <text class="poster-layout__title">{{title}}</text>
-    <text class="poster-layout__mode">{{mode}}</text>
+<view class="theme-layout theme-layout--poster" data-layout="poster">
+  <view class="theme-layout__navbar">
+    <text class="theme-layout__navbar-title">Layout Power</text>
+    <text class="theme-layout__navbar-theme">POSTER</text>
   </view>
-  <view class="poster-layout__sheet">
+
+  <view class="theme-layout__nav">
+    <view class="theme-layout__brand">
+      <text class="theme-layout__kicker">layout host</text>
+      <text class="theme-layout__title">{{title}}</text>
+    </view>
+    <text class="theme-layout__mode">{{mode}}</text>
+  </view>
+
+  <view class="theme-layout__content">
     <slot />
+  </view>
+
+  <view class="theme-layout__globals">
+    <text class="theme-layout__toast">#t-toast host</text>
+    <text class="theme-layout__safe-area">safe-area</text>
   </view>
 </view>

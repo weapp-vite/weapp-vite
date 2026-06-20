@@ -20,11 +20,14 @@ const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/layout-power-demo')
 const CLI_PATH = path.join(APP_ROOT, 'node_modules/weapp-vite/bin/weapp-vite.js')
 const PAGE_SCRIPT = path.join(APP_ROOT, 'src/pages/index/index.ts')
+const COMMAND_LAYOUT_WXSS = path.join(APP_ROOT, 'src/layouts/command/index.wxss')
 const PAGE_JS_DIST = path.join(APP_ROOT, 'dist/pages/index/index.js')
+const COMMAND_LAYOUT_WXSS_DIST = path.join(APP_ROOT, 'dist/layouts/command/index.wxss')
 const RUNTIME_VENDOR_DIST = path.join(APP_ROOT, 'dist/weapp-vendors/weapp-vite-runtime.js')
 const INDEX_ROUTE = '/pages/index/index'
 const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
+const STYLE_MARKER = 'runtime-vendor-style-hmr'
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
 
 function delay(ms: number) {
@@ -93,11 +96,15 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
 
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
   let originalScript = ''
+  let originalCommandLayoutStyle = ''
   let miniProgram: any
   let devProcess: ReturnType<typeof startDevProcess> | undefined
 
   beforeAll(async () => {
-    originalScript = await fs.readFile(PAGE_SCRIPT, 'utf8')
+    ;[originalScript, originalCommandLayoutStyle] = await Promise.all([
+      fs.readFile(PAGE_SCRIPT, 'utf8'),
+      fs.readFile(COMMAND_LAYOUT_WXSS, 'utf8'),
+    ])
     if (!originalScript.includes(BASELINE_MARKER)) {
       throw new Error(`Expected ${PAGE_SCRIPT} to contain ${BASELINE_MARKER}`)
     }
@@ -111,6 +118,9 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
   afterAll(async () => {
     if (originalScript) {
       await fs.writeFile(PAGE_SCRIPT, originalScript, 'utf8').catch(() => {})
+    }
+    if (originalCommandLayoutStyle) {
+      await fs.writeFile(COMMAND_LAYOUT_WXSS, originalCommandLayoutStyle, 'utf8').catch(() => {})
     }
     await Promise.resolve(miniProgram?.disconnect?.()).catch(() => {})
     await Promise.resolve(miniProgram?.close?.()).catch(() => {})
@@ -139,6 +149,16 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
 
     const pageJs = await waitForFileContains(PAGE_JS_DIST, UPDATED_MARKER, 30_000)
     expect(pageJs).toContain('../../weapp-vendors/weapp-vite-runtime.js')
+    await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+
+    page = await relaunchIndexPage(miniProgram)
+    await waitForRunE2EMarker(page, UPDATED_MARKER)
+    expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
+
+    const nextCommandLayoutStyle = `${originalCommandLayoutStyle}\n/* ${STYLE_MARKER} */\n`
+    expect(nextCommandLayoutStyle).not.toBe(originalCommandLayoutStyle)
+    await replaceFileByRename(COMMAND_LAYOUT_WXSS, nextCommandLayoutStyle)
+    await waitForFileContains(COMMAND_LAYOUT_WXSS_DIST, STYLE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
 
     page = await relaunchIndexPage(miniProgram)

@@ -1,10 +1,23 @@
-<view class="split-layout" data-layout="split">
-  <view class="split-layout__side">
-    <text class="split-layout__label">layout</text>
-    <text class="split-layout__title">{{title}}</text>
-    <text class="split-layout__mode">{{mode}}</text>
+<view class="theme-layout theme-layout--split" data-layout="split">
+  <view class="theme-layout__navbar">
+    <text class="theme-layout__navbar-title">Layout Power</text>
+    <text class="theme-layout__navbar-theme">SPLIT</text>
   </view>
-  <view class="split-layout__body">
+
+  <view class="theme-layout__nav">
+    <view class="theme-layout__brand">
+      <text class="theme-layout__kicker">layout host</text>
+      <text class="theme-layout__title">{{title}}</text>
+    </view>
+    <text class="theme-layout__mode">{{mode}}</text>
+  </view>
+
+  <view class="theme-layout__content">
     <slot />
+  </view>
+
+  <view class="theme-layout__globals">
+    <text class="theme-layout__toast">#t-toast host</text>
+    <text class="theme-layout__safe-area">safe-area</text>
   </view>
 </view>

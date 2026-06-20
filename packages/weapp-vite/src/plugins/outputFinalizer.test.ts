@@ -264,6 +264,57 @@ describe('weapp-vite output finalizer', () => {
     expect(emittedSource.get('pages/index/index.js')).toBe('Page({})')
   })
 
+  it('keeps unchanged chunks explicitly emitted for the current dev hmr event', () => {
+    const emittedSource = new Map([
+      ['pages/index/index.js', 'const runtime = require("../../weapp-vendors/weapp-vite-runtime.js");Page({})'],
+      ['weapp-vendors/weapp-vite-runtime.js', 'exports.setPageLayout = function setPageLayout() {}'],
+      ['pages/index/index.wxml', '<view />'],
+    ])
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'const runtime = require("../../weapp-vendors/weapp-vite-runtime.js");Page({})',
+      },
+      'weapp-vendors/weapp-vite-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/weapp-vite-runtime.js',
+        code: 'exports.setPageLayout = function setPageLayout() {}',
+      },
+      'pages/index/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxml',
+        source: '<view />',
+      },
+    } as unknown as OutputBundle
+
+    pruneUnchangedDevHmrOutputs({
+      configService: {
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            lastEmittedChunkFileNames: new Set([
+              'pages/index/index.js',
+              'weapp-vendors/weapp-vite-runtime.js',
+            ]),
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any, bundle)
+
+    expect(bundle['pages/index/index.js']).toBeDefined()
+    expect(bundle['weapp-vendors/weapp-vite-runtime.js']).toBeDefined()
+    expect(bundle['pages/index/index.wxml']).toBeUndefined()
+  })
+
   it('drops chunk outputs that were not emitted for the current hmr event', () => {
     const emittedSource = new Map<string, string>()
     const bundle = {

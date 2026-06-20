@@ -97,11 +97,18 @@ export function pruneUnchangedDevHmrOutputs(
   }
 
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
   pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
     const source = outputSourceToString(output)
-    if (isHmrBuild && cache.get(fileName) === source) {
+    const shouldForceEmitCurrentHmrChunk = isHmrBuild
+      && output.type === 'chunk'
+      && (
+        emittedChunkFileNames?.has(fileName) === true
+        || emittedChunkFileNames?.has(output.fileName) === true
+      )
+    if (isHmrBuild && !shouldForceEmitCurrentHmrChunk && cache.get(fileName) === source) {
       delete bundle[fileName]
       continue
     }
