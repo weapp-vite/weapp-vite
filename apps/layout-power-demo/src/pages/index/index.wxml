@@ -24,6 +24,36 @@
       <view class="stage__main">
         <text class="stage__title">{{layoutTitle}}</text>
         <text class="stage__desc">页面内容保留，只替换布局、属性和骨架。</text>
+        <view class="stage__visual stage__visual--default">
+          <text class="stage__tile stage__tile--wide" />
+          <text class="stage__tile" />
+          <text class="stage__tile" />
+          <text class="stage__tile stage__tile--short" />
+        </view>
+        <view class="stage__visual stage__visual--command">
+          <text class="stage__console-line stage__console-line--wide" />
+          <text class="stage__console-line" />
+          <text class="stage__console-cursor" />
+        </view>
+        <view class="stage__visual stage__visual--studio">
+          <text class="stage__swatch stage__swatch--large" />
+          <text class="stage__swatch stage__swatch--light" />
+          <text class="stage__brush" />
+        </view>
+        <view class="stage__visual stage__visual--split">
+          <text class="stage__pane stage__pane--main" />
+          <view class="stage__pane-stack">
+            <text class="stage__pane" />
+            <text class="stage__pane stage__pane--thin" />
+          </view>
+        </view>
+        <view class="stage__visual stage__visual--poster">
+          <text class="stage__poster-mark">海</text>
+          <view class="stage__poster-lines">
+            <text class="stage__poster-line stage__poster-line--wide" />
+            <text class="stage__poster-line" />
+          </view>
+        </view>
         <view class="stage__facts">
           <text class="stage__fact">运行切换</text>
           <text class="stage__fact">插槽承载</text>
