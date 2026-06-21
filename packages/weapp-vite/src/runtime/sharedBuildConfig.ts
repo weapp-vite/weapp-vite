@@ -17,6 +17,7 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|web-apis[/\\]dist[/\\]index\.(?:m?js|cjs)|weapp-vite[/\\](?:dist[/\\]web-apis\.mjs|src[/\\](?:webApis\.ts|runtime[/\\]webApis[/\\]index\.ts)))(?:$|[?#])/
+const REG_WEAPP_VITE_RUNTIME_VENDOR_ID = /(?:^|[/\\])weapp-vite[/\\](?:dist[/\\]runtime\.mjs|src[/\\]plugins[/\\]vue[/\\]runtime\.ts)(?:$|[?#])/
 const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\](?:dev[/\\])?([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
 const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
 
@@ -227,6 +228,12 @@ function isRequestGlobalsRuntimeModuleId(id: string) {
   return resolveDistChunkPackageToken(cleanedAbsoluteId)?.endsWith('web-apis') === true
 }
 
+function isWeappViteRuntimeModuleId(id: string) {
+  const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
+  REG_WEAPP_VITE_RUNTIME_VENDOR_ID.lastIndex = 0
+  return REG_WEAPP_VITE_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId)
+}
+
 function resolveStableHashedDistChunkFileName(
   chunk: { moduleIds?: string[] | readonly string[], facadeModuleId?: string | null },
 ) {
@@ -238,6 +245,10 @@ function resolveStableHashedDistChunkFileName(
   let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
 
   for (const id of candidateIds) {
+    if (isWeappViteRuntimeModuleId(id)) {
+      return 'weapp-vendors/weapp-vite-runtime.js'
+    }
+
     const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
     if (!path.isAbsolute(cleanedAbsoluteId)) {
       continue
@@ -329,6 +340,9 @@ function createSharedBuildResolver(
     if (isRequestGlobalsRuntimeModuleId(id)) {
       return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME.replace(/\.js$/, '')
     }
+    if (isWeappViteRuntimeModuleId(id)) {
+      return 'weapp-vendors/weapp-vite-runtime'
+    }
     if (configService.isDev) {
       const stableHashedDistChunkName = resolveStableHashedDistChunkName({
         facadeModuleId: id,
@@ -417,6 +431,7 @@ export {
   isRequestGlobalsRuntimeChunk,
   isRequestGlobalsRuntimeModuleId,
   isStableHashedDistChunkModule,
+  isWeappViteRuntimeModuleId,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,

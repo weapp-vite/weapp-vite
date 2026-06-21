@@ -13,6 +13,7 @@ import {
   isRequestGlobalsRuntimeChunk,
   isRequestGlobalsRuntimeModuleId,
   isStableHashedDistChunkModule,
+  isWeappViteRuntimeModuleId,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
@@ -234,6 +235,30 @@ describe('sharedBuildConfig', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/shared-BD3I133J.mjs',
     })).toBe('weapp-vendors/request-globals-wevu-web-apis-shared.js')
+  })
+
+  it('keeps weapp-vite runtime under a stable vendor chunk in dev', () => {
+    expect(isWeappViteRuntimeModuleId(
+      '/project/node_modules/weapp-vite/dist/runtime.mjs',
+    )).toBe(true)
+    expect(isWeappViteRuntimeModuleId(
+      '/project/packages/weapp-vite/src/plugins/vue/runtime.ts',
+    )).toBe(true)
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/node_modules/weapp-vite/dist/runtime.mjs',
+    })).toBe('weapp-vendors/weapp-vite-runtime.js')
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages/weapp-vite/src/plugins/vue/runtime.ts',
+    })).toBe('weapp-vendors/weapp-vite-runtime.js')
+
+    const output = createSharedBuildOutput(createTestConfigService({}, { isDev: true }), () => [])
+    expect(output.codeSplitting.groups[0]!.name(
+      '/project/node_modules/weapp-vite/dist/runtime.mjs',
+    )).toBe('weapp-vendors/weapp-vite-runtime')
+    expect(output.chunkFileNames({
+      name: 'runtime',
+      facadeModuleId: '/project/node_modules/weapp-vite/dist/runtime.mjs',
+    })).toBe('weapp-vendors/weapp-vite-runtime.js')
   })
 
   it('keeps hashed dist chunk groups stable across full and incremental rebuilds', () => {
