@@ -1,6 +1,5 @@
-import type { LayoutFeedbackResult } from '../../layouts/layoutFeedback'
-import { setPageLayout } from 'weapp-vite/runtime'
-import { callLayoutMessage, callLayoutToast, hasLayoutFeedback } from '../../layouts/layoutFeedback'
+import type { LayoutFeedbackHost, LayoutFeedbackResult } from '../../layouts/layoutFeedback'
+import { setPageLayout, waitForLayoutHost } from 'weapp-vite/runtime'
 
 type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default'
 
@@ -82,8 +81,20 @@ function createDemoClass(currentLayout: LayoutMode, state?: 'switching' | 'settl
   return ['demo', `demo--${currentLayout}`, state ? `demo--${state}` : ''].filter(Boolean).join(' ')
 }
 
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+function createMissingFeedbackResult(
+  layout: LayoutMode,
+  feedback: LayoutFeedbackResult['feedback'],
+): LayoutFeedbackResult {
+  return {
+    layout,
+    feedback,
+    messageTheme: 'info',
+    toastTheme: 'success',
+    toastPlacement: 'middle',
+    toastDirection: 'row',
+    messageOffsetTop: 0,
+    ok: false,
+  }
 }
 
 Page({
@@ -130,16 +141,15 @@ Page({
     this.applyNamedLayout(layout)
   },
   async waitForLayoutFeedback(layout: LayoutMode) {
-    const startedAt = Date.now()
-    while (!hasLayoutFeedback(layout) && Date.now() - startedAt <= feedbackReadyTimeoutMs) {
-      await delay(feedbackReadyRetryMs)
-    }
-    return hasLayoutFeedback(layout)
+    return await waitForLayoutHost<LayoutFeedbackHost>(layout, {
+      interval: feedbackReadyRetryMs,
+      retries: Math.ceil(feedbackReadyTimeoutMs / feedbackReadyRetryMs),
+    })
   },
   async showLayoutMessage() {
     const layout = this.data.currentLayout
-    await this.waitForLayoutFeedback(layout)
-    const result = callLayoutMessage(layout)
+    const host = await this.waitForLayoutFeedback(layout)
+    const result = host?.message() ?? createMissingFeedbackResult(layout, 'message')
     this.setData({
       lastFeedbackLayout: result.layout,
     })
@@ -147,8 +157,8 @@ Page({
   },
   async showLayoutToast() {
     const layout = this.data.currentLayout
-    await this.waitForLayoutFeedback(layout)
-    const result = callLayoutToast(layout)
+    const host = await this.waitForLayoutFeedback(layout)
+    const result = host?.toast() ?? createMissingFeedbackResult(layout, 'toast')
     this.setData({
       lastFeedbackLayout: result.layout,
     })

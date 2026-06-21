@@ -1,0 +1,21 @@
+{
+  "name": "runtime-public-types-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "weapp-vite/runtime": [
+          "../../dist/runtime.d.mts"
+        ]
+      },
+      "types": [
+        "miniprogram-api-typings"
+      ]
+    }
+  }
+}

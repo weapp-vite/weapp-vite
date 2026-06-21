@@ -1,9 +1,8 @@
 import type { LayoutFeedbackComponent } from '../layoutFeedback'
 import {
-  createLayoutFeedback,
-
-  registerLayoutFeedback,
-  unregisterLayoutFeedback,
+  createLayoutFeedbackHost,
+  registerLayoutFeedbackHost,
+  unregisterLayoutFeedbackHost,
 } from '../layoutFeedback'
 import { resolveNavbarMetrics } from '../navbarMetrics'
 
@@ -23,27 +22,29 @@ Component({
   },
   lifetimes: {
     attached(this: LayoutFeedbackComponent) {
-      this.__layoutPowerFeedbackHandlers = createLayoutFeedback(this, {
-        id: 'default',
-        message: {
-          content: '默认外壳：顶部轻提示',
-          theme: 'info',
-          duration: 1600,
-        },
-        toast: {
-          message: '默认布局已响应',
-          theme: 'success',
-          duration: 1200,
-          placement: 'middle',
-          direction: 'row',
-        },
-      })
-      registerLayoutFeedback('default', this.__layoutPowerFeedbackHandlers)
+      this.__layoutPowerFeedbackBridge = registerLayoutFeedbackHost(
+        'default',
+        createLayoutFeedbackHost(this, {
+          id: 'default',
+          message: {
+            content: '默认外壳：顶部轻提示',
+            theme: 'info',
+            duration: 1600,
+          },
+          toast: {
+            message: '默认布局已响应',
+            theme: 'success',
+            duration: 1200,
+            placement: 'middle',
+            direction: 'row',
+          },
+        }),
+      )
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback('default', this.__layoutPowerFeedbackHandlers)
-        this.__layoutPowerFeedbackHandlers = undefined
+      if (this.__layoutPowerFeedbackBridge) {
+        unregisterLayoutFeedbackHost(this.__layoutPowerFeedbackBridge)
+        this.__layoutPowerFeedbackBridge = undefined
       }
     },
   },

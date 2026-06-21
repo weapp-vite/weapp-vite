@@ -1,9 +1,8 @@
 import type { LayoutFeedbackComponent } from '../layoutFeedback'
 import {
-  createLayoutFeedback,
-
-  registerLayoutFeedback,
-  unregisterLayoutFeedback,
+  createLayoutFeedbackHost,
+  registerLayoutFeedbackHost,
+  unregisterLayoutFeedbackHost,
 } from '../layoutFeedback'
 import { resolveNavbarMetrics } from '../navbarMetrics'
 
@@ -23,31 +22,33 @@ Component({
   },
   lifetimes: {
     attached(this: LayoutFeedbackComponent) {
-      this.__layoutPowerFeedbackHandlers = createLayoutFeedback(this, {
-        id: 'poster',
-        message: {
-          content: '海报外壳：长文案沿顶部滚动展示',
-          theme: 'error',
-          duration: 2600,
-          marquee: {
-            speed: 45,
-            loop: 1,
+      this.__layoutPowerFeedbackBridge = registerLayoutFeedbackHost(
+        'poster',
+        createLayoutFeedbackHost(this, {
+          id: 'poster',
+          message: {
+            content: '海报外壳：长文案沿顶部滚动展示',
+            theme: 'error',
+            duration: 2600,
+            marquee: {
+              speed: 45,
+              loop: 1,
+            },
           },
-        },
-        toast: {
-          message: '票据效果已盖章',
-          theme: 'error',
-          duration: 1700,
-          placement: 'bottom',
-          direction: 'column',
-        },
-      })
-      registerLayoutFeedback('poster', this.__layoutPowerFeedbackHandlers)
+          toast: {
+            message: '票据效果已盖章',
+            theme: 'error',
+            duration: 1700,
+            placement: 'bottom',
+            direction: 'column',
+          },
+        }),
+      )
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback('poster', this.__layoutPowerFeedbackHandlers)
-        this.__layoutPowerFeedbackHandlers = undefined
+      if (this.__layoutPowerFeedbackBridge) {
+        unregisterLayoutFeedbackHost(this.__layoutPowerFeedbackBridge)
+        this.__layoutPowerFeedbackBridge = undefined
       }
     },
   },

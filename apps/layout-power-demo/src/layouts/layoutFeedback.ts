@@ -1,5 +1,7 @@
+import type { LayoutHostBridge } from 'weapp-vite/runtime'
 import Message from 'tdesign-miniprogram/message/index'
 import Toast from 'tdesign-miniprogram/toast/index'
+import { registerLayoutHosts, unregisterLayoutHosts } from 'weapp-vite/runtime'
 
 type ToastTheme = 'loading' | 'success' | 'warning' | 'error'
 type ToastPlacement = 'top' | 'middle' | 'bottom'
@@ -42,23 +44,16 @@ export interface LayoutFeedbackResult {
   ok: boolean
 }
 
-interface LayoutFeedbackHandlers {
+export interface LayoutFeedbackHost {
   message: () => LayoutFeedbackResult
   toast: () => LayoutFeedbackResult
 }
+
 export type LayoutFeedbackComponent = WechatMiniprogram.Component.TrivialInstance & {
-  __layoutPowerFeedbackHandlers?: LayoutFeedbackHandlers
+  __layoutPowerFeedbackBridge?: LayoutHostBridge | null
   data: WechatMiniprogram.Component.TrivialInstance['data'] & {
     messageOffset?: MessageOffset
   }
-}
-type FeedbackPageInstance = WechatMiniprogram.Page.Instance<Record<string, unknown>, Record<string, unknown>> & {
-  __layoutPowerFeedbackByLayout?: Record<string, LayoutFeedbackHandlers | undefined>
-}
-
-function resolveCurrentPage() {
-  const pages = getCurrentPages() as FeedbackPageInstance[]
-  return pages[pages.length - 1]
 }
 
 function resolveMessageOffset(context: LayoutFeedbackComponent, options: LayoutFeedbackOptions): MessageOffset {
@@ -75,10 +70,10 @@ function resolveMessageOffsetTop(offset: MessageOffset) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export function createLayoutFeedback(
+export function createLayoutFeedbackHost(
   context: LayoutFeedbackComponent,
   options: LayoutFeedbackOptions,
-): LayoutFeedbackHandlers {
+): LayoutFeedbackHost {
   const messageOffset = resolveMessageOffset(context, options)
   const createResult = (feedback: LayoutFeedbackResult['feedback']): LayoutFeedbackResult => ({
     layout: options.id,
@@ -140,50 +135,12 @@ export function createLayoutFeedback(
   }
 }
 
-export function registerLayoutFeedback(layout: string, handler: LayoutFeedbackHandlers) {
-  const page = resolveCurrentPage()
-  if (page) {
-    page.__layoutPowerFeedbackByLayout = {
-      ...page.__layoutPowerFeedbackByLayout,
-      [layout]: handler,
-    }
-  }
+export function registerLayoutFeedbackHost(layout: string, host: LayoutFeedbackHost) {
+  return registerLayoutHosts({
+    [layout]: host,
+  })
 }
 
-export function unregisterLayoutFeedback(layout: string, handler: LayoutFeedbackHandlers) {
-  const page = resolveCurrentPage()
-  if (page?.__layoutPowerFeedbackByLayout?.[layout] === handler) {
-    page.__layoutPowerFeedbackByLayout = {
-      ...page.__layoutPowerFeedbackByLayout,
-      [layout]: undefined,
-    }
-  }
-}
-
-function createMissingResult(feedback: LayoutFeedbackResult['feedback']): LayoutFeedbackResult {
-  return {
-    layout: 'none',
-    feedback,
-    messageTheme: 'info',
-    toastTheme: 'success',
-    toastPlacement: 'middle',
-    toastDirection: 'row',
-    messageOffsetTop: 0,
-    ok: false,
-  }
-}
-
-export function hasLayoutFeedback(layout: string) {
-  const page = resolveCurrentPage()
-  return Boolean(page?.__layoutPowerFeedbackByLayout?.[layout])
-}
-
-export function callLayoutMessage(layout: string): LayoutFeedbackResult {
-  const page = resolveCurrentPage()
-  return page?.__layoutPowerFeedbackByLayout?.[layout]?.message() ?? createMissingResult('message')
-}
-
-export function callLayoutToast(layout: string): LayoutFeedbackResult {
-  const page = resolveCurrentPage()
-  return page?.__layoutPowerFeedbackByLayout?.[layout]?.toast() ?? createMissingResult('toast')
+export function unregisterLayoutFeedbackHost(bridge: LayoutHostBridge) {
+  return unregisterLayoutHosts(bridge)
 }

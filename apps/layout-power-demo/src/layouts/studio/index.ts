@@ -1,9 +1,8 @@
 import type { LayoutFeedbackComponent } from '../layoutFeedback'
 import {
-  createLayoutFeedback,
-
-  registerLayoutFeedback,
-  unregisterLayoutFeedback,
+  createLayoutFeedbackHost,
+  registerLayoutFeedbackHost,
+  unregisterLayoutFeedbackHost,
 } from '../layoutFeedback'
 import { resolveNavbarMetrics } from '../navbarMetrics'
 
@@ -23,28 +22,30 @@ Component({
   },
   lifetimes: {
     attached(this: LayoutFeedbackComponent) {
-      this.__layoutPowerFeedbackHandlers = createLayoutFeedback(this, {
-        id: 'studio',
-        message: {
-          content: '画室外壳：工具状态已同步',
-          theme: 'success',
-          duration: 1800,
-          align: 'center',
-        },
-        toast: {
-          message: '画板已刷新',
-          theme: 'success',
-          duration: 1300,
-          placement: 'bottom',
-          direction: 'column',
-        },
-      })
-      registerLayoutFeedback('studio', this.__layoutPowerFeedbackHandlers)
+      this.__layoutPowerFeedbackBridge = registerLayoutFeedbackHost(
+        'studio',
+        createLayoutFeedbackHost(this, {
+          id: 'studio',
+          message: {
+            content: '画室外壳：工具状态已同步',
+            theme: 'success',
+            duration: 1800,
+            align: 'center',
+          },
+          toast: {
+            message: '画板已刷新',
+            theme: 'success',
+            duration: 1300,
+            placement: 'bottom',
+            direction: 'column',
+          },
+        }),
+      )
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback('studio', this.__layoutPowerFeedbackHandlers)
-        this.__layoutPowerFeedbackHandlers = undefined
+      if (this.__layoutPowerFeedbackBridge) {
+        unregisterLayoutFeedbackHost(this.__layoutPowerFeedbackBridge)
+        this.__layoutPowerFeedbackBridge = undefined
       }
     },
   },
