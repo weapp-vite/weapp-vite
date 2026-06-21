@@ -1,5 +1,16 @@
 # wevu
 
+## 6.17.2
+
+### Patch Changes
+
+- 📦 Updated 4 dependencies [`75e79fb`](https://github.com/weapp-vite/weapp-vite/commit/75e79fb08afc3165ff66fefeffe42623ffb48d62)
+  <details><summary>Details</summary>
+
+  `@weapp-core/shared@3.0.5`, `@wevu/api@0.2.11`, `@wevu/compiler@6.17.2`, `@wevu/web-apis@1.2.25`
+
+  </details>
+
 ## 6.17.1
 
 ### Patch Changes
