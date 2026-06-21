@@ -1,4 +1,9 @@
+import { resolveNavbarMetrics } from '../navbarMetrics'
+
 Component({
+  data: {
+    ...resolveNavbarMetrics(),
+  },
   properties: {
     mode: {
       type: String,

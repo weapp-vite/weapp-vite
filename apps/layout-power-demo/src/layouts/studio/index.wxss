@@ -21,6 +21,7 @@
 }
 
 .theme-layout__navbar {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,14 +73,14 @@
 
 .theme-layout__navbar-theme {
   box-sizing: border-box;
-  width: 176rpx;
-  height: 64rpx;
+  width: var(--demo-navbar-capsule-width, 176rpx);
+  height: var(--demo-navbar-capsule-height, 64rpx);
   padding: 0 20rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 20rpx;
   font-weight: 900;
-  line-height: 64rpx;
+  line-height: var(--demo-navbar-capsule-height, 64rpx);
   color: #fff0df;
   text-align: center;
   white-space: nowrap;

@@ -1,7 +1,7 @@
 <view class="theme-layout theme-layout--split" data-layout="split">
   <view class="theme-layout__transition" />
 
-  <view class="theme-layout__navbar">
+  <view class="theme-layout__navbar" style="{{navbarStyle}}">
     <view class="theme-layout__navbar-title">
       <text class="theme-layout__lane theme-layout__lane--active" />
       <text class="theme-layout__lane" />

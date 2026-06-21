@@ -1,7 +1,7 @@
 <view class="theme-layout theme-layout--default" data-layout="default">
   <view class="theme-layout__transition" />
 
-  <view class="theme-layout__navbar">
+  <view class="theme-layout__navbar" style="{{navbarStyle}}">
     <view class="theme-layout__navbar-title">
       <text class="theme-layout__navbar-text">布局演示</text>
       <text class="theme-layout__navbar-dot" />
