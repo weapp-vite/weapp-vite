@@ -2,11 +2,11 @@ Component({
   properties: {
     mode: {
       type: String,
-      value: 'light host',
+      value: '基础样式',
     },
     title: {
       type: String,
-      value: 'Default Theme',
+      value: '默认外壳',
     },
   },
 })

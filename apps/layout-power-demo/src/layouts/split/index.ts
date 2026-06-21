@@ -2,11 +2,11 @@ Component({
   properties: {
     mode: {
       type: String,
-      value: 'split',
+      value: '区域组合',
     },
     title: {
       type: String,
-      value: 'Split Layout',
+      value: '分栏外壳',
     },
   },
 })

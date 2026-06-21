@@ -2,11 +2,11 @@ Component({
   properties: {
     mode: {
       type: String,
-      value: 'default',
+      value: '默认',
     },
     title: {
       type: String,
-      value: 'Layout Power Demo',
+      value: '布局演示',
     },
   },
 })

@@ -8,8 +8,8 @@ export default defineConfig({
         appLayout: {
           name: 'command',
           props: {
-            mode: 'routeRules',
-            title: 'Route Rules Shell',
+            mode: '路由配置',
+            title: '配置外壳',
           },
         },
       },

@@ -2,7 +2,7 @@
   "name": "layout-power-demo",
   "version": "0.0.0",
   "private": true,
-  "description": "One-screen demo for weapp-vite layout capabilities",
+  "description": "weapp-vite layout 能力演示",
   "scripts": {
     "prepare:weapp": "wv prepare",
     "dev": "wv dev",

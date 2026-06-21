@@ -1,18 +1,18 @@
 <view class="{{demoClass}}">
   <view class="hero">
     <view class="hero__copy">
-      <text class="hero__eyebrow">weapp-vite layout</text>
-      <text class="hero__title">一屏切换不同页面外壳</text>
+      <text class="hero__eyebrow">布局能力</text>
+      <text class="hero__title">切换外壳，内容不动</text>
     </view>
     <view class="hero__badge">
-      <text class="hero__badge-value">{{currentLayout}}</text>
-      <text class="hero__badge-label">{{runtimeEvents}} changes</text>
+      <text class="hero__badge-value">{{currentLayoutLabel}}</text>
+      <text class="hero__badge-label">已切换 {{runtimeEvents}} 次</text>
     </view>
   </view>
 
   <view class="stage">
     <view class="stage__header">
-      <text class="stage__label">current shell</text>
+      <text class="stage__label">当前外壳</text>
       <text class="stage__mode">{{layoutMode}}</text>
     </view>
     <view class="stage__body">
@@ -23,11 +23,11 @@
       </view>
       <view class="stage__main">
         <text class="stage__title">{{layoutTitle}}</text>
-        <text class="stage__desc">同一个 page slot 不变，只替换外层 layout、props 和视觉骨架。</text>
+        <text class="stage__desc">页面内容保留，只替换布局、属性和骨架。</text>
         <view class="stage__facts">
-          <text class="stage__fact">setPageLayout</text>
-          <text class="stage__fact">slot</text>
-          <text class="stage__fact">{{currentLayout}}</text>
+          <text class="stage__fact">运行切换</text>
+          <text class="stage__fact">插槽承载</text>
+          <text class="stage__fact">{{currentLayoutLabel}}</text>
         </view>
       </view>
     </view>

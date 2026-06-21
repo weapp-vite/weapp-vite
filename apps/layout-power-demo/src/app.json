@@ -5,7 +5,7 @@
     "pages/rules/index"
   ],
   "window": {
-    "navigationBarTitleText": "Layout 能力一屏演示",
+    "navigationBarTitleText": "布局能力演示",
     "navigationStyle": "custom"
   },
   "style": "v2",

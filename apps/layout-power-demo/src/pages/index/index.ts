@@ -10,52 +10,57 @@ interface LayoutOption {
 
 const layoutOptions: LayoutOption[] = [
   {
-    label: 'Command',
+    label: '命令',
     value: 'command',
     className: 'switch switch--active',
   },
   {
-    label: 'Studio',
+    label: '画室',
     value: 'studio',
     className: 'switch',
   },
   {
-    label: 'Split',
+    label: '分栏',
     value: 'split',
     className: 'switch',
   },
   {
-    label: 'Poster',
+    label: '海报',
     value: 'poster',
     className: 'switch',
   },
   {
-    label: 'Default',
+    label: '默认',
     value: 'default',
     className: 'switch',
   },
 ]
 
-const layoutCopy: Record<LayoutMode, { title: string, mode: string }> = {
+const layoutCopy: Record<LayoutMode, { label: string, title: string, mode: string }> = {
   command: {
-    title: 'Neon Command',
-    mode: 'cyber host',
+    label: '命令',
+    title: '命令外壳',
+    mode: '运行切换',
   },
   studio: {
-    title: 'Ink Studio',
-    mode: 'paper host',
+    label: '画室',
+    title: '画室外壳',
+    mode: '工具面板',
   },
   split: {
-    title: 'Mint Ops',
-    mode: 'ops host',
+    label: '分栏',
+    title: '分栏外壳',
+    mode: '区域组合',
   },
   poster: {
-    title: 'Solar Poster',
-    mode: 'poster host',
+    label: '海报',
+    title: '海报外壳',
+    mode: '票据样式',
   },
   default: {
-    title: 'Cloud Default',
-    mode: 'clean host',
+    label: '默认',
+    title: '默认外壳',
+    mode: '基础样式',
   },
 }
 
@@ -72,17 +77,18 @@ function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
 Page({
   data: {
     currentLayout: 'command' as LayoutMode,
+    currentLayoutLabel: '命令',
     runtimeEvents: 1,
-    layoutTitle: 'Neon Command',
-    layoutMode: 'cyber host',
+    layoutTitle: '命令外壳',
+    layoutMode: '运行切换',
     demoClass: 'demo',
     e2eRuntimeVendorMarker,
     layoutOptions: createLayoutOptions('command'),
   },
   onLoad() {
     setPageLayout('command', {
-      mode: 'native Page',
-      title: 'Neon Command',
+      mode: '原生页面',
+      title: '命令外壳',
     })
   },
   onUnload() {
@@ -124,6 +130,7 @@ Page({
     this.setData({
       demoClass: 'demo demo--switching',
       currentLayout: layout,
+      currentLayoutLabel: copy.label,
       runtimeEvents,
       layoutTitle: copy.title,
       layoutMode: copy.mode,

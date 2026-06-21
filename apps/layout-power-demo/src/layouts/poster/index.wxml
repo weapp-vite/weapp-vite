@@ -3,19 +3,19 @@
 
   <view class="theme-layout__navbar">
     <view class="theme-layout__navbar-title">
-      <text class="theme-layout__poster-mark">LP</text>
-      <text class="theme-layout__navbar-text">Layout Power</text>
+      <text class="theme-layout__poster-mark">海</text>
+      <text class="theme-layout__navbar-text">布局演示</text>
     </view>
-    <text class="theme-layout__navbar-theme">POSTER</text>
+    <text class="theme-layout__navbar-theme">海报</text>
   </view>
 
   <view class="theme-layout__nav">
     <view class="theme-layout__brand">
-      <text class="theme-layout__kicker">layout host</text>
+      <text class="theme-layout__kicker">外壳</text>
       <text class="theme-layout__title">{{title}}</text>
     </view>
     <view class="theme-layout__poster-ticket">
-      <text class="theme-layout__ticket-code">A24</text>
+      <text class="theme-layout__ticket-code">票</text>
       <text class="theme-layout__ticket-rule" />
     </view>
   </view>
@@ -26,6 +26,6 @@
 
   <view class="theme-layout__globals">
     <text class="theme-layout__mode">{{mode}}</text>
-    <text class="theme-layout__safe-area">safe-area</text>
+    <text class="theme-layout__safe-area">安全区</text>
   </view>
 </view>

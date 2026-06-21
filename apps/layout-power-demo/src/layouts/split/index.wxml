@@ -5,14 +5,14 @@
     <view class="theme-layout__navbar-title">
       <text class="theme-layout__lane theme-layout__lane--active" />
       <text class="theme-layout__lane" />
-      <text class="theme-layout__navbar-text">Layout Power</text>
+      <text class="theme-layout__navbar-text">布局演示</text>
     </view>
-    <text class="theme-layout__navbar-theme">SPLIT</text>
+    <text class="theme-layout__navbar-theme">分栏</text>
   </view>
 
   <view class="theme-layout__nav">
     <view class="theme-layout__brand">
-      <text class="theme-layout__kicker">layout host</text>
+      <text class="theme-layout__kicker">外壳</text>
       <text class="theme-layout__title">{{title}}</text>
     </view>
     <view class="theme-layout__split-map">
@@ -28,6 +28,6 @@
 
   <view class="theme-layout__globals">
     <text class="theme-layout__mode">{{mode}}</text>
-    <text class="theme-layout__toast">#t-toast host</text>
+    <text class="theme-layout__toast">提示挂载</text>
   </view>
 </view>

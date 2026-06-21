@@ -2,11 +2,11 @@ Component({
   properties: {
     mode: {
       type: String,
-      value: 'poster',
+      value: '票据样式',
     },
     title: {
       type: String,
-      value: 'Poster Layout',
+      value: '海报外壳',
     },
   },
 })

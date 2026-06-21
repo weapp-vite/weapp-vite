@@ -2,11 +2,11 @@ Component({
   properties: {
     mode: {
       type: String,
-      value: 'studio',
+      value: '工具面板',
     },
     title: {
       type: String,
-      value: 'Studio Layout',
+      value: '画室外壳',
     },
   },
 })

@@ -1,8 +1,8 @@
 <view class="rules-page">
   <view class="rules-page__panel">
-    <text class="rules-page__eyebrow">vite.config.ts routeRules</text>
-    <text class="rules-page__title">这个页面没有运行时调用，仍然进入 command layout</text>
-    <text class="rules-page__desc">当前 layout props 来自项目配置：mode=routeRules，title=Route Rules Shell。</text>
+    <text class="rules-page__eyebrow">路由规则</text>
+    <text class="rules-page__title">无需运行时调用，也能套用外壳</text>
+    <text class="rules-page__desc">当前属性来自配置：模式=路由配置，标题=配置外壳。</text>
     <button class="rules-page__button" bindtap="backToHome">返回首页</button>
   </view>
 </view>
