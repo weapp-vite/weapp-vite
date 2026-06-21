@@ -1,4 +1,6 @@
 <view class="theme-layout theme-layout--studio" data-layout="studio">
+  <view class="theme-layout__transition" />
+
   <view class="theme-layout__navbar">
     <text class="theme-layout__navbar-title">Layout Power</text>
     <text class="theme-layout__navbar-theme">STUDIO</text>

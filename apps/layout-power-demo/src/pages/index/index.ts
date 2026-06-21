@@ -60,6 +60,7 @@ const layoutCopy: Record<LayoutMode, { title: string, mode: string }> = {
 }
 
 const e2eRuntimeVendorMarker = 'runtime-vendor-hmr-baseline'
+let transitionTimer: ReturnType<typeof setTimeout> | undefined
 
 function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
   return layoutOptions.map(option => ({
@@ -74,6 +75,7 @@ Page({
     runtimeEvents: 1,
     layoutTitle: 'Neon Command',
     layoutMode: 'cyber host',
+    demoClass: 'demo',
     e2eRuntimeVendorMarker,
     layoutOptions: createLayoutOptions('command'),
   },
@@ -82,6 +84,12 @@ Page({
       mode: 'native Page',
       title: 'Neon Command',
     })
+  },
+  onUnload() {
+    if (transitionTimer !== undefined) {
+      clearTimeout(transitionTimer)
+      transitionTimer = undefined
+    }
   },
   applyCommandLayout() {
     this.applyNamedLayout('command')
@@ -103,10 +111,18 @@ Page({
     this.applyNamedLayout(layout)
   },
   applyNamedLayout(layout: LayoutMode) {
+    if (layout === this.data.currentLayout) {
+      return
+    }
+    if (transitionTimer !== undefined) {
+      clearTimeout(transitionTimer)
+    }
+
     const runtimeEvents = this.data.runtimeEvents + 1
     const copy = layoutCopy[layout]
 
     this.setData({
+      demoClass: 'demo demo--switching',
       currentLayout: layout,
       runtimeEvents,
       layoutTitle: copy.title,
@@ -117,6 +133,13 @@ Page({
       mode: `${copy.mode} ${runtimeEvents}`,
       title: copy.title,
     })
+
+    transitionTimer = setTimeout(() => {
+      this.setData({
+        demoClass: 'demo demo--settled',
+      })
+      transitionTimer = undefined
+    }, 420)
   },
   runE2E() {
     const ok = this.data.currentLayout === 'command'

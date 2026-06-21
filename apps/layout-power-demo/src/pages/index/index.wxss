@@ -3,6 +3,19 @@
   min-height: calc(100vh - 170rpx);
   padding: 0 0 8rpx;
   color: #172033;
+  transform-origin: 50% 48%;
+}
+
+.demo--switching .hero,
+.demo--switching .stage,
+.demo--switching .switches {
+  animation: switch-press 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.demo--settled .hero,
+.demo--settled .stage,
+.demo--settled .switches {
+  animation: switch-settle 320ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
 }
 
 .hero {
@@ -83,18 +96,6 @@
   border-radius: 8rpx;
   box-shadow: 0 14rpx 32rpx rgb(23 32 51 / 10%);
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.stage::after {
-  position: absolute;
-  top: 0;
-  left: -70%;
-  width: 50%;
-  height: 100%;
-  pointer-events: none;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 42%), transparent);
-  animation: stage-sweep 560ms ease-out both;
 }
 
 .stage__header {
@@ -230,12 +231,31 @@
   transform: translateY(-4rpx) scale(1.02);
 }
 
-@keyframes stage-sweep {
-  from {
-    left: -70%;
+@keyframes switch-press {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 
-  to {
-    left: 120%;
+  42% {
+    opacity: 0.72;
+    transform: translateY(10rpx) scale(0.975);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes switch-settle {
+  0% {
+    opacity: 0.92;
+    transform: translateY(-8rpx) scale(1.012);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

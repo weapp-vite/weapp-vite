@@ -1,4 +1,6 @@
 <view class="theme-layout theme-layout--split" data-layout="split">
+  <view class="theme-layout__transition" />
+
   <view class="theme-layout__navbar">
     <text class="theme-layout__navbar-title">Layout Power</text>
     <text class="theme-layout__navbar-theme">SPLIT</text>

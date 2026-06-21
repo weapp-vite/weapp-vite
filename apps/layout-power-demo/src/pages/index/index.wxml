@@ -1,4 +1,4 @@
-<view class="demo">
+<view class="{{demoClass}}">
   <view class="hero">
     <view class="hero__copy">
       <text class="hero__eyebrow">weapp-vite layout</text>
