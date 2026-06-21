@@ -24,8 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 108rpx;
-  padding-top: 48rpx;
+  height: 96rpx;
   color: #ccfbf1;
 }
 
@@ -48,8 +47,10 @@
 
 .theme-layout__navbar-title {
   display: flex;
+  flex: 1;
   gap: 8rpx;
   align-items: center;
+  min-width: 0;
   font-size: 30rpx;
   font-weight: 900;
 }
@@ -66,10 +67,18 @@
 }
 
 .theme-layout__navbar-theme {
-  padding: 8rpx 12rpx;
+  box-sizing: border-box;
+  width: 176rpx;
+  height: 64rpx;
+  padding: 0 20rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 20rpx;
   font-weight: 900;
+  line-height: 64rpx;
   color: #042f2e;
+  text-align: center;
+  white-space: nowrap;
   background: #2dd4bf;
   border-radius: 6rpx;
 }

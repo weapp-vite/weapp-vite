@@ -1,12 +1,12 @@
 <view class="{{demoClass}}">
-  <view class="hero">
-    <view class="hero__copy">
-      <text class="hero__eyebrow">布局能力</text>
-      <text class="hero__title">切换外壳，内容不动</text>
+  <view class="summary">
+    <view class="summary__title">
+      <text class="summary__eyebrow">布局能力</text>
+      <text class="summary__name">切换外壳</text>
     </view>
-    <view class="hero__badge">
-      <text class="hero__badge-value">{{currentLayoutLabel}}</text>
-      <text class="hero__badge-label">已切换 {{runtimeEvents}} 次</text>
+    <view class="summary__meta">
+      <text class="summary__layout">{{currentLayoutLabel}}</text>
+      <text class="summary__count">{{runtimeEvents}} 次</text>
     </view>
   </view>
 

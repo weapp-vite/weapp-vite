@@ -29,11 +29,6 @@ const layoutOptions: LayoutOption[] = [
     value: 'poster',
     className: 'switch',
   },
-  {
-    label: '默认',
-    value: 'default',
-    className: 'switch',
-  },
 ]
 
 const layoutCopy: Record<LayoutMode, { label: string, title: string, mode: string }> = {
