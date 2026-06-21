@@ -5,6 +5,7 @@ type ToastTheme = 'loading' | 'success' | 'warning' | 'error'
 type ToastPlacement = 'top' | 'middle' | 'bottom'
 type ToastDirection = 'row' | 'column'
 type MessageTheme = 'info' | 'success' | 'warning' | 'error'
+type MessageOffset = Array<string | number>
 
 export interface LayoutFeedbackOptions {
   id: string
@@ -14,6 +15,7 @@ export interface LayoutFeedbackOptions {
     duration: number
     align?: string
     closeBtn?: boolean
+    offset?: MessageOffset
     marquee?: {
       speed?: number
       loop?: number
@@ -36,6 +38,7 @@ export interface LayoutFeedbackResult {
   toastTheme: ToastTheme
   toastPlacement: ToastPlacement
   toastDirection: ToastDirection
+  messageOffsetTop: number
   ok: boolean
 }
 
@@ -45,6 +48,9 @@ interface LayoutFeedbackHandlers {
 }
 export type LayoutFeedbackComponent = WechatMiniprogram.Component.TrivialInstance & {
   __layoutPowerFeedbackHandlers?: LayoutFeedbackHandlers
+  data: WechatMiniprogram.Component.TrivialInstance['data'] & {
+    messageOffset?: MessageOffset
+  }
 }
 type FeedbackPageInstance = WechatMiniprogram.Page.Instance<Record<string, unknown>, Record<string, unknown>> & {
   __layoutPowerFeedbackByLayout?: Record<string, LayoutFeedbackHandlers | undefined>
@@ -55,10 +61,25 @@ function resolveCurrentPage() {
   return pages[pages.length - 1]
 }
 
+function resolveMessageOffset(context: LayoutFeedbackComponent, options: LayoutFeedbackOptions): MessageOffset {
+  return options.message.offset ?? context.data.messageOffset ?? [76, 16]
+}
+
+function resolveMessageOffsetTop(offset: MessageOffset) {
+  const value = offset[0]
+  if (typeof value === 'number') {
+    return value
+  }
+
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 export function createLayoutFeedback(
   context: LayoutFeedbackComponent,
   options: LayoutFeedbackOptions,
 ): LayoutFeedbackHandlers {
+  const messageOffset = resolveMessageOffset(context, options)
   const createResult = (feedback: LayoutFeedbackResult['feedback']): LayoutFeedbackResult => ({
     layout: options.id,
     feedback,
@@ -66,6 +87,7 @@ export function createLayoutFeedback(
     toastTheme: options.toast.theme,
     toastPlacement: options.toast.placement,
     toastDirection: options.toast.direction,
+    messageOffsetTop: resolveMessageOffsetTop(messageOffset),
     ok: true,
   })
 
@@ -78,6 +100,7 @@ export function createLayoutFeedback(
         duration: options.message.duration,
         align: options.message.align ?? 'left',
         closeBtn: options.message.closeBtn ?? false,
+        offset: messageOffset,
         marquee: options.message.marquee ?? {
           delay: 0,
           loop: 0,
@@ -145,6 +168,7 @@ function createMissingResult(feedback: LayoutFeedbackResult['feedback']): Layout
     toastTheme: 'success',
     toastPlacement: 'middle',
     toastDirection: 'row',
+    messageOffsetTop: 0,
     ok: false,
   }
 }

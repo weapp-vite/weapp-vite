@@ -212,6 +212,9 @@ async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector)
       },
     ],
   })
+  for (const feedbackResult of result.results) {
+    expect(feedbackResult.messageOffsetTop).toBeGreaterThan(70)
+  }
   expect(collector.getSince(marker)).toEqual([])
 }
 

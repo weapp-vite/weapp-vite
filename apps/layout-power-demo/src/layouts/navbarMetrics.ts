@@ -1,5 +1,6 @@
 const DEFAULT_STATUS_BAR_HEIGHT = 20
 const DEFAULT_NAVBAR_HEIGHT = 48
+const MESSAGE_NAVBAR_GAP = 8
 
 function getMenuButtonRect() {
   try {
@@ -33,6 +34,7 @@ export function resolveNavbarMetrics() {
     : DEFAULT_NAVBAR_HEIGHT
 
   return {
+    messageOffset: [statusBarHeight + navbarHeight + MESSAGE_NAVBAR_GAP, 16],
     navbarStyle: [
       `height: calc(${statusBarHeight}px + ${navbarHeight}px)`,
       `padding-top: ${statusBarHeight}px`,
