@@ -339,6 +339,7 @@
 }
 
 .showcase__track-bar {
+  width: 76%;
   height: 18rpx;
   background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
   border-radius: 999rpx;
@@ -346,10 +347,6 @@
 
 .showcase__track--wide .showcase__track-bar {
   width: 100%;
-}
-
-.showcase__track:not(.showcase__track--wide, .showcase__track--short) .showcase__track-bar {
-  width: 76%;
 }
 
 .showcase__track--short .showcase__track-bar {
