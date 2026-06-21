@@ -101,7 +101,7 @@ export function createLayoutFeedbackHost(
           loop: 0,
           speed: 50,
         },
-        single: true,
+        single: false,
       }
 
       if (options.message.theme === 'success') {
