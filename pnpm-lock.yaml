@@ -347,8 +347,8 @@ importers:
         specifier: ^6.1.7
         version: 6.1.7
       es-toolkit:
-        specifier: ^1.47.1
-        version: 1.47.1
+        specifier: ^1.48.1
+        version: 1.48.1
       esbuild:
         specifier: 'catalog:'
         version: 0.28.1
@@ -356,8 +356,8 @@ importers:
         specifier: 'catalog:'
         version: 10.5.0(jiti@2.7.0)
       esrap:
-        specifier: ^2.2.11
-        version: 2.2.11(@typescript-eslint/types@8.61.1)
+        specifier: ^2.2.12
+        version: 2.2.12(@typescript-eslint/types@8.61.1)
       estree-walker:
         specifier: 'catalog:'
         version: 3.0.3
@@ -407,8 +407,8 @@ importers:
         specifier: ^4.6.6
         version: 4.6.6
       lint-staged:
-        specifier: ^17.0.7
-        version: 17.0.7
+        specifier: ^17.0.8
+        version: 17.0.8
       lodash:
         specifier: 'catalog:'
         version: 4.18.1
@@ -2953,8 +2953,8 @@ importers:
         specifier: ^1.11.6
         version: 1.11.7
       es-toolkit:
-        specifier: ^1.47.1
-        version: 1.47.1
+        specifier: ^1.48.1
+        version: 1.48.1
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
@@ -10417,8 +10417,8 @@ packages:
     resolution: {integrity: sha512-CxN9N56HYfd2m/acc/NOFrZQsN9kU4eh+2kk6A707Kz1krH8tKmfrs5RnftB8WNX80T0NS7vSQsDOlg23diR2g==}
     engines: {node: '>= 0.4'}
 
-  es-toolkit@1.47.1:
-    resolution: {integrity: sha512-5RAqEwf4P4E17p+W75KLOWw/nOvKZzSQpxM32IpI2KZLaVonjTrZ0Ai5ghMaVI9eKC2p8eoQgcBdkEDgzFk6+Q==}
+  es-toolkit@1.48.1:
+    resolution: {integrity: sha512-wfnXlwd5I75eXRtdD2vuEs50xHHESECDsGD7yiQnfFVNoa5522NwXEbmgo98LfiukSQHs+mBM7/YG3qKJB9/mQ==}
 
   esbuild@0.25.12:
     resolution: {integrity: sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==}
@@ -10765,8 +10765,8 @@ packages:
     resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
     engines: {node: '>=0.10'}
 
-  esrap@2.2.11:
-    resolution: {integrity: sha512-gPdx+I+BjYEinNMQaBXFjbaJVyoPMU4ZODg5mE+M4DqVG9VusAVHHjcBX+zqyITlI0DIARwDMMzZwAWj36dRoQ==}
+  esrap@2.2.12:
+    resolution: {integrity: sha512-On0QbLyaiAkVC4eXtgnXK9Kh2opit+3rcUSOc45DqJ2s/X2eXAHsGOKRSJ6IDagQEW5vPyivANfXUiqgXC67Rw==}
     peerDependencies:
       '@typescript-eslint/types': ^8.2.0
     peerDependenciesMeta:
@@ -12318,8 +12318,8 @@ packages:
   linkify-it@5.0.1:
     resolution: {integrity: sha512-wVoTjP4Q6R0NW5hiZkVJaFZPWgtXfoGF+6LucL3/FtiNjmcHhYjEr5f1Kqjirc1nBW07J/ZuRFumqr2oqccEWg==}
 
-  lint-staged@17.0.7:
-    resolution: {integrity: sha512-JrSobt+tW3rH8IOMi8tDZd3foorM5yPEkLD/V2NxobgHrFfHWGee4MOLVuZeScgxftEwbHrPHIFA/ZL+nUJeuA==}
+  lint-staged@17.0.8:
+    resolution: {integrity: sha512-B2P/d+jVW0UXOQ0MVMLrB/9ydA1P+zz6jYfdrbbEd9ur3S2rcbduFWKiUCC02Sm5hbC8nrm7y24WuYMG54HfxA==}
     engines: {node: '>=22.22.1'}
     hasBin: true
 
@@ -17444,7 +17444,7 @@ snapshots:
   '@commitlint/ensure@21.0.1':
     dependencies:
       '@commitlint/types': 21.0.1
-      es-toolkit: 1.47.1
+      es-toolkit: 1.48.1
 
   '@commitlint/execute-rule@21.0.1': {}
 
@@ -17473,7 +17473,7 @@ snapshots:
       '@commitlint/types': 21.0.1
       cosmiconfig: 9.0.1(typescript@6.0.3)
       cosmiconfig-typescript-loader: 6.3.0(@types/node@26.0.0)(cosmiconfig@9.0.1(typescript@6.0.3))(typescript@6.0.3)
-      es-toolkit: 1.47.1
+      es-toolkit: 1.48.1
       is-plain-obj: 4.1.0
       picocolors: 1.1.1
     transitivePeerDependencies:
@@ -17502,7 +17502,7 @@ snapshots:
     dependencies:
       '@commitlint/config-validator': 21.0.1
       '@commitlint/types': 21.0.1
-      es-toolkit: 1.47.1
+      es-toolkit: 1.48.1
       global-directory: 5.0.0
       resolve-from: 5.0.0
 
@@ -18202,7 +18202,7 @@ snapshots:
       consola: 3.4.2
       git-url-parse: 16.1.0
       klaw: 4.1.0
-      lint-staged: 17.0.7
+      lint-staged: 17.0.8
       p-queue: 9.3.0
       pathe: 2.0.3
       picocolors: 1.1.1
@@ -18874,7 +18874,7 @@ snapshots:
       clipanion: 4.0.0-rc.4(typanion@3.14.0)
       colorette: 2.0.20
       emnapi: 1.11.1(node-addon-api@7.1.1)
-      es-toolkit: 1.47.1
+      es-toolkit: 1.48.1
       js-yaml: 4.2.0
       obug: 2.1.3
       semver: 7.8.4
@@ -24086,7 +24086,7 @@ snapshots:
       is-symbol: 1.1.1
     optional: true
 
-  es-toolkit@1.47.1: {}
+  es-toolkit@1.48.1: {}
 
   esbuild@0.25.12:
     optionalDependencies:
@@ -24663,7 +24663,7 @@ snapshots:
     dependencies:
       estraverse: 5.3.0
 
-  esrap@2.2.11(@typescript-eslint/types@8.61.1):
+  esrap@2.2.12(@typescript-eslint/types@8.61.1):
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
     optionalDependencies:
@@ -26270,7 +26270,7 @@ snapshots:
     dependencies:
       uc.micro: 2.1.0
 
-  lint-staged@17.0.7:
+  lint-staged@17.0.8:
     dependencies:
       listr2: 10.2.1
       picomatch: 4.0.4
@@ -26748,7 +26748,7 @@ snapshots:
       dagre-d3-es: 7.0.14
       dayjs: 1.11.21
       dompurify: 3.4.2
-      es-toolkit: 1.47.1
+      es-toolkit: 1.48.1
       katex: 0.16.45
       khroma: 2.1.0
       marked: 16.4.2
