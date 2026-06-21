@@ -1,5 +1,12 @@
 # @weapp-vite/ast
 
+## 6.17.2
+
+### Patch Changes
+
+- 📦 **Dependencies** [`75e79fb`](https://github.com/weapp-vite/weapp-vite/commit/75e79fb08afc3165ff66fefeffe42623ffb48d62)
+  → `@weapp-core/shared@3.0.5`
+
 ## 6.17.1
 
 ### Patch Changes

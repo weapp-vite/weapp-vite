@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.17.2
+
+### Patch Changes
+
+- 🐛 **修复页面在 HMR 后引用 `weapp-vendors/*runtime*.js` 时，运行时 vendor chunk 被增量裁剪导致微信开发者工具报 “module is not defined” 的问题。** [`c01fbf9`](https://github.com/weapp-vite/weapp-vite/commit/c01fbf93b2ba4aeca8d207c6797ed590f90f5412) by @sonofmagic
+
+- 🐛 **为 `weapp-vite/runtime` 新增原生 layout 宿主访问 API：`registerLayoutHosts`、`unregisterLayoutHosts`、`resolveLayoutHost` 与 `waitForLayoutHost`。原生页面现在可以直接调用 layout 内注册的 toast、message 等共享反馈节点，不需要在业务页面里手写 layout 组件注册表。** [`8440d46`](https://github.com/weapp-vite/weapp-vite/commit/8440d46e2785444423b7211f99477e732e01e0ea) by @sonofmagic
+
+- 🐛 **修复开发态 `weapp-vite/runtime` 在初次构建和 HMR 后产物形态不一致的问题。现在 dev 模式会从初次构建开始稳定产出 `weapp-vendors/weapp-vite-runtime.js`，避免页面脚本热更新后首次新增 runtime vendor 模块时，微信开发者工具出现 `module 'weapp-vendors/weapp-vite-runtime.js' is not defined`。** [`e24c663`](https://github.com/weapp-vite/weapp-vite/commit/e24c663b5077d474605e2d17a97cb912e7abd2a0) by @sonofmagic
+- 📦 Updated 8 dependencies [`75e79fb`](https://github.com/weapp-vite/weapp-vite/commit/75e79fb08afc3165ff66fefeffe42623ffb48d62)
+  <details><summary>Details</summary>
+
+  `@weapp-core/shared@3.0.5`, `@weapp-core/init@6.0.11`, `@wevu/api@0.2.11`, `@weapp-vite/web@1.3.33`, `wevu@6.17.2`, `@weapp-vite/ast@6.17.2`, `weapp-ide-cli@5.4.9`, `@wevu/web-apis@1.2.25`
+
+  </details>
+
 ## 6.17.1
 
 ### Patch Changes

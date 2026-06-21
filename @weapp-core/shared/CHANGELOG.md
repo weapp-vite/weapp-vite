@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 3.0.5
+
+### Patch Changes
+
+- 🐛 **新增小程序 layout host 注册表工具，用于统一按页面身份 key 注册、解析、等待和注销 layout 宿主实例。`wevu` 与 `weapp-vite/runtime` 现在复用同一套底层逻辑，避免两边维护重复的注册表实现。** [`75e79fb`](https://github.com/weapp-vite/weapp-vite/commit/75e79fb08afc3165ff66fefeffe42623ffb48d62) by @sonofmagic
+
 ## 3.0.4
 
 ### Patch Changes
