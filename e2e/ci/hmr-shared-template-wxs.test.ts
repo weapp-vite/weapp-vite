@@ -26,14 +26,18 @@ const PLATFORM_LIST = resolvePlatforms()
 async function waitForFileContainsWithRetry(
   filePath: string,
   marker: string,
-  touchFilePath: string,
-  touchContent: string,
+  touchFiles: Array<{
+    filePath: string
+    content: string
+  }>,
 ) {
   try {
     return await waitForFileContains(filePath, marker, 20_000)
   }
   catch {
-    await replaceFileByRename(touchFilePath, `${touchContent}\n`)
+    for (const touchFile of touchFiles) {
+      await replaceFileByRename(touchFile.filePath, `${touchFile.content}\n`)
+    }
     return await waitForFileContains(filePath, marker, 20_000)
   }
 }
@@ -73,20 +77,18 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
     await fs.writeFile(SHARED_HMR_PATHS.sharedImportTemplate, buildSharedImportTemplate(initialTemplateMarker), 'utf8')
     await fs.writeFile(SHARED_HMR_PATHS.sharedIncludeTemplate, buildSharedIncludeTemplate(initialIncludeMarker), 'utf8')
     await fs.writeFile(SHARED_HMR_PATHS.sharedWxs, buildSharedWxs(initialWxsMarker), 'utf8')
-    await fs.writeFile(
-      SHARED_HMR_PATHS.hmrPageWxml,
-      buildSharedHmrPageWxml(
-        SHARED_HMR_IMPORTS.importTemplateRelative,
-        SHARED_HMR_IMPORTS.includeTemplateRelative,
-        SHARED_HMR_IMPORTS.helperRelative,
-      ),
-      'utf8',
+    const sharedHmrPageWxml = buildSharedHmrPageWxml(
+      SHARED_HMR_IMPORTS.importTemplateRelative,
+      SHARED_HMR_IMPORTS.includeTemplateRelative,
+      SHARED_HMR_IMPORTS.helperRelative,
     )
-    await fs.writeFile(
-      SHARED_HMR_PATHS.hmrSfcVue,
-      buildSharedHmrVueSource(SHARED_HMR_IMPORTS.importTemplateRelative, SHARED_HMR_IMPORTS.helperRelative),
-      'utf8',
+    const sharedHmrVueSource = buildSharedHmrVueSource(
+      SHARED_HMR_IMPORTS.importTemplateRelative,
+      SHARED_HMR_IMPORTS.helperRelative,
     )
+
+    await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, sharedHmrPageWxml, 'utf8')
+    await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, sharedHmrVueSource, 'utf8')
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -107,7 +109,20 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, updatedSharedTemplate)
 
       const updatedSharedTemplateOutput = await dev.waitFor(
-        waitForFileContainsWithRetry(sharedImportOutputPath, updatedTemplateMarker, SHARED_HMR_PATHS.sharedImportTemplate, updatedSharedTemplate),
+        waitForFileContainsWithRetry(sharedImportOutputPath, updatedTemplateMarker, [
+          {
+            filePath: SHARED_HMR_PATHS.sharedImportTemplate,
+            content: updatedSharedTemplate,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrPageWxml,
+            content: sharedHmrPageWxml,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrSfcVue,
+            content: sharedHmrVueSource,
+          },
+        ]),
         `${platform} updated shared import output`,
       )
       expect(updatedSharedTemplateOutput).toContain(updatedTemplateMarker)
@@ -116,7 +131,16 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
       await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeTemplate)
 
       const includeOutput = await dev.waitFor(
-        waitForFileContainsWithRetry(sharedIncludeOutputPath, updatedIncludeMarker, SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeTemplate),
+        waitForFileContainsWithRetry(sharedIncludeOutputPath, updatedIncludeMarker, [
+          {
+            filePath: SHARED_HMR_PATHS.sharedIncludeTemplate,
+            content: updatedIncludeTemplate,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrPageWxml,
+            content: sharedHmrPageWxml,
+          },
+        ]),
         `${platform} updated shared include output`,
       )
       expect(includeOutput).toContain(updatedIncludeMarker)
@@ -125,7 +149,20 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
       await replaceFileByRename(SHARED_HMR_PATHS.sharedWxs, updatedWxsSource)
 
       const wxsOutput = await dev.waitFor(
-        waitForFileContainsWithRetry(wxsOutputPath, updatedWxsMarker, SHARED_HMR_PATHS.sharedWxs, updatedWxsSource),
+        waitForFileContainsWithRetry(wxsOutputPath, updatedWxsMarker, [
+          {
+            filePath: SHARED_HMR_PATHS.sharedWxs,
+            content: updatedWxsSource,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrPageWxml,
+            content: sharedHmrPageWxml,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrSfcVue,
+            content: sharedHmrVueSource,
+          },
+        ]),
         `${platform} updated shared wxs`,
       )
       expect(wxsOutput).toContain(updatedWxsMarker)

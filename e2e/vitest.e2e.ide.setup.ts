@@ -2,6 +2,9 @@ import type { Suite } from 'vitest'
 import process from 'node:process'
 import { beforeAll, beforeEach } from 'vitest'
 import { getDevtoolsSkipReason, markSuiteSkipped } from './utils/devtoolsSkip'
+import { registerIdeHmrCompanion } from './utils/ide-hmr-companion'
+
+registerIdeHmrCompanion(() => Boolean(getDevtoolsSkipReason(process.env)))
 
 beforeAll(function () {
   const skipReason = getDevtoolsSkipReason()
