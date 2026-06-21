@@ -69,6 +69,7 @@
       wx:key="value"
       class="{{item.className}}"
       data-layout="{{item.value}}"
+      data-e2e-layout="{{item.value}}"
       hover-class="switch--hover"
       hover-stay-time="120"
       role="button"
@@ -86,7 +87,8 @@
       hover-stay-time="120"
       role="button"
       aria-label="调用当前布局 Message"
-      bindtap="showLayoutMessage"
+      data-e2e-feedback="message"
+      bindtap="onTapLayoutMessage"
     >
       <text class="feedback-trigger__icon">M</text>
       <text class="feedback-trigger__text">Message</text>
@@ -97,7 +99,8 @@
       hover-stay-time="120"
       role="button"
       aria-label="调用当前布局 Toast"
-      bindtap="showLayoutToast"
+      data-e2e-feedback="toast"
+      bindtap="onTapLayoutToast"
     >
       <text class="feedback-trigger__icon">T</text>
       <text class="feedback-trigger__text">Toast</text>

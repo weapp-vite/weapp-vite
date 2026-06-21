@@ -34,6 +34,7 @@ const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
 const TEMPLATE_MARKER = 'runtime-vendor-template-hmr'
 const STYLE_MARKER = 'runtime-vendor-style-hmr'
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
+const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -97,6 +98,29 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
   }
 
   throw new Error(`Timed out waiting runE2E marker ${marker}; lastResult=${JSON.stringify(lastResult)}`)
+}
+
+async function waitForCurrentLayout(page: any, layout: string, timeoutMs = 8_000) {
+  const startedAt = Date.now()
+  let latest: unknown
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    latest = await page.data('currentLayout').catch(() => undefined)
+    if (latest === layout) {
+      return latest
+    }
+    await page.waitFor?.(120).catch(() => delay(120))
+  }
+
+  throw new Error(`Timed out waiting currentLayout=${layout}; latest=${String(latest)}`)
+}
+
+async function tapRequired(page: any, selector: string) {
+  const element = await page.$(selector)
+  if (!element) {
+    throw new Error(`Failed to query element: ${selector}`)
+  }
+  await element.tap()
 }
 
 async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector) {
@@ -191,6 +215,23 @@ async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector)
   expect(collector.getSince(marker)).toEqual([])
 }
 
+async function expectLayoutFeedbackByTap(page: any, collector: RuntimeErrorCollector) {
+  const marker = collector.mark()
+
+  for (const layout of LAYOUTS) {
+    if (layout !== 'default') {
+      await tapRequired(page, `[data-e2e-layout="${layout}"]`)
+      await waitForCurrentLayout(page, layout)
+    }
+    await tapRequired(page, '[data-e2e-feedback="message"]')
+    await page.waitFor?.(300).catch(() => delay(300))
+    await tapRequired(page, '[data-e2e-feedback="toast"]')
+    await page.waitFor?.(300).catch(() => delay(300))
+  }
+
+  expect(collector.getSince(marker)).toEqual([])
+}
+
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
   let originalScript = ''
   let originalTemplate = ''
@@ -249,6 +290,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
+    await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
@@ -261,6 +303,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, UPDATED_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
+    await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)

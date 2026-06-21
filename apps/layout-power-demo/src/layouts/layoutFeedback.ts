@@ -47,7 +47,7 @@ export type LayoutFeedbackComponent = WechatMiniprogram.Component.TrivialInstanc
   __layoutPowerFeedbackHandlers?: LayoutFeedbackHandlers
 }
 type FeedbackPageInstance = WechatMiniprogram.Page.Instance<Record<string, unknown>, Record<string, unknown>> & {
-  __layoutPowerFeedback?: LayoutFeedbackHandlers
+  __layoutPowerFeedbackByLayout?: Record<string, LayoutFeedbackHandlers | undefined>
 }
 
 function resolveCurrentPage() {
@@ -117,17 +117,23 @@ export function createLayoutFeedback(
   }
 }
 
-export function registerLayoutFeedback(handler: LayoutFeedbackHandlers) {
+export function registerLayoutFeedback(layout: string, handler: LayoutFeedbackHandlers) {
   const page = resolveCurrentPage()
   if (page) {
-    page.__layoutPowerFeedback = handler
+    page.__layoutPowerFeedbackByLayout = {
+      ...page.__layoutPowerFeedbackByLayout,
+      [layout]: handler,
+    }
   }
 }
 
-export function unregisterLayoutFeedback(handler: LayoutFeedbackHandlers) {
+export function unregisterLayoutFeedback(layout: string, handler: LayoutFeedbackHandlers) {
   const page = resolveCurrentPage()
-  if (page?.__layoutPowerFeedback === handler) {
-    page.__layoutPowerFeedback = undefined
+  if (page?.__layoutPowerFeedbackByLayout?.[layout] === handler) {
+    page.__layoutPowerFeedbackByLayout = {
+      ...page.__layoutPowerFeedbackByLayout,
+      [layout]: undefined,
+    }
   }
 }
 
@@ -143,12 +149,17 @@ function createMissingResult(feedback: LayoutFeedbackResult['feedback']): Layout
   }
 }
 
-export function callLayoutMessage(): LayoutFeedbackResult {
+export function hasLayoutFeedback(layout: string) {
   const page = resolveCurrentPage()
-  return page?.__layoutPowerFeedback?.message() ?? createMissingResult('message')
+  return Boolean(page?.__layoutPowerFeedbackByLayout?.[layout])
 }
 
-export function callLayoutToast(): LayoutFeedbackResult {
+export function callLayoutMessage(layout: string): LayoutFeedbackResult {
   const page = resolveCurrentPage()
-  return page?.__layoutPowerFeedback?.toast() ?? createMissingResult('toast')
+  return page?.__layoutPowerFeedbackByLayout?.[layout]?.message() ?? createMissingResult('message')
+}
+
+export function callLayoutToast(layout: string): LayoutFeedbackResult {
+  const page = resolveCurrentPage()
+  return page?.__layoutPowerFeedbackByLayout?.[layout]?.toast() ?? createMissingResult('toast')
 }

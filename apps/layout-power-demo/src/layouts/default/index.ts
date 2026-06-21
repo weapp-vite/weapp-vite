@@ -38,11 +38,11 @@ Component({
           direction: 'row',
         },
       })
-      registerLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+      registerLayoutFeedback('default', this.__layoutPowerFeedbackHandlers)
     },
     detached(this: LayoutFeedbackComponent) {
       if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+        unregisterLayoutFeedback('default', this.__layoutPowerFeedbackHandlers)
         this.__layoutPowerFeedbackHandlers = undefined
       }
     },

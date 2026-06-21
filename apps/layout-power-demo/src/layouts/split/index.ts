@@ -40,11 +40,11 @@ Component({
           direction: 'row',
         },
       })
-      registerLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+      registerLayoutFeedback('split', this.__layoutPowerFeedbackHandlers)
     },
     detached(this: LayoutFeedbackComponent) {
       if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+        unregisterLayoutFeedback('split', this.__layoutPowerFeedbackHandlers)
         this.__layoutPowerFeedbackHandlers = undefined
       }
     },

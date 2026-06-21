@@ -1,6 +1,6 @@
 import type { LayoutFeedbackResult } from '../../layouts/layoutFeedback'
 import { setPageLayout } from 'weapp-vite/runtime'
-import { callLayoutMessage, callLayoutToast } from '../../layouts/layoutFeedback'
+import { callLayoutMessage, callLayoutToast, hasLayoutFeedback } from '../../layouts/layoutFeedback'
 
 type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default'
 
@@ -68,6 +68,8 @@ const layoutCopy: Record<LayoutMode, { label: string, title: string, mode: strin
 
 const e2eRuntimeVendorMarker = 'runtime-vendor-hmr-baseline'
 let transitionTimer: ReturnType<typeof setTimeout> | undefined
+const feedbackReadyRetryMs = 40
+const feedbackReadyTimeoutMs = 800
 
 function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
   return layoutOptions.map(option => ({
@@ -78,6 +80,10 @@ function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
 
 function createDemoClass(currentLayout: LayoutMode, state?: 'switching' | 'settled') {
   return ['demo', `demo--${currentLayout}`, state ? `demo--${state}` : ''].filter(Boolean).join(' ')
+}
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 Page({
@@ -123,19 +129,36 @@ Page({
     const layout = event.currentTarget.dataset.layout
     this.applyNamedLayout(layout)
   },
-  showLayoutMessage() {
-    const result = callLayoutMessage()
+  async waitForLayoutFeedback(layout: LayoutMode) {
+    const startedAt = Date.now()
+    while (!hasLayoutFeedback(layout) && Date.now() - startedAt <= feedbackReadyTimeoutMs) {
+      await delay(feedbackReadyRetryMs)
+    }
+    return hasLayoutFeedback(layout)
+  },
+  async showLayoutMessage() {
+    const layout = this.data.currentLayout
+    await this.waitForLayoutFeedback(layout)
+    const result = callLayoutMessage(layout)
     this.setData({
       lastFeedbackLayout: result.layout,
     })
     return result
   },
-  showLayoutToast() {
-    const result = callLayoutToast()
+  async showLayoutToast() {
+    const layout = this.data.currentLayout
+    await this.waitForLayoutFeedback(layout)
+    const result = callLayoutToast(layout)
     this.setData({
       lastFeedbackLayout: result.layout,
     })
     return result
+  },
+  onTapLayoutMessage() {
+    void this.showLayoutMessage()
+  },
+  onTapLayoutToast() {
+    void this.showLayoutToast()
   },
   applyNamedLayout(layout: LayoutMode) {
     if (layout === this.data.currentLayout) {
@@ -184,9 +207,9 @@ Page({
 
     for (const layout of layouts) {
       this.applyNamedLayout(layout)
-      await new Promise(resolve => setTimeout(resolve, 120))
-      results.push(this.showLayoutMessage())
-      results.push(this.showLayoutToast())
+      await this.waitForLayoutFeedback(layout)
+      results.push(await this.showLayoutMessage())
+      results.push(await this.showLayoutToast())
     }
 
     return {

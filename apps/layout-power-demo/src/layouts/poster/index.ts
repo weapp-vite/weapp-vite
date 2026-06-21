@@ -42,11 +42,11 @@ Component({
           direction: 'column',
         },
       })
-      registerLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+      registerLayoutFeedback('poster', this.__layoutPowerFeedbackHandlers)
     },
     detached(this: LayoutFeedbackComponent) {
       if (this.__layoutPowerFeedbackHandlers) {
-        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+        unregisterLayoutFeedback('poster', this.__layoutPowerFeedbackHandlers)
         this.__layoutPowerFeedbackHandlers = undefined
       }
     },
