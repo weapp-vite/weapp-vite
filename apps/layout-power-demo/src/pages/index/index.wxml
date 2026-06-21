@@ -44,4 +44,39 @@
       {{item.label}}
     </button>
   </view>
+
+  <view class="showcase">
+    <view class="showcase__header">
+      <text class="showcase__title">布局能力</text>
+      <text class="showcase__tag">{{currentLayoutLabel}}</text>
+    </view>
+    <view class="showcase__grid">
+      <view class="showcase__item">
+        <text class="showcase__item-title">插槽</text>
+        <text class="showcase__item-text">内容不变</text>
+      </view>
+      <view class="showcase__item">
+        <text class="showcase__item-title">属性</text>
+        <text class="showcase__item-text">{{layoutMode}}</text>
+      </view>
+      <view class="showcase__item">
+        <text class="showcase__item-title">次数</text>
+        <text class="showcase__item-text">{{runtimeEvents}} 次</text>
+      </view>
+    </view>
+    <view class="showcase__tracks">
+      <view class="showcase__track showcase__track--wide">
+        <text class="showcase__track-name">导航</text>
+        <text class="showcase__track-bar" />
+      </view>
+      <view class="showcase__track">
+        <text class="showcase__track-name">内容</text>
+        <text class="showcase__track-bar" />
+      </view>
+      <view class="showcase__track showcase__track--short">
+        <text class="showcase__track-name">挂载</text>
+        <text class="showcase__track-bar" />
+      </view>
+    </view>
+  </view>
 </view>
