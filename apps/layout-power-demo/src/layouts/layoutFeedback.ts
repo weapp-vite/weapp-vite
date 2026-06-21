@@ -8,6 +8,12 @@ type ToastPlacement = 'top' | 'middle' | 'bottom'
 type ToastDirection = 'row' | 'column'
 type MessageTheme = 'info' | 'success' | 'warning' | 'error'
 type MessageOffset = Array<string | number>
+interface LayoutMessageHost {
+  id: string
+}
+
+const MESSAGE_HIDE_DURATION = 400
+const MESSAGE_CLEANUP_GAP = 80
 
 export interface LayoutFeedbackOptions {
   id: string
@@ -45,13 +51,17 @@ export interface LayoutFeedbackResult {
 }
 
 export interface LayoutFeedbackHost {
-  message: () => LayoutFeedbackResult
+  message: () => Promise<LayoutFeedbackResult>
   toast: () => LayoutFeedbackResult
 }
 
 export type LayoutFeedbackComponent = WechatMiniprogram.Component.TrivialInstance & {
   __layoutPowerFeedbackBridge?: LayoutHostBridge | null
+  __layoutPowerMessageHosts?: LayoutMessageHost[]
+  __layoutPowerMessageIndex?: number
+  __layoutPowerMessageTimers?: Array<ReturnType<typeof setTimeout>>
   data: WechatMiniprogram.Component.TrivialInstance['data'] & {
+    messageHosts?: LayoutMessageHost[]
     messageOffset?: MessageOffset
   }
 }
@@ -68,6 +78,68 @@ function resolveMessageOffsetTop(offset: MessageOffset) {
 
   const parsed = Number.parseFloat(value)
   return Number.isFinite(parsed) ? parsed : 0
+}
+
+function updateMessageHosts(context: LayoutFeedbackComponent, messageHosts: LayoutMessageHost[]) {
+  context.__layoutPowerMessageHosts = messageHosts
+  context.setData({
+    messageHosts,
+  })
+}
+
+function appendMessageHost(context: LayoutFeedbackComponent) {
+  const nextIndex = (context.__layoutPowerMessageIndex ?? 0) + 1
+  context.__layoutPowerMessageIndex = nextIndex
+
+  const host = {
+    id: `t-message-${nextIndex}`,
+  }
+  const messageHosts = [
+    ...(context.__layoutPowerMessageHosts ?? context.data.messageHosts ?? []),
+    host,
+  ]
+
+  return new Promise<LayoutMessageHost>((resolve) => {
+    context.__layoutPowerMessageHosts = messageHosts
+    context.setData({
+      messageHosts,
+    }, () => {
+      resolve(host)
+    })
+  })
+}
+
+function removeMessageHost(context: LayoutFeedbackComponent, hostId: string) {
+  const messageHosts = (context.__layoutPowerMessageHosts ?? context.data.messageHosts ?? [])
+    .filter(host => host.id !== hostId)
+  updateMessageHosts(context, messageHosts)
+}
+
+function scheduleMessageHostCleanup(
+  context: LayoutFeedbackComponent,
+  hostId: string,
+  duration: number,
+) {
+  const timer = setTimeout(() => {
+    removeMessageHost(context, hostId)
+    context.__layoutPowerMessageTimers = (context.__layoutPowerMessageTimers ?? [])
+      .filter(item => item !== timer)
+  }, duration + MESSAGE_HIDE_DURATION + MESSAGE_CLEANUP_GAP)
+
+  context.__layoutPowerMessageTimers = [
+    ...(context.__layoutPowerMessageTimers ?? []),
+    timer,
+  ]
+}
+
+function clearMessageHosts(context: LayoutFeedbackComponent) {
+  for (const timer of context.__layoutPowerMessageTimers ?? []) {
+    clearTimeout(timer)
+  }
+
+  context.__layoutPowerMessageTimers = []
+  context.__layoutPowerMessageHosts = []
+  updateMessageHosts(context, [])
 }
 
 export function createLayoutFeedbackHost(
@@ -87,10 +159,11 @@ export function createLayoutFeedbackHost(
   })
 
   return {
-    message() {
+    async message() {
+      const messageHost = await appendMessageHost(context)
       const messagePayload = {
         context,
-        selector: '#t-message',
+        selector: `#${messageHost.id}`,
         content: options.message.content,
         duration: options.message.duration,
         align: options.message.align ?? 'left',
@@ -117,6 +190,7 @@ export function createLayoutFeedbackHost(
         Message.info(messagePayload)
       }
 
+      scheduleMessageHostCleanup(context, messageHost.id, options.message.duration)
       return createResult('message')
     },
     toast() {
@@ -143,4 +217,15 @@ export function registerLayoutFeedbackHost(layout: string, host: LayoutFeedbackH
 
 export function unregisterLayoutFeedbackHost(bridge: LayoutHostBridge) {
   return unregisterLayoutHosts(bridge)
+}
+
+export function destroyLayoutFeedbackHost(
+  context: LayoutFeedbackComponent,
+  bridge?: LayoutHostBridge | null,
+) {
+  clearMessageHosts(context)
+
+  if (bridge) {
+    unregisterLayoutFeedbackHost(bridge)
+  }
 }

@@ -34,6 +34,7 @@ const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
 const TEMPLATE_MARKER = 'runtime-vendor-template-hmr'
 const STYLE_MARKER = 'runtime-vendor-style-hmr'
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
+const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 
 function delay(ms: number) {
@@ -216,6 +217,11 @@ async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector)
     expect(feedbackResult.messageOffsetTop).toBeGreaterThan(70)
   }
   expect(collector.getSince(marker)).toEqual([])
+  expect(collector.getLogsSince(marker)).not.toEqual(
+    expect.arrayContaining([
+      expect.stringMatching(TD_MESSAGE_DUPLICATE_SLOT_RE),
+    ]),
+  )
 }
 
 async function expectLayoutFeedbackByTap(page: any, collector: RuntimeErrorCollector) {
@@ -226,13 +232,20 @@ async function expectLayoutFeedbackByTap(page: any, collector: RuntimeErrorColle
       await tapRequired(page, `[data-e2e-layout="${layout}"]`)
       await waitForCurrentLayout(page, layout)
     }
-    await tapRequired(page, '[data-e2e-feedback="message"]')
-    await page.waitFor?.(300).catch(() => delay(300))
+    for (let index = 0; index < 3; index += 1) {
+      await tapRequired(page, '[data-e2e-feedback="message"]')
+      await page.waitFor?.(120).catch(() => delay(120))
+    }
     await tapRequired(page, '[data-e2e-feedback="toast"]')
     await page.waitFor?.(300).catch(() => delay(300))
   }
 
   expect(collector.getSince(marker)).toEqual([])
+  expect(collector.getLogsSince(marker)).not.toEqual(
+    expect.arrayContaining([
+      expect.stringMatching(TD_MESSAGE_DUPLICATE_SLOT_RE),
+    ]),
+  )
 }
 
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {

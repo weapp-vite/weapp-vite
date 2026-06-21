@@ -1,14 +1,15 @@
 import type { LayoutFeedbackComponent } from '../layoutFeedback'
 import {
   createLayoutFeedbackHost,
+  destroyLayoutFeedbackHost,
   registerLayoutFeedbackHost,
-  unregisterLayoutFeedbackHost,
 } from '../layoutFeedback'
 import { resolveNavbarMetrics } from '../navbarMetrics'
 
 Component({
   data: {
     ...resolveNavbarMetrics(),
+    messageHosts: [],
   },
   properties: {
     mode: {
@@ -43,10 +44,8 @@ Component({
       )
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackBridge) {
-        unregisterLayoutFeedbackHost(this.__layoutPowerFeedbackBridge)
-        this.__layoutPowerFeedbackBridge = undefined
-      }
+      destroyLayoutFeedbackHost(this, this.__layoutPowerFeedbackBridge)
+      this.__layoutPowerFeedbackBridge = undefined
     },
   },
 })

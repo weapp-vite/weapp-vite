@@ -30,6 +30,8 @@
     <text class="theme-layout__safe-area">安全区</text>
   </view>
 
-  <t-message id="t-message" />
+  <block wx:for="{{messageHosts}}" wx:key="id">
+    <t-message id="{{item.id}}" />
+  </block>
   <t-toast id="t-toast" />
 </view>

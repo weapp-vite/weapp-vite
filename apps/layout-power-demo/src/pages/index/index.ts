@@ -149,7 +149,9 @@ Page({
   async showLayoutMessage() {
     const layout = this.data.currentLayout
     const host = await this.waitForLayoutFeedback(layout)
-    const result = host?.message() ?? createMissingFeedbackResult(layout, 'message')
+    const result = host
+      ? await host.message()
+      : createMissingFeedbackResult(layout, 'message')
     this.setData({
       lastFeedbackLayout: result.layout,
     })
