@@ -3,9 +3,9 @@
 
   <view class="theme-layout__navbar" style="{{navbarStyle}}">
     <view class="theme-layout__navbar-title">
-      <text class="theme-layout__signal theme-layout__signal--cyan" />
-      <text class="theme-layout__signal theme-layout__signal--pink" />
+      <text class="theme-layout__prompt">&gt;</text>
       <text class="theme-layout__navbar-text">布局演示</text>
+      <text class="theme-layout__cursor" />
     </view>
   </view>
 
@@ -15,9 +15,18 @@
       <text class="theme-layout__title">{{title}}</text>
     </view>
     <view class="theme-layout__command-panel">
-      <text class="theme-layout__meter theme-layout__meter--wide" />
-      <text class="theme-layout__meter" />
-      <text class="theme-layout__meter theme-layout__meter--short" />
+      <view class="theme-layout__terminal-row">
+        <text class="theme-layout__terminal-dot theme-layout__terminal-dot--active" />
+        <text class="theme-layout__terminal-line theme-layout__terminal-line--wide" />
+      </view>
+      <view class="theme-layout__terminal-row">
+        <text class="theme-layout__terminal-dot" />
+        <text class="theme-layout__terminal-line" />
+      </view>
+      <view class="theme-layout__terminal-row">
+        <text class="theme-layout__terminal-dot theme-layout__terminal-dot--warn" />
+        <text class="theme-layout__terminal-line theme-layout__terminal-line--short" />
+      </view>
     </view>
   </view>
 
@@ -27,6 +36,6 @@
 
   <view class="theme-layout__globals">
     <text class="theme-layout__mode">{{mode}}</text>
-    <text class="theme-layout__toast">提示挂载</text>
+    <text class="theme-layout__toast">命令队列</text>
   </view>
 </view>

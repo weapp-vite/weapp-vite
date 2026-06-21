@@ -10,9 +10,14 @@ interface LayoutOption {
 
 const layoutOptions: LayoutOption[] = [
   {
+    label: '默认',
+    value: 'default',
+    className: 'switch switch--active',
+  },
+  {
     label: '命令',
     value: 'command',
-    className: 'switch switch--active',
+    className: 'switch',
   },
   {
     label: '画室',
@@ -69,21 +74,25 @@ function createLayoutOptions(currentLayout: LayoutMode): LayoutOption[] {
   }))
 }
 
+function createDemoClass(currentLayout: LayoutMode, state?: 'switching' | 'settled') {
+  return ['demo', `demo--${currentLayout}`, state ? `demo--${state}` : ''].filter(Boolean).join(' ')
+}
+
 Page({
   data: {
-    currentLayout: 'command' as LayoutMode,
-    currentLayoutLabel: '命令',
+    currentLayout: 'default' as LayoutMode,
+    currentLayoutLabel: '默认',
     runtimeEvents: 1,
-    layoutTitle: '命令外壳',
-    layoutMode: '运行切换',
-    demoClass: 'demo',
+    layoutTitle: '默认外壳',
+    layoutMode: '基础样式',
+    demoClass: createDemoClass('default'),
     e2eRuntimeVendorMarker,
-    layoutOptions: createLayoutOptions('command'),
+    layoutOptions: createLayoutOptions('default'),
   },
   onLoad() {
-    setPageLayout('command', {
+    setPageLayout('default', {
       mode: '原生页面',
-      title: '命令外壳',
+      title: '默认外壳',
     })
   },
   onUnload() {
@@ -123,7 +132,7 @@ Page({
     const copy = layoutCopy[layout]
 
     this.setData({
-      demoClass: 'demo demo--switching',
+      demoClass: createDemoClass(layout, 'switching'),
       currentLayout: layout,
       currentLayoutLabel: copy.label,
       runtimeEvents,
@@ -138,13 +147,13 @@ Page({
 
     transitionTimer = setTimeout(() => {
       this.setData({
-        demoClass: 'demo demo--settled',
+        demoClass: createDemoClass(layout, 'settled'),
       })
       transitionTimer = undefined
     }, 420)
   },
   runE2E() {
-    const ok = this.data.currentLayout === 'command'
+    const ok = this.data.currentLayout === 'default'
       && this.data.e2eRuntimeVendorMarker === e2eRuntimeVendorMarker
     return {
       currentLayout: this.data.currentLayout,

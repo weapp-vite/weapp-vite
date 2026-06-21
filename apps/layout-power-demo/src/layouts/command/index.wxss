@@ -38,6 +38,8 @@
 }
 
 .theme-layout__navbar-text,
+.theme-layout__prompt,
+.theme-layout__cursor,
 .theme-layout__kicker,
 .theme-layout__title,
 .theme-layout__mode,
@@ -55,20 +57,23 @@
   font-weight: 900;
 }
 
-.theme-layout__signal {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-}
-
-.theme-layout__signal--cyan {
+.theme-layout__prompt {
+  width: 32rpx;
+  height: 32rpx;
+  font-size: 28rpx;
+  line-height: 32rpx;
+  color: #090d1f;
+  text-align: center;
   background: #00e5ff;
-  box-shadow: 0 0 18rpx rgb(0 229 255 / 76%);
+  border-radius: 6rpx;
 }
 
-.theme-layout__signal--pink {
-  background: #ff4fd8;
-  box-shadow: 0 0 18rpx rgb(255 79 216 / 76%);
+.theme-layout__cursor {
+  width: 20rpx;
+  height: 30rpx;
+  background: #00e5ff;
+  box-shadow: 0 0 18rpx rgb(0 229 255 / 62%);
+  animation: command-cursor 960ms steps(1, end) infinite;
 }
 
 .theme-layout__nav {
@@ -124,30 +129,54 @@
 .theme-layout__command-panel {
   box-sizing: border-box;
   display: grid;
-  gap: 8rpx;
+  gap: 7rpx;
   align-content: center;
-  width: 132rpx;
-  height: 64rpx;
-  padding: 8rpx;
+  width: 154rpx;
+  height: 72rpx;
+  padding: 9rpx 10rpx;
   background: rgb(0 229 255 / 10%);
   border: 1rpx solid rgb(0 229 255 / 42%);
   border-radius: 8rpx;
 }
 
-.theme-layout__meter {
-  width: 76rpx;
-  height: 8rpx;
+.theme-layout__terminal-row {
+  display: flex;
+  gap: 8rpx;
+  align-items: center;
+}
+
+.theme-layout__terminal-dot {
+  display: block;
+  width: 10rpx;
+  height: 10rpx;
+  background: rgb(185 247 255 / 58%);
+  border-radius: 50%;
+}
+
+.theme-layout__terminal-dot--active {
   background: #00e5ff;
-  border-radius: 999rpx;
   box-shadow: 0 0 12rpx rgb(0 229 255 / 52%);
 }
 
-.theme-layout__meter--wide {
-  width: 100rpx;
+.theme-layout__terminal-dot--warn {
+  background: #ff4fd8;
+  box-shadow: 0 0 12rpx rgb(255 79 216 / 52%);
 }
 
-.theme-layout__meter--short {
-  width: 48rpx;
+.theme-layout__terminal-line {
+  display: block;
+  width: 84rpx;
+  height: 8rpx;
+  background: rgb(185 247 255 / 64%);
+  border-radius: 999rpx;
+}
+
+.theme-layout__terminal-line--wide {
+  width: 108rpx;
+}
+
+.theme-layout__terminal-line--short {
+  width: 56rpx;
   background: #ff4fd8;
 }
 
@@ -198,5 +227,17 @@
   100% {
     opacity: 0;
     transform: translateX(230%) skewX(-14deg);
+  }
+}
+
+@keyframes command-cursor {
+  0%,
+  48% {
+    opacity: 1;
+  }
+
+  49%,
+  100% {
+    opacity: 0.24;
   }
 }
