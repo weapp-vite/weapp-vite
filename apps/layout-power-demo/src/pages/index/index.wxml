@@ -79,6 +79,19 @@
     </view>
   </view>
 
+  <view
+    class="feedback-trigger"
+    hover-class="feedback-trigger--hover"
+    hover-stay-time="120"
+    role="button"
+    aria-label="调用当前布局弹出提示"
+    bindtap="showLayoutFeedback"
+  >
+    <text class="feedback-trigger__icon">!</text>
+    <text class="feedback-trigger__text">调用布局弹层</text>
+    <text class="feedback-trigger__layout">{{currentLayoutLabel}}</text>
+  </view>
+
   <view class="showcase">
     <view class="showcase__header">
       <text class="showcase__title">布局能力</text>

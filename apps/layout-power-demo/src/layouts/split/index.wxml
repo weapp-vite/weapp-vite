@@ -29,4 +29,7 @@
     <text class="theme-layout__mode">{{mode}}</text>
     <text class="theme-layout__toast">提示挂载</text>
   </view>
+
+  <t-message id="t-message" />
+  <t-toast id="t-toast" />
 </view>

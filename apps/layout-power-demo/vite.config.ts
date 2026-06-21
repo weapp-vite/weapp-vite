@@ -17,5 +17,14 @@ export default defineConfig({
     hmr: {
       sharedChunks: 'auto',
     },
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
+          },
+        },
+      },
+    },
   },
 })

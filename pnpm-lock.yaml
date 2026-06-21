@@ -669,6 +669,10 @@ importers:
         version: link:../../packages-runtime/wevu
 
   apps/layout-power-demo:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: 'catalog:'
+        version: 1.15.1
     devDependencies:
       miniprogram-api-typings:
         specifier: catalog:latest

@@ -97,6 +97,50 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
   throw new Error(`Timed out waiting runE2E marker ${marker}; lastResult=${JSON.stringify(lastResult)}`)
 }
 
+async function expectLayoutFeedback(page: any) {
+  const result = await page.callMethod('runLayoutFeedbackE2E')
+  expect(result).toMatchObject({
+    ok: true,
+    results: [
+      {
+        layout: 'default',
+        messageTheme: 'info',
+        toastTheme: 'success',
+        toastPlacement: 'middle',
+        toastDirection: 'row',
+      },
+      {
+        layout: 'command',
+        messageTheme: 'warning',
+        toastTheme: 'loading',
+        toastPlacement: 'top',
+        toastDirection: 'column',
+      },
+      {
+        layout: 'studio',
+        messageTheme: 'success',
+        toastTheme: 'success',
+        toastPlacement: 'bottom',
+        toastDirection: 'column',
+      },
+      {
+        layout: 'split',
+        messageTheme: 'warning',
+        toastTheme: 'warning',
+        toastPlacement: 'middle',
+        toastDirection: 'row',
+      },
+      {
+        layout: 'poster',
+        messageTheme: 'error',
+        toastTheme: 'error',
+        toastPlacement: 'bottom',
+        toastDirection: 'column',
+      },
+    ],
+  })
+}
+
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
   let originalScript = ''
   let originalTemplate = ''
@@ -150,6 +194,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     )
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
+    await expectLayoutFeedback(page)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
@@ -161,6 +206,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
 
     page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, UPDATED_MARKER)
+    await expectLayoutFeedback(page)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)

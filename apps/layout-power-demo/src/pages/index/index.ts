@@ -1,4 +1,6 @@
+import type { LayoutFeedbackResult } from '../../layouts/layoutFeedback'
 import { setPageLayout } from 'weapp-vite/runtime'
+import { callLayoutFeedback } from '../../layouts/layoutFeedback'
 
 type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default'
 
@@ -88,6 +90,7 @@ Page({
     demoClass: createDemoClass('default'),
     e2eRuntimeVendorMarker,
     layoutOptions: createLayoutOptions('default'),
+    lastFeedbackLayout: '',
   },
   onLoad() {
     setPageLayout('default', {
@@ -119,6 +122,13 @@ Page({
   switchLayout(event: WechatMiniprogram.TouchEvent<{ layout: LayoutMode }>) {
     const layout = event.currentTarget.dataset.layout
     this.applyNamedLayout(layout)
+  },
+  showLayoutFeedback() {
+    const result = callLayoutFeedback()
+    this.setData({
+      lastFeedbackLayout: result.layout,
+    })
+    return result
   },
   applyNamedLayout(layout: LayoutMode) {
     if (layout === this.data.currentLayout) {
@@ -159,6 +169,21 @@ Page({
       currentLayout: this.data.currentLayout,
       marker: this.data.e2eRuntimeVendorMarker,
       ok,
+    }
+  },
+  async runLayoutFeedbackE2E() {
+    const layouts: LayoutMode[] = ['default', 'command', 'studio', 'split', 'poster']
+    const results: LayoutFeedbackResult[] = []
+
+    for (const layout of layouts) {
+      this.applyNamedLayout(layout)
+      await new Promise(resolve => setTimeout(resolve, 120))
+      results.push(this.showLayoutFeedback())
+    }
+
+    return {
+      ok: results.every((result, index) => result.ok && result.layout === layouts[index]),
+      results,
     }
   },
 })

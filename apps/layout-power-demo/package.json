@@ -12,6 +12,9 @@
     "open": "wv open",
     "postinstall": "wv prepare"
   },
+  "dependencies": {
+    "tdesign-miniprogram": "catalog:"
+  },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
