@@ -21,7 +21,6 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const READY_OUTPUT_RE = /✔ open/
 const INDEX_ROUTE = '/pages/index/index'
 const TEMPLATE_CASES = [
   {
@@ -231,7 +230,12 @@ async function startTemplateDevProcesses() {
     }
 
     processes.push(process)
-    await process.dev.waitForOutput(READY_OUTPUT_RE, `${process.name} dev:open ready`, 180_000)
+    await process.dev.waitFor(
+      waitForOpenedAutomator(templateCase.root, 180_000).then(async ({ miniProgram }) => {
+        await miniProgram.disconnect()
+      }),
+      `${process.name} dev:open ready`,
+    )
   }
 
   return processes
@@ -333,7 +337,12 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
       env: createDevProcessEnv(),
       reject: false,
     })
-    await plainDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss dev:open ready', 180_000)
+    await plainDev.waitFor(
+      waitForOpenedAutomator(PLAIN_TEMPLATE.root, 180_000).then(async ({ miniProgram }) => {
+        await miniProgram.disconnect()
+      }),
+      'tailwindcss dev:open ready',
+    )
     await plainDev.stop()
     await closeSharedMiniProgram(PLAIN_TEMPLATE.root, plainPort).catch(() => {})
     await delay(2_000)
@@ -345,7 +354,12 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     })
 
     try {
-      await tdesignDev.waitForOutput(READY_OUTPUT_RE, 'tailwindcss tdesign dev:open ready after plain exit', 180_000)
+      await tdesignDev.waitFor(
+        waitForOpenedAutomator(TDESIGN_TEMPLATE.root, 180_000).then(async ({ miniProgram }) => {
+          await miniProgram.disconnect()
+        }),
+        'tailwindcss tdesign dev:open ready after plain exit',
+      )
       const { miniProgram } = await waitForOpenedAutomator(TDESIGN_TEMPLATE.root)
       try {
         await waitForPageText(miniProgram, TDESIGN_TEMPLATE.root, INDEX_ROUTE, 'TDesign Button')

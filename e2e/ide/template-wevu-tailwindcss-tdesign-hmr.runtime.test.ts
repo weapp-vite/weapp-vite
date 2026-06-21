@@ -19,7 +19,6 @@ const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const INDEX_VUE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.vue')
 const INDEX_ROUTE = '/pages/index/index'
-const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
 const INITIAL_CARD_CLASS = 'rounded-[28rpx] bg-white p-[28rpx]'
 const UPDATED_CARD_CLASS = 'rounded-[28rpx] bg-[red] p-[28rpx]'
 
@@ -129,9 +128,10 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
       env: createDevProcessEnv(),
       reject: false,
     })
-    await devProcess.waitForOutput(READY_OUTPUT_RE, 'wevu tailwindcss tdesign dev:open ready', 180_000)
-
-    miniProgram = await waitForOpenedAutomator(TEMPLATE_ROOT)
+    miniProgram = await devProcess.waitFor(
+      waitForOpenedAutomator(TEMPLATE_ROOT, 180_000),
+      'wevu tailwindcss tdesign dev:open ready',
+    )
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {

@@ -101,6 +101,30 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
   throw new Error(`Timed out waiting runE2E marker ${marker}; lastResult=${JSON.stringify(lastResult)}`)
 }
 
+async function waitForIdeRecompileSettled(delayMs = 1_500) {
+  await delay(delayMs)
+}
+
+async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: string, timeoutMs = 90_000) {
+  const startedAt = Date.now()
+  let lastError: unknown
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const page = await relaunchIndexPage(miniProgram)
+      await waitForRunE2EMarker(page, marker, 3_000)
+      return page
+    }
+    catch (error) {
+      lastError = error
+    }
+    await delay(1_000)
+  }
+
+  const lastMessage = lastError instanceof Error ? lastError.message : String(lastError)
+  throw new Error(`Timed out relaunching ${INDEX_ROUTE} with runE2E marker ${marker}; lastError=${lastMessage}`)
+}
+
 async function waitForCurrentLayout(page: any, layout: string, timeoutMs = 8_000) {
   const startedAt = Date.now()
   let latest: unknown
@@ -316,9 +340,9 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     const pageJs = await waitForFileContains(PAGE_JS_DIST, UPDATED_MARKER, 30_000)
     expect(pageJs).toContain('../../weapp-vendors/weapp-vite-runtime.js')
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+    await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPage(miniProgram)
-    await waitForRunE2EMarker(page, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
     await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
@@ -328,9 +352,9 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await replaceFileByRename(PAGE_WXML, nextTemplate)
     await waitForFileContains(PAGE_WXML_DIST, TEMPLATE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+    await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPage(miniProgram)
-    await waitForRunE2EMarker(page, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextCommandLayoutStyle = `${originalCommandLayoutStyle}\n/* ${STYLE_MARKER} */\n`
@@ -338,9 +362,9 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await replaceFileByRename(COMMAND_LAYOUT_WXSS, nextCommandLayoutStyle)
     await waitForFileContains(COMMAND_LAYOUT_WXSS_DIST, STYLE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+    await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPage(miniProgram)
-    await waitForRunE2EMarker(page, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
   }, 420_000)
 })

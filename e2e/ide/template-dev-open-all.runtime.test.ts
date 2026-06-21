@@ -21,7 +21,6 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
 const HMR_SUFFIX = 'IDE_ALL_HMR'
 const SCREENSHOT_WATCHDOG_TIMEOUT = 75_000
 
@@ -396,7 +395,12 @@ async function startTemplateDevProcesses() {
     }
 
     processes.push(process)
-    await process.dev.waitForOutput(READY_OUTPUT_RE, `${process.name} dev:open ready`, 240_000)
+    await process.dev.waitFor(
+      waitForOpenedAutomator(process.root, 240_000).then(async ({ miniProgram }) => {
+        await miniProgram.disconnect()
+      }),
+      `${process.name} dev:open ready`,
+    )
   }
 
   return processes

@@ -18,7 +18,6 @@ const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
 const INDEX_ROUTE = '/pages/index/index'
-const READY_OUTPUT_RE = /mini initial build completed|开发快捷键已就绪|✔ open/
 const ROOT_MARKUP_RE = /<view class="min-h-screen \{\{ mode === 'light'\?'[^']+':'bg-gray-900 text-slate-200' \}\} transition-colors duration-500">/
 const LIGHT_BACKGROUND_CLASS_RE = /bg-(?:\[#([0-9a-fA-F]{6})\]|gray-100)/
 const INITIAL_BACKGROUND_HEX = 'f3f4f6'
@@ -207,9 +206,10 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
       env: createDevProcessEnv(),
       reject: false,
     })
-    await devProcess.waitForOutput(READY_OUTPUT_RE, 'tailwindcss tdesign dev:open ready', 180_000)
-
-    miniProgram = await waitForOpenedAutomator(TEMPLATE_ROOT)
+    miniProgram = await devProcess.waitFor(
+      waitForOpenedAutomator(TEMPLATE_ROOT, 180_000),
+      'tailwindcss tdesign dev:open ready',
+    )
     const rootMarkup = originalWxml.match(ROOT_MARKUP_RE)?.[0]
     if (!rootMarkup) {
       throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
