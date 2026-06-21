@@ -1,4 +1,4 @@
-import { resolveMiniProgramPageKeys, resolveMiniProgramPlatform, supportsMiniProgramRuntimeCapability } from '@weapp-core/shared'
+import { createMiniProgramLayoutHostRegistry, resolveMiniProgramPageKeys, resolveMiniProgramPlatform, supportsMiniProgramRuntimeCapability } from '@weapp-core/shared'
 
 export type LayoutHostContext = Record<string, any>
 export type LayoutHostResolver = (key: string) => unknown
@@ -22,7 +22,7 @@ type ImportMetaWithEnv = ImportMeta & {
   }
 }
 
-const layoutHostBridges = new Map<string, Map<string, LayoutHostBridge>>()
+const layoutHostRegistry = createMiniProgramLayoutHostRegistry<LayoutHostBridge>()
 
 function resolveCurrentPageInstance() {
   const compiledPlatform = resolveMiniProgramPlatform((import.meta as ImportMetaWithEnv).env?.PLATFORM)
@@ -44,11 +44,6 @@ function resolveCurrentPageInstance() {
   }
 }
 
-function normalizeKeys(keys: string | string[]) {
-  return Array.from(new Set(Array.isArray(keys) ? keys : [keys]))
-    .filter((key): key is string => typeof key === 'string' && key.length > 0)
-}
-
 function resolvePageKeys(page?: LayoutHostContext) {
   return resolveMiniProgramPageKeys(page)
 }
@@ -68,7 +63,7 @@ export function registerLayoutHosts(
   hosts: Record<string, LayoutHostEntry> | string[],
   context?: LayoutHostContext,
 ) {
-  const keys = normalizeKeys(Array.isArray(hosts) ? hosts : Object.keys(hosts))
+  const keys = Array.isArray(hosts) ? hosts : Object.keys(hosts)
   if (!keys.length) {
     return null
   }
@@ -95,15 +90,7 @@ export function registerLayoutHosts(
     },
   }
 
-  for (const pageKey of pageKeys) {
-    const registry = layoutHostBridges.get(pageKey) ?? new Map<string, LayoutHostBridge>()
-    for (const key of keys) {
-      registry.set(key, bridge)
-    }
-    layoutHostBridges.set(pageKey, registry)
-  }
-
-  return bridge
+  return layoutHostRegistry.register(keys, bridge, pageKeys) ? bridge : null
 }
 
 /**
@@ -114,23 +101,7 @@ export function unregisterLayoutHosts(bridge: LayoutHostBridge | null | undefine
     return false
   }
 
-  let removed = false
-  for (const registry of layoutHostBridges.values()) {
-    for (const key of bridge.keys) {
-      if (registry.get(key) === bridge) {
-        registry.delete(key)
-        removed = true
-      }
-    }
-  }
-
-  for (const [pageKey, registry] of layoutHostBridges) {
-    if (registry.size === 0) {
-      layoutHostBridges.delete(pageKey)
-    }
-  }
-
-  return removed
+  return layoutHostRegistry.unregisterBridge(bridge)
 }
 
 /**
@@ -141,10 +112,11 @@ export function resolveLayoutHost<T = any>(
   options: LayoutHostResolveOptions = {},
 ) {
   const page = resolvePageFromContext(options.context)
-  const bridge = resolvePageKeys(page)
-    .map(pageKey => layoutHostBridges.get(pageKey)?.get(key))
-    .find(Boolean)
-  return (bridge?.resolveHost(key) ?? null) as T | null
+  return layoutHostRegistry.resolveHost<T>(
+    key,
+    resolvePageKeys(page),
+    (bridge, key) => bridge.resolveHost(key) as T | null,
+  )
 }
 
 /**
@@ -154,19 +126,10 @@ export function waitForLayoutHost<T = any>(
   key: string,
   options: LayoutHostResolveOptions = {},
 ): Promise<T | null> {
-  const retries = options.retries ?? 20
-  const interval = options.interval ?? 16
-  const host = resolveLayoutHost<T>(key, options)
-  if (host || retries <= 0) {
-    return Promise.resolve(host)
-  }
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(waitForLayoutHost<T>(key, {
-        ...options,
-        retries: retries - 1,
-      }))
-    }, interval)
-  })
+  return layoutHostRegistry.waitForHost<T>(
+    key,
+    () => resolvePageKeys(resolvePageFromContext(options.context)),
+    (bridge, key) => bridge.resolveHost(key) as T | null,
+    options,
+  )
 }

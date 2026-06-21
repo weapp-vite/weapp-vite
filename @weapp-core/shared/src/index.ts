@@ -1,5 +1,6 @@
 import { createDefu } from 'defu'
 
+export * from './layoutHostRegistry'
 export * from './platforms'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'

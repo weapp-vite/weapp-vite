@@ -4,7 +4,7 @@ import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
 } from '@weapp-core/constants'
-import { resolveMiniProgramPageKeys } from '@weapp-core/shared'
+import { createMiniProgramLayoutHostRegistry, normalizeMiniProgramLayoutHostKeys, resolveMiniProgramPageKeys } from '@weapp-core/shared'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 import { getCurrentMiniProgramPages } from './platform'
@@ -29,16 +29,11 @@ interface LayoutHostResolveOptions<T = any> {
   retries?: number
 }
 
-const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
+const pageLayoutBridgeRegistry = createMiniProgramLayoutHostRegistry<LayoutBridgeContext>()
 
 function resolveCurrentPageInstance() {
   const pages = getCurrentMiniProgramPages()
   return pages[pages.length - 1]
-}
-
-function normalizeSelectors(selectors: string | string[]) {
-  return Array.from(new Set(Array.isArray(selectors) ? selectors : [selectors]))
-    .filter((selector): selector is string => typeof selector === 'string' && selector.length > 0)
 }
 
 function resolvePageKeys(page?: LayoutBridgeContext) {
@@ -160,13 +155,11 @@ export function registerPageLayoutBridge(
     return false
   }
 
-  for (const pageKey of pageKeys) {
-    const registry = pageLayoutBridges.get(pageKey) ?? new Map<string, LayoutBridgeContext>()
-    for (const selector of normalizeSelectors(selectors)) {
-      registry.set(selector, bridgeContext)
-    }
-    pageLayoutBridges.set(pageKey, registry)
+  const normalizedSelectors = pageLayoutBridgeRegistry.register(selectors, bridgeContext, pageKeys)
+  if (!normalizedSelectors) {
+    return false
   }
+
   bridgeContext[WEVU_LAYOUT_BRIDGE_PAGE_KEYS] = pageKeys
   return true
 }
@@ -185,25 +178,7 @@ export function unregisterPageLayoutBridge(
     return false
   }
 
-  let removed = false
-  for (const pageKey of pageKeys) {
-    const registry = pageLayoutBridges.get(pageKey)
-    if (!registry) {
-      continue
-    }
-
-    for (const selector of normalizeSelectors(selectors)) {
-      if (registry.get(selector) === bridgeContext) {
-        registry.delete(selector)
-        removed = true
-      }
-    }
-
-    if (registry.size === 0) {
-      pageLayoutBridges.delete(pageKey)
-    }
-  }
-
+  const removed = pageLayoutBridgeRegistry.unregister(selectors, bridgeContext, pageKeys)
   delete bridgeContext[WEVU_LAYOUT_BRIDGE_PAGE_KEYS]
   return removed
 }
@@ -216,9 +191,7 @@ export function resolveLayoutBridge<T = any>(
   fallbackContext?: T,
 ) {
   const page = resolveCurrentPageInstance() ?? resolvePageFromContext(fallbackContext as LayoutBridgeContext | undefined)
-  const bridgeContext = resolvePageKeys(page)
-    .map(pageKey => pageLayoutBridges.get(pageKey)?.get(selector))
-    .find(Boolean)
+  const bridgeContext = pageLayoutBridgeRegistry.resolveBridge(selector, resolvePageKeys(page))
   return (bridgeContext ?? fallbackContext ?? getCurrentInstance()) as LayoutBridgeInstance<T> | undefined
 }
 
@@ -230,9 +203,12 @@ export function resolveLayoutHost<T = any, C = any>(
   options: LayoutHostResolveOptions<C> = {},
 ) {
   const context = options.context ?? options.fallbackContext
-  const bridge = resolveLayoutBridge<LayoutBridgeContext & C>(key, context as LayoutBridgeContext & C | undefined)
-  const host = bridge?.selectComponent?.(key)
-  return (host ?? null) as T | null
+  const page = resolveCurrentPageInstance() ?? resolvePageFromContext(context as LayoutBridgeContext | undefined)
+  return pageLayoutBridgeRegistry.resolveHost<T>(
+    key,
+    resolvePageKeys(page),
+    (bridge, key) => bridge.selectComponent?.(key) as T | null,
+  )
 }
 
 /**
@@ -242,20 +218,13 @@ export function waitForLayoutHost<T = any, C = any>(
   key: string,
   options: LayoutHostResolveOptions<C> = {},
 ) {
-  const retries = options.retries ?? 20
-  const interval = options.interval ?? 16
-  const host = resolveLayoutHost<T, C>(key, options)
-  if (host || retries <= 0) {
-    return Promise.resolve(host)
-  }
-  return new Promise<T | null>((resolve) => {
-    setTimeout(() => {
-      resolve(waitForLayoutHost<T, C>(key, {
-        ...options,
-        retries: retries - 1,
-      }))
-    }, interval)
-  })
+  const context = options.context ?? options.fallbackContext
+  return pageLayoutBridgeRegistry.waitForHost<T>(
+    key,
+    () => resolvePageKeys(resolveCurrentPageInstance() ?? resolvePageFromContext(context as LayoutBridgeContext | undefined)),
+    (bridge, key) => bridge.selectComponent?.(key) as T | null,
+    options,
+  )
 }
 
 /**
@@ -272,7 +241,7 @@ export function useLayoutBridge(
   }
 
   const context = getCurrentInstance<LayoutBridgeContext>()
-  const normalizedSelectors = normalizeSelectors(selectors)
+  const normalizedSelectors = normalizeMiniProgramLayoutHostKeys(selectors)
   const resolveComponent = options.resolveComponent
   const nativeContext = resolveNativeLayoutContext(context)
   const bridgeBase = nativeContext && typeof nativeContext === 'object'
