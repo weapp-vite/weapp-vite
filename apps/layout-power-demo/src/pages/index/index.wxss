@@ -219,19 +219,32 @@
 
 .switch {
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 64rpx;
   padding: 0 6rpx;
+  overflow: hidden;
+  color: #172033;
+  text-align: center;
+  background: #eef2f7;
+  border-radius: 8rpx;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.switch__label {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 22rpx;
   font-weight: 900;
-  line-height: 64rpx;
-  color: #172033;
-  text-align: center;
+  line-height: 1.1;
   white-space: nowrap;
-  background: #eef2f7;
-  border-radius: 8rpx;
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.switch--hover {
+  transform: translateY(2rpx);
 }
 
 .switch--active {

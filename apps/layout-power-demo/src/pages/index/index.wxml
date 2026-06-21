@@ -34,15 +34,19 @@
   </view>
 
   <view class="switches">
-    <button
+    <view
       wx:for="{{layoutOptions}}"
       wx:key="value"
       class="{{item.className}}"
       data-layout="{{item.value}}"
+      hover-class="switch--hover"
+      hover-stay-time="120"
+      role="button"
+      aria-label="切换到{{item.label}}布局"
       bindtap="switchLayout"
     >
-      {{item.label}}
-    </button>
+      <text class="switch__label">{{item.label}}</text>
+    </view>
   </view>
 
   <view class="showcase">
