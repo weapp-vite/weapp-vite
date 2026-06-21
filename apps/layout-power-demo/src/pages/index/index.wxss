@@ -34,6 +34,40 @@
   --demo-shadow: rgb(0 229 255 / 26%);
 }
 
+.demo--command .summary__meta,
+.demo--command .stage__header,
+.demo--command .switch--active,
+.demo--command .feedback-trigger--toast,
+.demo--command .showcase__tag {
+  color: #071126;
+}
+
+.demo--command .summary__count,
+.demo--command .stage__label {
+  color: #0c2944;
+}
+
+.demo--command .stage__desc,
+.demo--command .showcase__item-title,
+.demo--command .showcase__track-name {
+  color: #c9f6ff;
+}
+
+.demo--command .feedback-trigger {
+  color: #eaffff;
+  background: #12274d;
+}
+
+.demo--command .feedback-trigger:first-child {
+  color: #071126;
+  background: #eaffff;
+}
+
+.demo--command .feedback-trigger__layout {
+  color: #eaffff;
+  background: #12385f;
+}
+
 .demo--studio {
   --demo-accent: #5f7c49;
   --demo-accent-2: #d6ff5f;

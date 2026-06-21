@@ -3,7 +3,7 @@
 
   <view class="theme-layout__navbar" style="{{navbarStyle}}">
     <view class="theme-layout__navbar-title">
-      <text class="theme-layout__prompt">&gt;</text>
+      <text class="theme-layout__prompt">›</text>
       <text class="theme-layout__navbar-text">布局演示</text>
       <text class="theme-layout__cursor" />
     </view>
