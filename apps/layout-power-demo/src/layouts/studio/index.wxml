@@ -7,7 +7,6 @@
       <text class="theme-layout__swatch theme-layout__swatch--paper" />
       <text class="theme-layout__navbar-text">布局演示</text>
     </view>
-    <text class="theme-layout__navbar-theme">画室</text>
   </view>
 
   <view class="theme-layout__nav">

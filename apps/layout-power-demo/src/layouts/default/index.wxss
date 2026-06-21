@@ -38,7 +38,6 @@
 }
 
 .theme-layout__navbar-text,
-.theme-layout__navbar-theme,
 .theme-layout__kicker,
 .theme-layout__title,
 .theme-layout__mode,
@@ -61,23 +60,6 @@
   height: 14rpx;
   background: #2563eb;
   border-radius: 50%;
-}
-
-.theme-layout__navbar-theme {
-  box-sizing: border-box;
-  width: var(--demo-navbar-capsule-width, 176rpx);
-  height: var(--demo-navbar-capsule-height, 64rpx);
-  padding: 0 20rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 20rpx;
-  font-weight: 900;
-  line-height: var(--demo-navbar-capsule-height, 64rpx);
-  color: #fff;
-  text-align: center;
-  white-space: nowrap;
-  background: #2563eb;
-  border-radius: 6rpx;
 }
 
 .theme-layout__nav {

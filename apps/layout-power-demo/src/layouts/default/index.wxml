@@ -6,7 +6,6 @@
       <text class="theme-layout__navbar-text">布局演示</text>
       <text class="theme-layout__navbar-dot" />
     </view>
-    <text class="theme-layout__navbar-theme">默认</text>
   </view>
 
   <view class="theme-layout__nav">
