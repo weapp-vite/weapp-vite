@@ -79,16 +79,29 @@
     </view>
   </view>
 
-  <view
-    class="feedback-trigger"
-    hover-class="feedback-trigger--hover"
-    hover-stay-time="120"
-    role="button"
-    aria-label="调用当前布局弹出提示"
-    bindtap="showLayoutFeedback"
-  >
-    <text class="feedback-trigger__icon">!</text>
-    <text class="feedback-trigger__text">调用布局弹层</text>
+  <view class="feedback-actions">
+    <view
+      class="feedback-trigger"
+      hover-class="feedback-trigger--hover"
+      hover-stay-time="120"
+      role="button"
+      aria-label="调用当前布局 Message"
+      bindtap="showLayoutMessage"
+    >
+      <text class="feedback-trigger__icon">M</text>
+      <text class="feedback-trigger__text">Message</text>
+    </view>
+    <view
+      class="feedback-trigger feedback-trigger--toast"
+      hover-class="feedback-trigger--hover"
+      hover-stay-time="120"
+      role="button"
+      aria-label="调用当前布局 Toast"
+      bindtap="showLayoutToast"
+    >
+      <text class="feedback-trigger__icon">T</text>
+      <text class="feedback-trigger__text">Toast</text>
+    </view>
     <text class="feedback-trigger__layout">{{currentLayoutLabel}}</text>
   </view>
 

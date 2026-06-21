@@ -82,7 +82,7 @@
 .demo--switching .summary,
 .demo--switching .stage,
 .demo--switching .switches,
-.demo--switching .feedback-trigger,
+.demo--switching .feedback-actions,
 .demo--switching .showcase {
   animation: switch-press 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -90,7 +90,7 @@
 .demo--settled .summary,
 .demo--settled .stage,
 .demo--settled .switches,
-.demo--settled .feedback-trigger,
+.demo--settled .feedback-actions,
 .demo--settled .showcase {
   animation: switch-settle 320ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
 }
@@ -495,20 +495,32 @@
   box-shadow: 0 10rpx 24rpx var(--demo-shadow);
 }
 
+.feedback-actions {
+  display: flex;
+  gap: 10rpx;
+  align-items: center;
+  margin-top: 14rpx;
+}
+
 .feedback-trigger {
   box-sizing: border-box;
   display: flex;
-  gap: 12rpx;
+  flex: 1;
+  gap: 10rpx;
   align-items: center;
   justify-content: center;
-  height: 58rpx;
-  margin-top: 14rpx;
+  min-width: 0;
+  height: 54rpx;
   color: var(--demo-card);
   background: var(--demo-ink);
   border: 1rpx solid var(--demo-border);
   border-radius: 8rpx;
   box-shadow: 0 10rpx 22rpx var(--demo-shadow);
   transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.feedback-trigger--toast {
+  background: var(--demo-accent);
 }
 
 .feedback-trigger__icon,
@@ -525,7 +537,7 @@
 .feedback-trigger__icon {
   width: 30rpx;
   height: 30rpx;
-  font-size: 22rpx;
+  font-size: 20rpx;
   line-height: 30rpx;
   color: var(--demo-ink);
   text-align: center;
@@ -534,12 +546,12 @@
 }
 
 .feedback-trigger__text {
-  font-size: 24rpx;
+  font-size: 23rpx;
 }
 
 .feedback-trigger__layout {
-  max-width: 120rpx;
-  padding: 7rpx 10rpx;
+  max-width: 116rpx;
+  padding: 8rpx 10rpx;
   font-size: 20rpx;
   color: var(--demo-chip-ink);
   background: var(--demo-chip-bg);

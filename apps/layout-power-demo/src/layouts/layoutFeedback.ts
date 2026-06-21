@@ -31,6 +31,7 @@ export interface LayoutFeedbackOptions {
 
 export interface LayoutFeedbackResult {
   layout: string
+  feedback: 'message' | 'toast'
   messageTheme: MessageTheme
   toastTheme: ToastTheme
   toastPlacement: ToastPlacement
@@ -38,12 +39,15 @@ export interface LayoutFeedbackResult {
   ok: boolean
 }
 
-type LayoutFeedbackHandler = () => LayoutFeedbackResult
+interface LayoutFeedbackHandlers {
+  message: () => LayoutFeedbackResult
+  toast: () => LayoutFeedbackResult
+}
 export type LayoutFeedbackComponent = WechatMiniprogram.Component.TrivialInstance & {
-  __layoutPowerFeedbackHandler?: LayoutFeedbackHandler
+  __layoutPowerFeedbackHandlers?: LayoutFeedbackHandlers
 }
 type FeedbackPageInstance = WechatMiniprogram.Page.Instance<Record<string, unknown>, Record<string, unknown>> & {
-  __layoutPowerFeedback?: LayoutFeedbackHandler
+  __layoutPowerFeedback?: LayoutFeedbackHandlers
 }
 
 function resolveCurrentPage() {
@@ -54,76 +58,97 @@ function resolveCurrentPage() {
 export function createLayoutFeedback(
   context: LayoutFeedbackComponent,
   options: LayoutFeedbackOptions,
-): LayoutFeedbackHandler {
-  return () => {
-    const messageOptions = {
-      context,
-      selector: '#t-message',
-      content: options.message.content,
-      duration: options.message.duration,
-      align: options.message.align,
-      closeBtn: options.message.closeBtn,
-      marquee: options.message.marquee,
-      single: true,
-    }
+): LayoutFeedbackHandlers {
+  const createResult = (feedback: LayoutFeedbackResult['feedback']): LayoutFeedbackResult => ({
+    layout: options.id,
+    feedback,
+    messageTheme: options.message.theme,
+    toastTheme: options.toast.theme,
+    toastPlacement: options.toast.placement,
+    toastDirection: options.toast.direction,
+    ok: true,
+  })
 
-    if (options.message.theme === 'success') {
-      Message.success(messageOptions)
-    }
-    else if (options.message.theme === 'warning') {
-      Message.warning(messageOptions)
-    }
-    else if (options.message.theme === 'error') {
-      Message.error(messageOptions)
-    }
-    else {
-      Message.info(messageOptions)
-    }
+  return {
+    message() {
+      const messagePayload = {
+        context,
+        selector: '#t-message',
+        content: options.message.content,
+        duration: options.message.duration,
+        align: options.message.align ?? 'left',
+        closeBtn: options.message.closeBtn ?? false,
+        marquee: options.message.marquee ?? {
+          delay: 0,
+          loop: 0,
+          speed: 50,
+        },
+        single: true,
+      }
 
-    Toast({
-      context,
-      selector: '#t-toast',
-      message: options.toast.message,
-      theme: options.toast.theme,
-      duration: options.toast.duration,
-      placement: options.toast.placement,
-      direction: options.toast.direction,
-    })
+      if (options.message.theme === 'success') {
+        Message.success(messagePayload)
+      }
+      else if (options.message.theme === 'warning') {
+        Message.warning(messagePayload)
+      }
+      else if (options.message.theme === 'error') {
+        Message.error(messagePayload)
+      }
+      else {
+        Message.info(messagePayload)
+      }
 
-    return {
-      layout: options.id,
-      messageTheme: options.message.theme,
-      toastTheme: options.toast.theme,
-      toastPlacement: options.toast.placement,
-      toastDirection: options.toast.direction,
-      ok: true,
-    }
+      return createResult('message')
+    },
+    toast() {
+      Toast({
+        context,
+        selector: '#t-toast',
+        message: options.toast.message,
+        theme: options.toast.theme,
+        duration: options.toast.duration,
+        placement: options.toast.placement,
+        direction: options.toast.direction,
+      })
+
+      return createResult('toast')
+    },
   }
 }
 
-export function registerLayoutFeedback(handler: LayoutFeedbackHandler) {
+export function registerLayoutFeedback(handler: LayoutFeedbackHandlers) {
   const page = resolveCurrentPage()
   if (page) {
     page.__layoutPowerFeedback = handler
   }
 }
 
-export function unregisterLayoutFeedback(handler: LayoutFeedbackHandler) {
+export function unregisterLayoutFeedback(handler: LayoutFeedbackHandlers) {
   const page = resolveCurrentPage()
   if (page?.__layoutPowerFeedback === handler) {
     page.__layoutPowerFeedback = undefined
   }
 }
 
-export function callLayoutFeedback(): LayoutFeedbackResult {
-  const page = resolveCurrentPage()
-  const result = page?.__layoutPowerFeedback?.()
-  return result ?? {
+function createMissingResult(feedback: LayoutFeedbackResult['feedback']): LayoutFeedbackResult {
+  return {
     layout: 'none',
+    feedback,
     messageTheme: 'info',
     toastTheme: 'success',
     toastPlacement: 'middle',
     toastDirection: 'row',
     ok: false,
   }
+}
+
+export function callLayoutMessage(): LayoutFeedbackResult {
+  const page = resolveCurrentPage()
+  return page?.__layoutPowerFeedback?.message() ?? createMissingResult('message')
+}
+
+export function callLayoutToast(): LayoutFeedbackResult {
+  const page = resolveCurrentPage()
+  return page?.__layoutPowerFeedback?.toast() ?? createMissingResult('toast')
 }

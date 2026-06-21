@@ -1,6 +1,6 @@
 import type { LayoutFeedbackResult } from '../../layouts/layoutFeedback'
 import { setPageLayout } from 'weapp-vite/runtime'
-import { callLayoutFeedback } from '../../layouts/layoutFeedback'
+import { callLayoutMessage, callLayoutToast } from '../../layouts/layoutFeedback'
 
 type LayoutMode = 'command' | 'studio' | 'split' | 'poster' | 'default'
 
@@ -123,8 +123,15 @@ Page({
     const layout = event.currentTarget.dataset.layout
     this.applyNamedLayout(layout)
   },
-  showLayoutFeedback() {
-    const result = callLayoutFeedback()
+  showLayoutMessage() {
+    const result = callLayoutMessage()
+    this.setData({
+      lastFeedbackLayout: result.layout,
+    })
+    return result
+  },
+  showLayoutToast() {
+    const result = callLayoutToast()
     this.setData({
       lastFeedbackLayout: result.layout,
     })
@@ -178,11 +185,12 @@ Page({
     for (const layout of layouts) {
       this.applyNamedLayout(layout)
       await new Promise(resolve => setTimeout(resolve, 120))
-      results.push(this.showLayoutFeedback())
+      results.push(this.showLayoutMessage())
+      results.push(this.showLayoutToast())
     }
 
     return {
-      ok: results.every((result, index) => result.ok && result.layout === layouts[index]),
+      ok: results.every((result, index) => result.ok && result.layout === layouts[Math.floor(index / 2)]),
       results,
     }
   },

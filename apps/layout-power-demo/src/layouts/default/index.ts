@@ -23,7 +23,7 @@ Component({
   },
   lifetimes: {
     attached(this: LayoutFeedbackComponent) {
-      this.__layoutPowerFeedbackHandler = createLayoutFeedback(this, {
+      this.__layoutPowerFeedbackHandlers = createLayoutFeedback(this, {
         id: 'default',
         message: {
           content: '默认外壳：顶部轻提示',
@@ -38,12 +38,12 @@ Component({
           direction: 'row',
         },
       })
-      registerLayoutFeedback(this.__layoutPowerFeedbackHandler)
+      registerLayoutFeedback(this.__layoutPowerFeedbackHandlers)
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackHandler) {
-        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandler)
-        this.__layoutPowerFeedbackHandler = undefined
+      if (this.__layoutPowerFeedbackHandlers) {
+        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+        this.__layoutPowerFeedbackHandlers = undefined
       }
     },
   },

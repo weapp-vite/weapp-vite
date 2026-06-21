@@ -1,3 +1,4 @@
+import type { RuntimeErrorCollector } from './runtimeErrors'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -15,6 +16,7 @@ import {
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/layout-power-demo')
@@ -97,12 +99,15 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
   throw new Error(`Timed out waiting runE2E marker ${marker}; lastResult=${JSON.stringify(lastResult)}`)
 }
 
-async function expectLayoutFeedback(page: any) {
+async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector) {
+  const marker = collector.mark()
   const result = await page.callMethod('runLayoutFeedbackE2E')
+  await page.waitFor?.(600).catch(() => delay(600))
   expect(result).toMatchObject({
     ok: true,
     results: [
       {
+        feedback: 'message',
         layout: 'default',
         messageTheme: 'info',
         toastTheme: 'success',
@@ -110,6 +115,15 @@ async function expectLayoutFeedback(page: any) {
         toastDirection: 'row',
       },
       {
+        feedback: 'toast',
+        layout: 'default',
+        messageTheme: 'info',
+        toastTheme: 'success',
+        toastPlacement: 'middle',
+        toastDirection: 'row',
+      },
+      {
+        feedback: 'message',
         layout: 'command',
         messageTheme: 'warning',
         toastTheme: 'loading',
@@ -117,6 +131,15 @@ async function expectLayoutFeedback(page: any) {
         toastDirection: 'column',
       },
       {
+        feedback: 'toast',
+        layout: 'command',
+        messageTheme: 'warning',
+        toastTheme: 'loading',
+        toastPlacement: 'top',
+        toastDirection: 'column',
+      },
+      {
+        feedback: 'message',
         layout: 'studio',
         messageTheme: 'success',
         toastTheme: 'success',
@@ -124,6 +147,15 @@ async function expectLayoutFeedback(page: any) {
         toastDirection: 'column',
       },
       {
+        feedback: 'toast',
+        layout: 'studio',
+        messageTheme: 'success',
+        toastTheme: 'success',
+        toastPlacement: 'bottom',
+        toastDirection: 'column',
+      },
+      {
+        feedback: 'message',
         layout: 'split',
         messageTheme: 'warning',
         toastTheme: 'warning',
@@ -131,6 +163,23 @@ async function expectLayoutFeedback(page: any) {
         toastDirection: 'row',
       },
       {
+        feedback: 'toast',
+        layout: 'split',
+        messageTheme: 'warning',
+        toastTheme: 'warning',
+        toastPlacement: 'middle',
+        toastDirection: 'row',
+      },
+      {
+        feedback: 'message',
+        layout: 'poster',
+        messageTheme: 'error',
+        toastTheme: 'error',
+        toastPlacement: 'bottom',
+        toastDirection: 'column',
+      },
+      {
+        feedback: 'toast',
         layout: 'poster',
         messageTheme: 'error',
         toastTheme: 'error',
@@ -139,6 +188,7 @@ async function expectLayoutFeedback(page: any) {
       },
     ],
   })
+  expect(collector.getSince(marker)).toEqual([])
 }
 
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
@@ -146,6 +196,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
   let originalTemplate = ''
   let originalCommandLayoutStyle = ''
   let miniProgram: any
+  let runtimeErrorCollector: RuntimeErrorCollector | undefined
   let devProcess: ReturnType<typeof startDevProcess> | undefined
 
   beforeAll(async () => {
@@ -176,6 +227,8 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     }
     await Promise.resolve(miniProgram?.disconnect?.()).catch(() => {})
     await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+    runtimeErrorCollector?.dispose()
+    runtimeErrorCollector = undefined
     miniProgram = undefined
     await devProcess?.stop().catch(() => {})
     await cleanupTrackedDevProcesses()
@@ -192,9 +245,10 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
       waitForOpenedAutomator(APP_ROOT, 180_000),
       'layout-power-demo opened automator',
     )
+    runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
-    await expectLayoutFeedback(page)
+    await expectLayoutFeedback(page, runtimeErrorCollector)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
@@ -206,7 +260,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
 
     page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, UPDATED_MARKER)
-    await expectLayoutFeedback(page)
+    await expectLayoutFeedback(page, runtimeErrorCollector)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)

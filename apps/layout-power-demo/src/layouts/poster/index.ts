@@ -23,7 +23,7 @@ Component({
   },
   lifetimes: {
     attached(this: LayoutFeedbackComponent) {
-      this.__layoutPowerFeedbackHandler = createLayoutFeedback(this, {
+      this.__layoutPowerFeedbackHandlers = createLayoutFeedback(this, {
         id: 'poster',
         message: {
           content: '海报外壳：长文案沿顶部滚动展示',
@@ -42,12 +42,12 @@ Component({
           direction: 'column',
         },
       })
-      registerLayoutFeedback(this.__layoutPowerFeedbackHandler)
+      registerLayoutFeedback(this.__layoutPowerFeedbackHandlers)
     },
     detached(this: LayoutFeedbackComponent) {
-      if (this.__layoutPowerFeedbackHandler) {
-        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandler)
-        this.__layoutPowerFeedbackHandler = undefined
+      if (this.__layoutPowerFeedbackHandlers) {
+        unregisterLayoutFeedback(this.__layoutPowerFeedbackHandlers)
+        this.__layoutPowerFeedbackHandlers = undefined
       }
     },
   },
