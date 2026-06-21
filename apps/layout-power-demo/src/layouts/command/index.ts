@@ -9,7 +9,6 @@ import { resolveNavbarMetrics } from '../navbarMetrics'
 Component({
   data: {
     ...resolveNavbarMetrics(),
-    messageHosts: [],
   },
   properties: {
     mode: {

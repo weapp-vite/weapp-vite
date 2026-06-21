@@ -240,6 +240,7 @@ async function expectLayoutFeedbackByTap(page: any, collector: RuntimeErrorColle
     await page.waitFor?.(300).catch(() => delay(300))
   }
 
+  await page.waitFor?.(2_500).catch(() => delay(2_500))
   expect(collector.getSince(marker)).toEqual([])
   expect(collector.getLogsSince(marker)).not.toEqual(
     expect.arrayContaining([
