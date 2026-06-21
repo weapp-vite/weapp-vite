@@ -2,7 +2,11 @@
   <view class="theme-layout__transition" />
 
   <view class="theme-layout__navbar">
-    <text class="theme-layout__navbar-title">Layout Power</text>
+    <view class="theme-layout__navbar-title">
+      <text class="theme-layout__signal theme-layout__signal--cyan" />
+      <text class="theme-layout__signal theme-layout__signal--pink" />
+      <text class="theme-layout__navbar-text">Layout Power</text>
+    </view>
     <text class="theme-layout__navbar-theme">COMMAND</text>
   </view>
 
@@ -11,7 +15,11 @@
       <text class="theme-layout__kicker">layout host</text>
       <text class="theme-layout__title">{{title}}</text>
     </view>
-    <text class="theme-layout__mode">{{mode}}</text>
+    <view class="theme-layout__command-panel">
+      <text class="theme-layout__meter theme-layout__meter--wide" />
+      <text class="theme-layout__meter" />
+      <text class="theme-layout__meter theme-layout__meter--short" />
+    </view>
   </view>
 
   <view class="theme-layout__content">
@@ -19,7 +27,7 @@
   </view>
 
   <view class="theme-layout__globals">
+    <text class="theme-layout__mode">{{mode}}</text>
     <text class="theme-layout__toast">#t-toast host</text>
-    <text class="theme-layout__safe-area">safe-area</text>
   </view>
 </view>
