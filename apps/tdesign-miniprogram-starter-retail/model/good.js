@@ -1,7 +1,26 @@
-import { cdnBase } from '../config/index';
-const imgPrefix = cdnBase;
+import { cdnBase } from '../config/index'
 
-const defaultDesc = [`${imgPrefix}/goods/details-1.png`];
+const imgPrefix = cdnBase
+
+const defaultDesc = [`${imgPrefix}/goods/details-1.png`]
+
+function withMockGoodsImageVariant(url, id, index = 0) {
+  if (!url) {
+    return url
+  }
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}mock_goods_id=${id}&mock_image_index=${index}`
+}
+
+function createMockGoodsImages(images, primaryImage, id) {
+  const sourceImages = Array.isArray(images) && images.length > 0 ? images : [primaryImage]
+  return sourceImages.map((image, index) => withMockGoodsImageVariant(image, id, index))
+}
+
+function createMockGoodsPrice(basePrice, id) {
+  const price = Number(basePrice) || 0
+  return price + id * 137
+}
 
 const allGoods = [
   {
@@ -1882,23 +1901,31 @@ const allGoods = [
     ],
     etitle: '',
   },
-];
+]
 
 /**
  * @param {string} id
  * @param {number} [available] 库存, 默认1
  */
 export function genGood(id, available = 1) {
-  const specID = ['135681624', '135681628'];
-  if (specID.indexOf(id) > -1) {
-    return allGoods.filter((good) => good.spuId === id)[0];
+  const specID = ['135681624', '135681628']
+  if (specID.includes(id)) {
+    return allGoods.filter(good => good.spuId === id)[0]
   }
-  const item = allGoods[id % allGoods.length];
+  const item = allGoods[id % allGoods.length]
+  const primaryImage = withMockGoodsImageVariant(item.primaryImage, id)
+  const images = createMockGoodsImages(item?.images, item?.primaryImage, id)
+  const minSalePrice = createMockGoodsPrice(item.minSalePrice, id)
   return {
     ...item,
     spuId: `${id}`,
-    available: available,
+    available,
+    primaryImage,
     desc: item?.desc || defaultDesc,
-    images: item?.images || [item?.primaryImage],
-  };
+    images,
+    minSalePrice,
+    minLinePrice: minSalePrice,
+    maxSalePrice: minSalePrice,
+    maxLinePrice: createMockGoodsPrice(item.maxLinePrice, id),
+  }
 }
