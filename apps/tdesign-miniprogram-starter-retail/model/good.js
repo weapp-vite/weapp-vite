@@ -6,7 +6,7 @@ const defaultDesc = [`${imgPrefix}/goods/details-1.png`]
 
 const mockGoodsImageUrls = Array.from(
   { length: 60 },
-  (_, index) => `/common/assets/goods/mock/goods-${String(index + 1).padStart(2, '0')}.webp`,
+  (_, index) => `/common/assets/goods/mock/goods-${String(index + 1).padStart(2, '0')}.jpg`,
 )
 
 function createMockGoodsImageUrl(id, index = 0) {
