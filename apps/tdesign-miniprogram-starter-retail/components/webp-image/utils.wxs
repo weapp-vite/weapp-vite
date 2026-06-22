@@ -30,6 +30,10 @@ function rpx2px(rpx, screenWidth) {
   return Math.round(result);
 }
 
+function canUseImageMogr(url) {
+  return url.indexOf('gtimg.com') !== -1 || url.indexOf('myqcloud.com') !== -1;
+}
+
 function imageMogr(url, options) {
   if (!isString(url) || !url) return '';
 
@@ -50,6 +54,8 @@ function imageMogr(url, options) {
   }
 
   if (!options) return url;
+  // 仅腾讯云图片服务支持 imageMogr2，其他图床保持原始 URL。
+  if (!canUseImageMogr(url)) return url;
 
   var width = Math.ceil(options.width),
     height = Math.ceil(options.height),
