@@ -46,6 +46,34 @@ describe('captureScreenshotBuffer', () => {
     return PNG.sync.write(png)
   }
 
+  function createViewportPng(options: {
+    width: number
+    contentHeight: number
+    fixedBottomHeight: number
+    contentRgba: [number, number, number, number]
+    fixedBottomRgba: [number, number, number, number]
+  }) {
+    const png = new PNG({
+      width: options.width,
+      height: options.contentHeight + options.fixedBottomHeight,
+    })
+
+    for (let row = 0; row < png.height; row += 1) {
+      const rgba = row < options.contentHeight
+        ? options.contentRgba
+        : options.fixedBottomRgba
+      for (let column = 0; column < png.width; column += 1) {
+        const index = (row * png.width + column) * 4
+        png.data[index] = rgba[0]
+        png.data[index + 1] = rgba[1]
+        png.data[index + 2] = rgba[2]
+        png.data[index + 3] = rgba[3]
+      }
+    }
+
+    return PNG.sync.write(png)
+  }
+
   beforeEach(() => {
     vi.resetModules()
     vi.useFakeTimers()
@@ -240,6 +268,7 @@ describe('captureScreenshotBuffer', () => {
     const pageScrollTo = vi.fn()
     const scrollTop = vi.fn().mockResolvedValue(13)
     const waitFor = vi.fn().mockResolvedValue(undefined)
+    let sizeHeight = 45
     const screenshot = vi.fn()
       .mockResolvedValueOnce(red.toString('base64'))
       .mockResolvedValueOnce(green.toString('base64'))
@@ -248,7 +277,7 @@ describe('captureScreenshotBuffer', () => {
     withMiniProgramMock.mockImplementation(async (_options, runner) => {
       return await runner({
         currentPage: () => Promise.resolve({
-          size: () => Promise.resolve({ width: 8, height: 45 }),
+          size: () => Promise.resolve({ width: 8, height: sizeHeight }),
           scrollTop,
           waitFor,
         }),
@@ -256,6 +285,10 @@ describe('captureScreenshotBuffer', () => {
         pageScrollTo,
         screenshot,
       })
+    })
+    pageScrollTo.mockImplementation((value: number) => {
+      scrollTop.mockResolvedValue(value)
+      sizeHeight = 45
     })
 
     const { captureScreenshotBuffer } = await import('../src/cli/commands')
@@ -268,7 +301,7 @@ describe('captureScreenshotBuffer', () => {
 
     expect(pageScrollTo).toHaveBeenNthCalledWith(1, 0)
     expect(pageScrollTo).toHaveBeenNthCalledWith(2, 20)
-    expect(pageScrollTo).toHaveBeenNthCalledWith(3, 25)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(3, 40)
     expect(pageScrollTo).toHaveBeenNthCalledWith(4, 13)
     expect(waitFor).toHaveBeenCalledTimes(4)
     expect(stitched.height).toBe(45)
@@ -276,6 +309,149 @@ describe('captureScreenshotBuffer', () => {
     expect(Array.from(stitched.data.slice(0, 4))).toEqual([255, 0, 0, 255])
     expect(Array.from(stitched.data.slice(20 * 8 * 4, 20 * 8 * 4 + 4))).toEqual([0, 255, 0, 255])
     expect(Array.from(stitched.data.slice(40 * 8 * 4, 40 * 8 * 4 + 4))).toEqual([0, 0, 255, 255])
+  })
+
+  it('keeps fixed bottom chrome only once when stitching fullPage screenshots', async () => {
+    const first = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [255, 0, 0, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const second = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [0, 255, 0, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const third = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [0, 0, 255, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const pageScrollTo = vi.fn()
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    let actualScrollTop = 0
+    const screenshot = vi.fn()
+      .mockResolvedValueOnce(first.toString('base64'))
+      .mockResolvedValueOnce(second.toString('base64'))
+      .mockResolvedValueOnce(second.toString('base64'))
+      .mockResolvedValueOnce(third.toString('base64'))
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size: () => Promise.resolve({ width: 8, height: 240 }),
+          scrollTop: () => Promise.resolve(actualScrollTop),
+          waitFor,
+        }),
+        systemInfo: () => Promise.resolve({ windowHeight: 100 }),
+        pageScrollTo,
+        screenshot,
+      })
+    })
+    pageScrollTo.mockImplementation((value: number) => {
+      actualScrollTop = value
+      return Promise.resolve()
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })
+    const stitched = PNG.sync.read(result)
+    const rowPixel = (row: number) => Array.from(stitched.data.slice(row * 8 * 4, row * 8 * 4 + 4))
+
+    expect(pageScrollTo).toHaveBeenNthCalledWith(1, 0)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(2, 100)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(3, 80)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(4, 160)
+    expect(stitched.height).toBe(260)
+    expect(rowPixel(0)).toEqual([255, 0, 0, 255])
+    expect(rowPixel(80)).toEqual([0, 255, 0, 255])
+    expect(rowPixel(160)).toEqual([0, 0, 255, 255])
+    expect(rowPixel(239)).toEqual([0, 0, 255, 255])
+    expect(rowPixel(240)).toEqual([16, 16, 16, 255])
+  })
+
+  it('uses actual scrollTop to avoid duplicated rows when pageScrollTo is clamped', async () => {
+    const first = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [255, 0, 0, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const second = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [0, 255, 0, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const third = createViewportPng({
+      width: 8,
+      contentHeight: 80,
+      fixedBottomHeight: 20,
+      contentRgba: [0, 0, 255, 255],
+      fixedBottomRgba: [16, 16, 16, 255],
+    })
+    const pageScrollTo = vi.fn()
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    const actualScrollTops = [0, 72, 72, 152, 160]
+    let captureIndex = -1
+    const screenshot = vi.fn()
+      .mockResolvedValueOnce(first.toString('base64'))
+      .mockResolvedValueOnce(second.toString('base64'))
+      .mockResolvedValueOnce(second.toString('base64'))
+      .mockResolvedValueOnce(third.toString('base64'))
+      .mockResolvedValueOnce(third.toString('base64'))
+
+    pageScrollTo.mockImplementation(() => {
+      captureIndex += 1
+      return Promise.resolve()
+    })
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size: () => Promise.resolve({ width: 8, height: 240 }),
+          scrollTop: () => Promise.resolve(actualScrollTops[captureIndex] ?? 160),
+          waitFor,
+        }),
+        systemInfo: () => Promise.resolve({ windowHeight: 100 }),
+        pageScrollTo,
+        screenshot,
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })
+    const stitched = PNG.sync.read(result)
+    const rowPixel = (row: number) => Array.from(stitched.data.slice(row * 8 * 4, row * 8 * 4 + 4))
+
+    expect(pageScrollTo).toHaveBeenNthCalledWith(1, 0)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(2, 100)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(3, 80)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(4, 152)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(5, 232)
+    expect(stitched.height).toBe(260)
+    expect(rowPixel(0)).toEqual([255, 0, 0, 255])
+    expect(rowPixel(72)).toEqual([255, 0, 0, 255])
+    expect(rowPixel(80)).toEqual([0, 255, 0, 255])
+    expect(rowPixel(151)).toEqual([0, 255, 0, 255])
+    expect(rowPixel(152)).toEqual([0, 0, 255, 255])
+    expect(rowPixel(240)).toEqual([16, 16, 16, 255])
   })
 
   it('restores the original scroll position when fullPage capture fails', async () => {
