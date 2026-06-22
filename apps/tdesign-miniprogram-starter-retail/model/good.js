@@ -4,17 +4,37 @@ const imgPrefix = cdnBase
 
 const defaultDesc = [`${imgPrefix}/goods/details-1.png`]
 
-function withMockGoodsImageVariant(url, id, index = 0) {
-  if (!url) {
-    return url
-  }
-  const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}mock_goods_id=${id}&mock_image_index=${index}`
+const mockGoodsImageKeywords = [
+  'skincare,product',
+  'dress,fashion',
+  'tshirt,clothing',
+  'jacket,fashion',
+  'headphones,product',
+  'earbuds,gadget',
+  'plate,tableware',
+  'cutlery,tableware',
+  'perfume,product',
+  'watch,product',
+  'bag,fashion',
+  'shoes,fashion',
+  'cosmetics,product',
+  'lamp,product',
+  'camera,gadget',
+  'mug,product',
+  'backpack,fashion',
+  'sunglasses,fashion',
+  'soap,skincare',
+  'chair,furniture',
+]
+
+function createMockGoodsImageUrl(id, index = 0) {
+  const keyword = mockGoodsImageKeywords[(id + index) % mockGoodsImageKeywords.length]
+  return `https://loremflickr.com/640/640/${keyword}?lock=${10000 + id * 10 + index}`
 }
 
-function createMockGoodsImages(images, primaryImage, id) {
-  const sourceImages = Array.isArray(images) && images.length > 0 ? images : [primaryImage]
-  return sourceImages.map((image, index) => withMockGoodsImageVariant(image, id, index))
+function createMockGoodsImages(images, id) {
+  const imageCount = Array.isArray(images) && images.length > 0 ? images.length : 1
+  return Array.from({ length: imageCount }, (_, index) => createMockGoodsImageUrl(id, index))
 }
 
 function createMockGoodsPrice(basePrice, id) {
@@ -1913,8 +1933,8 @@ export function genGood(id, available = 1) {
     return allGoods.filter(good => good.spuId === id)[0]
   }
   const item = allGoods[id % allGoods.length]
-  const primaryImage = withMockGoodsImageVariant(item.primaryImage, id)
-  const images = createMockGoodsImages(item?.images, item?.primaryImage, id)
+  const primaryImage = createMockGoodsImageUrl(id)
+  const images = createMockGoodsImages(item?.images, id)
   const minSalePrice = createMockGoodsPrice(item.minSalePrice, id)
   return {
     ...item,
