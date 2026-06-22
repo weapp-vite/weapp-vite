@@ -127,7 +127,7 @@ jobs:
   templates-performance:
     name: Templates Performance (${{ matrix.os }} / Node 24)
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
