@@ -136,6 +136,8 @@
     "check:changeset:frontmatter": "node scripts/check-changeset-frontmatter.mjs",
     "check:rolldown:report": "node scripts/print-rolldown-versions.mjs --mode report",
     "check:rolldown:single-version": "node scripts/print-rolldown-versions.mjs",
+    "report:wechat-devtools-api": "node --import tsx scripts/generate-wechat-devtools-api-report.ts",
+    "check:wechat-devtools-api-report": "node --import tsx scripts/generate-wechat-devtools-api-report.ts --check",
     "changeset:catalog:auto": "node --import tsx scripts/generate-catalog-changeset.ts",
     "check:catalog-changeset": "node --import tsx scripts/check-catalog-changeset.ts",
     "catalog:sync:rolldown": "node scripts/print-rolldown-versions.mjs --mode sync",
