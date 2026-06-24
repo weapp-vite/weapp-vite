@@ -78,7 +78,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     typescript: '^6.0.3'
   },
   tailwind3: {
-    tailwindcss: '^4.3.1'
+    tailwindcss: '^3.4.19'
   },
   tailwind4: {
     tailwindcss: '^4.3.1'

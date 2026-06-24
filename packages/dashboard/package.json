@@ -31,7 +31,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "lint": "eslint --max-warnings=0 --no-warn-ignored src tsconfig.json",
     "lint:styles": "stylelint 'src/**/*.vue'",
@@ -53,7 +53,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "vite": "catalog:",
+    "vite": "7.3.5",
     "vue-tsc": "catalog:"
   },
   "publishConfig": {

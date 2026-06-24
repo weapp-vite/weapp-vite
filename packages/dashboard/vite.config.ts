@@ -10,6 +10,22 @@ const dashboardDevServer = {
   strictPort: false,
 }
 
+function resolveDashboardChunk(id: string) {
+  if (!id.includes('node_modules')) {
+    return undefined
+  }
+  if (id.includes('monaco-editor')) {
+    return 'monaco'
+  }
+  if (id.includes('echarts')) {
+    return 'echarts'
+  }
+  if (id.includes('vue')) {
+    return 'vue'
+  }
+  return 'vendor'
+}
+
 export default defineConfig({
   root: __dirname,
   base: './',
@@ -38,26 +54,20 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     modulePreload: false,
+    rollupOptions: {
+      output: {
+        manualChunks: resolveDashboardChunk,
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name][extname]',
+      },
+    },
     rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
             {
-              name(id) {
-                if (!id.includes('node_modules')) {
-                  return undefined
-                }
-                if (id.includes('monaco-editor')) {
-                  return 'monaco'
-                }
-                if (id.includes('echarts')) {
-                  return 'echarts'
-                }
-                if (id.includes('vue')) {
-                  return 'vue'
-                }
-                return 'vendor'
-              },
+              name: resolveDashboardChunk,
             },
           ],
         },

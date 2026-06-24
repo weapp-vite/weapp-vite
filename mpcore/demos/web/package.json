@@ -26,7 +26,7 @@
     "shiki": "^4.2.0",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "vite": "catalog:",
+    "vite": "7.3.5",
     "vue-tsc": "catalog:"
   }
 }
