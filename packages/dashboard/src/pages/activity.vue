@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+import type { EventKindFilter, EventLevelFilter } from '../features/dashboard/composables/useActivityEventConsole'
 import ActivityEventSortBar from '../features/dashboard/components/ActivityEventSortBar.vue'
 import ActivityInsightPanel from '../features/dashboard/components/ActivityInsightPanel.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
@@ -50,8 +51,8 @@ const {
           :event-level-filter="eventLevelFilter"
           :event-source-filter="eventSourceFilter"
           @update:search-query="searchQuery = $event"
-          @update:event-kind-filter="eventKindFilter = $event"
-          @update:event-level-filter="eventLevelFilter = $event"
+          @update:event-kind-filter="eventKindFilter = $event as EventKindFilter"
+          @update:event-level-filter="eventLevelFilter = $event as EventLevelFilter"
           @update:event-source-filter="eventSourceFilter = $event"
           @apply-preset="filterPresets.find(preset => preset.key === $event)?.apply()"
         />
