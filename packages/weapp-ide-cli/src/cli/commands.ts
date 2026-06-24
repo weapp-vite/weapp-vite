@@ -52,6 +52,7 @@ export interface ScreenshotOptions extends AutomatorCommandOptions {
   outputPath?: string
   page?: string
   fullPage?: boolean
+  retryWithFreshSession?: boolean
 }
 
 export interface ScreenshotResult {
@@ -485,7 +486,8 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
       const isNavigationTimeout = isScreenshotNavigationTimeoutError(error)
       const isScreenshotTimeout = isScreenshotRequestTimeoutError(error)
       const canRetryWithFreshSession = Boolean(
-        !nextOptions.miniProgram
+        nextOptions.retryWithFreshSession !== false
+        && !nextOptions.miniProgram
         && (isProtocolTimeout || isNavigationTimeout || isScreenshotTimeout)
         && !hasRetriedWithFreshSession,
       )

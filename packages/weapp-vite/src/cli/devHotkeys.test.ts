@@ -14,9 +14,11 @@ const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const createSharedInputSessionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
+const readFileMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
 const closeMcpMock = vi.hoisted(() => vi.fn())
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
+const pauseActiveForwardConsoleMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -71,6 +73,7 @@ vi.mock('node:readline', () => ({
 vi.mock('node:fs/promises', () => ({
   default: {
     mkdir: mkdirMock,
+    readFile: readFileMock,
   },
 }))
 
@@ -96,6 +99,10 @@ vi.mock('../mcp', () => ({
     }
   }),
   startWeappViteMcpServer: startWeappViteMcpServerMock,
+}))
+
+vi.mock('./forwardConsole', () => ({
+  pauseActiveForwardConsole: pauseActiveForwardConsoleMock,
 }))
 
 vi.mock('../logger', () => ({
@@ -129,6 +136,8 @@ describe('devHotkeys', () => {
     fakeProcess = new FakeProcess(stdin)
     mkdirMock.mockReset()
     mkdirMock.mockResolvedValue(undefined)
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue(JSON.stringify({ pages: ['pages/home/home'] }))
     closeSharedMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockResolvedValue(undefined)
     createSharedInputSessionMock.mockReset()
@@ -189,6 +198,8 @@ describe('devHotkeys', () => {
     closeMcpMock.mockResolvedValue(undefined)
     readLatestHmrProfileSummaryMock.mockReset()
     readLatestHmrProfileSummaryMock.mockResolvedValue(undefined)
+    pauseActiveForwardConsoleMock.mockReset()
+    pauseActiveForwardConsoleMock.mockResolvedValue(vi.fn())
     startWeappViteMcpServerMock.mockReset()
     startWeappViteMcpServerMock.mockResolvedValue({
       close: closeMcpMock,
@@ -369,12 +380,16 @@ describe('devHotkeys', () => {
     })
 
     expect(takeScreenshotMock).toHaveBeenCalledWith({
+      fullPage: true,
       outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
+      page: 'pages/home/home',
       port: 9633,
       projectPath: '/project/dist',
       preserveProjectRoot: true,
-      timeout: 30000,
+      retryWithFreshSession: false,
+      timeout: 120000,
     })
+    expect(pauseActiveForwardConsoleMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.success).toHaveBeenCalledWith(expect.stringContaining('当前页面截图完成'))
   })
 

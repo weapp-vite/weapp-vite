@@ -33,6 +33,7 @@ export interface StartForwardConsoleBridgeOptions {
 
 const DEFAULT_FORWARD_CONSOLE_LEVELS: WeappForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
 let activeForwardConsoleSession: Awaited<ReturnType<typeof startWechatForwardConsole>> | undefined
+let activeForwardConsoleBridgeOptions: StartForwardConsoleBridgeOptions | undefined
 const FORWARD_CONSOLE_RETRY_DELAY_MS = 1000
 const FORWARD_CONSOLE_RETRY_TIMES = 5
 
@@ -206,6 +207,39 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
 }
 
 /**
+ * @description 暂停当前 DevTools 日志桥，并返回恢复函数。
+ */
+export async function pauseActiveForwardConsole() {
+  const session = activeForwardConsoleSession
+  const bridgeOptions = activeForwardConsoleBridgeOptions
+  if (!session || !bridgeOptions) {
+    return undefined
+  }
+
+  activeForwardConsoleSession = undefined
+  activeForwardConsoleBridgeOptions = undefined
+  await session.close()
+
+  return async () => {
+    if (activeForwardConsoleSession) {
+      return true
+    }
+    try {
+      activeForwardConsoleSession = await startForwardConsoleBridge(bridgeOptions)
+      activeForwardConsoleBridgeOptions = bridgeOptions
+      return true
+    }
+    catch (error) {
+      activeForwardConsoleSession = undefined
+      activeForwardConsoleBridgeOptions = undefined
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`[forwardConsole] 恢复失败：${message}`)
+      return false
+    }
+  }
+}
+
+/**
  * @description 在 weapp 开发态按需启动控制台转发。
  */
 export async function maybeStartForwardConsole(options: MaybeStartForwardConsoleOptions) {
@@ -240,11 +274,13 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
 
   try {
     activeForwardConsoleSession = await startForwardConsoleBridge(bridgeOptions)
+    activeForwardConsoleBridgeOptions = bridgeOptions
     return true
   }
   catch (error) {
     if (!isDevtoolsPortNotReadyError(error)) {
       activeForwardConsoleSession = undefined
+      activeForwardConsoleBridgeOptions = undefined
       const message = error instanceof Error ? error.message : String(error)
       logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
       return false
@@ -256,10 +292,16 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
         openedOnly: true,
         port: undefined,
       })
+      activeForwardConsoleBridgeOptions = {
+        ...bridgeOptions,
+        openedOnly: true,
+        port: undefined,
+      }
       return true
     }
     catch (fallbackError) {
       activeForwardConsoleSession = undefined
+      activeForwardConsoleBridgeOptions = undefined
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
       logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
       return false

@@ -141,10 +141,28 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     await Promise.all([
       fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
     ])
-  }, 60_000)
+    miniProgram = await launchAutomator({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: true,
+      projectPath: APP_ROOT,
+      port: APP_AUTOMATOR_PORT,
+      timeout: 60_000,
+      trustProject: true,
+    })
+  }, 120_000)
 
   afterEach(async () => {
-    await cleanupTestState()
+    if (originalIndexTs) {
+      await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8').catch(() => {})
+    }
+    if (originalIndexWxml) {
+      await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8').catch(() => {})
+    }
+    await forwardConsoleSession?.close().catch(() => {})
+    forwardConsoleSession = undefined
+    await devProcess?.stop().catch(() => {})
+    devProcess = undefined
+    await cleanupTrackedDevProcesses()
   }, 60_000)
 
   afterAll(async () => {
@@ -163,14 +181,9 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
       'forward-console demo initial dist generated',
     )
 
-    miniProgram = await launchAutomator({
-      persistAsDefaultSession: true,
-      preserveProjectRoot: true,
-      projectPath: APP_ROOT,
-      port: APP_AUTOMATOR_PORT,
-      timeout: 60_000,
-      trustProject: true,
-    })
+    if (!miniProgram) {
+      throw new Error('Shared automator session is not initialized')
+    }
     const forwardedMessages: string[] = []
     forwardConsoleSession = await startForwardConsole({
       projectPath: APP_ROOT,

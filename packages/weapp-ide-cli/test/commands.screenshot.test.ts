@@ -311,6 +311,57 @@ describe('captureScreenshotBuffer', () => {
     expect(Array.from(stitched.data.slice(40 * 8 * 4, 40 * 8 * 4 + 4))).toEqual([0, 0, 255, 255])
   })
 
+  it('uses runtime viewport metrics before Page.getWindowProperties for fullPage screenshots', async () => {
+    const red = createSolidPng(8, 20, [255, 0, 0, 255])
+    const green = createSolidPng(8, 20, [0, 255, 0, 255])
+    const blue = createSolidPng(8, 20, [0, 0, 255, 255])
+    const pageScrollTo = vi.fn()
+    const size = vi.fn().mockRejectedValue(new Error('Page.getWindowProperties timeout'))
+    const scrollTop = vi.fn().mockRejectedValue(new Error('Page.getWindowProperties timeout'))
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    let actualScrollTop = 0
+    const evaluate = vi.fn().mockImplementation(() => Promise.resolve({
+      pageHeight: 45,
+      pageWidth: 8,
+      scrollTop: actualScrollTop,
+      viewportHeight: 20,
+    }))
+    const screenshot = vi.fn()
+      .mockResolvedValueOnce(red.toString('base64'))
+      .mockResolvedValueOnce(green.toString('base64'))
+      .mockResolvedValueOnce(blue.toString('base64'))
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size,
+          scrollTop,
+          waitFor,
+        }),
+        evaluate,
+        pageScrollTo,
+        screenshot,
+      })
+    })
+    pageScrollTo.mockImplementation((value: number) => {
+      actualScrollTop = value
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })
+    const stitched = PNG.sync.read(result)
+
+    expect(size).not.toHaveBeenCalled()
+    expect(scrollTop).not.toHaveBeenCalled()
+    expect(evaluate).toHaveBeenCalled()
+    expect(stitched.height).toBe(45)
+    expect(stitched.width).toBe(8)
+  })
+
   it('keeps fixed bottom chrome only once when stitching fullPage screenshots', async () => {
     const first = createViewportPng({
       width: 8,
@@ -592,5 +643,21 @@ describe('captureScreenshotBuffer', () => {
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+  })
+
+  it('does not close and relaunch DevTools when fresh-session retry is disabled', async () => {
+    withMiniProgramMock.mockRejectedValue(new Error('DEVTOOLS_PROTOCOL_TIMEOUT'))
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+
+    await expect(takeScreenshot({
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+      retryWithFreshSession: false,
+    })).rejects.toThrow('DEVTOOLS_PROTOCOL_TIMEOUT')
+
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(1)
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
   })
 })

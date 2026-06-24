@@ -120,6 +120,31 @@ describe('forwardConsole', () => {
     expect(resolveProjectAutomatorPortMock).toHaveBeenCalledWith('dist/dev')
   })
 
+  it('pauses and resumes the active console forwarding session', async () => {
+    const close = vi.fn()
+    startForwardConsoleMock.mockResolvedValueOnce({ close })
+    const { maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+
+    const resume = await pauseActiveForwardConsole()
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(1)
+
+    await resume?.()
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(2)
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      projectPath: 'dist/dev',
+      port: 10261,
+    }))
+  })
+
   it('can restrict console forwarding to an opened automator session', async () => {
     determineAgentMock.mockResolvedValue({
       isAgent: true,

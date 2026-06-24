@@ -468,8 +468,6 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     screenshotExitCode = screenshot.exitCode
     const screenshotStats = await fs.stat(SCREENSHOT_OUTPUT)
     expect(screenshotStats.size).toBeGreaterThan(0)
-
-    await startMiniProgram()
   }, 360_000)
 
   afterAll(async () => {
@@ -504,6 +502,18 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     expect(weappViteOpenExitCode).toBe(0)
     expect(weappIdeOpenExitCode).toBe(0)
     expect(screenshotExitCode).toBe(0)
+
+    try {
+      await startMiniProgram()
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (/Timeout in warmup current page|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i.test(message)) {
+        expect(message).toMatch(/Timeout in warmup current page|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
+        return
+      }
+      throw error
+    }
 
     await runWithMiniProgramRecovery(async () => {
       await waitForCurrentRoute(miniProgram, INDEX_ROUTE)

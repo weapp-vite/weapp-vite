@@ -15,6 +15,13 @@ interface CapturedPng {
   scrollTop: number
 }
 
+interface RuntimeViewportMetrics {
+  pageHeight: number | undefined
+  pageWidth: number | undefined
+  scrollTop: number | undefined
+  viewportHeight: number | undefined
+}
+
 const MAX_FULL_PAGE_CAPTURES = 200
 
 function decodeScreenshotBuffer(raw: string | Buffer | undefined) {
@@ -106,6 +113,71 @@ async function restoreScrollPosition(miniProgram: MiniProgramLike, page: MiniPro
   await page.waitFor(150)
 }
 
+async function readRuntimeViewportMetrics(miniProgram: MiniProgramLike): Promise<RuntimeViewportMetrics | undefined> {
+  if (typeof miniProgram.evaluate !== 'function') {
+    return undefined
+  }
+
+  const metrics = await miniProgram.evaluate(() => {
+    const wxLike = typeof wx === 'undefined' ? undefined : wx
+    const windowInfo = wxLike?.getWindowInfo?.()
+    const systemInfo = windowInfo ?? wxLike?.getSystemInfoSync?.()
+
+    return new Promise((resolve) => {
+      if (!wxLike?.createSelectorQuery) {
+        resolve({
+          pageHeight: undefined,
+          pageWidth: systemInfo?.windowWidth,
+          scrollTop: undefined,
+          viewportHeight: systemInfo?.windowHeight,
+        })
+        return
+      }
+
+      wxLike.createSelectorQuery()
+        .selectViewport()
+        .scrollOffset((viewport) => {
+          resolve({
+            pageHeight: viewport?.scrollHeight,
+            pageWidth: viewport?.scrollWidth ?? systemInfo?.windowWidth,
+            scrollTop: viewport?.scrollTop,
+            viewportHeight: systemInfo?.windowHeight,
+          })
+        })
+        .exec()
+    })
+  }).catch(() => undefined)
+
+  if (!metrics || typeof metrics !== 'object') {
+    return undefined
+  }
+
+  const raw = metrics as Record<string, unknown>
+  return {
+    pageHeight: toPositiveNumber(raw.pageHeight),
+    pageWidth: toPositiveNumber(raw.pageWidth),
+    scrollTop: typeof raw.scrollTop === 'number' && Number.isFinite(raw.scrollTop)
+      ? Math.max(raw.scrollTop, 0)
+      : undefined,
+    viewportHeight: toPositiveNumber(raw.viewportHeight),
+  }
+}
+
+async function readPageSize(page: MiniProgramPage) {
+  return await page.size().catch(() => null)
+}
+
+async function readScrollTop(miniProgram: MiniProgramLike, page: MiniProgramPage) {
+  const runtimeMetrics = await readRuntimeViewportMetrics(miniProgram)
+  if (runtimeMetrics?.scrollTop !== undefined) {
+    return runtimeMetrics.scrollTop
+  }
+
+  return typeof page.scrollTop === 'function'
+    ? toPositiveNumber(await page.scrollTop().catch(() => undefined)) ?? 0
+    : 0
+}
+
 async function captureScrolledPng(
   miniProgram: MiniProgramLike,
   page: MiniProgramPage,
@@ -123,12 +195,17 @@ async function captureScrolledPng(
     screenshotTimeoutMessage,
     'DEVTOOLS_SCREENSHOT_TIMEOUT',
   )
-  const actualScrollTop = typeof page.scrollTop === 'function'
-    ? toPositiveNumber(await page.scrollTop()) ?? 0
-    : scrollTop
-  const pageSize = await page.size().catch(() => null)
+  const runtimeMetrics = await readRuntimeViewportMetrics(miniProgram)
+  const actualScrollTop = runtimeMetrics?.scrollTop ?? (
+    typeof page.scrollTop === 'function'
+      ? toPositiveNumber(await page.scrollTop().catch(() => undefined)) ?? scrollTop
+      : scrollTop
+  )
+  const pageSize = runtimeMetrics?.pageHeight
+    ? undefined
+    : await readPageSize(page)
   return {
-    pageHeight: toPositiveNumber(pageSize?.height),
+    pageHeight: runtimeMetrics?.pageHeight ?? toPositiveNumber(pageSize?.height),
     png: PNG.sync.read(decodeScreenshotBuffer(rawScreenshot)),
     scrollTop: actualScrollTop,
   }
@@ -140,14 +217,17 @@ async function captureScrolledPng(
 export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOptions) {
   const { miniProgram, timeoutMs, runWithTimeout, screenshotTimeoutMessage } = options
   const page = await miniProgram.currentPage()
-  const pageSize = await page.size()
-  const systemInfo = await miniProgram.systemInfo()
-  const initialScrollTop = typeof page.scrollTop === 'function'
-    ? await page.scrollTop()
-    : 0
-  const pageWidth = toPositiveNumber(pageSize.width)
-  const pageHeight = toPositiveNumber(pageSize.height)
-  const viewportHeight = toPositiveNumber(systemInfo.windowHeight)
+  const runtimeMetrics = await readRuntimeViewportMetrics(miniProgram)
+  const pageSize = runtimeMetrics?.pageHeight && runtimeMetrics.pageWidth
+    ? undefined
+    : await readPageSize(page)
+  const systemInfo = runtimeMetrics?.viewportHeight
+    ? undefined
+    : await miniProgram.systemInfo()
+  const initialScrollTop = runtimeMetrics?.scrollTop ?? await readScrollTop(miniProgram, page)
+  const pageWidth = runtimeMetrics?.pageWidth ?? toPositiveNumber(pageSize?.width)
+  const pageHeight = runtimeMetrics?.pageHeight ?? toPositiveNumber(pageSize?.height)
+  const viewportHeight = runtimeMetrics?.viewportHeight ?? toPositiveNumber(systemInfo?.windowHeight)
 
   if (!pageHeight || !viewportHeight) {
     const screenshot = await runWithTimeout(
