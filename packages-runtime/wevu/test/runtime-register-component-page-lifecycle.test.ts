@@ -11,6 +11,7 @@ const mockState = vi.hoisted(() => {
     onRouteDone: vi.fn(),
     onReady: vi.fn(),
     onUnload: vi.fn(),
+    onPullDownRefresh: vi.fn(),
   }
   return {
     hooks,
@@ -93,6 +94,7 @@ describe('registerComponent (page lifecycles)', () => {
     options.pageLifetimes.routeDone.call(instance, 'r')
     options.lifetimes.ready.call(instance, 'd')
     options.lifetimes.detached.call(instance, 'e')
+    options.methods.onPullDownRefresh.call(instance, 'p')
 
     expect(mockState.hooks.onShow).toHaveBeenCalledWith('a')
     expect(mockState.hooks.onHide).toHaveBeenCalledWith('b')
@@ -100,6 +102,7 @@ describe('registerComponent (page lifecycles)', () => {
     expect(mockState.hooks.onRouteDone).toHaveBeenCalledWith('r')
     expect(mockState.hooks.onReady).toHaveBeenCalledWith('d')
     expect(mockState.hooks.onUnload).toHaveBeenCalledWith('e')
+    expect(mockState.hooks.onPullDownRefresh).toHaveBeenCalledWith('p')
 
     expect(userShow).toHaveBeenCalledWith('a')
     expect(userHide).toHaveBeenCalledWith('b')

@@ -902,6 +902,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).not.toContain('pages/issue-479/usePageFeatureHooks')
   })
 
+  it('issue #695: keeps direct pull-down hook feature enabled for Vue SFC pages', async () => {
+    await runBuild()
+
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-695/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-695/index.json')
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-695/index.wxml')
+
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-695 direct pull-down hook')
+    expect(issuePageJs).toContain('enableOnPullDownRefresh: true')
+    expect(issuePageJson).toContain('"enablePullDownRefresh": true')
+  })
+
   it('issue #484: keeps config.define import.meta.env member overrides in weapp-vite preprocessed files', async () => {
     await runBuild()
 

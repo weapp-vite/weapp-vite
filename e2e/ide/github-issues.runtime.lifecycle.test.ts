@@ -306,6 +306,28 @@ async function waitForIssue479BottomRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue695PullRuntime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (runtime?.hasPull) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 async function waitForIssue479Ready(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
@@ -744,6 +766,37 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       const runtimeResult = await waitForIssue479BottomRuntime(issuePage)
       expect(runtimeResult?.hasBottom).toBe(true)
       expect(runtimeResult?.logs).toContain('bottom')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #695: triggers direct pull-down hook through Component page method bridge', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-695/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-695/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-695/index.json')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-695 direct pull-down hook')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('enableOnPullDownRefresh: true')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"enablePullDownRefresh": true')
+
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-695/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-695 page')
+      }
+      const initialRuntime = await callPageMethodWithTimeout(issuePage, '_runE2E')
+      expect(initialRuntime?.hasPull).toBe(false)
+
+      await issuePage.callMethod('onPullDownRefresh')
+
+      const runtimeResult = await waitForIssue695PullRuntime(issuePage)
+      expect(runtimeResult?.count).toBe(1)
+      expect(runtimeResult?.doubled).toBe(2)
+      expect(runtimeResult?.logs).toContain('pull:1')
+      expect(runtimeResult?.hasPull).toBe(true)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
