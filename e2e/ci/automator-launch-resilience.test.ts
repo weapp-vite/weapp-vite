@@ -177,6 +177,26 @@ function readBridgePayloadFromFirstExecaCall() {
   return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string } : undefined
 }
 
+async function waitForJsonContains(target: string, expected: Record<string, any>, timeoutMs = 3_000) {
+  const start = Date.now()
+  let latest: Record<string, any> | undefined
+
+  while (Date.now() - start <= timeoutMs) {
+    if (fs.existsSync(target)) {
+      latest = readJson(target)
+      try {
+        expect(latest).toMatchObject(expected)
+        return latest
+      }
+      catch {
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 80))
+  }
+
+  throw new Error(`Timed out waiting for ${target} to match ${JSON.stringify(expected)}. Latest=${JSON.stringify(latest)}`)
+}
+
 function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: string | undefined) {
   expect(projectPath).toBeTruthy()
   expect(projectPath).not.toBe(sourceProjectPath)
@@ -1087,6 +1107,80 @@ describe.sequential('automator launch resilience', () => {
     })
   })
 
+  it('keeps cli bridge wrapper dist files synced with the real project dist', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launchedMiniProgram = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    const wrapperProjectPath = readBridgePayloadFromFirstExecaCall()?.projectPath
+    expectBridgeWrapperProjectPath(sandboxRoot, wrapperProjectPath)
+
+    writeJson(path.join(sandboxRoot, 'dist/app.json'), {
+      pages: ['pages/index/index', 'pages/hmr/index'],
+      subPackages: [],
+      window: {
+        navigationBarTitleText: 'hmr synced',
+      },
+    })
+
+    await waitForJsonContains(path.join(wrapperProjectPath!, 'app.json'), {
+      pages: ['pages/index/index', 'pages/hmr/index'],
+      window: {
+        navigationBarTitleText: 'hmr synced',
+      },
+    })
+
+    const nestedDistFile = path.join(sandboxRoot, 'dist/pages/hmr/index.wxml')
+    fs.mkdirSync(path.dirname(nestedDistFile), { recursive: true })
+    fs.writeFileSync(nestedDistFile, '<view>nested hmr synced</view>', 'utf8')
+    await waitForJsonContains(path.join(wrapperProjectPath!, 'app.json'), {
+      pages: ['pages/index/index', 'pages/hmr/index'],
+    })
+    await vi.waitFor(() => {
+      expect(fs.readFileSync(path.join(wrapperProjectPath!, 'pages/hmr/index.wxml'), 'utf8')).toContain('nested hmr synced')
+    })
+
+    fs.rmSync(nestedDistFile, { force: true })
+    await vi.waitFor(() => {
+      expect(fs.existsSync(path.join(wrapperProjectPath!, 'pages/hmr/index.wxml'))).toBe(false)
+    })
+
+    fs.rmSync(path.join(sandboxRoot, 'dist'), { recursive: true, force: true })
+    fs.mkdirSync(path.join(sandboxRoot, 'dist/pages/rebuilt'), { recursive: true })
+    writeJson(path.join(sandboxRoot, 'dist/app.json'), {
+      pages: ['pages/rebuilt/index'],
+      subPackages: [],
+    })
+    fs.writeFileSync(
+      path.join(sandboxRoot, 'dist/pages/rebuilt/index.wxml'),
+      '<view>rebuilt dist hmr synced</view>',
+      'utf8',
+    )
+    await waitForJsonContains(path.join(wrapperProjectPath!, 'app.json'), {
+      pages: ['pages/rebuilt/index'],
+    })
+    await vi.waitFor(() => {
+      expect(fs.readFileSync(path.join(wrapperProjectPath!, 'pages/rebuilt/index.wxml'), 'utf8')).toContain('rebuilt dist hmr synced')
+    })
+    await launchedMiniProgram.disconnect?.()
+  })
+
   it('can disable cli bridge wrapper project for focused launch debugging', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -1333,6 +1427,12 @@ describe.sequential('automator launch resilience', () => {
     const fetchError = Object.assign(new TypeError('fetch failed'), {
       cause: connectionError,
     })
+    connectMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
+    resetWechatIdeFileUtilsByHttpMock
+      .mockRejectedValueOnce(fetchError)
+      .mockResolvedValue('')
     execaMock
       .mockResolvedValueOnce({
         exitCode: 0,
@@ -1344,18 +1444,25 @@ describe.sequential('automator launch resilience', () => {
         stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9412' }),
         stderr: '',
       })
-    connectMock
-      .mockResolvedValueOnce(firstMiniProgram)
-      .mockResolvedValueOnce(secondMiniProgram)
-    resetWechatIdeFileUtilsByHttpMock
-      .mockRejectedValueOnce(fetchError)
-      .mockResolvedValue('')
 
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
+    const firstWrapperProjectPath = (readBridgePayloadFromFirstExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledTimes(2)
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, firstWrapperProjectPath)
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(path.join('.tmp', 'e2e-ide-bridge-projects')),
+    )
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalledWith(sandboxRoot)
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledTimes(2)
+    expect(execaMock).not.toHaveBeenCalledWith(
+      DEFAULT_WECHAT_CLI_PATH,
+      ['engine', 'build', sandboxRoot],
+      expect.anything(),
+    )
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()

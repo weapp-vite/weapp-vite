@@ -265,6 +265,16 @@ interface LaunchProjectMeta {
   warmupRoute?: string
 }
 
+interface BridgeWrapperProject {
+  distRoot: string
+  path: string
+  stopSync?: () => void
+}
+
+interface BridgeWrapperSyncOptions {
+  preserveRoots?: string[]
+}
+
 class LaunchAppConfigNotReadyError extends Error {
   constructor(appConfigPath: string, reason: string) {
     super(`[runtime:launch-preflight] app.json not ready: ${appConfigPath} reason=${reason}`)
@@ -1008,15 +1018,97 @@ function normalizeProjectRelativeRoot(rawRoot: unknown) {
 }
 
 function copyDistEntryForBridgeWrapper(sourcePath: string, targetPath: string, isDirectory: boolean) {
-  if (isDirectory) {
-    fs.cpSync(sourcePath, targetPath, {
-      dereference: true,
-      recursive: true,
-    })
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+  fs.rmSync(targetPath, { recursive: true, force: true })
+  try {
+    if (isDirectory) {
+      fs.cpSync(sourcePath, targetPath, {
+        dereference: true,
+        recursive: true,
+      })
+      return
+    }
+
+    fs.copyFileSync(sourcePath, targetPath)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error
+    }
+  }
+}
+
+function shouldPreserveBridgeWrapperPath(relativePath: string, preserveRoots: string[]) {
+  const normalized = relativePath.replace(/\\/g, '/')
+  return normalized === 'project.config.json'
+    || normalized === 'project.private.config.json'
+    || preserveRoots.some(root => normalized === root || normalized.startsWith(`${root}/`))
+}
+
+function safeStat(targetPath: string) {
+  try {
+    return fs.lstatSync(targetPath)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined
+    }
+    throw error
+  }
+}
+
+function safeReadDirectory(directoryPath: string) {
+  try {
+    return fs.readdirSync(directoryPath, { withFileTypes: true })
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined
+    }
+    throw error
+  }
+}
+
+function removeStaleBridgeWrapperDistEntries(distRoot: string, wrapperRoot: string, preserveRoots: string[]) {
+  if (!fs.existsSync(wrapperRoot)) {
     return
   }
 
-  fs.copyFileSync(sourcePath, targetPath)
+  const entries = safeReadDirectory(wrapperRoot)
+  if (!entries) {
+    return
+  }
+  for (const entry of entries) {
+    const targetPath = path.join(wrapperRoot, entry.name)
+    const relativePath = path.relative(wrapperRoot, targetPath)
+    if (shouldPreserveBridgeWrapperPath(relativePath, preserveRoots)) {
+      continue
+    }
+    if (!fs.existsSync(path.join(distRoot, relativePath))) {
+      fs.rmSync(targetPath, { recursive: true, force: true })
+    }
+  }
+}
+
+function copyBridgeWrapperDistSnapshot(
+  distRoot: string,
+  wrapperRoot: string,
+  options: BridgeWrapperSyncOptions = {},
+) {
+  const distEntries = safeReadDirectory(distRoot)
+  if (!distEntries) {
+    return
+  }
+
+  const preserveRoots = options.preserveRoots ?? []
+  fs.mkdirSync(wrapperRoot, { recursive: true })
+  removeStaleBridgeWrapperDistEntries(distRoot, wrapperRoot, preserveRoots)
+
+  for (const entry of distEntries) {
+    const sourcePath = path.join(distRoot, entry.name)
+    const targetPath = path.join(wrapperRoot, entry.name)
+    copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+  }
 }
 
 function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: string, relativeRoot: string) {
@@ -1026,21 +1118,183 @@ function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: strin
   }
 
   const targetPath = path.join(wrapperRoot, relativeRoot)
-  const entry = fs.lstatSync(sourcePath)
+  const entry = safeStat(sourcePath)
+  if (!entry) {
+    return
+  }
   copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+}
+
+function isPathInsideRoot(root: string, candidate: string) {
+  const relative = path.relative(root, candidate)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
+
+function copyBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, sourcePath: string) {
+  if (!isPathInsideRoot(distRoot, sourcePath) || !fs.existsSync(sourcePath)) {
+    return
+  }
+
+  const relativePath = path.relative(distRoot, sourcePath)
+  const targetPath = path.join(wrapperRoot, relativePath)
+  const sourceStat = safeStat(sourcePath)
+  if (!sourceStat) {
+    return
+  }
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory())
+}
+
+function removeBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, sourcePath: string) {
+  if (!isPathInsideRoot(distRoot, sourcePath)) {
+    return
+  }
+
+  const relativePath = path.relative(distRoot, sourcePath)
+  fs.rmSync(path.join(wrapperRoot, relativePath), { recursive: true, force: true })
+}
+
+function startBridgeWrapperDistSync(
+  distRoot: string,
+  wrapperRoot: string,
+  options: BridgeWrapperSyncOptions = {},
+) {
+  const preserveRoots = options.preserveRoots ?? []
+  const pendingPaths = new Set<string>()
+  const watchers = new Map<string, fs.FSWatcher>()
+  let timer: NodeJS.Timeout | undefined
+  let reconcileTimer: NodeJS.Timeout | undefined
+  let closed = false
+  let watchDirectoryTree: (directoryPath: string) => void = () => {}
+
+  const closeWatchers = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+    for (const watcher of watchers.values()) {
+      watcher.close()
+    }
+    watchers.clear()
+    pendingPaths.clear()
+  }
+
+  const closeSync = () => {
+    closed = true
+    closeWatchers()
+    if (reconcileTimer) {
+      clearInterval(reconcileTimer)
+      reconcileTimer = undefined
+    }
+  }
+
+  const syncSnapshot = () => {
+    if (closed) {
+      return
+    }
+    if (!fs.existsSync(distRoot)) {
+      closeWatchers()
+      return
+    }
+    watchDirectoryTree(distRoot)
+    copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot, { preserveRoots })
+  }
+
+  const flush = () => {
+    timer = undefined
+    if (!fs.existsSync(distRoot)) {
+      closeWatchers()
+      return
+    }
+    const paths = Array.from(pendingPaths)
+    pendingPaths.clear()
+
+    for (const changedPath of paths) {
+      if (closed) {
+        return
+      }
+      if (fs.existsSync(changedPath)) {
+        copyBridgeWrapperDistPath(distRoot, wrapperRoot, changedPath)
+      }
+      else {
+        removeBridgeWrapperDistPath(distRoot, wrapperRoot, changedPath)
+      }
+    }
+  }
+
+  const schedule = (changedPath: string) => {
+    if (closed) {
+      return
+    }
+    pendingPaths.add(changedPath)
+    if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(flush, 80)
+  }
+
+  const watchDirectory = (directoryPath: string) => {
+    if (closed || watchers.has(directoryPath) || !fs.existsSync(directoryPath)) {
+      return
+    }
+
+    const watcher = fs.watch(directoryPath, (_eventType, fileName) => {
+      if (!fileName) {
+        syncSnapshot()
+        return
+      }
+
+      const changedPath = path.join(directoryPath, fileName.toString())
+      if (fs.existsSync(changedPath)) {
+        const stat = safeStat(changedPath)
+        if (stat?.isDirectory()) {
+          watchDirectoryTree(changedPath)
+        }
+      }
+      schedule(changedPath)
+    })
+    watcher.on('error', () => {
+      watchers.delete(directoryPath)
+      syncSnapshot()
+    })
+    watcher.unref()
+    watchers.set(directoryPath, watcher)
+  }
+
+  watchDirectoryTree = (directoryPath: string) => {
+    if (!fs.existsSync(directoryPath)) {
+      return
+    }
+
+    watchDirectory(directoryPath)
+    const entries = safeReadDirectory(directoryPath)
+    if (!entries) {
+      return
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        watchDirectoryTree(path.join(directoryPath, entry.name))
+      }
+    }
+  }
+
+  watchDirectoryTree(distRoot)
+  reconcileTimer = setInterval(syncSnapshot, 500)
+  reconcileTimer.unref()
+
+  return closeSync
 }
 
 function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
-) {
+): BridgeWrapperProject | undefined {
   if (!projectPath || !projectMeta || !shouldUseAutomatorBridgeWrapper()) {
-    return projectPath
+    return projectPath ? { distRoot: '', path: projectPath } : undefined
   }
 
   const distRoot = path.dirname(projectMeta.appConfigPath)
   if (!fs.existsSync(distRoot)) {
-    return projectPath
+    return { distRoot, path: projectPath }
   }
 
   const hash = crypto
@@ -1052,16 +1306,11 @@ function prepareAutomatorBridgeWrapperProject(
     .slice(0, 16)
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
   fs.rmSync(wrapperRoot, { recursive: true, force: true })
-  fs.mkdirSync(wrapperRoot, { recursive: true })
-
-  for (const entry of fs.readdirSync(distRoot, { withFileTypes: true })) {
-    const sourcePath = path.join(distRoot, entry.name)
-    const targetPath = path.join(wrapperRoot, entry.name)
-    copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
-  }
+  copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
 
   const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
+  const preserveRoots = pluginRoot ? [pluginRoot] : []
   if (pluginRoot) {
     copyProjectRootForBridgeWrapper(projectPath, wrapperRoot, pluginRoot)
   }
@@ -1073,7 +1322,11 @@ function prepareAutomatorBridgeWrapperProject(
     path.join(wrapperRoot, 'project.private.config.json'),
   )
 
-  return wrapperRoot
+  return {
+    distRoot,
+    path: wrapperRoot,
+    stopSync: startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots }),
+  }
 }
 
 function resolveRouteFromAppConfig(config: Record<string, any>) {
@@ -2119,6 +2372,39 @@ async function launchAutomatorViaCliBridge(
   return miniProgram
 }
 
+function attachBridgeWrapperSyncCleanup(miniProgram: any, bridgeWrapperProject: BridgeWrapperProject | undefined) {
+  if (!bridgeWrapperProject?.stopSync) {
+    return miniProgram
+  }
+
+  let stopped = false
+  const stopSync = () => {
+    if (stopped) {
+      return
+    }
+    stopped = true
+    bridgeWrapperProject.stopSync?.()
+  }
+
+  for (const methodName of ['close', 'disconnect']) {
+    const rawMethod = miniProgram?.[methodName]
+    if (typeof rawMethod !== 'function') {
+      continue
+    }
+
+    miniProgram[methodName] = async (...args: any[]) => {
+      try {
+        return await rawMethod.apply(miniProgram, args)
+      }
+      finally {
+        stopSync()
+      }
+    }
+  }
+
+  return miniProgram
+}
+
 export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
@@ -2142,6 +2428,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
+      let bridgeWrapperProject: BridgeWrapperProject | undefined
       try {
         return await runWithTimeout(
           async () => {
@@ -2158,9 +2445,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   ...projectConfig,
                 }
               : undefined
-            const launchProjectPath = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+            bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
-              : rest.projectPath
+              : undefined
+            const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {
               ...rest,
               ...(launchProjectPath ? { projectPath: launchProjectPath } : {}),
@@ -2211,7 +2499,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 allowCliEngineBuildFallback: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
-                refreshProject: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
+                refreshProject: true,
               })
               await compileMiniProgramProject(withRuntimeLogs, project)
               resetMiniProgramRuntimeLogs(withRuntimeLogs)
@@ -2232,7 +2520,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               projectPath: launchProjectPath,
               skipPageRootCheck: skipRelaunchPageRootCheck,
             })
-            return withRelaunch
+            return attachBridgeWrapperSyncCleanup(withRelaunch, bridgeWrapperProject)
           },
           launchAttemptTimeout,
           `launch automator#${attempt}`,
@@ -2246,6 +2534,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (error) {
+        bridgeWrapperProject?.stopSync?.()
         if (miniProgram) {
           try {
             await miniProgram.close()
