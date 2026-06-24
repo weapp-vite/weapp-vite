@@ -1,5 +1,4 @@
-<script setup lang="ts">
-import type { DashboardIconFeatureItem, DashboardSurfaceSampleItem } from '../features/dashboard/types'
+<script setup>
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -8,13 +7,13 @@ import TokenInspector from '../features/dashboard/components/TokenInspector.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
 
-const surfaceSamples: DashboardSurfaceSampleItem[] = [
+const surfaceSamples = [
   { label: 'Default surface', tone: 'default' },
   { label: 'Strong surface', tone: 'strong' },
   { label: 'Muted surface', tone: 'muted' },
 ]
 
-const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option => ({
+const themeFeatureItems = themeOptions.map(option => ({
   iconName: option.iconName,
   title: option.label,
   meta: option.value,

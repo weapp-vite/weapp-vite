@@ -1,5 +1,4 @@
-<script setup lang="ts">
-import type { DashboardTitleBlock } from './features/dashboard/types'
+<script setup>
 import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppNavigationList from './features/dashboard/components/AppNavigationList.vue'
@@ -25,7 +24,7 @@ provideDashboardTheme({
 })
 provideDashboardWorkspace(workspace)
 
-const pageMeta = computed<DashboardTitleBlock>(() => {
+const pageMeta = computed(() => {
   if (route.path.startsWith('/analyze')) {
     return {
       title: 'Analyze Workspace',

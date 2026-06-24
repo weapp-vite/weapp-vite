@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AnalyzeEmptyPayloadPanel from '../features/dashboard/components/AnalyzeEmptyPayloadPanel.vue'
 import AnalyzeResultSections from '../features/dashboard/components/AnalyzeResultSections.vue'
