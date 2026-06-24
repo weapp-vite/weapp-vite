@@ -505,6 +505,37 @@ describe('captureScreenshotBuffer', () => {
     expect(rowPixel(240)).toEqual([16, 16, 16, 255])
   })
 
+  it('falls back to viewport screenshot when fullPage scroll metrics hit DevTools inspectee globals', async () => {
+    const expected = createSolidPng(8, 20, [255, 0, 0, 255])
+    const pageScrollTo = vi.fn().mockRejectedValue(new Error('__inspectee__ is not defined'))
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    const screenshot = vi.fn().mockResolvedValue(expected.toString('base64'))
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size: () => Promise.resolve({ width: 8, height: 45 }),
+          scrollTop: () => Promise.resolve(0),
+          waitFor,
+        }),
+        systemInfo: () => Promise.resolve({ windowHeight: 20 }),
+        pageScrollTo,
+        screenshot,
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })
+
+    expect(result.equals(expected)).toBe(true)
+    expect(screenshot).toHaveBeenCalledTimes(1)
+    expect(pageScrollTo).toHaveBeenCalledWith(0)
+  })
+
   it('restores the original scroll position when fullPage capture fails', async () => {
     const pageScrollTo = vi.fn()
     const scrollTop = vi.fn().mockResolvedValue(42)

@@ -23,6 +23,7 @@ interface RuntimeViewportMetrics {
 }
 
 const MAX_FULL_PAGE_CAPTURES = 200
+const DEVTOOLS_INSPECTEE_REFERENCE_ERROR = /__inspectee__ is not defined|Can't find variable:\s*__inspectee__/i
 
 function decodeScreenshotBuffer(raw: string | Buffer | undefined) {
   if (raw === undefined) {
@@ -44,6 +45,26 @@ function toPositiveNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
     ? value
     : undefined
+}
+
+function isDevtoolsInspecteeReferenceError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return DEVTOOLS_INSPECTEE_REFERENCE_ERROR.test(message)
+}
+
+async function captureViewportScreenshotBuffer(
+  miniProgram: MiniProgramLike,
+  timeoutMs: number,
+  runWithTimeout: FullPageCaptureOptions['runWithTimeout'],
+  screenshotTimeoutMessage: string,
+) {
+  const screenshot = await runWithTimeout(
+    miniProgram.screenshot({ timeout: timeoutMs }),
+    timeoutMs,
+    screenshotTimeoutMessage,
+    'DEVTOOLS_SCREENSHOT_TIMEOUT',
+  )
+  return decodeScreenshotBuffer(screenshot)
 }
 
 function resolveScale(pageWidth: number | undefined, viewportHeight: number, png: PNG) {
@@ -109,8 +130,15 @@ function detectFixedBottomRows(first: PNG, second: PNG, scale: number) {
 }
 
 async function restoreScrollPosition(miniProgram: MiniProgramLike, page: MiniProgramPage, scrollTop: number) {
-  await miniProgram.pageScrollTo(scrollTop)
-  await page.waitFor(150)
+  try {
+    await miniProgram.pageScrollTo(scrollTop)
+    await page.waitFor(150)
+  }
+  catch (error) {
+    if (!isDevtoolsInspecteeReferenceError(error)) {
+      throw error
+    }
+  }
 }
 
 async function readRuntimeViewportMetrics(miniProgram: MiniProgramLike): Promise<RuntimeViewportMetrics | undefined> {
@@ -223,20 +251,19 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
     : await readPageSize(page)
   const systemInfo = runtimeMetrics?.viewportHeight
     ? undefined
-    : await miniProgram.systemInfo()
+    : await miniProgram.systemInfo().catch((error: unknown) => {
+        if (isDevtoolsInspecteeReferenceError(error)) {
+          return undefined
+        }
+        throw error
+      })
   const initialScrollTop = runtimeMetrics?.scrollTop ?? await readScrollTop(miniProgram, page)
   const pageWidth = runtimeMetrics?.pageWidth ?? toPositiveNumber(pageSize?.width)
   const pageHeight = runtimeMetrics?.pageHeight ?? toPositiveNumber(pageSize?.height)
   const viewportHeight = runtimeMetrics?.viewportHeight ?? toPositiveNumber(systemInfo?.windowHeight)
 
   if (!pageHeight || !viewportHeight) {
-    const screenshot = await runWithTimeout(
-      miniProgram.screenshot({ timeout: timeoutMs }),
-      timeoutMs,
-      screenshotTimeoutMessage,
-      'DEVTOOLS_SCREENSHOT_TIMEOUT',
-    )
-    return decodeScreenshotBuffer(screenshot)
+    return await captureViewportScreenshotBuffer(miniProgram, timeoutMs, runWithTimeout, screenshotTimeoutMessage)
   }
 
   const segments: PNG[] = []
@@ -336,6 +363,12 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
 
       requestedScrollTop = coveredUntil
     }
+  }
+  catch (error) {
+    if (!isDevtoolsInspecteeReferenceError(error)) {
+      throw error
+    }
+    return await captureViewportScreenshotBuffer(miniProgram, timeoutMs, runWithTimeout, screenshotTimeoutMessage)
   }
   finally {
     await restoreScrollPosition(miniProgram, page, initialScrollTop)
