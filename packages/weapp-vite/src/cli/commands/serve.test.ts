@@ -422,8 +422,9 @@ describe('serve cli command', () => {
       loginRetryTimeout: '1000',
       nonInteractive: true,
       openRecovery: false,
-      prepareAutomatorSession: true,
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
+      skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: false,
       useAutomatorOpen: true,
@@ -475,8 +476,9 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: true,
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
+      skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: true,
@@ -506,8 +508,9 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: true,
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
+      skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: true,
@@ -545,6 +548,7 @@ describe('serve cli command', () => {
 
     expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
       cwd: '/cwd-project',
+      preloadAppEntry: false,
     }))
   })
 
@@ -575,6 +579,7 @@ describe('serve cli command', () => {
       openRecovery: false,
       prepareAutomatorSession: true,
       reuseOpenedProject: false,
+      skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: true,
@@ -629,6 +634,7 @@ describe('serve cli command', () => {
       openRecovery: false,
       prepareAutomatorSession: true,
       reuseOpenedProject: false,
+      skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
       useAutomatorOpen: true,

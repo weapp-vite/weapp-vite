@@ -89,6 +89,20 @@ describe('dev process env isolation', () => {
     expect(env.CHOKIDAR_INTERVAL).toBeUndefined()
   })
 
+  it('can strip e2e-only env flags from child dev processes', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_TARGET_FILE', 'ide/current.test.ts')
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_DIR', '/tmp/report')
+    vi.stubEnv('WEAPP_VITE_AI', 'codex')
+
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv({ stripE2EEnv: true })
+
+    expect(env.WEAPP_VITE_E2E_TARGET_FILE).toBeUndefined()
+    expect(env.WEAPP_VITE_E2E_REPORT_DIR).toBeUndefined()
+    expect(env.WEAPP_VITE_AI).toBe('codex')
+  })
+
   it('allows opting out of sidecar watch for targeted diagnostics', async () => {
     const { createDevProcessEnv } = await import('../utils/dev-process-env')
 

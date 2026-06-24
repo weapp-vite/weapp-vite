@@ -3,6 +3,7 @@ import process from 'node:process'
 import path from 'pathe'
 import {
   bootstrapWechatDevtoolsSettings,
+  connectOpenedAutomator,
   formatAutomatorLoginError,
   isAutomatorLoginError,
   isWechatIdeEngineBuildEndpointMissingError,
@@ -50,7 +51,8 @@ export interface OpenIdeOptions {
   reuseOpenedProject?: boolean
   useAutomatorOpen?: boolean
   openRecovery?: boolean
-  prepareAutomatorSession?: boolean
+  prepareAutomatorSession?: boolean | 'connect-opened'
+  skipAutomatorCompile?: boolean
   skipPostOpenHealthCheck?: boolean
   loginRetry?: string
   loginRetryTimeout?: string
@@ -216,6 +218,40 @@ async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, optio
   }
 }
 
+async function connectOpenedWechatIdeAutomatorSession(projectPath: string): Promise<WechatIdeOpenHealthResult> {
+  try {
+    const miniProgram = await connectOpenedAutomator({
+      projectPath,
+      port: resolveProjectAutomatorPort(projectPath),
+      timeout: PREPARE_AUTOMATOR_SESSION_TIMEOUT,
+    }) as { disconnect?: () => void }
+    miniProgram.disconnect?.()
+    return { ok: true }
+  }
+  catch (error) {
+    logger.warn('连接当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
+    logWechatIdeRecoveryHint({
+      projectPath,
+      reason: '当前项目已完成打开流程，但尚未连接到可复用的自动化会话。',
+    })
+    if (shouldLogAutomatorFallbackError()) {
+      logger.error(error)
+    }
+    return {
+      ok: false,
+      reason: 'automator-session-failed',
+      error,
+    }
+  }
+}
+
+async function prepareWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions): Promise<WechatIdeOpenHealthResult> {
+  if (options.prepareAutomatorSession === 'connect-opened') {
+    return await connectOpenedWechatIdeAutomatorSession(projectPath)
+  }
+  return await prepareOpenedWechatIdeAutomatorSession(projectPath, options)
+}
+
 async function stabilizeOpenedWechatIdeProject(
   projectPath: string,
   servicePortEnabled?: boolean,
@@ -254,7 +290,7 @@ async function stabilizeOpenedWechatIdeProject(
       }
       logger.warn('当前微信开发者工具不支持自动 engine build 刷新，已跳过该步骤；如模拟器显示旧状态，可在开发者工具内手动编译。')
     }
-    if (options.useAutomatorOpen !== false) {
+    if (options.useAutomatorOpen !== false && options.skipAutomatorCompile !== true) {
       try {
         await executeWechatIdeCliCommand(appendLoginRetryArgv(['compile'], options), {
           automatorMode: 'require',
@@ -419,7 +455,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
 
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, normalizedOptions))
   if (platform === 'weapp' && projectPath && normalizedOptions.prepareAutomatorSession) {
-    await prepareOpenedWechatIdeAutomatorSession(projectPath, normalizedOptions)
+    await prepareWechatIdeAutomatorSession(projectPath, normalizedOptions)
   }
   if (platform === 'weapp' && projectPath && !normalizedOptions.skipPostOpenHealthCheck) {
     await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)

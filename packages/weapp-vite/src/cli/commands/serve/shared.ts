@@ -20,6 +20,21 @@ export interface CreateServeMiniProgramDevActionsOptions {
   tryReuseForwardConsole?: () => Promise<boolean>
 }
 
+function startBackgroundForwardConsoleReuse(
+  tryReuseForwardConsole?: () => Promise<boolean>,
+) {
+  if (!tryReuseForwardConsole) {
+    return
+  }
+
+  try {
+    void tryReuseForwardConsole().catch(() => {})
+  }
+  catch {
+    // 日志桥只用于增强调试体验，不能阻塞 IDE 打开与 HMR。
+  }
+}
+
 export function resolveWebHost(host: GlobalCLIOptions['host']) {
   if (host === undefined) {
     return undefined
@@ -48,7 +63,7 @@ export function createServeMiniProgramDevActions(
       }
 
       await options.openIde(projectPath, openOptions)
-      await options.tryReuseForwardConsole?.()
+      startBackgroundForwardConsoleReuse(options.tryReuseForwardConsole)
       return openOptions.forceReopen
         ? '已重新打开微信开发者工具项目'
         : '已打开或复用微信开发者工具项目'

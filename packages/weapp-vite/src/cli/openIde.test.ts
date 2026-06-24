@@ -53,6 +53,7 @@ vi.mock('weapp-ide-cli', () => ({
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   promptRetryKeypress: promptRetryKeypressMock,
+  RETRY_CONFIRM_KEYS: ['y'],
   resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
@@ -314,7 +315,7 @@ describe('openIde', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
-  it('closes current devtools window and reopens when user presses r for an opened weapp project', async () => {
+  it('closes current devtools window and reopens when user confirms retry for an opened weapp project', async () => {
     connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,
     })
@@ -331,9 +332,9 @@ describe('openIde', () => {
       timeout: 3000,
     })
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(colorsMock.green).toHaveBeenCalledWith('r')
-    expect(colorsMock.bold).toHaveBeenCalledWith('r')
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
+    expect(colorsMock.green).toHaveBeenCalledWith('y')
+    expect(colorsMock.bold).toHaveBeenCalledWith('y')
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 y 关闭当前窗口后重新打开。')
     expect(loggerMock.info).toHaveBeenCalledWith('正在关闭当前已打开项目，并重新拉起微信开发者工具...')
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       persistAsDefaultSession: true,
@@ -476,6 +477,35 @@ describe('openIde', () => {
     expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
     expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps index refresh but skips automator compile when requested', async () => {
+    const { openIde } = await import('./openIde')
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      skipAutomatorCompile: true,
+      useAutomatorOpen: false,
+    })
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      fallbackToCli: true,
+      logPath: undefined,
+    })
+    expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
+      timeout: 8000,
+      trustProject: true,
+    })
   })
 
   it('skips post-open health check after automator open when explicitly requested', async () => {
@@ -629,6 +659,64 @@ describe('openIde', () => {
     expect(parseMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).not.toHaveBeenCalledWith('微信开发者工具已完成自动恢复。')
     expect(loggerMock.error).not.toHaveBeenCalledWith(error)
+  })
+
+  it('connects only to opened automator session when requested after plain open', async () => {
+    const { openIde } = await import('./openIde')
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+    })
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      prepareAutomatorSession: 'connect-opened',
+      skipPostOpenHealthCheck: true,
+      useAutomatorOpen: false,
+    })
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
+      timeout: 8000,
+    })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not launch a second automator session after automator open falls back to plain open', async () => {
+    const { openIde } = await import('./openIde')
+    const automatorOpenError = new Error('automator failed')
+    const connectError = new Error('connect opened failed')
+    launchAutomatorMock.mockRejectedValueOnce(automatorOpenError)
+    connectOpenedAutomatorMock.mockRejectedValueOnce(connectError)
+
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      prepareAutomatorSession: 'connect-opened',
+      skipPostOpenHealthCheck: true,
+      useAutomatorOpen: true,
+    })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
+      timeout: 8000,
+    })
+    expect(launchAutomatorMock).toHaveBeenCalledTimes(1)
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(loggerMock.warn).toHaveBeenCalledWith('连接当前项目的微信开发者工具自动化会话失败，截图、MCP 或 IDE 联动命令首次运行时将重新连接。')
   })
 
   it('falls back to weapp open when explicit automator open fails', async () => {

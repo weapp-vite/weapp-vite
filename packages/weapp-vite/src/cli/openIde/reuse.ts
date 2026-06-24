@@ -1,4 +1,4 @@
-import { connectOpenedAutomator, launchAutomator, promptRetryKeypress, resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { connectOpenedAutomator, launchAutomator, promptRetryKeypress, resolveProjectAutomatorPort, RETRY_CONFIRM_KEYS } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
 
 interface DisconnectableMiniProgram {
@@ -6,8 +6,8 @@ interface DisconnectableMiniProgram {
 }
 
 function formatReuseOpenedWechatIdePrompt() {
-  const highlightedRetryKey = colors.bold(colors.green('r'))
-  return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKey} 关闭当前窗口后重新打开。`
+  const highlightedRetryKeys = RETRY_CONFIRM_KEYS.map(key => colors.bold(colors.green(key))).join(' / ')
+  return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKeys} 关闭当前窗口后重新打开。`
 }
 
 function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {

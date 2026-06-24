@@ -18,6 +18,12 @@ interface DevProcessController {
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
 
+interface DevProcessSpawnInfo {
+  args: readonly string[]
+  command: string
+  cwd?: string | URL
+}
+
 const TRACKED_DEV_PIDS = new Set<number>()
 
 interface ProcessEntry {
@@ -51,17 +57,28 @@ function formatExitInfo(info: DevProcessExitInfo) {
   return parts.join(', ')
 }
 
-function appendRecentOutput(message: string, outputChunks: string[]) {
+function appendRecentOutput(
+  message: string,
+  outputChunks: string[],
+  spawnInfo?: DevProcessSpawnInfo,
+) {
   const output = outputChunks.join('')
+  const spawnDetail = spawnInfo
+    ? [
+        `command=${spawnInfo.command}`,
+        `args=${spawnInfo.args.join(' ')}`,
+        ...(spawnInfo.cwd ? [`cwd=${String(spawnInfo.cwd)}`] : []),
+      ].join('\n')
+    : ''
   if (!output.trim()) {
-    return message
+    return spawnDetail ? `${message}\n\nDev process:\n${spawnDetail}` : message
   }
 
   const recentOutput = output.length > 12000
     ? output.slice(-12000)
     : output
 
-  return `${message}\n\nRecent dev output:\n${recentOutput}`
+  return `${message}${spawnDetail ? `\n\nDev process:\n${spawnDetail}` : ''}\n\nRecent dev output:\n${recentOutput}`
 }
 
 function matchesCommandPattern(command: string, pattern: CommandPattern) {
@@ -239,6 +256,11 @@ export function startDevProcess(
   args: readonly string[],
   options?: Options,
 ): DevProcessController {
+  const spawnInfo: DevProcessSpawnInfo = {
+    args,
+    command,
+    cwd: options?.cwd,
+  }
   const child = execa(command, args, {
     ...options,
     env: options?.env ?? process.env,
@@ -296,7 +318,7 @@ export function startDevProcess(
         .then(value => ({ type: 'task' as const, value }))
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : String(error)
-          throw new Error(appendRecentOutput(message, outputChunks))
+          throw new Error(appendRecentOutput(message, outputChunks, spawnInfo))
         }),
       settledExit.then(info => ({ type: 'exit' as const, info })),
     ])
@@ -324,7 +346,7 @@ export function startDevProcess(
         break
       }
     }
-    throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks))
+    throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo))
   }
 
   const stop = async (forceKillDelayMs = 3_000) => {

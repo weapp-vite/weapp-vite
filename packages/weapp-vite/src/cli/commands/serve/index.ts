@@ -88,6 +88,7 @@ export function registerServeCommand(cli: CAC) {
         configFile,
         inlineConfig,
         cliPlatform: targets.rawPlatform,
+        preloadAppEntry: false,
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
@@ -107,8 +108,9 @@ export function registerServeCommand(cli: CAC) {
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
             openRecovery: false,
-            prepareAutomatorSession: true,
+            prepareAutomatorSession: openOptions?.forceReopen ? true : 'connect-opened',
             reuseOpenedProject: !openOptions?.forceReopen,
+            skipAutomatorCompile: !openOptions?.forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
             useAutomatorOpen: true,

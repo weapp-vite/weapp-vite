@@ -22,6 +22,9 @@ const DIST_INDEX_JS = 'dist/pages/index/index.js'
 const DIST_INDEX_WXSS = 'dist/pages/index/index.wxss'
 const HMR_COMPANION_ENABLED_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION'
 const TARGET_FILE_ENV = 'WEAPP_VITE_E2E_TARGET_FILE'
+const HMR_COMPANION_SKIP_TARGETS = new Set([
+  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+])
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -79,11 +82,25 @@ function resolveTargetFileLabel() {
   return path.relative(path.resolve(import.meta.dirname, '..'), resolvedTargetArg).replaceAll('\\', '/')
 }
 
+function isSkippedCompanionTarget(targetLabel: string) {
+  if (HMR_COMPANION_SKIP_TARGETS.has(targetLabel)) {
+    return true
+  }
+
+  const normalizedArgs = process.argv.map(arg => arg.replaceAll('\\', '/'))
+  return [...HMR_COMPANION_SKIP_TARGETS].some((target) => {
+    return normalizedArgs.some(arg => arg.endsWith(target) || arg.endsWith(`e2e/${target}`))
+  })
+}
+
 function shouldRegisterIdeHmrCompanion(targetLabel: string) {
   if (resolveRuntimeProviderName() !== 'devtools') {
     return false
   }
   if (process.env[HMR_COMPANION_ENABLED_ENV] === '0') {
+    return false
+  }
+  if (isSkippedCompanionTarget(targetLabel)) {
     return false
   }
   return targetLabel.startsWith('ide/')

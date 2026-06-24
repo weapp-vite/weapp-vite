@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
+
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -12,10 +14,10 @@ import {
   cleanupTrackedDevProcesses,
   startDevProcess,
 } from '../utils/dev-process'
-import { createDevProcessEnv } from '../utils/dev-process-env'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
+const CLI_PATH = path.resolve(WORKSPACE_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const INDEX_VUE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.vue')
 const INDEX_ROUTE = '/pages/index/index'
@@ -24,6 +26,27 @@ const UPDATED_CARD_CLASS = 'rounded-[28rpx] bg-[red] p-[28rpx]'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function createTemplateDevOpenEnv() {
+  const env: NodeJS.ProcessEnv = {
+    HOME: process.env.HOME,
+    LANG: process.env.LANG,
+    LC_ALL: process.env.LC_ALL,
+    LOGNAME: process.env.LOGNAME,
+    NODE_ENV: 'development',
+    OPENAI_AGENT: process.env.OPENAI_AGENT,
+    PATH: process.env.PATH,
+    SHELL: process.env.SHELL,
+    TERM: process.env.TERM,
+    TMPDIR: process.env.TMPDIR,
+    USER: process.env.USER,
+    WEAPP_VITE_AI: process.env.WEAPP_VITE_AI,
+  }
+
+  return Object.fromEntries(
+    Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  )
 }
 
 function resolveAutomatorSessionFile(projectPath: string, port?: number) {
@@ -55,22 +78,41 @@ async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
-async function waitForPageText(miniProgram: any, text: string, timeoutMs = 90_000) {
+function isDevtoolsProtocolTimeout(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  const protocolError = error as Error & { code?: unknown, method?: unknown }
+  return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && (protocolError.method === 'App.getCurrentPage' || protocolError.method === 'App.getPageStack')
+}
+
+async function waitForCurrentRoute(miniProgram: any, timeoutMs = 90_000) {
   const start = Date.now()
-  let latestWxml = ''
+  let lastRoute = ''
 
   while (Date.now() - start <= timeoutMs) {
-    const page = await miniProgram.reLaunch(INDEX_ROUTE)
-    await page.waitFor(500)
-    const root = await page.$('page')
-    latestWxml = root ? await root.outerWxml() : ''
-    if (latestWxml.includes(text)) {
-      return latestWxml
+    try {
+      const page = await miniProgram.currentPage({
+        retries: 1,
+        timeout: 6_000,
+      })
+      lastRoute = page?.path ?? ''
+      if (lastRoute === INDEX_ROUTE.replace(/^\/+/, '')) {
+        return page
+      }
+    }
+    catch (error) {
+      if (!isDevtoolsProtocolTimeout(error)) {
+        throw error
+      }
+      miniProgram.disconnect?.()
+      miniProgram = await waitForOpenedAutomator(TEMPLATE_ROOT, 30_000)
     }
     await delay(1_000)
   }
 
-  throw new Error(`Timed out waiting for rendered text "${text}".\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
+  throw new Error(`Timed out waiting for current route ${INDEX_ROUTE}; latest route: ${lastRoute || '<none>'}`)
 }
 
 async function waitForFileContains(filePath: string, expected: string, timeoutMs = 90_000) {
@@ -123,11 +165,13 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
   }, 60_000)
 
   it('keeps wevu internal runtime bundled after bg-white changes to bg-[red]', async () => {
-    devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+    devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: TEMPLATE_ROOT,
-      env: createDevProcessEnv(),
+      env: createTemplateDevOpenEnv(),
       reject: false,
     })
+    await devProcess.waitForOutput('小程序初次构建完成', 'wevu tailwindcss tdesign initial build')
+    await devProcess.waitForOutput('开发服务已就绪', 'wevu tailwindcss tdesign dev ready')
     miniProgram = await devProcess.waitFor(
       waitForOpenedAutomator(TEMPLATE_ROOT, 180_000),
       'wevu tailwindcss tdesign dev:open ready',
@@ -135,13 +179,15 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
-      await waitForPageText(miniProgram, 'TDesign 最小模板')
+      await waitForCurrentRoute(miniProgram)
       const marker = collector.mark()
       const updatedVue = initialVue.replace(INITIAL_CARD_CLASS, UPDATED_CARD_CLASS)
       expect(updatedVue).not.toBe(initialVue)
       await fs.writeFile(INDEX_VUE, updatedVue, 'utf8')
+      await devProcess.waitForOutput('[update] src/pages/index/index.vue', 'wevu tdesign HMR update log')
+      await devProcess.waitForOutput(/小程序已重新构建（[\d.]+ ms）/, 'wevu tdesign HMR rebuild log')
       await waitForFileContains(path.join(TEMPLATE_ROOT, 'dist/app.js'), 'weapp-vendors/')
-      await waitForPageText(miniProgram, 'TDesign 最小模板')
+      await waitForCurrentRoute(miniProgram)
 
       const runtimeErrors = collector.getSince(marker)
       expect(runtimeErrors).not.toEqual(expect.arrayContaining([

@@ -39,6 +39,28 @@ describe('serve shared helpers', () => {
     expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
   })
 
+  it('does not wait for forward console after opening ide', async () => {
+    const build = vi.fn().mockResolvedValue(undefined)
+    const openIde = vi.fn().mockResolvedValue(undefined)
+    let resolveForwardConsole: ((value: boolean) => void) | undefined
+    const tryReuseForwardConsole = vi.fn(() => new Promise<boolean>((resolve) => {
+      resolveForwardConsole = resolve
+    }))
+    const actions = createServeMiniProgramDevActions({
+      build,
+      fallbackProjectPath: '/project',
+      openIde,
+      projectPath: '/project/dist-root',
+      tryReuseForwardConsole,
+    })
+
+    await expect(actions.openIde({ forceOpen: true })).resolves.toBe('已打开或复用微信开发者工具项目')
+
+    expect(resolveForwardConsole).toBeDefined()
+    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
+    resolveForwardConsole?.(true)
+  })
+
   it('falls back to reopening and rebuilding current mini program project', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
