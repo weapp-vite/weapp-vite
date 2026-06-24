@@ -315,6 +315,31 @@ describe('openIde', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
+  it('does not reuse an opened weapp project when screenshot protocol health check fails', async () => {
+    const screenshotMock = vi.fn().mockRejectedValueOnce(new Error('App.captureScreenshot timeout'))
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+      screenshot: screenshotMock,
+    })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      reuseOpenedProject: true,
+      useAutomatorOpen: true,
+    })
+
+    expect(screenshotMock).toHaveBeenCalledWith({ timeout: 3000 })
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
+    expect(loggerMock.info).not.toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。')
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev/mp-weixin',
+      port: 9633,
+      trustProject: true,
+    })
+  })
+
   it('closes current devtools window and reopens when user confirms retry for an opened weapp project', async () => {
     connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,

@@ -2,7 +2,7 @@ import type { ScreenshotResult } from 'weapp-ide-cli'
 import type { StartDevHotkeysOptions } from './types'
 import fs from 'node:fs/promises'
 import path from 'pathe'
-import { takeScreenshot } from 'weapp-ide-cli'
+import { resolveProjectAutomatorPort, takeScreenshot } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
 
 const DEV_SCREENSHOT_DIR = '.weapp-vite/dev-screenshots'
@@ -37,10 +37,9 @@ export async function runScreenshotAction(options: StartDevHotkeysOptions) {
 
   logger.info(`[dev action] 正在截图当前页面，输出到 ${colors.cyan(formatLogPath(options.cwd, outputPath))}`)
   const result = await takeScreenshot({
-    fullPage: true,
     projectPath: options.projectPath,
     preserveProjectRoot: true,
-    sharedSession: true,
+    port: resolveProjectAutomatorPort(options.projectPath),
     outputPath,
     timeout: DEFAULT_SCREENSHOT_TIMEOUT,
   })

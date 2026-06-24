@@ -3,7 +3,10 @@ import logger, { colors } from '../../logger'
 
 interface DisconnectableMiniProgram {
   disconnect: () => void
+  screenshot?: (options?: { timeout?: number }) => Promise<unknown>
 }
+
+const OPENED_PROJECT_HEALTH_CHECK_TIMEOUT = 3_000
 
 function formatReuseOpenedWechatIdePrompt() {
   const highlightedRetryKeys = RETRY_CONFIRM_KEYS.map(key => colors.bold(colors.green(key))).join(' / ')
@@ -12,6 +15,28 @@ function formatReuseOpenedWechatIdePrompt() {
 
 function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
   miniProgram.disconnect()
+}
+
+function withTimeout<T>(task: Promise<T>, timeoutMs: number) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`opened automator health check timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+  })
+
+  return Promise.race([task, timeout]).finally(() => {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  })
+}
+
+async function verifyOpenedProjectHealth(miniProgram: DisconnectableMiniProgram) {
+  if (typeof miniProgram.screenshot !== 'function') {
+    return
+  }
+  await withTimeout(miniProgram.screenshot({ timeout: OPENED_PROJECT_HEALTH_CHECK_TIMEOUT }), OPENED_PROJECT_HEALTH_CHECK_TIMEOUT)
 }
 
 async function openWechatIdeByAutomator(projectPath: string) {
@@ -26,14 +51,20 @@ async function openWechatIdeByAutomator(projectPath: string) {
 }
 
 async function connectOpenedProject(projectPath: string) {
+  let miniProgram: DisconnectableMiniProgram | null = null
   try {
-    return await connectOpenedAutomator({
+    miniProgram = await connectOpenedAutomator({
       projectPath,
       port: resolveProjectAutomatorPort(projectPath),
       timeout: 3_000,
     }) as DisconnectableMiniProgram
+    await verifyOpenedProjectHealth(miniProgram)
+    return miniProgram
   }
   catch {
+    if (miniProgram) {
+      disconnectMiniProgram(miniProgram)
+    }
     return null
   }
 }

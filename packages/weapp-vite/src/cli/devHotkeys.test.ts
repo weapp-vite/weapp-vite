@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
+const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
@@ -56,6 +57,7 @@ vi.mock('weapp-ide-cli', () => ({
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   parse: parseWeappIdeCliMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
   takeScreenshot: takeScreenshotMock,
@@ -194,6 +196,8 @@ describe('devHotkeys', () => {
     })
     takeScreenshotMock.mockReset()
     takeScreenshotMock.mockResolvedValue({ path: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    resolveProjectAutomatorPortMock.mockReset()
+    resolveProjectAutomatorPortMock.mockReturnValue(9633)
     emitKeypressEventsMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -365,11 +369,10 @@ describe('devHotkeys', () => {
     })
 
     expect(takeScreenshotMock).toHaveBeenCalledWith({
-      fullPage: true,
       outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
+      port: 9633,
       projectPath: '/project/dist',
       preserveProjectRoot: true,
-      sharedSession: true,
       timeout: 30000,
     })
     expect(loggerMock.success).toHaveBeenCalledWith(expect.stringContaining('当前页面截图完成'))
@@ -730,12 +733,12 @@ describe('devHotkeys', () => {
     await flushMicrotasks(10)
 
     expect(takeScreenshotMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      fullPage: true,
-      sharedSession: true,
+      outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
+      projectPath: '/project/dist',
     }))
     expect(takeScreenshotMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      fullPage: true,
-      sharedSession: true,
+      outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
+      projectPath: '/project/dist',
     }))
 
     session?.close()
