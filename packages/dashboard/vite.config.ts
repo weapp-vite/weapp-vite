@@ -28,6 +28,9 @@ export default defineConfig({
     vue(),
     tailwindcss(),
   ],
+  oxc: {
+    tsconfig: false,
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
