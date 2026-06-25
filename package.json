@@ -39,6 +39,7 @@
     "test:dev": "vitest",
     "test:types": "turbo run test:types",
     "lint": "turbo run lint",
+    "lint:ci:windows": "turbo run lint --concurrency=1",
     "release": "pnpm run changeset:catalog:auto && changeset",
     "changeset:deps:auto": "node --import tsx scripts/generate-dependency-upgrade-changeset.ts",
     "pr": "changeset pre enter alpha",
