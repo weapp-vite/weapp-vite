@@ -1,0 +1,15 @@
+{
+  "name": "e2e-app-vue-mini-issue151-wevu",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
