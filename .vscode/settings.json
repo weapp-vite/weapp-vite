@@ -188,10 +188,6 @@
   },
   "files.exclude": {
     "node_modules": true,
-    "dist": true,
-    "**/dist-*": true,
-    "**/dist-plugin": true,
-    "**/dist-web": true,
     "**/build": true,
     "**/coverage": true,
     "**/miniprogram_npm": true,
@@ -208,8 +204,6 @@
     "**/.turbo": true,
     "**/.vite": true,
     "**/.vite-inspect": true,
-    "**/.weapp-vite": true,
-    "**/.wevu-config": true,
     "**/__temp__": true,
     "**/docs/reports": true,
     "**/packages/ast-native/target": true
