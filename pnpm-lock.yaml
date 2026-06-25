@@ -184,8 +184,8 @@ catalogs:
       specifier: ^3.3.5
       version: 3.3.5
     weapp-tailwindcss:
-      specifier: ^5.1.1
-      version: 5.1.1
+      specifier: ^5.1.2
+      version: 5.1.2
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -210,8 +210,8 @@ catalogs:
       version: 1.15.2
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.1.1
-      version: 5.1.1
+      specifier: 5.1.2
+      version: 5.1.2
 
 importers:
 
@@ -761,7 +761,7 @@ importers:
         version: 3.3.5(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -937,7 +937,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1050,7 +1050,7 @@ importers:
         version: 11.4.1(vite@8.1.0(@types/node@26.0.1)(esbuild@0.28.1)(jiti@2.7.0)(less@4.6.7)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.34.1)(tsx@4.22.4)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1074,7 +1074,7 @@ importers:
         version: 4.3.1
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1118,7 +1118,7 @@ importers:
         version: 4.3.1
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1167,7 +1167,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1185,7 +1185,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1318,7 +1318,7 @@ importers:
         version: 3.3.5(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1511,7 +1511,7 @@ importers:
         version: 4.3.1
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1529,7 +1529,7 @@ importers:
         version: 4.3.1
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1783,7 +1783,7 @@ importers:
         version: 3.3.5(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2566,7 +2566,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2617,7 +2617,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2672,7 +2672,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2766,7 +2766,7 @@ importers:
         version: 3.3.5(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2821,7 +2821,7 @@ importers:
         version: 3.3.5(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
+        version: 5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2955,7 +2955,7 @@ importers:
         version: 3.4.19(tsx@4.22.4)(yaml@2.9.0)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.1(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)
+        version: 5.1.2(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -8661,8 +8661,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.1.1':
-    resolution: {integrity: sha512-ViH9THkZyj3wuepSRBXlTN5onpljfujd7NJmsveczHH7SxepE09PNWER3MyeTaVUHhTNpOSnieJrMG1V1BA8Rw==}
+  '@weapp-tailwindcss/postcss@3.1.2':
+    resolution: {integrity: sha512-uJdaAVJIwzFqm/L00i9Ld0oa93LB96ub9oIOsRf65b8C3I6hh6UMMni/5Vm8wyJN/EFFSBq/bbVNQjbSHNT4QA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/reset@0.1.1':
@@ -16065,8 +16065,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@5.1.1:
-    resolution: {integrity: sha512-slA1zdWOYmy98DdLfO4gmuqivMVtSPn3Jp4xN+F+a2uMc09xEbVMtEUCJy5UXV/2G6/z40QZ/zaGYvTdmMarTA==}
+  weapp-tailwindcss@5.1.2:
+    resolution: {integrity: sha512-YLsrNKLPdRexNRBXf3CXtuu8Noc6+/LMD14Wt94gXdaDJy/MV+BpkKyTABgwBqHuq4JyfyQdpofbU8dMpSWiiA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -22045,7 +22045,7 @@ snapshots:
       postcss-selector-parser: 7.1.4
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.1.1(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)(yaml@2.9.0)':
+  '@weapp-tailwindcss/postcss@3.1.2(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)(yaml@2.9.0)':
     dependencies:
       '@tailwindcss-mangle/engine': 0.1.1(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))
       '@weapp-core/escape': 8.0.0
@@ -22068,7 +22068,7 @@ snapshots:
       - tsx
       - yaml
 
-  '@weapp-tailwindcss/postcss@3.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)(yaml@2.9.0)':
+  '@weapp-tailwindcss/postcss@3.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)(yaml@2.9.0)':
     dependencies:
       '@tailwindcss-mangle/engine': 0.1.1(tailwindcss@4.3.1)
       '@weapp-core/escape': 8.0.0
@@ -30653,7 +30653,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@5.1.1(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4):
+  weapp-tailwindcss@5.1.2(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.7
@@ -30663,7 +30663,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.38
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.0
-      '@weapp-tailwindcss/postcss': 3.1.1(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)(yaml@2.9.0)
+      '@weapp-tailwindcss/postcss': 3.1.2(jiti@1.21.7)(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))(tsx@4.22.4)(yaml@2.9.0)
       '@weapp-tailwindcss/reset': 0.1.1(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))
       '@weapp-tailwindcss/shared': 2.0.0
       comment-json: 5.0.0
@@ -30682,7 +30682,7 @@ snapshots:
       - tailwindcss
       - tsx
 
-  weapp-tailwindcss@5.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4):
+  weapp-tailwindcss@5.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.7
@@ -30692,7 +30692,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.38
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.0
-      '@weapp-tailwindcss/postcss': 3.1.1(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)(yaml@2.9.0)
+      '@weapp-tailwindcss/postcss': 3.1.2(jiti@2.7.0)(tailwindcss@4.3.1)(tsx@4.22.4)(yaml@2.9.0)
       '@weapp-tailwindcss/reset': 0.1.1(tailwindcss@4.3.1)
       '@weapp-tailwindcss/shared': 2.0.0
       comment-json: 5.0.0
