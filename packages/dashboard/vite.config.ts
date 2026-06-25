@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import VueRouter from 'vue-router/vite'
+import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
 
 const dashboardDevServer = {
   host: '127.0.0.1',
@@ -26,6 +27,8 @@ function resolveDashboardChunk(id: string) {
   return 'vendor'
 }
 
+const dashboardVuePlugin = vue()
+
 export default defineConfig({
   root: __dirname,
   base: './',
@@ -41,7 +44,8 @@ export default defineConfig({
       dts: 'typed-router.d.ts',
       watch: false,
     }),
-    vue(),
+    dashboardVuePlugin,
+    createVueOxcTsconfigGuard(dashboardVuePlugin, 'dashboard-vue-oxc-tsconfig-guard'),
     tailwindcss(),
   ],
   resolve: {

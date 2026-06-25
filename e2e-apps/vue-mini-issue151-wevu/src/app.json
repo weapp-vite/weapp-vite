@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/issue-151/index"
+  ],
+  "usingComponents": {
+    "custom-tab-bar": "/custom-tab-bar/index"
+  },
+  "window": {
+    "navigationBarTitleText": "vue-mini issue151 wevu"
+  },
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "home"
+      },
+      {
+        "pagePath": "pages/issue-151/index",
+        "text": "issue151"
+      }
+    ]
+  }
+}
