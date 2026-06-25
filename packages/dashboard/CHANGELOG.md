@@ -1,5 +1,12 @@
 # @weapp-vite/dashboard
 
+## 6.17.3
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`06588a6`](https://github.com/weapp-vite/weapp-vite/commit/06588a6469679c665632bdc6e98f7c93177050de) by @sonofmagic
+  - 默认 catalog 变更键：autoprefixer, vite, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
 ## 6.17.2
 
 ## 6.17.1

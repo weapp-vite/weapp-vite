@@ -1,5 +1,15 @@
 # weapp-ide-cli
 
+## 5.4.10
+
+### Patch Changes
+
+- 🐛 **修复开发态长截图在复杂页面上依赖 `Page.getWindowProperties` 容易超时的问题，并让 `wv dev -o` 的 `s` 截图热键保持默认整页长截图，同时避免截图期间的日志桥 automator 会话干扰截图协议。** [`1806559`](https://github.com/weapp-vite/weapp-vite/commit/1806559c3d461b9bccca25dfdbde316a08f6ef50) by @sonofmagic
+
+- 🐛 **修复整页长截图拼接时滚动内容和底部固定区域重复出现的问题。** [`2cfe961`](https://github.com/weapp-vite/weapp-vite/commit/2cfe961a4d74c1bf7b82934f09e14b9025a17ad0) by @sonofmagic
+
+- 🐛 **修复微信开发者工具长截图在部分版本中触发 `__inspectee__ is not defined` 时直接失败的问题。现在长截图读取滚动指标遇到该兼容错误时会降级为当前视口截图，保证 `wv screenshot --full-page` 和 dev 快捷键截图仍能输出图片。** [`6019f7b`](https://github.com/weapp-vite/weapp-vite/commit/6019f7b46e5093b2d49be396e644a08e2fbb4391) by @sonofmagic
+
 ## 5.4.9
 
 ### Patch Changes

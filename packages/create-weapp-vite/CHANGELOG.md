@@ -1,5 +1,19 @@
 # create-weapp-vite
 
+## 2.4.3
+
+### Patch Changes
+
+- 🐛 **修复 Tailwind 3 命名 catalog 误解析到 Tailwind CSS 4 的问题，确保创建 Tailwind 3 模板和相关测试夹具时仍使用 Tailwind CSS 3。** [#696](https://github.com/weapp-vite/weapp-vite/pull/696) by @sonofmagic
+
+- 🐛 **修复开发态长截图在复杂页面上依赖 `Page.getWindowProperties` 容易超时的问题，并让 `wv dev -o` 的 `s` 截图热键保持默认整页长截图，同时避免截图期间的日志桥 automator 会话干扰截图协议。** [`1806559`](https://github.com/weapp-vite/weapp-vite/commit/1806559c3d461b9bccca25dfdbde316a08f6ef50) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 启动阶段优先通过 automator 打开微信开发者工具时，在部分 DevTools 环境下每次都提示回退到普通 open 流程的问题。现在开发态首次打开会先使用官方 CLI 普通 open，再连接已打开的自动化会话；只有手动强制重开时才继续使用 automator 打开。** [`fc1a664`](https://github.com/weapp-vite/weapp-vite/commit/fc1a66479d1e0c5bdb5673734fb27395a635e94d) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 在微信开发者工具普通打开回退后继续预热 automator，导致同一次启动内可能重复拉起或关闭重开 DevTools 的问题。** [`1cffd85`](https://github.com/weapp-vite/weapp-vite/commit/1cffd8536898fc1ced7f32d695ce2e0b07906164) by @sonofmagic
+
+- 🐛 **修复 Wevu Vue SFC 页面通过 `definePageJson({ enablePullDownRefresh: true })` 启用下拉刷新后，直接注册的 `onPullDownRefresh` 在微信开发者工具用户下拉刷新路径中不会触发的问题。** [#696](https://github.com/weapp-vite/weapp-vite/pull/696) by @sonofmagic
+
 ## 2.4.2
 
 ### Patch Changes
