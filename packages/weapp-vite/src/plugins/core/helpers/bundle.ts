@@ -25,6 +25,16 @@ const WEVU_INTERNAL_MODULE_IDS = [
   'wevu/internal-template',
 ] as const
 type WevuInternalModuleId = (typeof WEVU_INTERNAL_MODULE_IDS)[number]
+const WEVU_RUNTIME_MODULE_IDS = [
+  'wevu',
+  'wevu/router',
+  'wevu/store',
+  'wevu/api',
+  'wevu/fetch',
+  'wevu/web-apis',
+  ...WEVU_INTERNAL_MODULE_IDS,
+] as const
+type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
 const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly string[]> = {
   'wevu/internal-runtime': WEVU_INTERNAL_RUNTIME_EXPORTS,
   'wevu/internal-reactivity': [
@@ -40,6 +50,33 @@ const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly
     'normalizeStyle',
     'resolvePropValue',
   ],
+}
+const WEVU_RUNTIME_MODULE_EXPORT_MARKERS: Record<WevuRuntimeModuleId, readonly string[]> = {
+  'wevu': WEVU_INTERNAL_RUNTIME_EXPORTS,
+  'wevu/router': [
+    'createRouter',
+    'useRouter',
+    'useRoute',
+    'NavigationFailureType',
+  ],
+  'wevu/store': [
+    'defineStore',
+    'createPinia',
+    'storeToRefs',
+  ],
+  'wevu/api': [
+    'createApi',
+    'defineApi',
+  ],
+  'wevu/fetch': [
+    'createFetch',
+    'useFetch',
+  ],
+  'wevu/web-apis': [
+    'installWebApis',
+    'createWebApis',
+  ],
+  ...WEVU_INTERNAL_MODULE_EXPORT_MARKERS,
 }
 const JS_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
@@ -315,8 +352,8 @@ function collectChunkExportNames(chunk: OutputChunk) {
   return collectExistingExportNames(chunk.code)
 }
 
-function isWevuInternalModuleId(value: string): value is WevuInternalModuleId {
-  return (WEVU_INTERNAL_MODULE_IDS as readonly string[]).includes(value)
+function isWevuRuntimeModuleId(value: string): value is WevuRuntimeModuleId {
+  return (WEVU_RUNTIME_MODULE_IDS as readonly string[]).includes(value)
 }
 
 function resolveWevuInternalChunk(
@@ -334,6 +371,29 @@ function resolveWevuInternalChunk(
     }
     const exports = collectChunkExportNames(output as OutputChunk)
     return [...requiredNames].every(name => exports.has(name))
+  })
+}
+
+function resolveWevuRuntimeChunkByModuleId(
+  bundle: OutputBundle,
+  moduleId: string,
+) {
+  const chunkFileName = moduleId.replace(/\//g, '-')
+  return Object.values(bundle).find((output): output is OutputChunk => {
+    if (
+      !output
+      || output.type !== 'chunk'
+      || typeof output.code !== 'string'
+      || !output.fileName.startsWith('weapp-vendors/')
+    ) {
+      return false
+    }
+    const normalizedFileName = output.fileName.replace(/\\/g, '/')
+    if (moduleId === 'wevu') {
+      return normalizedFileName.endsWith(`${chunkFileName}.js`)
+    }
+    return normalizedFileName.endsWith(`${chunkFileName}.js`)
+      || normalizedFileName.includes(`/${chunkFileName}-`)
   })
 }
 
@@ -362,7 +422,7 @@ function resolveWevuInternalChunkByExportMarkers(
   })
 }
 
-function rememberWevuInternalChunk(
+function rememberWevuRuntimeChunk(
   moduleId: string,
   chunk: OutputChunk | undefined,
   options: RewriteWevuInternalRuntimeImportsOptions,
@@ -376,18 +436,19 @@ function rememberWevuInternalChunk(
   options.onRuntimeModuleFileName?.(moduleId, chunk.fileName)
 }
 
-function rememberCurrentWevuInternalChunks(
+function rememberCurrentWevuRuntimeChunks(
   bundle: OutputBundle,
   options: RewriteWevuInternalRuntimeImportsOptions,
 ) {
   const rememberedFileNames = new Set<string>()
-  for (const moduleId of WEVU_INTERNAL_MODULE_IDS) {
-    const chunk = resolveWevuInternalChunkByExportMarkers(
+  for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
+    const exactChunk = resolveWevuRuntimeChunkByModuleId(bundle, moduleId)
+    const chunk = exactChunk ?? resolveWevuInternalChunkByExportMarkers(
       bundle,
-      WEVU_INTERNAL_MODULE_EXPORT_MARKERS[moduleId],
+      WEVU_RUNTIME_MODULE_EXPORT_MARKERS[moduleId],
       rememberedFileNames,
     )
-    rememberWevuInternalChunk(moduleId, chunk, options)
+    rememberWevuRuntimeChunk(moduleId, chunk, options)
     if (chunk?.fileName) {
       rememberedFileNames.add(chunk.fileName)
     }
@@ -429,13 +490,13 @@ export function rewriteWevuInternalRuntimeImports(
   bundle: OutputBundle,
   options: RewriteWevuInternalRuntimeImportsOptions = {},
 ) {
-  const importRe = /\bimport\s*\{([^}]*)\}\s*from\s*["'](wevu(?:\/internal-(?:runtime|reactivity|template))?)["'];?/g
-  const requireRe = /\brequire\(\s*(`wevu(?:\/internal-(?:runtime|reactivity|template))?`|'wevu(?:\/internal-(?:runtime|reactivity|template))?'|"wevu(?:\/internal-(?:runtime|reactivity|template))?")\s*\)/g
+  const importRe = /\bimport\s*\{([^}]*)\}\s*from\s*["'](wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?)["'];?/g
+  const requireRe = /\brequire\(\s*(`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")\s*\)/g
   const currentRuntimeChunk = resolveWevuInternalChunk(bundle, WEVU_INTERNAL_RUNTIME_EXPORTS)
   if (currentRuntimeChunk) {
-    rememberWevuInternalChunk('wevu/internal-runtime', currentRuntimeChunk, options)
+    rememberWevuRuntimeChunk('wevu/internal-runtime', currentRuntimeChunk, options)
   }
-  rememberCurrentWevuInternalChunks(bundle, options)
+  rememberCurrentWevuRuntimeChunks(bundle, options)
 
   for (const output of Object.values(bundle)) {
     if (!output || (output.type !== 'chunk' && output.type !== 'asset')) {
@@ -458,8 +519,10 @@ export function rewriteWevuInternalRuntimeImports(
     rewritten = rewritten.replace(importRe, (full, importClause: string, source: string) => {
       const bindings = parseNamedImportBindings(importClause)
       const importedNames = bindings.map(binding => binding.importedName)
-      const runtimeChunk = resolveWevuInternalChunk(bundle, importedNames)
-      const resolvedInternalModuleId = isWevuInternalModuleId(source)
+      const runtimeChunk = isWevuRuntimeModuleId(source)
+        ? resolveWevuRuntimeChunkByModuleId(bundle, source) ?? resolveWevuInternalChunk(bundle, importedNames)
+        : resolveWevuInternalChunk(bundle, importedNames)
+      const resolvedInternalModuleId = isWevuRuntimeModuleId(source)
         ? source
         : 'wevu/internal-runtime'
       const canUseRememberedRuntime = resolvedInternalModuleId === 'wevu/internal-runtime'
@@ -470,7 +533,7 @@ export function rewriteWevuInternalRuntimeImports(
       if (!runtimeFileName) {
         return full
       }
-      rememberWevuInternalChunk(resolvedInternalModuleId, runtimeChunk, options)
+      rememberWevuRuntimeChunk(resolvedInternalModuleId, runtimeChunk, options)
 
       changed = true
       requiredRuntimeFileNames.add(runtimeFileName)
@@ -482,12 +545,12 @@ export function rewriteWevuInternalRuntimeImports(
       const specifierValue = stripQuotes(rawSpecifier)
       const canUseRememberedRuntime = specifierValue === 'wevu/internal-runtime'
         || (specifierValue === 'wevu' && WEVU_INTERNAL_RUNTIME_EXPORTS.some(exportName => new RegExp(`\\b${exportName}\\b`).test(code)))
-      const rememberedRuntimeFileName = isWevuInternalModuleId(specifierValue)
+      const rememberedRuntimeFileName = isWevuRuntimeModuleId(specifierValue)
         ? options.runtimeFileNames?.get(specifierValue)
         : undefined
       const runtimeFileName = canUseRememberedRuntime
         ? (currentRuntimeChunk?.fileName ?? rememberedRuntimeFileName ?? options.runtimeFileName)
-        : undefined
+        : rememberedRuntimeFileName
       if (!runtimeFileName) {
         return full
       }
@@ -539,6 +602,11 @@ export function rewriteWevuInternalRuntimeImportCode(
       !code.includes('wevu/internal-runtime')
       && !code.includes('wevu/internal-reactivity')
       && !code.includes('wevu/internal-template')
+      && !code.includes('wevu/router')
+      && !code.includes('wevu/store')
+      && !code.includes('wevu/api')
+      && !code.includes('wevu/fetch')
+      && !code.includes('wevu/web-apis')
       && !code.includes('from \'wevu\'')
       && !code.includes('from "wevu"')
       && !code.includes('require(\'wevu')

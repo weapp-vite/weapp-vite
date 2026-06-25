@@ -157,6 +157,60 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-ref.js'])
   })
 
+  it('rewrites bare wevu router imports to emitted vendor requires', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { createRouter, useRouter as useWevuRouter } from "wevu/router";',
+          'const router = createRouter({ routes: [] });',
+          'useWevuRouter();',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-router.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-router.js',
+        code: [
+          'Object.defineProperty(exports, "createRouter", { enumerable: true, get: function() { return createRouter; } });',
+          'Object.defineProperty(exports, "useRouter", { enumerable: true, get: function() { return useRouter; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/router"')
+    expect(bundle['app.js'].code).toContain('const { createRouter, useRouter: useWevuRouter } = require("./weapp-vendors/wevu-router.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-router.js'])
+  })
+
+  it('rewrites partial hmr wevu router imports with a remembered vendor file', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { createRouter } from "wevu/router";',
+          'const router = createRouter({ routes: [] });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileNames: new Map([
+        ['wevu/router', 'weapp-vendors/wevu-router.js'],
+      ]),
+    })
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/router"')
+    expect(bundle['app.js'].code).toContain('const { createRouter } = require("./weapp-vendors/wevu-router.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-router.js'])
+  })
+
   it('rewrites partial hmr bare wevu require calls used by app runtime bootstrap', () => {
     const bundle = {
       'app.js': {
