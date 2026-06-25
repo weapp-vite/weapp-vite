@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.1",
-    "@vue/shared": "^3.5.38",
+    "@vue/shared": "^3.5.39",
     "echarts": "catalog:",
     "element-plus": "^2.14.2",
     "gridstack": "^12.6.0",
@@ -42,7 +42,7 @@
     "@shikijs/vitepress-twoslash": "^4.3.0",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
-    "mermaid": "^11.15.0",
+    "mermaid": "^11.16.0",
     "tailwindcss": "catalog:tailwind4",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.1.0",
