@@ -565,10 +565,18 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     rewriteWevuInternalRuntimeImports(rolldownBundle, {
       runtimeFileName: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
+      runtimeFileNames: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
       onRuntimeFileName(fileName) {
         const outputState = state.ctx.runtimeState?.build?.output
         if (outputState) {
           outputState.wevuInternalRuntimeFileName = fileName
+        }
+      },
+      onRuntimeModuleFileName(moduleId, fileName) {
+        const outputState = state.ctx.runtimeState?.build?.output
+        if (outputState) {
+          outputState.wevuInternalRuntimeFileNames ??= new Map<string, string>()
+          outputState.wevuInternalRuntimeFileNames.set(moduleId, fileName)
         }
       },
     })

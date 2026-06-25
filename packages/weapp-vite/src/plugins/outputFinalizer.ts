@@ -121,10 +121,20 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
     },
+    get runtimeFileNames() {
+      return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames
+    },
     onRuntimeFileName(fileName) {
       const outputState = ctx.runtimeState?.build?.output
       if (outputState) {
         outputState.wevuInternalRuntimeFileName = fileName
+      }
+    },
+    onRuntimeModuleFileName(moduleId, fileName) {
+      const outputState = ctx.runtimeState?.build?.output
+      if (outputState) {
+        outputState.wevuInternalRuntimeFileNames ??= new Map<string, string>()
+        outputState.wevuInternalRuntimeFileNames.set(moduleId, fileName)
       }
     },
   }

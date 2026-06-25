@@ -133,7 +133,10 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     const script = rewriteWevuInternalRuntimeImportCode(
       scriptFileName,
       result.script,
-      ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
+      {
+        runtimeFileName: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
+        runtimeFileNames: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
+      },
     )
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,

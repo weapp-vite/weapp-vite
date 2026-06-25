@@ -132,8 +132,75 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
   })
 
+  it('rewrites partial hmr wevu internal reactivity imports with remembered vendor files', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { ref, computed as useComputed } from "wevu/internal-reactivity";',
+          'const count = ref(0);',
+          'useComputed(() => count.value);',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileNames: new Map([
+        ['wevu/internal-reactivity', 'weapp-vendors/wevu-ref.js'],
+      ]),
+    })
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/internal-reactivity"')
+    expect(bundle['app.js'].code).toContain('const { ref, computed: useComputed } = require("./weapp-vendors/wevu-ref.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-ref.js'])
+  })
+
+  it('rewrites partial hmr bare wevu require calls used by app runtime bootstrap', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'const { setWevuDefaults, createApp } = require("wevu");',
+          'setWevuDefaults({});',
+          'createApp({ hmr: true });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+    })
+
+    expect(bundle['app.js'].code).not.toContain('require("wevu")')
+    expect(bundle['app.js'].code).toContain('const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
+  it('does not rewrite generic bare wevu require calls to app runtime chunks', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'const { ref } = require("wevu");const count = ref(0);',
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+    })
+
+    expect(bundle['pages/index/index.js'].code).toBe('const { ref } = require("wevu");const count = ref(0);')
+    expect(bundle['pages/index/index.js'].imports).toEqual([])
+  })
+
   it('records emitted wevu internal runtime chunks even when no bare import is rewritten', () => {
     let runtimeFileName: string | undefined
+    const runtimeFileNames = new Map<string, string>()
     const bundle = {
       'app.js': {
         type: 'chunk',
@@ -156,10 +223,57 @@ describe('core helper bundle', () => {
       onRuntimeFileName(fileName) {
         runtimeFileName = fileName
       },
+      onRuntimeModuleFileName(moduleId, fileName) {
+        runtimeFileNames.set(moduleId, fileName)
+      },
     })
 
     expect(runtimeFileName).toBe('weapp-vendors/wevu-watch.js')
+    expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('weapp-vendors/wevu-watch.js')
     expect(bundle['app.js'].code).toBe('const runtime = require("./weapp-vendors/wevu-watch.js");runtime.createApp({});')
+  })
+
+  it('records emitted wevu reactivity and template chunks for later partial hmr rewrites', () => {
+    const runtimeFileNames = new Map<string, string>()
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'const runtime = require("./weapp-vendors/wevu-watch.js");runtime.createApp({});',
+        imports: ['weapp-vendors/wevu-watch.js'],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: 'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return ref; } });',
+        imports: [],
+      },
+      'weapp-vendors/wevu-template.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-template.js',
+        code: 'Object.defineProperty(exports, "normalizeClass", { enumerable: true, get: function() { return normalizeClass; } });',
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      onRuntimeModuleFileName(moduleId, fileName) {
+        runtimeFileNames.set(moduleId, fileName)
+      },
+    })
+
+    expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('weapp-vendors/wevu-watch.js')
+    expect(runtimeFileNames.get('wevu/internal-reactivity')).toBe('weapp-vendors/wevu-ref.js')
+    expect(runtimeFileNames.get('wevu/internal-template')).toBe('weapp-vendors/wevu-template.js')
   })
 
   it('adds stable wevu runtime exports and rewrites page chunk access with old-alias fallback', () => {

@@ -214,6 +214,10 @@ describe('emitCompiledEntry helpers', () => {
           build: {
             output: {
               wevuInternalRuntimeFileName: 'weapp-vendors/wevu-watch.js',
+              wevuInternalRuntimeFileNames: new Map([
+                ['wevu/internal-runtime', 'weapp-vendors/wevu-watch.js'],
+                ['wevu/internal-reactivity', 'weapp-vendors/wevu-ref.js'],
+              ]),
             },
             hmr: {
               profile: {
@@ -235,7 +239,7 @@ describe('emitCompiledEntry helpers', () => {
       classStyleRuntimeWarned: { value: false },
     }
     const result = {
-      script: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";setWevuDefaults({});createApp({});',
+      script: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";import { ref } from "wevu/internal-reactivity";setWevuDefaults({});const count = ref(0);createApp({ count });',
     } as any
 
     await emitResolvedCompiledVueEntryAssets({
@@ -258,7 +262,7 @@ describe('emitCompiledEntry helpers', () => {
       state.pluginCtx,
       bundle,
       'app',
-      'const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");setWevuDefaults({});createApp({});',
+      'const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");const { ref } = require("./weapp-vendors/wevu-ref.js");setWevuDefaults({});const count = ref(0);createApp({ count });',
       'js',
     )
   })
