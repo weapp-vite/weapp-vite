@@ -103,17 +103,18 @@ export function registerServeCommand(cli: CAC) {
         },
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath, openOptions) => {
+          const forceReopen = openOptions?.forceReopen === true
           await openIde(configService.platform, projectPath, {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
             openRecovery: false,
-            prepareAutomatorSession: openOptions?.forceReopen ? true : 'connect-opened',
-            reuseOpenedProject: !openOptions?.forceReopen,
-            skipAutomatorCompile: !openOptions?.forceReopen,
+            prepareAutomatorSession: forceReopen ? true : 'connect-opened',
+            reuseOpenedProject: !forceReopen,
+            skipAutomatorCompile: !forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
-            useAutomatorOpen: true,
+            useAutomatorOpen: forceReopen,
           })
           writePostOpenSeparator()
         },

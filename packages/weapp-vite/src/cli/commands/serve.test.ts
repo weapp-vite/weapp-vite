@@ -427,7 +427,7 @@ describe('serve cli command', () => {
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: false,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
     expect(devHotkeysSuspendMock).toHaveBeenCalledTimes(1)
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
@@ -481,7 +481,7 @@ describe('serve cli command', () => {
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
     expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
       platform: 'weapp',
@@ -513,7 +513,7 @@ describe('serve cli command', () => {
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
   })
 
