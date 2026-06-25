@@ -37,6 +37,7 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-features.runtime.behavior.test.ts',
   'ide/wevu-features.runtime.router.test.ts',
   'ide/wevu-features.runtime.subpath.test.ts',
+  'ide/wevu-router-hmr.runtime.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
   'ide/devtools-cli-workflow.runtime.test.ts',
@@ -252,6 +253,7 @@ export function getIdeChunkModesTasks() {
 export function getHmrRegressionTasks() {
   return [
     ...getIdePatternTasks(IDE_HMR_PATTERNS),
+    createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/wevu-router-hmr.test.ts')),
     {
       label: 'hmr-guard:smoke',
       command: 'node',

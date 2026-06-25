@@ -1812,6 +1812,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  e2e-apps/wevu-router-hmr:
+    devDependencies:
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   e2e-apps/wevu-runtime-e2e:
     devDependencies:
       '@weapp-vite/dashboard':

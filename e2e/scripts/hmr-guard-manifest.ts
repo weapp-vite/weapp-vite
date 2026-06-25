@@ -21,6 +21,7 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-app-config.test.ts',
     'hmr-package-scripts.test.ts',
     'issue-340-comment.hmr.test.ts',
+    'wevu-router-hmr.test.ts',
   ]),
   sharedDependencyPropagation: resolveCiTests([
     'hmr-layout-shared-template-wxs.test.ts',
