@@ -27,19 +27,6 @@ interface TailwindMemoryGuardCase {
 
 const guardCases: TailwindMemoryGuardCase[] = [
   {
-    name: 'issue-814-tailwind3',
-    appRoot: path.resolve(REPO_ROOT, 'e2e-apps/issue-814-tailwind3'),
-    sourcePath: 'src/pages/index/index.vue',
-    outputTemplatePath: 'dist/pages/index/index.wxml',
-    outputCssPath: 'dist/app.wxss',
-    outputTemplateMarker: 'bg-_b_h222222_B',
-    outputCssMarker: 'background-color: #222222',
-    updates: [
-      '<view class="flex gap-6 bg-[#111111]">',
-      '<view class="flex gap-6 bg-[#222222]">',
-    ],
-  },
-  {
     name: 'issue-814-tailwind4',
     appRoot: path.resolve(REPO_ROOT, 'e2e-apps/issue-814-tailwind4'),
     sourcePath: 'src/pages/index/index.vue',

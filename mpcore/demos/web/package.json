@@ -18,15 +18,15 @@
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
-    "@shikijs/engine-javascript": "^4.2.0",
-    "@shikijs/langs": "^4.2.0",
-    "@shikijs/themes": "^4.2.0",
+    "@shikijs/engine-javascript": "^4.3.0",
+    "@shikijs/langs": "^4.3.0",
+    "@shikijs/themes": "^4.3.0",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "shiki": "^4.2.0",
+    "shiki": "^4.3.0",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "vite": "7.3.5",
+    "vite": "8.1.0",
     "vue-tsc": "catalog:"
   }
 }

@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 
 const CASES = {
-  tailwind3: path.resolve(import.meta.dirname, '../../e2e-apps/issue-814-tailwind3'),
   tailwind4: path.resolve(import.meta.dirname, '../../e2e-apps/issue-814-tailwind4'),
   tailwind4Broken: path.resolve(import.meta.dirname, '../../e2e-apps/issue-814-tailwind4-broken'),
 } as const
@@ -34,18 +33,6 @@ async function buildCase(appRoot: string) {
 }
 
 describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
-  it('tailwind3 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
-    const { wxml, js } = await buildCase(CASES.tailwind3)
-
-    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
-    expect(wxml).toContain('gap-_b24px_B')
-    expect(js).toContain('`flex`+')
-    expect(js).toContain('this.bbb')
-    expect(js).toContain('this.aaa')
-    expect(js).toContain('gap-_b17px_B')
-    expect(js).not.toContain('gap-[17px]')
-  })
-
   it('tailwind4 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind4)
 

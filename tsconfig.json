@@ -146,9 +146,6 @@
       "path": "./e2e-apps/issue-340-hoist"
     },
     {
-      "path": "./e2e-apps/issue-814-tailwind3"
-    },
-    {
       "path": "./e2e-apps/issue-814-tailwind4-broken"
     },
     {

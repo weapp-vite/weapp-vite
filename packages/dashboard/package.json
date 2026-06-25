@@ -53,7 +53,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "vite": "7.3.5",
+    "vite": "8.1.0",
     "vue-tsc": "catalog:"
   },
   "publishConfig": {
