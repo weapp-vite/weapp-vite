@@ -1,5 +1,22 @@
 # weapp-vite
 
+## 6.17.3
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`06588a6`](https://github.com/weapp-vite/weapp-vite/commit/06588a6469679c665632bdc6e98f7c93177050de) by @sonofmagic
+  - 默认 catalog 变更键：autoprefixer, vite, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 🐛 **修复开发态长截图在复杂页面上依赖 `Page.getWindowProperties` 容易超时的问题，并让 `wv dev -o` 的 `s` 截图热键保持默认整页长截图，同时避免截图期间的日志桥 automator 会话干扰截图协议。** [`1806559`](https://github.com/weapp-vite/weapp-vite/commit/1806559c3d461b9bccca25dfdbde316a08f6ef50) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 启动阶段优先通过 automator 打开微信开发者工具时，在部分 DevTools 环境下每次都提示回退到普通 open 流程的问题。现在开发态首次打开会先使用官方 CLI 普通 open，再连接已打开的自动化会话；只有手动强制重开时才继续使用 automator 打开。** [`fc1a664`](https://github.com/weapp-vite/weapp-vite/commit/fc1a66479d1e0c5bdb5673734fb27395a635e94d) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 开发快捷键截图在微信开发者工具 automator 会话卡住或连接到错误默认会话时失败的问题。现在按 `s` 会使用当前项目派生的 automator 端口执行普通视口截图，不再默认触发更重的整页长截图链路，也不会复用 dev 日志桥接的共享会话缓存。** [`fae7be1`](https://github.com/weapp-vite/weapp-vite/commit/fae7be12865489a549a1e5f179e3e765806565a6) by @sonofmagic
+
+- 🐛 **修复 `wv dev -o` 在微信开发者工具普通打开回退后继续预热 automator，导致同一次启动内可能重复拉起或关闭重开 DevTools 的问题。** [`1cffd85`](https://github.com/weapp-vite/weapp-vite/commit/1cffd8536898fc1ced7f32d695ce2e0b07906164) by @sonofmagic
+- 📦 **Dependencies** [`1806559`](https://github.com/weapp-vite/weapp-vite/commit/1806559c3d461b9bccca25dfdbde316a08f6ef50)
+  → `weapp-ide-cli@5.4.10`, `wevu@6.17.3`, `@weapp-vite/ast@6.17.3`
+
 ## 6.17.2
 
 ### Patch Changes

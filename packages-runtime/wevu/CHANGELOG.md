@@ -1,5 +1,13 @@
 # wevu
 
+## 6.17.3
+
+### Patch Changes
+
+- 🐛 **修复 Wevu Vue SFC 页面通过 `definePageJson({ enablePullDownRefresh: true })` 启用下拉刷新后，直接注册的 `onPullDownRefresh` 在微信开发者工具用户下拉刷新路径中不会触发的问题。** [#696](https://github.com/weapp-vite/weapp-vite/pull/696) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.17.3`
+
 ## 6.17.2
 
 ### Patch Changes
