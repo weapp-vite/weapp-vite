@@ -112,7 +112,32 @@ function createBuildPlan() {
   return plan
 }
 
-const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+function createPnpmInvocation() {
+  const npmExecPath = process.env.npm_execpath
+  if (npmExecPath && existsSync(npmExecPath) && /\.(?:cjs|mjs|js)$/i.test(npmExecPath)) {
+    return {
+      command: process.execPath,
+      args: [npmExecPath],
+    }
+  }
+
+  if (process.platform === 'win32' && process.env.PNPM_HOME) {
+    const pnpmEntrypoint = path.resolve(process.env.PNPM_HOME, '..', 'pnpm', 'bin', 'pnpm.cjs')
+    if (existsSync(pnpmEntrypoint)) {
+      return {
+        command: process.execPath,
+        args: [pnpmEntrypoint],
+      }
+    }
+  }
+
+  return {
+    command: 'pnpm',
+    args: [],
+  }
+}
+
+const pnpmInvocation = createPnpmInvocation()
 const buildPlan = createBuildPlan()
 
 console.log(`Windows CI core build plan: ${buildPlan.length} packages`)
@@ -121,7 +146,7 @@ for (const [index, packageInfo] of buildPlan.entries()) {
   const label = `[${index + 1}/${buildPlan.length}] ${packageInfo.name}`
   console.log(`\n${label}`)
 
-  const result = spawnSync(pnpmCommand, ['--filter', packageInfo.name, 'build'], {
+  const result = spawnSync(pnpmInvocation.command, [...pnpmInvocation.args, '--filter', packageInfo.name, 'build'], {
     cwd: repoRoot,
     env: process.env,
     stdio: 'inherit',
