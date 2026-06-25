@@ -27,7 +27,7 @@
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/*",
     "build:pkgs:ci": "turbo run build --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/* --filter=!@weapp-vite/sfc-playground",
     "build:pkgs:ci:macos": "turbo run build --concurrency=2 --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/* --filter=!@weapp-vite/sfc-playground",
-    "build:pkgs:ci:windows": "turbo run build --concurrency=1 --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/* --filter=!@weapp-vite/sfc-playground",
+    "build:pkgs:ci:windows": "node scripts/build-core-windows-ci.mjs",
     "build:pkgs:sourcemap": "turbo run build --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/* -- --sourcemap",
     "build:sourcemap": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website --filter=!./packages/* --filter=!./packages-runtime/* --filter=!./benchmarks/* --filter=!./@weapp-core/* && pnpm run build:pkgs:sourcemap",
     "build:apps": "turbo run build --filter=./apps/* --filter=./templates/* --filter=!weapp-library",
