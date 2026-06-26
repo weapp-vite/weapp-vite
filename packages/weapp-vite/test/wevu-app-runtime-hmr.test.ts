@@ -98,12 +98,24 @@ function expectRelativeWevuVendorRequire(code: string, fileName: string) {
 }
 
 function expectRelativeWevuVendorRequireForBinding(code: string, bindingName: string) {
-  const pattern = [
+  const destructuredPattern = [
     '\\bconst\\s*\\{[^}]*\\b',
     bindingName,
     '\\b[^}]*\\}\\s*=\\s*require\\((["\'])\\./weapp-vendors/wevu-[^\'"]+\\.js\\1\\)',
   ].join('')
-  expect(code).toMatch(new RegExp(pattern))
+  if (new RegExp(destructuredPattern).test(code)) {
+    return
+  }
+
+  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])\.\/weapp-vendors\/wevu-[^'"]+\.js\2\)/g
+  for (const match of code.matchAll(namespaceRequirePattern)) {
+    const namespace = match[1]
+    if (new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(code)) {
+      return
+    }
+  }
+
+  expect(code).toMatch(new RegExp(destructuredPattern))
 }
 
 describe.sequential('wevu app runtime HMR', () => {
