@@ -4,19 +4,32 @@ import { describe, expect, it } from 'vitest'
 import { WEVU_ROOT_HMR_EXPORTS } from '../e2e/generated/wevu-root-hmr-exports'
 import {
   collectWevuRootValueExports,
+  quoteSingleStringLiteral,
   renderWevuRootHmrExports,
 } from './generate-wevu-root-hmr-exports'
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..')
 const GENERATED_PATH = path.join(REPO_ROOT, 'e2e/generated/wevu-root-hmr-exports.ts')
+const TYPESCRIPT_PROGRAM_TIMEOUT_MS = 30_000
 
 describe('wevu root HMR export manifest', () => {
   it('stays in sync with root wevu value exports', () => {
     expect(WEVU_ROOT_HMR_EXPORTS).toEqual(collectWevuRootValueExports())
-  })
+  }, TYPESCRIPT_PROGRAM_TIMEOUT_MS)
 
   it('keeps the generated file stable', () => {
     expect(fs.readFileSync(GENERATED_PATH, 'utf8')).toBe(renderWevuRootHmrExports([...WEVU_ROOT_HMR_EXPORTS]))
+  })
+
+  it('renders single quoted string literals deterministically', () => {
+    expect(renderWevuRootHmrExports(['plain', 'quote\'name', 'slash\\name'])).toContain(
+      [
+        '  \'plain\',',
+        '  \'quote\\\'name\',',
+        '  \'slash\\\\name\',',
+      ].join('\n'),
+    )
+    expect(quoteSingleStringLiteral('quote\'name')).toBe('\'quote\\\'name\'')
   })
 
   it('guards the runtime APIs that previously failed after HMR', () => {
