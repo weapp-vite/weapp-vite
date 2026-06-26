@@ -155,6 +155,19 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       continue
     }
 
+    const isAffectedSharedChunk = state.hmrState.affectedSharedChunkIds?.has(fileName) === true
+      || (output.fileName ? state.hmrState.affectedSharedChunkIds?.has(output.fileName) === true : false)
+    if (isAffectedSharedChunk) {
+      const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+      if (emittedChunkFileNames) {
+        emittedChunkFileNames.add(fileName)
+        if (output.fileName) {
+          emittedChunkFileNames.add(output.fileName)
+        }
+      }
+      continue
+    }
+
     const activeEntryIds = state.hmrState.lastHmrEntryIds?.size
       ? state.hmrState.lastHmrEntryIds
       : state.hmrState.lastEmittedEntryIds
@@ -259,7 +272,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
       let redundantBytesTotal = 0
 
-      if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
+      if (configService.isDev && (state.hmrSharedChunksMode === 'auto' || state.hmrSharedChunksMode === 'full')) {
         const forceFullSharedChunkRefresh = process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS === '1'
         if (
           assetOnlyDevHmrBundle
@@ -268,7 +281,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
           // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
         }
-        else if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
+        else if (
+          state.hmrSharedChunksMode === 'full'
+          || state.hmrState.didEmitAllEntries
+          || !state.hmrState.hasBuiltOnce
+        ) {
           refreshSharedChunkImporters(rolldownBundle, state)
         }
         else if (forceFullSharedChunkRefresh) {
@@ -285,6 +302,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       prunePartialHmrStableSharedChunks(rolldownBundle, state)
       retainFullEntryHmrChunks(rolldownBundle, state)
       pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+      state.hmrState.affectedSharedChunkIds?.clear()
 
       if (assetOnlyDevHmrBundle) {
         normalizePreprocessorStyleAssets(

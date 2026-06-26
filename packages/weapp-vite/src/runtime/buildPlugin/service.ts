@@ -103,15 +103,17 @@ function resolveSnapshotSidecarDirtySummary(filePath: string) {
 }
 
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
+const watchedSnapshotScriptExts = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
 
-function shouldHandleSnapshotSidecarFile(filePath: string, configService: ActiveConfigService) {
+function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
+  const configService = ctx.configService!
   if (isSidecarFile(filePath)) {
     return true
   }
   const normalizedFile = normalizeFsResolvedId(filePath)
   const normalizedSrcRoot = normalizeFsResolvedId(configService.absoluteSrcRoot)
   if (normalizedFile === normalizedSrcRoot || normalizedFile.startsWith(`${normalizedSrcRoot}/`)) {
-    return false
+    return ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds.has(normalizedFile)
   }
   return path.extname(filePath) !== ''
 }
@@ -161,6 +163,7 @@ function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, 
     ...Array.from(watchedCssExts).map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedTemplateExts).map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedScriptModuleExts).map(ext => path.join(root, `**/*${ext}`)),
+    ...Array.from(watchedSnapshotScriptExts).map(ext => path.join(root, `**/*${ext}`)),
   ]
   for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
     patterns.push(include)
@@ -923,7 +926,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!shouldHandleSnapshotSidecarFile(id, configService)) {
+        if (!shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
         const sidecarStartedAt = performance.now()

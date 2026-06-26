@@ -12,6 +12,7 @@ const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
+const collectAffectedSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../utils/cache', () => ({
@@ -38,6 +39,7 @@ vi.mock('../helpers', async () => {
     ...actual,
     collectAffectedEntries: collectAffectedEntriesMock,
     collectAffectedEntriesFromSharedChunks: collectAffectedEntriesFromSharedChunksMock,
+    collectAffectedSharedChunks: collectAffectedSharedChunksMock,
   }
 })
 
@@ -109,6 +111,14 @@ function createState(overrides: Record<string, any> = {}) {
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
     entryModuleIds: new Set(),
+    hmrState: {
+      didEmitAllEntries: false,
+      hasBuiltOnce: true,
+      affectedSharedChunkIds: new Set<string>(),
+      lastHmrEntryIds: new Set<string>(),
+      lastEmittedEntryIds: new Set<string>(),
+      skipSharedChunkRefresh: false,
+    },
     hmrSharedChunksByModule: new Map(),
     hmrSharedChunkImporters: new Map(),
     hmrSharedChunksByEntry: new Map(),
@@ -129,6 +139,7 @@ describe('core lifecycle watch hook', () => {
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
+    collectAffectedSharedChunksMock.mockReturnValue(new Set())
   })
 
   it('adds loaded config dependencies to dev build watch files', async () => {
@@ -1255,6 +1266,9 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
       '/project/src/pages/native/index.ts',
       '/project/src/components/probe-card/index.ts',
     ]))
+    collectAffectedSharedChunksMock.mockReturnValue(new Set([
+      'common.js',
+    ]))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -1262,6 +1276,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/native/index.ts', 'dependency')
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/components/probe-card/index.ts', 'dependency')
+    expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['common.js']))
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:2'])
   })
 

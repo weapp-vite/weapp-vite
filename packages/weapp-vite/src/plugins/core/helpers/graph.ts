@@ -57,6 +57,20 @@ export function collectAffectedEntriesFromSharedChunks(state: CorePluginState, s
   return affected
 }
 
+export function collectAffectedSharedChunks(state: CorePluginState, startId: string) {
+  const affected = new Set<string>()
+  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  if (!chunkIds?.size) {
+    return affected
+  }
+
+  for (const chunkId of chunkIds) {
+    affected.add(chunkId)
+  }
+
+  return affected
+}
+
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
@@ -193,6 +207,7 @@ function appendSharedChunkImporters(
     return moduleIds
   }
   const addSharedChunkModule = (moduleId: string, chunkId: string) => {
+    state.ctx.runtimeState?.build?.hmr?.sharedChunkSourceModuleIds?.add(moduleId)
     const current = state.hmrSharedChunksByModule.get(moduleId)
     if (current) {
       current.add(chunkId)

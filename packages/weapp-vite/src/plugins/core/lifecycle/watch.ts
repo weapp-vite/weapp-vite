@@ -23,7 +23,7 @@ import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invali
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
-import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '../helpers'
+import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks, collectAffectedSharedChunks } from '../helpers'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
@@ -587,6 +587,10 @@ async function processChangedFile(
     ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
     : new Set<string>()
   if (sharedChunkAffected.size) {
+    state.hmrState.affectedSharedChunkIds ??= new Set<string>()
+    for (const chunkId of collectAffectedSharedChunks(state, normalizedId)) {
+      state.hmrState.affectedSharedChunkIds.add(chunkId)
+    }
     for (const entryId of sharedChunkAffected) {
       if (importerGraphAffectedEntryIds.has(entryId)) {
         continue

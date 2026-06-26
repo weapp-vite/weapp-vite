@@ -21,6 +21,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const hmrState = {
     didEmitAllEntries: false,
     hasBuiltOnce: false,
+    affectedSharedChunkIds: new Set<string>(),
     lastHmrEntryIds: new Set<string>(),
     lastEmittedEntryIds: new Set<string>(),
     skipSharedChunkRefresh: false,

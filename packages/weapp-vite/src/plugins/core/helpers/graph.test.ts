@@ -4,6 +4,7 @@ import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import {
   collectAffectedEntries,
   collectAffectedEntriesFromSharedChunks,
+  collectAffectedSharedChunks,
   refreshModuleGraph,
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
@@ -250,6 +251,9 @@ describe('core helpers graph', () => {
     )
     expect(collectAffectedEntriesFromSharedChunks(state, sharedModule)).toEqual(
       new Set([appEntry, pageEntry, componentEntry]),
+    )
+    expect(collectAffectedSharedChunks(state, sharedModule)).toEqual(
+      new Set(['weapp-vendors/wevu-ref.js']),
     )
   })
 

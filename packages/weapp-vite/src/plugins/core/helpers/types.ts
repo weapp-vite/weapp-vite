@@ -31,6 +31,7 @@ export interface CorePluginState {
   hmrState: {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
+    affectedSharedChunkIds?: Set<string>
     lastHmrEntryIds?: Set<string>
     lastEmittedEntryIds?: Set<string>
     skipSharedChunkRefresh?: boolean
