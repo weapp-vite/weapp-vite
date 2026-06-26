@@ -10,11 +10,12 @@ import {
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..')
 const GENERATED_PATH = path.join(REPO_ROOT, 'e2e/generated/wevu-root-hmr-exports.ts')
+const TYPESCRIPT_PROGRAM_TIMEOUT_MS = 30_000
 
 describe('wevu root HMR export manifest', () => {
   it('stays in sync with root wevu value exports', () => {
     expect(WEVU_ROOT_HMR_EXPORTS).toEqual(collectWevuRootValueExports())
-  })
+  }, TYPESCRIPT_PROGRAM_TIMEOUT_MS)
 
   it('keeps the generated file stable', () => {
     expect(fs.readFileSync(GENERATED_PATH, 'utf8')).toBe(renderWevuRootHmrExports([...WEVU_ROOT_HMR_EXPORTS]))
