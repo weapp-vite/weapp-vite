@@ -14,16 +14,41 @@ interface InspectorResponse<T = unknown> {
 }
 
 const INSPECTOR_URL_RE = /Debugger listening on (ws:\/\/\S+)/
+const DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS = 5_000
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
-function waitForWebSocketOpen(socket: WebSocket) {
-  return new Promise<void>((resolve, reject) => {
-    socket.addEventListener('open', () => resolve(), { once: true })
-    socket.addEventListener('error', () => reject(new Error('Inspector WebSocket failed to open.')), { once: true })
+function withTimeout<T>(
+  task: Promise<T>,
+  timeoutMs: number,
+  createTimeoutError: () => Error,
+) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(createTimeoutError()), timeoutMs)
   })
+  return Promise.race([task, timeout]).finally(() => {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  })
+}
+
+function waitForWebSocketOpen(socket: WebSocket, timeoutMs: number) {
+  let onOpen: () => void
+  let onError: () => void
+  const task = new Promise<void>((resolve, reject) => {
+    onOpen = () => resolve()
+    onError = () => reject(new Error('Inspector WebSocket failed to open.'))
+    socket.addEventListener('open', onOpen, { once: true })
+    socket.addEventListener('error', onError, { once: true })
+  }).finally(() => {
+    socket.removeEventListener('open', onOpen)
+    socket.removeEventListener('error', onError)
+  })
+  return withTimeout(task, timeoutMs, () => new Error(`Timed out opening inspector WebSocket after ${timeoutMs}ms.`))
 }
 
 function removeInspectorListeners(
@@ -53,25 +78,41 @@ function sendInspectorCommand<T>(
   commandId: number,
   method: string,
   params?: Record<string, unknown>,
+  timeoutMs = DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS,
 ) {
-  return new Promise<T>((resolve, reject) => {
+  const task = new Promise<T>((resolve, reject) => {
+    let onError: () => void
     let onMessage: (event: MessageEvent) => void
-    const onError = () => {
+    let settled = false
+    const settle = (callback: () => void) => {
+      if (settled) {
+        return
+      }
+      settled = true
       removeInspectorListeners(socket, onMessage, onError)
-      reject(new Error(`Inspector WebSocket failed while running ${method}.`))
+      callback()
+    }
+    onError = () => {
+      settle(() => reject(new Error(`Inspector WebSocket failed while running ${method}.`)))
     }
     onMessage = (event: MessageEvent) => {
-      const payload = JSON.parse(stringifySocketData(event.data)) as InspectorResponse<T>
+      let payload: InspectorResponse<T>
+      try {
+        payload = JSON.parse(stringifySocketData(event.data)) as InspectorResponse<T>
+      }
+      catch (error) {
+        settle(() => reject(error))
+        return
+      }
       if (payload.id !== commandId) {
         return
       }
 
-      removeInspectorListeners(socket, onMessage, onError)
       if (payload.error) {
-        reject(new Error(payload.error.message ?? `Inspector command failed: ${method}`))
+        settle(() => reject(new Error(payload.error.message ?? `Inspector command failed: ${method}`)))
         return
       }
-      resolve(payload.result as T)
+      settle(() => resolve(payload.result as T))
     }
 
     socket.addEventListener('message', onMessage)
@@ -82,6 +123,7 @@ function sendInspectorCommand<T>(
       params,
     }))
   })
+  return withTimeout(task, timeoutMs, () => new Error(`Timed out waiting for inspector command ${method} after ${timeoutMs}ms.`))
 }
 
 export async function waitForInspectorUrl(
@@ -100,12 +142,14 @@ export async function waitForInspectorUrl(
   throw new Error(`Timed out waiting for inspector URL: ${description}`)
 }
 
-export async function sampleHeapAfterGc(inspectorUrl: string): Promise<DevHeapUsage> {
+export async function sampleHeapAfterGc(
+  inspectorUrl: string,
+  timeoutMs = DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS,
+): Promise<DevHeapUsage> {
   const socket = new WebSocket(inspectorUrl)
-  await waitForWebSocketOpen(socket)
-
   try {
-    await sendInspectorCommand(socket, 1, 'HeapProfiler.collectGarbage')
+    await waitForWebSocketOpen(socket, timeoutMs)
+    await sendInspectorCommand(socket, 1, 'HeapProfiler.collectGarbage', undefined, timeoutMs)
     const evaluated = await sendInspectorCommand<{
       result?: {
         value?: DevHeapUsage
@@ -113,7 +157,7 @@ export async function sampleHeapAfterGc(inspectorUrl: string): Promise<DevHeapUs
     }>(socket, 2, 'Runtime.evaluate', {
       expression: 'process.memoryUsage()',
       returnByValue: true,
-    })
+    }, timeoutMs)
     const usage = evaluated.result?.value
     if (!usage) {
       throw new Error('Inspector did not return process.memoryUsage().')
