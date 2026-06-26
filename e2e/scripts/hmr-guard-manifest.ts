@@ -55,7 +55,12 @@ export const HMR_GUARD_SPECIAL_CASES = {
   sharedChunksAuto: resolveCiTest('hmr-shared-chunks-auto.test.ts'),
 }
 
+export const HMR_GUARD_UTILITY_TESTS = [
+  path.resolve(import.meta.dirname, '..', 'utils', 'wevu-root-hmr-exports.test.ts').replaceAll('\\', '/'),
+]
+
 export const HMR_GUARD_ALL_TESTS = [
+  ...HMR_GUARD_UTILITY_TESTS,
   ...HMR_GUARD_STABLE_TESTS,
   HMR_GUARD_SPECIAL_CASES.autoImportVueSfc,
   HMR_GUARD_SPECIAL_CASES.autoRoutesHmr,

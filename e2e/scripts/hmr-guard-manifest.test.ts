@@ -4,7 +4,7 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
 import { getCiTasks, getSuiteTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
-import { HMR_GUARD_ALL_TESTS } from './hmr-guard-manifest'
+import { HMR_GUARD_ALL_TESTS, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const REPO_ROOT = path.resolve(ROOT, '..')
@@ -58,7 +58,14 @@ describe('hmr-guard manifest', () => {
       onlyFiles: true,
     }).map(toPosixPath).sort()
 
-    expect(HMR_GUARD_ALL_TESTS.slice().sort()).toEqual(actualFiles)
+    expect(HMR_GUARD_ALL_TESTS.slice().sort()).toEqual([
+      ...HMR_GUARD_UTILITY_TESTS,
+      ...actualFiles,
+    ].sort())
+  })
+
+  it('runs generated fixture guards before filesystem backed hmr tests', () => {
+    expect(HMR_GUARD_ALL_TESTS.slice(0, HMR_GUARD_UTILITY_TESTS.length)).toEqual(HMR_GUARD_UTILITY_TESTS)
   })
 
   it('wires all hmr guard entrypoints into the ci suite', async () => {

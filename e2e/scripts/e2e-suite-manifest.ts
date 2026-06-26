@@ -4,7 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
-import { HMR_GUARD_SPECIAL_CASES } from './hmr-guard-manifest'
+import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -171,6 +171,7 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
 
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
+    ...HMR_GUARD_UTILITY_TESTS.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     createCommandTask('hmr-guard:full', ['full']),
     createCommandTask('hmr-guard:auto-import-vue-sfc', ['auto-import-vue-sfc']),
     createCommandTask('hmr-guard:auto-routes-hmr', ['auto-routes-hmr']),

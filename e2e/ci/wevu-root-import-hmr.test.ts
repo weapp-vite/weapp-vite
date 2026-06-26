@@ -4,6 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createWevuRootImportHmrComposableSource, WEVU_ROOT_HMR_EXPORTS } from '../utils/wevu-root-hmr-exports'
 import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
@@ -17,20 +18,6 @@ const PAGE_JSON_PATH = path.join(DIST_ROOT, 'pages/root-import-hmr/index.json')
 const BASE_TITLE = 'Root Import HMR'
 const PLATFORM_LIST = resolvePlatforms()
 
-function createComposableSource(marker: string) {
-  return [
-    'import { computed, onShareAppMessage, ref, unref } from \'wevu\'',
-    '',
-    'export function useRootImportHmr() {',
-    `  const title = ref('${marker}')`,
-    '  const label = computed(() => `root:${unref(title)'.concat('}`)'),
-    '  onShareAppMessage(() => ({ title: unref(label) }))',
-    '  return { label }',
-    '}',
-    '',
-  ].join('\n')
-}
-
 function createPageSource(title: string) {
   return [
     '<script setup lang="ts">',
@@ -40,12 +27,15 @@ function createPageSource(title: string) {
     `  navigationBarTitleText: '${title}',`,
     '})',
     '',
-    'const { label } = useRootImportHmr()',
+    'const { label, rootExportGuardCount, rootExportKinds } = useRootImportHmr()',
     '</script>',
     '',
     '<template>',
     '  <view class="root-import-hmr">',
     '    {{ label }}',
+    '  </view>',
+    '  <view class="root-import-hmr-guard">',
+    '    {{ rootExportGuardCount }}',
     '  </view>',
     '</template>',
     '',
@@ -86,7 +76,7 @@ describe.sequential('wevu root import HMR regression (dev watch)', () => {
     const secondTitle = createHmrMarker('ROOT-IMPORT-TITLE-SECOND', platform)
     const finalMarker = createHmrMarker('ROOT-IMPORT-FINAL', platform)
 
-    await fs.writeFile(COMPOSABLE_PATH, createComposableSource(initialMarker), 'utf8')
+    await fs.writeFile(COMPOSABLE_PATH, createWevuRootImportHmrComposableSource(initialMarker), 'utf8')
     await fs.writeFile(PAGE_SOURCE_PATH, createPageSource(BASE_TITLE), 'utf8')
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -108,7 +98,7 @@ describe.sequential('wevu root import HMR regression (dev watch)', () => {
       await replaceFileByRename(PAGE_SOURCE_PATH, createPageSource(secondTitle))
       await dev.waitFor(waitForFileContains(PAGE_JSON_PATH, secondTitle, 90_000), `${platform} second page json hmr`)
 
-      await replaceFileByRename(COMPOSABLE_PATH, createComposableSource(finalMarker))
+      await replaceFileByRename(COMPOSABLE_PATH, createWevuRootImportHmrComposableSource(finalMarker))
       const finalPageJs = await dev.waitFor(
         waitForPageRequire(PAGE_JS_PATH, finalMarker),
         `${platform} composable hmr after page json saves`,
@@ -125,6 +115,7 @@ describe.sequential('wevu root import HMR regression (dev watch)', () => {
 
       expect(initialPageJs).toContain(initialMarker)
       expect(finalPageJs).toContain(finalMarker)
+      expect(finalPageJs).toContain(String(WEVU_ROOT_HMR_EXPORTS.length))
       expect(finalPageJs).toContain(`require("${toRelativeImport(PAGE_JS_PATH, reactivityChunk.path)}")`)
       expect(finalPageJs).toContain(`require("${toRelativeImport(PAGE_JS_PATH, runtimeChunk.path)}")`)
       expect(finalPageJs).toContain('onShareAppMessage || function(handler)')

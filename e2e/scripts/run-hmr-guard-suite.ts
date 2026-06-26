@@ -1,11 +1,13 @@
 import path from 'node:path'
 import process from 'node:process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
+import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
   HMR_GUARD_ALL_TESTS,
   HMR_GUARD_SMOKE_TESTS,
   HMR_GUARD_SPECIAL_CASES,
   HMR_GUARD_STABLE_TESTS,
+  HMR_GUARD_UTILITY_TESTS,
 } from './hmr-guard-manifest'
 import {
   FORCE_HMR_GUARD_ENV,
@@ -15,6 +17,7 @@ import {
 import { runTaskSuite } from './suiteRunner'
 
 const VITEST_CONFIG_PATH = path.resolve(import.meta.dirname, '../vitest.e2e.ci.config.ts')
+const E2E_ROOT = path.resolve(import.meta.dirname, '..')
 
 const SUITES = {
   'full': {
@@ -42,11 +45,15 @@ const SUITES = {
 type SuiteName = keyof typeof SUITES
 
 function formatLabel(testPath: string) {
-  return path.relative(path.resolve(import.meta.dirname, '..'), testPath).replaceAll('\\', '/')
+  return path.relative(E2E_ROOT, testPath).replaceAll('\\', '/')
 }
 
 async function runSuite(name: SuiteName) {
   const suite = SUITES[name]
+  const testPaths = [
+    ...HMR_GUARD_UTILITY_TESTS,
+    ...suite.tests,
+  ]
   if (!shouldForceDiskBackedMiniProgramDevChecks()) {
     const hasDiskBackedDevOutput = await supportsDiskBackedMiniProgramDev()
     if (!hasDiskBackedDevOutput) {
@@ -58,10 +65,13 @@ async function runSuite(name: SuiteName) {
     }
   }
 
-  await runTaskSuite(`hmr-guard:${name}`, suite.tests.map(testPath => ({
+  await runTaskSuite(`hmr-guard:${name}`, testPaths.map(testPath => ({
     label: formatLabel(testPath),
     command: 'pnpm',
-    args: ['vitest', 'run', testPath, '--config', VITEST_CONFIG_PATH],
+    args: ['vitest', 'run', '--config', VITEST_CONFIG_PATH],
+    env: {
+      [E2E_TARGET_FILE_ENV]: formatLabel(testPath),
+    },
   })), {
     beforeEachTask: async () => {
       await cleanupResidualDevProcesses()
@@ -74,6 +84,10 @@ async function runSuite(name: SuiteName) {
 
 function printList() {
   console.log('HMR guard suites:')
+  console.log('- utility guards:')
+  for (const testPath of HMR_GUARD_UTILITY_TESTS) {
+    console.log(`  - ${formatLabel(testPath)}`)
+  }
   for (const [name, suite] of Object.entries(SUITES)) {
     console.log(`- ${name}: ${suite.description}`)
     for (const testPath of suite.tests) {
