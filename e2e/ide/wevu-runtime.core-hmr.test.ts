@@ -15,6 +15,7 @@ import {
   cleanupResidualDevtoolsProcesses,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
+import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
 import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
 
@@ -26,6 +27,7 @@ const HMR_SFC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
 const LAYOUT_PAGE_WXML = path.join(APP_ROOT, 'src/pages/layouts/index.wxml')
 const LAYOUT_PAGE_SCRIPT = path.join(APP_ROOT, 'src/pages/layouts/index.ts')
 const LAYOUT_PAGE_STYLE = path.join(APP_ROOT, 'src/pages/layouts/index.wxss')
+const SHARED_STORE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
 
 const HMR_PAGE_WXML_DIST = path.join(DIST_ROOT, 'pages/hmr/index.wxml')
 const HMR_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/hmr/index.js')
@@ -38,6 +40,8 @@ const LAYOUT_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.js')
 const LAYOUT_PAGE_WXSS_DIST = path.join(DIST_ROOT, 'pages/layouts/index.wxss')
 const RUNTIME_PAGE_WXML_DIST = path.join(DIST_ROOT, 'pages/runtime/index.wxml')
 const RUNTIME_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/runtime/index.js')
+const STORE_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/store/index.js')
+const STORE_SHARE_PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/store-share/index.js')
 
 const HMR_PAGE_BASE_MARKER = '<view class="title">HMR</view>'
 const HMR_SFC_TEMPLATE_BASE_MARKER = 'HMR-SFC'
@@ -93,6 +97,19 @@ async function waitForRunE2EName(page: any, expected: string, timeoutMs = 10_000
     await page.waitFor(200)
   }
   throw new Error(`Timed out waiting runE2E name to equal ${expected}; lastResult=${JSON.stringify(lastResult)}`)
+}
+
+async function waitForRunE2EOk(page: any, expected: string, timeoutMs = 10_000) {
+  const start = Date.now()
+  let lastResult: any
+  while (Date.now() - start < timeoutMs) {
+    lastResult = await page.callMethod('runE2E')
+    if (lastResult?.name === expected && lastResult?.ok === true) {
+      return lastResult
+    }
+    await page.waitFor(200)
+  }
+  throw new Error(`Timed out waiting runE2E "${expected}" to pass; lastResult=${JSON.stringify(lastResult)}`)
 }
 
 function expectSfcKeepImportResolved(content: string) {
@@ -160,6 +177,8 @@ async function waitForInitialHmrDistReady(dev: ReturnType<typeof startDevProcess
       waitForFile(LAYOUT_PAGE_WXSS_DIST, 90_000),
       waitForFile(RUNTIME_PAGE_WXML_DIST, 90_000),
       waitForFile(RUNTIME_PAGE_JS_DIST, 90_000),
+      waitForFile(STORE_PAGE_JS_DIST, 90_000),
+      waitForFile(STORE_SHARE_PAGE_JS_DIST, 90_000),
     ]),
     'weapp core hmr baseline dist generated',
   )
@@ -256,6 +275,24 @@ async function updateSourceAndWait(options: {
   return await waitForFileContainsWithRetry(distPath, marker, sourcePath, nextSource, timeoutMs)
 }
 
+function replaceSharedStoreName(source: string, marker: string) {
+  const updated = source.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+  if (updated === source) {
+    throw new Error('Failed to inject HMR marker into shared store source.')
+  }
+  return updated
+}
+
+async function waitForSharedStoreMarker(marker: string, retrySource: string) {
+  try {
+    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+  }
+  catch {
+    await replaceFileByRename(SHARED_STORE_PATH, `${retrySource}\n`)
+    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+  }
+}
+
 describe.sequential('wevu runtime core hmr matrix (ide)', () => {
   beforeAll(() => {
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
@@ -290,6 +327,7 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       LAYOUT_PAGE_WXML,
       LAYOUT_PAGE_SCRIPT,
       LAYOUT_PAGE_STYLE,
+      SHARED_STORE_PATH,
     ]) {
       originalSources.set(filePath, await fs.readFile(filePath, 'utf8'))
     }
@@ -484,6 +522,39 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       await waitForIdeRecompileSettled()
       page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
       expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
+
+      const sharedStoreMarker = createHmrMarker('IDE-CORE-SHARED-STORE', 'weapp')
+      const updatedSharedStore = replaceSharedStoreName(
+        originalSources.get(SHARED_STORE_PATH)!,
+        sharedStoreMarker,
+      )
+      await replaceFileByRename(SHARED_STORE_PATH, updatedSharedStore)
+      const sharedRuntime = await dev.waitFor(
+        waitForSharedStoreMarker(sharedStoreMarker, updatedSharedStore),
+        'shared store hmr marker emitted',
+      )
+      expect(sharedRuntime.code).toContain(sharedStoreMarker)
+      expect(sharedRuntime.code).toContain('setupCounter')
+      expect(sharedRuntime.code).toContain('optionsCounter')
+      const [storePageOutput, storeSharePageOutput] = await Promise.all([
+        fs.readFile(STORE_PAGE_JS_DIST, 'utf8'),
+        fs.readFile(STORE_SHARE_PAGE_JS_DIST, 'utf8'),
+      ])
+      expect(storePageOutput).toContain(`require("${toRelativeImport(STORE_PAGE_JS_DIST, sharedRuntime.path)}")`)
+      expect(storeSharePageOutput).toContain(`require("${toRelativeImport(STORE_SHARE_PAGE_JS_DIST, sharedRuntime.path)}")`)
+      await waitForIdeRecompileSettled()
+      page = await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
+        validate: async (currentPage) => {
+          await waitForRunE2EOk(currentPage, 'store')
+        },
+      })
+      expect((await page.callMethod('runE2E'))?.ok).toBe(true)
+      page = await relaunchIdeRoute('/pages/store-share/index', undefined, ctx, {
+        validate: async (currentPage) => {
+          await waitForRunE2EOk(currentPage, 'store-share')
+        },
+      })
+      expect((await page.callMethod('runE2E'))?.ok).toBe(true)
     }
     finally {
       await closeMiniProgram()

@@ -34,12 +34,16 @@ export const HMR_GUARD_TEST_GROUPS = {
     'style-import-vue.test.ts',
     'wevu-runtime.hmr.test.ts',
   ]),
+  complexDeveloperFlows: resolveCiTests([
+    'hmr-complex-developer-flow.test.ts',
+  ]),
 } as const
 
 export const HMR_GUARD_STABLE_TESTS = [
   ...HMR_GUARD_TEST_GROUPS.directEntryUpdates,
   ...HMR_GUARD_TEST_GROUPS.sharedDependencyPropagation,
   ...HMR_GUARD_TEST_GROUPS.derivedOutputSync,
+  ...HMR_GUARD_TEST_GROUPS.complexDeveloperFlows,
 ]
 
 export const HMR_GUARD_SMOKE_TESTS = resolveCiTests([

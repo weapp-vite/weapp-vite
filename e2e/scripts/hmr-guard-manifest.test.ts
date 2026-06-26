@@ -4,7 +4,7 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
 import { getCiTasks, getSuiteTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
-import { HMR_GUARD_ALL_TESTS, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
+import { HMR_GUARD_ALL_TESTS, HMR_GUARD_TEST_GROUPS, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const REPO_ROOT = path.resolve(ROOT, '..')
@@ -16,6 +16,10 @@ const DEV_SCRIPT_ALLOWLIST = new Set([
 
 function toPosixPath(filePath: string) {
   return filePath.replaceAll('\\', '/')
+}
+
+function toRelativeLabel(filePath: string) {
+  return toPosixPath(path.relative(ROOT, filePath))
 }
 
 function readPackageScripts(packageJsonPath: string) {
@@ -76,6 +80,15 @@ describe('hmr-guard manifest', () => {
     expect(labels).toContain('hmr-guard:auto-import-vue-sfc')
     expect(labels).toContain('hmr-guard:auto-routes-hmr')
     expect(labels).toContain('hmr-guard:shared-chunks-auto')
+  })
+
+  it('keeps complex developer flow hmr cases in the stable guard suite', () => {
+    const complexDeveloperFlowTests = HMR_GUARD_TEST_GROUPS.complexDeveloperFlows.map(filePath => toRelativeLabel(filePath))
+
+    expect(complexDeveloperFlowTests).toEqual([
+      'ci/hmr-complex-developer-flow.test.ts',
+    ])
+    expect(HMR_GUARD_ALL_TESTS).toEqual(expect.arrayContaining(HMR_GUARD_TEST_GROUPS.complexDeveloperFlows))
   })
 
   it('wires the complete HMR regression flow into a single runnable suite', async () => {
