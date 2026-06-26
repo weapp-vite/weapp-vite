@@ -330,6 +330,70 @@ describe('emitCompiledEntry helpers', () => {
     )
   })
 
+  it('keeps bundler-owned app chunks when app vue hmr script still has user imports', async () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'const bootstrap = require("./common.js").bootstrap;bootstrap();',
+      },
+    }
+    const state = {
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: DEFAULT_MP_PLATFORM,
+        },
+        runtimeState: {
+          build: {
+            output: {
+              wevuInternalRuntimeFileNames: new Map([
+                ['wevu/internal-runtime', 'weapp-vendors/wevu-watch.js'],
+              ]),
+            },
+            hmr: {
+              profile: {
+                event: 'update',
+              },
+              lastEmittedChunkFileNames: new Set<string>(),
+            },
+          },
+        },
+      },
+      pluginCtx: {},
+    } as any
+    const cached = {
+      isPage: false,
+      source: '<script setup />',
+    } as any
+    const compileOptionsState = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    }
+    const result = {
+      script: 'import { createApp } from "wevu/internal-runtime";import { bootstrap } from "@/bootstrap";createApp({ setup() { bootstrap(); } });',
+    } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle,
+      state,
+      filename: '/project/src/app.vue',
+      cached,
+      result,
+      relativeBase: 'app',
+      compileOptionsState,
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitSfcScriptAssetReplacingBundleEntryMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(false)
+  })
+
   it('replaces app script assets during auto-routes topology refreshes', async () => {
     const bundle = {
       'app.js': {

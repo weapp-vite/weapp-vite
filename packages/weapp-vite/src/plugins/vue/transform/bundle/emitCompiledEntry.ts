@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { parseJsLike, traverse } from '../../../../utils/babel'
 import { rewriteWevuInternalRuntimeImportCode } from '../../../core/helpers'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
@@ -19,6 +20,30 @@ function shouldReplaceAppScriptBundleEntry(options: {
     return false
   }
   return true
+}
+
+function hasModuleImportDeclaration(script: string | undefined) {
+  if (!script?.includes('import')) {
+    return false
+  }
+
+  try {
+    let hasUnresolvedImport = false
+    const ast = parseJsLike(script)
+    traverse(ast, {
+      ImportDeclaration(path) {
+        const source = path.node.source.value
+        if (typeof source === 'string') {
+          hasUnresolvedImport = true
+          path.stop()
+        }
+      },
+    })
+    return hasUnresolvedImport
+  }
+  catch {
+    return true
+  }
 }
 
 function retainReplacedDevHmrScriptChunk(state: VueBundleState, fileName: string) {
@@ -138,6 +163,9 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
         runtimeFileNames: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
       },
     )
+    if (hasModuleImportDeclaration(script)) {
+      return
+    }
     emitSfcScriptAssetReplacingBundleEntry(
       pluginCtx,
       bundle,

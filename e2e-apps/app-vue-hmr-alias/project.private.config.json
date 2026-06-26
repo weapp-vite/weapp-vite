@@ -1,0 +1,20 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "app vue hmr alias",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true,
+    "urlCheck": false
+  },
+  "libVersion": "3.15.0"
+}

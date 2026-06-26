@@ -1374,6 +1374,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  e2e-apps/app-vue-hmr-alias:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   e2e-apps/auto-import-vue-sfc:
     devDependencies:
       '@weapp-vite/dashboard':
