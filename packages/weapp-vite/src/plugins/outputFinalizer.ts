@@ -4,7 +4,7 @@ import type { CompilerContext } from '../context'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
 import { changeFileExtension } from '../utils'
-import { rewriteWevuInternalRuntimeImports } from './core/helpers'
+import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 type EmitAsset = (asset: EmittedAsset) => void
@@ -99,6 +99,7 @@ export function pruneUnchangedDevHmrOutputs(
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
+  stabilizeWevuRuntimeChunkAccess(bundle)
   pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
     const source = outputSourceToString(output)
@@ -144,6 +145,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
     enforce: 'post',
     generateBundle(_options, bundle) {
       rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
+      stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
       normalizePreprocessorStyleAssets(
         bundle as unknown as OutputBundle,
         ctx.configService.outputExtensions?.wxss,

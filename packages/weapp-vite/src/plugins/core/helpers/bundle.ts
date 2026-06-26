@@ -13,12 +13,166 @@ import { emitJsonAsset } from '../../utils/wxmlEmit'
 const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
 const REQUIRE_CALL_RE = /\brequire\((`[^`]+`|'[^']+'|"[^"]+")\)/g
 const WEVU_SRC_CHUNK_RE = /(?:^|\/)wevu-src\.js$/
+const WEVU_VENDOR_RUNTIME_CHUNK_RE = /(?:^|\/)weapp-vendors\/wevu-[^/]+\.js$/
 const WEVU_EXPORT_ALIASES = [
   ['defineComponent', '__wevuDefineComponent'],
   ['createWevuComponent', '__wevuCreateWevuComponent'],
 ] as const
-const WEVU_INTERNAL_RUNTIME_EXPORTS = ['createApp', 'setWevuDefaults'] as const
-const WEVU_INTERNAL_RUNTIME_EXPORT_SET = new Set<string>(WEVU_INTERNAL_RUNTIME_EXPORTS)
+const WEVU_SYNTHETIC_SINGLE_PAGE_HOOK_EXPORTS = [
+  'onAddToFavorites',
+  'onSaveExitState',
+  'onShareAppMessage',
+  'onShareTimeline',
+] as const
+const WEVU_INTERNAL_REACTIVITY_EXPORTS = [
+  'addMutationRecorder',
+  'batch',
+  'computed',
+  'customRef',
+  'effect',
+  'effectScope',
+  'endBatch',
+  'getCurrentScope',
+  'getDeepWatchStrategy',
+  'getReactiveVersion',
+  'isProxy',
+  'isRaw',
+  'isReactive',
+  'isReadonly',
+  'isRef',
+  'isShallowReactive',
+  'isShallowRef',
+  'markRaw',
+  'nextTick',
+  'onScopeDispose',
+  'prelinkReactiveTree',
+  'reactive',
+  'readonly',
+  'ref',
+  'removeMutationRecorder',
+  'setDeepWatchStrategy',
+  'shallowReactive',
+  'shallowReadonly',
+  'shallowRef',
+  'startBatch',
+  'stop',
+  'toRaw',
+  'toRef',
+  'toRefs',
+  'toValue',
+  'touchReactive',
+  'traverse',
+  'triggerRef',
+  'unref',
+  'watch',
+  'watchEffect',
+  'watchPostEffect',
+  'watchSyncEffect',
+] as const
+const WEVU_INTERNAL_TEMPLATE_EXPORTS = [
+  'normalizeClass',
+  'normalizeStyle',
+  'resolvePropValue',
+] as const
+const WEVU_INTERNAL_RUNTIME_EXPORTS = [
+  'callHookList',
+  'callHookReturn',
+  'createApp',
+  'createWevuComponent',
+  'createWevuScopedSlotComponent',
+  'defineAppSetup',
+  'defineComponent',
+  'getCurrentInstance',
+  'getCurrentPageStackSnapshot',
+  'getCurrentSetupContext',
+  'getNavigationBarMetrics',
+  'hasInjectionContext',
+  'inject',
+  'injectGlobal',
+  'isNoSetData',
+  'markNoSetData',
+  'mergeModels',
+  'mountRuntimeInstance',
+  'onActivated',
+  'onAddToFavorites',
+  'onAttached',
+  'onBeforeMount',
+  'onBeforeUnmount',
+  'onBeforeUpdate',
+  'onDeactivated',
+  'onDetached',
+  'onError',
+  'onErrorCaptured',
+  'onHide',
+  'onLaunch',
+  'onLoad',
+  'onMemoryWarning',
+  'onMounted',
+  'onMoved',
+  'onPageNotFound',
+  'onPageScroll',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onReady',
+  'onResize',
+  'onRouteDone',
+  'onSaveExitState',
+  'onServerPrefetch',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onShow',
+  'onTabItemTap',
+  'onThemeChange',
+  'onUnhandledRejection',
+  'onUnload',
+  'onUnmounted',
+  'onUpdated',
+  'provide',
+  'provideGlobal',
+  'registerApp',
+  'registerComponent',
+  'resetWevuDefaults',
+  'resolveLayoutBridge',
+  'resolveLayoutHost',
+  'resolveRuntimePageLayoutName',
+  'runSetupFunction',
+  'setCurrentInstance',
+  'setCurrentSetupContext',
+  'setGlobalProvidedValue',
+  'setPageLayout',
+  'setRuntimeSetDataVisibility',
+  'setWevuDefaults',
+  'syncRuntimePageLayoutState',
+  'syncRuntimePageLayoutStateFromRuntime',
+  'teardownRuntimeInstance',
+  'use',
+  'useAsyncPullDownRefresh',
+  'useAttrs',
+  'useBindModel',
+  'useBoundingClientRect',
+  'useChangeModel',
+  'useDisposables',
+  'useElementIntersectionObserver',
+  'useIntersectionObserver',
+  'useLayoutBridge',
+  'useLayoutHosts',
+  'useModel',
+  'useNativeInstance',
+  'useNativePageRouter',
+  'useNativeRouter',
+  'useNavigationBarMetrics',
+  'usePageLayout',
+  'usePageScrollThrottle',
+  'usePageStack',
+  'useScrollOffset',
+  'useSelectorFields',
+  'useSelectorQuery',
+  'useSlots',
+  'useTemplateRef',
+  'useUpdatePerformanceListener',
+  'version',
+  'waitForLayoutHost',
+] as const
 const WEVU_INTERNAL_MODULE_IDS = [
   'wevu/internal-runtime',
   'wevu/internal-reactivity',
@@ -37,19 +191,8 @@ const WEVU_RUNTIME_MODULE_IDS = [
 type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
 const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly string[]> = {
   'wevu/internal-runtime': WEVU_INTERNAL_RUNTIME_EXPORTS,
-  'wevu/internal-reactivity': [
-    'ref',
-    'reactive',
-    'computed',
-    'watch',
-    'watchEffect',
-    'nextTick',
-  ],
-  'wevu/internal-template': [
-    'normalizeClass',
-    'normalizeStyle',
-    'resolvePropValue',
-  ],
+  'wevu/internal-reactivity': WEVU_INTERNAL_REACTIVITY_EXPORTS,
+  'wevu/internal-template': WEVU_INTERNAL_TEMPLATE_EXPORTS,
 }
 const WEVU_RUNTIME_MODULE_EXPORT_MARKERS: Record<WevuRuntimeModuleId, readonly string[]> = {
   'wevu': WEVU_INTERNAL_RUNTIME_EXPORTS,
@@ -78,6 +221,9 @@ const WEVU_RUNTIME_MODULE_EXPORT_MARKERS: Record<WevuRuntimeModuleId, readonly s
   ],
   ...WEVU_INTERNAL_MODULE_EXPORT_MARKERS,
 }
+const WEVU_INTERNAL_REACTIVITY_EXPORT_SET = new Set<string>(WEVU_INTERNAL_REACTIVITY_EXPORTS)
+const WEVU_INTERNAL_TEMPLATE_EXPORT_SET = new Set<string>(WEVU_INTERNAL_TEMPLATE_EXPORTS)
+const WEVU_INTERNAL_RUNTIME_EXPORT_SET = new Set<string>(WEVU_INTERNAL_RUNTIME_EXPORTS)
 const JS_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
 export function filterPluginBundleOutputs(
@@ -442,6 +588,9 @@ function rememberCurrentWevuRuntimeChunks(
 ) {
   const rememberedFileNames = new Set<string>()
   for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
+    if (moduleId === 'wevu') {
+      continue
+    }
     const exactChunk = resolveWevuRuntimeChunkByModuleId(bundle, moduleId)
     const chunk = exactChunk ?? resolveWevuInternalChunkByExportMarkers(
       bundle,
@@ -486,6 +635,103 @@ function formatNamedRequireBindings(bindings: Array<{ importedName: string, loca
     .join(', ')
 }
 
+function resolveRootWevuInternalModuleId(importedName: string): WevuInternalModuleId | undefined {
+  if (WEVU_INTERNAL_REACTIVITY_EXPORT_SET.has(importedName)) {
+    return 'wevu/internal-reactivity'
+  }
+  if (WEVU_INTERNAL_TEMPLATE_EXPORT_SET.has(importedName)) {
+    return 'wevu/internal-template'
+  }
+  if (WEVU_INTERNAL_RUNTIME_EXPORT_SET.has(importedName)) {
+    return 'wevu/internal-runtime'
+  }
+  return undefined
+}
+
+function resolveWevuRuntimeChunkForModuleId(
+  bundle: OutputBundle,
+  moduleId: WevuRuntimeModuleId,
+  importedNames: Iterable<string>,
+) {
+  return resolveWevuRuntimeChunkByModuleId(bundle, moduleId)
+    ?? resolveWevuInternalChunk(bundle, importedNames)
+}
+
+function resolveRememberedWevuRuntimeFileName(
+  moduleId: WevuRuntimeModuleId,
+  importedNames: Iterable<string>,
+  options: RewriteWevuInternalRuntimeImportsOptions,
+) {
+  const names = [...importedNames]
+  const canUseLegacyRuntimeFileName = moduleId === 'wevu/internal-runtime'
+    && names.every(importedName => WEVU_INTERNAL_RUNTIME_EXPORT_SET.has(importedName))
+  return options.runtimeFileNames?.get(moduleId)
+    ?? (canUseLegacyRuntimeFileName ? options.runtimeFileName : undefined)
+}
+
+function formatWevuRuntimeRequire(
+  fileName: string,
+  runtimeFileName: string,
+  bindings: Array<{ importedName: string, localName: string }>,
+) {
+  const specifier = normalizeRelativeRequireSpecifier(fileName, runtimeFileName)
+  return `const { ${formatNamedRequireBindings(bindings)} } = require(${JSON.stringify(specifier)});`
+}
+
+function rewriteRootWevuImport(
+  bundle: OutputBundle,
+  fileName: string,
+  full: string,
+  bindings: Array<{ importedName: string, localName: string }>,
+  options: RewriteWevuInternalRuntimeImportsOptions,
+  requiredRuntimeFileNames: Set<string>,
+) {
+  const groupedBindings = new Map<WevuInternalModuleId, Array<{ importedName: string, localName: string }>>()
+  const remainingBindings: Array<{ importedName: string, localName: string }> = []
+
+  for (const binding of bindings) {
+    const moduleId = resolveRootWevuInternalModuleId(binding.importedName)
+    if (!moduleId) {
+      remainingBindings.push(binding)
+      continue
+    }
+    const group = groupedBindings.get(moduleId) ?? []
+    group.push(binding)
+    groupedBindings.set(moduleId, group)
+  }
+
+  if (!groupedBindings.size) {
+    return { code: full, changed: false }
+  }
+
+  const statements: string[] = []
+  for (const [moduleId, moduleBindings] of groupedBindings) {
+    const importedNames = moduleBindings.map(binding => binding.importedName)
+    const runtimeChunk = resolveWevuRuntimeChunkForModuleId(bundle, moduleId, importedNames)
+    const runtimeFileName = runtimeChunk?.fileName
+      ?? resolveRememberedWevuRuntimeFileName(moduleId, importedNames, options)
+    if (!runtimeFileName) {
+      return { code: full, changed: false }
+    }
+    rememberWevuRuntimeChunk(moduleId, runtimeChunk, options)
+    requiredRuntimeFileNames.add(runtimeFileName)
+    statements.push(formatWevuRuntimeRequire(fileName, runtimeFileName, moduleBindings))
+  }
+
+  if (remainingBindings.length) {
+    statements.push(`import { ${remainingBindings.map(({ importedName, localName }) => {
+      return importedName === localName
+        ? importedName
+        : `${importedName} as ${localName}`
+    }).join(', ')} } from "wevu";`)
+  }
+
+  return {
+    code: statements.join('\n'),
+    changed: true,
+  }
+}
+
 export function rewriteWevuInternalRuntimeImports(
   bundle: OutputBundle,
   options: RewriteWevuInternalRuntimeImportsOptions = {},
@@ -519,16 +765,26 @@ export function rewriteWevuInternalRuntimeImports(
     rewritten = rewritten.replace(importRe, (full, importClause: string, source: string) => {
       const bindings = parseNamedImportBindings(importClause)
       const importedNames = bindings.map(binding => binding.importedName)
-      const runtimeChunk = isWevuRuntimeModuleId(source)
-        ? resolveWevuRuntimeChunkByModuleId(bundle, source) ?? resolveWevuInternalChunk(bundle, importedNames)
-        : resolveWevuInternalChunk(bundle, importedNames)
-      const resolvedInternalModuleId = isWevuRuntimeModuleId(source)
-        ? source
-        : 'wevu/internal-runtime'
-      const canUseRememberedRuntime = resolvedInternalModuleId === 'wevu/internal-runtime'
-        && importedNames.every(importedName => WEVU_INTERNAL_RUNTIME_EXPORT_SET.has(importedName))
-      const rememberedRuntimeFileName = options.runtimeFileNames?.get(resolvedInternalModuleId)
-        ?? (canUseRememberedRuntime ? options.runtimeFileName : undefined)
+      if (source === 'wevu') {
+        const result = rewriteRootWevuImport(
+          bundle,
+          fileName,
+          full,
+          bindings,
+          options,
+          requiredRuntimeFileNames,
+        )
+        changed ||= result.changed
+        return result.code
+      }
+
+      const resolvedInternalModuleId = source as WevuRuntimeModuleId
+      const runtimeChunk = resolveWevuRuntimeChunkForModuleId(bundle, resolvedInternalModuleId, importedNames)
+      const rememberedRuntimeFileName = resolveRememberedWevuRuntimeFileName(
+        resolvedInternalModuleId,
+        importedNames,
+        options,
+      )
       const runtimeFileName = runtimeChunk?.fileName ?? rememberedRuntimeFileName
       if (!runtimeFileName) {
         return full
@@ -777,6 +1033,99 @@ function appendWevuRuntimeExports(
   }
 }
 
+function formatSyntheticSinglePageHookExport(exportName: string) {
+  return [
+    `function ${exportName}(handler) {`,
+    `\tconst instance = require_weapp_vendors_wevu_base.assertInSetup(${JSON.stringify(exportName)});`,
+    `\trequire_weapp_vendors_wevu_base.pushHook(instance, ${JSON.stringify(exportName)}, handler, { single: true });`,
+    `}`,
+    `Object.defineProperty(exports, ${JSON.stringify(exportName)}, { enumerable: true, get: function() { return ${exportName}; } });`,
+  ].join('\n')
+}
+
+function appendSyntheticWevuHookExports(chunk: OutputChunk, importedMembers: Set<string>) {
+  if (!chunk.code.includes('require_weapp_vendors_wevu_base')) {
+    return
+  }
+
+  const existingExports = collectExistingExportNames(chunk.code)
+  const lines: string[] = []
+  for (const exportName of WEVU_SYNTHETIC_SINGLE_PAGE_HOOK_EXPORTS) {
+    if (!importedMembers.has(exportName) || existingExports.has(exportName)) {
+      continue
+    }
+    lines.push(formatSyntheticSinglePageHookExport(exportName))
+    existingExports.add(exportName)
+  }
+
+  if (lines.length) {
+    chunk.code = `${chunk.code}\n${lines.join('\n')}`
+  }
+}
+
+function resolveWevuBaseChunk(bundle: OutputBundle) {
+  return resolveWevuInternalChunk(bundle, ['assertInSetup', 'pushHook'])
+}
+
+function formatSyntheticSinglePageHookFallback(
+  hookName: string,
+  receiverAccess: string,
+  baseRequireSpecifier: string,
+) {
+  const baseRequire = `require(${JSON.stringify(baseRequireSpecifier)})`
+  return `(${receiverAccess} || function(handler) { const instance = ${baseRequire}.assertInSetup(${JSON.stringify(hookName)}); ${baseRequire}.pushHook(instance, ${JSON.stringify(hookName)}, handler, { single: true }); })(`
+}
+
+function rewriteSyntheticWevuHookAccess(
+  chunk: OutputChunk,
+  wevuChunkFileName: string,
+  baseChunkFileName: string,
+  importedMembers: Set<string>,
+) {
+  const hookNames = WEVU_SYNTHETIC_SINGLE_PAGE_HOOK_EXPORTS.filter(name => importedMembers.has(name))
+  if (!hookNames.length) {
+    return
+  }
+
+  const baseRequireSpecifier = normalizeRelativeRequireSpecifier(chunk.fileName, baseChunkFileName)
+  let nextCode = chunk.code
+  const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
+  const runtimeRefs = new Set<string>()
+  for (const match of nextCode.matchAll(localRequireRe)) {
+    const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[2]))
+    if (resolved === wevuChunkFileName) {
+      runtimeRefs.add(match[1])
+    }
+  }
+
+  for (const hookName of hookNames) {
+    for (const ref of runtimeRefs) {
+      const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.${hookName}\\s*\\(`, 'g')
+      nextCode = nextCode.replace(memberRe, () => {
+        return formatSyntheticSinglePageHookFallback(hookName, `${ref}.${hookName}`, baseRequireSpecifier)
+      })
+    }
+
+    const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\s*\(/g
+    nextCode = nextCode.replace(inlineRequireRe, (full, rawSpecifier: string, property: string) => {
+      if (property !== hookName) {
+        return full
+      }
+      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(rawSpecifier))
+      if (resolved !== wevuChunkFileName) {
+        return full
+      }
+      return formatSyntheticSinglePageHookFallback(
+        hookName,
+        `require(${rawSpecifier}).${hookName}`,
+        baseRequireSpecifier,
+      )
+    })
+  }
+
+  chunk.code = nextCode
+}
+
 function rewriteStableWevuRuntimeAccess(chunk: OutputChunk, wevuChunkFileName: string, aliases: Map<string, string>) {
   if (!aliases.size) {
     return
@@ -822,21 +1171,38 @@ function rewriteStableWevuRuntimeAccess(chunk: OutputChunk, wevuChunkFileName: s
 }
 
 export function stabilizeWevuRuntimeChunkAccess(bundle: OutputBundle) {
-  const wevuChunk = Object.values(bundle).find((output): output is OutputChunk => {
-    return output?.type === 'chunk' && WEVU_SRC_CHUNK_RE.test(output.fileName)
+  const wevuChunks = Object.values(bundle).filter((output): output is OutputChunk => {
+    return output?.type === 'chunk'
+      && (
+        WEVU_SRC_CHUNK_RE.test(output.fileName)
+        || WEVU_VENDOR_RUNTIME_CHUNK_RE.test(output.fileName)
+      )
   })
-  if (!wevuChunk) {
+  if (!wevuChunks.length) {
     return
   }
+  const baseChunk = resolveWevuBaseChunk(bundle)
 
-  const aliases = resolveWevuExportAliasMap(wevuChunk)
-  const importedMembers = collectImportedWevuRuntimeMembers(bundle, wevuChunk.fileName)
+  for (const wevuChunk of wevuChunks) {
+    const aliases = resolveWevuExportAliasMap(wevuChunk)
+    const importedMembers = collectImportedWevuRuntimeMembers(bundle, wevuChunk.fileName)
 
-  appendWevuRuntimeExports(wevuChunk, aliases, importedMembers)
-  for (const output of Object.values(bundle)) {
-    if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunk.fileName) {
-      continue
+    appendWevuRuntimeExports(wevuChunk, aliases, importedMembers)
+    appendSyntheticWevuHookExports(wevuChunk, importedMembers)
+    for (const output of Object.values(bundle)) {
+      if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunk.fileName) {
+        continue
+      }
+      const chunk = output as OutputChunk
+      rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases)
+      if (baseChunk?.fileName) {
+        rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, importedMembers)
+        if (chunk.code.includes(normalizeRelativeRequireSpecifier(chunk.fileName, baseChunk.fileName))) {
+          const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
+          nextImports.add(baseChunk.fileName)
+          chunk.imports = [...nextImports]
+        }
+      }
     }
-    rewriteStableWevuRuntimeAccess(output as OutputChunk, wevuChunk.fileName, aliases)
   }
 }

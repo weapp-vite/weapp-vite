@@ -157,6 +157,119 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-ref.js'])
   })
 
+  it('rewrites bare wevu page hooks to the internal runtime vendor chunk', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { onShareAppMessage } from "wevu";',
+          'onShareAppMessage(() => ({ title: "share" }));',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-router.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-router.js',
+        code: [
+          'Object.defineProperty(exports, "createRouter", { enumerable: true, get: function() { return createRouter; } });',
+          'Object.defineProperty(exports, "useRouter", { enumerable: true, get: function() { return useRouter; } });',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "onShareAppMessage", { enumerable: true, get: function() { return onShareAppMessage; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['pages/index/index.js'].code).not.toContain('from "wevu"')
+    expect(bundle['pages/index/index.js'].code).toContain('const { onShareAppMessage } = require("../../weapp-vendors/wevu-watch.js");')
+    expect(bundle['pages/index/index.js'].code).not.toContain('wevu-router.js')
+    expect(bundle['pages/index/index.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
+  it('splits bare wevu internal imports by runtime module', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { ref, unref, onShareAppMessage } from "wevu";',
+          'const count = ref(0);',
+          'unref(count);',
+          'onShareAppMessage(() => ({}));',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: [
+          'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return ref; } });',
+          'Object.defineProperty(exports, "unref", { enumerable: true, get: function() { return unref; } });',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "onShareAppMessage", { enumerable: true, get: function() { return onShareAppMessage; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['pages/index/index.js'].code).not.toContain('from "wevu"')
+    expect(bundle['pages/index/index.js'].code).toContain('const { ref, unref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('const { onShareAppMessage } = require("../../weapp-vendors/wevu-watch.js");')
+    expect(bundle['pages/index/index.js'].imports).toEqual([
+      'weapp-vendors/wevu-ref.js',
+      'weapp-vendors/wevu-watch.js',
+    ])
+  })
+
+  it('rewrites partial hmr bare wevu internal imports with remembered module vendor files', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { ref, onShareAppMessage } from "wevu";',
+          'const count = ref(0);',
+          'onShareAppMessage(() => ({}));',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileNames: new Map([
+        ['wevu/internal-reactivity', 'weapp-vendors/wevu-ref.js'],
+        ['wevu/internal-runtime', 'weapp-vendors/wevu-watch.js'],
+      ]),
+    })
+
+    expect(bundle['pages/index/index.js'].code).not.toContain('from "wevu"')
+    expect(bundle['pages/index/index.js'].code).toContain('const { ref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('const { onShareAppMessage } = require("../../weapp-vendors/wevu-watch.js");')
+    expect(bundle['pages/index/index.js'].imports).toEqual([
+      'weapp-vendors/wevu-ref.js',
+      'weapp-vendors/wevu-watch.js',
+    ])
+  })
+
   it('rewrites bare wevu router imports to emitted vendor requires', () => {
     const bundle = {
       'app.js': {
@@ -424,5 +537,55 @@ describe('core helper bundle', () => {
     expect(wevuCode).toContain('"Ot"')
     expect(wevuCode).toContain('"Mo"')
     expect(wevuCode).not.toContain('"unused"')
+  })
+
+  it('adds synthetic single page hook exports when hmr preserves only router hook helpers', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'const require_weapp_vendors_wevu_router = require("../../weapp-vendors/wevu-src.js");',
+          'require_weapp_vendors_wevu_router.onShareAppMessage(() => ({}));',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-src.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: [
+          'const require_weapp_vendors_wevu_base = require("./wevu-ref.js");',
+          'function onLoad(handler) { require_weapp_vendors_wevu_base.pushHook(require_weapp_vendors_wevu_base.assertInSetup("onLoad"), "onLoad", handler); }',
+          'Object.defineProperty(exports, "onLoad", { enumerable: true, get: function() { return onLoad; } });',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-ref.js'],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: [
+          'function assertInSetup(name) { return {}; }',
+          'function pushHook() {}',
+          'Object.defineProperty(exports, "assertInSetup", { enumerable: true, get: function() { return assertInSetup; } });',
+          'Object.defineProperty(exports, "pushHook", { enumerable: true, get: function() { return pushHook; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    const wevuCode = bundle['weapp-vendors/wevu-src.js'].code
+    const pageCode = bundle['pages/index/index.js'].code
+    expect(wevuCode).toContain('function onShareAppMessage(handler)')
+    expect(wevuCode).toContain('assertInSetup("onShareAppMessage")')
+    expect(wevuCode).toContain('pushHook(instance, "onShareAppMessage", handler, { single: true })')
+    expect(wevuCode).toContain('Object.defineProperty(exports, "onShareAppMessage"')
+    expect(pageCode).toContain('require_weapp_vendors_wevu_router.onShareAppMessage || function(handler)')
+    expect(pageCode).toContain('require("../../weapp-vendors/wevu-ref.js").assertInSetup("onShareAppMessage")')
+    expect(bundle['pages/index/index.js'].imports).toEqual([
+      'weapp-vendors/wevu-src.js',
+      'weapp-vendors/wevu-ref.js',
+    ])
   })
 })
