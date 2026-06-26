@@ -93,10 +93,23 @@ async function normalizeWatchEvent(
   options: {
     emittedJsonPaths?: Set<string>
     loadedEntrySet: Set<string>
+    moduleImporters?: Map<string, Set<string>>
     resolvedEntryMap: Map<string, unknown>
+    sharedChunkSourceModuleIds?: Set<string>
   },
 ) {
   if (event === 'create' && (options.loadedEntrySet.has(id) || options.resolvedEntryMap.has(id)) && await fs.pathExists(id)) {
+    return 'update' satisfies ChangeEvent
+  }
+
+  if (
+    event === 'create'
+    && (
+      options.moduleImporters?.has(id)
+      || options.sharedChunkSourceModuleIds?.has(id)
+    )
+    && await fs.pathExists(id)
+  ) {
     return 'update' satisfies ChangeEvent
   }
 
@@ -682,7 +695,9 @@ export function createWatchChangeHook(state: CorePluginState) {
           .filter(Boolean),
       ),
       loadedEntrySet: state.loadedEntrySet,
+      moduleImporters: state.moduleImporters,
       resolvedEntryMap: state.resolvedEntryMap,
+      sharedChunkSourceModuleIds: state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds,
     })
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,

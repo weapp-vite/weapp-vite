@@ -120,6 +120,74 @@ describe('core helpers graph', () => {
     expect(state.moduleImporters.has('\0virtual:skip')).toBe(false)
   })
 
+  it('refreshes entry importers from inlined bundle modules', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/root-import-hmr/index.vue'
+    const composable = '/project/src/shared/root-import-hmr.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/root-import-hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/root-import-hmr/index.js',
+        facadeModuleId: `\0vue:${pageEntry}?vue&type=script`,
+        moduleIds: [
+          composable,
+          `\0vue:${pageEntry}?vue&type=script`,
+        ],
+        modules: {
+          [composable]: { code: '', renderedExports: [], removedExports: [], renderedLength: 0, originalLength: 0 },
+        },
+      } as any,
+    })
+
+    expect(state.entryModuleIds).toContain(pageEntry)
+    expect(state.moduleImporters.get(composable)).toEqual(new Set([pageEntry]))
+  })
+
+  it('merges partial bundle entry importers without dropping unrelated entry dependencies', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/root-import-hmr/index.vue'
+    const otherEntry = '/project/src/pages/other/index.vue'
+    const composable = '/project/src/shared/root-import-hmr.ts'
+    const otherDep = '/project/src/shared/other.ts'
+    const staleDep = '/project/src/shared/stale-root-import.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.entryModuleIds.add(otherEntry)
+    state.moduleImporters.set(composable, new Set([pageEntry]))
+    state.moduleImporters.set(staleDep, new Set([pageEntry]))
+    state.moduleImporters.set(otherDep, new Set([otherEntry]))
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/root-import-hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/root-import-hmr/index.js',
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          composable,
+        ],
+        modules: {
+          [pageEntry]: { code: '', renderedExports: [], removedExports: [], renderedLength: 0, originalLength: 0 },
+          [composable]: { code: '', renderedExports: [], removedExports: [], renderedLength: 0, originalLength: 0 },
+        },
+      } as any,
+    }, { mode: 'merge' })
+
+    expect(state.entryModuleIds).toEqual(new Set([pageEntry, otherEntry]))
+    expect(state.moduleImporters.get(composable)).toEqual(new Set([pageEntry]))
+    expect(state.moduleImporters.has(staleDep)).toBe(false)
+    expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+  })
+
   it('refreshes shared chunk importers from entry chunks only', () => {
     const state = createState()
     state.resolvedEntryMap.set('/project/src/virtual-entry.ts', {

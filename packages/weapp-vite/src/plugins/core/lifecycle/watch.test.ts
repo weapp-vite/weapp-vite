@@ -1327,6 +1327,46 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/shared/store.ts')
   })
 
+  it('normalizes atomic-save create events on importer graph dependencies back to dependency updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    const dependencyId = '/project/src/shared/root-import-hmr.ts'
+    const pageEntry = '/project/src/pages/root-import-hmr/index.vue'
+    collectAffectedEntriesMock.mockReturnValue(new Set([pageEntry]))
+    const state = createState({
+      moduleImporters: new Map([
+        [dependencyId, new Set([pageEntry])],
+      ]),
+      entryModuleIds: new Set([pageEntry]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'create' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:1'])
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+  })
+
+  it('normalizes atomic-save create events on shared chunk source dependencies back to dependency updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    const dependencyId = '/project/src/shared/tokens.ts'
+    const pageEntry = '/project/src/pages/root-import-hmr/index.vue'
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([pageEntry]))
+    collectAffectedSharedChunksMock.mockReturnValue(new Set(['common.js']))
+    const state = createState()
+    state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds = new Set([dependencyId])
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'create' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['common.js']))
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:1'])
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+  })
+
   it('invalidates resolve cache and sidecar entries on create', async () => {
     const state = createState()
     const hook = createWatchChangeHook(state)

@@ -49,6 +49,8 @@ describe('hmr-guard manifest', () => {
       'ci/external-linked-vue-component.hmr.test.ts',
       'ci/issue-340-comment.hmr.test.ts',
       'ci/style-import-vue.test.ts',
+      'ci/wevu-root-import-hmr.test.ts',
+      'ci/wevu-router-hmr.test.ts',
       'ci/wevu-runtime.hmr.test.ts',
     ], {
       cwd: ROOT,
@@ -76,6 +78,7 @@ describe('hmr-guard manifest', () => {
     expect(labels).toEqual([
       'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
       'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+      'ci/wevu-router-hmr.test.ts',
       'hmr-guard:smoke',
       'hmr-guard:full',
       'hmr-guard:auto-import-vue-sfc',

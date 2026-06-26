@@ -199,7 +199,9 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
           && profile.pendingCount > 1
           && typeof profile.emittedCount === 'number'
           && profile.emittedCount > 1
-          && (profile.dirtyReasonSummary ?? []).some(reason => reason.startsWith('importer-graph:')),
+          && (profile.dirtyReasonSummary ?? []).some(reason =>
+            reason.startsWith('importer-graph:') || reason.startsWith('shared-chunk-source:'),
+          ),
         ),
         'shared dependency rebuild hmr profile',
       )

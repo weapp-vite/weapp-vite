@@ -17,6 +17,7 @@
     "pages/style-matrix/index",
     "pages/template-compat/index",
     "pages/wevu-inline-object-reactivity-repro/index",
+    "pages/root-import-hmr/index",
     "pages/hmr-sfc/index",
     "pages/hmr-html/index",
     "pages/composition-api/index",

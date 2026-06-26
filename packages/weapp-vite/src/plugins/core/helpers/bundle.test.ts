@@ -270,6 +270,58 @@ describe('core helper bundle', () => {
     ])
   })
 
+  it('does not reuse the legacy runtime vendor file for bare wevu reactivity imports', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { unref } from "wevu";',
+          'unref(count);',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+      runtimeFileNames: new Map([
+        ['wevu/internal-reactivity', 'weapp-vendors/wevu-ref.js'],
+      ]),
+    })
+
+    expect(bundle['pages/index/index.js'].code).not.toContain('wevu-watch.js')
+    expect(bundle['pages/index/index.js'].code).toContain('const { unref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].imports).toEqual(['weapp-vendors/wevu-ref.js'])
+  })
+
+  it('keeps unknown bare wevu imports while splitting known runtime imports', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { ref, experimentalApi as useExperimentalApi } from "wevu";',
+          'const count = ref(0);',
+          'useExperimentalApi(count);',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: 'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return ref; } });',
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('const { ref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('import { experimentalApi as useExperimentalApi } from "wevu";')
+    expect(bundle['pages/index/index.js'].imports).toEqual(['weapp-vendors/wevu-ref.js'])
+  })
+
   it('rewrites bare wevu router imports to emitted vendor requires', () => {
     const bundle = {
       'app.js': {
@@ -585,6 +637,54 @@ describe('core helper bundle', () => {
     expect(pageCode).toContain('require("../../weapp-vendors/wevu-ref.js").assertInSetup("onShareAppMessage")')
     expect(bundle['pages/index/index.js'].imports).toEqual([
       'weapp-vendors/wevu-src.js',
+      'weapp-vendors/wevu-ref.js',
+    ])
+  })
+
+  it('stabilizes single page hook member access for split wevu vendor chunks', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'const require_weapp_vendors_wevu_watch = require("../../weapp-vendors/wevu-watch.js");',
+          'require_weapp_vendors_wevu_watch.onShareTimeline(() => ({}));',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-watch.js'],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'const require_weapp_vendors_wevu_base = require("./wevu-ref.js");',
+          'function onLoad(handler) { require_weapp_vendors_wevu_base.pushHook(require_weapp_vendors_wevu_base.assertInSetup("onLoad"), "onLoad", handler); }',
+          'Object.defineProperty(exports, "onLoad", { enumerable: true, get: function() { return onLoad; } });',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-ref.js'],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: [
+          'function assertInSetup(name) { return {}; }',
+          'function pushHook() {}',
+          'Object.defineProperty(exports, "assertInSetup", { enumerable: true, get: function() { return assertInSetup; } });',
+          'Object.defineProperty(exports, "pushHook", { enumerable: true, get: function() { return pushHook; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    const wevuCode = bundle['weapp-vendors/wevu-watch.js'].code
+    const pageCode = bundle['pages/index/index.js'].code
+    expect(wevuCode).toContain('function onShareTimeline(handler)')
+    expect(wevuCode).toContain('assertInSetup("onShareTimeline")')
+    expect(pageCode).toContain('require_weapp_vendors_wevu_watch.onShareTimeline || function(handler)')
+    expect(pageCode).toContain('require("../../weapp-vendors/wevu-ref.js").pushHook')
+    expect(bundle['pages/index/index.js'].imports).toEqual([
+      'weapp-vendors/wevu-watch.js',
       'weapp-vendors/wevu-ref.js',
     ])
   })

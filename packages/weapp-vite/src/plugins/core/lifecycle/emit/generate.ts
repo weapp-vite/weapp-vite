@@ -310,7 +310,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           state.ctx.configService.outputExtensions?.wxss,
           asset => this.emitFile(asset),
         )
-        refreshModuleGraph(this, state)
         return
       }
 
@@ -606,7 +605,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       asset => this.emitFile(asset),
     )
 
-    refreshModuleGraph(this, state)
+    refreshModuleGraph(this, state, rolldownBundle, {
+      mode: state.ctx.configService.isDev && state.hmrState.hasBuiltOnce ? 'merge' : 'replace',
+    })
 
     if (configService.weappViteConfig?.debug?.watchFiles) {
       const watcherService = ctx.watcherService

@@ -74,47 +74,131 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
+  bundle?: OutputBundle,
+  options?: { mode?: 'replace' | 'merge' },
 ) {
-  state.moduleImporters.clear()
-  state.entryModuleIds.clear()
+  const mode = options?.mode ?? 'replace'
+  if (mode === 'replace') {
+    state.moduleImporters.clear()
+    state.entryModuleIds.clear()
+  }
 
-  if (typeof pluginCtx.getModuleIds !== 'function' || typeof pluginCtx.getModuleInfo !== 'function') {
+  const addModuleImporter = (moduleId: string, importerId: string) => {
+    const normalizedModuleId = normalizeFsResolvedId(moduleId)
+    const normalizedImporterId = normalizeFsResolvedId(importerId)
+    if (
+      normalizedModuleId === normalizedImporterId
+      || isSkippableResolvedId(normalizedModuleId)
+      || isSkippableResolvedId(normalizedImporterId)
+    ) {
+      return
+    }
+    const importers = state.moduleImporters.get(normalizedModuleId) ?? new Set<string>()
+    importers.add(normalizedImporterId)
+    state.moduleImporters.set(normalizedModuleId, importers)
+  }
+  const removeEntryImporter = (entryId: string) => {
+    const normalizedEntryId = normalizeFsResolvedId(entryId)
+    for (const [moduleId, importers] of state.moduleImporters) {
+      importers.delete(normalizedEntryId)
+      if (!importers.size) {
+        state.moduleImporters.delete(moduleId)
+      }
+    }
+  }
+  const collectChunkModuleIds = (chunk: OutputChunk) => {
+    const moduleIds = new Set<string>()
+    if (Array.isArray(chunk.moduleIds)) {
+      for (const moduleId of chunk.moduleIds) {
+        moduleIds.add(moduleId)
+      }
+    }
+    for (const moduleId of Object.keys(chunk.modules ?? {})) {
+      moduleIds.add(moduleId)
+    }
+    return moduleIds
+  }
+  const collectChunkEntryIds = (chunk: OutputChunk, moduleIds: Set<string>) => {
+    const entryIds = new Set<string>()
+    const addEntryIfTracked = (rawId?: string | null) => {
+      if (!rawId) {
+        return
+      }
+      const entryId = normalizeFsResolvedId(rawId)
+      if (!isSkippableResolvedId(entryId) && state.resolvedEntryMap.has(entryId)) {
+        entryIds.add(entryId)
+      }
+    }
+
+    addEntryIfTracked(chunk.facadeModuleId)
+    for (const moduleId of moduleIds) {
+      addEntryIfTracked(moduleId)
+    }
+
+    return entryIds
+  }
+
+  if (typeof pluginCtx.getModuleIds === 'function' && typeof pluginCtx.getModuleInfo === 'function') {
+    for (const rawId of pluginCtx.getModuleIds()) {
+      const normalizedId = normalizeFsResolvedId(rawId)
+      if (isSkippableResolvedId(normalizedId)) {
+        continue
+      }
+
+      const info = pluginCtx.getModuleInfo(rawId)
+      if (!info) {
+        continue
+      }
+
+      if (info.isEntry) {
+        state.entryModuleIds.add(normalizedId)
+      }
+
+      const importerIds: string[] = []
+      if (Array.isArray(info.importers)) {
+        importerIds.push(...info.importers)
+      }
+      if (Array.isArray(info.dynamicImporters)) {
+        importerIds.push(...info.dynamicImporters)
+      }
+      for (const importer of importerIds) {
+        addModuleImporter(normalizedId, importer)
+      }
+    }
+  }
+
+  if (!bundle) {
     return
   }
 
-  for (const rawId of pluginCtx.getModuleIds()) {
-    const normalizedId = normalizeFsResolvedId(rawId)
-    if (isSkippableResolvedId(normalizedId)) {
+  const chunkRecords: Array<{ chunk: OutputChunk, entryIds: Set<string>, moduleIds: Set<string> }> = []
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
       continue
     }
-
-    const info = pluginCtx.getModuleInfo(rawId)
-    if (!info) {
+    const chunk = output as OutputChunk
+    const moduleIds = collectChunkModuleIds(chunk)
+    const entryIds = collectChunkEntryIds(chunk, moduleIds)
+    if (!entryIds.size) {
       continue
     }
+    chunkRecords.push({ chunk, entryIds, moduleIds })
+  }
 
-    if (info.isEntry) {
-      state.entryModuleIds.add(normalizedId)
-    }
-
-    const importers = new Set<string>()
-    const importerIds: string[] = []
-    if (Array.isArray(info.importers)) {
-      importerIds.push(...info.importers)
-    }
-    if (Array.isArray(info.dynamicImporters)) {
-      importerIds.push(...info.dynamicImporters)
-    }
-    for (const importer of importerIds) {
-      const normalizedImporter = normalizeFsResolvedId(importer)
-      if (isSkippableResolvedId(normalizedImporter)) {
-        continue
+  if (mode === 'merge') {
+    for (const { entryIds } of chunkRecords) {
+      for (const entryId of entryIds) {
+        removeEntryImporter(entryId)
       }
-      importers.add(normalizedImporter)
     }
+  }
 
-    if (importers.size) {
-      state.moduleImporters.set(normalizedId, importers)
+  for (const { entryIds, moduleIds } of chunkRecords) {
+    for (const entryId of entryIds) {
+      state.entryModuleIds.add(entryId)
+      for (const moduleId of moduleIds) {
+        addModuleImporter(moduleId, entryId)
+      }
     }
   }
 }

@@ -409,7 +409,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(applyRuntimeChunkLocalizationMock).not.toHaveBeenCalled()
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
     expect(syncChunkImportsFromRequireCallsMock).not.toHaveBeenCalled()
-    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
+    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
   })
 
   it('drops incomplete stable shared chunks during partial dev hmr rebuilds', async () => {
