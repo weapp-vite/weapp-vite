@@ -21,7 +21,7 @@
       https://tw.icebreaker.top
     </view>
     <view>
-      <van-button type="default" @tap="showDialog">Vant 按钮</van-button>
+      <van-button type="default" bind:tap="showDialog">Vant 按钮</van-button>
     </view>
     <view>
       <van-button type="primary" plain bind:tap="goToLayouts">打开布局演示页</van-button>

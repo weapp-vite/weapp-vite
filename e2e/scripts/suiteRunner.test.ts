@@ -248,6 +248,12 @@ describe('suiteRunner', () => {
     ])
     expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideFullTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
+    expect(ideFullTasks.find(task => task.label === 'ide/automator-bridge-wrapper-hmr.runtime.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(ideFullTasks.find(task => task.label === 'ide/automator-concurrent-sessions.runtime.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue558.test.ts')
@@ -368,11 +374,13 @@ describe('suiteRunner', () => {
     })
   })
 
-  it('defaults devtools vitest tasks to cli bridge launch mode', () => {
+  it('defaults devtools vitest tasks to cli bridge launch mode without wrapper projects', () => {
     const previousLaunchMode = process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
     const previousPrebuild = process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+    const previousBridgeWrapper = process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
     delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
     delete process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD
+    delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
 
     try {
       const options = getTaskSpawnOptions({
@@ -384,6 +392,7 @@ describe('suiteRunner', () => {
       expect(options.env).toMatchObject({
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'bridge',
         WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '0',
+        WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '0',
         WEAPP_VITE_E2E_REPORT_MARKERS: '1',
       })
     }
@@ -400,10 +409,16 @@ describe('suiteRunner', () => {
       else {
         process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = previousPrebuild
       }
+      if (previousBridgeWrapper == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = previousBridgeWrapper
+      }
     }
   })
 
-  it('preserves explicit devtools launch mode and prebuild overrides', () => {
+  it('preserves explicit devtools launch mode, prebuild, and wrapper overrides', () => {
     const options = getTaskSpawnOptions({
       label: 'ide/task.test.ts',
       command: 'pnpm',
@@ -411,12 +426,14 @@ describe('suiteRunner', () => {
       env: {
         WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
         WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '1',
+        WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
       },
     })
 
     expect(options.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE: 'direct',
       WEAPP_VITE_E2E_AUTOMATOR_PREBUILD: '1',
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
       WEAPP_VITE_E2E_REPORT_MARKERS: '1',
     })
   })

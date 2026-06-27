@@ -6,9 +6,10 @@ const JS_FORMATS = ['esm', 'cjs'] as const
 
 describe.sequential('template e2e: weapp-vite-wevu-template', () => {
   for (const jsFormat of JS_FORMATS) {
-    it(`renders all pages from app config in ${jsFormat}`, async () => {
+    it(`renders all pages from app config in ${jsFormat}`, async (ctx) => {
       await runTemplateE2E({
         jsFormat,
+        skip: ctx.skip,
         templateRoot: TEMPLATE_ROOT,
         templateName: 'weapp-vite-wevu-template',
       })

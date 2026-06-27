@@ -9,27 +9,23 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config in cjs > weapp-vite-wevu-template::pages/index/index 1`] = `
-"<weapp-layout-default is="layouts/default">
-  <view class="default--layout-default">
-    <view class="page">
-      <view class="card">
-        <view class="hero__title">Weapp-vite + Wevu</view>
-        <view class="hero__desc">一个尽量小的 Vue SFC 小程序起点，复杂能力示例请看 e2e-apps。</view>
-        <view class="counter">
-          <text></text>
-          <text></text>
-        </view>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="action-btn"
-          data-wi-tap="i0"
-          role="button"
-          aria-disabled="false">
-          +1
-        </button>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
+  <view class="page">
+    <view class="card">
+      <view class="hero__title">Weapp-vite + Wevu</view>
+      <view class="hero__desc">一个尽量小的 Vue SFC 小程序起点，复杂能力示例请看 e2e-apps。</view>
+      <view class="counter">
+        <text>count: {{count}}</text>
+        <text>double: {{doubled}}</text>
       </view>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wi-tap="i0">
+        +1
+      </button>
     </view>
   </view>
 </weapp-layout-default>
@@ -37,28 +33,28 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config in cjs > weapp-vite-wevu-template::pages/layouts/index 1`] = `
-"<weapp-layout-default is="layouts/default">
-  <view class="default--layout-default">
+"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
+  <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
       <view class="hero">
         <view class="hero__eyebrow">Layout Playground</view>
         <view class="hero__title">基础模板已接入 src/layouts 约定</view>
         <view class="hero__desc">
-          当前状态：default。可以在 default、admin 与 false
+          当前状态：{{currentLayout}}。可以在 default、admin 与 false
           三种布局模式之间切换，作为正式业务页面的基础壳能力。
         </view>
       </view>
-      <view class="section">
-        <view class="section__title">default 布局</view>
-        <text class="section__desc"></text>
-      </view>
-      <view class="section">
-        <view class="section__title">admin 布局</view>
-        <text class="section__desc"></text>
-      </view>
-      <view class="section">
-        <view class="section__title">关闭布局</view>
-        <text class="section__desc"></text>
+      <view
+        class="section"
+        wx:for="{{cards}}"
+        wx:for-item="item"
+        wx:for-index="__wv_index_0"
+        wx:key="title">
+        <view class="section__title">{{item.title}}</view>
+        <text class="section__desc">{{item.desc}}</text>
       </view>
       <view class="section">
         <button
@@ -66,9 +62,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn"
-          data-wi-tap="i0"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i0">
           使用 default 布局
         </button>
         <button
@@ -76,9 +70,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--primary"
-          data-wi-tap="i1"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i1">
           切到 admin 布局
         </button>
         <button
@@ -86,15 +78,112 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--ghost"
-          data-wi-tap="i2"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i2">
           关闭布局
         </button>
       </view>
     </view>
+  </weapp-layout-admin>
+</block>
+<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
+  <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="page">
+      <view class="hero">
+        <view class="hero__eyebrow">Layout Playground</view>
+        <view class="hero__title">基础模板已接入 src/layouts 约定</view>
+        <view class="hero__desc">
+          当前状态：{{currentLayout}}。可以在 default、admin 与 false
+          三种布局模式之间切换，作为正式业务页面的基础壳能力。
+        </view>
+      </view>
+      <view
+        class="section"
+        wx:for="{{cards}}"
+        wx:for-item="item"
+        wx:for-index="__wv_index_0"
+        wx:key="title">
+        <view class="section__title">{{item.title}}</view>
+        <text class="section__desc">{{item.desc}}</text>
+      </view>
+      <view class="section">
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn"
+          data-wi-tap="i0">
+          使用 default 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--primary"
+          data-wi-tap="i1">
+          切到 admin 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--ghost"
+          data-wi-tap="i2">
+          关闭布局
+        </button>
+      </view>
+    </view>
+  </weapp-layout-default>
+</block>
+<block wx:else>
+  <view class="page">
+    <view class="hero">
+      <view class="hero__eyebrow">Layout Playground</view>
+      <view class="hero__title">基础模板已接入 src/layouts 约定</view>
+      <view class="hero__desc">
+        当前状态：{{currentLayout}}。可以在 default、admin 与 false
+        三种布局模式之间切换，作为正式业务页面的基础壳能力。
+      </view>
+    </view>
+    <view
+      class="section"
+      wx:for="{{cards}}"
+      wx:for-item="item"
+      wx:for-index="__wv_index_0"
+      wx:key="title">
+      <view class="section__title">{{item.title}}</view>
+      <text class="section__desc">{{item.desc}}</text>
+    </view>
+    <view class="section">
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wi-tap="i0">
+        使用 default 布局
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn action-btn--primary"
+        data-wi-tap="i1">
+        切到 admin 布局
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn action-btn--ghost"
+        data-wi-tap="i2">
+        关闭布局
+      </button>
+    </view>
   </view>
-</weapp-layout-default>
+</block>
 "
 `;
 
@@ -107,27 +196,23 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config in esm > weapp-vite-wevu-template::pages/index/index 1`] = `
-"<weapp-layout-default is="layouts/default">
-  <view class="default--layout-default">
-    <view class="page">
-      <view class="card">
-        <view class="hero__title">Weapp-vite + Wevu</view>
-        <view class="hero__desc">一个尽量小的 Vue SFC 小程序起点，复杂能力示例请看 e2e-apps。</view>
-        <view class="counter">
-          <text></text>
-          <text></text>
-        </view>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="action-btn"
-          data-wi-tap="i0"
-          role="button"
-          aria-disabled="false">
-          +1
-        </button>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
+  <view class="page">
+    <view class="card">
+      <view class="hero__title">Weapp-vite + Wevu</view>
+      <view class="hero__desc">一个尽量小的 Vue SFC 小程序起点，复杂能力示例请看 e2e-apps。</view>
+      <view class="counter">
+        <text>count: {{count}}</text>
+        <text>double: {{doubled}}</text>
       </view>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wi-tap="i0">
+        +1
+      </button>
     </view>
   </view>
 </weapp-layout-default>
@@ -135,28 +220,28 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config in esm > weapp-vite-wevu-template::pages/layouts/index 1`] = `
-"<weapp-layout-default is="layouts/default">
-  <view class="default--layout-default">
+"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
+  <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
       <view class="hero">
         <view class="hero__eyebrow">Layout Playground</view>
         <view class="hero__title">基础模板已接入 src/layouts 约定</view>
         <view class="hero__desc">
-          当前状态：default。可以在 default、admin 与 false
+          当前状态：{{currentLayout}}。可以在 default、admin 与 false
           三种布局模式之间切换，作为正式业务页面的基础壳能力。
         </view>
       </view>
-      <view class="section">
-        <view class="section__title">default 布局</view>
-        <text class="section__desc"></text>
-      </view>
-      <view class="section">
-        <view class="section__title">admin 布局</view>
-        <text class="section__desc"></text>
-      </view>
-      <view class="section">
-        <view class="section__title">关闭布局</view>
-        <text class="section__desc"></text>
+      <view
+        class="section"
+        wx:for="{{cards}}"
+        wx:for-item="item"
+        wx:for-index="__wv_index_0"
+        wx:key="title">
+        <view class="section__title">{{item.title}}</view>
+        <text class="section__desc">{{item.desc}}</text>
       </view>
       <view class="section">
         <button
@@ -164,9 +249,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn"
-          data-wi-tap="i0"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i0">
           使用 default 布局
         </button>
         <button
@@ -174,9 +257,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--primary"
-          data-wi-tap="i1"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i1">
           切到 admin 布局
         </button>
         <button
@@ -184,14 +265,111 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn action-btn--ghost"
-          data-wi-tap="i2"
-          role="button"
-          aria-disabled="false">
+          data-wi-tap="i2">
           关闭布局
         </button>
       </view>
     </view>
+  </weapp-layout-admin>
+</block>
+<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
+  <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="page">
+      <view class="hero">
+        <view class="hero__eyebrow">Layout Playground</view>
+        <view class="hero__title">基础模板已接入 src/layouts 约定</view>
+        <view class="hero__desc">
+          当前状态：{{currentLayout}}。可以在 default、admin 与 false
+          三种布局模式之间切换，作为正式业务页面的基础壳能力。
+        </view>
+      </view>
+      <view
+        class="section"
+        wx:for="{{cards}}"
+        wx:for-item="item"
+        wx:for-index="__wv_index_0"
+        wx:key="title">
+        <view class="section__title">{{item.title}}</view>
+        <text class="section__desc">{{item.desc}}</text>
+      </view>
+      <view class="section">
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn"
+          data-wi-tap="i0">
+          使用 default 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--primary"
+          data-wi-tap="i1">
+          切到 admin 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--ghost"
+          data-wi-tap="i2">
+          关闭布局
+        </button>
+      </view>
+    </view>
+  </weapp-layout-default>
+</block>
+<block wx:else>
+  <view class="page">
+    <view class="hero">
+      <view class="hero__eyebrow">Layout Playground</view>
+      <view class="hero__title">基础模板已接入 src/layouts 约定</view>
+      <view class="hero__desc">
+        当前状态：{{currentLayout}}。可以在 default、admin 与 false
+        三种布局模式之间切换，作为正式业务页面的基础壳能力。
+      </view>
+    </view>
+    <view
+      class="section"
+      wx:for="{{cards}}"
+      wx:for-item="item"
+      wx:for-index="__wv_index_0"
+      wx:key="title">
+      <view class="section__title">{{item.title}}</view>
+      <text class="section__desc">{{item.desc}}</text>
+    </view>
+    <view class="section">
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wi-tap="i0">
+        使用 default 布局
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn action-btn--primary"
+        data-wi-tap="i1">
+        切到 admin 布局
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn action-btn--ghost"
+        data-wi-tap="i2">
+        关闭布局
+      </button>
+    </view>
   </view>
-</weapp-layout-default>
+</block>
 "
 `;

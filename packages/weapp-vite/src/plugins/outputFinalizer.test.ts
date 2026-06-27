@@ -1,6 +1,7 @@
 import type { OutputBundle } from 'rolldown'
+import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
-import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -80,6 +81,51 @@ describe('weapp-vite output finalizer', () => {
         source: '.page{color:red}',
       },
     ])
+  })
+
+  it('normalizes template event shorthand left by post-process plugins', () => {
+    const bundle = {
+      'pages/index/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxml',
+        source: '<van-button type="default" @tap="showDialog">Vant 按钮</van-button>',
+      },
+    } as unknown as OutputBundle
+
+    normalizeTemplateAssets({
+      configService: {
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+      },
+    } as any, bundle)
+
+    expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="showDialog"')
+    expect((bundle['pages/index/index.wxml'] as any).source).not.toContain('@tap=')
+  })
+
+  it('normalizes binary template assets emitted by post-process plugins', () => {
+    const bundle = {
+      'pages/index/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxml',
+        source: Buffer.from('<button @tap="handleTap">Tap</button>'),
+      },
+    } as unknown as OutputBundle
+
+    normalizeTemplateAssets({
+      configService: {
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+      },
+    } as any, bundle)
+
+    expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="handleTap"')
   })
 
   it('runs as a post generateBundle plugin', () => {

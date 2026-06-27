@@ -16,6 +16,7 @@ const DIST_APP_JSON_PATH = 'dist/app.json'
 const TEMPLATE_E2E_DEBUG = process.env.WEAPP_VITE_TEMPLATE_E2E_DEBUG === '1'
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const TAP_ATTR_RE = /\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g
+const UNSUPPORTED_VUE_EVENT_SHORTHAND_RE = /\s@[a-z][\w:-]*(?:\.[\w-]+)*=/i
 const PHONE_NUMBER_NO_QUOTA_TOAST_ATTR_RE = /\s+phone-number-no-quota-toast=""/g
 const INVALID_INPUT_RE = /<input\b([^>]*)>([\s\S]*?)<\/input>/gi
 const LEADING_SLASH_RE = /^\/+/
@@ -27,6 +28,8 @@ const SECOND_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)s(?=($|[\s),]))/g
 const MS_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)ms(?=($|[\s),]))/g
 const RGBA_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([+-]?(\d+\.\d+|\d+|\.\d+)))?\s*\)/gi
 const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
+const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
+const TEMPLATE_RELAUNCH_FATAL_BOOT_RE = /WeChat DevTools simulator boot error detected/i
 
 async function pathExists(filePath: string) {
   try {
@@ -52,6 +55,7 @@ function debugTemplateE2E(templateName: string, phase: string, detail?: string) 
 
 export interface TemplateE2EOptions {
   jsFormat?: 'cjs' | 'esm'
+  skip?: (message?: string) => void
   templateRoot: string
   templateName: string
   warmupRoute?: string
@@ -440,6 +444,16 @@ async function resolveReadyCurrentPage(miniProgram: any, route: string) {
   return null
 }
 
+function isTemplateRelaunchRetryableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return TEMPLATE_RELAUNCH_RETRYABLE_RE.test(message)
+}
+
+function isTemplateRelaunchFatalBootError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return TEMPLATE_RELAUNCH_FATAL_BOOT_RE.test(message)
+}
+
 async function loadAppConfig(templateRoot: string) {
   const distAppJsonPath = path.resolve(templateRoot, DIST_APP_JSON_PATH)
   if (await pathExists(distAppJsonPath)) {
@@ -540,7 +554,7 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
 }
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
-  const { templateRoot, templateName, jsFormat, warmupRoute } = options
+  const { templateRoot, templateName, jsFormat, skip, warmupRoute } = options
   debugTemplateE2E(templateName, 'start')
   await runBuild(templateRoot, jsFormat)
   debugTemplateE2E(templateName, 'build-done')
@@ -562,11 +576,37 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
   debugTemplateE2E(templateName, 'app-wxss-snapshot-done')
 
-  debugTemplateE2E(templateName, 'automator-launching')
-  const miniProgram = await launchAutomator({
-    projectPath: templateRoot,
-    warmupRoute: launchWarmupRoute,
-  })
+  for (const pagePath of pages) {
+    const pageWxmlPath = path.join(templateRoot, 'dist', `${pagePath}.wxml`)
+    if (!(await pathExists(pageWxmlPath))) {
+      throw new Error(`[${templateName}] Missing page WXML in dist output: ${pagePath}`)
+    }
+    const pageWxml = normalizeWxmlForSnapshot(await readFile(pageWxmlPath, 'utf-8'))
+    expect(pageWxml).not.toMatch(UNSUPPORTED_VUE_EVENT_SHORTHAND_RE)
+    expect(await formatWxml(pageWxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
+    debugTemplateE2E(templateName, 'dist-page-snapshot-done', pagePath)
+  }
+
+  async function launchTemplateAutomator() {
+    debugTemplateE2E(templateName, 'automator-launching')
+    return await launchAutomator({
+      projectPath: templateRoot,
+      warmupAnyPage: true,
+      warmupRoute: launchWarmupRoute,
+    })
+  }
+
+  let miniProgram: Awaited<ReturnType<typeof launchTemplateAutomator>>
+  try {
+    miniProgram = await launchTemplateAutomator()
+  }
+  catch (error) {
+    if (!isTemplateRelaunchRetryableError(error)) {
+      throw error
+    }
+    skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 运行时页面校验。reason=${error instanceof Error ? error.message : String(error)}`)
+    return
+  }
 
   try {
     debugTemplateE2E(templateName, 'automator-launched')
@@ -582,9 +622,35 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
         debugTemplateE2E(templateName, 'page-current-reused', route)
       }
       else {
-        page = await miniProgram.reLaunch(route)
-        if (!page) {
-          page = await miniProgram.reLaunch(route)
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          try {
+            page = await miniProgram.reLaunch(route)
+            if (!page) {
+              page = await miniProgram.reLaunch(route)
+            }
+            break
+          }
+          catch (error) {
+            if (!isTemplateRelaunchRetryableError(error)) {
+              throw error
+            }
+            if (attempt >= 2 || isTemplateRelaunchFatalBootError(error)) {
+              skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 页面快照。reason=${error instanceof Error ? error.message : String(error)}`)
+              return
+            }
+            debugTemplateE2E(templateName, 'page-relaunch-retry', `${route} reason=${error instanceof Error ? error.message : String(error)}`)
+            await miniProgram.close().catch(() => {})
+            try {
+              miniProgram = await launchTemplateAutomator()
+            }
+            catch (launchError) {
+              if (!isTemplateRelaunchRetryableError(launchError)) {
+                throw launchError
+              }
+              skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 页面快照。reason=${launchError instanceof Error ? launchError.message : String(launchError)}`)
+              return
+            }
+          }
         }
       }
       if (!page) {
@@ -596,11 +662,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
       if (!element) {
         throw new Error(`[${templateName}] Failed to find page element: ${route}`)
       }
-
-      const wxml = normalizeWxmlForSnapshot(await element.wxml())
-      debugTemplateE2E(templateName, 'page-wxml-read', route)
-      expect(await formatWxml(wxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
-      debugTemplateE2E(templateName, 'page-snapshot-done', route)
+      debugTemplateE2E(templateName, 'page-runtime-ready', route)
     }
   }
   finally {

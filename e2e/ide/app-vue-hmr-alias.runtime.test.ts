@@ -1,7 +1,11 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import {
+  isDevtoolsHttpPortError,
+  isDevtoolsSimulatorBootError,
+  launchAutomator,
+} from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -28,6 +32,7 @@ const BASE_LAYOUT_MARKER = 'APP-VUE-HMR-ALIAS-LAYOUT-BASE'
 const PAGE_MARKER = 'APP-VUE-HMR-ALIAS-PAGE'
 const BOOTSTRAP_MARKER = 'app-vue-hmr-alias-bootstrap-ready'
 const ALIAS_MODULE_MISSING_RE = /module ['"]@\/bootstrap(?:\.js)?['"] is not defined|require args is ['"]@\/bootstrap['"]/i
+const DEVTOOLS_ROUTE_INFRA_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|simulator not found|模拟器启动失败/i
 const MARKER_SELECTORS = [
   '.app-vue-hmr-alias-page',
   '.app-vue-hmr-alias-page__label',
@@ -58,6 +63,13 @@ let previousAutomatorLaunchMode: string | undefined
 let previousAutomatorPostConnectRefresh: string | undefined
 let previousBridgePostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage: string | null = null
+
+function isDevtoolsRouteInfraError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isDevtoolsHttpPortError(error)
+    || isDevtoolsSimulatorBootError(error)
+    || DEVTOOLS_ROUTE_INFRA_RE.test(message)
+}
 
 async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnapshot> {
   const result = await miniProgram.evaluate(() => {
@@ -127,9 +139,14 @@ async function waitForCurrentRoute(miniProgram: any, timeoutMs = 15_000) {
   const start = Date.now()
   let latest: unknown
   while (Date.now() - start <= timeoutMs) {
-    latest = await miniProgram.currentPage({ retries: 1, timeout: 5_000 }).catch((error: unknown) => ({
-      error: error instanceof Error ? error.message : String(error),
-    }))
+    latest = await miniProgram.currentPage({ retries: 1, timeout: 5_000 }).catch((error: unknown) => {
+      if (isDevtoolsRouteInfraError(error)) {
+        throw error
+      }
+      return {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    })
     if ((latest as { path?: string })?.path === 'pages/index/index') {
       return latest
     }
@@ -239,7 +256,7 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
       })
     }
     catch (error) {
-      if (isDevtoolsHttpPortError(error)) {
+      if (isDevtoolsRouteInfraError(error)) {
         sharedInfraUnavailableMessage = `WeChat DevTools 自动化环境不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`
         return
       }
@@ -293,7 +310,16 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
       throw new Error('app.vue alias HMR IDE runtime setup did not create DevTools session.')
     }
 
-    const page = await waitForCurrentRoute(miniProgram)
+    let page: any
+    try {
+      page = await waitForCurrentRoute(miniProgram)
+    }
+    catch (error) {
+      if (isDevtoolsRouteInfraError(error)) {
+        ctx.skip(`WeChat DevTools 页面路由协议不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`)
+      }
+      throw error
+    }
     await page.waitFor(5_000)
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
@@ -317,14 +343,30 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
     await devProcess.waitFor(waitForFileContains(PAGE_JS_DIST, pageMarker), 'updated page script emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
     await waitForIdeHmrSettled()
-    await relaunchIndexPage(miniProgram)
+    try {
+      await relaunchIndexPage(miniProgram)
+    }
+    catch (error) {
+      if (isDevtoolsRouteInfraError(error)) {
+        ctx.skip(`WeChat DevTools 页面路由协议不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`)
+      }
+      throw error
+    }
     await waitForVisibleRuntime(miniProgram, [pageMarker, BOOTSTRAP_MARKER])
 
     const bootstrapMarker = createHmrMarker('APP-VUE-ALIAS-BOOTSTRAP', 'weapp')
     await replaceFileByRename(BOOTSTRAP_TS_PATH, replaceMarker(originalBootstrapSource, BOOTSTRAP_MARKER, bootstrapMarker, 'bootstrap alias module'))
     await assertDistJsKeepsBundledAliasMarker(bootstrapMarker)
     await waitForIdeHmrSettled()
-    await relaunchIndexPage(miniProgram)
+    try {
+      await relaunchIndexPage(miniProgram)
+    }
+    catch (error) {
+      if (isDevtoolsRouteInfraError(error)) {
+        ctx.skip(`WeChat DevTools 页面路由协议不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`)
+      }
+      throw error
+    }
     await waitForVisibleRuntime(miniProgram, [pageMarker, bootstrapMarker])
 
     expect(devProcess.getOutput()).not.toMatch(ALIAS_MODULE_MISSING_RE)

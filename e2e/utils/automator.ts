@@ -1807,7 +1807,7 @@ async function warmupMiniProgramRoute(
     ? Math.min(BRIDGE_WARMUP_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
     : Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
   if (options.allowRelaunch === false && options.allowAnyPage) {
-    const bootedPage = await waitForAnyCurrentPageReady(miniProgram, Math.min(3_000, currentPageReadyTimeout), {
+    const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
       checkDevtoolsLog: options.checkDevtoolsLog,
       closeOnQueryTimeout: false,
       queryTimeoutMs: 1_500,

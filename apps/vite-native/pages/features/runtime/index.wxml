@@ -7,7 +7,7 @@
   <view class="bg-slate-800 rounded-2xl p-4 space-y-3">
     <view class="flex items-center justify-between">
       <view class="text-sm text-slate-300">环境变量 (import.meta.env)</view>
-      <button class="px-3 py-2 rounded-lg bg-slate-50 text-slate-900 text-xs active:bg-slate-200" @tap="handleCopyEnv">复制</button>
+      <button class="px-3 py-2 rounded-lg bg-slate-50 text-slate-900 text-xs active:bg-slate-200" bind:tap="handleCopyEnv">复制</button>
     </view>
     <scroll-view scroll-y class="max-h-56 bg-slate-900/60 rounded-xl p-3 text-xs font-mono break-all">
       {{envPreview}}
@@ -27,7 +27,7 @@
   <view class="bg-slate-800 rounded-2xl p-4 space-y-3">
     <view class="flex items-center justify-between">
       <view class="text-base font-medium">构建 / 分包</view>
-      <button class="px-3 py-2 rounded-lg bg-amber-400 text-slate-900 text-xs font-semibold active:bg-amber-500" @tap="handleNavigateSubpackages">查看分包示例</button>
+      <button class="px-3 py-2 rounded-lg bg-amber-400 text-slate-900 text-xs font-semibold active:bg-amber-500" bind:tap="handleNavigateSubpackages">查看分包示例</button>
     </view>
     <view class="flex flex-wrap gap-2">
       <view class="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-100 text-xs" wx:for="{{buildFeatures}}" wx:key="*this">{{item}}</view>
@@ -37,7 +37,7 @@
   <view class="bg-slate-800 rounded-2xl p-4 space-y-3">
     <view class="flex items-center justify-between">
       <view class="text-base font-medium">样式 / 组件</view>
-      <button class="px-3 py-2 rounded-lg bg-emerald-400 text-slate-900 text-xs font-semibold active:bg-emerald-500" @tap="handleNavigateUI">跳转 UI 示例</button>
+      <button class="px-3 py-2 rounded-lg bg-emerald-400 text-slate-900 text-xs font-semibold active:bg-emerald-500" bind:tap="handleNavigateUI">跳转 UI 示例</button>
     </view>
     <view class="flex flex-wrap gap-2">
       <view class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-100 text-xs" wx:for="{{styleFeatures}}" wx:key="*this">{{item}}</view>

@@ -13,7 +13,7 @@
         data-color="{{item}}"
         class="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-xs font-semibold active:scale-95 duration-150"
         style="background: {{item}}"
-        @tap="handlePaletteTap"
+        bind:tap="handlePaletteTap"
       >
         {{item}}
       </view>
@@ -27,7 +27,7 @@
       <t-button size="large" theme="light">Ghost</t-button>
     </view>
     <view class="flex items-center gap-3">
-      <button class="px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm active:bg-indigo-600" @tap="handleToast">触发 Vant Toast</button>
+      <button class="px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm active:bg-indigo-600" bind:tap="handleToast">触发 Vant Toast</button>
       <van-toast id="van-toast" />
     </view>
   </view>

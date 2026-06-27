@@ -10,7 +10,14 @@ vi.mock('@weapp-vite/web', () => ({
 }), { virtual: true })
 
 type WatcherEmitter = WatcherInstance & {
-  on: (event: string, listener: (...args: any[]) => void) => void
+  on: (event: 'event', listener: (event: WatcherEvent) => void) => void
+  off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
+  removeListener?: (event: 'event', listener: (event: WatcherEvent) => void) => void
+}
+
+interface WatcherEvent {
+  code?: string
+  error?: unknown
 }
 
 function isWatcherEmitter(value: unknown): value is WatcherEmitter {
@@ -19,6 +26,43 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   }
   const candidate = value as { on?: unknown, close?: unknown }
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
+}
+
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+  return new Promise<void>((resolve, reject) => {
+    const seenEvents: string[] = []
+
+    const unsubscribe = (fn: (event: WatcherEvent) => void) => {
+      if (typeof watcher.off === 'function') {
+        watcher.off('event', fn)
+      }
+      else if (typeof watcher.removeListener === 'function') {
+        watcher.removeListener('event', fn)
+      }
+    }
+
+    let timer: ReturnType<typeof setTimeout>
+    const handler = (event: WatcherEvent) => {
+      seenEvents.push(event.code ?? 'unknown')
+      if (event.code === 'END' || event.code === 'BUNDLE_END') {
+        clearTimeout(timer)
+        unsubscribe(handler)
+        resolve()
+      }
+      else if (event.code === 'ERROR') {
+        clearTimeout(timer)
+        unsubscribe(handler)
+        reject(event.error ?? new Error('watch build failed'))
+      }
+    }
+
+    timer = setTimeout(() => {
+      unsubscribe(handler)
+      reject(new Error(`watch build timed out, events seen: ${seenEvents.join(', ')}`))
+    }, timeoutMs)
+
+    watcher.on('event', handler)
+  })
 }
 
 async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
@@ -76,7 +120,9 @@ describe.sequential('app vue hmr alias watch shared chunk rebuild', () => {
       const updatedSource = originalSource.replace(initialMarker, updatedMarker)
       expect(updatedSource).not.toBe(originalSource)
 
+      const buildPromise = waitForBuild(watcher)
       await fs.writeFile(bootstrapSourcePath, updatedSource, 'utf8')
+      await buildPromise
       await waitForFileContains(commonOutputPath, updatedMarker)
 
       const updatedCommonOutput = await fs.readFile(commonOutputPath, 'utf8')

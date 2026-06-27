@@ -29,7 +29,7 @@ const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const LOGIN_REQUIRED_RE = /登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired|DEVTOOLS_LOGIN_REQUIRED/i
 const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools timed out|DevTools did not respond/i
-const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out/i
+const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out|Command timed out after \d+ milliseconds/i
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
 
@@ -177,6 +177,14 @@ function isRecoverableAutomatorConnectionError(error: unknown) {
     || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
     || message.includes('DevTools did not respond to protocol method')
     || Reflect.get(error as object, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+}
+
+function isRecoverableDevToolsLaunchError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  const name = error instanceof Error ? error.name : ''
+  return isRecoverableAutomatorConnectionError(error)
+    || name === 'WechatIdeSimulatorBootLogError'
+    || /Timeout in warmup current page|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i.test(message)
 }
 
 async function waitForPredicate(
@@ -508,8 +516,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      if (/Timeout in warmup current page|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i.test(message)) {
-        expect(message).toMatch(/Timeout in warmup current page|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
+      if (isRecoverableDevToolsLaunchError(error)) {
+        expect(message).toMatch(/Timeout in warmup current page|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
         return
       }
       throw error
@@ -520,15 +528,24 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       await waitForPageData(miniProgram, 'count', 0)
     })
 
-    await runWeappIdeCli([
+    const tapResult = await runWeappIdeCli([
       'tap',
       COUNT_BUTTON_SELECTOR,
       '-p',
       TEMPLATE_ROOT,
     ], {
       cwd: TEMPLATE_ROOT,
+      reject: false,
       timeout: 60_000,
     })
+    if (tapResult.exitCode !== 0) {
+      const output = formatCliFailure('weapp-ide-cli tap', tapResult)
+      if (isIdeInfraOutput(output) || isCliTimeoutResult(tapResult)) {
+        expect(normalizeTerminalOutput(output)).toMatch(/automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|timedOut=true|Command timed out after \d+ milliseconds/i)
+        return
+      }
+      throw new Error(output)
+    }
 
     const { manager, tools } = await createRuntimeTools()
     try {

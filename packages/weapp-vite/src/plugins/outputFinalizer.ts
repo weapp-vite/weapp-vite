@@ -4,9 +4,11 @@ import type { CompilerContext } from '../context'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
 import { changeFileExtension } from '../utils'
+import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
+const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
 type EmitAsset = (asset: EmittedAsset) => void
 
 function outputSourceToString(output: OutputBundle[string]) {
@@ -59,6 +61,39 @@ export function normalizePreprocessorStyleAssets(
       ...(originalFileName ? { originalFileName } : {}),
       source: output.source,
     })
+  }
+}
+
+export function normalizeTemplateAssets(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+) {
+  const { configService } = ctx
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'asset' || !TEMPLATE_ASSET_RE.test(output.fileName)) {
+      continue
+    }
+
+    const source = output.source
+    const code = typeof source === 'string'
+      ? source
+      : source instanceof Uint8Array
+        ? Buffer.from(source).toString('utf8')
+        : undefined
+    if (code === undefined) {
+      continue
+    }
+
+    const token = scanWxml(code, {
+      platform: configService?.platform,
+    })
+    const result = handleWxml(token, {
+      scriptModuleExtension: configService?.outputExtensions?.wxs,
+      templateExtension: configService?.outputExtensions?.wxml,
+    })
+    if (result.code !== code) {
+      output.source = result.code
+    }
   }
 }
 
@@ -151,6 +186,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
         ctx.configService.outputExtensions?.wxss,
         asset => this.emitFile(asset),
       )
+      normalizeTemplateAssets(ctx, bundle as unknown as OutputBundle)
       pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
     },
   }

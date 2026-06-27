@@ -9,6 +9,7 @@ const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
+const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
 
@@ -210,6 +211,9 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
   const shouldDisableDevtoolsPrebuild = isDevtoolsVitestTask(task)
     && process.env[AUTOMATOR_PREBUILD_ENV] == null
     && task.env?.[AUTOMATOR_PREBUILD_ENV] == null
+  const shouldDisableDevtoolsBridgeWrapper = isDevtoolsVitestTask(task)
+    && process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] == null
+    && task.env?.[AUTOMATOR_BRIDGE_WRAPPER_ENV] == null
 
   return {
     cwd: process.cwd(),
@@ -221,6 +225,9 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
         : {}),
       ...(shouldDisableDevtoolsPrebuild
         ? { [AUTOMATOR_PREBUILD_ENV]: '0' }
+        : {}),
+      ...(shouldDisableDevtoolsBridgeWrapper
+        ? { [AUTOMATOR_BRIDGE_WRAPPER_ENV]: '0' }
         : {}),
       ...task.env,
     },

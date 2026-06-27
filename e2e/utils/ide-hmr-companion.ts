@@ -22,6 +22,8 @@ const DIST_INDEX_JS = 'dist/pages/index/index.js'
 const DIST_INDEX_WXSS = 'dist/pages/index/index.wxss'
 const HMR_COMPANION_ENABLED_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION'
 const TARGET_FILE_ENV = 'WEAPP_VITE_E2E_TARGET_FILE'
+const HMR_COMPANION_ATTEMPTS = 2
+const HMR_COMPANION_TIMEOUT_MS = 90_000
 const HMR_COMPANION_SKIP_TARGETS = new Set([
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ])
@@ -30,7 +32,7 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function waitForFileExcludes(filePath: string, marker: string, timeoutMs = 90_000) {
+async function waitForFileExcludes(filePath: string, marker: string, timeoutMs = HMR_COMPANION_TIMEOUT_MS) {
   const startedAt = Date.now()
   let latest = ''
 
@@ -106,8 +108,8 @@ function shouldRegisterIdeHmrCompanion(targetLabel: string) {
   return targetLabel.startsWith('ide/')
 }
 
-async function runIdeHmrCompanion(targetLabel: string) {
-  process.stdout.write(`[ide-hmr-companion] start target=${targetLabel}\n`)
+async function runIdeHmrCompanionAttempt(targetLabel: string, attempt: number) {
+  process.stdout.write(`[ide-hmr-companion] start target=${targetLabel} attempt=${attempt}\n`)
   const projectRoot = path.join(COMPANION_ROOT, targetLabel.replace(/[\\/]/g, '__'))
   const indexWxmlPath = path.join(projectRoot, INDEX_WXML)
   const indexTsPath = path.join(projectRoot, INDEX_TS)
@@ -136,29 +138,75 @@ async function runIdeHmrCompanion(targetLabel: string) {
     })
 
     await Promise.all([
-      devProcess.waitFor(waitForFileContains(path.join(projectRoot, DIST_INDEX_WXML), initialText, 90_000), 'HMR companion initial WXML emit'),
-      devProcess.waitFor(waitForFileContains(path.join(projectRoot, DIST_INDEX_JS), initialData, 90_000), 'HMR companion initial JS emit'),
+      devProcess.waitFor(
+        waitForFileContains(path.join(projectRoot, DIST_INDEX_WXML), initialText, HMR_COMPANION_TIMEOUT_MS),
+        'HMR companion initial WXML emit',
+      ),
+      devProcess.waitFor(
+        waitForFileContains(path.join(projectRoot, DIST_INDEX_JS), initialData, HMR_COMPANION_TIMEOUT_MS),
+        'HMR companion initial JS emit',
+      ),
     ])
     expect(await fs.readFile(path.join(projectRoot, DIST_INDEX_WXSS), 'utf8')).toContain('#f8fafc')
 
     await replaceFileByRename(indexWxmlPath, originalWxml.replace('Hello', updatedText))
-    await waitForFileContains(path.join(projectRoot, DIST_INDEX_WXML), updatedText, 90_000)
-    await waitForFileExcludes(path.join(projectRoot, DIST_INDEX_WXML), initialText, 90_000)
+    await devProcess.waitFor(
+      waitForFileContains(path.join(projectRoot, DIST_INDEX_WXML), updatedText, HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion updated WXML emit',
+    )
+    await devProcess.waitFor(
+      waitForFileExcludes(path.join(projectRoot, DIST_INDEX_WXML), initialText, HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion stale WXML removal',
+    )
 
     await replaceFileByRename(indexTsPath, originalTs.replace('target: \'index snapshot\'', `target: '${updatedData}'`))
-    await waitForFileContains(path.join(projectRoot, DIST_INDEX_JS), updatedData, 90_000)
-    await waitForFileExcludes(path.join(projectRoot, DIST_INDEX_JS), initialData, 90_000)
+    await devProcess.waitFor(
+      waitForFileContains(path.join(projectRoot, DIST_INDEX_JS), updatedData, HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion updated JS emit',
+    )
+    await devProcess.waitFor(
+      waitForFileExcludes(path.join(projectRoot, DIST_INDEX_JS), initialData, HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion stale JS removal',
+    )
 
     await replaceFileByRename(indexWxssPath, originalWxss.replace('background: #f8fafc;', 'background: #dcfce7;'))
-    await waitForFileContains(path.join(projectRoot, DIST_INDEX_WXSS), '#dcfce7', 90_000)
-    await waitForFileExcludes(path.join(projectRoot, DIST_INDEX_WXSS), '#f8fafc', 90_000)
-    process.stdout.write(`[ide-hmr-companion] pass target=${targetLabel}\n`)
+    await devProcess.waitFor(
+      waitForFileContains(path.join(projectRoot, DIST_INDEX_WXSS), '#dcfce7', HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion updated WXSS emit',
+    )
+    await devProcess.waitFor(
+      waitForFileExcludes(path.join(projectRoot, DIST_INDEX_WXSS), '#f8fafc', HMR_COMPANION_TIMEOUT_MS),
+      'HMR companion stale WXSS removal',
+    )
+    process.stdout.write(`[ide-hmr-companion] pass target=${targetLabel} attempt=${attempt}\n`)
   }
   finally {
     await devProcess?.stop().catch(() => {})
     await cleanupTrackedDevProcesses()
     await fs.rm(projectRoot, { force: true, recursive: true }).catch(() => {})
   }
+}
+
+async function runIdeHmrCompanion(targetLabel: string) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= HMR_COMPANION_ATTEMPTS; attempt += 1) {
+    try {
+      await runIdeHmrCompanionAttempt(targetLabel, attempt)
+      return
+    }
+    catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (attempt >= HMR_COMPANION_ATTEMPTS) {
+        break
+      }
+      process.stderr.write(`[ide-hmr-companion] retry target=${targetLabel} attempt=${attempt} reason=${message}\n`)
+      await delay(1_000)
+    }
+  }
+
+  throw lastError
 }
 
 export function registerIdeHmrCompanion(shouldSkip: () => boolean = () => false) {

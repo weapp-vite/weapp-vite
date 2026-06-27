@@ -22,8 +22,6 @@ text,
 page,
 .tw-root,
 wx-root-portal-content {
-  --color-gray-200: #e5e7eb;
-  --color-gray-400: #9ca3af;
   --color-white: #fff;
   --default-font-family: var(--font-sans);
   --default-mono-font-family: var(--font-mono);
@@ -41,9 +39,6 @@ wx-root-portal-content {
 }
 .mt-_b24rpx_B {
   margin-top: 24rpx;
-}
-.block {
-  display: block;
 }
 .min-h-screen {
   min-height: 100vh;
@@ -114,53 +109,26 @@ page {
 `;
 
 exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/index/index 1`] = `
-"<view
-  class="min-h-screen index--min-h-screen bg-_b_hf6f7fb_B index--bg-_b_hf6f7fb_B px-_b28rpx_B index--px-_b28rpx_B py-_b32rpx_B index--py-_b32rpx_B text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B">
+"<view class="min-h-screen bg-_b_hf6f7fb_B px-_b28rpx_B py-_b32rpx_B text-_b_h1f1a3f_B">
   <view
-    class="rounded-_b28rpx_B index--rounded-_b28rpx_B bg-white index--bg-white p-_b28rpx_B index--p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
-    <view
-      class="t-tag tag--t-tag t-tag--primary tag--t-tag--primary t-tag--light tag--t-tag--light t-tag--medium tag--t-tag--medium t-tag--square tag--t-tag--square"
-      style="">
-      <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
-      <view class="t-tag__text tag--t-tag__text">wevu</view>
-    </view>
-    <view
-      class="mt-_b16rpx_B index--mt-_b16rpx_B text-_b38rpx_B index--text-_b38rpx_B font-semibold index--font-semibold">
-      TDesign 最小模板
-    </view>
-    <view
-      class="mt-_b12rpx_B index--mt-_b12rpx_B text-_b24rpx_B index--text-_b24rpx_B leading-_b1_d6_B index--leading-_b1_d6_B text-_b_h64748b_B index--text-_b_h64748b_B">
+    class="rounded-_b28rpx_B bg-white p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <t-tag theme="primary" variant="light">wevu</t-tag>
+    <view class="mt-_b16rpx_B text-_b38rpx_B font-semibold">TDesign 最小模板</view>
+    <view class="mt-_b12rpx_B text-_b24rpx_B leading-_b1_d6_B text-_b_h64748b_B">
       保留 Vue SFC、Tailwind CSS 与 TDesign 自动导入的最小组合，复杂验证场景已迁到 e2e-apps。
     </view>
-    <view
-      class="mt-_b24rpx_B index--mt-_b24rpx_B rounded-_b20rpx_B index--rounded-_b20rpx_B bg-_b_hf4f6ff_B index--bg-_b_hf4f6ff_B p-_b20rpx_B index--p-_b20rpx_B">
-      <text
-        class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h51517c_B index--text-_b_h51517c_B"
-        id="count-label"></text>
+    <view class="mt-_b24rpx_B rounded-_b20rpx_B bg-_b_hf4f6ff_B p-_b20rpx_B">
+      <text class="text-_b24rpx_B text-_b_h51517c_B" id="count-label">{{buttonText}}</text>
     </view>
     <view id="count-button">
-      <button
-        activity-type="0"
-        entrance-path=""
-        need-show-entrance=""
-        app-parameter=""
-        data-custom="null"
-        form-type=""
-        hover-class="t-button--hover"
-        hover-start-time="20"
-        hover-stay-time="70"
-        lang=""
-        open-type=""
-        send-message-img="截图"
-        send-message-path="当前分享路径"
-        send-message-title="当前标题"
-        session-from=""
-        style=""
-        class="mt-_b24rpx_B index--mt-_b24rpx_B count-button-control index--count-button-control t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-        role="button"
-        aria-disabled="false">
-        <view class="t-button__content button--t-button__content">点一下</view>
-      </button>
+      <t-button
+        class="mt-_b24rpx_B count-button-control"
+        theme="primary"
+        block
+        data-wd-tap="1"
+        data-wi-tap="i0">
+        点一下
+      </t-button>
     </view>
   </view>
 </view>

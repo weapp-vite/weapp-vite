@@ -10,7 +10,7 @@
     wx:for="{{demos}}"
     wx:key="target"
     data-url="{{item.target}}"
-    @tap="handleNavigate"
+    bind:tap="handleNavigate"
   >
     <view class="text-xl font-semibold">{{item.title}}</view>
     <view class="text-sm text-slate-600">{{item.desc}}</view>

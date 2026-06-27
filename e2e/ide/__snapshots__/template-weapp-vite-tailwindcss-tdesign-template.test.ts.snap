@@ -37,21 +37,19 @@ text,
 page,
 .tw-root,
 wx-root-portal-content {
-  --color-blue-600: #2563eb;
+  --color-blue-600: #155dfc;
   --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-400: #9ca3af;
-  --color-gray-900: #111827;
-  --color-green-400: #4ade80;
-  --color-sky-400: #38bdf8;
+  --color-gray-900: #101828;
+  --color-green-400: #05df72;
+  --color-sky-400: #00bcff;
   --color-slate-100: #f1f5f9;
   --color-slate-200: #e2e8f0;
-  --color-slate-400: #94a3b8;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
-  --color-violet-700: #6d28d9;
+  --color-slate-400: #90a1b9;
+  --color-slate-600: #45556c;
+  --color-slate-700: #314158;
+  --color-slate-800: #1d293d;
+  --color-slate-900: #0f172b;
+  --color-violet-700: #7008e7;
   --color-white: #fff;
   --default-font-family: var(--font-sans);
   --default-mono-font-family: var(--font-mono);
@@ -329,7 +327,7 @@ wx-root-portal-content {
   text-decoration-line: underline;
 }
 .shadow-sm {
-  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, #0000000d);
+  --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, #0000001a), 0 1px 2px -1px var(--tw-shadow-color, #0000001a);
   box-shadow:
     var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
     var(--tw-shadow);
@@ -345,7 +343,7 @@ wx-root-portal-content {
 }
 .outline {
   outline-style: var(--tw-outline-style);
-  outline-width: 3px;
+  outline-width: 1px;
 }
 .transition {
   transition-duration: var(--tw-duration, var(--default-transition-duration));
@@ -378,253 +376,5 @@ wx-root-portal-content {
   --tw-scale-z: 95%;
   scale: var(--tw-scale-x) var(--tw-scale-y);
 }
-"
-`;
-
-exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/index/index 1`] = `
-"<weapp-layout-default is="layouts/default/index">
-  <view class="index--layout-default">
-    <view class="min-h-screen bg-gray-100 text-slate-800 transition-colors duration-500">
-      <view class="flex flex-col items-center pt-20 space-y-10">
-        <view class="flex HelloWorld--flex space-x-8 HelloWorld--space-x-8">
-          <view
-            class="w-24 HelloWorld--w-24 h-24 HelloWorld--h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B HelloWorld--bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B HelloWorld--bg-_blength_c100_v_100_v_B bg-no-repeat HelloWorld--bg-no-repeat"></view>
-          <view
-            class="w-32 HelloWorld--w-32 h-24 HelloWorld--h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B HelloWorld--bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B HelloWorld--bg-_blength_c100_v_100_v_B bg-no-repeat HelloWorld--bg-no-repeat"></view>
-        </view>
-        <view
-          class="bg-linear-to-r HelloWorld--bg-linear-to-r from-green-400 HelloWorld--from-green-400 to-sky-400 HelloWorld--to-sky-400 bg-clip-text HelloWorld--bg-clip-text text-xl HelloWorld--text-xl font-extrabold HelloWorld--font-extrabold text-transparent HelloWorld--text-transparent underline HelloWorld--underline">
-          weapp-vite &amp; weapp-tailwindcss
-        </view>
-        <view
-          class="w-full HelloWorld--w-full max-w-_b640rpx_B HelloWorld--max-w-_b640rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f95 HelloWorld--bg-white_f95 shadow-xl HelloWorld--shadow-xl shadow-slate-200_f70 HelloWorld--shadow-slate-200_f70 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-6 HelloWorld--gap-6">
-          <view
-            class="text-3xl HelloWorld--text-3xl font-semibold HelloWorld--font-semibold text-blue-600 HelloWorld--text-blue-600">
-            Hello weapp-vite + TDesign
-          </view>
-          <view
-            class="text-lg HelloWorld--text-lg leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700">
-            集成 TDesign Miniprogram 与 Tailwind CSS，帮助你快速搭建企业级交互界面。
-          </view>
-          <view
-            class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              app-parameter=""
-              data-custom="null"
-              form-type=""
-              hover-class="t-button--hover"
-              hover-start-time="20"
-              hover-stay-time="70"
-              lang=""
-              open-type=""
-              send-message-img="截图"
-              send-message-path="当前分享路径"
-              send-message-title="当前标题"
-              session-from=""
-              style=""
-              class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
-              role="button"
-              aria-disabled="false">
-              <view class="t-button__content button--t-button__content">复制文档链接</view>
-            </button>
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              app-parameter=""
-              data-custom="null"
-              form-type=""
-              hover-class="t-button--hover"
-              hover-start-time="20"
-              hover-stay-time="70"
-              lang=""
-              open-type=""
-              send-message-img="截图"
-              send-message-path="当前分享路径"
-              send-message-title="当前标题"
-              session-from=""
-              style=""
-              class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 t-button button--t-button t-button--outline button--t-button--outline t-button--light button--t-button--light t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
-              role="button"
-              aria-disabled="false">
-              <view class="t-button__content button--t-button__content">TDesign 小程序组件</view>
-            </button>
-          </view>
-          <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400">
-            点击按钮即可复制常用链接
-          </view>
-        </view>
-        <view class="flex items-center">
-          当前模式 light 切换模式
-          <view class="iconify i-mdi-moon-waxing-crescent text-2xl"></view>
-        </view>
-        <view class="underline">https://vite.icebreaker.top</view>
-        <view class="underline">https://tw.icebreaker.top</view>
-        <view>
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            data-custom="null"
-            form-type=""
-            hover-class="t-button--hover"
-            hover-start-time="20"
-            hover-stay-time="70"
-            lang=""
-            open-type=""
-            send-message-img="截图"
-            send-message-path="当前分享路径"
-            send-message-title="当前标题"
-            session-from=""
-            style=""
-            class="t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--ghost button--t-button--ghost"
-            role="button"
-            aria-disabled="false">
-            <view class="t-button__content button--t-button__content">TDesign Button</view>
-          </button>
-        </view>
-        <view>
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            data-custom="null"
-            form-type=""
-            hover-class="t-button--hover"
-            hover-start-time="20"
-            hover-stay-time="70"
-            lang=""
-            open-type=""
-            send-message-img="截图"
-            send-message-path="当前分享路径"
-            send-message-title="当前标题"
-            session-from=""
-            style=""
-            class="t-button button--t-button t-button--outline button--t-button--outline t-button--success button--t-button--success t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium"
-            role="button"
-            aria-disabled="false">
-            <view class="t-button__content button--t-button__content">打开布局演示页</view>
-          </button>
-        </view>
-      </view>
-      <view
-        class="t-action-sheet sheet--t-action-sheet t-action-sheet--center sheet--t-action-sheet--center t-action-sheet--list sheet--t-action-sheet--list t-action-sheet--no-description sheet--t-action-sheet--no-description"
-        id="t-action-sheet--stable"
-        style=""></view>
-    </view>
-  </view>
-</weapp-layout-default>
-"
-`;
-
-exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/layouts/index 1`] = `
-"<weapp-layout-default is="layouts/default/index">
-  <view class="index--layout-default">
-    <view class="min-h-screen bg-slate-100 px-4 py-5">
-      <view class="rounded-2xl bg-white p-5 shadow-sm">
-        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
-          Native Layouts
-        </view>
-        <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：default</view>
-      </view>
-      <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          app-parameter=""
-          data-custom="null"
-          form-type=""
-          hover-class="t-button--hover"
-          hover-start-time="20"
-          hover-stay-time="70"
-          lang=""
-          open-type=""
-          send-message-img="截图"
-          send-message-path="当前分享路径"
-          send-message-title="当前标题"
-          session-from=""
-          style=""
-          class="t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-          role="button"
-          aria-disabled="false">
-          <view class="t-button__content button--t-button__content">使用 default 布局</view>
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          app-parameter=""
-          data-custom="null"
-          form-type=""
-          hover-class="t-button--hover"
-          hover-start-time="20"
-          hover-stay-time="70"
-          lang=""
-          open-type=""
-          send-message-img="截图"
-          send-message-path="当前分享路径"
-          send-message-title="当前标题"
-          session-from=""
-          style=""
-          class="mt-3 t-button button--t-button t-button--outline button--t-button--outline t-button--success button--t-button--success t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-          role="button"
-          aria-disabled="false">
-          <view class="t-button__content button--t-button__content">切到 admin 布局</view>
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          app-parameter=""
-          data-custom="null"
-          form-type=""
-          hover-class="t-button--hover"
-          hover-start-time="20"
-          hover-stay-time="70"
-          lang=""
-          open-type=""
-          send-message-img="截图"
-          send-message-path="当前分享路径"
-          send-message-title="当前标题"
-          session-from=""
-          style=""
-          class="mt-3 t-button button--t-button t-button--outline button--t-button--outline t-button--warning button--t-button--warning t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-          role="button"
-          aria-disabled="false">
-          <view class="t-button__content button--t-button__content">关闭布局</view>
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          app-parameter=""
-          data-custom="null"
-          form-type=""
-          hover-class="t-button--hover"
-          hover-start-time="20"
-          hover-stay-time="70"
-          lang=""
-          open-type=""
-          send-message-img="截图"
-          send-message-path="当前分享路径"
-          send-message-title="当前标题"
-          session-from=""
-          style=""
-          class="mt-3 t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
-          role="button"
-          aria-disabled="false">
-          <view class="t-button__content button--t-button__content">返回首页</view>
-        </button>
-      </view>
-    </view>
-  </view>
-</weapp-layout-default>
 "
 `;

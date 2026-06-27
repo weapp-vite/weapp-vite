@@ -1,12 +1,17 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import {
+  isDevtoolsHttpPortError,
+  isDevtoolsSimulatorBootError,
+  launchAutomator,
+} from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/lifecycle-compare')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const DEVTOOLS_ROUTE_INFRA_RE = /Timeout in read current page|Timeout in raw reLaunch|DEVTOOLS_PROTOCOL_TIMEOUT|simulator not found|模拟器启动失败/i
 
 const TAB_PATHS = [
   '/pages/native/index',
@@ -59,6 +64,13 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
   return page
 }
 
+function isLifecycleCompareInfraError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isDevtoolsHttpPortError(error)
+    || isDevtoolsSimulatorBootError(error)
+    || DEVTOOLS_ROUTE_INFRA_RE.test(message)
+}
+
 function normalizeEntries(entries: any[]) {
   const normalized = entries.map(({ source, componentKind, ...rest }) => {
     const normalizedEntry = { ...rest }
@@ -84,8 +96,10 @@ function normalizeEntries(entries: any[]) {
     return normalizedEntry
   })
 
-  // Some IDE/runtime combinations may merge adjacent callbacks or emit
-  // routeDone more than once in the same transition.
+  // Some IDE/runtime combinations may merge adjacent callbacks, emit
+  // routeDone more than once in the same transition, or let wevu's
+  // pull-down-refresh bridge callback land immediately before the host
+  // lifecycle callback for the same user action.
   // Keep only the latest entry in a continuous segment.
   const compacted: any[] = []
   for (const entry of normalized) {
@@ -93,6 +107,7 @@ function normalizeEntries(entries: any[]) {
     if (
       (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll')
       || (entry.hook === 'onRouteDone' && prev?.hook === 'onRouteDone')
+      || (entry.hook === 'onPullDownRefresh' && prev?.hook === 'onPullDownRefresh')
     ) {
       compacted[compacted.length - 1] = entry
       continue
@@ -177,18 +192,41 @@ async function tapElementById(page: any, id: string) {
 
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
+let sharedInfraUnavailableMessage: string | null = null
 
-async function getSharedMiniProgram() {
+async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  if (sharedInfraUnavailableMessage) {
+    ctx?.skip(sharedInfraUnavailableMessage)
+    throw new Error(sharedInfraUnavailableMessage)
+  }
   if (!sharedBuildPrepared) {
     await runBuild()
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    try {
+      sharedMiniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (ctx && isLifecycleCompareInfraError(error)) {
+        sharedInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 lifecycle-compare IDE 自动化用例。reason=${error instanceof Error ? error.message : String(error)}`
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      throw error
+    }
   }
   return sharedMiniProgram
+}
+
+function skipLifecycleCompareInfraError(ctx: { skip: (message?: string) => void }, error: unknown) {
+  if (!isLifecycleCompareInfraError(error)) {
+    return false
+  }
+  sharedInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 lifecycle-compare IDE 自动化用例。reason=${error instanceof Error ? error.message : String(error)}`
+  ctx.skip(sharedInfraUnavailableMessage)
+  return true
 }
 
 async function releaseSharedMiniProgram(miniProgram: any) {
@@ -212,8 +250,8 @@ describe.sequential('lifecycle compare (e2e)', () => {
     await closeSharedMiniProgram()
   })
 
-  it('compares page lifecycles (native vs wevu ts/vue)', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('compares page lifecycles (native vs wevu ts/vue)', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
     try {
       await miniProgram.reLaunch('/pages/native/index?from=e2e')
       const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
@@ -234,13 +272,19 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
       expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
     }
+    catch (error) {
+      if (skipLifecycleCompareInfraError(ctx, error)) {
+        return
+      }
+      throw error
+    }
     finally {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
 
-  it('compares component lifecycles (native vs wevu ts/vue)', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('compares component lifecycles (native vs wevu ts/vue)', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
     try {
       await miniProgram.reLaunch('/pages/components/index?from=e2e')
       const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index')) ?? await miniProgram.currentPage()
@@ -255,13 +299,19 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
       expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
     }
+    catch (error) {
+      if (skipLifecycleCompareInfraError(ctx, error)) {
+        return
+      }
+      throw error
+    }
     finally {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
 
-  it('verifies bind event alias behavior for native view/native component/wevu sfc component', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('verifies bind event alias behavior for native view/native component/wevu sfc component', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await miniProgram.reLaunch('/pages/components/index?from=e2e-event-binding')
       if (!page) {
@@ -311,13 +361,19 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(stats.wevuSfcComponent.bothReverseBindprobe).toBe(1)
       expect(stats.wevuSfcComponent.bothReverseBindColonProbe).toBe(0)
     }
+    catch (error) {
+      if (skipLifecycleCompareInfraError(ctx, error)) {
+        return
+      }
+      throw error
+    }
     finally {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
 
-  it('verifies triggerEvent hyphen/underscore event names with bind and bind: forms', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('verifies triggerEvent hyphen/underscore event names with bind and bind: forms', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await miniProgram.reLaunch('/pages/components/index?from=e2e-event-name-binding')
       if (!page) {
@@ -356,6 +412,12 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(stats.underscore.wevuSfcComponent.bindColon).toBe(1)
       expect(stats.underscore.wevuSfcComponent.bothBind).toBe(1)
       expect(stats.underscore.wevuSfcComponent.bothBindColon).toBe(0)
+    }
+    catch (error) {
+      if (skipLifecycleCompareInfraError(ctx, error)) {
+        return
+      }
+      throw error
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

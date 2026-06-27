@@ -1,7 +1,11 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import {
+  isDevtoolsHttpPortError,
+  isDevtoolsSimulatorBootError,
+  launchAutomator,
+} from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
@@ -17,10 +21,15 @@ function getSessionMetadata(miniProgram: any) {
   return Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { projectPath?: string } | undefined
 }
 
+function isBridgeWrapperInfraError(error: unknown) {
+  return isDevtoolsHttpPortError(error) || isDevtoolsSimulatorBootError(error)
+}
+
 describe.sequential('automator bridge wrapper hmr (ide)', () => {
   let dev: ReturnType<typeof startDevProcess> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
   let originalWxml = ''
+  let sharedInfraUnavailableMessage = ''
 
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
@@ -40,10 +49,19 @@ describe.sequential('automator bridge wrapper hmr (ide)', () => {
       'bridge wrapper hmr baseline dist generated',
     )
 
-    miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-      skipWarmup: true,
-    })
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+        skipWarmup: true,
+      })
+    }
+    catch (error) {
+      if (isBridgeWrapperInfraError(error)) {
+        sharedInfraUnavailableMessage = `WeChat DevTools automator 基础设施不可用，跳过 bridge wrapper HMR IDE 自动化用例。reason=${error instanceof Error ? error.message : String(error)}`
+        return
+      }
+      throw error
+    }
   }, 120_000)
 
   afterAll(async () => {
@@ -59,7 +77,11 @@ describe.sequential('automator bridge wrapper hmr (ide)', () => {
     }
   }, 60_000)
 
-  it('keeps the opened bridge wrapper project synced with dev dist updates', async () => {
+  it('keeps the opened bridge wrapper project synced with dev dist updates', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+      return
+    }
     const wrapperProjectPath = getSessionMetadata(miniProgram)?.projectPath
     expect(wrapperProjectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
     const wrapperHmrWxml = path.join(wrapperProjectPath!, 'pages/hmr/index.wxml')

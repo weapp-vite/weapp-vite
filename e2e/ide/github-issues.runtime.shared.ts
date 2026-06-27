@@ -2,7 +2,12 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect } from 'vitest'
-import { isDevtoolsHttpPortError, isDevtoolsSimulatorBootError, launchAutomator } from '../utils/automator'
+import {
+  isDevtoolsHttpPortError,
+  isDevtoolsLoginRequiredError,
+  isDevtoolsSimulatorBootError,
+  launchAutomator,
+} from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
@@ -76,6 +81,20 @@ const PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT = 8_000
 const PAGE_WXML_PROTOCOL_TIMEOUT = 8_000
 const PAGE_WXML_DIAGNOSTIC_SNIPPET_LENGTH = 1_200
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
+
+function resolveGithubIssuesWarmupRoute() {
+  const targetFile = getNormalizedTargetFile()
+  if (
+    targetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
+    || targetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
+  ) {
+    return '/pages/issue-642-bug7/index'
+  }
+  if (targetFile.endsWith('github-issues.runtime.issue642-bug8.test.ts')) {
+    return '/pages/issue-642-bug8/index'
+  }
+  return GITHUB_ISSUES_WARMUP_ROUTE
+}
 
 function isRecord(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === 'object'
@@ -482,10 +501,11 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
 }
 
 async function ensureGithubIssuesWarmupPage(miniProgram: any) {
-  const page = await waitForCurrentPagePath(miniProgram, GITHUB_ISSUES_WARMUP_ROUTE, 15_000)
+  const warmupRoute = resolveGithubIssuesWarmupRoute()
+  const page = await waitForCurrentPagePath(miniProgram, warmupRoute, 15_000)
     ?? await runAutomatorOp(
-      `reLaunch ${GITHUB_ISSUES_WARMUP_ROUTE}`,
-      () => miniProgram.reLaunch(GITHUB_ISSUES_WARMUP_ROUTE),
+      `reLaunch ${warmupRoute}`,
+      () => miniProgram.reLaunch(warmupRoute),
       {
         timeoutMs: 30_000,
         retries: 2,
@@ -503,28 +523,38 @@ function isGithubIssuesLaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Timeout in warmup reLaunch')
     || message.includes('Timed out waiting page root after warmup reLaunch')
+    || message.includes('Timeout in read current page for route')
     || isDevtoolsHttpPortError(error)
     || isDevtoolsSimulatorBootError(error)
+}
+
+function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isDevtoolsHttpPortError(error)
+    || isDevtoolsLoginRequiredError(error)
+    || isDevtoolsSimulatorBootError(error)
+    || message.includes('Timeout in read current page for route')
 }
 
 async function launchGithubIssuesMiniProgramOnce() {
   const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
   try {
     delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    const warmupRoute = resolveGithubIssuesWarmupRoute()
 
     const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      warmupRoute: GITHUB_ISSUES_WARMUP_ROUTE,
+      warmupRoute,
     })
 
     try {
       const warmupPage = await ensureGithubIssuesWarmupPage(miniProgram)
       if (!warmupPage) {
-        process.stdout.write(`[github-issues:launch] warmup-check-skip route=${GITHUB_ISSUES_WARMUP_ROUTE}\n`)
+        process.stdout.write(`[github-issues:launch] warmup-check-skip route=${warmupRoute}\n`)
       }
     }
     catch (error) {
-      process.stdout.write(`[github-issues:launch] warmup-check-skip route=${GITHUB_ISSUES_WARMUP_ROUTE} reason=${error instanceof Error ? error.message : String(error)}\n`)
+      process.stdout.write(`[github-issues:launch] warmup-check-skip route=${warmupRoute} reason=${error instanceof Error ? error.message : String(error)}\n`)
     }
     await delay(600)
     return miniProgram
@@ -566,8 +596,9 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
     }
   }
 
-  if (ctx && isDevtoolsHttpPortError(lastError)) {
-    sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
+  if (ctx && isGithubIssuesLaunchInfraUnavailableError(lastError)) {
+    const reason = lastError instanceof Error ? lastError.message : String(lastError)
+    sharedLaunchInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。reason=${reason}`
     ctx.skip(sharedLaunchInfraUnavailableMessage)
   }
   throw lastError

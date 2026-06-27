@@ -37,28 +37,26 @@ text,
 page,
 .tw-root,
 wx-root-portal-content {
-  --color-emerald-600: #059669;
+  --color-emerald-600: #009966;
   --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-400: #9ca3af;
-  --color-gray-900: #111827;
-  --color-green-400: #4ade80;
-  --color-sky-100: #e0f2fe;
-  --color-sky-200: #bae6fd;
-  --color-sky-300: #7dd3fc;
-  --color-sky-400: #38bdf8;
+  --color-gray-900: #101828;
+  --color-green-400: #05df72;
+  --color-sky-100: #dff2fe;
+  --color-sky-200: #b8e6fe;
+  --color-sky-300: #74d4ff;
+  --color-sky-400: #00bcff;
   --color-sky-50: #f0f9ff;
-  --color-sky-500: #0ea5e9;
-  --color-sky-600: #0284c7;
-  --color-sky-700: #0369a1;
+  --color-sky-500: #00a6f4;
+  --color-sky-600: #0084d1;
+  --color-sky-700: #0069a8;
   --color-slate-100: #f1f5f9;
   --color-slate-200: #e2e8f0;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
+  --color-slate-400: #90a1b9;
+  --color-slate-500: #62748e;
+  --color-slate-600: #45556c;
+  --color-slate-700: #314158;
+  --color-slate-800: #1d293d;
+  --color-slate-900: #0f172b;
   --color-white: #fff;
   --default-font-family: var(--font-sans);
   --default-mono-font-family: var(--font-mono);
@@ -402,7 +400,7 @@ wx-root-portal-content {
   text-decoration-line: underline;
 }
 .shadow-sm {
-  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, #0000000d);
+  --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, #0000001a), 0 1px 2px -1px var(--tw-shadow-color, #0000001a);
   box-shadow:
     var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
     var(--tw-shadow);
@@ -414,7 +412,7 @@ wx-root-portal-content {
     var(--tw-shadow);
 }
 .shadow-sky-200_f40 {
-  --tw-shadow-color: #bae6fd66;
+  --tw-shadow-color: #b8e6fe66;
 }
 .transition {
   transition-duration: var(--tw-duration, var(--default-transition-duration));
@@ -454,7 +452,7 @@ wx-root-portal-content {
 }
 @media (prefers-color-scheme: dark) {
   .dark_cbg-slate-800_f90 {
-    background-color: #1e293be6;
+    background-color: #1d293de6;
   }
 }
 @media (prefers-color-scheme: dark) {
@@ -479,192 +477,122 @@ wx-root-portal-content {
 }
 @media (prefers-color-scheme: dark) {
   .dark_cshadow-slate-900_f60 {
-    --tw-shadow-color: #0f172a99;
+    --tw-shadow-color: #0f172b99;
   }
 }
 "
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/index/index 1`] = `
-"<weapp-layout-default is="layouts/default/index">
-  <view class="index--layout-default">
-    <view class="min-h-screen bg-gray-100 text-slate-800 transition-colors duration-500">
-      <view class="flex flex-col items-center pt-6 space-y-4">
-        <view class="flex space-x-8">
-          <view
-            class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
-          <view
-            class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
-        </view>
-        <view
-          class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
-          weapp-vite &amp; weapp-tailwindcss
-        </view>
-        <view>
-          <helloworld is="components/HelloWorld/HelloWorld">
-            <view
-              class="w-full HelloWorld--w-full max-w-_b600rpx_B HelloWorld--max-w-_b600rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f90 HelloWorld--bg-white_f90 shadow-xl HelloWorld--shadow-xl shadow-sky-200_f40 HelloWorld--shadow-sky-200_f40 dark_cbg-slate-800_f90 HelloWorld--dark_cbg-slate-800_f90 dark_cshadow-slate-900_f60 HelloWorld--dark_cshadow-slate-900_f60 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-2 HelloWorld--gap-2">
-              <view
-                class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
-                Hello weapp-vite
-              </view>
-              <view
-                class="text-xs HelloWorld--text-xs leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700 dark_ctext-slate-200 HelloWorld--dark_ctext-slate-200">
-                这是一个集成 Tailwind CSS 的小程序模板，开箱即可体验原子化样式与完整的 HMR 流程。
-              </view>
-              <view
-                class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
-                <view
-                  class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 bg-sky-500 HelloWorld--bg-sky-500 text-white HelloWorld--text-white hover_cbg-sky-600 HelloWorld--hover_cbg-sky-600"
-                  data-url="https://vite.icebreaker.top">
-                  复制文档链接
-                </view>
-                <view
-                  class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 bg-slate-200 HelloWorld--bg-slate-200 text-slate-800 HelloWorld--text-slate-800 dark_cbg-slate-700 HelloWorld--dark_cbg-slate-700 dark_ctext-slate-100 HelloWorld--dark_ctext-slate-100"
-                  data-url="https://tw.icebreaker.top">
-                  Tailwind Demo
-                </view>
-              </view>
-              <view
-                class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
-                点击按钮会将链接复制到剪贴板
-              </view>
-            </view>
-          </helloworld>
-        </view>
-        <view class="flex items-center">
-          <text></text>
-          <view class="iconify i-mdi-moon-waxing-crescent text-4xl"></view>
-        </view>
-        <view class="underline">https://vite.icebreaker.top</view>
-        <view class="underline">https://tw.icebreaker.top/</view>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="rounded-full bg-sky-600 px-6 py-2 text-white"
-          role="button"
-          aria-disabled="false">
-          打开布局演示页
-        </button>
-      </view>
+"<view
+  class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+  <view class="flex flex-col items-center pt-6 space-y-4">
+    <view class="flex space-x-8">
+      <view
+        class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      <view
+        class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
     </view>
+    <view
+      class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+      weapp-vite & weapp-tailwindcss
+    </view>
+    <view>
+      <HelloWorld
+        title="{{hello.title}}"
+        description="{{hello.description}}"
+        docs="{{hello.docs}}"
+        links="{{hello.links}}" />
+    </view>
+    <view class="flex items-center">
+      <text>切换模式</text>
+      <view
+        class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-4xl"></view>
+    </view>
+    <view class="underline" mark:url="https://vite.icebreaker.top">
+      https://vite.icebreaker.top
+    </view>
+    <view class="underline" mark:url="https://tw.icebreaker.top/">https://tw.icebreaker.top/</view>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="rounded-full bg-sky-600 px-6 py-2 text-white">
+      打开布局演示页
+    </button>
   </view>
-</weapp-layout-default>
+</view>
 "
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/layouts/index 1`] = `
-"<weapp-layout-default is="layouts/default/index">
-  <view class="index--layout-default">
-    <view class="min-h-screen bg-slate-100 px-4 py-5">
-      <view
-        class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
-        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
-          Native Layouts
-        </view>
-        <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：default</view>
-      </view>
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <view class="text-lg font-bold text-slate-900">default 布局</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">
-          当前页面默认命中 src/layouts/default。
-        </view>
-      </view>
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <view class="text-lg font-bold text-slate-900">admin 布局</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">
-          通过 setPageLayout("admin", props) 切换到命名布局。
-        </view>
-      </view>
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <view class="text-lg font-bold text-slate-900">关闭布局</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">
-          通过 setPageLayout(false) 移除当前页面壳。
-        </view>
-      </view>
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="_emt-0 rounded-full bg-slate-900 text-white"
-          role="button"
-          aria-disabled="false">
-          使用 default 布局
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="mt-3 rounded-full bg-emerald-600 text-white"
-          role="button"
-          aria-disabled="false">
-          切到 admin 布局
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="mt-3 rounded-full bg-slate-200 text-slate-900"
-          role="button"
-          aria-disabled="false">
-          关闭布局
-        </button>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="mt-3 rounded-full bg-sky-100 text-sky-700"
-          role="button"
-          aria-disabled="false">
-          返回首页
-        </button>
-      </view>
+"<view class="min-h-screen bg-slate-100 px-4 py-5">
+  <view
+    class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
+    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
+      Native Layouts
     </view>
+    <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
   </view>
-</weapp-layout-default>
+
+  <view
+    wx:for="{{cards}}"
+    wx:key="title"
+    class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
+  </view>
+
+  <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="_emt-0 rounded-full bg-slate-900 text-white">
+      使用 default 布局
+    </button>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="mt-3 rounded-full bg-emerald-600 text-white">
+      切到 admin 布局
+    </button>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="mt-3 rounded-full bg-slate-200 text-slate-900">
+      关闭布局
+    </button>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="mt-3 rounded-full bg-sky-100 text-sky-700">
+      返回首页
+    </button>
+  </view>
+</view>
 "
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/profile/index 1`] = `
-"<weapp-layout-default is="layouts/default/index">
-  <view class="index--layout-default">
-    <view class="min-h-screen bg-gray-100 py-16">
-      <view class="flex flex-col items-center space-y-5">
-        <view><image class="w-_b200px_B h-_b190px_B" src="/logo.png" role="img"></image></view>
-        <view class="text-lg font-semibold">ice breaker</view>
-        <view>
-          <helloworld is="components/HelloWorld/HelloWorld">
-            <view
-              class="w-full HelloWorld--w-full max-w-_b600rpx_B HelloWorld--max-w-_b600rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f90 HelloWorld--bg-white_f90 shadow-xl HelloWorld--shadow-xl shadow-sky-200_f40 HelloWorld--shadow-sky-200_f40 dark_cbg-slate-800_f90 HelloWorld--dark_cbg-slate-800_f90 dark_cshadow-slate-900_f60 HelloWorld--dark_cshadow-slate-900_f60 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-2 HelloWorld--gap-2">
-              <view
-                class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
-                Hello weapp-vite
-              </view>
-              <view
-                class="text-xs HelloWorld--text-xs leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700 dark_ctext-slate-200 HelloWorld--dark_ctext-slate-200">
-                这里是一个额外的页面示例，你可以继续拆分业务模块并复用组件。
-              </view>
-              <view
-                class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
-                <view
-                  class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 bg-sky-500 HelloWorld--bg-sky-500 text-white HelloWorld--text-white hover_cbg-sky-600 HelloWorld--hover_cbg-sky-600"
-                  data-url="https://vite.icebreaker.top">
-                  复制文档链接
-                </view>
-              </view>
-              <view
-                class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
-                点击按钮会将链接复制到剪贴板
-              </view>
-            </view>
-          </helloworld>
-        </view>
-      </view>
+"<view class="min-h-screen bg-gray-100 py-16">
+  <view class="flex flex-col items-center space-y-5">
+    <view>
+      <image class="w-_b200px_B h-_b190px_B" src="/logo.png" />
+    </view>
+    <view class="text-lg font-semibold">ice breaker</view>
+    <view>
+      <HelloWorld
+        title="{{hello.title}}"
+        description="{{hello.description}}"
+        docs="{{hello.docs}}"
+        links="{{hello.links}}" />
     </view>
   </view>
-</weapp-layout-default>
+</view>
 "
 `;

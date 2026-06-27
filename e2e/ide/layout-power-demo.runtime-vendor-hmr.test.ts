@@ -125,6 +125,11 @@ async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: strin
   throw new Error(`Timed out relaunching ${INDEX_ROUTE} with runE2E marker ${marker}; lastError=${lastMessage}`)
 }
 
+function isStaleRunE2EMarkerError(error: unknown, marker: string) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes(`Timed out relaunching ${INDEX_ROUTE} with runE2E marker ${marker}`)
+}
+
 async function waitForCurrentLayout(page: any, layout: string, timeoutMs = 8_000) {
   const startedAt = Date.now()
   let latest: unknown
@@ -316,7 +321,31 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await cleanupTrackedDevProcesses()
   }, 60_000)
 
-  it('keeps active runtime vendor chunks available after page script HMR', async () => {
+  async function removeAutomatorSessionFiles() {
+    await Promise.all([
+      fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
+      fs.rm(resolveAutomatorSessionFile(APP_ROOT, resolveProjectAutomatorPort(APP_ROOT)), { force: true }).catch(() => {}),
+    ])
+  }
+
+  async function closeRuntimeSession() {
+    runtimeErrorCollector?.dispose()
+    runtimeErrorCollector = undefined
+    await Promise.resolve(miniProgram?.disconnect?.()).catch(() => {})
+    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+    miniProgram = undefined
+  }
+
+  async function stopDevSession() {
+    await closeRuntimeSession()
+    await devProcess?.stop().catch(() => {})
+    devProcess = undefined
+    await cleanupTrackedDevProcesses()
+    await removeAutomatorSessionFiles()
+    await cleanupResidualIdeProcesses()
+  }
+
+  async function startDevSession() {
     devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: APP_ROOT,
       all: true,
@@ -328,6 +357,29 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
       'layout-power-demo opened automator',
     )
     runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
+    return miniProgram
+  }
+
+  async function relaunchIndexPageWithRecoveredSession(marker: string) {
+    try {
+      return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
+    }
+    catch (error) {
+      if (!isStaleRunE2EMarkerError(error, marker)) {
+        throw error
+      }
+
+      const message = error instanceof Error ? error.message : String(error)
+      process.stdout.write(`[layout-power-demo:hmr] restart-devtools-session marker=${marker} reason=${message}\n`)
+      await stopDevSession()
+      await waitForIdeRecompileSettled(1_600)
+      await startDevSession()
+      return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
+    }
+  }
+
+  it('keeps active runtime vendor chunks available after page script HMR', async () => {
+    await startDevSession()
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
@@ -342,7 +394,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
     await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
@@ -354,7 +406,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextCommandLayoutStyle = `${originalCommandLayoutStyle}\n/* ${STYLE_MARKER} */\n`
@@ -364,7 +416,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
 
-    page = await relaunchIndexPageWithRunE2EMarker(miniProgram, UPDATED_MARKER)
+    page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
   }, 420_000)
 })
