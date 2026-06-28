@@ -205,7 +205,10 @@
     "**/.vite": true,
     "**/.vite-inspect": true,
     "**/__temp__": true,
-    "**/docs/reports": true,
+    "**/docs/reports": false,
+    "**/docs/reports/*": true,
+    "**/docs/reports/product-detail-ai-iteration": false,
+    "**/docs/reports/product-detail-ai-iteration/**": false,
     "**/packages/ast-native/target": true
   },
   "search.exclude": {

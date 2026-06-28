@@ -5,67 +5,127 @@
     "height": 844
   },
   "target": "docs/reports/product-detail-ai-iteration/00-target.png",
-  "generatedAt": "2026-06-28T06:53:29.438Z",
+  "generatedAt": "2026-06-28T18:17:07.611Z",
   "images": [
     {
       "iteration": 1,
-      "similarity": 66.59,
+      "similarity": 59.9,
       "screenshot": "docs/reports/product-detail-ai-iteration/01-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/01-diff.png"
     },
     {
       "iteration": 2,
-      "similarity": 86.17,
+      "similarity": 75.44,
       "screenshot": "docs/reports/product-detail-ai-iteration/02-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/02-diff.png"
     },
     {
       "iteration": 3,
-      "similarity": 88.74,
+      "similarity": 75.89,
       "screenshot": "docs/reports/product-detail-ai-iteration/03-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/03-diff.png"
     },
     {
       "iteration": 4,
-      "similarity": 88.81,
+      "similarity": 76.28,
       "screenshot": "docs/reports/product-detail-ai-iteration/04-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/04-diff.png"
     },
     {
       "iteration": 5,
-      "similarity": 88.93,
+      "similarity": 73.91,
       "screenshot": "docs/reports/product-detail-ai-iteration/05-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/05-diff.png"
     },
     {
       "iteration": 6,
-      "similarity": 96.51,
+      "similarity": 74.42,
       "screenshot": "docs/reports/product-detail-ai-iteration/06-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/06-diff.png"
     },
     {
       "iteration": 7,
-      "similarity": 96.51,
+      "similarity": 76.57,
       "screenshot": "docs/reports/product-detail-ai-iteration/07-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/07-diff.png"
     },
     {
       "iteration": 8,
-      "similarity": 97.51,
+      "similarity": 77.6,
       "screenshot": "docs/reports/product-detail-ai-iteration/08-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/08-diff.png"
     },
     {
       "iteration": 9,
-      "similarity": 97.77,
+      "similarity": 81.72,
       "screenshot": "docs/reports/product-detail-ai-iteration/09-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/09-diff.png"
     },
     {
       "iteration": 10,
-      "similarity": 100,
+      "similarity": 85.61,
       "screenshot": "docs/reports/product-detail-ai-iteration/10-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/10-diff.png"
+    },
+    {
+      "iteration": 11,
+      "similarity": 86.55,
+      "screenshot": "docs/reports/product-detail-ai-iteration/11-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/11-diff.png"
+    },
+    {
+      "iteration": 12,
+      "similarity": 87.49,
+      "screenshot": "docs/reports/product-detail-ai-iteration/12-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/12-diff.png"
+    },
+    {
+      "iteration": 13,
+      "similarity": 88.42,
+      "screenshot": "docs/reports/product-detail-ai-iteration/13-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/13-diff.png"
+    },
+    {
+      "iteration": 14,
+      "similarity": 89.36,
+      "screenshot": "docs/reports/product-detail-ai-iteration/14-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/14-diff.png"
+    },
+    {
+      "iteration": 15,
+      "similarity": 90.3,
+      "screenshot": "docs/reports/product-detail-ai-iteration/15-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/15-diff.png"
+    },
+    {
+      "iteration": 16,
+      "similarity": 91.24,
+      "screenshot": "docs/reports/product-detail-ai-iteration/16-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/16-diff.png"
+    },
+    {
+      "iteration": 17,
+      "similarity": 92.16,
+      "screenshot": "docs/reports/product-detail-ai-iteration/17-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/17-diff.png"
+    },
+    {
+      "iteration": 18,
+      "similarity": 93.08,
+      "screenshot": "docs/reports/product-detail-ai-iteration/18-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/18-diff.png"
+    },
+    {
+      "iteration": 19,
+      "similarity": 93.92,
+      "screenshot": "docs/reports/product-detail-ai-iteration/19-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/19-diff.png"
+    },
+    {
+      "iteration": 20,
+      "similarity": 94.77,
+      "screenshot": "docs/reports/product-detail-ai-iteration/20-iteration.png",
+      "diff": "docs/reports/product-detail-ai-iteration/20-diff.png"
     }
   ]
 }
