@@ -27,14 +27,14 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.6",
-    "es-toolkit": "^1.48.1",
+    "es-toolkit": "^1.49.0",
     "gm-crypto": "^0.1.12",
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
     "autoprefixer": "catalog:",
     "postcss": "catalog:",
-    "tailwindcss": "catalog:tailwind3",
+    "tailwindcss": "catalog:tailwind4",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
   }
