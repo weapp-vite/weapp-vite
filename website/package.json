@@ -29,7 +29,7 @@
     "echarts": "catalog:",
     "element-plus": "^2.14.2",
     "gridstack": "^12.6.0",
-    "theme-transition": "^2.0.2",
+    "theme-transition": "^2.0.3",
     "vue": "catalog:",
     "vue-echarts": "^8.0.1"
   },
@@ -38,7 +38,7 @@
     "@iconify-json/bi": "^1.2.1",
     "@iconify-json/logos": "^1.2.11",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.61",
+    "@iconify-json/vscode-icons": "^1.2.62",
     "@shikijs/vitepress-twoslash": "^4.3.0",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",

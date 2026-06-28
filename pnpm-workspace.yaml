@@ -27,8 +27,8 @@ catalog:
   '@babel/types': ^8.0.0
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
-  '@icebreakers/eslint-config': ^5.0.4
-  '@icebreakers/stylelint-config': ^4.0.2
+  '@icebreakers/eslint-config': ^6.0.0
+  '@icebreakers/stylelint-config': ^5.0.0
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
   '@mini-types/alipay': ^3.0.14
@@ -49,7 +49,7 @@ catalog:
   dayjs: ^1.11.21
   echarts: ^6.1.0
   esbuild: ^0.28.1
-  eslint: ^10.5.0
+  eslint: ^10.6.0
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
@@ -68,7 +68,7 @@ catalog:
   rolldown: 1.1.3
   sass: ^1.101.0
   sass-embedded: ^1.100.0
-  stylelint: ^17.13.0
+  stylelint: ^17.14.0
   tailwind-merge: ^3.6.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.3.1
@@ -80,7 +80,7 @@ catalog:
   vite-plugin-inspect: ^11.4.1
   vue: ^3.5.39
   vue-tsc: ^3.3.5
-  weapp-tailwindcss: ^5.1.2
+  weapp-tailwindcss: ^5.1.3
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +94,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.2
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.1.2
+    weapp-tailwindcss: 5.1.3
 
 gitChecks: false
 
