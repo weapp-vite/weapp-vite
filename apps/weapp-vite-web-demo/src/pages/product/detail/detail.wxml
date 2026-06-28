@@ -1,0 +1,122 @@
+<view class="product product--iteration-{{iteration}}">
+  <view class="goods-head">
+    <view class="swiper-frame">
+      <image class="swiper-frame__image" src="/retail-goods-01.jpg" mode="aspectFit" />
+      <view class="swiper-frame__nav">1/3</view>
+      <view class="swiper-frame__iteration">AI {{iteration}}/10</view>
+    </view>
+
+    <view class="goods-info">
+      <view class="goods-number">
+        <view class="goods-price">
+          <text class="goods-price__symbol">¥</text>
+          <text class="goods-price__value">7499</text>
+          <text class="goods-price__up">起</text>
+          <text class="goods-price__del">¥8299</text>
+        </view>
+        <view class="sold-num">已售 1032</view>
+      </view>
+
+      <view class="goods-activity" bindtap="toggleFavorite">
+        <view class="tags-container">
+          <view class="goods-activity-tag" wx:for="{{couponTags}}" wx:key="*this">{{item}}</view>
+        </view>
+        <view class="activity-show">
+          <text>领劵</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+
+      <view class="goods-title">
+        <view class="goods-name">NOVA X1 Pro 智能创作终端 2.5K 高刷屏 18 小时续航 AI 旗舰平板</view>
+        <view class="goods-share">
+          <view class="share-icon">↗</view>
+          <view class="share-text">分享</view>
+        </view>
+      </view>
+      <view class="goods-intro">{{intro}}</view>
+    </view>
+
+    <view class="spu-select" bindtap="toggleFavorite">
+      <view class="spu-select__label">已选</view>
+      <view class="spu-select__content">
+        <view>{{stockText}}</view>
+        <text class="chevron chevron--muted">›</text>
+      </view>
+    </view>
+
+    <view class="comments-wrap">
+      <view class="comments-head">
+        <view class="comments-title-wrap">
+          <view class="comments-title-label">商品评价</view>
+          <view class="comments-title-count"> (248) </view>
+        </view>
+        <view class="comments-rate-wrap">
+          <text class="comments-good-rate">98.6% 好评</text>
+          <text class="chevron chevron--muted">›</text>
+        </view>
+      </view>
+      <view class="comment-item-wrap" wx:for="{{reviews}}" wx:key="id">
+        <view class="comment-item-head">
+          <view class="comment-item-avatar">{{index + 1}}</view>
+          <view class="comment-head-right">
+            <view class="comment-username">{{item.user}}</view>
+            <view class="comment-stars">★★★★★</view>
+          </view>
+        </view>
+        <view class="comment-item-content">{{item.content}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="desc-content">
+    <view class="desc-content__title">
+      <view class="desc-content__line"></view>
+      <text class="desc-content__title-text">详情介绍</text>
+      <view class="desc-content__line"></view>
+    </view>
+    <view class="detail-panel detail-panel--dark">
+      <view class="detail-panel__title">旗舰硬件参数</view>
+      <view class="spec-grid">
+        <view class="spec-card" wx:for="{{specs}}" wx:key="id">
+          <view class="spec-card__label">{{item.label}}</view>
+          <view class="spec-card__value">{{item.value}}</view>
+        </view>
+      </view>
+    </view>
+    <view class="detail-panel">
+      <view class="detail-panel__title">核心卖点</view>
+      <view class="feature-item" wx:for="{{featureItems}}" wx:key="id">
+        <view class="feature-item__index">0{{index + 1}}</view>
+        <view class="feature-item__content">
+          <view class="feature-item__title">{{item.title}}</view>
+          <view class="feature-item__desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+    <view class="detail-panel">
+      <view class="detail-panel__title">履约服务</view>
+      <view class="service-card" wx:for="{{serviceItems}}" wx:key="id">
+        <view class="service-card__title">{{item.title}}</view>
+        <view class="service-card__desc">{{item.desc}}</view>
+      </view>
+    </view>
+    <view class="desc-image" wx:for="{{gallery}}" wx:key="*this">
+      <image class="desc-image__img" src="{{item}}" mode="aspectFit" />
+    </view>
+  </view>
+
+  <view class="buy-bar">
+    <view class="buy-bar__nav">
+      <view class="buy-bar__nav-item">首页</view>
+      <view class="buy-bar__nav-item">
+        <text class="cart-badge">2</text>
+        购物车
+      </view>
+    </view>
+    <view class="buy-bar__buttons">
+      <view class="buy-bar__cart">加入购物车</view>
+      <view class="buy-bar__buy" bindtap="buyNow">立即购买</view>
+    </view>
+  </view>
+</view>

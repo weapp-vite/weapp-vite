@@ -4,7 +4,8 @@
     "pages/index/index",
     "pages/about/index",
     "pages/interactive/index",
-    "pages/interactive/detail"
+    "pages/interactive/detail",
+    "pages/product/detail/detail"
   ],
   "window": {},
   "style": "v2",

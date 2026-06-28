@@ -6,11 +6,11 @@ import {
   platformBanner,
   platformClass,
   platformCta,
+  platformDisplayName,
   platformDocLink,
   platformDocsLabel,
-  platformDisplayName,
-  platformFeature,
   platformExamples,
+  platformFeature,
   platformWrapperAccent,
 } from '../../utils/platform'
 
@@ -88,6 +88,13 @@ Page({
     if (typeof wx !== 'undefined' && typeof wx.navigateTo === 'function') {
       void wx.navigateTo({
         url: 'pages/interactive/index?from=index',
+      })
+    }
+  },
+  gotoProductDetail() {
+    if (typeof wx !== 'undefined' && typeof wx.navigateTo === 'function') {
+      void wx.navigateTo({
+        url: 'pages/product/detail/detail?from=index',
       })
     }
   },
