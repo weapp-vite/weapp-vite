@@ -55,6 +55,16 @@ async function addSimilarityOverlay(inputPath, outputPath, label) {
     .toFile(outputPath)
 }
 
+async function normalizeReportFrame(inputPath, outputPath, contentWidth = 750, safeRight = 24) {
+  const metadata = await sharp(inputPath).metadata()
+  const imageWidth = metadata.width ?? contentWidth
+  const imageHeight = metadata.height ?? 0
+  await sharp(inputPath)
+    .extract({ left: 0, top: 0, width: Math.min(contentWidth, imageWidth), height: imageHeight })
+    .extend({ right: safeRight, background: '#ffffff' })
+    .toFile(outputPath)
+}
+
 async function addBottomPadding(inputPath, outputPath, padding = 164) {
   const metadata = await sharp(inputPath).metadata()
   const width = metadata.width ?? 780
@@ -275,6 +285,15 @@ async function captureProductPage(page, iteration, filePath) {
     const style = document.createElement('style')
     style.dataset.productReportMode = 'true'
     style.textContent = `
+      :host, * {
+        scrollbar-width: none !important;
+      }
+      :host::-webkit-scrollbar,
+      *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
       .product { padding-bottom: 0 !important; }
       .buy-bar {
         position: relative !important;
@@ -345,8 +364,11 @@ async function main() {
     const targetPath = path.join(reportDir, '00-target.png')
     const rawTargetPath = path.join(reportDir, '00-target.raw.png')
     await captureProductPage(page, totalIterations + 1, rawTargetPath)
-    await addBottomPadding(rawTargetPath, targetPath)
+    const paddedTargetPath = path.join(reportDir, '00-target.padded.png')
+    await addBottomPadding(rawTargetPath, paddedTargetPath)
+    await normalizeReportFrame(paddedTargetPath, targetPath)
     await fs.rm(rawTargetPath, { force: true })
+    await fs.rm(paddedTargetPath, { force: true })
     const targetMetadata = await sharp(targetPath).metadata()
     const targetSize = {
       width: targetMetadata.width ?? viewport.width * 2,
@@ -357,13 +379,15 @@ async function main() {
     for (let iteration = 1; iteration <= totalIterations; iteration += 1) {
       const rawScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.raw.png`)
       const paddedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.padded.png`)
+      const croppedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.cropped.png`)
       const normalizedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.normalized.png`)
       const screenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.png`)
       const rawDiffPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-diff.raw.png`)
       const diffPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-diff.png`)
       await captureProductPage(page, iteration, rawScreenshotPath)
       await addBottomPadding(rawScreenshotPath, paddedScreenshotPath)
-      await normalizeCanvas(paddedScreenshotPath, normalizedScreenshotPath, targetSize)
+      await normalizeReportFrame(paddedScreenshotPath, croppedScreenshotPath, targetSize.width - 24)
+      await normalizeCanvas(croppedScreenshotPath, normalizedScreenshotPath, targetSize)
       const similarity = await compareScreenshots(targetPath, normalizedScreenshotPath, rawDiffPath)
       const label = `pixelmatch ${similarity}%`
       await Promise.all([
@@ -373,6 +397,7 @@ async function main() {
       await Promise.all([
         fs.rm(rawScreenshotPath, { force: true }),
         fs.rm(paddedScreenshotPath, { force: true }),
+        fs.rm(croppedScreenshotPath, { force: true }),
         fs.rm(normalizedScreenshotPath, { force: true }),
         fs.rm(rawDiffPath, { force: true }),
       ])
