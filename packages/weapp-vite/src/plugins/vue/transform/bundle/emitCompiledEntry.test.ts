@@ -330,6 +330,77 @@ describe('emitCompiledEntry helpers', () => {
     )
   })
 
+  it('replaces auto-routes app scripts when only wevu runtime imports remain', async () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({ old: true })',
+      },
+    }
+    const state = {
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: DEFAULT_MP_PLATFORM,
+        },
+        runtimeState: {
+          build: {
+            output: {
+              wevuInternalRuntimeFileNames: new Map([
+                ['wevu/internal-runtime', 'weapp-vendors/wevu-watch.js'],
+              ]),
+            },
+            hmr: {
+              profile: {
+                event: 'create',
+                dirtyReasonSummary: ['auto-routes-topology:1'],
+              },
+              lastEmittedChunkFileNames: new Set<string>(),
+            },
+          },
+        },
+      },
+      pluginCtx: {},
+    } as any
+    const cached = {
+      isPage: false,
+      source: '<script setup />',
+    } as any
+    const compileOptionsState = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    }
+    const result = {
+      script: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";setWevuDefaults({});createApp({ routes: ["pages/logs/hmr-added"] });',
+    } as any
+
+    await emitResolvedCompiledVueEntryAssets({
+      bundle,
+      state,
+      filename: '/project/src/app.vue',
+      cached,
+      result,
+      relativeBase: 'app',
+      compileOptionsState,
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
+    })
+
+    expect(emitSfcScriptAssetReplacingBundleEntryMock).toHaveBeenCalledWith(
+      state.pluginCtx,
+      bundle,
+      'app',
+      'const { setWevuDefaults, createApp } = require("./weapp-vendors/wevu-watch.js");setWevuDefaults({});createApp({ routes: ["pages/logs/hmr-added"] });',
+      'js',
+    )
+    expect(state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(true)
+  })
+
   it('keeps bundler-owned app chunks when app vue hmr script still has user imports', async () => {
     const bundle = {
       'app.js': {

@@ -22,7 +22,7 @@ function shouldReplaceAppScriptBundleEntry(options: {
   return true
 }
 
-function hasModuleImportDeclaration(script: string | undefined) {
+function hasUnresolvedModuleImportDeclaration(script: string | undefined) {
   if (!script?.includes('import')) {
     return false
   }
@@ -33,7 +33,20 @@ function hasModuleImportDeclaration(script: string | undefined) {
     traverse(ast, {
       ImportDeclaration(path) {
         const source = path.node.source.value
-        if (typeof source === 'string') {
+        if (
+          typeof source === 'string'
+          && !(
+            source === 'wevu'
+            || source === 'wevu/router'
+            || source === 'wevu/store'
+            || source === 'wevu/api'
+            || source === 'wevu/fetch'
+            || source === 'wevu/web-apis'
+            || source === 'wevu/internal-runtime'
+            || source === 'wevu/internal-reactivity'
+            || source === 'wevu/internal-template'
+          )
+        ) {
           hasUnresolvedImport = true
           path.stop()
         }
@@ -163,7 +176,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
         runtimeFileNames: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
       },
     )
-    if (hasModuleImportDeclaration(script)) {
+    if (hasUnresolvedModuleImportDeclaration(script)) {
       return
     }
     emitSfcScriptAssetReplacingBundleEntry(
