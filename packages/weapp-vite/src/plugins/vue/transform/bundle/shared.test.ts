@@ -1188,6 +1188,75 @@ describe('emitSharedVueEntryAssets', () => {
     expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
+  it('refreshes dirty compiled app entries when dirty ids use windows separators', async () => {
+    const appSource = [
+      '<script setup>',
+      'import routes from "weapp-vite/auto-routes"',
+      '</script>',
+    ].join('\n')
+    const cached = {
+      result: { script: 'App({ cached: true })' },
+      source: appSource,
+      autoRoutesSignature: 'current-routes',
+      isPage: false,
+      refreshToken: 1,
+    } as any
+    const dirtyVueEntryIds = new Set(['D:\\project\\src\\app.vue'])
+    readFileMock.mockResolvedValue(appSource)
+    compileVueFileMock.mockResolvedValue({
+      template: '<view />',
+      script: 'App({ refreshed: true })',
+    })
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: 'D:/project/src/app.vue',
+      cached,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+            },
+          },
+        },
+        autoImportService: {
+          resolve: () => undefined,
+        },
+        autoRoutesService: {
+          ensureFresh: vi.fn(async () => {}),
+          getReference: () => ({
+            pages: [{ path: 'pages/logs/hmr-added' }],
+            entries: [],
+            subPackages: [],
+          }),
+          getSignature: () => 'current-routes',
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('D:/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(compileVueFileMock).toHaveBeenCalledWith(
+      expect.stringContaining('pages/logs/hmr-added'),
+      'D:/project/src/app.vue',
+      expect.anything(),
+    )
+    expect(cached.autoRoutesSignature).toBe('current-routes')
+    expect(cached.refreshToken).toBe(0)
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect((result as any).script).toBe('App({ refreshed: true })')
+  })
+
   it('refreshes compiled cache when source changes in dev', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },

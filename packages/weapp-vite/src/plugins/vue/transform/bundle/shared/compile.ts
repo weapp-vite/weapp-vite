@@ -151,6 +151,28 @@ export async function compileAndFinalizeVueLikeFile(options: {
   })
 }
 
+function takeDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined, filename: string) {
+  if (!dirtyVueEntryIds?.size) {
+    return undefined
+  }
+
+  const normalizedFilename = normalizeFsResolvedId(filename)
+  if (dirtyVueEntryIds.has(filename)) {
+    return filename
+  }
+  if (dirtyVueEntryIds.has(normalizedFilename)) {
+    return normalizedFilename
+  }
+
+  for (const entryId of dirtyVueEntryIds) {
+    if (normalizeFsResolvedId(entryId) === normalizedFilename) {
+      return entryId
+    }
+  }
+
+  return undefined
+}
+
 export async function refreshCompiledVueEntryCacheInDev(options: {
   filename: string
   cached: CompilationCacheEntry
@@ -178,15 +200,13 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         }
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
-    const normalizedDirtyFilename = normalizeFsResolvedId(filename)
-    const isDirtyVueEntry = dirtyVueEntryIds?.has(normalizedDirtyFilename) === true
+    const dirtyEntryId = takeDirtyVueEntryId(dirtyVueEntryIds, filename)
     if (
-      !isDirtyVueEntry
+      !dirtyEntryId
       && source === cached.source
       && transformed.signature === cached.autoRoutesSignature
     ) {
       cached.refreshToken = 0
-      dirtyVueEntryIds?.delete(normalizedDirtyFilename)
       return cached.result
     }
 
@@ -204,7 +224,9 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
     cached.refreshToken = 0
-    dirtyVueEntryIds?.delete(normalizedDirtyFilename)
+    if (dirtyEntryId) {
+      dirtyVueEntryIds?.delete(dirtyEntryId)
+    }
     cached.result = compiled
     return compiled
   }
