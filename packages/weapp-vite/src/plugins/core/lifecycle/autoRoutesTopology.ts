@@ -14,11 +14,10 @@ export function markAppEntryForAutoRoutesTopology(ctx: CompilerContext, options:
   const appEntryId = ctx.scanService?.appEntry?.path
     ? normalizeFsResolvedId(ctx.scanService.appEntry.path)
     : undefined
-  if (!appEntryId || !options.resolvedEntryMap.has(appEntryId)) {
-    return false
-  }
 
-  invalidateFileCache(appEntryId)
+  if (appEntryId) {
+    invalidateFileCache(appEntryId)
+  }
   invalidateFileCache('weapp-vite/auto-routes')
   invalidateFileCache('virtual:weapp-vite-auto-routes')
   invalidateFileCache('\0weapp-vite:auto-routes')
@@ -29,6 +28,11 @@ export function markAppEntryForAutoRoutesTopology(ctx: CompilerContext, options:
 
   ;(options.loadEntry as any)?.invalidateResolveCache?.()
   ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
+
+  if (!appEntryId || !options.resolvedEntryMap.has(appEntryId)) {
+    return false
+  }
+
   options.markEntryDirty(appEntryId, 'direct')
   return true
 }

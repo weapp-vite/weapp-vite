@@ -119,7 +119,6 @@ export interface RuntimeState {
       loadedEntrySet: Set<string>
       dirtyEntrySet: Set<string>
       dirtyEntryReasons: Map<string, 'direct' | 'dependency' | 'metadata'>
-      emitDirtyEntries?: (pluginCtx: unknown) => Promise<void>
       resolvedEntryMap: Map<string, ResolvedId>
       externalComponentEntryMap: Map<string, string>
       entriesMap: Map<string, Entry | undefined>
@@ -262,7 +261,6 @@ export function createRuntimeState(): RuntimeState {
         loadedEntrySet: new Set<string>(),
         dirtyEntrySet: new Set<string>(),
         dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
-        emitDirtyEntries: undefined,
         resolvedEntryMap: new Map<string, ResolvedId>(),
         externalComponentEntryMap: new Map<string, string>(),
         entriesMap: new Map<string, Entry | undefined>(),

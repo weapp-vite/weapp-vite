@@ -43,7 +43,6 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
           dirtyVueEntryIds: new Set(),
           dirtyEntryReasons: new Map(),
           dirtyEntrySet: new Set(),
-          emitDirtyEntries: vi.fn(async () => {}),
           loadedEntrySet: new Set(),
           resolvedEntryMap: new Map(),
         },
@@ -275,6 +274,7 @@ describe('auto-routes plugin alias fallback', () => {
       },
     })
     ctx.runtimeState.build.hmr.resolvedEntryMap.set(appEntry, { id: appEntry })
+    ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
     const emit = vi.fn()
     chokidarWatchMock.mockClear()
 
@@ -307,9 +307,54 @@ describe('auto-routes plugin alias fallback', () => {
     expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(appEntry)).toBe(true)
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appEntry)).toBe('direct')
+    expect(ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature).toBeUndefined()
     expect(emit).toHaveBeenCalledWith('change', appEntry)
-    expect(ctx.runtimeState.build.hmr.emitDirtyEntries).toHaveBeenCalled()
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBe(true)
+    expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBeUndefined()
+  })
+
+  it('invalidates app auto-routes signature when sidecar syncs before app entry resolves', async () => {
+    const appEntry = '/virtual/project/src/app.vue'
+    const { plugin, handleFileChange, ctx } = createPlugin({
+      scanService: {
+        appEntry: {
+          path: appEntry,
+        },
+      },
+    })
+    ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
+    const emit = vi.fn()
+    chokidarWatchMock.mockClear()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+    plugin.configureServer?.({
+      moduleGraph: {
+        getModuleById: vi.fn(() => ({
+          id: '\0weapp-vite:auto-routes',
+          importers: new Set(),
+        })),
+        invalidateModule: vi.fn(),
+      },
+      watcher: {
+        emit,
+      },
+    } as any)
+
+    await plugin.load?.call({ addWatchFile: vi.fn() } as any, path.resolve('/virtual/weapp-vite', 'src/auto-routes.ts'))
+    const watcher = chokidarWatchMock.mock.results[0]?.value
+    const addHandler = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')?.[1]
+    expect(addHandler).toBeTypeOf('function')
+
+    addHandler('/virtual/project/src/pages/logs/hmr-added.vue')
+    await vi.waitFor(() => {
+      expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/logs/hmr-added.vue', 'create')
+    })
+
+    expect(ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature).toBeUndefined()
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(appEntry)).toBe(false)
+    expect(emit).toHaveBeenCalledWith('change', appEntry)
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBeUndefined()
   })
 
