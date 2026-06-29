@@ -20,6 +20,21 @@ const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|w
 const REG_WEAPP_VITE_RUNTIME_VENDOR_ID = /(?:^|[/\\])weapp-vite[/\\](?:dist[/\\]runtime\.mjs|src[/\\]plugins[/\\]vue[/\\]runtime\.ts)(?:$|[?#])/
 const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\](?:dev[/\\])?([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
 const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
+const STABLE_HASHED_DIST_CHUNK_PRIORITY_BY_PACKAGE: Record<string, string[]> = {
+  wevu: [
+    'index',
+    'internal-runtime',
+    'watch',
+    'templateRef',
+    'router',
+    'base',
+    'computed',
+    'toRefs',
+    'store',
+    'template',
+    'ref',
+  ],
+}
 
 function resolveSharedPathRoot(
   configService: ConfigService,
@@ -277,6 +292,28 @@ function resolveStableHashedDistChunkFileName(
     matchedChunks.push(matchedChunk)
     if (id === chunk.facadeModuleId) {
       facadeMatchedChunk = matchedChunk
+    }
+  }
+
+  const packageTokens = new Set<string>()
+  for (const { fileName } of matchedChunks) {
+    const fileNameBase = fileName.replace(/^weapp-vendors\//, '').replace(/\.js$/, '')
+    const packageToken = Object.keys(STABLE_HASHED_DIST_CHUNK_PRIORITY_BY_PACKAGE)
+      .find(token => fileNameBase.startsWith(`${token}-`))
+    if (packageToken) {
+      packageTokens.add(packageToken)
+    }
+  }
+
+  for (const packageToken of packageTokens) {
+    const priorityBaseNames = STABLE_HASHED_DIST_CHUNK_PRIORITY_BY_PACKAGE[packageToken]
+    for (const priorityBaseName of priorityBaseNames) {
+      const matched = matchedChunks.find(chunk => (
+        chunk.fileName === `weapp-vendors/${packageToken}-${priorityBaseName}.js`
+      ))
+      if (matched) {
+        return matched.fileName
+      }
     }
   }
 

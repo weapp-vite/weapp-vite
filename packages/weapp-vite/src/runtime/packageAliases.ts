@@ -20,6 +20,7 @@ interface PackageAliasTarget {
   packageName: string
   distEntry: string
   devDistEntry?: string
+  devWorkspaceEntry?: string
   fallbackWorkspacePackagePath?: string
 }
 
@@ -50,6 +51,7 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-runtime.mjs',
     devDistEntry: 'dist/dev/internal-runtime.mjs',
+    devWorkspaceEntry: 'src/internal-runtime.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -57,6 +59,7 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-reactivity.mjs',
     devDistEntry: 'dist/dev/internal-reactivity.mjs',
+    devWorkspaceEntry: 'src/internal-reactivity.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -64,6 +67,7 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-template.mjs',
     devDistEntry: 'dist/dev/internal-template.mjs',
+    devWorkspaceEntry: 'src/internal-template.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -117,18 +121,21 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
   },
 ]
 
-function resolveWevuRuntimeDistEntry(
+function resolveWevuRuntimeDistEntries(
   target: PackageAliasTarget,
   options: ResolveBuiltinPackageAliasesOptions,
 ) {
   if (!target.devDistEntry || target.packageName !== 'wevu') {
-    return target.distEntry
+    return [target.distEntry]
   }
   const mode = options.wevuRuntime ?? 'auto'
   if (mode === 'dev' || (mode === 'auto' && options.isDev)) {
-    return target.devDistEntry
+    return [
+      target.devWorkspaceEntry,
+      target.devDistEntry,
+    ].filter((entry): entry is string => Boolean(entry))
   }
-  return target.distEntry
+  return [target.distEntry]
 }
 
 function resolveRepoRoot(fromDir: string) {
@@ -147,14 +154,16 @@ function resolveRepoRoot(fromDir: string) {
 
 function resolvePackageEntry(
   packageName: string,
-  distEntry: string,
+  distEntries: string[],
   fallbackWorkspacePackagePath?: string,
 ) {
   const packageInfo = safeGetPackageInfoSync(packageName)
   if (packageInfo) {
-    const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
-    if (existsSync(resolvedEntry)) {
-      return resolvedEntry
+    for (const distEntry of distEntries) {
+      const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
+      if (existsSync(resolvedEntry)) {
+        return resolvedEntry
+      }
     }
   }
 
@@ -168,9 +177,11 @@ function resolvePackageEntry(
     return undefined
   }
 
-  const fallbackEntry = path.resolve(repoRoot, fallbackWorkspacePackagePath, distEntry)
-  if (existsSync(fallbackEntry)) {
-    return fallbackEntry
+  for (const distEntry of distEntries) {
+    const fallbackEntry = path.resolve(repoRoot, fallbackWorkspacePackagePath, distEntry)
+    if (existsSync(fallbackEntry)) {
+      return fallbackEntry
+    }
   }
 
   return undefined
@@ -181,8 +192,8 @@ export function resolveBuiltinPackageAliases(options: ResolveBuiltinPackageAlias
 
   for (const target of PACKAGE_ALIASES) {
     const { find, packageName, fallbackWorkspacePackagePath } = target
-    const distEntry = resolveWevuRuntimeDistEntry(target, options)
-    const resolvedEntry = resolvePackageEntry(packageName, distEntry, fallbackWorkspacePackagePath)
+    const distEntries = resolveWevuRuntimeDistEntries(target, options)
+    const resolvedEntry = resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath)
     if (!resolvedEntry) {
       continue
     }

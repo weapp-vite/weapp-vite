@@ -9,6 +9,10 @@ import { waitForFile } from '../wevu-runtime.utils'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
+const MINIMAL_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+const MINIMAL_DIST_ROOT = path.join(MINIMAL_TEMPLATE_ROOT, 'dist')
+const MINIMAL_INDEX_SOURCE_PATH = path.join(MINIMAL_TEMPLATE_ROOT, 'src/pages/index/index.vue')
+const MINIMAL_INDEX_WXML_PATH = path.join(MINIMAL_DIST_ROOT, 'pages/index/index.wxml')
 const HOME_SOURCE_PATH = path.join(TEMPLATE_ROOT, 'src/pages/home/home.vue')
 const HOME_WXML_PATH = path.join(DIST_ROOT, 'pages/home/home.wxml')
 const HOME_JSON_PATH = path.join(DIST_ROOT, 'pages/home/home.json')
@@ -17,12 +21,14 @@ const SEARCH_PLACEHOLDER_RE = /placeholder="iphone 13 火热发售中[^"]*"/
 const PAGE_TITLE_RE = /navigationBarTitleText:\s*'[^']*'/
 const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
 const VENDOR_MEMBER_RE = /const\s+([A-Za-z_$][\w$]*)\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
+const VENDOR_DESTRUCTURE_RE = /const\s+\{([^}]+)\}\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
+const MINIMAL_TAG_TEXT_RE = /(>\s*)wevu(?:321312)?(\s*<\/t-tag>)/
 
-async function collectDistJsFiles() {
-  const files = await fs.readdir(DIST_ROOT, { recursive: true })
+async function collectDistJsFiles(distRoot = DIST_ROOT) {
+  const files = await fs.readdir(distRoot, { recursive: true })
   return files
     .filter((file): file is string => typeof file === 'string' && file.endsWith('.js'))
-    .map(file => path.join(DIST_ROOT, file))
+    .map(file => path.join(distRoot, file))
 }
 
 async function collectVendorExports(vendorPath: string) {
@@ -34,7 +40,7 @@ async function collectVendorExports(vendorPath: string) {
   )
 }
 
-async function collectMissingVendorMembers(jsPath: string) {
+async function collectMissingVendorMembers(jsPath: string, distRoot = DIST_ROOT) {
   const source = await fs.readFile(jsPath, 'utf8')
   const missing: string[] = []
   const vendorVariables = new Map<string, string>()
@@ -51,6 +57,18 @@ async function collectMissingVendorMembers(jsPath: string) {
     const [, request, member] = match
     if (request && member) {
       usedMembers.push({ request, member })
+    }
+  }
+  for (const match of source.matchAll(VENDOR_DESTRUCTURE_RE)) {
+    const [, bindings, request] = match
+    if (!bindings || !request) {
+      continue
+    }
+    for (const rawBinding of bindings.split(',')) {
+      const [member] = rawBinding.trim().split(/\s*:\s*/)
+      if (member) {
+        usedMembers.push({ request, member })
+      }
     }
   }
 
@@ -76,33 +94,33 @@ async function collectMissingVendorMembers(jsPath: string) {
       exportCache.set(resolved, exports)
     }
     if (!exports.has(member)) {
-      missing.push(`${path.relative(DIST_ROOT, resolved).replaceAll('\\', '/')}#${member}`)
+      missing.push(`${path.relative(distRoot, resolved).replaceAll('\\', '/')}#${member}`)
     }
   }
 
   return [...new Set(missing)].sort()
 }
 
-async function collectMissingVendorMembersByFile() {
+async function collectMissingVendorMembersByFile(distRoot = DIST_ROOT) {
   const missingByFile: Record<string, string[]> = {}
-  for (const jsPath of await collectDistJsFiles()) {
+  for (const jsPath of await collectDistJsFiles(distRoot)) {
     if (jsPath.includes('/weapp-vendors/')) {
       continue
     }
-    const missing = await collectMissingVendorMembers(jsPath)
+    const missing = await collectMissingVendorMembers(jsPath, distRoot)
     if (missing.length) {
-      missingByFile[path.relative(DIST_ROOT, jsPath).replaceAll('\\', '/')] = missing
+      missingByFile[path.relative(distRoot, jsPath).replaceAll('\\', '/')] = missing
     }
   }
   return missingByFile
 }
 
-async function waitForVendorMembersIntact(timeoutMs = 90_000) {
+async function waitForVendorMembersIntact(distRoot = DIST_ROOT, timeoutMs = 90_000) {
   const start = Date.now()
   let lastMissing: Record<string, string[]> = {}
 
   while (Date.now() - start < timeoutMs) {
-    lastMissing = await collectMissingVendorMembersByFile()
+    lastMissing = await collectMissingVendorMembersByFile(distRoot)
     if (Object.keys(lastMissing).length === 0) {
       return lastMissing
     }
@@ -124,6 +142,14 @@ function replacePageTitle(source: string, marker: string) {
   const updated = source.replace(PAGE_TITLE_RE, `navigationBarTitleText: '${marker}'`)
   if (updated === source) {
     throw new Error('Failed to replace retail home definePageJson title.')
+  }
+  return updated
+}
+
+function replaceMinimalTagText(source: string, marker: string) {
+  const updated = source.replace(MINIMAL_TAG_TEXT_RE, `$1${marker}$2`)
+  if (updated === source && !source.includes(`\n        ${marker}\n`)) {
+    throw new Error('Failed to replace minimal template wevu tag text.')
   }
   return updated
 }
@@ -156,7 +182,59 @@ async function withRetailDevWatch<T>(
   }
 }
 
+async function withMinimalDevWatch<T>(
+  task: (dev: ReturnType<typeof startDevProcess>) => Promise<T>,
+) {
+  await fs.remove(MINIMAL_DIST_ROOT)
+
+  const dev = startDevProcess('node', [CLI_PATH, 'dev', MINIMAL_TEMPLATE_ROOT, '--platform', 'weapp'], {
+    cwd: MINIMAL_TEMPLATE_ROOT,
+    env: createDevProcessEnv({ disableSidecarWatch: true }),
+    all: true,
+  })
+
+  try {
+    await dev.waitFor(
+      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.json'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      'minimal template app.json generated',
+    )
+    await dev.waitFor(
+      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.js'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      'minimal template app.js generated',
+    )
+    await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT), 'initial minimal template vendor members')
+    return await task(dev)
+  }
+  finally {
+    await dev.stop(5_000)
+  }
+}
+
 describe.sequential('retail template HMR keeps wevu vendor exports intact', () => {
+  it('updates the minimal template tag text without dropping app vendor exports', async () => {
+    const originalSource = await fs.readFile(MINIMAL_INDEX_SOURCE_PATH, 'utf8')
+    const marker = 'wevu321312'
+    const resetSource = replaceMinimalTagText(originalSource, 'wevu')
+    const updatedSource = replaceMinimalTagText(resetSource, marker)
+
+    try {
+      await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, resetSource)
+      await withMinimalDevWatch(async (dev) => {
+        await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, updatedSource)
+
+        const output = await dev.waitFor(
+          waitForFileContains(MINIMAL_INDEX_WXML_PATH, marker),
+          'updated minimal template tag text',
+        )
+        expect(output).toContain(marker)
+        expect(await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT), 'minimal template vendor members after text HMR')).toEqual({})
+      })
+    }
+    finally {
+      await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, originalSource)
+    }
+  })
+
   it('updates the home search placeholder without dropping vendor exports', async () => {
     const originalSource = await fs.readFile(HOME_SOURCE_PATH, 'utf8')
     const marker = 'iphone 13 火热发售中-e2e-template'

@@ -203,6 +203,13 @@ describe('sharedBuildConfig', () => {
         '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
       ],
     })).toBe('weapp-vendors/wevu-index.js')
+    expect(resolveStableHashedDistChunkFileName({
+      moduleIds: [
+        '/project/packages-runtime/wevu/dist/dev/ref-Bxwe2Kfo.mjs',
+        '/project/packages-runtime/wevu/dist/dev/watch-B46crqgs.mjs',
+        '/project/packages-runtime/wevu/dist/dev/templateRef-D6APbgBW.mjs',
+      ],
+    })).toBe('weapp-vendors/wevu-watch.js')
     expect(resolveStableHashedDistChunkName({
       facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
     })).toBe('weapp-vendors/wevu-src')
