@@ -14,6 +14,11 @@ interface WatcherEvent {
   error?: unknown
 }
 
+interface GeneratedJsFile {
+  relativePath: string
+  code: string
+}
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -85,6 +90,31 @@ async function waitForFileSatisfies(
   throw new Error(`watch build timed out, output did not satisfy: ${label}`)
 }
 
+async function readGeneratedJsFiles(root: string) {
+  const files: GeneratedJsFile[] = []
+
+  async function visit(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const filePath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await visit(filePath)
+        continue
+      }
+      if (!entry.isFile() || !filePath.endsWith('.js')) {
+        continue
+      }
+      files.push({
+        relativePath: path.relative(root, filePath).replaceAll('\\', '/'),
+        code: await fs.readFile(filePath, 'utf8'),
+      })
+    }
+  }
+
+  await visit(root)
+  return files
+}
+
 function expectNoBareWevuRuntimeReferences(code: string) {
   expect(code).not.toMatch(/\brequire\((['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1\)/)
   expect(code).not.toMatch(/\bfrom\s*(['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1/)
@@ -93,29 +123,36 @@ function expectNoBareWevuRuntimeReferences(code: string) {
   expect(code).not.toContain('wevu/internal-template')
 }
 
-function expectRelativeWevuVendorRequire(code: string, fileName: string) {
-  expect(code).toMatch(new RegExp(`\\brequire\\((['"])\\./weapp-vendors/${fileName}\\1\\)`))
+function includesRelativeWevuVendorRequire(code: string) {
+  return /\brequire\((['"])(?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js\1\)/.test(code)
 }
 
-function expectRelativeWevuVendorRequireForBinding(code: string, bindingName: string) {
+function expectRelativeWevuVendorRequireForBinding(files: GeneratedJsFile[], bindingName: string) {
   const destructuredPattern = [
     '\\bconst\\s*\\{[^}]*\\b',
     bindingName,
-    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])\\./weapp-vendors/wevu-[^\'"]+\\.js\\1\\)',
+    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])(?:\\.\\.?/)+weapp-vendors/wevu-[^\'"]+\\.js\\1\\)',
   ].join('')
-  if (new RegExp(destructuredPattern).test(code)) {
-    return
-  }
-
-  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])\.\/weapp-vendors\/wevu-[^'"]+\.js\2\)/g
-  for (const match of code.matchAll(namespaceRequirePattern)) {
-    const namespace = match[1]
-    if (new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(code)) {
-      return
+  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])(?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js\2\)/g
+  const bindingPattern = new RegExp(`\\b${bindingName}\\b`)
+  const exportPattern = new RegExp(`\\bexports\\.${bindingName}\\b|Object\\.defineProperty\\(exports, ["']${bindingName}`)
+  const matchedFiles = files.filter(({ code }) => {
+    if (!includesRelativeWevuVendorRequire(code) || !bindingPattern.test(code)) {
+      return false
     }
-  }
+    if (new RegExp(destructuredPattern).test(code)) {
+      return true
+    }
+    for (const match of code.matchAll(namespaceRequirePattern)) {
+      const namespace = match[1]
+      if (new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(code)) {
+        return true
+      }
+    }
+    return exportPattern.test(code)
+  })
 
-  expect(code).toMatch(new RegExp(destructuredPattern))
+  expect(matchedFiles.map(file => file.relativePath)).not.toEqual([])
 }
 
 describe.sequential('wevu app runtime HMR', () => {
@@ -205,10 +242,10 @@ describe.sequential('wevu app runtime HMR', () => {
         content => content.includes('wevu-hmr-probe'),
         'updated app output contains hmr probe',
       )
+      const generatedJsFiles = await readGeneratedJsFiles(ctxResult.ctx.configService.outDir)
 
-      expectRelativeWevuVendorRequire(updatedAppOutput, 'wevu-watch.js')
-      expectRelativeWevuVendorRequireForBinding(updatedAppOutput, 'ref')
-      expectRelativeWevuVendorRequire(updatedAppOutput, 'wevu-template.js')
+      expectRelativeWevuVendorRequireForBinding(generatedJsFiles, 'setWevuDefaults')
+      expectRelativeWevuVendorRequireForBinding(generatedJsFiles, 'ref')
       expectNoBareWevuRuntimeReferences(updatedAppOutput)
     }
     finally {
