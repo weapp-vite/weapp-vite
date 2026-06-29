@@ -107,11 +107,21 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     })
   }
 
+  function notifyAppEntryChange() {
+    const appEntryPath = ctx.scanService?.appEntry?.path
+    if (!appEntryPath || !devServer) {
+      return
+    }
+
+    devServer.watcher.emit('change', appEntryPath)
+  }
+
   async function handleRouteStructureChange(filePath: string, event: 'create' | 'delete') {
     const didChangeRoutes = await service.handleFileChange(filePath, event)
     if (didChangeRoutes) {
       invalidateAutoRoutesVirtualModule()
       markAutoRoutesTopologyDirty()
+      notifyAppEntryChange()
     }
   }
 

@@ -274,6 +274,7 @@ describe('auto-routes plugin alias fallback', () => {
       },
     })
     ctx.runtimeState.build.hmr.resolvedEntryMap.set(appEntry, { id: appEntry })
+    const emit = vi.fn()
     chokidarWatchMock.mockClear()
 
     plugin.configResolved?.({
@@ -286,6 +287,9 @@ describe('auto-routes plugin alias fallback', () => {
           importers: new Set(),
         })),
         invalidateModule: vi.fn(),
+      },
+      watcher: {
+        emit,
       },
     } as any)
 
@@ -302,6 +306,7 @@ describe('auto-routes plugin alias fallback', () => {
     expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(appEntry)).toBe(true)
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appEntry)).toBe('direct')
+    expect(emit).toHaveBeenCalledWith('change', appEntry)
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBe(true)
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBeUndefined()
   })
