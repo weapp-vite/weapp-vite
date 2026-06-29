@@ -45,7 +45,7 @@ function cosThumb(url: string, width: number, height = width) {
     return url
   }
 
-  if (url.indexOf('http://') === 0) {
+  if (url.startsWith('http://')) {
     url = url.replace('http://', 'https://')
   }
 
