@@ -22,6 +22,7 @@ import {
   RESOLVED_VIRTUAL_ID,
   shouldStartAutoRoutesWatcher,
 } from './autoRoutes.shared'
+import { markAppEntryForAutoRoutesTopology } from './core/lifecycle/autoRoutesTopology'
 
 /**
  * 路由文件监听器的唯一标识，用于在 sidecarWatcherMap 中注册。
@@ -33,6 +34,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   let resolvedConfig: ResolvedConfig | undefined
   let devServer: ViteDevServer | undefined
   const autoRoutesAliasTargets = new Set<string>()
+  const autoRoutesTopologyDirtyEntries = new Set<string>()
   let routeWatcherStarted = false
 
   const refreshAutoRoutesAliasTargets = () => {
@@ -90,10 +92,26 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     invalidateModuleWithImporters(virtualModule)
   }
 
+  function markAutoRoutesTopologyDirty() {
+    return markAppEntryForAutoRoutesTopology(ctx, {
+      resolvedEntryMap: ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, unknown>,
+      markEntryDirty(entryId) {
+        const hmr = ctx.runtimeState.build.hmr
+        autoRoutesTopologyDirtyEntries.add(entryId)
+        hmr.dirtyEntrySet.add(entryId)
+        hmr.dirtyEntryReasons.set(entryId, 'direct')
+        hmr.loadedEntrySet.delete(entryId)
+        hmr.dirtyVueEntryIds ??= new Set<string>()
+        hmr.dirtyVueEntryIds.add(entryId)
+      },
+    })
+  }
+
   async function handleRouteStructureChange(filePath: string, event: 'create' | 'delete') {
     const didChangeRoutes = await service.handleFileChange(filePath, event)
     if (didChangeRoutes) {
       invalidateAutoRoutesVirtualModule()
+      markAutoRoutesTopologyDirty()
     }
   }
 
@@ -193,6 +211,10 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         code: service.getModuleCode(),
         map: { mappings: '' },
       }
+    },
+
+    shouldTransformCachedModule({ id }) {
+      return autoRoutesTopologyDirtyEntries.delete(id) || undefined
     },
 
     async watchChange(id, change) {

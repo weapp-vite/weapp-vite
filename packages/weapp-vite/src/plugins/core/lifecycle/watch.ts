@@ -8,7 +8,7 @@ import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
-import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesAliasTargets, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
+import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
@@ -24,6 +24,7 @@ import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks, collectAffectedSharedChunks } from '../helpers'
+import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
@@ -65,16 +66,6 @@ function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: st
     managedOutputPaths: resolveAutoRoutesManagedOutputPaths(state.ctx),
     subPackageRoots,
   })
-}
-
-function invalidateAutoRoutesModuleCache(state: CorePluginState) {
-  invalidateFileCache('weapp-vite/auto-routes')
-  invalidateFileCache('virtual:weapp-vite-auto-routes')
-  invalidateFileCache('\0weapp-vite:auto-routes')
-
-  for (const target of resolveAutoRoutesAliasTargets(state.ctx.configService?.packageInfo?.rootPath)) {
-    invalidateFileCache(normalizeFsResolvedId(target))
-  }
 }
 
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
@@ -375,19 +366,11 @@ async function processChangedFile(
     return false
   }
   const markAppEntryForAutoRoutesTopology = () => {
-    const appEntryId = scanService.appEntry?.path
-      ? normalizeFsResolvedId(scanService.appEntry.path)
-      : undefined
-    if (!appEntryId || !resolvedEntryMap.has(appEntryId)) {
-      return false
-    }
-
-    invalidateFileCache(appEntryId)
-    invalidateAutoRoutesModuleCache(state)
-    ;(loadEntry as any)?.invalidateResolveCache?.()
-    ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
-    markEntryDirtyWithCause(appEntryId, 'direct', 'auto-routes-topology')
-    return true
+    return markAppEntryForAutoRoutesTopologyDirty(ctx, {
+      loadEntry,
+      resolvedEntryMap: resolvedEntryMap as Map<string, unknown>,
+      markEntryDirty: entryId => markEntryDirtyWithCause(entryId, 'direct', 'auto-routes-topology'),
+    })
   }
 
   const addCssImporterEntries = async (startId: string) => {

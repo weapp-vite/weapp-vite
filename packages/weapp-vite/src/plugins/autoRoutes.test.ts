@@ -32,16 +32,27 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
       isRouteFile,
       isEnabled,
       handleFileChange,
+      getSignature: vi.fn(() => 'routes'),
     },
     runtimeState: {
       watcher: {
         sidecarWatcherMap: new Map(),
+      },
+      build: {
+        hmr: {
+          dirtyVueEntryIds: new Set(),
+          dirtyEntryReasons: new Map(),
+          dirtyEntrySet: new Set(),
+          loadedEntrySet: new Set(),
+          resolvedEntryMap: new Map(),
+        },
       },
     },
     configService: {
       cwd: '/virtual/project',
       absoluteSrcRoot: '/virtual/project/src',
       isDev: true,
+      relativeCwd: (id: string) => id.replace('/virtual/project/', ''),
       weappViteConfig: {
         autoRoutes: true,
       },
@@ -66,6 +77,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
     isEnabled,
     handleFileChange,
     packageRoot: ctx.configService.packageInfo.rootPath,
+    ctx,
   }
 }
 
@@ -250,6 +262,48 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/views/home/index.ts', 'rename')
     expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pkgA/screens/detail/index.ts', 'rename')
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
+  })
+
+  it('marks app entry dirty when sidecar watcher syncs a created route', async () => {
+    const appEntry = '/virtual/project/src/app.vue'
+    const { plugin, handleFileChange, ctx } = createPlugin({
+      scanService: {
+        appEntry: {
+          path: appEntry,
+        },
+      },
+    })
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(appEntry, { id: appEntry })
+    chokidarWatchMock.mockClear()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+    plugin.configureServer?.({
+      moduleGraph: {
+        getModuleById: vi.fn(() => ({
+          id: '\0weapp-vite:auto-routes',
+          importers: new Set(),
+        })),
+        invalidateModule: vi.fn(),
+      },
+    } as any)
+
+    await plugin.load?.call({ addWatchFile: vi.fn() } as any, path.resolve('/virtual/weapp-vite', 'src/auto-routes.ts'))
+    const watcher = chokidarWatchMock.mock.results[0]?.value
+    const addHandler = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')?.[1]
+    expect(addHandler).toBeTypeOf('function')
+
+    addHandler('/virtual/project/src/pages/logs/hmr-added.vue')
+    await vi.waitFor(() => {
+      expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/logs/hmr-added.vue', 'create')
+    })
+
+    expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(appEntry)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(appEntry)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appEntry)).toBe('direct')
+    expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBe(true)
+    expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBeUndefined()
   })
 
   it('returns null in load for unrelated ids', async () => {
