@@ -62,7 +62,7 @@
     "dayjs": "catalog:",
     "magic-string": "^0.30.21",
     "miniprogram-api-typings": "catalog:",
-    "miniprogram-simulate": "^1.6.1",
+    "miniprogram-simulate": "^1.6.2",
     "postcss": "catalog:",
     "sass-embedded": "catalog:",
     "sharp": "^0.35.2",

@@ -266,7 +266,7 @@
     "playwright": "^1.61.1",
     "postcss": "catalog:",
     "postcss-load-config": "^6.0.1",
-    "prettier": "^3.9.1",
+    "prettier": "^3.9.3",
     "repoctl": "^5.0.0",
     "rolldown": "catalog:",
     "rollup": "^4.62.2",
