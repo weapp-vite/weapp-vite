@@ -64,7 +64,7 @@ catalog:
   oxc-walker: ^1.0.0
   pathe: ^2.0.3
   pkg-types: ^2.3.1
-  postcss: ^8.5.15
+  postcss: ^8.5.16
   rolldown: 1.1.3
   sass: ^1.101.0
   sass-embedded: ^1.100.0
@@ -80,7 +80,7 @@ catalog:
   vite-plugin-inspect: ^11.4.1
   vue: ^3.5.39
   vue-tsc: ^3.3.5
-  weapp-tailwindcss: ^5.1.3
+  weapp-tailwindcss: ^5.1.4
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +94,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.2
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.1.3
+    weapp-tailwindcss: 5.1.4
 
 gitChecks: false
 
