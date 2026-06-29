@@ -17,7 +17,12 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     configResolved(config) {
       state.resolvedConfig = config
     },
-    buildStart: createBuildStartHook(state),
+    buildStart() {
+      state.ctx.runtimeState.build.hmr.emitDirtyEntries = async (pluginCtx) => {
+        await state.emitDirtyEntries.call(pluginCtx as any)
+      }
+      return createBuildStartHook(state).call(this)
+    },
     watchChange: createWatchChangeHook(state),
     options: createOptionsHook(state),
     load: createLoadHook(state),

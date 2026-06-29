@@ -43,6 +43,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
           dirtyVueEntryIds: new Set(),
           dirtyEntryReasons: new Map(),
           dirtyEntrySet: new Set(),
+          emitDirtyEntries: vi.fn(async () => {}),
           loadedEntrySet: new Set(),
           resolvedEntryMap: new Map(),
         },
@@ -307,6 +308,7 @@ describe('auto-routes plugin alias fallback', () => {
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(appEntry)).toBe(true)
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appEntry)).toBe('direct')
     expect(emit).toHaveBeenCalledWith('change', appEntry)
+    expect(ctx.runtimeState.build.hmr.emitDirtyEntries).toHaveBeenCalled()
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBe(true)
     expect(plugin.shouldTransformCachedModule?.({ id: appEntry } as any)).toBeUndefined()
   })

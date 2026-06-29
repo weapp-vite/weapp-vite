@@ -1,4 +1,4 @@
-import type { ModuleNode, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
+import type { ModuleNode, Plugin, PluginContext, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import { vueExtensions } from '../constants'
@@ -36,6 +36,11 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const autoRoutesAliasTargets = new Set<string>()
   const autoRoutesTopologyDirtyEntries = new Set<string>()
   let routeWatcherStarted = false
+  let pluginContext: PluginContext | undefined
+
+  function rememberPluginContext(context: PluginContext) {
+    pluginContext = context
+  }
 
   const refreshAutoRoutesAliasTargets = () => {
     autoRoutesAliasTargets.clear()
@@ -122,6 +127,9 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       invalidateAutoRoutesVirtualModule()
       markAutoRoutesTopologyDirty()
       notifyAppEntryChange()
+      if (pluginContext) {
+        await ctx.runtimeState.build.hmr.emitDirtyEntries?.(pluginContext)
+      }
     }
   }
 
@@ -195,6 +203,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     buildStart() {
+      rememberPluginContext(this)
       refreshAutoRoutesAliasTargets()
       startRouteFileWatcher()
     },
@@ -204,6 +213,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     async load(id) {
+      rememberPluginContext(this as PluginContext)
       if (resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets) !== RESOLVED_VIRTUAL_ID) {
         return null
       }
