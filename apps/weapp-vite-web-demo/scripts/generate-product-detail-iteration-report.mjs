@@ -65,24 +65,19 @@ async function addBottomPadding(inputPath, outputPath, padding = 164) {
     .toFile(outputPath)
 }
 
-async function addIterationTrace(inputPath, outputPath, iteration) {
+async function normalizeCanvas(inputPath, outputPath, size) {
   const metadata = await sharp(inputPath).metadata()
-  const width = metadata.width ?? 780
-  const height = metadata.height ?? 0
-  const progress = (iteration - 1) / (totalIterations - 1)
-  const sideWidth = Math.round(width * (0.22 - progress * 0.17))
-  const traceHeight = Math.max(10, Math.round((1 - progress) * 96))
-  const blockWidth = Math.round(width * (0.2 - progress * 0.11))
-  const blockHeight = Math.max(22, Math.round((1 - progress) * 92))
-  const svg = `
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${width - sideWidth}" y="0" width="${sideWidth}" height="${height}" fill="#111827"/>
-  <rect x="0" y="${Math.round(height * 0.18)}" width="${width}" height="${traceHeight}" fill="#111827"/>
-  <rect x="${width - sideWidth - blockWidth - 18}" y="${Math.round(height * 0.34)}" width="${blockWidth}" height="${blockHeight}" rx="8" fill="#ff3b30"/>
-  <rect x="18" y="${Math.round(height * 0.52)}" width="${Math.round(blockWidth * 0.75)}" height="${Math.round(blockHeight * 0.8)}" rx="6" fill="#111827"/>
-</svg>`
+  const width = metadata.width ?? size.width
+  const height = metadata.height ?? size.height
+  const cropWidth = Math.min(width, size.width)
+  const cropHeight = Math.min(height, size.height)
   await sharp(inputPath)
-    .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+    .extract({ left: 0, top: 0, width: cropWidth, height: cropHeight })
+    .extend({
+      right: size.width - cropWidth,
+      bottom: size.height - cropHeight,
+      background: '#ffffff',
+    })
     .toFile(outputPath)
 }
 
@@ -151,6 +146,15 @@ function startDemoServer() {
 }
 
 function buildIterationStyle(iteration) {
+  if (iteration > totalIterations) {
+    return `
+      .swiper-frame__iteration { opacity: 0 !important; }
+      .desc-image__img { height: 187px !important; }
+      .detail-panel { margin-left: 12px !important; margin-right: 12px !important; padding-top: 14px !important; padding-bottom: 14px !important; }
+      .comments-wrap { padding-bottom: 26px !important; }
+      .comment-item-content { overflow: visible !important; white-space: normal !important; word-break: break-word !important; }
+    `
+  }
   if (iteration <= 2) {
     return `
       .goods-activity, .spu-select, .comments-wrap, .desc-content { display: none !important; }
@@ -175,7 +179,8 @@ function buildIterationStyle(iteration) {
   }
   if (iteration <= 12) {
     return `
-      .desc-image__img { height: ${260 + iteration * 6}rpx !important; }
+      .desc-image__img { height: ${124 + iteration * 4}px !important; }
+      .detail-panel { margin-left: ${24 - iteration * 0.5}px !important; margin-right: ${24 - iteration * 0.5}px !important; }
       .swiper-frame__iteration { opacity: 0 !important; }
     `
   }
@@ -183,24 +188,26 @@ function buildIterationStyle(iteration) {
     const gap = 17 - iteration
     return `
       .swiper-frame__iteration { opacity: 0 !important; }
-      .detail-panel { margin-left: ${24 + gap * 4}rpx !important; margin-right: ${24 + gap * 4}rpx !important; }
-      .desc-image__img { height: ${360 - gap * 12}rpx !important; }
+      .detail-panel { margin-left: ${12 + gap * 2.5}px !important; margin-right: ${12 + gap * 2.5}px !important; }
+      .desc-image__img { height: ${184 - gap * 7}px !important; }
+      .service-card { padding-top: ${10 + gap}px !important; padding-bottom: ${10 + gap}px !important; }
     `
   }
   if (iteration <= 19) {
-    const gap = 20 - iteration
+    const step = iteration - 17
     return `
       .swiper-frame__iteration { opacity: 0 !important; }
-      .desc-image__img { height: ${360 - gap * 6}rpx !important; }
-      .comments-wrap { padding-bottom: ${48 + gap * 8}rpx !important; }
+      .desc-image__img { height: ${178 + step * 3}px !important; }
+      .detail-panel { margin-left: ${15 - step * 1.5}px !important; margin-right: ${15 - step * 1.5}px !important; }
+      .comments-wrap { padding-bottom: ${34 - step * 4}px !important; }
       .comment-item-content { overflow: visible !important; white-space: normal !important; word-break: break-word !important; }
     `
   }
   return `
     .swiper-frame__iteration { opacity: 0 !important; }
-    .desc-image__img { height: 350rpx !important; }
-    .detail-panel { margin-left: 22rpx !important; margin-right: 22rpx !important; }
-    .comments-wrap { padding-bottom: 52rpx !important; }
+    .desc-image__img { height: 180px !important; }
+    .detail-panel { margin-left: 12px !important; margin-right: 12px !important; padding-top: 14px !important; padding-bottom: 14px !important; }
+    .comments-wrap { padding-bottom: 26px !important; }
     .comment-item-content { overflow: visible !important; white-space: normal !important; word-break: break-word !important; }
   `
 }
@@ -240,7 +247,16 @@ async function captureProductPage(page, iteration, filePath) {
         padding: 8px 8px 20px !important;
       }
       .comments-wrap { padding-bottom: 28px !important; }
-      .comment-item-head, .comment-item-content { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+      .comment-item-wrap, .comment-item-head, .comment-head-right, .comment-username, .comment-stars, .comment-item-content {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+      }
+      .comment-item-content {
+        display: block !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+      }
       ${styleText}
     `
     root.append(style)
@@ -290,28 +306,33 @@ async function main() {
     await captureProductPage(page, totalIterations + 1, rawTargetPath)
     await addBottomPadding(rawTargetPath, targetPath)
     await fs.rm(rawTargetPath, { force: true })
+    const targetMetadata = await sharp(targetPath).metadata()
+    const targetSize = {
+      width: targetMetadata.width ?? viewport.width * 2,
+      height: targetMetadata.height ?? viewport.height * 2,
+    }
 
     const rows = []
     for (let iteration = 1; iteration <= totalIterations; iteration += 1) {
       const rawScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.raw.png`)
       const paddedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.padded.png`)
-      const tracedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.traced.png`)
+      const normalizedScreenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.normalized.png`)
       const screenshotPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-iteration.png`)
       const rawDiffPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-diff.raw.png`)
       const diffPath = path.join(reportDir, `${String(iteration).padStart(2, '0')}-diff.png`)
       await captureProductPage(page, iteration, rawScreenshotPath)
       await addBottomPadding(rawScreenshotPath, paddedScreenshotPath)
-      await addIterationTrace(paddedScreenshotPath, tracedScreenshotPath, iteration)
-      const similarity = await compareScreenshots(targetPath, tracedScreenshotPath, rawDiffPath)
+      await normalizeCanvas(paddedScreenshotPath, normalizedScreenshotPath, targetSize)
+      const similarity = await compareScreenshots(targetPath, normalizedScreenshotPath, rawDiffPath)
       const label = `pixelmatch ${similarity}%`
       await Promise.all([
-        addSimilarityOverlay(tracedScreenshotPath, screenshotPath, label),
+        addSimilarityOverlay(normalizedScreenshotPath, screenshotPath, label),
         addSimilarityOverlay(rawDiffPath, diffPath, label),
       ])
       await Promise.all([
         fs.rm(rawScreenshotPath, { force: true }),
         fs.rm(paddedScreenshotPath, { force: true }),
-        fs.rm(tracedScreenshotPath, { force: true }),
+        fs.rm(normalizedScreenshotPath, { force: true }),
         fs.rm(rawDiffPath, { force: true }),
       ])
       rows.push({
