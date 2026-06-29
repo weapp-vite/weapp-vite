@@ -120,6 +120,24 @@ describe('createVueTransformPlugin lifecycle', () => {
     })
   })
 
+  it('invalidates dirty vue entry caches with normalized path keys', async () => {
+    normalizeFsResolvedIdMock.mockImplementation((id: string) => id.replace(/\\/g, '/'))
+    const { invalidateDirtyVueEntryCaches } = await import('./index')
+    const compilationCache = new Map<string, any>([
+      ['D:\\project\\src\\app.vue', {
+        source: '<script setup />',
+        refreshToken: 0,
+      }],
+    ])
+
+    invalidateDirtyVueEntryCaches(new Set(['D:/project/src/app.vue']), compilationCache)
+
+    expect(compilationCache.get('D:\\project\\src\\app.vue')).toEqual({
+      source: undefined,
+      refreshToken: 1,
+    })
+  })
+
   it('preloads native layout entries during buildStart', async () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({

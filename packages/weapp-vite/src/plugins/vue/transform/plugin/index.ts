@@ -31,8 +31,13 @@ export function invalidateDirtyVueEntryCaches(
     return
   }
 
+  const cachedEntriesByNormalizedId = new Map<string, { source?: string, refreshToken?: number }>()
+  for (const [cachedId, cached] of compilationCache.entries()) {
+    cachedEntriesByNormalizedId.set(normalizeFsResolvedId(cachedId), cached)
+  }
+
   for (const entryId of dirtyVueEntryIds) {
-    const cached = compilationCache.get(entryId)
+    const cached = compilationCache.get(entryId) ?? cachedEntriesByNormalizedId.get(normalizeFsResolvedId(entryId))
     if (!cached) {
       continue
     }
