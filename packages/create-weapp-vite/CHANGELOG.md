@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.4.6
+
+### Patch Changes
+
+- 🐛 **修复模板产物最终输出阶段遗漏的 Vue 事件简写归一化，避免后处理插件或原生模板中残留 `@tap` 导致开发者工具 WXML 语法错误。** [`f0f163a`](https://github.com/weapp-vite/weapp-vite/commit/f0f163ae105be187742ac361f5c9443172f95f75)
+
+- 🐛 **upgrade weapp-tailwindcss** [`ce6a9ac`](https://github.com/weapp-vite/weapp-vite/commit/ce6a9ac490ffa48b6497bd0da0548dfbceb83c00)
+
+- 🐛 **修复 dev 模式下自动路由新增或删除后，依赖 `weapp-vite/auto-routes` 的 app 入口可能继续复用旧虚拟模块内容的问题，避免 Windows 等较慢文件事件环境中出现 app.js 未同步最新路由的 HMR 结果。** [`c3fbbf7`](https://github.com/weapp-vite/weapp-vite/commit/c3fbbf74ed681c5ab71a85a70994f97281045c65)
+
+- 🐛 **修复 wevu 模板开发模式热更新后内部运行时导出绑定漂移的问题，避免 `setWevuDefaults is not a function`、`createApp is not a function` 等由错误 vendor chunk 引发的运行时错误。** [`1a684f5`](https://github.com/weapp-vite/weapp-vite/commit/1a684f52e4ee9bb57bbac288dd021dc6916524f9)
+
 ## 2.4.5
 
 ### Patch Changes
