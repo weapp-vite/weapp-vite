@@ -1,4 +1,4 @@
-import type { Plugin, ResolvedConfig } from 'vite'
+import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import { vueExtensions } from '../constants'
@@ -31,6 +31,7 @@ const ROUTE_WATCHER_KEY = '__auto-routes-vue-watcher__'
 function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const service = ctx.autoRoutesService
   let resolvedConfig: ResolvedConfig | undefined
+  let devServer: ViteDevServer | undefined
   const autoRoutesAliasTargets = new Set<string>()
   let routeWatcherStarted = false
 
@@ -68,6 +69,20 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
    * 统一回收，不在 closeBundle 中销毁（build watch 模式下 closeBundle 每次
    * 重编译都会触发，提前销毁会导致后续文件变更无法感知）。
    */
+  function invalidateAutoRoutesVirtualModule() {
+    const virtualModule = devServer?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
+    if (virtualModule) {
+      devServer?.moduleGraph.invalidateModule(virtualModule)
+    }
+  }
+
+  async function handleRouteStructureChange(filePath: string, event: 'create' | 'delete') {
+    const didChangeRoutes = await service.handleFileChange(filePath, event)
+    if (didChangeRoutes) {
+      invalidateAutoRoutesVirtualModule()
+    }
+  }
+
   function startRouteFileWatcher() {
     const configService = ctx.configService
     if (!configService) {
@@ -106,7 +121,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
-      void service.handleFileChange(filePath, 'create')
+      void handleRouteStructureChange(filePath, 'create')
     })
 
     watcher.on('unlink', (filePath) => {
@@ -114,7 +129,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
-      void service.handleFileChange(filePath, 'delete')
+      void handleRouteStructureChange(filePath, 'delete')
     })
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
@@ -131,6 +146,10 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     configResolved(config) {
       resolvedConfig = config
       refreshAutoRoutesAliasTargets()
+    },
+
+    configureServer(server) {
+      devServer = server
     },
 
     buildStart() {
