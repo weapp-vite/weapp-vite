@@ -1,4 +1,4 @@
-import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
+import type { ModuleNode, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import { vueExtensions } from '../constants'
@@ -71,9 +71,23 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
    */
   function invalidateAutoRoutesVirtualModule() {
     const virtualModule = devServer?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
-    if (virtualModule) {
-      devServer?.moduleGraph.invalidateModule(virtualModule)
+    if (!virtualModule || !devServer) {
+      return
     }
+
+    const seen = new Set<ModuleNode>()
+    const invalidateModuleWithImporters = (module: ModuleNode) => {
+      if (seen.has(module)) {
+        return
+      }
+      seen.add(module)
+      devServer.moduleGraph.invalidateModule(module)
+      for (const importer of module.importers) {
+        invalidateModuleWithImporters(importer)
+      }
+    }
+
+    invalidateModuleWithImporters(virtualModule)
   }
 
   async function handleRouteStructureChange(filePath: string, event: 'create' | 'delete') {
