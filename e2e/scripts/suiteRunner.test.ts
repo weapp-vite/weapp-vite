@@ -163,7 +163,8 @@ describe('suiteRunner', () => {
     const previousExitCode = process.exitCode
     process.exitCode = undefined
 
-    const leakStdoutScript = `
+    const leakStdoutScriptPath = path.join(tempRoot, 'leak-stdio.cjs')
+    fs.writeFileSync(leakStdoutScriptPath, `
       const fs = require('node:fs');
       const { spawn } = require('node:child_process');
       const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3000)'], {
@@ -171,7 +172,7 @@ describe('suiteRunner', () => {
       });
       fs.writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));
       process.exit(0);
-    `
+    `)
 
     try {
       const result = await Promise.race([
@@ -179,7 +180,7 @@ describe('suiteRunner', () => {
           {
             label: 'pipe-leak-task',
             command: process.execPath,
-            args: ['-e', leakStdoutScript],
+            args: [leakStdoutScriptPath],
           },
         ], {
           writeReport: false,
