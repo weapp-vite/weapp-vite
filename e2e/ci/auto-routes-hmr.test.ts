@@ -246,8 +246,17 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
 
       // small delay lets the watcher settle after initial build
       await sleep(1_000)
+      const outputLengthBeforeAddRoute = dev.getOutput().length
       await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
+      await dev.waitFor(
+        waitForOutputSince(
+          dev,
+          outputLengthBeforeAddRoute,
+          /\[auto-routes:watch\] 新增路由文件 .*pages[\\/]logs[\\/]hmr-added\.vue/,
+        ),
+        'auto-routes watcher observed added route',
+      )
 
       const appAfterAddSource = originalAppSource.replace('auto-routes-define-app-json', appTitleAddMarker)
       await replaceFileByRename(APP_VUE_PATH, appAfterAddSource)
