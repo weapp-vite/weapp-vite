@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.17.8
+
+### Patch Changes
+
+- 🐛 **修复模板产物最终输出阶段遗漏的 Vue 事件简写归一化，避免后处理插件或原生模板中残留 `@tap` 导致开发者工具 WXML 语法错误。** [`f0f163a`](https://github.com/weapp-vite/weapp-vite/commit/f0f163ae105be187742ac361f5c9443172f95f75)
+
+- 🐛 **修复 dev 模式下自动路由新增或删除后，依赖 `weapp-vite/auto-routes` 的 app 入口可能继续复用旧虚拟模块内容的问题，避免 Windows 等较慢文件事件环境中出现 app.js 未同步最新路由的 HMR 结果。** [`c3fbbf7`](https://github.com/weapp-vite/weapp-vite/commit/c3fbbf74ed681c5ab71a85a70994f97281045c65)
+
+- 🐛 **修复 wevu 模板开发模式热更新后内部运行时导出绑定漂移的问题，避免 `setWevuDefaults is not a function`、`createApp is not a function` 等由错误 vendor chunk 引发的运行时错误。** [`1a684f5`](https://github.com/weapp-vite/weapp-vite/commit/1a684f52e4ee9bb57bbac288dd021dc6916524f9)
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.17.8`, `wevu@6.17.8`
+
 ## 6.17.7
 
 ### Patch Changes
@@ -2548,9 +2560,7 @@
 
   ```typescript
   export default defineConfig({
-    plugins: [
-      /* 旧 Vue 插件 */
-    ],
+    plugins: [/* 旧 Vue 插件 */],
   });
   ```
 
@@ -2797,9 +2807,7 @@
 
   ```typescript
   export default defineConfig({
-    plugins: [
-      /* 旧 Vue 插件 */
-    ],
+    plugins: [/* 旧 Vue 插件 */],
   });
   ```
 
@@ -3070,6 +3078,7 @@
 
 - 默认将 `weapp.chunks.sharedStrategy` 切回 `hoist`，保持跨分包共享模块统一落到主包；若需要按分包复制，请在配置中显式设置 `sharedStrategy: 'duplicate'`。
 - `hoist` 策略会根据源码所在目录决定共享产物位置：位于主包根目录的模块统一落到主包 `common.js`，位于分包目录的模块固定在对应分包，若被其它分包引用会直接报错，提示将共享代码移动到主包/公共目录。
+
 <!--
 - 支持在导入语句前加上 `take:` 指令强制将模块复制到当前分包：只要分包使用 `import 'take:foo'`，`foo` 就会复制到该分包的 `weapp-shared/common.js`，允许 `hoist` 策略下的按需复制；若同时存在普通导入，构建日志会提示代码既保留在主包也会复制到使用 `take:` 的分包。
 - 模板项目默认在 `tsconfig.json` 中新增 `paths.take:@/*`，TypeScript 会自动把 `import 'take:foo'` 映射回原始模块，恢复类型提示。
