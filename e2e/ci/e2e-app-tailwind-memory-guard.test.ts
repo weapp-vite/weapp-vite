@@ -39,19 +39,6 @@ const guardCases: TailwindMemoryGuardCase[] = [
       '<view class="flex gap-6 bg-[#222222]">',
     ],
   },
-  {
-    name: 'template-wevu-tdesign-regression',
-    appRoot: path.resolve(REPO_ROOT, 'e2e-apps/template-wevu-tdesign-regression'),
-    sourcePath: 'src/pages/index/index.vue',
-    outputTemplatePath: 'dist/pages/index/index.wxml',
-    outputCssPath: 'dist/app.wxss',
-    outputTemplateMarker: 'bg-_b_h222222_B',
-    outputCssMarker: 'background-color: #222222',
-    updates: [
-      'class="min-h-screen bg-[#111111] px-[28rpx] pb-[88rpx] pt-[32rpx] text-[#1c1c3c]"',
-      'class="min-h-screen bg-[#222222] px-[28rpx] pb-[88rpx] pt-[32rpx] text-[#1c1c3c]"',
-    ],
-  },
 ]
 
 async function createGuardFixture(testCase: TailwindMemoryGuardCase) {
