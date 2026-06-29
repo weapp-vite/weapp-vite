@@ -5,7 +5,7 @@
     "height": 844
   },
   "target": "docs/reports/product-detail-ai-iteration/00-target.png",
-  "generatedAt": "2026-06-29T01:38:17.174Z",
+  "generatedAt": "2026-06-29T01:58:01.752Z",
   "images": [
     {
       "iteration": 1,
@@ -105,25 +105,25 @@
     },
     {
       "iteration": 17,
-      "similarity": 93.71,
+      "similarity": 98,
       "screenshot": "docs/reports/product-detail-ai-iteration/17-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/17-diff.png"
     },
     {
       "iteration": 18,
-      "similarity": 95.01,
+      "similarity": 98.68,
       "screenshot": "docs/reports/product-detail-ai-iteration/18-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/18-diff.png"
     },
     {
       "iteration": 19,
-      "similarity": 97.75,
+      "similarity": 99.14,
       "screenshot": "docs/reports/product-detail-ai-iteration/19-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/19-diff.png"
     },
     {
       "iteration": 20,
-      "similarity": 96.07,
+      "similarity": 96.93,
       "screenshot": "docs/reports/product-detail-ai-iteration/20-iteration.png",
       "diff": "docs/reports/product-detail-ai-iteration/20-diff.png"
     }

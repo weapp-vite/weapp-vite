@@ -22,9 +22,9 @@
 | 14 | 92.74% | [screenshot](14-iteration.png) | [diff](14-diff.png) |
 | 15 | 93.65% | [screenshot](15-iteration.png) | [diff](15-diff.png) |
 | 16 | 95.12% | [screenshot](16-iteration.png) | [diff](16-diff.png) |
-| 17 | 93.71% | [screenshot](17-iteration.png) | [diff](17-diff.png) |
-| 18 | 95.01% | [screenshot](18-iteration.png) | [diff](18-diff.png) |
-| 19 | 97.75% | [screenshot](19-iteration.png) | [diff](19-diff.png) |
-| 20 | 96.07% | [screenshot](20-iteration.png) | [diff](20-diff.png) |
+| 17 | 98% | [screenshot](17-iteration.png) | [diff](17-diff.png) |
+| 18 | 98.68% | [screenshot](18-iteration.png) | [diff](18-diff.png) |
+| 19 | 99.14% | [screenshot](19-iteration.png) | [diff](19-diff.png) |
+| 20 | 96.93% | [screenshot](20-iteration.png) | [diff](20-diff.png) |
 
 最终设计稿：[00-target.png](00-target.png)
