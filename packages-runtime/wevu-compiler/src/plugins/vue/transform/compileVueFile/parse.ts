@@ -1,12 +1,12 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import type { parse } from 'vue/compiler-sfc'
 import type { JsonConfig } from '../../../../types/json'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { normalizeLineEndings } from '../../../../utils/text'
-import { preprocessScriptSetupSrc, preprocessScriptSrc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
+import { preprocessScriptSetupSrc, preprocessScriptSrc, readAndParseSfc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
@@ -116,14 +116,16 @@ function restoreTemplateImportMetaInDescriptor(
   }
 }
 
-function parseSfc(
+async function parseSfc(
   source: string,
   filename: string,
   ignoreEmpty: boolean,
 ) {
   const preprocessedSource = preprocessTemplateImportMeta(source)
-  const parsed = parse(preprocessedSource, {
-    filename,
+  const parsed = await readAndParseSfc(filename, {
+    source,
+    preprocessedSource,
+    checkMtime: false,
     ignoreEmpty,
   })
 
@@ -141,7 +143,7 @@ export async function parseVueFile(
   const normalizedInputSource = normalizeLineEndings(source)
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
   let descriptorForCompileSource = normalizedSource
-  const { descriptor, errors } = parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
+  const { descriptor, errors } = await parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
   restoreScriptSetupSrc(descriptor)
   restoreScriptSrc(descriptor)
 
@@ -203,7 +205,7 @@ export async function parseVueFile(
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
+        const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
         restoreScriptSetupSrc(nextDescriptor)
         restoreScriptSrc(nextDescriptor)
 
@@ -255,7 +257,7 @@ export async function parseVueFile(
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + inlined.code + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
+        const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
         restoreScriptSetupSrc(nextDescriptor)
         restoreScriptSrc(nextDescriptor)
 

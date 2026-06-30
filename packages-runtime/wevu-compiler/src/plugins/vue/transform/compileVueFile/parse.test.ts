@@ -1,11 +1,20 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as vueCompilerSfc from 'vue/compiler-sfc'
 
 import { parseVueFile } from './parse'
 
 const extractJsonMacroFromScriptSetupMock = vi.hoisted(() => vi.fn())
 const inlineScriptSetupDefineOptionsArgsMock = vi.hoisted(() => vi.fn())
 const resolveSfcBlockSrcMock = vi.hoisted(() => vi.fn())
+
+vi.mock('vue/compiler-sfc', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue/compiler-sfc')>()
+  return {
+    ...actual,
+    parse: vi.fn(actual.parse),
+  }
+})
 
 vi.mock('../jsonMacros', () => {
   return {
@@ -43,6 +52,7 @@ describe('compileVueFile parse', () => {
       descriptor,
       deps: [],
     }))
+    vi.mocked(vueCompilerSfc.parse).mockClear()
   })
 
   it('parses basic SFC and infers page json defaults', async () => {
@@ -246,6 +256,21 @@ defineAppJson({ navigationBarTitleText: 'app' })
     await expect(
       parseVueFile('<template><view></template>', '/project/src/pages/bad.vue'),
     ).rejects.toThrow('解析 /project/src/pages/bad.vue 失败')
+  })
+
+  it('reuses cached SFC parse result for repeated same-source parses', async () => {
+    const source = `
+<template><view>{{ title }}</view></template>
+<script setup lang="ts">
+const title = 'home'
+</script>
+    `.trim()
+    const filename = `/project/src/pages/cache-${Date.now()}.vue`
+
+    await parseVueFile(source, filename)
+    await parseVueFile(source, filename)
+
+    expect(vueCompilerSfc.parse).toHaveBeenCalledTimes(1)
   })
 
   it('keeps stripped script setup content after reparsing', async () => {
