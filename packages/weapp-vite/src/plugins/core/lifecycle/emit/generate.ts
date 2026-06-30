@@ -218,12 +218,38 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
   }
 
   const activeEntryIds = resolveActiveHmrEntryIds(state)
-  const activeImportedChunkIds = collectActiveHmrImportedChunkIds(bundle, activeEntryIds)
+  const activeImportedChunkIds = new Set<string>()
+  const pendingRuntimeVendorChunks: Array<{ fileName: string, chunk: OutputChunk }> = []
+  const addEmittedChunkFileName = (fileName: string, output: OutputChunk) => {
+    const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+    if (!emittedChunkFileNames) {
+      return
+    }
+    emittedChunkFileNames.add(fileName)
+    if (output.fileName) {
+      emittedChunkFileNames.add(output.fileName)
+    }
+  }
   for (const [fileName, output] of Object.entries(bundle)) {
-    if (output?.type !== 'chunk' || !isStableHmrSharedChunk(fileName)) {
+    if (output?.type !== 'chunk') {
       continue
     }
 
+    const chunk = output as OutputChunk
+    if (chunk.facadeModuleId && activeEntryIds?.has(chunk.facadeModuleId)) {
+      const importerFileName = chunk.fileName || fileName
+      const imports = [
+        ...(Array.isArray(chunk.imports) ? chunk.imports : []),
+        ...(Array.isArray(chunk.dynamicImports) ? chunk.dynamicImports : []),
+      ]
+      for (const imported of imports) {
+        activeImportedChunkIds.add(resolveImportedChunkId(importerFileName, imported))
+      }
+    }
+
+    if (!isStableHmrSharedChunk(fileName)) {
+      continue
+    }
     const knownImporters = state.hmrSharedChunkImporters.get(fileName)
     if (!knownImporters?.size) {
       delete bundle[fileName]
@@ -243,33 +269,46 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       continue
     }
 
-    const isActiveRuntimeVendorChunk = isRuntimeVendorSharedChunk(fileName)
-      && activeImportedChunkIds.has(fileName)
-    if (isActiveRuntimeVendorChunk) {
-      const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-      if (emittedChunkFileNames) {
-        emittedChunkFileNames.add(fileName)
-        if (output.fileName) {
-          emittedChunkFileNames.add(output.fileName)
-        }
-      }
+    if (isRuntimeVendorSharedChunk(fileName)) {
+      pendingRuntimeVendorChunks.push({ fileName, chunk })
       continue
     }
 
-    const isCompleteSharedChunkRefresh = Array.from(knownImporters)
-      .every(entryId => activeEntryIds?.has(entryId))
+    let isCompleteSharedChunkRefresh = true
+    for (const entryId of knownImporters) {
+      if (!activeEntryIds?.has(entryId)) {
+        isCompleteSharedChunkRefresh = false
+        break
+      }
+    }
     if (!isCompleteSharedChunkRefresh) {
       delete bundle[fileName]
       continue
     }
 
-    const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-    if (emittedChunkFileNames) {
-      emittedChunkFileNames.add(fileName)
-      if (output.fileName) {
-        emittedChunkFileNames.add(output.fileName)
+    addEmittedChunkFileName(fileName, chunk)
+  }
+
+  for (const { fileName, chunk } of pendingRuntimeVendorChunks) {
+    if (activeImportedChunkIds.has(fileName) || (chunk.fileName ? activeImportedChunkIds.has(chunk.fileName) : false)) {
+      addEmittedChunkFileName(fileName, chunk)
+      continue
+    }
+
+    const knownImporters = state.hmrSharedChunkImporters.get(fileName)
+    let isCompleteSharedChunkRefresh = true
+    for (const entryId of knownImporters ?? []) {
+      if (!activeEntryIds?.has(entryId)) {
+        isCompleteSharedChunkRefresh = false
+        break
       }
     }
+    if (!isCompleteSharedChunkRefresh) {
+      delete bundle[fileName]
+      continue
+    }
+
+    addEmittedChunkFileName(fileName, chunk)
   }
 }
 

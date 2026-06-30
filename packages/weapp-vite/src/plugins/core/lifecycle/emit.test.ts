@@ -801,6 +801,66 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('__weappViteInjectedApi__')
     expect(bundle['common.js'].code).not.toContain('jd.showToast')
   })
+
+  it('retains runtime vendor chunks imported after the shared chunk candidate is visited', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const lastEmittedChunkFileNames = new Set<string>()
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {},
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames,
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map([['weapp-vendors/runtime.js', new Set([activeEntry, '/project/src/pages/other/index.ts'])]]),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'weapp-vendors/runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/runtime.js',
+        code: 'const runtime = {}',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'const page = {}',
+        imports: ['../../weapp-vendors/runtime.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['weapp-vendors/runtime.js']).toBeDefined()
+    expect(lastEmittedChunkFileNames.has('weapp-vendors/runtime.js')).toBe(true)
+  })
 })
 
 describe('core lifecycle emit HMR import graph', () => {
