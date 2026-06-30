@@ -1048,6 +1048,58 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
+  it('keeps css importer only updates representative even when shared chunk indexes match', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['css-importer:4'],
+    }
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const ids = [
+      '/project/src/pages/native/index.ts',
+      '/project/src/pages/sfc/index.vue',
+      '/project/src/components/probe-card/index.ts',
+      '/project/src/subpackages/lab/pages/sub-native/index.ts',
+    ]
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    for (const id of ids) {
+      sharedChunksByEntry.set(id, new Set(['common.js']))
+      hook.markEntryDirty(id, 'dependency')
+    }
+    sourceSharedChunks.add('common.js')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: ids[0],
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(4)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
+      'css-importer-representative:1/4',
+    ])
+  })
+
   it('keeps incremental rebuilds when dirty entries have no related shared chunk index hit', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
