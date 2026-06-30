@@ -60,7 +60,21 @@ function registerCssImports(
     normalizedDeps.add(normalizePath(dependency))
   }
 
-  const previousDeps = graph.importerToDependencies.get(normalizedImporter) ?? new Set<string>()
+  const existingDeps = graph.importerToDependencies.get(normalizedImporter)
+  const previousDeps = existingDeps ?? new Set<string>()
+  if (existingDeps && previousDeps.size === normalizedDeps.size) {
+    let unchanged = true
+    for (const dependency of normalizedDeps) {
+      if (!previousDeps.has(dependency) || !graph.dependencyToImporters.get(dependency)?.has(normalizedImporter)) {
+        unchanged = false
+        break
+      }
+    }
+    if (unchanged) {
+      return
+    }
+  }
+
   if (previousDeps.size) {
     for (const previous of previousDeps) {
       if (normalizedDeps.has(previous)) {

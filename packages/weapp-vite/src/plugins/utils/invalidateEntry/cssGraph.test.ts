@@ -235,6 +235,31 @@ describe('invalidateEntry cssGraph', () => {
     expect(ctx.runtimeState.css.dependencyToImporters.get(viteDep)).toEqual(new Set([importer]))
   })
 
+  it('keeps css graph sets stable when dependencies are unchanged', () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const importer = '/project/src/components/card/index.scss'
+    const shared = '/project/src/shared/styles/shared.scss'
+
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    const normalizedImporter = path.normalize(importer)
+    const normalizedShared = path.normalize(shared)
+    const previousDeps = ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)
+    const previousImporters = ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)
+
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    expect(ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)).toBe(previousDeps)
+    expect(ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)).toBe(previousImporters)
+
+    previousImporters?.delete(normalizedImporter)
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    expect(ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)).not.toBe(previousDeps)
+    expect(ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)).toEqual(new Set([normalizedImporter]))
+  })
+
   it('skips css graph updates when runtime css state is unavailable', async () => {
     const ctx = {
       configService: {
