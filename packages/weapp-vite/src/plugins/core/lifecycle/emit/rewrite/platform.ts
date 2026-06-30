@@ -35,6 +35,19 @@ export type ChunkScriptAnalysisCache = WeakMap<OutputChunk, {
   code: string
 }>
 
+export function rememberChunkScriptAnalysis(
+  chunk: OutputChunk,
+  analysis: ChunkScriptAnalysis,
+  options?: {
+    cache?: ChunkScriptAnalysisCache
+  },
+) {
+  options?.cache?.set(chunk, {
+    analysis,
+    code: chunk.code,
+  })
+}
+
 export function getChunkScriptAnalysis(
   chunk: OutputChunk,
   options?: {
@@ -53,10 +66,7 @@ export function getChunkScriptAnalysis(
         hasPlatformApiAccess: false,
         hasStaticRequireLiteral: false,
       }
-  options?.cache?.set(chunk, {
-    analysis,
-    code: chunk.code,
-  })
+  rememberChunkScriptAnalysis(chunk, analysis, options)
   return analysis
 }
 
@@ -85,13 +95,10 @@ export function warmupBundleScriptAnalysis(
       continue
     }
     if (!mayNeedChunkScriptAnalysis(chunk.code)) {
-      cache.set(chunk, {
-        analysis: {
-          hasPlatformApiAccess: false,
-          hasStaticRequireLiteral: false,
-        },
-        code: chunk.code,
-      })
+      rememberChunkScriptAnalysis(chunk, {
+        hasPlatformApiAccess: false,
+        hasStaticRequireLiteral: false,
+      }, options)
       continue
     }
 
@@ -112,10 +119,7 @@ export function warmupBundleScriptAnalysis(
     if (!chunk) {
       continue
     }
-    cache.set(chunk, {
-      analysis,
-      code: chunk.code,
-    })
+    rememberChunkScriptAnalysis(chunk, analysis, options)
   }
 }
 
@@ -241,6 +245,9 @@ export function rewriteBundleNpmImportsByPlatform(
       continue
     }
     chunk.code = nextCode
+    rememberChunkScriptAnalysis(chunk, analysis, {
+      cache: options?.analysisCache,
+    })
   }
 }
 

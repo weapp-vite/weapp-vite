@@ -8,7 +8,7 @@ import {
   normalizeWeappLocalNpmImport,
   setRequireImportLiteral,
 } from './literals'
-import { getChunkScriptAnalysis, matchesSubPackageDependency } from './platform'
+import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
 
 export interface LocalRootNpmRewriteSubPackageMeta {
   root: string
@@ -197,6 +197,9 @@ export function rewriteChunkNpmImportsToLocalRoot(
 
     if (mutated) {
       chunk.code = generate(ast as any).code
+      rememberChunkScriptAnalysis(chunk, analysis, {
+        cache: options?.analysisCache,
+      })
     }
   }
   catch {

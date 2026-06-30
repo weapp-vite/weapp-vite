@@ -5,6 +5,7 @@ import {
   getChunkScriptAnalysis,
   rewriteBundleDynamicGlobalResolution,
   rewriteBundleNpmImportsByPlatform,
+  rewriteBundlePlatformApi,
   warmupBundleScriptAnalysis,
 } from './platform'
 
@@ -112,6 +113,38 @@ describe('bundle script analysis warmup', () => {
 
     expect(analyzeScripts).toHaveBeenCalledTimes(1)
     expect(chunk.code).toContain('/node_modules/pkg')
+  })
+
+  it('keeps analysis cache valid after npm import rewriting', () => {
+    const cache = new WeakMap<OutputChunk, {
+      analysis: {
+        hasPlatformApiAccess: boolean
+        hasStaticRequireLiteral: boolean
+      }
+      code: string
+    }>()
+    const chunk = createChunk('pages/index.js', [
+      `const dep = require('pkg')`,
+      `wx.getStorageSync('k')`,
+    ].join('\n'))
+    const bundle: OutputBundle = {
+      [chunk.fileName]: chunk,
+    }
+
+    rewriteBundleNpmImportsByPlatform('alipay', bundle, {
+      pkg: '1.0.0',
+    }, undefined, {
+      astEngine: 'oxc',
+      analysisCache: cache,
+    })
+    rewriteBundlePlatformApi(bundle, 'my', {
+      astEngine: 'oxc',
+      analysisCache: cache,
+    })
+
+    expect(analyzeScripts).toHaveBeenCalledTimes(1)
+    expect(chunk.code).toContain('/node_modules/pkg')
+    expect(chunk.code).toContain('__weappViteInjectedApi__.getStorageSync')
   })
 
   it('rewrites dynamic global resolution only for matching chunks', () => {
