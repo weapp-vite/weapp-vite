@@ -1,7 +1,7 @@
 import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
-import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -150,6 +150,16 @@ describe('weapp-vite output finalizer', () => {
     } as any, bundle)
 
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="handleTap"')
+  })
+
+  it('skips template parser for assets without normalization markers', () => {
+    expect(mayNeedTemplateNormalization('<view class="page"><text>Hello</text></view>', 'weapp')).toBe(false)
+    expect(mayNeedTemplateNormalization('<view @tap="handleTap" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view><!-- comment --></view>', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view a:if="{{ready}}" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<import src="./shared.wxml" />', 'alipay')).toBe(true)
+    expect(mayNeedTemplateNormalization('<button bind:tap="handleTap" />', 'alipay')).toBe(true)
+    expect(mayNeedTemplateNormalization('<HelloWorld />', 'alipay')).toBe(true)
   })
 
   it('runs as a post generateBundle plugin', () => {

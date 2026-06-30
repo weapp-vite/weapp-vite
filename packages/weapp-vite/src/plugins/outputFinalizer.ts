@@ -1,14 +1,38 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
+import type { MpPlatform } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
+import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
+import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
+const TEMPLATE_STATIC_REWRITE_MARKERS = [
+  '@',
+  '<!--',
+  '<wxs',
+  '</wxs',
+  '<sjs',
+  '</sjs',
+  '.html',
+  '.wxs',
+  '.sjs',
+  '.wxml',
+  '.axml',
+  '.swan',
+  '.ttml',
+  '.jxml',
+  '.qml',
+  '.ksml',
+  '.xhsml',
+  'import.meta.',
+] as const
+const TEMPLATE_DIRECTIVE_PREFIXES = getSupportedMiniProgramDirectivePrefixes()
 type EmitAsset = (asset: EmittedAsset) => void
 
 function outputSourceToString(output: OutputBundle[string]) {
@@ -20,6 +44,34 @@ function outputSourceToString(output: OutputBundle[string]) {
   return typeof source === 'string'
     ? source
     : Buffer.from(source).toString('base64')
+}
+
+export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform) {
+  const lowerCode = code.toLowerCase()
+  const { directivePrefix, eventBindingStyle, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
+  if (normalizeComponentTagName && /[A-Z]/.test(code)) {
+    return true
+  }
+
+  for (const prefix of TEMPLATE_DIRECTIVE_PREFIXES) {
+    if (prefix !== directivePrefix) {
+      const marker = prefix === 's' ? 's-' : `${prefix}:`
+      if (code.includes(marker)) {
+        return true
+      }
+    }
+  }
+
+  if (eventBindingStyle === 'alipay' && (
+    lowerCode.includes('bind')
+    || lowerCode.includes('catch')
+    || lowerCode.includes('capture-')
+    || lowerCode.includes('mut-bind')
+  )) {
+    return true
+  }
+
+  return TEMPLATE_STATIC_REWRITE_MARKERS.some(marker => lowerCode.includes(marker))
 }
 
 export function normalizePreprocessorStyleAssets(
@@ -86,6 +138,9 @@ export function normalizeTemplateAssets(
         ? Buffer.from(source).toString('utf8')
         : undefined
     if (code === undefined) {
+      continue
+    }
+    if (!mayNeedTemplateNormalization(code, configService?.platform)) {
       continue
     }
 
