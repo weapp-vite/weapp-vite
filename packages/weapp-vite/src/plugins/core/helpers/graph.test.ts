@@ -49,6 +49,16 @@ function createState() {
   } as any
 }
 
+class ThrowOnIterateMap<K, V> extends Map<K, V> {
+  override entries() {
+    throw new Error('unexpected full map scan')
+  }
+
+  override [Symbol.iterator]() {
+    throw new Error('unexpected full map scan')
+  }
+}
+
 describe('core helpers graph', () => {
   it('collects affected entries through importer graph traversal', () => {
     const state = createState()
@@ -536,6 +546,43 @@ describe('core helpers graph', () => {
     expect(state.hmrSharedChunksByEntry.get(otherEntry)).toEqual(
       new Set(['common.js', 'unrelated.js']),
     )
+  })
+
+  it('snapshots indexed partial shared chunks without scanning unrelated importer maps', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    const otherEntry = '/project/src/pages/other/index.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(otherEntry, { value: true })
+    state.hmrSharedChunkImporters = new ThrowOnIterateMap([
+      ['common.js', new Set([pageEntry, otherEntry])],
+      ['weapp-vendors/runtime.js', new Set([pageEntry])],
+      ['unrelated.js', new Set([otherEntry])],
+    ])
+    state.hmrSharedChunksByEntry.set(pageEntry, new Set(['common.js', 'weapp-vendors/runtime.js']))
+    state.hmrSharedChunksByEntry.set(otherEntry, new Set(['common.js', 'unrelated.js']))
+    state.hmrSharedChunkDependencies = new ThrowOnIterateMap([
+      ['common.js', new Set(['weapp-vendors/runtime.js'])],
+      ['weapp-vendors/runtime.js', new Set()],
+      ['unrelated.js', new Set()],
+    ])
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/runtime.js'],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(new Set([otherEntry, pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/runtime.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('unrelated.js')).toEqual(new Set([otherEntry]))
   })
 
   it('refreshes module index for chunks included in partial refreshes', () => {

@@ -512,6 +512,52 @@ function appendSharedChunkImporters(
   }
 }
 
+function collectPreviousSharedChunkSnapshot(state: CorePluginState, entryIds: Set<string>) {
+  const previousImporters = new Map<string, Set<string>>()
+  const previousDependencies = new Map<string, Set<string>>()
+  const visited = new Set<string>()
+
+  const addChunk = (chunkId: string) => {
+    if (visited.has(chunkId)) {
+      return
+    }
+    visited.add(chunkId)
+
+    const importers = state.hmrSharedChunkImporters.get(chunkId)
+    if (importers) {
+      previousImporters.set(chunkId, new Set(importers))
+    }
+
+    const dependencies = state.hmrSharedChunkDependencies.get(chunkId)
+    if (!dependencies?.size) {
+      return
+    }
+
+    previousDependencies.set(chunkId, new Set(dependencies))
+    for (const dependency of dependencies) {
+      addChunk(dependency)
+    }
+  }
+
+  for (const entryId of entryIds) {
+    const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
+    if (!chunkIds?.size) {
+      for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+        if (importers.has(entryId)) {
+          addChunk(chunkId)
+        }
+      }
+      continue
+    }
+
+    for (const chunkId of chunkIds) {
+      addChunk(chunkId)
+    }
+  }
+
+  return { previousImporters, previousDependencies }
+}
+
 export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
   state.hmrSharedChunkImporters.clear()
   state.hmrSharedChunksByEntry.clear()
@@ -554,14 +600,7 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     return
   }
 
-  const previousImporters = new Map<string, Set<string>>()
-  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
-    previousImporters.set(chunkId, new Set(importers))
-  }
-  const previousDependencies = new Map<string, Set<string>>()
-  for (const [chunkId, imports] of state.hmrSharedChunkDependencies) {
-    previousDependencies.set(chunkId, new Set(imports))
-  }
+  const { previousImporters, previousDependencies } = collectPreviousSharedChunkSnapshot(state, refreshedEntryIds)
   for (const entryId of refreshedEntryIds) {
     const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
     if (!chunkIds?.size) {
