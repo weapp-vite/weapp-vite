@@ -186,7 +186,11 @@ function shouldRewriteDevHmrChunk(
   return activeImportedChunkIds.has(fileName)
 }
 
-function resolveDevHmrRewriteBundle(bundle: OutputBundle, state: CorePluginState) {
+function resolveDevHmrRewriteBundle(
+  bundle: OutputBundle,
+  state: CorePluginState,
+  precomputedActiveImportedChunkIds?: Set<string>,
+) {
   if (
     !state.ctx.configService.isDev
     || !state.hmrState.hasBuiltOnce
@@ -197,7 +201,8 @@ function resolveDevHmrRewriteBundle(bundle: OutputBundle, state: CorePluginState
 
   const rewriteBundle: OutputBundle = {}
   const activeEntryIds = resolveActiveHmrEntryIds(state)
-  const activeImportedChunkIds = collectActiveHmrImportedChunkIds(bundle, activeEntryIds)
+  const activeImportedChunkIds = precomputedActiveImportedChunkIds
+    ?? collectActiveHmrImportedChunkIds(bundle, activeEntryIds)
   for (const [fileName, output] of Object.entries(bundle)) {
     if (shouldRewriteDevHmrChunk(fileName, output, state, activeEntryIds, activeImportedChunkIds)) {
       rewriteBundle[fileName] = output
@@ -214,7 +219,7 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     || state.hmrState.skipSharedChunkRefresh
     || !state.hmrState.lastEmittedEntryIds?.size
   ) {
-    return
+    return undefined
   }
 
   const activeEntryIds = resolveActiveHmrEntryIds(state)
@@ -310,6 +315,7 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
 
     addEmittedChunkFileName(fileName, chunk)
   }
+  return activeImportedChunkIds
 }
 
 function retainFullEntryHmrChunks(bundle: OutputBundle, state: CorePluginState) {
@@ -385,6 +391,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
 
       const sharedStartedAt = performance.now()
+      let activeImportedChunkIds: Set<string> | undefined
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
         const shouldLogChunks = configService.weappViteConfig?.chunks?.logOptimization ?? true
@@ -420,7 +427,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
           state.hmrState.hasBuiltOnce = true
         }
-        prunePartialHmrStableSharedChunks(rolldownBundle, state)
+        activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
         retainFullEntryHmrChunks(rolldownBundle, state)
         pruneUneventedDevHmrChunks(ctx, rolldownBundle)
 
@@ -595,7 +602,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       })
 
       const rewriteStartedAt = performance.now()
-      const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state)
+      const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
       if (shouldRewriteBundleNpmImports(configService.platform)) {
         rewriteBundleNpmImportsByPlatform(
           configService.platform,
