@@ -574,6 +574,61 @@ describe('core helper bundle', () => {
     expect(bundle['pages/hmr/index.js'].code).toContain('(require("../../weapp-vendors/wevu-src.js").__wevuDefineComponent || require("../../weapp-vendors/wevu-src.js").pt)({})')
   })
 
+  it('indexes runtime chunk usage without rewriting unrelated wevu chunks', () => {
+    const bundle = {
+      'pages/runtime/index.js': {
+        type: 'chunk',
+        fileName: 'pages/runtime/index.js',
+        code: [
+          'const require_src_ABC = require("../../weapp-vendors/wevu-src.js");',
+          'var page = require_src_ABC.eo({});',
+          'const require_watch_ABC = require("../../weapp-vendors/wevu-watch.js");',
+          'require_watch_ABC.onShareTimeline(() => ({}));',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-src.js', 'weapp-vendors/wevu-watch.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: [
+          'function eo(e) { return e }',
+          'Object.defineProperty(exports, "eo", { enumerable: true, get: function() { return eo; } });',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'const require_weapp_vendors_wevu_base = require("./wevu-ref.js");',
+          'function onLoad(handler) { require_weapp_vendors_wevu_base.pushHook(require_weapp_vendors_wevu_base.assertInSetup("onLoad"), "onLoad", handler); }',
+          'Object.defineProperty(exports, "onLoad", { enumerable: true, get: function() { return onLoad; } });',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-ref.js'],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: [
+          'function assertInSetup(name) { return {}; }',
+          'function pushHook() {}',
+          'Object.defineProperty(exports, "assertInSetup", { enumerable: true, get: function() { return assertInSetup; } });',
+          'Object.defineProperty(exports, "pushHook", { enumerable: true, get: function() { return pushHook; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    const pageCode = bundle['pages/runtime/index.js'].code
+    expect(pageCode).toContain('(require_src_ABC.__wevuDefineComponent || require_src_ABC.eo)({})')
+    expect(pageCode).toContain('require_watch_ABC.onShareTimeline || function(handler)')
+    expect(bundle['weapp-vendors/wevu-src.js'].code).toContain('"__wevuDefineComponent"')
+    expect(bundle['weapp-vendors/wevu-src.js'].code).not.toContain('"onShareTimeline"')
+    expect(bundle['weapp-vendors/wevu-watch.js'].code).toContain('"onShareTimeline"')
+  })
+
   it('exports actually consumed wevu runtime members when rolldown only preserves partial exports', () => {
     const bundle = {
       'pages/runtime/index.js': {

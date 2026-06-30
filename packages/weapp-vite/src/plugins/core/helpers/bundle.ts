@@ -189,6 +189,12 @@ const WEVU_RUNTIME_MODULE_IDS = [
   ...WEVU_INTERNAL_MODULE_IDS,
 ] as const
 type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
+interface WevuRuntimeChunkUsage {
+  chunk: OutputChunk
+  runtimeRefs: Set<string>
+  inlineMembers: Set<string>
+  members: Set<string>
+}
 const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly string[]> = {
   'wevu/internal-runtime': WEVU_INTERNAL_RUNTIME_EXPORTS,
   'wevu/internal-reactivity': WEVU_INTERNAL_REACTIVITY_EXPORTS,
@@ -986,43 +992,92 @@ function resolveWevuExportAliasMap(wevuChunk: OutputChunk) {
   return aliases
 }
 
-function collectImportedWevuRuntimeMembers(
-  bundle: OutputBundle,
-  wevuChunkFileName: string,
+function getWevuRuntimeChunkUsage(
+  usageByRuntimeChunk: Map<string, Map<string, WevuRuntimeChunkUsage>>,
+  runtimeChunkFileName: string,
+  chunk: OutputChunk,
 ) {
-  const members = new Set<string>()
+  let usageByChunk = usageByRuntimeChunk.get(runtimeChunkFileName)
+  if (!usageByChunk) {
+    usageByChunk = new Map()
+    usageByRuntimeChunk.set(runtimeChunkFileName, usageByChunk)
+  }
+
+  let usage = usageByChunk.get(chunk.fileName)
+  if (!usage) {
+    usage = {
+      chunk,
+      runtimeRefs: new Set(),
+      inlineMembers: new Set(),
+      members: new Set(),
+    }
+    usageByChunk.set(chunk.fileName, usage)
+  }
+
+  return usage
+}
+
+function collectWevuRuntimeChunkUsage(
+  bundle: OutputBundle,
+  wevuChunkFileNames: Set<string>,
+) {
+  const usageByRuntimeChunk = new Map<string, Map<string, WevuRuntimeChunkUsage>>()
+  if (!wevuChunkFileNames.size) {
+    return usageByRuntimeChunk
+  }
 
   for (const output of Object.values(bundle)) {
-    if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunkFileName) {
+    if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const runtimeRefs = new Set<string>()
     const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
     for (const match of chunk.code.matchAll(localRequireRe)) {
       const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[2]))
-      if (resolved === wevuChunkFileName) {
-        runtimeRefs.add(match[1])
+      if (!resolved || resolved === chunk.fileName || !wevuChunkFileNames.has(resolved)) {
+        continue
       }
-    }
 
-    for (const ref of runtimeRefs) {
-      const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.([A-Za-z_$][\\w$]*)\\b`, 'g')
-      for (const match of chunk.code.matchAll(memberRe)) {
-        members.add(match[1])
-      }
+      getWevuRuntimeChunkUsage(usageByRuntimeChunk, resolved, chunk).runtimeRefs.add(match[1])
     }
 
     const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\b/g
     for (const match of chunk.code.matchAll(inlineRequireRe)) {
       const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[1]))
-      if (resolved === wevuChunkFileName) {
-        members.add(match[2])
+      if (!resolved || resolved === chunk.fileName || !wevuChunkFileNames.has(resolved)) {
+        continue
+      }
+
+      const usage = getWevuRuntimeChunkUsage(usageByRuntimeChunk, resolved, chunk)
+      usage.inlineMembers.add(match[2])
+      usage.members.add(match[2])
+    }
+  }
+
+  for (const usageByChunk of usageByRuntimeChunk.values()) {
+    for (const usage of usageByChunk.values()) {
+      for (const ref of usage.runtimeRefs) {
+        const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.([A-Za-z_$][\\w$]*)\\b`, 'g')
+        for (const match of usage.chunk.code.matchAll(memberRe)) {
+          usage.members.add(match[1])
+        }
       }
     }
   }
 
+  return usageByRuntimeChunk
+}
+
+function collectImportedWevuRuntimeMembers(
+  usageByChunk: Map<string, WevuRuntimeChunkUsage> | undefined,
+) {
+  const members = new Set<string>()
+  for (const usage of usageByChunk?.values() ?? []) {
+    for (const member of usage.members) {
+      members.add(member)
+    }
+  }
   return members
 }
 
@@ -1105,29 +1160,28 @@ function rewriteSyntheticWevuHookAccess(
   wevuChunkFileName: string,
   baseChunkFileName: string,
   importedMembers: Set<string>,
+  usage: WevuRuntimeChunkUsage,
 ) {
-  const hookNames = WEVU_SYNTHETIC_SINGLE_PAGE_HOOK_EXPORTS.filter(name => importedMembers.has(name))
+  const hookNames = WEVU_SYNTHETIC_SINGLE_PAGE_HOOK_EXPORTS.filter((name) => {
+    return importedMembers.has(name) && usage.members.has(name)
+  })
   if (!hookNames.length) {
     return
   }
 
   const baseRequireSpecifier = normalizeRelativeRequireSpecifier(chunk.fileName, baseChunkFileName)
   let nextCode = chunk.code
-  const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
-  const runtimeRefs = new Set<string>()
-  for (const match of nextCode.matchAll(localRequireRe)) {
-    const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[2]))
-    if (resolved === wevuChunkFileName) {
-      runtimeRefs.add(match[1])
-    }
-  }
 
   for (const hookName of hookNames) {
-    for (const ref of runtimeRefs) {
+    for (const ref of usage.runtimeRefs) {
       const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.${hookName}\\s*\\(`, 'g')
       nextCode = nextCode.replace(memberRe, () => {
         return formatSyntheticSinglePageHookFallback(hookName, `${ref}.${hookName}`, baseRequireSpecifier)
       })
+    }
+
+    if (!usage.inlineMembers.has(hookName)) {
+      continue
     }
 
     const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\s*\(/g
@@ -1150,7 +1204,12 @@ function rewriteSyntheticWevuHookAccess(
   chunk.code = nextCode
 }
 
-function rewriteStableWevuRuntimeAccess(chunk: OutputChunk, wevuChunkFileName: string, aliases: Map<string, string>) {
+function rewriteStableWevuRuntimeAccess(
+  chunk: OutputChunk,
+  wevuChunkFileName: string,
+  aliases: Map<string, string>,
+  usage: WevuRuntimeChunkUsage,
+) {
   if (!aliases.size) {
     return
   }
@@ -1161,28 +1220,25 @@ function rewriteStableWevuRuntimeAccess(chunk: OutputChunk, wevuChunkFileName: s
     if (!localName) {
       continue
     }
-    const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\s*\(/g
-    nextCode = nextCode.replace(inlineRequireRe, (full, rawSpecifier: string, property: string) => {
-      if (property !== localName && property !== stableName) {
-        return full
-      }
-      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(rawSpecifier))
-      if (resolved !== wevuChunkFileName) {
-        return full
-      }
-      return `(require(${rawSpecifier}).${stableName} || require(${rawSpecifier}).${property})(`
-    })
-
-    const localRequireRe = /\b((?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?)/g
-    const runtimeRefs = new Set<string>()
-    for (const match of nextCode.matchAll(localRequireRe)) {
-      const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[3]))
-      if (resolved === wevuChunkFileName) {
-        runtimeRefs.add(match[2])
-      }
+    if (usage.inlineMembers.has(localName) || usage.inlineMembers.has(stableName)) {
+      const inlineRequireRe = /require\((`[^`]+`|'[^']+'|"[^"]+")\)\.([A-Za-z_$][\w$]*)\s*\(/g
+      nextCode = nextCode.replace(inlineRequireRe, (full, rawSpecifier: string, property: string) => {
+        if (property !== localName && property !== stableName) {
+          return full
+        }
+        const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(rawSpecifier))
+        if (resolved !== wevuChunkFileName) {
+          return full
+        }
+        return `(require(${rawSpecifier}).${stableName} || require(${rawSpecifier}).${property})(`
+      })
     }
 
-    for (const ref of runtimeRefs) {
+    if (!usage.members.has(localName) && !usage.members.has(stableName)) {
+      continue
+    }
+
+    for (const ref of usage.runtimeRefs) {
       const memberRe = new RegExp(`\\b${escapeRegExp(ref)}\\.(?:${stableName}|${localName})\\s*\\(`, 'g')
       nextCode = nextCode.replace(memberRe, (full) => {
         const property = full.includes(`.${stableName}`) ? stableName : localName
@@ -1206,21 +1262,23 @@ export function stabilizeWevuRuntimeChunkAccess(bundle: OutputBundle) {
     return
   }
   const baseChunk = resolveWevuBaseChunk(bundle)
+  const usageByRuntimeChunk = collectWevuRuntimeChunkUsage(
+    bundle,
+    new Set(wevuChunks.map(chunk => chunk.fileName)),
+  )
 
   for (const wevuChunk of wevuChunks) {
     const aliases = resolveWevuExportAliasMap(wevuChunk)
-    const importedMembers = collectImportedWevuRuntimeMembers(bundle, wevuChunk.fileName)
+    const usageByChunk = usageByRuntimeChunk.get(wevuChunk.fileName)
+    const importedMembers = collectImportedWevuRuntimeMembers(usageByChunk)
 
     appendWevuRuntimeExports(wevuChunk, aliases, importedMembers)
     appendSyntheticWevuHookExports(wevuChunk, importedMembers)
-    for (const output of Object.values(bundle)) {
-      if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || output.fileName === wevuChunk.fileName) {
-        continue
-      }
-      const chunk = output as OutputChunk
-      rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases)
+    for (const usage of usageByChunk?.values() ?? []) {
+      const chunk = usage.chunk
+      rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases, usage)
       if (baseChunk?.fileName) {
-        rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, importedMembers)
+        rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, importedMembers, usage)
         if (chunk.code.includes(normalizeRelativeRequireSpecifier(chunk.fileName, baseChunk.fileName))) {
           const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
           nextImports.add(baseChunk.fileName)
