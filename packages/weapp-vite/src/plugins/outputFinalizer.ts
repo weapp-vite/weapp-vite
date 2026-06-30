@@ -241,7 +241,6 @@ export function pruneUnchangedDevHmrOutputs(
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
     stabilizeWevuRuntimeChunkAccess(bundle)
   }
-  pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
     const shouldForceEmitCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
