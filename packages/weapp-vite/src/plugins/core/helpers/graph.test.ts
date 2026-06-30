@@ -526,6 +526,41 @@ describe('core helpers graph', () => {
     )
   })
 
+  it('prunes shared chunk module ownership through chunk module index', () => {
+    const state = createState()
+    const entry = '/project/src/pages/hmr/index.ts'
+    const staleCommonModule = '/project/src/shared/common-stale.ts'
+    const nextCommonModule = '/project/src/shared/common-next.ts'
+    const vendorModule = '/project/src/shared/vendor.ts'
+    state.resolvedEntryMap.set(entry, { value: true })
+    state.hmrSharedChunksByModule.set(staleCommonModule, new Set(['common.js']))
+    state.hmrSharedChunksByModule.set(nextCommonModule, new Set(['legacy-common.js']))
+    state.hmrSharedChunksByModule.set(vendorModule, new Set(['weapp-vendors/vendor.js']))
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: entry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        moduleIds: [nextCommonModule],
+        imports: ['./weapp-vendors/vendor.js'],
+      }),
+      'weapp-vendors/vendor.js': createChunk('weapp-vendors/vendor.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
+
+    expect(state.hmrSharedChunksByModule.has(staleCommonModule)).toBe(false)
+    expect(state.hmrSharedChunksByModule.get(nextCommonModule)).toEqual(
+      new Set(['legacy-common.js', 'common.js']),
+    )
+    expect(state.hmrSharedChunksByModule.get(vendorModule)).toEqual(
+      new Set(['weapp-vendors/vendor.js']),
+    )
+  })
+
   it('preserves module index when partial refresh includes shared chunk shell without module metadata', () => {
     const state = createState()
     const entry = '/project/src/pages/hmr/index.ts'

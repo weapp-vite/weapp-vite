@@ -86,6 +86,21 @@ function createModulesByImporter(moduleImporters: Map<string, Set<string>>) {
   return modulesByImporter
 }
 
+function createSharedModulesByChunk(sharedChunksByModule: Map<string, Set<string>>) {
+  const modulesByChunk = new Map<string, Set<string>>()
+  for (const [moduleId, chunkIds] of sharedChunksByModule) {
+    for (const chunkId of chunkIds) {
+      let moduleIds = modulesByChunk.get(chunkId)
+      if (!moduleIds) {
+        moduleIds = new Set<string>()
+        modulesByChunk.set(chunkId, moduleIds)
+      }
+      moduleIds.add(moduleId)
+    }
+  }
+  return modulesByChunk
+}
+
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
@@ -335,12 +350,21 @@ function appendSharedChunkImporters(
       state.hmrSharedChunksByModule.set(moduleId, new Set([chunkId]))
     }
   }
+  const previousSharedModulesByChunk = createSharedModulesByChunk(state.hmrSharedChunksByModule)
   const pruneSharedChunkModules = (chunkId: string, nextModuleIds: Set<string>) => {
     if (!nextModuleIds.size) {
       return
     }
-    for (const [moduleId, chunkIds] of state.hmrSharedChunksByModule) {
+    const previousModuleIds = previousSharedModulesByChunk.get(chunkId)
+    if (!previousModuleIds?.size) {
+      return
+    }
+    for (const moduleId of previousModuleIds) {
       if (nextModuleIds.has(moduleId)) {
+        continue
+      }
+      const chunkIds = state.hmrSharedChunksByModule.get(moduleId)
+      if (!chunkIds) {
         continue
       }
       chunkIds.delete(chunkId)
