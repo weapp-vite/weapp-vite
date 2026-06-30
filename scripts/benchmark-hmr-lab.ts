@@ -168,7 +168,7 @@ async function main() {
   try {
     const startupStart = performance.now()
     await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), 120_000), 'hmr-lab app.json generated', 120_000)
-    await dev.waitFor(waitForTarget(SCENARIOS[0]!.wait(SCENARIOS[0]!.baselineMarker), 120_000), 'hmr-lab initial output generated', 120_000)
+    await dev.waitFor(waitForInitialScenarioOutputs(selectedScenarios, 120_000), 'hmr-lab selected initial outputs generated', 120_000)
     const startupMs = performance.now() - startupStart
 
     const results: ScenarioResult[] = []
@@ -204,6 +204,12 @@ async function main() {
       await writeFile(sourcePath, original, 'utf8').catch(() => {})
     }
     await cleanupResidualDevProcesses()
+  }
+}
+
+async function waitForInitialScenarioOutputs(scenarios: ScenarioCase[], waitMs: number) {
+  for (const scenario of scenarios) {
+    await waitForTarget(scenario.wait(scenario.baselineMarker), waitMs)
   }
 }
 
