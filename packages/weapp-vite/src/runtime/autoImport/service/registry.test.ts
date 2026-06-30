@@ -11,7 +11,7 @@ const findJsonEntryMock = vi.hoisted(() => vi.fn())
 const findTemplateEntryMock = vi.hoisted(() => vi.fn())
 const findVueEntryMock = vi.hoisted(() => vi.fn())
 const extractConfigFromVueMock = vi.hoisted(() => vi.fn())
-const compileVueFileMock = vi.hoisted(() => vi.fn())
+const extractVueComponentPropsMock = vi.hoisted(() => vi.fn())
 const extractComponentPropsMock = vi.hoisted(() => vi.fn())
 const requireConfigServiceMock = vi.hoisted(() => vi.fn())
 const getAutoImportConfigMock = vi.hoisted(() => vi.fn())
@@ -54,12 +54,12 @@ vi.mock('../../../utils', () => ({
   extractConfigFromVue: extractConfigFromVueMock,
 }))
 
-vi.mock('wevu/compiler', () => ({
-  compileVueFile: compileVueFileMock,
-}))
-
 vi.mock('../../componentProps', () => ({
   extractComponentProps: extractComponentPropsMock,
+}))
+
+vi.mock('../vueProps', () => ({
+  extractVueComponentProps: extractVueComponentPropsMock,
 }))
 
 vi.mock('../../utils/requireConfigService', () => ({
@@ -476,27 +476,18 @@ describe('autoImport registry helpers', () => {
       base: 'index',
     })
     readFileMock.mockResolvedValue('<script setup lang="ts">const x = 1</script>')
-    compileVueFileMock.mockResolvedValue({
-      script: 'export default { properties: { fromVue: String } }',
-    })
-    extractComponentPropsMock.mockReturnValueOnce(new Map([['fromVueScript', 'string']]))
+    extractVueComponentPropsMock.mockReturnValueOnce(new Map([['fromVueScript', 'string']]))
 
     const helpers = createRegistryHelpers(state)
     await helpers.registerLocalComponent('/project/src/components/vue-rich/index.vue')
 
-    expect(compileVueFileMock).toHaveBeenCalledWith(
+    expect(extractVueComponentPropsMock).toHaveBeenCalledWith(
       '<script setup lang="ts">const x = 1</script>',
       '/project/src/components/vue-rich/index.vue',
       {
         astEngine: 'oxc',
-        json: {
-          kind: 'component',
-        },
       },
     )
-    expect(extractComponentPropsMock).toHaveBeenCalledWith('export default { properties: { fromVue: String } }', {
-      astEngine: 'oxc',
-    })
     expect(state.componentMetadataMap.get('VueRichProps')).toEqual({
       types: new Map([
         ['fromJson', 'number'],
@@ -517,7 +508,7 @@ describe('autoImport registry helpers', () => {
       componentName: 'VueNoScript',
       base: 'index',
     })
-    compileVueFileMock.mockResolvedValueOnce({ script: '' })
+    extractVueComponentPropsMock.mockReturnValueOnce(new Map())
 
     const helpersNoScript = createRegistryHelpers(noScriptState)
     await helpersNoScript.registerLocalComponent('/project/src/components/vue-no-script/index.vue')

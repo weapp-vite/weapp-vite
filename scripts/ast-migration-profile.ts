@@ -277,8 +277,7 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
   const timings = {
     parse: 0,
     pageFlags: 0,
-    vueSfcTraverse: 0,
-    macroImportCollectTraverse: 0,
+    mergedTraverse: 0,
     templateMeta: 0,
     rewriteDefaultExport: 0,
     generate: 0,
@@ -305,17 +304,29 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
   const parsedWevuDefaults = serializedWevuDefaults ? JSON.parse(serializedWevuDefaults) : undefined
   timings.pageFlags += performance.now() - pageFlagStart
 
-  const vueSfcStart = performance.now()
-  traverse(ast as any, vueSfcTransformPlugin().visitor as any)
-  timings.vueSfcTraverse += performance.now() - vueSfcStart
-
-  const macroImportCollectStart = performance.now()
+  const mergedTraverseStart = performance.now()
+  const vueSfcVisitors = vueSfcTransformPlugin().visitor as Record<string, any>
+  const macroVisitors = createMacroVisitors((ast as any).program, state)
+  const importVisitors = createImportVisitors((ast as any).program, state)
   traverse(ast as any, {
-    ...createMacroVisitors((ast as any).program, state),
-    ...createImportVisitors((ast as any).program, state),
+    ...vueSfcVisitors,
+    ...macroVisitors,
+    ...importVisitors,
     ...createCollectVisitors(state),
+    ImportDeclaration(path: any) {
+      vueSfcVisitors.ImportDeclaration?.(path)
+      if (!path.removed) {
+        importVisitors.ImportDeclaration?.(path)
+      }
+    },
+    CallExpression(path: any) {
+      vueSfcVisitors.CallExpression?.(path)
+      if (!path.removed) {
+        macroVisitors.CallExpression?.(path)
+      }
+    },
   } as any)
-  timings.macroImportCollectTraverse += performance.now() - macroImportCollectStart
+  timings.mergedTraverse += performance.now() - mergedTraverseStart
 
   const metaStart = performance.now()
   if (options.templateComponentMeta) {
@@ -525,8 +536,7 @@ async function main() {
     total: average(transformPhaseSamples.map(sample => sample.total)),
     parse: average(transformPhaseSamples.map(sample => sample.timings.parse)),
     pageFlags: average(transformPhaseSamples.map(sample => sample.timings.pageFlags)),
-    vueSfcTraverse: average(transformPhaseSamples.map(sample => sample.timings.vueSfcTraverse)),
-    macroImportCollectTraverse: average(transformPhaseSamples.map(sample => sample.timings.macroImportCollectTraverse)),
+    mergedTraverse: average(transformPhaseSamples.map(sample => sample.timings.mergedTraverse)),
     templateMeta: average(transformPhaseSamples.map(sample => sample.timings.templateMeta)),
     rewriteDefaultExport: average(transformPhaseSamples.map(sample => sample.timings.rewriteDefaultExport)),
     generate: average(transformPhaseSamples.map(sample => sample.timings.generate)),
@@ -613,8 +623,7 @@ async function main() {
   const transformAstShare = (
     transformPhaseAverages.parse
     + transformPhaseAverages.pageFlags
-    + transformPhaseAverages.vueSfcTraverse
-    + transformPhaseAverages.macroImportCollectTraverse
+    + transformPhaseAverages.mergedTraverse
     + transformPhaseAverages.templateMeta
     + transformPhaseAverages.rewriteDefaultExport
     + transformPhaseAverages.generate
@@ -624,8 +633,7 @@ async function main() {
   const compileVueAstShareUpperBound = (compileVuePhaseAverages.parseVueFile + compileVuePhaseAverages.compileScriptPhase) / compileVuePhaseAverages.total
   const transformScriptBabelCoreShareInSfc = (
     transformPhaseAverages.parse
-    + transformPhaseAverages.vueSfcTraverse
-    + transformPhaseAverages.macroImportCollectTraverse
+    + transformPhaseAverages.mergedTraverse
     + transformPhaseAverages.templateMeta
     + transformPhaseAverages.rewriteDefaultExport
     + transformPhaseAverages.generate
@@ -636,8 +644,7 @@ async function main() {
     transformScript: formatMs(transformScriptAvg),
     parse: formatMs(transformPhaseAverages.parse),
     pageFlags: formatMs(transformPhaseAverages.pageFlags),
-    vueSfcTraverse: formatMs(transformPhaseAverages.vueSfcTraverse),
-    macroImportCollectTraverse: formatMs(transformPhaseAverages.macroImportCollectTraverse),
+    mergedTraverse: formatMs(transformPhaseAverages.mergedTraverse),
     templateMeta: formatMs(transformPhaseAverages.templateMeta),
     rewriteDefaultExport: formatMs(transformPhaseAverages.rewriteDefaultExport),
     generate: formatMs(transformPhaseAverages.generate),

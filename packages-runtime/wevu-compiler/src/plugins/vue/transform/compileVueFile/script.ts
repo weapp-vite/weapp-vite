@@ -21,6 +21,11 @@ export interface ScriptPhaseResult {
   autoComponentMeta: Record<string, string>
 }
 
+export interface PrecomputedScriptPhaseInfo {
+  propsAliases?: Record<string, string>
+  propsDerivedKeys?: string[]
+}
+
 type SfcDescriptor = Parameters<typeof compileScript>[0]
 type CompiledScript = ReturnType<typeof compileScript>
 
@@ -70,6 +75,26 @@ export function resolveScriptSetupPropsDerivedKeys(bindings: Record<string, any>
     keys.add(key)
   }
   return keys.size ? [...keys] : undefined
+}
+
+function bindingsMayContainProps(bindings: Record<string, any> | undefined, scriptCode: string) {
+  for (const [key, bindingType] of Object.entries(bindings ?? {})) {
+    if (
+      key === '__propsAliases'
+      || bindingType === 'props'
+      || bindingType === 'props-aliased'
+    ) {
+      return true
+    }
+  }
+  return scriptCode.includes('__props') || scriptCode.includes('props:')
+}
+
+function hasPrecomputedScriptPhaseInfo<Key extends keyof PrecomputedScriptPhaseInfo>(
+  info: PrecomputedScriptPhaseInfo | undefined,
+  key: Key,
+): info is PrecomputedScriptPhaseInfo & Required<Pick<PrecomputedScriptPhaseInfo, Key>> {
+  return Boolean(info) && Object.prototype.hasOwnProperty.call(info, key)
 }
 
 function collectScriptSetupReturnInfo(scriptCode: string) {
@@ -174,6 +199,10 @@ export function resolveEffectivePropsDerivedKeys(
   bindings: Record<string, any> | undefined,
   scriptCode: string,
 ) {
+  if (!bindingsMayContainProps(bindings, scriptCode)) {
+    return undefined
+  }
+
   const directKeys = resolveScriptSetupPropsDerivedKeys(bindings) ?? []
   const { returnedKeys, destructuredPropsKeys } = collectScriptSetupReturnInfo(scriptCode)
   const aliases = resolveScriptSetupPropsAliases(bindings) ?? {}
@@ -217,6 +246,7 @@ export async function compileScriptPhase(
   isAppFile: boolean,
   componentSourceInfo?: ComponentSourceInfo,
   precompiledScript?: CompiledScript,
+  precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -238,10 +268,15 @@ export async function compileScriptPhase(
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
     })
+    if (!propsAliases && hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsAliases')) {
+      propsAliases = precomputedScriptPhaseInfo.propsAliases
+    }
     propsAliases ??= resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
 
     scriptCode = scriptCompiled.content
-    propsDerivedKeys = resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
+    propsDerivedKeys = hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsDerivedKeys')
+      ? precomputedScriptPhaseInfo.propsDerivedKeys
+      : resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
     scriptMap = scriptCompiled.map && typeof scriptCompiled.map === 'object'
       ? scriptCompiled.map
       : null

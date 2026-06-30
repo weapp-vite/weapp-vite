@@ -15,6 +15,12 @@ import { rewriteDefaultExport, serializeWevuDefaults } from './rewrite'
 
 export type { TransformResult, TransformScriptOptions } from './utils'
 
+function runVisitor(visitor: any, path: any) {
+  if (typeof visitor === 'function') {
+    visitor(path)
+  }
+}
+
 /**
  * 转换 Vue SFC 脚本：处理宏、导入、默认导出与 wevu 相关注入。
  */
@@ -39,13 +45,27 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ? JSON.parse(serializedWevuDefaults)
     : undefined
 
-  // 先运行 Vue SFC 转换插件
-  traverse(ast, vueSfcTransformPlugin().visitor as any)
-
+  const vueSfcVisitors = vueSfcTransformPlugin().visitor as Record<string, any>
+  const macroVisitors = createMacroVisitors(ast.program, state)
+  const importVisitors = createImportVisitors(ast.program, state)
+  const collectVisitors = createCollectVisitors(state)
   const visitor = {
-    ...createMacroVisitors(ast.program, state),
-    ...createImportVisitors(ast.program, state),
-    ...createCollectVisitors(state),
+    ...vueSfcVisitors,
+    ...macroVisitors,
+    ...importVisitors,
+    ...collectVisitors,
+    ImportDeclaration(path: any) {
+      runVisitor(vueSfcVisitors.ImportDeclaration, path)
+      if (!path.removed) {
+        runVisitor(importVisitors.ImportDeclaration, path)
+      }
+    },
+    CallExpression(path: any) {
+      runVisitor(vueSfcVisitors.CallExpression, path)
+      if (!path.removed) {
+        runVisitor(macroVisitors.CallExpression, path)
+      }
+    },
   }
 
   traverse(ast, visitor as any)

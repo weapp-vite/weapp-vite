@@ -18,6 +18,7 @@ import { createHtmlCustomDataDefinition } from '../../htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from '../../metadata'
 import { createTypedComponentsDefinition } from '../../typedDefinition'
 import { createLayoutTypesDefinition, createVueComponentsDefinition } from '../../vueDefinition'
+import { extractVueComponentProps } from '../../vueProps'
 import { loadWeappBuiltinHtmlTags } from '../../weappBuiltinHtmlTags'
 import { collectAllComponentNames } from './manifest'
 
@@ -157,16 +158,9 @@ async function collectLayoutSyncState(ctx: MutableCompilerContext): Promise<Layo
             propMap = inlineProps
           }
           else {
-            const { compileVueFile } = await import('wevu/compiler')
-            const compiled = await compileVueFile(source, full, {
+            propMap = extractVueComponentProps(source, full, {
               astEngine: resolveAstEngine(configService.weappViteConfig),
-              json: { kind: 'component' },
             })
-            propMap = compiled.script
-              ? extractComponentProps(compiled.script, {
-                  astEngine: resolveAstEngine(configService.weappViteConfig),
-                })
-              : new Map()
           }
         }
         catch {

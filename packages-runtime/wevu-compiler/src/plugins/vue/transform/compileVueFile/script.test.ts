@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo } from './componentSources'
-import { compileScriptPhase } from './script'
+import { compileScriptPhase, resolveEffectivePropsDerivedKeys } from './script'
 
 vi.mock('../../../../utils/fs', () => ({
   readFile: vi.fn(async (filename: string) => {
@@ -19,6 +19,35 @@ defineComponentJson({ component: true })
 }))
 
 describe('compileScriptPhase', () => {
+  it('skips props-derived analysis when compiled script has no props', () => {
+    expect(resolveEffectivePropsDerivedKeys(
+      {
+        count: 'setup-ref',
+        title: 'setup-const',
+      },
+      `
+const count = ref(0)
+const title = 'home'
+const __returned__ = { count, title }
+      `.trim(),
+    )).toBeUndefined()
+  })
+
+  it('keeps toRefs props destructure as props-derived setup bindings', () => {
+    expect(resolveEffectivePropsDerivedKeys(
+      {
+        props: 'setup-reactive-const',
+        goodsList: 'setup-maybe-ref',
+        thresholds: 'setup-maybe-ref',
+      },
+      `
+const props = __props
+const { goodsList, thresholds } = toRefs(props)
+const __returned__ = { props, goodsList, thresholds }
+      `.trim(),
+    )).toEqual(['goodsList', 'thresholds'])
+  })
+
   it('returns fallback script when both script and script setup are absent', async () => {
     const descriptor = parse(`<template><view /></template>`, { filename: '/project/src/pages/index/index.vue' }).descriptor
 

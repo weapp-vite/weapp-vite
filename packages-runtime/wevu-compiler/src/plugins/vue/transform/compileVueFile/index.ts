@@ -117,6 +117,10 @@ export async function compileVueFile(
     parsed.isAppFile,
     componentSourceInfo,
     scriptCompiled,
+    {
+      propsAliases,
+      propsDerivedKeys,
+    },
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
