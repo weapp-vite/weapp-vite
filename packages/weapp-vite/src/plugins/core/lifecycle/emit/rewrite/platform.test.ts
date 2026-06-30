@@ -1,7 +1,12 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeScripts } from '../../../../../ast'
-import { getChunkScriptAnalysis, rewriteBundleNpmImportsByPlatform, warmupBundleScriptAnalysis } from './platform'
+import {
+  getChunkScriptAnalysis,
+  rewriteBundleDynamicGlobalResolution,
+  rewriteBundleNpmImportsByPlatform,
+  warmupBundleScriptAnalysis,
+} from './platform'
 
 vi.mock('../../../../../ast', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../ast')>()
@@ -107,5 +112,22 @@ describe('bundle script analysis warmup', () => {
 
     expect(analyzeScripts).toHaveBeenCalledTimes(1)
     expect(chunk.code).toContain('/node_modules/pkg')
+  })
+
+  it('rewrites dynamic global resolution only for matching chunks', () => {
+    const plain = createChunk('pages/plain.js', `const value = globalThis`)
+    const functionGlobal = createChunk('pages/function.js', `const root = Function("return this")()`)
+    const browserTernary = createChunk('pages/browser.js', `const root = typeof self<"u"?self:typeof window<"u"?window:globalThis`)
+    const bundle: OutputBundle = {
+      [plain.fileName]: plain,
+      [functionGlobal.fileName]: functionGlobal,
+      [browserTernary.fileName]: browserTernary,
+    }
+
+    rewriteBundleDynamicGlobalResolution(bundle)
+
+    expect(plain.code).toBe(`const value = globalThis`)
+    expect(functionGlobal.code).toBe(`const root = globalThis`)
+    expect(browserTernary.code).toBe(`const root = globalThis`)
   })
 })

@@ -285,6 +285,13 @@ export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
     }
 
     const chunk = output as OutputChunk
+    if (
+      !chunk.code.includes('Function(')
+      && !chunk.code.includes('typeof self<')
+    ) {
+      continue
+    }
+
     const hasDynamicGlobalResolution = DYNAMIC_GLOBAL_RESOLUTION_RE.test(chunk.code)
     DYNAMIC_GLOBAL_RESOLUTION_RE.lastIndex = 0
     const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)
