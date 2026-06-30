@@ -79,8 +79,12 @@ describe('rewriteBundleNpmImportsToLocalRoots', () => {
 
   it('prefers the most specific subpackage root for nested roots', () => {
     const nested = createChunk('pkg-a/nested/pages/index.js', `const comp = require('ui-lib/button')`)
+    const nestedJson = createJsonAsset('pkg-a/nested/pages/index.json', {
+      button: 'ui-lib/button',
+    })
     const bundle: OutputBundle = {
       [nested.fileName]: nested,
+      [nestedJson.fileName]: nestedJson,
     }
 
     rewriteBundleNpmImportsToLocalRoots(
@@ -101,14 +105,19 @@ describe('rewriteBundleNpmImportsToLocalRoots', () => {
     )
 
     expect(nested.code).toContain(`require("../miniprogram_npm/ui-lib/button")`)
+    expect(JSON.parse(String(nestedJson.source)).usingComponents.button).toBe('../miniprogram_npm/ui-lib/button')
   })
 
   it('does not rewrite the subpackage root chunk as a local subpackage page chunk', () => {
     const rootChunk = createChunk('pkg-a', `const comp = require('ui-lib/button')`)
     const pageChunk = createChunk('pkg-a/pages/index.js', `const comp = require('ui-lib/button')`)
+    const rootJson = createJsonAsset('pkg-a.json', {
+      button: 'ui-lib/button',
+    })
     const bundle: OutputBundle = {
       [rootChunk.fileName]: rootChunk,
       [pageChunk.fileName]: pageChunk,
+      [rootJson.fileName]: rootJson,
     }
 
     rewriteBundleNpmImportsToLocalRoots(
@@ -127,5 +136,6 @@ describe('rewriteBundleNpmImportsToLocalRoots', () => {
     expect(rootChunk.code).toContain(`require("./miniprogram_npm/ui-lib/button")`)
     expect(rootChunk.code).not.toContain(`require("./pkg-a/miniprogram_npm/ui-lib/button")`)
     expect(pageChunk.code).toContain(`require("../miniprogram_npm/ui-lib/button")`)
+    expect(JSON.parse(String(rootJson.source)).usingComponents.button).toBe('./miniprogram_npm/ui-lib/button')
   })
 })

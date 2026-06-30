@@ -256,6 +256,45 @@ export function rewriteJsonNpmImportsToLocalRoot(
   }
 }
 
+function rewriteJsonAssetNpmImportsToLocalRoot(
+  output: OutputBundle[string],
+  root: string,
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+  basedir?: string,
+) {
+  if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+    return
+  }
+
+  const source = typeof output.source === 'string' ? output.source : output.source?.toString()
+  if (!source) {
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(source)
+    if (!parsed || typeof parsed !== 'object' || !parsed.usingComponents || typeof parsed.usingComponents !== 'object' || Array.isArray(parsed.usingComponents)) {
+      return
+    }
+
+    let mutated = false
+    for (const [componentName, importee] of Object.entries(parsed.usingComponents as Record<string, string>)) {
+      if (typeof importee !== 'string' || !matchesSubPackageDependency(dependencyPatterns, importee, dependencies)) {
+        continue
+      }
+      parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, root, importee, basedir)
+      mutated = true
+    }
+
+    if (mutated) {
+      output.source = `${JSON.stringify(parsed, null, 2)}\n`
+    }
+  }
+  catch {
+  }
+}
+
 function matchesRootFile(fileName: string, root: string) {
   return fileName.startsWith(`${root}/`)
 }
@@ -265,6 +304,27 @@ function resolveChunkLocalRootRewriteTarget(
   localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
 ) {
   return localSubPackages.find(meta => meta.root && matchesRootFile(fileName, meta.root))
+}
+
+function rewriteJsonNpmImportsToLocalRoots(
+  bundle: OutputBundle,
+  dependencies: Record<string, string> | undefined,
+  orderedLocalSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+  basedir?: string,
+) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+      continue
+    }
+
+    const subPackageTarget = resolveChunkLocalRootRewriteTarget(output.fileName, orderedLocalSubPackages)
+    if (subPackageTarget) {
+      rewriteJsonAssetNpmImportsToLocalRoot(output, subPackageTarget.root, subPackageTarget.dependencies, dependencies, basedir)
+      continue
+    }
+
+    rewriteJsonAssetNpmImportsToLocalRoot(output, '', undefined, dependencies, basedir)
+  }
 }
 
 export function rewriteBundleNpmImportsToLocalRoots(
@@ -290,14 +350,5 @@ export function rewriteBundleNpmImportsToLocalRoots(
     rewriteChunkNpmImportsToLocalRoot(chunk, '', undefined, dependencies, options)
   }
 
-  const localSubPackageRoots = orderedLocalSubPackages
-    .map(meta => meta.root)
-    .filter(Boolean)
-  rewriteJsonNpmImportsToLocalRoot(bundle, '', undefined, dependencies, options?.basedir, {
-    excludeRoots: localSubPackageRoots,
-  })
-
-  for (const meta of orderedLocalSubPackages) {
-    rewriteJsonNpmImportsToLocalRoot(bundle, meta.root, meta.dependencies, dependencies, options?.basedir)
-  }
+  rewriteJsonNpmImportsToLocalRoots(bundle, dependencies, orderedLocalSubPackages, options?.basedir)
 }
