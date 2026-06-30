@@ -9,7 +9,11 @@ const importProtocols = /^(?:https?:|data:|blob:|\/)/i
 const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
 
 function ensureCssGraph(ctx: CompilerContext) {
-  return ctx.runtimeState?.css
+  const graph = ctx.runtimeState?.css
+  if (!graph?.importerToDependencies || !graph.dependencyToImporters) {
+    return undefined
+  }
+  return graph
 }
 
 function cleanupImporterGraph(
@@ -180,6 +184,26 @@ export async function extractCssImportDependencies(
 
   const dependencies = collectCssDependenciesFromContent(ctx, importer, cssContent)
   registerCssImports(ctx, importer, dependencies)
+}
+
+export function syncCssImportDependencies(
+  ctx: CompilerContext,
+  importer: string,
+  cssContent: string,
+  extraDependencies: Iterable<string | undefined> = [],
+) {
+  const dependencies = collectCssDependenciesFromContent(ctx, importer, cssContent)
+  for (const dependency of extraDependencies) {
+    if (dependency) {
+      dependencies.add(dependency)
+      const ext = path.extname(dependency)
+      if (ext) {
+        dependencies.add(dependency.slice(0, -ext.length))
+      }
+    }
+  }
+  registerCssImports(ctx, importer, dependencies)
+  return dependencies
 }
 
 export function syncVueSfcStyleDependencies(

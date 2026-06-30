@@ -8,6 +8,7 @@ const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () =
   importers: new Set<string>(),
   scripts: new Set<string>(),
 })))
+const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
@@ -26,6 +27,7 @@ vi.mock('../../utils/invalidateEntry', () => ({
 
 vi.mock('../../utils/invalidateEntry/cssGraph', () => ({
   collectAffectedScriptsAndImporters: collectAffectedScriptsAndImportersMock,
+  extractCssImportDependencies: extractCssImportDependenciesMock,
 }))
 
 vi.mock('../../../utils/file', () => ({
@@ -325,6 +327,9 @@ describe('core lifecycle watch hook', () => {
     await hook(dependencyId, { event: 'update' })
 
     expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
+      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
@@ -358,8 +363,8 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:1'])
   })
 
-  it('treats created existing style files as update-like css importers after atomic saves', async () => {
-    vi.mocked(fs.pathExists).mockResolvedValue(true)
+  it('treats created style files as update-like css importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
@@ -376,10 +381,35 @@ describe('core lifecycle watch hook', () => {
 
     await hook(dependencyId, { event: 'create' })
 
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
     expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
+      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('create')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+  })
+
+  it('falls back to resolved entries when created style dependency graph has no importers yet', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
+    const dependencyId = '/project/src/shared/styles/shared.scss'
+    const pageEntry = '/project/src/pages/native/index.ts'
+    const componentEntry = '/project/src/components/probe-card/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [pageEntry, { id: pageEntry }],
+        [componentEntry, { id: componentEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'create' })
+
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(componentEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer-fallback:2'])
   })
 
   it('treats created existing shared templates as update-like wxml importers after atomic saves', async () => {

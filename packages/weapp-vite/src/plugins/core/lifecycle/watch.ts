@@ -18,7 +18,7 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
-import { collectAffectedScriptsAndImporters } from '../../utils/invalidateEntry/cssGraph'
+import { collectAffectedScriptsAndImporters, extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
 import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
@@ -375,6 +375,7 @@ async function processChangedFile(
 
   const addCssImporterEntries = async (startId: string) => {
     const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
+    let affectedCount = 0
 
     for (const importer of importers) {
       const normalizedImporter = normalizeFsResolvedId(importer)
@@ -383,12 +384,16 @@ async function processChangedFile(
         && (loadedEntrySet.has(normalizedImporter) || resolvedEntryMap.has(normalizedImporter))
       ) {
         markScriptDirty(normalizedImporter, 'css-importer')
+        affectedCount += 1
       }
     }
 
     for (const script of scripts) {
       markScriptDirty(script, 'css-importer')
+      affectedCount += 1
     }
+
+    return affectedCount
   }
 
   if (isDeletedMissingSelf) {
@@ -448,12 +453,15 @@ async function processChangedFile(
   const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
   const isTemplateFile = isTemplate(normalizedId)
   const isHtmlTemplateFile = normalizedId.endsWith('.html')
-  const isExistingSidecarCreate = event === 'create'
+  const isSidecarCreate = event === 'create'
     && (isStyleFile || isTemplateFile || isHtmlTemplateFile || isScriptModuleSidecar)
-    && await fs.pathExists(normalizedId)
-  const shouldHandleUpdateLikeSidecar = event === 'update' || isExistingSidecarCreate
+  const shouldHandleUpdateLikeSidecar = event === 'update' || isSidecarCreate
   if (shouldHandleUpdateLikeSidecar) {
     const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
+
+    if (isStyleFile) {
+      await extractCssImportDependencies(ctx, normalizedId)
+    }
 
     if (isTemplateFile) {
       const wxmlService = ctx.wxmlService
@@ -482,7 +490,14 @@ async function processChangedFile(
         handledSidecarMetadataUpdate = true
       }
       else if (isStyleFile) {
-        await addCssImporterEntries(normalizedId)
+        const affectedCount = await addCssImporterEntries(normalizedId)
+        if (affectedCount === 0 && resolvedEntryMap.size) {
+          for (const entryId of resolvedEntryMap.keys()) {
+            if (isCurrentSubPackageFile(configService.relativeAbsoluteSrcRoot(entryId), subPackageMeta)) {
+              markEntryDirtyWithCause(entryId, 'dependency', 'css-importer-fallback')
+            }
+          }
+        }
         handledSidecarMetadataUpdate = true
       }
     }

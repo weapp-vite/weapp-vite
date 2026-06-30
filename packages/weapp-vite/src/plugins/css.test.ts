@@ -135,6 +135,8 @@ describe('css plugin shared style injection', () => {
     scanService,
     runtimeState: {
       css: {
+        importerToDependencies: new Map<string, Set<string>>(),
+        dependencyToImporters: new Map<string, Set<string>>(),
         emittedSource: new Map(),
       },
     },
@@ -152,9 +154,10 @@ describe('css plugin shared style injection', () => {
 
   beforeEach(() => {
     emitted = []
-    readFileMock.mockClear()
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue('.sidecar{color:red}')
     processCssWithCache.mockClear()
-    preprocessCSSMock.mockClear()
+    preprocessCSSMock.mockReset()
     preprocessCSSMock.mockImplementation(async (code: string) => ({
       code,
       deps: [],
@@ -167,6 +170,8 @@ describe('css plugin shared style injection', () => {
     pathExistsMock.mockReset()
     pathExistsMock.mockResolvedValue(true)
     pluginContext.addWatchFile.mockClear()
+    ;(ctx as any).runtimeState.css.importerToDependencies.clear()
+    ;(ctx as any).runtimeState.css.dependencyToImporters.clear()
     ;(ctx as any).runtimeState.css.emittedSource.clear()
   })
 
@@ -356,9 +361,39 @@ describe('css plugin shared style injection', () => {
       resolvedConfig,
     )
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/pages/index/tokens.scss'))
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get('/project/src/pages/index/tokens.scss')).toEqual(
+      new Set([resolve(absoluteSrcRoot, 'pages/index/index.scss')]),
+    )
   })
 
-  it('keeps existing wxss asset source instead of rereading raw scss original files', async () => {
+  it('registers css import graph from original source assets after Vite preprocessing removed imports', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/native/index.wxss')
+    const sharedPath = resolve(absoluteSrcRoot, 'shared/styles/shared.scss')
+    readFileMock.mockResolvedValueOnce('@import "../../shared/styles/shared.scss";\n.native{color:red}')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.shared{color:green}.native{color:red}',
+      deps: [sharedPath],
+    })
+
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/native/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/native/index.wxss',
+        source: '.shared{color:green}.native{color:red}',
+        originalFileNames: [stylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get(sharedPath)).toEqual(new Set([stylePath]))
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get(sharedPath.slice(0, -'.scss'.length))).toEqual(new Set([stylePath]))
+    expect(bundle['pages/native/index.wxss']?.source).toContain('.native{color:red}')
+  })
+
+  it('keeps existing wxss asset source instead of using raw scss original files as output', async () => {
     readFileMock.mockResolvedValueOnce('$brand: red;\n.page { .title { color: $brand; } }')
 
     const plugin = css(ctx)[0]
@@ -374,7 +409,7 @@ describe('css plugin shared style injection', () => {
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
-    expect(readFileMock).not.toHaveBeenCalled()
+    expect(readFileMock).toHaveBeenCalledWith(resolve(absoluteSrcRoot, 'pages/index/index.scss'), 'utf8')
     expect(preprocessCSSMock).toHaveBeenCalledWith(
       '.page .title{color:red}',
       resolve(absoluteSrcRoot, 'pages/index/index.scss'),

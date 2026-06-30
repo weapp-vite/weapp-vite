@@ -13,6 +13,7 @@ import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
 import { pathExists as pathExistsCached } from './utils/cache'
+import { syncCssImportDependencies } from './utils/invalidateEntry'
 
 export { cssCodeCache }
 
@@ -94,6 +95,15 @@ async function preprocessStyleSource(
   return {
     css: stripLeadingBlankLines(processed.code),
     dependencies: processed.deps ? Array.from(processed.deps) : [],
+  }
+}
+
+async function readStyleGraphSource(stylePath: string, fallback: string) {
+  try {
+    return await fs.readFile(stylePath, 'utf8')
+  }
+  catch {
+    return fallback
   }
 }
 
@@ -187,6 +197,7 @@ export async function emitStyleSidecarAsset(
 
   const rawCss = await fs.readFile(stylePath, 'utf8')
   const { css, dependencies } = await preprocessStyleSource(rawCss, stylePath, resolvedConfig)
+  syncCssImportDependencies(ctx, stylePath, rawCss, dependencies)
   if (typeof pluginCtx.addWatchFile === 'function') {
     for (const dependency of dependencies) {
       pluginCtx.addWatchFile(normalizeWatchPath(dependency))
@@ -263,6 +274,8 @@ async function handleBundleEntry(
     const { css, dependencies } = await preprocessStyleSource(rawCss, preprocessId, resolvedConfig, {
       enabled: shouldPreprocess,
     })
+    const graphCss = await readStyleGraphSource(preprocessId, rawCss)
+    syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
     if (typeof this.addWatchFile === 'function') {
       for (const dependency of dependencies) {
         this.addWatchFile(normalizeWatchPath(dependency))
@@ -299,6 +312,8 @@ async function handleBundleEntry(
       const { css, dependencies } = await preprocessStyleSource(source, absOriginal, resolvedConfig, {
         enabled: shouldPreprocessWithVite(absOriginal),
       })
+      const graphCss = await readStyleGraphSource(absOriginal, source)
+      syncCssImportDependencies(ctx, absOriginal, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function') {
         for (const dependency of dependencies) {
           this.addWatchFile(normalizeWatchPath(dependency))
@@ -385,6 +400,8 @@ async function emitSharedStyleEntries(
       }
 
       const { css: renderedCss, dependencies } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
+      const graphCss = await readStyleGraphSource(absolutePath, renderedCss)
+      syncCssImportDependencies(ctx, absolutePath, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function' && dependencies.length) {
         for (const dependency of dependencies) {
           if (dependency && dependency !== absolutePath) {

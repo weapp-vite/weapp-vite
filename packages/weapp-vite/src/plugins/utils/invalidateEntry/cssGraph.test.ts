@@ -7,6 +7,7 @@ import {
   cleanupCssImporterGraph,
   collectAffectedScriptsAndImporters,
   extractCssImportDependencies,
+  syncCssImportDependencies,
   syncVueSfcStyleDependencies,
 } from './cssGraph'
 
@@ -200,6 +201,30 @@ describe('invalidateEntry cssGraph', () => {
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toBeUndefined()
     expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toBeUndefined()
     expect(ctx.runtimeState.css.dependencyToImporters.get(global)).toBeUndefined()
+  })
+
+  it('syncs css imports from in-memory style content and preprocess dependencies', () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const importer = '/project/src/components/card/index.scss'
+    const shared = '/project/src/shared/styles/shared.scss'
+    const viteDep = '/project/src/shared/styles/mixins.scss'
+
+    const dependencies = syncCssImportDependencies(
+      ctx,
+      importer,
+      '@import "../../shared/styles/shared.scss";',
+      [viteDep],
+    )
+
+    expect(dependencies).toEqual(new Set([
+      shared,
+      shared.slice(0, -'.scss'.length),
+      viteDep,
+      viteDep.slice(0, -'.scss'.length),
+    ]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(shared)).toEqual(new Set([importer]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(viteDep)).toEqual(new Set([importer]))
   })
 
   it('skips css graph updates when runtime css state is unavailable', async () => {
