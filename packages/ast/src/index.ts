@@ -29,6 +29,7 @@ export {
   collectFeatureFlagsFromCode,
   collectFeatureFlagsWithBabel,
   collectFeatureFlagsWithNative,
+  collectFeatureFlagsWithNativeBatch,
   collectFeatureFlagsWithOxc,
   consumeNamedFeatureFlag,
   consumeNamespaceFeatureFlag,

@@ -26,6 +26,13 @@ pub struct NativeOnPageScrollDiagnostic {
     pub sync_api: Option<String>,
 }
 
+#[napi(object)]
+pub struct NativeScriptAnalysis {
+    pub has_static_require_literal: bool,
+    pub has_platform_api_access: bool,
+    pub feature_flags: Vec<String>,
+}
+
 fn parse_program<'a>(
     allocator: &'a Allocator,
     code: &'a str,
@@ -362,6 +369,48 @@ struct FeatureFlagVisitor {
     enabled: BTreeMap<String, ()>,
 }
 
+struct ScriptAnalysisVisitor {
+    has_static_require_literal: bool,
+    has_platform_api_access: bool,
+    feature_flags: Option<FeatureFlagVisitor>,
+}
+
+impl<'a> Visit<'a> for ScriptAnalysisVisitor {
+    fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
+        if !self.has_static_require_literal && is_static_require_call(call) {
+            self.has_static_require_literal = true;
+        }
+
+        if !self.has_platform_api_access && has_platform_api_member_expression(&call.callee) {
+            self.has_platform_api_access = true;
+        }
+
+        if let Some(feature_flags) = &mut self.feature_flags {
+            match &call.callee {
+                Expression::Identifier(identifier) => {
+                    feature_flags.consume_named(identifier.name.as_str());
+                }
+                Expression::StaticMemberExpression(member) => {
+                    if let Expression::Identifier(object) = &member.object {
+                        feature_flags
+                            .consume_namespace(object.name.as_str(), member.property.name.as_str());
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        walk::walk_call_expression(self, call);
+    }
+
+    fn visit_expression(&mut self, expression: &Expression<'a>) {
+        if !self.has_platform_api_access && has_platform_api_member_expression(expression) {
+            self.has_platform_api_access = true;
+        }
+        walk::walk_expression(self, expression);
+    }
+}
+
 impl FeatureFlagVisitor {
     fn consume_named(&mut self, name: &str) {
         if let Some(feature) = self.named_hook_locals.get(name) {
@@ -434,6 +483,81 @@ pub fn collect_feature_flags_native(
     };
     visitor.visit_program(&program);
     visitor.enabled.keys().cloned().collect()
+}
+
+#[napi(js_name = "analyzeScriptNative")]
+pub fn analyze_script_native(
+    code: String,
+    module_id: Option<String>,
+    hook_to_feature_json: Option<String>,
+    filename: Option<String>,
+) -> NativeScriptAnalysis {
+    let wants_static_require =
+        code.contains("require(") || code.contains("require (") || code.contains("require`");
+    let wants_platform_api = may_contain_platform_api_text(&code);
+    let feature_config =
+        module_id
+            .zip(hook_to_feature_json)
+            .and_then(|(module_id, hook_to_feature_json)| {
+                if !code.contains(&module_id) {
+                    return None;
+                }
+                let hook_to_feature =
+                    serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
+                if hook_to_feature.is_empty()
+                    || !hook_to_feature.keys().any(|hook| code.contains(hook))
+                {
+                    return None;
+                }
+                Some((module_id, hook_to_feature))
+            });
+
+    if !wants_static_require && !wants_platform_api && feature_config.is_none() {
+        return NativeScriptAnalysis {
+            has_static_require_literal: false,
+            has_platform_api_access: false,
+            feature_flags: Vec::new(),
+        };
+    }
+
+    let allocator = Allocator::default();
+    let Some(program) = parse_program(&allocator, &code, filename) else {
+        return NativeScriptAnalysis {
+            has_static_require_literal: false,
+            has_platform_api_access: false,
+            feature_flags: Vec::new(),
+        };
+    };
+
+    let feature_flags = feature_config.and_then(|(module_id, hook_to_feature)| {
+        let (named_hook_locals, namespace_locals) =
+            collect_feature_flag_imports(&program, &module_id, &hook_to_feature);
+        if named_hook_locals.is_empty() && namespace_locals.is_empty() {
+            return None;
+        }
+        Some(FeatureFlagVisitor {
+            named_hook_locals,
+            namespace_locals,
+            hook_to_feature,
+            enabled: BTreeMap::new(),
+        })
+    });
+
+    let mut visitor = ScriptAnalysisVisitor {
+        has_static_require_literal: false,
+        has_platform_api_access: false,
+        feature_flags,
+    };
+    visitor.visit_program(&program);
+
+    NativeScriptAnalysis {
+        has_static_require_literal: wants_static_require && visitor.has_static_require_literal,
+        has_platform_api_access: wants_platform_api && visitor.has_platform_api_access,
+        feature_flags: visitor
+            .feature_flags
+            .map(|feature_flags| feature_flags.enabled.keys().cloned().collect())
+            .unwrap_or_default(),
+    }
 }
 
 fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<String>) {

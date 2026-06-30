@@ -19,6 +19,7 @@ if (!bindingPath) {
 }
 
 const {
+  analyzeScriptNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
@@ -27,6 +28,7 @@ const {
 } = require(bindingPath)
 
 export {
+  analyzeScriptNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,

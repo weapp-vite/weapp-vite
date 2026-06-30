@@ -1065,6 +1065,18 @@ wevu.onPageScroll?.(() => {})`
     const tempDir = await mkdtemp(join(tmpdir(), 'weapp-vite-ast-native-'))
     const modulePath = join(tempDir, 'native.cjs')
     await writeFile(modulePath, `
+globalThis.__weappViteNativeAnalysisCalls = 0
+exports.analyzeScriptNative = (code) => {
+  globalThis.__weappViteNativeAnalysisCalls += 1
+  if (code.includes('throwBatchNative')) {
+    throw new Error('native batch failed')
+  }
+  return {
+    featureFlags: ['nativeFeature'],
+    hasPlatformApiAccess: code.includes('nativePlatform'),
+    hasStaticRequireLiteral: code.includes('nativeRequire'),
+  }
+}
 exports.collectFeatureFlagsNative = (code) => {
   if (code.includes('throwNative')) {
     throw new Error('native failed')
@@ -1092,6 +1104,9 @@ exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequ
       expect(nativeModule.collectOnPageScrollPerformanceWarnings('onPageScroll(() => {})', '/src/pages/index.ts')).toHaveLength(2)
       expect(nativeModule.mayContainPlatformApiAccess('nativePlatform.wx.request()', { engine: 'oxc' })).toBe(true)
       expect(nativeModule.mayContainStaticRequireLiteral('nativeRequire(); require(name)', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.collectFeatureFlagsWithNativeBatch('import { onLoad } from "wevu"; onLoad(() => {})', 'wevu', {
+        onLoad: 'nativeFeature',
+      })).toEqual(new Set(['nativeFeature']))
       expect(nativeModule.collectFeatureFlagsWithNative('import { onLoad } from "wevu"; onLoad(() => {})', 'wevu', {
         onLoad: 'nativeFeature',
       })).toEqual(new Set(['nativeFeature']))
@@ -1101,15 +1116,17 @@ exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequ
           onLoad: 'nativeFeature',
         },
       })).toEqual(new Set(['nativeFeature']))
-      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; throwNative(); onLoad(() => {})', {
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; throwBatchNative(); onLoad(() => {})', {
         astEngine: 'oxc',
         moduleId: 'wevu',
         hookToFeature: {
           onLoad: 'fallbackFeature',
         },
       })).toEqual(new Set(['fallbackFeature']))
+      expect((globalThis as any).__weappViteNativeAnalysisCalls).toBe(4)
     }
     finally {
+      delete (globalThis as any).__weappViteNativeAnalysisCalls
       vi.unstubAllEnvs()
       vi.resetModules()
       await rm(tempDir, { force: true, recursive: true })

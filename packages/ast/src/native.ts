@@ -11,7 +11,19 @@ export interface NativeOnPageScrollDiagnostic {
   syncApi?: string
 }
 
+export interface NativeScriptAnalysis {
+  hasStaticRequireLiteral: boolean
+  hasPlatformApiAccess: boolean
+  featureFlags: string[]
+}
+
 export interface NativeAstBinding {
+  analyzeScriptNative?: (
+    code: string,
+    moduleId?: string,
+    hookToFeatureJson?: string,
+    filename?: string,
+  ) => NativeScriptAnalysis
   collectFeatureFlagsNative?: (
     code: string,
     moduleId: string,
@@ -34,6 +46,12 @@ export interface NativeAstBinding {
 }
 
 let binding: NativeAstBinding | false | undefined
+let lastScriptAnalysis:
+  | {
+    key: string
+    result: NativeScriptAnalysis
+  }
+  | undefined
 
 function resolveNativeAstModulePath() {
   const modulePath = process.env.WEAPP_VITE_NATIVE_AST_PATH?.trim()
@@ -60,4 +78,38 @@ export function loadNativeAstBindingSync() {
   }
 
   return binding || undefined
+}
+
+export function analyzeScriptWithNative(
+  code: string,
+  options?: {
+    filename?: string
+    moduleId?: string
+    hookToFeature?: Record<string, string>
+  },
+) {
+  const analyzeNative = loadNativeAstBindingSync()?.analyzeScriptNative
+  if (!analyzeNative) {
+    return undefined
+  }
+
+  const hookToFeatureJson = options?.hookToFeature
+    ? JSON.stringify(options.hookToFeature)
+    : undefined
+  const key = [
+    code,
+    options?.filename ?? '',
+    options?.moduleId ?? '',
+    hookToFeatureJson ?? '',
+  ].join('\0')
+  if (lastScriptAnalysis?.key === key) {
+    return lastScriptAnalysis.result
+  }
+
+  const result = analyzeNative(code, options?.moduleId, hookToFeatureJson, options?.filename ?? 'inline.ts')
+  lastScriptAnalysis = {
+    key,
+    result,
+  }
+  return result
 }

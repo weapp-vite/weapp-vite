@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  analyzeScriptNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
@@ -128,6 +129,8 @@ const count = 1
 
     const source = `import { onLoad as useLoad } from 'wevu'
 import * as wevuNs from 'wevu'
+const dep = require('./dep')
+wx.getStorageSync('k')
 useLoad(() => {})
 wevuNs.onShow?.(() => {})
 `
@@ -135,5 +138,13 @@ wevuNs.onShow?.(() => {})
       onLoad: 'enableLoad',
       onShow: 'enableShow',
     }))).toEqual(['enableLoad', 'enableShow'])
+    expect(analyzeScriptNative(source, 'wevu', JSON.stringify({
+      onLoad: 'enableLoad',
+      onShow: 'enableShow',
+    }))).toEqual({
+      featureFlags: ['enableLoad', 'enableShow'],
+      hasPlatformApiAccess: true,
+      hasStaticRequireLiteral: true,
+    })
   })
 })

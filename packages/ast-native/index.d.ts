@@ -6,6 +6,19 @@ export interface NativeOnPageScrollDiagnostic {
   syncApi?: string
 }
 
+export interface NativeScriptAnalysis {
+  hasStaticRequireLiteral: boolean
+  hasPlatformApiAccess: boolean
+  featureFlags: string[]
+}
+
+export function analyzeScriptNative(
+  code: string,
+  moduleId?: string,
+  hookToFeatureJson?: string,
+  filename?: string,
+): NativeScriptAnalysis
+
 export function collectOnPageScrollDiagnosticsNative(
   code: string,
   filename?: string,

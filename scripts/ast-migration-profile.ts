@@ -21,6 +21,7 @@ import { createMacroVisitors } from '../packages-runtime/wevu-compiler/src/plugi
 import { rewriteDefaultExport, serializeWevuDefaults } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite'
 import { collectWevuPageFeatureFlags } from '../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../packages-runtime/wevu-compiler/src/utils/babel'
+import { analyzeScriptWithNative } from '../packages/ast/src/native'
 import { collectFeatureFlagsFromCode } from '../packages/ast/src/operations/featureFlags'
 import { mayContainPlatformApiAccess } from '../packages/ast/src/operations/platformApi'
 import { mayContainStaticRequireLiteral } from '../packages/ast/src/operations/require'
@@ -181,6 +182,19 @@ function measureSync(fn: () => void, iterations = ITERATIONS, warmup = WARMUP) {
   for (let i = 0; i < iterations; i++) {
     const start = performance.now()
     fn()
+    samples.push(performance.now() - start)
+  }
+  return average(samples)
+}
+
+function measureSyncByIteration(fn: (index: number) => void, iterations = ITERATIONS, warmup = WARMUP) {
+  for (let i = 0; i < warmup; i++) {
+    fn(i)
+  }
+  const samples: number[] = []
+  for (let i = 0; i < iterations; i++) {
+    const start = performance.now()
+    fn(i + warmup)
     samples.push(performance.now() - start)
   }
   return average(samples)
@@ -556,27 +570,45 @@ async function main() {
     },
   }
   const analysisOnlyBaseline = {
-    staticRequire: withNativeAstEnv(false, () => measureSync(() => {
-      mayContainStaticRequireLiteral(analysisOnlyCode, { engine: 'oxc' })
+    staticRequire: withNativeAstEnv(false, () => measureSyncByIteration((index) => {
+      mayContainStaticRequireLiteral(`${analysisOnlyCode}\n// sample-${index}`, { engine: 'oxc' })
     })),
-    platformApi: withNativeAstEnv(false, () => measureSync(() => {
-      mayContainPlatformApiAccess(analysisOnlyCode, { engine: 'oxc' })
+    platformApi: withNativeAstEnv(false, () => measureSyncByIteration((index) => {
+      mayContainPlatformApiAccess(`${analysisOnlyCode}\n// sample-${index}`, { engine: 'oxc' })
     })),
-    featureFlags: withNativeAstEnv(false, () => measureSync(() => {
-      collectFeatureFlagsFromCode(analysisOnlyCode, analysisFeatureOptions)
+    featureFlags: withNativeAstEnv(false, () => measureSyncByIteration((index) => {
+      collectFeatureFlagsFromCode(`${analysisOnlyCode}\n// sample-${index}`, analysisFeatureOptions)
     })),
   }
   const analysisOnlyNative = {
-    staticRequire: withNativeAstEnv(true, () => measureSync(() => {
-      mayContainStaticRequireLiteral(analysisOnlyCode, { engine: 'oxc' })
+    staticRequire: withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+      mayContainStaticRequireLiteral(`${analysisOnlyCode}\n// sample-${index}`, { engine: 'oxc' })
     })),
-    platformApi: withNativeAstEnv(true, () => measureSync(() => {
-      mayContainPlatformApiAccess(analysisOnlyCode, { engine: 'oxc' })
+    platformApi: withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+      mayContainPlatformApiAccess(`${analysisOnlyCode}\n// sample-${index}`, { engine: 'oxc' })
     })),
-    featureFlags: withNativeAstEnv(true, () => measureSync(() => {
-      collectFeatureFlagsFromCode(analysisOnlyCode, analysisFeatureOptions)
+    featureFlags: withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+      collectFeatureFlagsFromCode(`${analysisOnlyCode}\n// sample-${index}`, analysisFeatureOptions)
     })),
   }
+  const analysisOnlySequentialBaseline = withNativeAstEnv(false, () => measureSyncByIteration((index) => {
+    const code = `${analysisOnlyCode}\n// sample-${index}`
+    mayContainStaticRequireLiteral(code, { engine: 'oxc' })
+    mayContainPlatformApiAccess(code, { engine: 'oxc' })
+    collectFeatureFlagsFromCode(code, analysisFeatureOptions)
+  }))
+  const analysisOnlySequentialNative = withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+    const code = `${analysisOnlyCode}\n// sample-${index}`
+    mayContainStaticRequireLiteral(code, { engine: 'oxc' })
+    mayContainPlatformApiAccess(code, { engine: 'oxc' })
+    collectFeatureFlagsFromCode(code, analysisFeatureOptions)
+  }))
+  const analysisOnlyDirectBatchNative = withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+    analyzeScriptWithNative(`${analysisOnlyCode}\n// sample-${index}`, {
+      hookToFeature: analysisFeatureOptions.hookToFeature,
+      moduleId: analysisFeatureOptions.moduleId,
+    })
+  }))
 
   const transformAstShare = (
     transformPhaseAverages.parse
@@ -654,6 +686,16 @@ async function main() {
       baseline: formatMs(analysisOnlyBaseline.featureFlags),
       native: formatMs(analysisOnlyNative.featureFlags),
       speedup: `${(analysisOnlyBaseline.featureFlags / analysisOnlyNative.featureFlags).toFixed(2)}x`,
+    },
+    sequentialAll: {
+      baseline: formatMs(analysisOnlySequentialBaseline),
+      native: formatMs(analysisOnlySequentialNative),
+      speedup: `${(analysisOnlySequentialBaseline / analysisOnlySequentialNative).toFixed(2)}x`,
+    },
+    directBatch: {
+      baseline: '-',
+      native: formatMs(analysisOnlyDirectBatchNative),
+      speedup: '-',
     },
   })
 
