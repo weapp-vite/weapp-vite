@@ -10,3 +10,5 @@ export function collectOnPageScrollDiagnosticsNative(
   code: string,
   filename?: string,
 ): NativeOnPageScrollDiagnostic[]
+
+export function getVueSfcSignaturePayloadNative(source: string): string | undefined

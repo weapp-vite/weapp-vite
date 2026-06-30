@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from './vueSfcSignature'
 
 describe('vueSfcSignature', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
   it('keeps the same signature when only definePageJson content changes', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">
@@ -80,6 +85,50 @@ const count = 1
 
     expect(resolveVueSfcNonJsonSignature(second, filename)).toBe(
       resolveVueSfcNonJsonSignature(first, filename),
+    )
+  })
+
+  it('uses the native backend only when explicitly enabled', async () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>
+
+<style scoped>
+.count { color: red; }
+</style>`
+    const tsNonJson = resolveVueSfcNonJsonSignature(source, filename)
+    const tsScript = resolveVueSfcScriptSignature(source, filename)
+
+    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.resetModules()
+    const nativeModule = await import('./vueSfcSignature')
+
+    expect(nativeModule.resolveVueSfcNonJsonSignature(source, filename)).toBe(tsNonJson)
+    expect(nativeModule.resolveVueSfcScriptSignature(source, filename)).toBe(tsScript)
+  })
+
+  it('falls back to the TypeScript backend when JSON macros are present', async () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const second = first.replace('首页', '新标题')
+
+    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.resetModules()
+    const nativeModule = await import('./vueSfcSignature')
+
+    expect(nativeModule.resolveVueSfcNonJsonSignature(second, filename)).toBe(
+      nativeModule.resolveVueSfcNonJsonSignature(first, filename),
+    )
+    expect(nativeModule.resolveVueSfcScriptSignature(second, filename)).toBe(
+      nativeModule.resolveVueSfcScriptSignature(first, filename),
     )
   })
 })

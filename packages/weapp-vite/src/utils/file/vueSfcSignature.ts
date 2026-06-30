@@ -1,7 +1,18 @@
 import type { SFCBlock, SFCDescriptor } from 'vue/compiler-sfc'
 import { createHash } from 'node:crypto'
+import process from 'node:process'
 import { parse } from 'vue/compiler-sfc'
 import { stripJsonMacroCallsFromCode } from 'wevu/compiler'
+import { loadVueSfcSignatureNativeBindingSync } from './vueSfcSignatureNative'
+
+interface VueSfcSignaturePayload {
+  nonJson: unknown
+  script: unknown
+  hasTemplate: boolean
+}
+
+const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
   return createHash('sha256')
@@ -65,29 +76,69 @@ function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: strin
   }
 }
 
-export function resolveVueSfcNonJsonSignature(source: string, filename: string) {
+function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): VueSfcSignaturePayload | undefined {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
     return undefined
   }
 
-  return hashPayload(buildNonJsonDescriptorPayload(descriptor, filename))
+  return {
+    nonJson: buildNonJsonDescriptorPayload(descriptor, filename),
+    script: buildScriptDescriptorPayload(descriptor, filename),
+    hasTemplate: Boolean(descriptor.template?.content.trim()),
+  }
+}
+
+function buildVueSfcSignaturePayloadWithNative(source: string): VueSfcSignaturePayload | undefined {
+  if (JSON_MACRO_HINT_RE.test(source)) {
+    return undefined
+  }
+
+  const binding = loadVueSfcSignatureNativeBindingSync()
+  if (!binding) {
+    return undefined
+  }
+
+  const payload = binding.getVueSfcSignaturePayloadNative(source)
+  if (!payload) {
+    return undefined
+  }
+
+  try {
+    return JSON.parse(payload) as VueSfcSignaturePayload
+  }
+  catch {
+    return undefined
+  }
+}
+
+function buildVueSfcSignaturePayload(source: string, filename: string) {
+  const cacheKey = `${filename}\0${source}\0${process.env.WEAPP_VITE_NATIVE === '1' ? 'native' : 'ts'}`
+  if (signaturePayloadCache.has(cacheKey)) {
+    return signaturePayloadCache.get(cacheKey)
+  }
+
+  const nativePayload = buildVueSfcSignaturePayloadWithNative(source)
+  if (nativePayload) {
+    signaturePayloadCache.set(cacheKey, nativePayload)
+    return nativePayload
+  }
+
+  const tsPayload = buildVueSfcSignaturePayloadWithTs(source, filename)
+  signaturePayloadCache.set(cacheKey, tsPayload)
+  return tsPayload
+}
+
+export function resolveVueSfcNonJsonSignature(source: string, filename: string) {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  return payload ? hashPayload(payload.nonJson) : undefined
 }
 
 export function resolveVueSfcScriptSignature(source: string, filename: string) {
-  const { descriptor, errors } = parse(source, { filename })
-  if (errors.length) {
-    return undefined
-  }
-
-  return hashPayload(buildScriptDescriptorPayload(descriptor, filename))
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  return payload ? hashPayload(payload.script) : undefined
 }
 
 export function resolveVueSfcHasTemplate(source: string, filename: string) {
-  const { descriptor, errors } = parse(source, { filename })
-  if (errors.length) {
-    return undefined
-  }
-
-  return Boolean(descriptor.template?.content.trim())
+  return buildVueSfcSignaturePayload(source, filename)?.hasTemplate
 }

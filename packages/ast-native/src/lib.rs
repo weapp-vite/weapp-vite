@@ -14,6 +14,9 @@ use oxc_parser::Parser;
 use oxc_span::{GetSpan, SourceType, Span};
 use oxc_syntax::scope::ScopeFlags;
 
+mod vue_sfc_signature;
+pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
+
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
     pub kind: String,

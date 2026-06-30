@@ -20,8 +20,10 @@ if (!bindingPath) {
 
 const {
   collectOnPageScrollDiagnosticsNative,
+  getVueSfcSignaturePayloadNative,
 } = require(bindingPath)
 
 export {
   collectOnPageScrollDiagnosticsNative,
+  getVueSfcSignaturePayloadNative,
 }
