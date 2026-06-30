@@ -71,10 +71,16 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
   return affected
 }
 
-function createModulesByImporter(moduleImporters: Map<string, Set<string>>) {
+function createModulesByImporter(
+  moduleImporters: Map<string, Set<string>>,
+  onlyImporterIds?: Set<string>,
+) {
   const modulesByImporter = new Map<string, Set<string>>()
   for (const [moduleId, importers] of moduleImporters) {
     for (const importerId of importers) {
+      if (onlyImporterIds && !onlyImporterIds.has(importerId)) {
+        continue
+      }
       let modules = modulesByImporter.get(importerId)
       if (!modules) {
         modules = new Set<string>()
@@ -230,16 +236,15 @@ export function refreshModuleGraph(
   }
 
   if (mode === 'merge') {
-    const modulesByImporter = createModulesByImporter(state.moduleImporters)
     const removedEntryIds = new Set<string>()
     for (const { entryIds } of chunkRecords) {
       for (const entryId of entryIds) {
-        if (removedEntryIds.has(entryId)) {
-          continue
-        }
         removedEntryIds.add(entryId)
-        removeEntryImporter(entryId, modulesByImporter)
       }
+    }
+    const modulesByImporter = createModulesByImporter(state.moduleImporters, removedEntryIds)
+    for (const entryId of removedEntryIds) {
+      removeEntryImporter(entryId, modulesByImporter)
     }
   }
 

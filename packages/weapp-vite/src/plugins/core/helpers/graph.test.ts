@@ -230,6 +230,41 @@ describe('core helpers graph', () => {
     expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
   })
 
+  it('keeps merge cleanup scoped to touched entries while preserving unrelated importer edges', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const otherEntry = '/project/src/pages/other.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDep = '/project/src/shared/stale.ts'
+    const sharedDep = '/project/src/shared/reused.ts'
+    const otherDep = '/project/src/shared/other.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.entryModuleIds.add(otherEntry)
+    state.moduleImporters.set(staleDep, new Set([pageEntry]))
+    state.moduleImporters.set(sharedDep, new Set([pageEntry, otherEntry]))
+    state.moduleImporters.set(otherDep, new Set([otherEntry]))
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(state.moduleImporters.has(staleDep)).toBe(false)
+    expect(state.moduleImporters.get(sharedDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
+  })
+
   it('refreshes shared chunk importers from entry chunks only', () => {
     const state = createState()
     state.resolvedEntryMap.set('/project/src/virtual-entry.ts', {
