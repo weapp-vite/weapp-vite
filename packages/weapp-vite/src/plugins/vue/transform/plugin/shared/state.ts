@@ -6,6 +6,7 @@ import { escapeStringRegexp } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getWxmlDirectivePrefix } from '../../../../../platform'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../../../utils/toAbsoluteId'
 import { isVueLikeFile } from '../../shared'
 
@@ -42,6 +43,28 @@ export function isAppEntry(filename: string) {
 
 export function isVueLikeId(id: string) {
   return isVueLikeFile(id)
+}
+
+export function resolveDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined, filename: string) {
+  if (!dirtyVueEntryIds?.size) {
+    return undefined
+  }
+
+  const normalizedFilename = normalizeFsResolvedId(filename)
+  if (dirtyVueEntryIds.has(filename)) {
+    return filename
+  }
+  if (dirtyVueEntryIds.has(normalizedFilename)) {
+    return normalizedFilename
+  }
+
+  for (const entryId of dirtyVueEntryIds) {
+    if (normalizeFsResolvedId(entryId) === normalizedFilename) {
+      return entryId
+    }
+  }
+
+  return undefined
 }
 
 export function mayNeedTransformSetDataPick(

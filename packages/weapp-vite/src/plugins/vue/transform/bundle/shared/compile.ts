@@ -4,13 +4,12 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './type
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
-import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
-import { resolveTransformAutoRoutesSource } from '../../plugin/shared'
+import { resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
@@ -151,28 +150,6 @@ export async function compileAndFinalizeVueLikeFile(options: {
   })
 }
 
-function takeDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined, filename: string) {
-  if (!dirtyVueEntryIds?.size) {
-    return undefined
-  }
-
-  const normalizedFilename = normalizeFsResolvedId(filename)
-  if (dirtyVueEntryIds.has(filename)) {
-    return filename
-  }
-  if (dirtyVueEntryIds.has(normalizedFilename)) {
-    return normalizedFilename
-  }
-
-  for (const entryId of dirtyVueEntryIds) {
-    if (normalizeFsResolvedId(entryId) === normalizedFilename) {
-      return entryId
-    }
-  }
-
-  return undefined
-}
-
 export async function refreshCompiledVueEntryCacheInDev(options: {
   filename: string
   cached: CompilationCacheEntry
@@ -200,7 +177,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         }
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
-    const dirtyEntryId = takeDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
     if (
       !dirtyEntryId
       && source === cached.source

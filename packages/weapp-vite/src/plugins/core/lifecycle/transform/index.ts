@@ -151,7 +151,9 @@ export function createTransformHook(state: CorePluginState) {
       }
     }
     finally {
-      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+      const durationMs = performance.now() - startedAt
+      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'transformMs', durationMs)
+      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'coreTransformMs', durationMs)
     }
   }
 

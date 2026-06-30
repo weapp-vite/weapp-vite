@@ -11,7 +11,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 function parseUsingComponents(config: string | undefined) {
   if (!config) {
@@ -153,6 +153,35 @@ export async function transformVueLikeFile(options: {
       transformedSource = transformed.source
       autoRoutesSignature = transformed.signature
     }
+    const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
+    const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    if (
+      configService.isDev
+      && cachedCompilation
+      && !ctx.runtimeState.scan.isDirty
+      && !dirtyEntryId
+      && cachedCompilation.source === transformedSource
+      && cachedCompilation.autoRoutesSignature === autoRoutesSignature
+    ) {
+      cachedCompilation.refreshToken = 0
+      const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
+      const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+        result: cachedResult,
+        filename,
+        styleBlocks: (cachedResult.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
+        isPage: cachedCompilation.isPage,
+        isApp,
+        isDev: configService.isDev,
+        hmrStyleToken: styleRefreshTokens.get(filename),
+      }))
+
+      reportTiming(filename, cachedCompilation.isPage)
+
+      return {
+        code: returnedCode.code,
+        map: returnedCode.map,
+      }
+    }
     const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
       reExportResolutionCache,
       classStyleRuntimeWarned,
@@ -172,7 +201,7 @@ export async function transformVueLikeFile(options: {
     if (currentStyleBlocks) {
       styleBlocksCache.set(filename, currentStyleBlocks)
     }
-    if (configService.isDev && ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds?.has(filename)) {
+    if (configService.isDev && dirtyEntryId) {
       const currentStyleSignature = createSfcStyleBlocksSignature(currentStyleBlocks)
       const hmrEventId = ctx.runtimeState.build.hmr.profile.eventId
       if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
@@ -181,6 +210,7 @@ export async function transformVueLikeFile(options: {
       else {
         styleRefreshTokens.delete(filename)
       }
+      dirtyVueEntryIds?.delete(dirtyEntryId)
     }
     const sfcStyleDependencies = syncVueSfcStyleDependencies(
       ctx,

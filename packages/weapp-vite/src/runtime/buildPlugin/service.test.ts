@@ -783,6 +783,9 @@ describe('runtime buildPlugin service', () => {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       transformMs: 9.5,
+      coreTransformMs: 2.5,
+      wevuTransformMs: 3,
+      vueTransformMs: 4,
       writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
@@ -993,6 +996,9 @@ describe('runtime buildPlugin service', () => {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       transformMs: 9.5,
+      coreTransformMs: 2.5,
+      wevuTransformMs: 3,
+      vueTransformMs: 4,
       writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
@@ -1023,6 +1029,9 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"transformMs":9.5')
+    expect(payload).toContain('"coreTransformMs":2.5')
+    expect(payload).toContain('"wevuTransformMs":3')
+    expect(payload).toContain('"vueTransformMs":4')
     expect(payload).toContain('"writeMs":5.25')
     expect(payload).toContain('"buildCoreMs":')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')

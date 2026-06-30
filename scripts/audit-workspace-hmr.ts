@@ -62,6 +62,9 @@ interface HmrProfileSample {
   sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -1454,6 +1457,9 @@ function dominantPhaseMetric(scenario: ScenarioResult) {
   const phases = [
     ['build', profile?.buildCoreMs],
     ['transform', profile?.transformMs],
+    ['core-transform', profile?.coreTransformMs],
+    ['wevu-transform', profile?.wevuTransformMs],
+    ['vue-transform', profile?.vueTransformMs],
     ['write', profile?.writeMs],
     ['emit', profile?.emitMs],
   ] as const

@@ -63,6 +63,9 @@ interface HmrProfileJsonSample {
   sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -220,6 +223,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       sourceRootFile,
       buildCoreMs: profile.buildCoreMs,
       transformMs: profile.transformMs,
+      coreTransformMs: profile.coreTransformMs,
+      wevuTransformMs: profile.wevuTransformMs,
+      vueTransformMs: profile.vueTransformMs,
       writeMs: profile.writeMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,

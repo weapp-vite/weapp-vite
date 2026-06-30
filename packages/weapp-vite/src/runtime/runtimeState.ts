@@ -144,6 +144,9 @@ export interface RuntimeState {
         sourceRootFile?: string
         buildCoreMs?: number
         transformMs?: number
+        coreTransformMs?: number
+        wevuTransformMs?: number
+        vueTransformMs?: number
         writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
@@ -160,6 +163,9 @@ export interface RuntimeState {
         file?: string
         buildCoreMs?: number
         transformMs?: number
+        coreTransformMs?: number
+        wevuTransformMs?: number
+        vueTransformMs?: number
         writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
