@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-use-before-define */
 import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
@@ -109,9 +110,7 @@ export function applyRuntimeChunkLocalization(
     })
   }
 
-  for (const target of runtimeLookupKeys) {
-    updateImporters(bundle, importerToRuntime, target)
-  }
+  updateImporters(bundle, importerToRuntime, runtimeLookupKeys)
   options.onDuplicate?.({
     runtimeFileName,
     duplicates,

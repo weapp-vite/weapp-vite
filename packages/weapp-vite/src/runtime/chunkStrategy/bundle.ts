@@ -66,7 +66,7 @@ function addCollectionImporters(
 
 function replaceInArray(
   list: string[] | undefined,
-  searchValue: string,
+  searchValues: readonly string[],
   replaceValue: string,
   shouldInsert?: boolean,
 ) {
@@ -74,7 +74,7 @@ function replaceInArray(
   let replaced = false
   for (let index = 0; index < values.length; index++) {
     const current = values[index]
-    if (current === searchValue) {
+    if (searchValues.includes(current)) {
       values[index] = replaceValue
       replaced = true
     }
@@ -87,7 +87,7 @@ function replaceInArray(
 
 function updateViteMetadata(
   importerChunk: OutputChunk,
-  originalFileName: string,
+  originalFileNames: readonly string[],
   newChunkFile: string,
   shouldInsert: boolean,
 ) {
@@ -100,18 +100,31 @@ function updateViteMetadata(
   for (const key of candidateKeys) {
     const collection = metadata[key]
     if (collection instanceof Set) {
-      const hadOriginal = collection.delete(originalFileName)
+      let hadOriginal = false
+      for (const originalFileName of originalFileNames) {
+        hadOriginal = collection.delete(originalFileName) || hadOriginal
+      }
       if (hadOriginal || shouldInsert) {
         collection.add(newChunkFile)
       }
     }
     else if (Array.isArray(collection)) {
-      metadata[key] = replaceInArray(collection, originalFileName, newChunkFile, shouldInsert)
+      metadata[key] = replaceInArray(collection, originalFileNames, newChunkFile, shouldInsert)
     }
     else if (collection instanceof Map) {
-      if (collection.has(originalFileName)) {
-        const originalValue = collection.get(originalFileName)
+      let originalValue: unknown
+      let hadOriginal = false
+      for (const originalFileName of originalFileNames) {
+        if (!collection.has(originalFileName)) {
+          continue
+        }
+        if (!hadOriginal) {
+          originalValue = collection.get(originalFileName)
+        }
+        hadOriginal = true
         collection.delete(originalFileName)
+      }
+      if (hadOriginal) {
         collection.set(newChunkFile, originalValue)
       }
     }
@@ -177,15 +190,18 @@ export function removeChunkFromImporterIndex(index: ChunkImporterIndex, fileName
 function updateChunkImporterIndex(
   index: ChunkImporterIndex,
   importerFile: string,
-  originalFileName: string,
+  originalFileNames: readonly string[],
   newChunkFile: string,
   shouldInsert: boolean,
 ) {
-  if (!newChunkFile || originalFileName === newChunkFile) {
+  if (!newChunkFile || originalFileNames.includes(newChunkFile)) {
     return
   }
-  const hadOriginal = index.directImporters.get(originalFileName)?.has(importerFile) === true
-  removeDirectImporter(index.directImporters, originalFileName, importerFile)
+  let hadOriginal = false
+  for (const originalFileName of originalFileNames) {
+    hadOriginal = index.directImporters.get(originalFileName)?.has(importerFile) === true || hadOriginal
+    removeDirectImporter(index.directImporters, originalFileName, importerFile)
+  }
   if (hadOriginal || shouldInsert) {
     addDirectImporter(index.directImporters, newChunkFile, importerFile)
   }
@@ -233,9 +249,12 @@ export function ensureUniqueFileName(bundle: OutputBundle, fileName: string) {
 export function updateImporters(
   bundle: OutputBundle,
   importerToChunk: Map<string, string>,
-  originalFileName: string,
+  originalFileName: string | readonly string[],
   index?: ChunkImporterIndex,
 ) {
+  const originalFileNames = Array.isArray(originalFileName)
+    ? originalFileName
+    : [originalFileName]
   for (const [importerFile, newChunkFile] of importerToChunk.entries()) {
     const importer = bundle[importerFile]
     if (!importer || importer.type !== 'chunk') {
@@ -243,11 +262,14 @@ export function updateImporters(
     }
 
     const importerChunk = importer as OutputChunk
-    const originalImportPath = createRelativeImport(importerFile, originalFileName)
     const newImportPath = createRelativeImport(importerFile, newChunkFile)
 
     let codeUpdated = false
-    if (originalImportPath !== newImportPath) {
+    for (const originalFileName of originalFileNames) {
+      const originalImportPath = createRelativeImport(importerFile, originalFileName)
+      if (originalImportPath === newImportPath) {
+        continue
+      }
       const updated = replaceAll(importerChunk.code, originalImportPath, newImportPath)
       if (updated !== importerChunk.code) {
         importerChunk.code = updated
@@ -255,14 +277,14 @@ export function updateImporters(
       }
     }
 
-    importerChunk.imports = replaceInArray(importerChunk.imports, originalFileName, newChunkFile, codeUpdated)
-    importerChunk.dynamicImports = replaceInArray(importerChunk.dynamicImports, originalFileName, newChunkFile, codeUpdated)
+    importerChunk.imports = replaceInArray(importerChunk.imports, originalFileNames, newChunkFile, codeUpdated)
+    importerChunk.dynamicImports = replaceInArray(importerChunk.dynamicImports, originalFileNames, newChunkFile, codeUpdated)
 
     const implicitlyLoadedBefore = (importerChunk as any).implicitlyLoadedBefore
     if (Array.isArray(implicitlyLoadedBefore)) {
       (importerChunk as any).implicitlyLoadedBefore = replaceInArray(
         implicitlyLoadedBefore,
-        originalFileName,
+        originalFileNames,
         newChunkFile,
         codeUpdated,
       )
@@ -272,15 +294,15 @@ export function updateImporters(
     if (Array.isArray(referencedFiles)) {
       (importerChunk as any).referencedFiles = replaceInArray(
         referencedFiles,
-        originalFileName,
+        originalFileNames,
         newChunkFile,
         codeUpdated,
       )
     }
 
-    updateViteMetadata(importerChunk, originalFileName, newChunkFile, codeUpdated)
+    updateViteMetadata(importerChunk, originalFileNames, newChunkFile, codeUpdated)
     if (index) {
-      updateChunkImporterIndex(index, importerFile, originalFileName, newChunkFile, codeUpdated)
+      updateChunkImporterIndex(index, importerFile, originalFileNames, newChunkFile, codeUpdated)
     }
   }
 }

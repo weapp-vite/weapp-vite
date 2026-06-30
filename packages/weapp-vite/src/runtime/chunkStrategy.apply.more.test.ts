@@ -100,7 +100,7 @@ describe('chunkStrategy apply helpers more branches', () => {
       [],
     )
     ;(importerWithMap as any).viteMetadata = {
-      importedScripts: new Map([[runtimeLookupKey, true]]),
+      importedScripts: new Map([[runtimeLookupKey, true], [runtimeFileName, true]]),
     }
 
     const importerWithCodeFallback = createChunk(
@@ -162,6 +162,11 @@ describe('chunkStrategy apply helpers more branches', () => {
         expect(chunk.imports).toContain('pages/order/rolldown-runtime.js')
       }
     }
+
+    expect((importerWithSet as any).viteMetadata.importedChunks).toEqual(new Set(['pages/order/rolldown-runtime.js']))
+    expect((importerWithArray as any).viteMetadata.importedChunks).toEqual(['pages/order/rolldown-runtime.js'])
+    expect(Array.from((importerWithMap as any).viteMetadata.importedScripts.keys())).toEqual(['pages/order/rolldown-runtime.js'])
+    expect((importerWithScriptSet as any).viteMetadata.importedScripts).toEqual(new Set(['pages/order/rolldown-runtime.js']))
 
     expect(duplicateEvents).toHaveLength(1)
     expect(duplicateEvents[0].runtimeFileName).toBe(runtimeFileName)
