@@ -65,6 +65,14 @@ interface HmrProfileSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -1460,6 +1468,14 @@ function dominantPhaseMetric(scenario: ScenarioResult) {
     ['core-transform', profile?.coreTransformMs],
     ['wevu-transform', profile?.wevuTransformMs],
     ['vue-transform', profile?.vueTransformMs],
+    ['bundler', profile?.bundlerMs],
+    ['render-start', profile?.renderStartMs],
+    ['generate-bundle', profile?.generateBundleMs],
+    ['generate-shared', profile?.generateSharedMs],
+    ['generate-rewrite', profile?.generateRewriteMs],
+    ['generate-module-graph', profile?.generateModuleGraphMs],
+    ['snapshot-resolve', profile?.snapshotResolveMs],
+    ['snapshot-build', profile?.snapshotBuildMs],
     ['write', profile?.writeMs],
     ['emit', profile?.emitMs],
   ] as const

@@ -3,7 +3,20 @@ import path from 'pathe'
 
 export const DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH = '.weapp-vite/hmr-profile.jsonl'
 export const HMR_PROFILE_JSON_ENV = 'WEAPP_VITE_HMR_PROFILE_JSON'
-export type HmrProfileDurationKey = 'transformMs' | 'writeMs' | 'coreTransformMs' | 'wevuTransformMs' | 'vueTransformMs'
+export type HmrProfileDurationKey
+  = | 'transformMs'
+    | 'writeMs'
+    | 'coreTransformMs'
+    | 'wevuTransformMs'
+    | 'vueTransformMs'
+    | 'bundlerMs'
+    | 'renderStartMs'
+    | 'generateBundleMs'
+    | 'generateSharedMs'
+    | 'generateRewriteMs'
+    | 'generateModuleGraphMs'
+    | 'snapshotResolveMs'
+    | 'snapshotBuildMs'
 
 interface ResolveHmrProfileJsonPathOptions {
   cwd: string

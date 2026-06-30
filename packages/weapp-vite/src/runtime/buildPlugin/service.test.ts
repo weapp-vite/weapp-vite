@@ -1032,6 +1032,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
     expect(payload).toContain('"vueTransformMs":4')
+    expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
     expect(payload).toContain('"buildCoreMs":')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')

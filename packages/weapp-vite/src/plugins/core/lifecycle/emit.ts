@@ -3,6 +3,7 @@ import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { isTemplate } from '../../../utils'
+import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeWatchPath } from '../../../utils/path'
 import { emitStyleSidecarAsset } from '../../css'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
@@ -82,31 +83,37 @@ export function createRenderStartHook(state: CorePluginState) {
   const { ctx, subPackageMeta, buildTarget } = state
 
   return async function renderStart(this: any) {
-    if (isCurrentStyleSidecarUpdate(state)) {
-      const currentFile = ctx.runtimeState.build.hmr.profile.file
-      if (typeof currentFile === 'string' && path.extname(currentFile)) {
-        await emitStyleSidecarAsset(ctx, this, {} as any, currentFile, state.resolvedConfig)
+    const startedAt = performance.now()
+    try {
+      if (isCurrentStyleSidecarUpdate(state)) {
+        const currentFile = ctx.runtimeState.build.hmr.profile.file
+        if (typeof currentFile === 'string' && path.extname(currentFile)) {
+          await emitStyleSidecarAsset(ctx, this, {} as any, currentFile, state.resolvedConfig)
+        }
       }
+      const runtime: WxmlEmitRuntime = {
+        addWatchFile: typeof this.addWatchFile === 'function'
+          ? (id: string) => { this.addWatchFile(normalizeWatchPath(id)) }
+          : undefined,
+        emitFile: (asset) => {
+          this.emitFile(asset)
+        },
+      }
+      if (shouldEmitJsonDuringRenderStart(state)) {
+        emitJsonAssets.call(this, state)
+      }
+      state.watchFilesSnapshot = emitWxmlAssetsWithCache({
+        runtime,
+        compiler: ctx,
+        subPackageMeta,
+        emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+        buildTarget,
+        targetIds: resolveIncrementalHmrWxmlTargetIds(state),
+      })
     }
-    const runtime: WxmlEmitRuntime = {
-      addWatchFile: typeof this.addWatchFile === 'function'
-        ? (id: string) => { this.addWatchFile(normalizeWatchPath(id)) }
-        : undefined,
-      emitFile: (asset) => {
-        this.emitFile(asset)
-      },
+    finally {
+      recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'renderStartMs', performance.now() - startedAt)
     }
-    if (shouldEmitJsonDuringRenderStart(state)) {
-      emitJsonAssets.call(this, state)
-    }
-    state.watchFilesSnapshot = emitWxmlAssetsWithCache({
-      runtime,
-      compiler: ctx,
-      subPackageMeta,
-      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
-      buildTarget,
-      targetIds: resolveIncrementalHmrWxmlTargetIds(state),
-    })
   }
 }
 

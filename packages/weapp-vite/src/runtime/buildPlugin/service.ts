@@ -24,7 +24,7 @@ import {
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { findJsEntry, touch } from '../../utils/file'
-import { createHmrProfileEventId, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
@@ -66,6 +66,14 @@ interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -226,6 +234,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       coreTransformMs: profile.coreTransformMs,
       wevuTransformMs: profile.wevuTransformMs,
       vueTransformMs: profile.vueTransformMs,
+      bundlerMs: profile.bundlerMs,
+      renderStartMs: profile.renderStartMs,
+      generateBundleMs: profile.generateBundleMs,
+      generateSharedMs: profile.generateSharedMs,
+      generateRewriteMs: profile.generateRewriteMs,
+      generateModuleGraphMs: profile.generateModuleGraphMs,
+      snapshotResolveMs: profile.snapshotResolveMs,
+      snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
@@ -355,6 +371,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (logLevel === 'concise') {
       const conciseSegments = [
         typeof profile.buildCoreMs === 'number' ? `build-core ${profile.buildCoreMs.toFixed(2)} ms` : undefined,
+        typeof profile.bundlerMs === 'number' ? `bundler ${profile.bundlerMs.toFixed(2)} ms` : undefined,
+        typeof profile.renderStartMs === 'number' ? `render-start ${profile.renderStartMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateBundleMs === 'number' ? `generate ${profile.generateBundleMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateSharedMs === 'number' ? `generate-shared ${profile.generateSharedMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateRewriteMs === 'number' ? `generate-rewrite ${profile.generateRewriteMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateModuleGraphMs === 'number' ? `module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms` : undefined,
         typeof profile.transformMs === 'number' ? `transform ${profile.transformMs.toFixed(2)} ms` : undefined,
         typeof profile.writeMs === 'number' ? `write ${profile.writeMs.toFixed(2)} ms` : undefined,
       ].filter((segment): segment is string => Boolean(segment))
@@ -370,6 +392,30 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.transformMs !== undefined) {
       verboseSegments.push(`transform ${profile.transformMs.toFixed(2)} ms`)
+    }
+    if (profile.bundlerMs !== undefined) {
+      verboseSegments.push(`bundler ${profile.bundlerMs.toFixed(2)} ms`)
+    }
+    if (profile.renderStartMs !== undefined) {
+      verboseSegments.push(`render-start ${profile.renderStartMs.toFixed(2)} ms`)
+    }
+    if (profile.generateBundleMs !== undefined) {
+      verboseSegments.push(`generate ${profile.generateBundleMs.toFixed(2)} ms`)
+    }
+    if (profile.generateSharedMs !== undefined) {
+      verboseSegments.push(`generate-shared ${profile.generateSharedMs.toFixed(2)} ms`)
+    }
+    if (profile.generateRewriteMs !== undefined) {
+      verboseSegments.push(`generate-rewrite ${profile.generateRewriteMs.toFixed(2)} ms`)
+    }
+    if (profile.generateModuleGraphMs !== undefined) {
+      verboseSegments.push(`module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms`)
+    }
+    if (profile.snapshotResolveMs !== undefined) {
+      verboseSegments.push(`snapshot-resolve ${profile.snapshotResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.snapshotBuildMs !== undefined) {
+      verboseSegments.push(`snapshot-build ${profile.snapshotBuildMs.toFixed(2)} ms`)
     }
     if (profile.writeMs !== undefined) {
       verboseSegments.push(`write ${profile.writeMs.toFixed(2)} ms`)
@@ -801,10 +847,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             watchToDirtyMs: performance.now() - startedAt,
           }
         }
+        const snapshotResolveStartedAt = performance.now()
         const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
+        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
+        const snapshotBuildStartedAt = performance.now()
         if (sidecarEntryId) {
           markSnapshotEntryDirty(sidecarEntryId, reason)
-          await build(snapshotBuildOptions)
+          try {
+            await build(snapshotBuildOptions)
+          }
+          finally {
+            recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+          }
           return 'snapshot'
         }
         markSnapshotEntriesFullDirty()
@@ -814,6 +868,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return 'snapshot'
         }
         finally {
+          recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
         }
       })
@@ -859,6 +914,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
+        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'bundlerMs', durationMs)
         void (async () => {
           const shouldRestart = shouldRestartDevBuild(target)
           if (shouldRestart) {

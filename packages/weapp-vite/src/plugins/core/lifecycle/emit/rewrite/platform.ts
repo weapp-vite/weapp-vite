@@ -1,7 +1,7 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
-import { analyzeScript, mayContainPlatformApiAccess, mayContainStaticRequireLiteral } from '../../../../../ast'
+import { analyzeScript, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   hasNpmDependencyPrefix,
@@ -15,6 +15,19 @@ import {
   DYNAMIC_GLOBAL_RESOLUTION_RE,
 } from '../constants'
 import { getRequireImportLiteral, setRequireImportLiteral } from './literals'
+
+function mayNeedChunkScriptAnalysis(code: string) {
+  if (code.includes('require')) {
+    return true
+  }
+
+  for (const identifier of platformApiIdentifiers) {
+    if (code.includes(identifier)) {
+      return true
+    }
+  }
+  return false
+}
 
 export type ChunkScriptAnalysis = Pick<ScriptAnalysisResult, 'hasPlatformApiAccess' | 'hasStaticRequireLiteral'>
 export type ChunkScriptAnalysisCache = WeakMap<OutputChunk, {
@@ -34,7 +47,12 @@ export function getChunkScriptAnalysis(
     return cached.analysis
   }
 
-  const analysis = analyzeScript(chunk.code, { engine: options?.astEngine })
+  const analysis = mayNeedChunkScriptAnalysis(chunk.code)
+    ? analyzeScript(chunk.code, { engine: options?.astEngine })
+    : {
+        hasPlatformApiAccess: false,
+        hasStaticRequireLiteral: false,
+      }
   options?.cache?.set(chunk, {
     analysis,
     code: chunk.code,

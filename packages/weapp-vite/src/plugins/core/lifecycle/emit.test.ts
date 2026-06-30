@@ -671,4 +671,133 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/tdesign-miniprogram/toast/index")')
     expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/button"')
   })
+
+  it('limits platform rewrite to active chunks during dev hmr', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'wx.showToast({ title: "active" })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'wx.showToast({ title: "stale" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['pages/index/index.js'].code).not.toContain('wx.showToast')
+    expect(bundle['common.js']).toBeUndefined()
+  })
+
+  it('rewrites shared chunks imported by active dev hmr entries', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map([['common.js', new Set([activeEntry])]]),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'wx.showToast({ title: "active" })',
+        imports: ['../../common.js'],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'jd.showToast({ title: "shared" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['pages/index/index.js'].code).not.toContain('wx.showToast')
+    expect(bundle['common.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['common.js'].code).not.toContain('jd.showToast')
+  })
 })
