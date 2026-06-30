@@ -519,6 +519,53 @@ describe('core helper bundle', () => {
     expect(runtimeFileNames.get('wevu/internal-template')).toBe('weapp-vendors/wevu-template.js')
   })
 
+  it('rewrites multiple wevu internal imports from the indexed runtime chunks', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          'import { createApp } from "wevu/internal-runtime";',
+          'import { ref } from "wevu/internal-reactivity";',
+          'import { normalizeClass } from "wevu/internal-template";',
+          'createApp({});',
+          'ref(0);',
+          'normalizeClass("a");',
+        ].join('\n'),
+        imports: [],
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: 'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+        imports: [],
+      },
+      'weapp-vendors/wevu-ref.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-ref.js',
+        code: 'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return ref; } });',
+        imports: [],
+      },
+      'weapp-vendors/wevu-template.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-template.js',
+        code: 'Object.defineProperty(exports, "normalizeClass", { enumerable: true, get: function() { return normalizeClass; } });',
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('const { createApp } = require("../../weapp-vendors/wevu-watch.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('const { ref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('const { normalizeClass } = require("../../weapp-vendors/wevu-template.js");')
+    expect(bundle['pages/index/index.js'].imports).toEqual([
+      'weapp-vendors/wevu-watch.js',
+      'weapp-vendors/wevu-ref.js',
+      'weapp-vendors/wevu-template.js',
+    ])
+  })
+
   it('adds stable wevu runtime exports and rewrites page chunk access with old-alias fallback', () => {
     const bundle = {
       'pages/hmr/index.js': {

@@ -195,6 +195,11 @@ interface WevuRuntimeChunkUsage {
   inlineMembers: Set<string>
   members: Set<string>
 }
+interface WevuRuntimeChunkIndex {
+  vendorChunks: OutputChunk[]
+  chunksByModuleId: Map<string, OutputChunk>
+  exportNamesByFileName: Map<string, Set<string>>
+}
 const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly string[]> = {
   'wevu/internal-runtime': WEVU_INTERNAL_RUNTIME_EXPORTS,
   'wevu/internal-reactivity': WEVU_INTERNAL_REACTIVITY_EXPORTS,
@@ -545,31 +550,72 @@ function resolveWevuInternalChunk(
   })
 }
 
-function resolveWevuRuntimeChunkByModuleId(
-  bundle: OutputBundle,
-  moduleId: string,
-) {
-  const chunkFileName = moduleId.replace(/\//g, '-')
-  return Object.values(bundle).find((output): output is OutputChunk => {
+function createWevuRuntimeChunkIndex(bundle: OutputBundle): WevuRuntimeChunkIndex {
+  const vendorChunks: OutputChunk[] = []
+  const chunksByModuleId = new Map<string, OutputChunk>()
+  const exportNamesByFileName = new Map<string, Set<string>>()
+
+  for (const output of Object.values(bundle)) {
     if (
       !output
       || output.type !== 'chunk'
       || typeof output.code !== 'string'
       || !output.fileName.startsWith('weapp-vendors/')
     ) {
-      return false
+      continue
     }
-    const normalizedFileName = output.fileName.replace(/\\/g, '/')
-    if (moduleId === 'wevu') {
-      return normalizedFileName.endsWith(`${chunkFileName}.js`)
+
+    const chunk = output as OutputChunk
+    vendorChunks.push(chunk)
+    const normalizedFileName = chunk.fileName.replace(/\\/g, '/')
+    for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
+      const chunkFileName = moduleId.replace(/\//g, '-')
+      const isMatch = moduleId === 'wevu'
+        ? normalizedFileName.endsWith(`${chunkFileName}.js`)
+        : normalizedFileName.endsWith(`${chunkFileName}.js`)
+          || normalizedFileName.includes(`/${chunkFileName}-`)
+      if (isMatch && !chunksByModuleId.has(moduleId)) {
+        chunksByModuleId.set(moduleId, chunk)
+      }
     }
-    return normalizedFileName.endsWith(`${chunkFileName}.js`)
-      || normalizedFileName.includes(`/${chunkFileName}-`)
+  }
+
+  return {
+    vendorChunks,
+    chunksByModuleId,
+    exportNamesByFileName,
+  }
+}
+
+function getWevuRuntimeChunkExportNames(
+  index: WevuRuntimeChunkIndex,
+  chunk: OutputChunk,
+) {
+  let exports = index.exportNamesByFileName.get(chunk.fileName)
+  if (!exports) {
+    exports = collectChunkExportNames(chunk)
+    index.exportNamesByFileName.set(chunk.fileName, exports)
+  }
+  return exports
+}
+
+function resolveIndexedWevuInternalChunk(
+  index: WevuRuntimeChunkIndex,
+  importNames: Iterable<string>,
+) {
+  const requiredNames = new Set(importNames)
+  if (!requiredNames.size) {
+    return undefined
+  }
+
+  return index.vendorChunks.find((chunk) => {
+    const exports = getWevuRuntimeChunkExportNames(index, chunk)
+    return [...requiredNames].every(name => exports.has(name))
   })
 }
 
-function resolveWevuInternalChunkByExportMarkers(
-  bundle: OutputBundle,
+function resolveIndexedWevuInternalChunkByExportMarkers(
+  index: WevuRuntimeChunkIndex,
   markers: Iterable<string>,
   excludedFileNames: Set<string>,
 ) {
@@ -578,17 +624,11 @@ function resolveWevuInternalChunkByExportMarkers(
     return undefined
   }
 
-  return Object.values(bundle).find((output): output is OutputChunk => {
-    if (
-      !output
-      || output.type !== 'chunk'
-      || typeof output.code !== 'string'
-      || !output.fileName.startsWith('weapp-vendors/')
-      || excludedFileNames.has(output.fileName)
-    ) {
+  return index.vendorChunks.find((chunk) => {
+    if (excludedFileNames.has(chunk.fileName)) {
       return false
     }
-    const exports = collectChunkExportNames(output as OutputChunk)
+    const exports = getWevuRuntimeChunkExportNames(index, chunk)
     return [...markerSet].some(name => exports.has(name))
   })
 }
@@ -608,7 +648,7 @@ function rememberWevuRuntimeChunk(
 }
 
 function rememberCurrentWevuRuntimeChunks(
-  bundle: OutputBundle,
+  index: WevuRuntimeChunkIndex,
   options: RewriteWevuInternalRuntimeImportsOptions,
 ) {
   const rememberedFileNames = new Set<string>()
@@ -616,9 +656,9 @@ function rememberCurrentWevuRuntimeChunks(
     if (moduleId === 'wevu') {
       continue
     }
-    const exactChunk = resolveWevuRuntimeChunkByModuleId(bundle, moduleId)
-    const chunk = exactChunk ?? resolveWevuInternalChunkByExportMarkers(
-      bundle,
+    const exactChunk = index.chunksByModuleId.get(moduleId)
+    const chunk = exactChunk ?? resolveIndexedWevuInternalChunkByExportMarkers(
+      index,
       WEVU_RUNTIME_MODULE_EXPORT_MARKERS[moduleId],
       rememberedFileNames,
     )
@@ -674,12 +714,12 @@ function resolveRootWevuInternalModuleId(importedName: string): WevuInternalModu
 }
 
 function resolveWevuRuntimeChunkForModuleId(
-  bundle: OutputBundle,
+  index: WevuRuntimeChunkIndex,
   moduleId: WevuRuntimeModuleId,
   importedNames: Iterable<string>,
 ) {
-  return resolveWevuRuntimeChunkByModuleId(bundle, moduleId)
-    ?? resolveWevuInternalChunk(bundle, importedNames)
+  return index.chunksByModuleId.get(moduleId)
+    ?? resolveIndexedWevuInternalChunk(index, importedNames)
 }
 
 function resolveRememberedWevuRuntimeFileName(
@@ -704,7 +744,7 @@ function formatWevuRuntimeRequire(
 }
 
 function rewriteRootWevuImport(
-  bundle: OutputBundle,
+  index: WevuRuntimeChunkIndex,
   fileName: string,
   full: string,
   bindings: Array<{ importedName: string, localName: string }>,
@@ -732,7 +772,7 @@ function rewriteRootWevuImport(
   const statements: string[] = []
   for (const [moduleId, moduleBindings] of groupedBindings) {
     const importedNames = moduleBindings.map(binding => binding.importedName)
-    const runtimeChunk = resolveWevuRuntimeChunkForModuleId(bundle, moduleId, importedNames)
+    const runtimeChunk = resolveWevuRuntimeChunkForModuleId(index, moduleId, importedNames)
     const runtimeFileName = runtimeChunk?.fileName
       ?? resolveRememberedWevuRuntimeFileName(moduleId, importedNames, options)
     if (!runtimeFileName) {
@@ -779,11 +819,12 @@ export function rewriteWevuInternalRuntimeImports(
 ) {
   const importRe = /\bimport\s*\{([^}]*)\}\s*from\s*["'](wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?)["'];?/g
   const requireRe = /\brequire\(\s*(`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")\s*\)/g
-  const currentRuntimeChunk = resolveWevuInternalChunk(bundle, WEVU_INTERNAL_RUNTIME_EXPORTS)
+  const runtimeChunkIndex = createWevuRuntimeChunkIndex(bundle)
+  const currentRuntimeChunk = resolveIndexedWevuInternalChunk(runtimeChunkIndex, WEVU_INTERNAL_RUNTIME_EXPORTS)
   if (currentRuntimeChunk) {
     rememberWevuRuntimeChunk('wevu/internal-runtime', currentRuntimeChunk, options)
   }
-  rememberCurrentWevuRuntimeChunks(bundle, options)
+  rememberCurrentWevuRuntimeChunks(runtimeChunkIndex, options)
 
   for (const output of Object.values(bundle)) {
     if (!output || (output.type !== 'chunk' && output.type !== 'asset')) {
@@ -811,7 +852,7 @@ export function rewriteWevuInternalRuntimeImports(
       const importedNames = bindings.map(binding => binding.importedName)
       if (source === 'wevu') {
         const result = rewriteRootWevuImport(
-          bundle,
+          runtimeChunkIndex,
           fileName,
           full,
           bindings,
@@ -823,7 +864,7 @@ export function rewriteWevuInternalRuntimeImports(
       }
 
       const resolvedInternalModuleId = source as WevuRuntimeModuleId
-      const runtimeChunk = resolveWevuRuntimeChunkForModuleId(bundle, resolvedInternalModuleId, importedNames)
+      const runtimeChunk = resolveWevuRuntimeChunkForModuleId(runtimeChunkIndex, resolvedInternalModuleId, importedNames)
       const rememberedRuntimeFileName = resolveRememberedWevuRuntimeFileName(
         resolvedInternalModuleId,
         importedNames,
