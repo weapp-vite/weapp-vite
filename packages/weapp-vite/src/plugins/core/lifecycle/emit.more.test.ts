@@ -1605,6 +1605,12 @@ describe('core lifecycle emit hook extra branches', () => {
         sharedFileName: 'shared/missing-b.js',
         finalFileName: 'pkg-a/scanned-common.js',
       })
+      options.onFallback?.({
+        reason: 'main-package',
+        importers: ['pkg-a/pages/index.js'],
+        sharedFileName: 'shared/missing-c.js',
+        finalFileName: 'pkg-a/multi-common.js',
+      })
     })
 
     const state = createState({
@@ -1621,7 +1627,7 @@ describe('core lifecycle emit hook extra branches', () => {
               logOptimization: true,
             },
           },
-          relativeAbsoluteSrcRoot: (id: string) => id,
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         },
       },
     })
@@ -1645,6 +1651,21 @@ describe('core lifecycle emit hook extra branches', () => {
           '/project/node_modules/.pnpm/pkg-b@1.0.0/node_modules/pkg-b/index.js': {},
         },
       },
+      'multi-key.js': {
+        type: 'chunk',
+        fileName: 'pkg-a/multi-common.js',
+        code: 'module.exports = 3',
+        imports: [],
+        dynamicImports: [],
+        modules: {
+          '/project/src/shared/a.ts': {},
+          '/project/src/shared/b.ts': {},
+          '/project/src/shared/c.ts': {},
+          '/project/src/shared/d.ts': {},
+          '/project/src/shared/a.ts?duplicate': {},
+          '\0virtual:skip': {},
+        },
+      },
     } as any
 
     await hook.call({}, {}, bundle)
@@ -1654,6 +1675,9 @@ describe('core lifecycle emit hook extra branches', () => {
     ).toBe(true)
     expect(
       loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-b/index.js')),
+    ).toBe(true)
+    expect(
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('shared/a.ts、shared/b.ts、shared/c.ts 等 5 个模块')),
     ).toBe(true)
   })
 

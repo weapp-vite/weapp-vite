@@ -498,18 +498,27 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           if (!chunk) {
             return finalFileName
           }
-          const moduleLabels = [...new Set(
-            Object.keys(chunk.modules ?? {})
-              .filter(id => id && !id.startsWith('\0'))
-              .map(id => configService.relativeAbsoluteSrcRoot(id))
-              .filter(Boolean),
-          )]
-          if (!moduleLabels.length) {
+          const seenModuleLabels = new Set<string>()
+          const preview: string[] = []
+          let moduleLabelCount = 0
+          for (const id in chunk.modules ?? {}) {
+            if (!id || id.startsWith('\0')) {
+              continue
+            }
+            const label = configService.relativeAbsoluteSrcRoot(id)
+            if (!label || seenModuleLabels.has(label)) {
+              continue
+            }
+            seenModuleLabels.add(label)
+            moduleLabelCount += 1
+            if (preview.length < 3) {
+              preview.push(prettifyModuleLabel(label))
+            }
+          }
+          if (moduleLabelCount === 0) {
             return chunk.fileName || finalFileName
           }
-          const preview = moduleLabels.map(prettifyModuleLabel).slice(0, 3)
-          const remaining = moduleLabels.length - preview.length
-          const suffix = remaining > 0 ? ` 等 ${moduleLabels.length} 个模块` : ''
+          const suffix = moduleLabelCount > preview.length ? ` 等 ${moduleLabelCount} 个模块` : ''
           return `${preview.join('、')}${suffix}`
         }
 
