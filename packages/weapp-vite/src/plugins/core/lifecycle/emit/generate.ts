@@ -97,7 +97,7 @@ function isRuntimeVendorSharedChunk(fileName: string) {
 }
 
 function isCurrentStyleSidecarUpdate(state: CorePluginState) {
-  return state.ctx.runtimeState.build?.hmr?.profile?.dirtyReasonSummary?.some(item => item.startsWith('style-sidecar:')) === true
+  return state.ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(item => item.startsWith('style-sidecar:')) === true
 }
 
 async function emitCurrentStyleSidecarAsset(this: any, state: CorePluginState, bundle: OutputBundle) {
@@ -130,11 +130,12 @@ function resolveImportedChunkId(importerFileName: string, imported: string) {
   return importerSegments.join('/')
 }
 
-function isImportedByActiveHmrChunk(fileName: string, bundle: OutputBundle, activeEntryIds?: Set<string>) {
+export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEntryIds?: Set<string>) {
   if (!activeEntryIds?.size) {
-    return false
+    return new Set<string>()
   }
-  for (const output of Object.values(bundle)) {
+  const importedChunkIds = new Set<string>()
+  for (const [bundleFileName, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
@@ -142,15 +143,16 @@ function isImportedByActiveHmrChunk(fileName: string, bundle: OutputBundle, acti
     if (!chunk.facadeModuleId || !activeEntryIds.has(chunk.facadeModuleId)) {
       continue
     }
+    const importerFileName = chunk.fileName || bundleFileName
     const imports = [
       ...(Array.isArray(chunk.imports) ? chunk.imports : []),
       ...(Array.isArray(chunk.dynamicImports) ? chunk.dynamicImports : []),
     ]
-    if (imports.some(imported => resolveImportedChunkId(chunk.fileName, imported) === fileName)) {
-      return true
+    for (const imported of imports) {
+      importedChunkIds.add(resolveImportedChunkId(importerFileName, imported))
     }
   }
-  return false
+  return importedChunkIds
 }
 
 function resolveActiveHmrEntryIds(state: CorePluginState) {
@@ -159,12 +161,17 @@ function resolveActiveHmrEntryIds(state: CorePluginState) {
     : state.hmrState.lastEmittedEntryIds
 }
 
-function shouldRewriteDevHmrChunk(fileName: string, output: OutputBundle[string], bundle: OutputBundle, state: CorePluginState) {
+function shouldRewriteDevHmrChunk(
+  fileName: string,
+  output: OutputBundle[string],
+  state: CorePluginState,
+  activeEntryIds: Set<string> | undefined,
+  activeImportedChunkIds: Set<string>,
+) {
   if (output?.type !== 'chunk') {
     return true
   }
 
-  const activeEntryIds = resolveActiveHmrEntryIds(state)
   if (!activeEntryIds?.size) {
     return true
   }
@@ -176,7 +183,7 @@ function shouldRewriteDevHmrChunk(fileName: string, output: OutputBundle[string]
   if (state.hmrState.affectedSharedChunkIds?.has(fileName) || state.hmrState.affectedSharedChunkIds?.has(chunk.fileName)) {
     return true
   }
-  return isImportedByActiveHmrChunk(fileName, bundle, activeEntryIds)
+  return activeImportedChunkIds.has(fileName)
 }
 
 function resolveDevHmrRewriteBundle(bundle: OutputBundle, state: CorePluginState) {
@@ -189,8 +196,10 @@ function resolveDevHmrRewriteBundle(bundle: OutputBundle, state: CorePluginState
   }
 
   const rewriteBundle: OutputBundle = {}
+  const activeEntryIds = resolveActiveHmrEntryIds(state)
+  const activeImportedChunkIds = collectActiveHmrImportedChunkIds(bundle, activeEntryIds)
   for (const [fileName, output] of Object.entries(bundle)) {
-    if (shouldRewriteDevHmrChunk(fileName, output, bundle, state)) {
+    if (shouldRewriteDevHmrChunk(fileName, output, state, activeEntryIds, activeImportedChunkIds)) {
       rewriteBundle[fileName] = output
     }
   }
@@ -208,6 +217,8 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     return
   }
 
+  const activeEntryIds = resolveActiveHmrEntryIds(state)
+  const activeImportedChunkIds = collectActiveHmrImportedChunkIds(bundle, activeEntryIds)
   for (const [fileName, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk' || !isStableHmrSharedChunk(fileName)) {
       continue
@@ -232,11 +243,8 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       continue
     }
 
-    const activeEntryIds = state.hmrState.lastHmrEntryIds?.size
-      ? state.hmrState.lastHmrEntryIds
-      : state.hmrState.lastEmittedEntryIds
     const isActiveRuntimeVendorChunk = isRuntimeVendorSharedChunk(fileName)
-      && isImportedByActiveHmrChunk(fileName, bundle, activeEntryIds)
+      && activeImportedChunkIds.has(fileName)
     if (isActiveRuntimeVendorChunk) {
       const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
       if (emittedChunkFileNames) {

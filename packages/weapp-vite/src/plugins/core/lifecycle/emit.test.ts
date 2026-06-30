@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createGenerateBundleHook } from './emit'
+import { collectActiveHmrImportedChunkIds } from './emit/generate'
 
 describe('core lifecycle emit hook injectWeapi', () => {
   it('rewrites bundle chunk wx/my access to global wpi', async () => {
@@ -799,5 +800,34 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['pages/index/index.js'].code).not.toContain('wx.showToast')
     expect(bundle['common.js'].code).toContain('__weappViteInjectedApi__')
     expect(bundle['common.js'].code).not.toContain('jd.showToast')
+  })
+})
+
+describe('core lifecycle emit HMR import graph', () => {
+  it('collects normalized direct and dynamic imports for active HMR entries once', () => {
+    const activeEntry = '/src/pages/index/index.ts'
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        imports: ['../../common.js'],
+        dynamicImports: ['../async/chunk.js'],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: '/src/pages/other/index.ts',
+        imports: ['../../unused.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    const importedChunkIds = collectActiveHmrImportedChunkIds(bundle, new Set([activeEntry]))
+
+    expect([...importedChunkIds].sort()).toEqual([
+      'common.js',
+      'pages/async/chunk.js',
+    ])
   })
 })
