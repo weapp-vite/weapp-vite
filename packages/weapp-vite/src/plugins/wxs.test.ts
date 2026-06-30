@@ -288,4 +288,256 @@ describe('wxs plugin', () => {
     expect(emitFile).toHaveBeenCalledTimes(2)
     expect(emitFile.mock.calls[1][0].fileName).toBe('components/cache-card/tools.wxs')
   })
+
+  it('skips full tokenMap scans during unrelated script hmr', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-script-hmr-'))
+    tempDirs.push(tempDir)
+
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/skip-card')
+    await fs.ensureDir(componentDir)
+
+    const vueFile = path.join(componentDir, 'index.vue')
+    const wxsFile = path.join(componentDir, 'tools.wxs')
+    const scriptFile = path.join(srcRoot, 'pages/index/index.ts')
+    await fs.ensureDir(path.dirname(scriptFile))
+    await fs.writeFile(vueFile, '<template><view /></template>', 'utf8')
+    await fs.writeFile(wxsFile, 'module.exports = { noop: function() {} }', 'utf8')
+    await fs.writeFile(scriptFile, 'Page({})', 'utf8')
+
+    const ctx = {
+      configService: {
+        absoluteSrcRoot: srcRoot,
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+        relativeOutputPath(filePath: string) {
+          return path.relative(srcRoot, filePath).replace(/\\/g, '/')
+        },
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              event: 'update',
+              file: scriptFile,
+            },
+          },
+        },
+      },
+      wxmlService: {
+        tokenMap: new Map([
+          [
+            vueFile,
+            {
+              deps: [
+                {
+                  name: 'src',
+                  value: './tools.wxs',
+                  quote: '"',
+                  tagName: 'wxs',
+                  start: 0,
+                  end: 0,
+                  attrs: {
+                    src: './tools.wxs',
+                  },
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    } as any
+    const plugin = wxs(ctx)[0]
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+
+    plugin.buildStart?.call({} as any)
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+
+    expect(emitFile).not.toHaveBeenCalled()
+    expect(addWatchFile).not.toHaveBeenCalled()
+  })
+
+  it('keeps tokenMap scans for wxs hmr updates', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-file-hmr-'))
+    tempDirs.push(tempDir)
+
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/wxs-card')
+    await fs.ensureDir(componentDir)
+
+    const vueFile = path.join(componentDir, 'index.vue')
+    const wxsFile = path.join(componentDir, 'tools.wxs')
+    await fs.writeFile(vueFile, '<template><view /></template>', 'utf8')
+    await fs.writeFile(wxsFile, 'module.exports = { noop: function() {} }', 'utf8')
+
+    const ctx = {
+      configService: {
+        absoluteSrcRoot: srcRoot,
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+        relativeOutputPath(filePath: string) {
+          return path.relative(srcRoot, filePath).replace(/\\/g, '/')
+        },
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              event: 'update',
+              file: wxsFile,
+            },
+          },
+        },
+      },
+      wxmlService: {
+        tokenMap: new Map([
+          [
+            vueFile,
+            {
+              deps: [
+                {
+                  name: 'src',
+                  value: './tools.wxs',
+                  quote: '"',
+                  tagName: 'wxs',
+                  start: 0,
+                  end: 0,
+                  attrs: {
+                    src: './tools.wxs',
+                  },
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    } as any
+    const plugin = wxs(ctx)[0]
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+
+    plugin.buildStart?.call({} as any)
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+
+    expect(emitFile).toHaveBeenCalledTimes(1)
+    expect(emitFile.mock.calls[0][0].fileName).toBe('components/wxs-card/tools.wxs')
+    expect(addWatchFile).toHaveBeenCalledWith(wxsFile)
+  })
+
+  it('keeps tokenMap scans for cached wxs importee hmr updates without wxs suffix', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-importee-hmr-'))
+    tempDirs.push(tempDir)
+
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/importee-card')
+    await fs.ensureDir(componentDir)
+
+    const vueFile = path.join(componentDir, 'index.vue')
+    const wxsFile = path.join(componentDir, 'tools.wxs')
+    const helperFile = path.join(componentDir, 'helper')
+    await fs.writeFile(vueFile, '<template><view /></template>', 'utf8')
+    await fs.writeFile(wxsFile, 'const helper = require("./helper"); module.exports = helper', 'utf8')
+    await fs.writeFile(helperFile, 'module.exports = { noop: function() {} }', 'utf8')
+
+    const ctx = {
+      configService: {
+        absoluteSrcRoot: srcRoot,
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+        relativeOutputPath(filePath: string) {
+          return path.relative(srcRoot, filePath).replace(/\\/g, '/')
+        },
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {},
+          },
+        },
+      },
+      wxmlService: {
+        tokenMap: new Map([
+          [
+            vueFile,
+            {
+              deps: [
+                {
+                  name: 'src',
+                  value: './tools.wxs',
+                  quote: '"',
+                  tagName: 'wxs',
+                  start: 0,
+                  end: 0,
+                  attrs: {
+                    src: './tools.wxs',
+                  },
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    } as any
+    const plugin = wxs(ctx)[0]
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+
+    plugin.buildStart?.call({} as any)
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+    emitFile.mockClear()
+    addWatchFile.mockClear()
+    ctx.runtimeState.build.hmr.profile = {
+      event: 'update',
+      file: helperFile,
+    }
+
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+
+    expect(emitFile.mock.calls.map(([asset]) => asset.fileName)).toContain('components/importee-card/tools.wxs')
+    expect(addWatchFile).toHaveBeenCalledWith(helperFile)
+  })
 })
