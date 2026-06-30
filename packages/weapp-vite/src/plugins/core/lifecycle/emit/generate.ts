@@ -672,30 +672,35 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
       }
 
+      const appPreludePath = scanService.appEntry?.preludePath
+      const shouldInjectRequestGlobalsPrelude = injectRequestGlobalsOptions?.prelude === true
       const appPreludeOptions = resolveAppPreludeOptions(state)
-      const appPreludeCode = await resolveAppPreludeCode(scanService.appEntry?.preludePath, {
-        importMetaDefineRegistry: configService.importMetaDefineRegistry,
-        relativePath: scanService.appEntry?.preludePath
-          ? configService.relativeAbsoluteSrcRoot(scanService.appEntry.preludePath)
-          : undefined,
-      })
-      const preservedRequestGlobalsInstallerChunks = injectAppPreludeCode(
-        rolldownBundle,
-        appPreludeCode,
-        {
-          ...appPreludeOptions,
-          enabled: appPreludeOptions.enabled || injectRequestGlobalsOptions?.prelude === true,
-        },
-        state,
-        {
-          enabled: injectRequestGlobalsOptions?.prelude === true,
-          installerChunks,
-          mode: injectRequestGlobalsOptions?.mode ?? 'explicit',
-          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          targets: injectRequestGlobalsOptions?.targets ?? [],
-        },
-        asset => this.emitFile(asset),
-      )
+      const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
+        || shouldInjectRequestGlobalsPrelude
+      const preservedRequestGlobalsInstallerChunks = shouldRunAppPrelude
+        ? injectAppPreludeCode(
+            rolldownBundle,
+            await resolveAppPreludeCode(appPreludePath, {
+              importMetaDefineRegistry: configService.importMetaDefineRegistry,
+              relativePath: appPreludePath
+                ? configService.relativeAbsoluteSrcRoot(appPreludePath)
+                : undefined,
+            }),
+            {
+              ...appPreludeOptions,
+              enabled: appPreludeOptions.enabled || shouldInjectRequestGlobalsPrelude,
+            },
+            state,
+            {
+              enabled: shouldInjectRequestGlobalsPrelude,
+              installerChunks,
+              mode: injectRequestGlobalsOptions?.mode ?? 'explicit',
+              networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
+              targets: injectRequestGlobalsOptions?.targets ?? [],
+            },
+            asset => this.emitFile(asset),
+          )
+        : new Set<string>()
       if (injectRequestGlobalsOptions?.targets?.length) {
         inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
       }

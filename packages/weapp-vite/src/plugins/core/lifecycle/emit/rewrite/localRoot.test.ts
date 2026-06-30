@@ -102,4 +102,30 @@ describe('rewriteBundleNpmImportsToLocalRoots', () => {
 
     expect(nested.code).toContain(`require("../miniprogram_npm/ui-lib/button")`)
   })
+
+  it('does not rewrite the subpackage root chunk as a local subpackage page chunk', () => {
+    const rootChunk = createChunk('pkg-a', `const comp = require('ui-lib/button')`)
+    const pageChunk = createChunk('pkg-a/pages/index.js', `const comp = require('ui-lib/button')`)
+    const bundle: OutputBundle = {
+      [rootChunk.fileName]: rootChunk,
+      [pageChunk.fileName]: pageChunk,
+    }
+
+    rewriteBundleNpmImportsToLocalRoots(
+      bundle,
+      {
+        'ui-lib': '1.0.0',
+      },
+      [
+        {
+          root: 'pkg-a',
+          dependencies: ['ui-lib'],
+        },
+      ],
+    )
+
+    expect(rootChunk.code).toContain(`require("./miniprogram_npm/ui-lib/button")`)
+    expect(rootChunk.code).not.toContain(`require("./pkg-a/miniprogram_npm/ui-lib/button")`)
+    expect(pageChunk.code).toContain(`require("../miniprogram_npm/ui-lib/button")`)
+  })
 })

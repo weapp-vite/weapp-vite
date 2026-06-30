@@ -196,6 +196,34 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
   })
 
+  it('skips app prelude scanning when no prelude source or request globals prelude is enabled', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(bundle['app.js'].code).toBe('App({})')
+  })
+
   it('narrows wxml emit targets during incremental hmr renderStart', async () => {
     const state = createState({
       entriesMap: new Map([

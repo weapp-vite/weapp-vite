@@ -257,7 +257,7 @@ export function rewriteJsonNpmImportsToLocalRoot(
 }
 
 function matchesRootFile(fileName: string, root: string) {
-  return fileName === root || fileName.startsWith(`${root}/`)
+  return fileName.startsWith(`${root}/`)
 }
 
 function resolveChunkLocalRootRewriteTarget(
