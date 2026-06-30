@@ -33,6 +33,14 @@ pub struct NativeScriptAnalysis {
     pub feature_flags: Vec<String>,
 }
 
+#[napi(object)]
+pub struct NativeScriptAnalysisInput {
+    pub code: String,
+    pub module_id: Option<String>,
+    pub hook_to_feature_json: Option<String>,
+    pub filename: Option<String>,
+}
+
 fn parse_program<'a>(
     allocator: &'a Allocator,
     code: &'a str,
@@ -492,9 +500,33 @@ pub fn analyze_script_native(
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
 ) -> NativeScriptAnalysis {
+    analyze_script_impl(&code, module_id, hook_to_feature_json, filename)
+}
+
+#[napi(js_name = "analyzeScriptsNative")]
+pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> Vec<NativeScriptAnalysis> {
+    inputs
+        .into_iter()
+        .map(|input| {
+            analyze_script_impl(
+                &input.code,
+                input.module_id,
+                input.hook_to_feature_json,
+                input.filename,
+            )
+        })
+        .collect()
+}
+
+fn analyze_script_impl(
+    code: &str,
+    module_id: Option<String>,
+    hook_to_feature_json: Option<String>,
+    filename: Option<String>,
+) -> NativeScriptAnalysis {
     let wants_static_require =
         code.contains("require(") || code.contains("require (") || code.contains("require`");
-    let wants_platform_api = may_contain_platform_api_text(&code);
+    let wants_platform_api = may_contain_platform_api_text(code);
     let feature_config =
         module_id
             .zip(hook_to_feature_json)
@@ -521,7 +553,7 @@ pub fn analyze_script_native(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, code, filename) else {
         return NativeScriptAnalysis {
             has_static_require_literal: false,
             has_platform_api_access: false,

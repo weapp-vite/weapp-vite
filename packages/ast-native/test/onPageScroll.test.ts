@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   analyzeScriptNative,
+  analyzeScriptsNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
@@ -146,5 +147,29 @@ wevuNs.onShow?.(() => {})
       hasPlatformApiAccess: true,
       hasStaticRequireLiteral: true,
     })
+    expect(analyzeScriptsNative([
+      {
+        code: source,
+        hookToFeatureJson: JSON.stringify({
+          onLoad: 'enableLoad',
+          onShow: 'enableShow',
+        }),
+        moduleId: 'wevu',
+      },
+      {
+        code: 'const value = 1',
+      },
+    ])).toEqual([
+      {
+        featureFlags: ['enableLoad', 'enableShow'],
+        hasPlatformApiAccess: true,
+        hasStaticRequireLiteral: true,
+      },
+      {
+        featureFlags: [],
+        hasPlatformApiAccess: false,
+        hasStaticRequireLiteral: false,
+      },
+    ])
   })
 })

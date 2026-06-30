@@ -12,12 +12,21 @@ export interface NativeScriptAnalysis {
   featureFlags: string[]
 }
 
+export interface NativeScriptAnalysisInput {
+  code: string
+  moduleId?: string
+  hookToFeatureJson?: string
+  filename?: string
+}
+
 export function analyzeScriptNative(
   code: string,
   moduleId?: string,
   hookToFeatureJson?: string,
   filename?: string,
 ): NativeScriptAnalysis
+
+export function analyzeScriptsNative(inputs: NativeScriptAnalysisInput[]): NativeScriptAnalysis[]
 
 export function collectOnPageScrollDiagnosticsNative(
   code: string,

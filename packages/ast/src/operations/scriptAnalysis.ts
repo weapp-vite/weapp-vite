@@ -1,6 +1,6 @@
 import type { AstEngineName, AstParserLike } from '../types'
 import type { FeatureFlagOptions } from './featureFlags'
-import { analyzeScriptWithNative, shouldUseNativeAst } from '../native'
+import { analyzeScriptsWithNative, analyzeScriptWithNative, shouldUseNativeAst } from '../native'
 import { collectFeatureFlagsFromCode } from './featureFlags'
 import { mayContainPlatformApiAccess } from './platformApi'
 import { mayContainStaticRequireLiteral } from './require'
@@ -17,6 +17,34 @@ export interface ScriptAnalysisResult<TFeature extends string = string> {
   featureFlags: Set<TFeature>
 }
 
+export interface ScriptAnalysisBatchInput<TFeature extends string = string> {
+  code: string
+  filename?: string
+  featureFlags?: FeatureFlagOptions<TFeature>
+}
+
+function normalizeNativeAnalysis<TFeature extends string>(
+  nativeAnalysis: {
+    hasStaticRequireLiteral: boolean
+    hasPlatformApiAccess: boolean
+    featureFlags: string[]
+  },
+  featureFlags?: FeatureFlagOptions<TFeature>,
+): ScriptAnalysisResult<TFeature> {
+  const validFeatures = new Set(Object.values(featureFlags?.hookToFeature ?? {}))
+  const enabled = new Set<TFeature>()
+  for (const feature of nativeAnalysis.featureFlags) {
+    if (!validFeatures.size || validFeatures.has(feature as TFeature)) {
+      enabled.add(feature as TFeature)
+    }
+  }
+  return {
+    featureFlags: enabled,
+    hasPlatformApiAccess: nativeAnalysis.hasPlatformApiAccess,
+    hasStaticRequireLiteral: nativeAnalysis.hasStaticRequireLiteral,
+  }
+}
+
 /**
  * 对同一份脚本做批量 AST 预分析，避免多个轻量检查重复 parse 或跨 native 边界。
  */
@@ -31,18 +59,7 @@ export function analyzeScript<TFeature extends string = string>(
         moduleId: options?.featureFlags?.moduleId,
       })
       if (nativeAnalysis) {
-        const validFeatures = new Set(Object.values(options?.featureFlags?.hookToFeature ?? {}))
-        const featureFlags = new Set<TFeature>()
-        for (const feature of nativeAnalysis.featureFlags) {
-          if (!validFeatures.size || validFeatures.has(feature as TFeature)) {
-            featureFlags.add(feature as TFeature)
-          }
-        }
-        return {
-          featureFlags,
-          hasPlatformApiAccess: nativeAnalysis.hasPlatformApiAccess,
-          hasStaticRequireLiteral: nativeAnalysis.hasStaticRequireLiteral,
-        }
+        return normalizeNativeAnalysis(nativeAnalysis, options?.featureFlags)
       }
     }
     catch {
@@ -63,4 +80,39 @@ export function analyzeScript<TFeature extends string = string>(
       parserLike: options?.parserLike,
     }),
   }
+}
+
+/**
+ * 对多份脚本做批量 native 预分析，减少 JS 与 Rust 的往返次数。
+ */
+export function analyzeScripts<TFeature extends string = string>(
+  inputs: ScriptAnalysisBatchInput<TFeature>[],
+  options?: ScriptAnalysisOptions<TFeature>,
+): Array<ScriptAnalysisResult<TFeature>> {
+  if (shouldUseNativeAst() && inputs.length > 0) {
+    try {
+      const nativeResults = analyzeScriptsWithNative(inputs.map(input => ({
+        code: input.code,
+        filename: input.filename,
+        hookToFeature: input.featureFlags?.hookToFeature ?? options?.featureFlags?.hookToFeature,
+        moduleId: input.featureFlags?.moduleId ?? options?.featureFlags?.moduleId,
+      })))
+      if (nativeResults?.length === inputs.length) {
+        return nativeResults.map((nativeAnalysis, index) => {
+          return normalizeNativeAnalysis(
+            nativeAnalysis,
+            inputs[index]?.featureFlags ?? options?.featureFlags,
+          )
+        })
+      }
+    }
+    catch {
+      // native AST 是可选批处理快速路径，失败时逐项回退原有解析。
+    }
+  }
+
+  return inputs.map(input => analyzeScript(input.code, {
+    ...options,
+    featureFlags: input.featureFlags ?? options?.featureFlags,
+  }))
 }

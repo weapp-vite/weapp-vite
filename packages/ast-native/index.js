@@ -20,6 +20,7 @@ if (!bindingPath) {
 
 const {
   analyzeScriptNative,
+  analyzeScriptsNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
@@ -29,6 +30,7 @@ const {
 
 export {
   analyzeScriptNative,
+  analyzeScriptsNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,

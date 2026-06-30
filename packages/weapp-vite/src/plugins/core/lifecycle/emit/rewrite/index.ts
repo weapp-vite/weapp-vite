@@ -22,4 +22,5 @@ export {
   rewriteBundleNpmImportsByPlatform,
   rewriteBundlePlatformApi,
   rewriteChunkNpmImportsByPlatform,
+  warmupBundleScriptAnalysis,
 } from './platform'

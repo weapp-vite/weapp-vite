@@ -17,6 +17,13 @@ export interface NativeScriptAnalysis {
   featureFlags: string[]
 }
 
+export interface NativeScriptAnalysisInput {
+  code: string
+  moduleId?: string
+  hookToFeature?: Record<string, unknown>
+  filename?: string
+}
+
 export interface NativeAstBinding {
   analyzeScriptNative?: (
     code: string,
@@ -24,6 +31,14 @@ export interface NativeAstBinding {
     hookToFeatureJson?: string,
     filename?: string,
   ) => NativeScriptAnalysis
+  analyzeScriptsNative?: (
+    inputs: Array<{
+      code: string
+      moduleId?: string
+      hookToFeatureJson?: string
+      filename?: string
+    }>,
+  ) => NativeScriptAnalysis[]
   collectFeatureFlagsNative?: (
     code: string,
     moduleId: string,
@@ -112,4 +127,23 @@ export function analyzeScriptWithNative(
     result,
   }
   return result
+}
+
+export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
+  const analyzeNative = loadNativeAstBindingSync()?.analyzeScriptsNative
+  if (!analyzeNative) {
+    return undefined
+  }
+
+  const nativeInputs = inputs.map((input) => {
+    return {
+      code: input.code,
+      filename: input.filename ?? 'inline.ts',
+      hookToFeatureJson: input.hookToFeature
+        ? JSON.stringify(input.hookToFeature)
+        : undefined,
+      moduleId: input.moduleId,
+    }
+  })
+  return analyzeNative(nativeInputs)
 }

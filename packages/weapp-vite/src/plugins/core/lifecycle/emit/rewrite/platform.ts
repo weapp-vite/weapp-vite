@@ -1,7 +1,7 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
-import { analyzeScript, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
+import { analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   hasNpmDependencyPrefix,
@@ -58,6 +58,65 @@ export function getChunkScriptAnalysis(
     code: chunk.code,
   })
   return analysis
+}
+
+export function warmupBundleScriptAnalysis(
+  bundle: OutputBundle,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+    cache?: ChunkScriptAnalysisCache
+  },
+) {
+  const cache = options?.cache
+  if (!cache) {
+    return
+  }
+
+  const chunks: OutputChunk[] = []
+  const inputs: Array<{ code: string, filename?: string }> = []
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const cached = cache.get(chunk)
+    if (cached?.code === chunk.code) {
+      continue
+    }
+    if (!mayNeedChunkScriptAnalysis(chunk.code)) {
+      cache.set(chunk, {
+        analysis: {
+          hasPlatformApiAccess: false,
+          hasStaticRequireLiteral: false,
+        },
+        code: chunk.code,
+      })
+      continue
+    }
+
+    chunks.push(chunk)
+    inputs.push({
+      code: chunk.code,
+      filename: chunk.fileName,
+    })
+  }
+
+  if (inputs.length === 0) {
+    return
+  }
+
+  const analyses = analyzeScripts(inputs, { engine: options.astEngine })
+  for (const [index, analysis] of analyses.entries()) {
+    const chunk = chunks[index]
+    if (!chunk) {
+      continue
+    }
+    cache.set(chunk, {
+      analysis,
+      code: chunk.code,
+    })
+  }
 }
 
 export function replacePlatformApiAccess(
@@ -159,6 +218,11 @@ export function rewriteBundleNpmImportsByPlatform(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
+  warmupBundleScriptAnalysis(bundle, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -188,6 +252,11 @@ export function rewriteBundlePlatformApi(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
+  warmupBundleScriptAnalysis(bundle, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue

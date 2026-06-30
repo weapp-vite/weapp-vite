@@ -43,6 +43,7 @@ import {
   rewriteBundlePlatformApi,
   rewriteChunkNpmImportsToLocalRoot,
   rewriteJsonNpmImportsToLocalRoot,
+  warmupBundleScriptAnalysis,
 } from './rewrite'
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
@@ -312,6 +313,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       if (isPluginBuild) {
         filterPluginBundleOutputs(rolldownBundle, configService)
         if (!shouldRewriteBundleNpmImports(configService.platform)) {
+          warmupBundleScriptAnalysis(rolldownBundle, {
+            astEngine,
+            cache: scriptAnalysisCache,
+          })
           for (const output of Object.values(rolldownBundle)) {
             if (output?.type === 'chunk') {
               rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
@@ -563,6 +568,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           || localSubPackageMetas.length > 0
 
         if (hasNpmRewriteTargets) {
+          warmupBundleScriptAnalysis(rewriteBundle, {
+            astEngine,
+            cache: scriptAnalysisCache,
+          })
           for (const output of Object.values(rewriteBundle)) {
             if (output?.type !== 'chunk') {
               continue

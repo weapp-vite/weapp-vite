@@ -1089,6 +1089,7 @@ wevu.onPageScroll?.(() => {})`
     const modulePath = join(tempDir, 'native.cjs')
     await writeFile(modulePath, `
 globalThis.__weappViteNativeAnalysisCalls = 0
+globalThis.__weappViteNativeBatchAnalysisCalls = 0
 exports.analyzeScriptNative = (code) => {
   globalThis.__weappViteNativeAnalysisCalls += 1
   if (code.includes('throwBatchNative')) {
@@ -1099,6 +1100,14 @@ exports.analyzeScriptNative = (code) => {
     hasPlatformApiAccess: code.includes('nativePlatform'),
     hasStaticRequireLiteral: code.includes('nativeRequire'),
   }
+}
+exports.analyzeScriptsNative = (inputs) => {
+  globalThis.__weappViteNativeBatchAnalysisCalls += 1
+  return inputs.map(input => ({
+    featureFlags: input.code.includes('nativeFeature') ? ['nativeFeature'] : [],
+    hasPlatformApiAccess: input.code.includes('nativePlatform'),
+    hasStaticRequireLiteral: input.code.includes('nativeRequire'),
+  }))
 }
 exports.collectFeatureFlagsNative = (code) => {
   if (code.includes('throwNative')) {
@@ -1146,10 +1155,32 @@ exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequ
           onLoad: 'fallbackFeature',
         },
       })).toEqual(new Set(['fallbackFeature']))
+      expect(nativeModule.analyzeScripts([
+        { code: 'nativePlatform.wx.request()' },
+        { code: 'nativeRequire(); nativeFeature(); import { onLoad } from "wevu"; onLoad(() => {})', featureFlags: {
+          moduleId: 'wevu',
+          hookToFeature: {
+            onLoad: 'nativeFeature',
+          },
+        } },
+      ], { engine: 'oxc' })).toEqual([
+        {
+          featureFlags: new Set(),
+          hasPlatformApiAccess: true,
+          hasStaticRequireLiteral: false,
+        },
+        {
+          featureFlags: new Set(['nativeFeature']),
+          hasPlatformApiAccess: false,
+          hasStaticRequireLiteral: true,
+        },
+      ])
       expect((globalThis as any).__weappViteNativeAnalysisCalls).toBe(4)
+      expect((globalThis as any).__weappViteNativeBatchAnalysisCalls).toBe(1)
     }
     finally {
       delete (globalThis as any).__weappViteNativeAnalysisCalls
+      delete (globalThis as any).__weappViteNativeBatchAnalysisCalls
       vi.unstubAllEnvs()
       vi.resetModules()
       await rm(tempDir, { force: true, recursive: true })

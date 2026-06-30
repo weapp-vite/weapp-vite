@@ -21,7 +21,7 @@ import { createMacroVisitors } from '../packages-runtime/wevu-compiler/src/plugi
 import { rewriteDefaultExport, serializeWevuDefaults } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite'
 import { collectWevuPageFeatureFlags } from '../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../packages-runtime/wevu-compiler/src/utils/babel'
-import { analyzeScriptWithNative } from '../packages/ast/src/native'
+import { analyzeScriptsWithNative, analyzeScriptWithNative } from '../packages/ast/src/native'
 import { collectFeatureFlagsFromCode } from '../packages/ast/src/operations/featureFlags'
 import { mayContainPlatformApiAccess } from '../packages/ast/src/operations/platformApi'
 import { mayContainStaticRequireLiteral } from '../packages/ast/src/operations/require'
@@ -619,6 +619,15 @@ async function main() {
       moduleId: analysisFeatureOptions.moduleId,
     })
   }))
+  const analysisOnlyDirectMultiBatchNative = withNativeAstEnv(true, () => measureSyncByIteration((index) => {
+    analyzeScriptsWithNative(Array.from({ length: 8 }, (_, sampleIndex) => {
+      return {
+        code: `${analysisOnlyCode}\n// sample-${index}-${sampleIndex}`,
+        hookToFeature: analysisFeatureOptions.hookToFeature,
+        moduleId: analysisFeatureOptions.moduleId,
+      }
+    }))
+  }))
 
   const transformAstShare = (
     transformPhaseAverages.parse
@@ -702,6 +711,11 @@ async function main() {
     directBatch: {
       baseline: '-',
       native: formatMs(analysisOnlyDirectBatchNative),
+      speedup: '-',
+    },
+    directMultiBatch8: {
+      baseline: '-',
+      native: formatMs(analysisOnlyDirectMultiBatchNative),
       speedup: '-',
     },
   })
