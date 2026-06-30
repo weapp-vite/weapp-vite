@@ -384,6 +384,9 @@ export function removeImplicitPagePreloads(
     if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string') {
       continue
     }
+    if (!chunk.code.includes('require(')) {
+      continue
+    }
 
     const targetSet = new Set<string>()
 
@@ -431,19 +434,30 @@ export function removeImplicitPagePreloads(
 }
 
 export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
-  const chunkFileNames = new Set(
-    Object.values(bundle)
-      .filter((output): output is OutputChunk => output?.type === 'chunk')
-      .map(chunk => chunk.fileName),
-  )
-
+  const chunks: OutputChunk[] = []
+  let hasRequireCall = false
   for (const output of Object.values(bundle)) {
     if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
       continue
     }
+    chunks.push(output as OutputChunk)
+    if (output.code.includes('require(')) {
+      hasRequireCall = true
+    }
+  }
+  if (!chunks.length || !hasRequireCall) {
+    return
+  }
 
-    const chunk = output as OutputChunk
+  const chunkFileNames = new Set(chunks.map(chunk => chunk.fileName))
+
+  for (const chunk of chunks) {
+    if (!chunk.code.includes('require(')) {
+      continue
+    }
+
     const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
+    let importsChanged = false
 
     for (const match of chunk.code.matchAll(REQUIRE_CALL_RE)) {
       const specifier = stripQuotes(match[1])
@@ -456,10 +470,15 @@ export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
         continue
       }
 
+      if (!nextImports.has(resolved)) {
+        importsChanged = true
+      }
       nextImports.add(resolved)
     }
 
-    chunk.imports = [...nextImports]
+    if (importsChanged) {
+      chunk.imports = [...nextImports]
+    }
   }
 }
 
