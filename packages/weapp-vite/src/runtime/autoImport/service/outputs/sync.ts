@@ -39,6 +39,11 @@ const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
 const CAMEL_TO_KEBAB_RE = /([a-z0-9])([A-Z])/g
 const TRAILING_INDEX_SEGMENT_RE = /\/index$/
 
+interface LayoutSyncState {
+  layoutNames: string[]
+  layoutPropsMap: Map<string, ComponentPropMap>
+}
+
 async function getPreparedSyncState(options: CommonSyncOptions): Promise<PreparedSyncState> {
   const { outputsState } = options
   const currentVersion = options.getPreparedStateVersion()
@@ -72,61 +77,31 @@ function normalizeLocalNavigationSource(sourcePath: string) {
   return sourcePath.replace(TS_LIKE_EXT_RE, '')
 }
 
-async function collectLayoutNames(srcRoot: string) {
-  const layoutsRoot = path.join(srcRoot, 'layouts')
-  const names = new Set<string>()
-
-  async function walk(dir: string) {
-    let entries: string[]
-    try {
-      entries = await fs.readdir(dir)
-    }
-    catch {
-      return
-    }
-
-    for (const entry of entries) {
-      const full = path.join(dir, entry)
-      const stat = await fs.stat(full)
-      if (stat.isDirectory()) {
-        await walk(full)
-        continue
-      }
-
-      const ext = path.extname(full)
-      if (!VUE_LIKE_EXTENSIONS.includes(ext as '.vue' | '.tsx' | '.jsx') && ext !== '.wxml') {
-        continue
-      }
-
-      const base = ext === '.wxml' ? full.slice(0, -ext.length) : full
-      const relativePath = path.relative(layoutsRoot, base)
-      const withoutExt = ext === '.wxml'
-        ? relativePath
-        : relativePath.slice(0, -path.extname(relativePath).length)
-      const normalized = withoutExt.replaceAll('\\', '/').replace(TRAILING_INDEX_SEGMENT_RE, '')
-      if (!normalized) {
-        continue
-      }
-      const layoutName = normalized
-        .split('/')
-        .filter(Boolean)
-        .map(segment => segment.replace(CAMEL_TO_KEBAB_RE, '$1-$2').replaceAll('_', '-').toLowerCase())
-        .join('-')
-      if (layoutName) {
-        names.add(layoutName)
-      }
-    }
+function normalizeLayoutName(layoutsRoot: string, full: string, ext: string) {
+  const base = ext === '.wxml' ? full.slice(0, -ext.length) : full
+  const relativePath = path.relative(layoutsRoot, base)
+  const withoutExt = ext === '.wxml'
+    ? relativePath
+    : relativePath.slice(0, -path.extname(relativePath).length)
+  const normalized = withoutExt.replaceAll('\\', '/').replace(TRAILING_INDEX_SEGMENT_RE, '')
+  if (!normalized) {
+    return undefined
   }
+  const layoutName = normalized
+    .split('/')
+    .filter(Boolean)
+    .map(segment => segment.replace(CAMEL_TO_KEBAB_RE, '$1-$2').replaceAll('_', '-').toLowerCase())
+    .join('-')
 
-  await walk(layoutsRoot)
-  return [...names].sort((a, b) => a.localeCompare(b))
+  return layoutName || undefined
 }
 
-async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
+async function collectLayoutSyncState(ctx: MutableCompilerContext): Promise<LayoutSyncState> {
   const configService = requireConfigService(ctx, '收集 layout props 前必须初始化 configService。')
   const srcRoot = configService.absoluteSrcRoot
   const layoutsRoot = path.join(srcRoot, 'layouts')
-  const result = new Map<string, ComponentPropMap>()
+  const layoutNames = new Set<string>()
+  const layoutPropsMap = new Map<string, ComponentPropMap>()
 
   async function walk(dir: string) {
     let entries: string[]
@@ -151,22 +126,11 @@ async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
       }
 
       const base = ext === '.wxml' ? full.slice(0, -ext.length) : full
-      const relativePath = path.relative(layoutsRoot, base)
-      const withoutExt = ext === '.wxml'
-        ? relativePath
-        : relativePath.slice(0, -path.extname(relativePath).length)
-      const normalized = withoutExt.replaceAll('\\', '/').replace(TRAILING_INDEX_SEGMENT_RE, '')
-      if (!normalized) {
-        continue
-      }
-      const layoutName = normalized
-        .split('/')
-        .filter(Boolean)
-        .map(segment => segment.replace(CAMEL_TO_KEBAB_RE, '$1-$2').replaceAll('_', '-').toLowerCase())
-        .join('-')
+      const layoutName = normalizeLayoutName(layoutsRoot, full, ext)
       if (!layoutName) {
         continue
       }
+      layoutNames.add(layoutName)
 
       let propMap: ComponentPropMap = new Map()
       if (ext === '.wxml') {
@@ -210,12 +174,15 @@ async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
         }
       }
 
-      result.set(layoutName, propMap)
+      layoutPropsMap.set(layoutName, propMap)
     }
   }
 
   await walk(layoutsRoot)
-  return result
+  return {
+    layoutNames: [...layoutNames].sort((a, b) => a.localeCompare(b)),
+    layoutPropsMap,
+  }
 }
 
 export async function syncTypedComponentsDefinition(
@@ -293,8 +260,7 @@ export async function syncVueComponentsDefinition(
   const prepared = await getPreparedSyncState(options)
   const outputPath = settings.outputPath
 
-  const layoutNames = await collectLayoutNames(configService.absoluteSrcRoot)
-  const layoutPropsMap = await collectLayoutPropsMap(ctx)
+  const { layoutNames, layoutPropsMap } = await collectLayoutSyncState(ctx)
   const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(configService)
   const layoutTypesDefinition = createLayoutTypesDefinition(layoutNames, layoutPropsMap)
   const nextDefinition = createVueComponentsDefinition(prepared.componentNames, name => prepared.componentMetadataMap.get(name) ?? { types: new Map(), docs: new Map() }, {
