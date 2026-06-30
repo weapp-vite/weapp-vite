@@ -125,6 +125,22 @@ export function createSubPackageMatcher(subPackageRoots: string[]) {
   }
 }
 
+function createBundleChunkResolver(bundle: OutputBundle) {
+  const chunksByFileName = new Map<string, OutputChunk>()
+  for (const [fileName, output] of Object.entries(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+    const chunk = output as OutputChunk
+    chunksByFileName.set(fileName, chunk)
+    if (chunk.fileName) {
+      chunksByFileName.set(chunk.fileName, chunk)
+    }
+  }
+
+  return (fileName: string) => chunksByFileName.get(fileName)
+}
+
 async function emitCurrentStyleSidecarAsset(this: any, state: CorePluginState, bundle: OutputBundle) {
   if (!isCurrentStyleSidecarUpdate(state)) {
     return
@@ -473,6 +489,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         }
 
         const matchSubPackage = createSubPackageMatcher(subPackageRoots)
+        const resolveBundleChunk = createBundleChunkResolver(rolldownBundle)
 
         const resolveSharedChunkLabel = (sharedFileName: string, finalFileName: string) => {
           const prettifyModuleLabel = (label: string) => {
@@ -480,26 +497,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             const match = normalized.match(PRETTY_NODE_MODULES_RE)
             return match?.[1] || label
           }
-          const candidates: OutputChunk[] = []
-          const collect = (output?: OutputBundle[string]) => {
-            if (output?.type === 'chunk') {
-              candidates.push(output as OutputChunk)
-            }
-          }
-          collect(rolldownBundle[sharedFileName])
-          if (finalFileName !== sharedFileName) {
-            collect(rolldownBundle[finalFileName])
-          }
-          if (!candidates.length) {
-            const matched = Object.values(rolldownBundle).find(
-              (output): output is OutputChunk => output?.type === 'chunk'
-                && (((output as OutputChunk).fileName ?? '') === finalFileName || ((output as OutputChunk).fileName ?? '') === sharedFileName),
-            )
-            if (matched) {
-              candidates.push(matched)
-            }
-          }
-          const chunk = candidates[0]
+          const chunk = resolveBundleChunk(sharedFileName) ?? resolveBundleChunk(finalFileName)
           if (!chunk) {
             return finalFileName
           }

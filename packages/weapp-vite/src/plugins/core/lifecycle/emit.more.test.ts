@@ -1641,7 +1641,9 @@ describe('core lifecycle emit hook extra branches', () => {
         code: 'module.exports = 2',
         imports: [],
         dynamicImports: [],
-        modules: {},
+        modules: {
+          '/project/node_modules/.pnpm/pkg-b@1.0.0/node_modules/pkg-b/index.js': {},
+        },
       },
     } as any
 
@@ -1651,7 +1653,7 @@ describe('core lifecycle emit hook extra branches', () => {
       loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/ghost-common.js')),
     ).toBe(true)
     expect(
-      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/scanned-common.js')),
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-b/index.js')),
     ).toBe(true)
   })
 
