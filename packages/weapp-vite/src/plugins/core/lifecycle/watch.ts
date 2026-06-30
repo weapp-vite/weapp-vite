@@ -3,7 +3,6 @@ import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
@@ -11,7 +10,7 @@ import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
-import { findJsEntry, isTemplate } from '../../../utils/file'
+import { findJsEntry } from '../../../utils/file'
 import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../utils/file/vueSfcSignature'
 import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -19,16 +18,52 @@ import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { collectAffectedScriptsAndImporters, extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
-import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
+import { configSuffixes, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks, collectAffectedSharedChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 
-const configSuffixes = configExtensions.map(ext => `.${ext}`)
-const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
+
+interface WatchPathKind {
+  configSuffix?: string
+  extension: string
+  isHtmlTemplate: boolean
+  isScriptModuleSidecar: boolean
+  isStyle: boolean
+  isTemplate: boolean
+}
+
+function resolveWatchPathKind(normalizedId: string): WatchPathKind {
+  const extension = path.extname(normalizedId)
+  let configSuffix: string | undefined
+  let isScriptModuleSidecar = false
+
+  for (const suffix of configSuffixes) {
+    if (normalizedId.endsWith(suffix)) {
+      configSuffix = suffix
+      break
+    }
+  }
+
+  for (const suffix of watchedScriptModuleExts) {
+    if (normalizedId.endsWith(suffix)) {
+      isScriptModuleSidecar = true
+      break
+    }
+  }
+
+  return {
+    configSuffix,
+    extension,
+    isHtmlTemplate: normalizedId.endsWith('.html'),
+    isScriptModuleSidecar,
+    isStyle: watchedCssExts.has(extension),
+    isTemplate: watchedTemplateExts.has(extension),
+  }
+}
 
 function isOutputFileChange(state: CorePluginState, normalizedId: string) {
   const outDir = state.ctx.configService?.outDir
@@ -286,8 +321,9 @@ async function processChangedFile(
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
-  const isTemplateSidecar = Boolean(path.extname(normalizedId) && watchedTemplateExts.has(path.extname(normalizedId)))
-  const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedId.endsWith(suffix))
+  const pathKind = resolveWatchPathKind(normalizedId)
+  const isTemplateSidecar = Boolean(pathKind.extension && pathKind.isTemplate)
+  const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
     : normalizedId
@@ -471,20 +507,15 @@ async function processChangedFile(
   }
 
   invalidateFileCache(normalizedId)
-  const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
-  const isTemplateFile = isTemplate(normalizedId)
-  const isHtmlTemplateFile = normalizedId.endsWith('.html')
   const isSidecarCreate = event === 'create'
-    && (isStyleFile || isTemplateFile || isHtmlTemplateFile || isScriptModuleSidecar)
+    && (pathKind.isStyle || pathKind.isTemplate || pathKind.isHtmlTemplate || isScriptModuleSidecar)
   const shouldHandleUpdateLikeSidecar = event === 'update' || isSidecarCreate
   if (shouldHandleUpdateLikeSidecar) {
-    const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
-
-    if (isStyleFile) {
+    if (pathKind.isStyle) {
       await extractCssImportDependencies(ctx, normalizedId)
     }
 
-    if (isTemplateFile) {
+    if (pathKind.isTemplate) {
       const wxmlService = ctx.wxmlService
       if (wxmlService) {
         await wxmlService.scan(normalizedId)
@@ -495,22 +526,19 @@ async function processChangedFile(
       await addWxmlImporterEntries(normalizedId)
     }
 
-    if (isTemplateFile || configSuffix || isStyleFile || isHtmlTemplateFile) {
-      const basePath = configSuffix
-        ? normalizedId.slice(0, -configSuffix.length)
-        : (() => {
-            const ext = path.extname(normalizedId)
-            return ext ? normalizedId.slice(0, -ext.length) : normalizedId
-          })()
+    if (pathKind.isTemplate || pathKind.configSuffix || pathKind.isStyle || pathKind.isHtmlTemplate) {
+      const basePath = pathKind.configSuffix
+        ? normalizedId.slice(0, -pathKind.configSuffix.length)
+        : pathKind.extension ? normalizedId.slice(0, -pathKind.extension.length) : normalizedId
       const primaryScript = await findJsEntry(basePath)
       if (primaryScript.path) {
-        markScriptDirty(primaryScript.path, configSuffix ? 'json-sidecar' : isStyleFile ? 'style-sidecar' : 'sidecar-direct')
+        markScriptDirty(primaryScript.path, pathKind.configSuffix ? 'json-sidecar' : pathKind.isStyle ? 'style-sidecar' : 'sidecar-direct')
         handledSidecarMetadataUpdate = true
       }
-      else if (configSuffix && markAppEntryForJsonEmit()) {
+      else if (pathKind.configSuffix && markAppEntryForJsonEmit()) {
         handledSidecarMetadataUpdate = true
       }
-      else if (isStyleFile) {
+      else if (pathKind.isStyle) {
         const affectedCount = await addCssImporterEntries(normalizedId)
         if (affectedCount === 0 && resolvedEntryMap.size) {
           for (const entryId of resolvedEntryMap.keys()) {
