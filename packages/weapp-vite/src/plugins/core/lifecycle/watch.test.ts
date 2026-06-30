@@ -307,7 +307,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
   })
 
-  it('marks css importers direct dirty when imported style dependencies change', async () => {
+  it('marks css importers dirty without forcing vue recompilation when imported style dependencies change', async () => {
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
@@ -333,7 +333,7 @@ describe('core lifecycle watch hook', () => {
       .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
-    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set())
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })

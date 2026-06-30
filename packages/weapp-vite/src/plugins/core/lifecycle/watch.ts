@@ -276,7 +276,7 @@ async function processChangedFile(
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
-    if (entryId.endsWith('.vue') && reason !== 'dependency') {
+    if (entryId.endsWith('.vue') && reason !== 'dependency' && cause !== 'css-importer') {
       const hmr = ctx.runtimeState.build.hmr
       hmr.dirtyVueEntryIds ??= new Set<string>()
       hmr.dirtyVueEntryIds.add(entryId)

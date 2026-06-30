@@ -2,7 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import { supportedCssLangs } from '../../../constants'
+import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { changeFileExtension } from '../../../utils'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -96,6 +96,18 @@ function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
   )
 }
 
+function isVueEntryId(entryId: string) {
+  return vueExtensions.some(ext => entryId.endsWith(`.${ext}`))
+}
+
+function resolveCssImporterRepresentative(
+  pending: Set<string>,
+  resolvedEntryMap: Map<string, ResolvedId>,
+) {
+  const candidates = [...pending].filter(entryId => resolvedEntryMap.has(entryId))
+  return candidates.find(entryId => !isVueEntryId(entryId)) ?? candidates[0]
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
@@ -125,7 +137,7 @@ function resolvePendingEntryIds(options: {
   }
 
   if (isCssImporterOnlyRefresh(options.dirtyReasonSummary) && pending.size > 1) {
-    const representative = [...pending].find(entryId => options.resolvedEntryMap.has(entryId))
+    const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap)
     if (representative) {
       pendingReasonSummary.push(`css-importer-representative:1/${pending.size}`)
       return {

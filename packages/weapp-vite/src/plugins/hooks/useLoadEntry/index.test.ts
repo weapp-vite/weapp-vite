@@ -1048,6 +1048,48 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
+  it('prefers native entries as css importer representatives when vue entries are dirty first', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['css-importer:3'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const ids = [
+      '/project/src/pages/sfc/index.vue',
+      '/project/src/pages/native/index.ts',
+      '/project/src/components/probe-card/index.ts',
+    ]
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: ids[1],
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
+      'css-importer-representative:1/3',
+    ])
+  })
+
   it('keeps css importer only updates representative even when shared chunk indexes match', async () => {
     const ctx = createContext()
     const setLastEmittedEntries = vi.fn()
