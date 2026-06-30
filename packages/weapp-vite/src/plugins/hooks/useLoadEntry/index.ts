@@ -31,6 +31,7 @@ interface HmrOptions {
 
 interface PendingEntryResolution {
   pending: Set<string>
+  hmrEntries?: Set<string>
   sharedChunkResolveMs?: number
   pendingReasonSummary?: string[]
   shouldEmitAllEntries?: boolean
@@ -77,6 +78,13 @@ function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
 
 function isEntryAutoRoutesRefresh(dirtyReasonSummary?: string[]) {
   return dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')) === true
+}
+
+function isSharedChunkSourceOnlyRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.every(item => item.startsWith('shared-chunk-source:')),
+  )
 }
 
 function resolvePendingEntryIds(options: {
@@ -160,6 +168,7 @@ function resolvePendingEntryIds(options: {
   const expandedImporters = new Set<string>()
   let expansionMode: DirtyEntryReason | 'mixed' | null = null
   let hasStableSharedChunkExpansion = false
+  const representativeImporters = new Set<string>()
   for (const chunkId of relatedChunkIds) {
     const importers = options.sharedChunkImporters.get(chunkId)
     if (!importers) {
@@ -184,6 +193,13 @@ function resolvePendingEntryIds(options: {
     }
     if (shouldExpandStableSharedChunk(chunkId, importers)) {
       hasStableSharedChunkExpansion = true
+    }
+    if (isSharedChunkSourceOnlyRefresh(options.dirtyReasonSummary)) {
+      const representative = [...importers].find(entryId => pending.has(entryId))
+        ?? [...importers].find(entryId => options.resolvedEntryMap.has(entryId))
+      if (representative) {
+        representativeImporters.add(representative)
+      }
     }
     if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -217,6 +233,22 @@ function resolvePendingEntryIds(options: {
     const overflow = relatedChunkIds.size > 2 ? '+' : ''
     const mode = expansionMode ? `:${expansionMode}` : ''
     pendingReasonSummary.push(`shared-chunk(${chunkPreview}${overflow})+${expandedImporters.size}${mode}`)
+  }
+
+  if (representativeImporters.size && representativeImporters.size < pending.size) {
+    const hmrEntries = new Set(pending)
+    const representativePending = new Set(
+      [...representativeImporters].filter(entryId => pending.has(entryId)),
+    )
+    if (representativePending.size) {
+      pendingReasonSummary.push(`shared-chunk-representative:${representativePending.size}/${hmrEntries.size}`)
+      return {
+        pending: representativePending,
+        hmrEntries,
+        sharedChunkResolveMs: performance.now() - startedAt,
+        pendingReasonSummary,
+      }
+    }
   }
 
   return {
@@ -460,9 +492,13 @@ export function useLoadEntry(
           lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
         }
       }
-      const hmrEntryIds = shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
-        ? pendingMetadataEntryIds
-        : new Set(actualEmittedEntryIds)
+      let hmrEntryIds = new Set(actualEmittedEntryIds)
+      if (pendingResolution.hmrEntries) {
+        hmrEntryIds = pendingResolution.hmrEntries
+      }
+      if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+        hmrEntryIds = pendingMetadataEntryIds
+      }
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
       const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (
         actualEmittedEntryIds.size === resolvedEntryMap.size
