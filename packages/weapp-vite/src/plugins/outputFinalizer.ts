@@ -34,6 +34,33 @@ const TEMPLATE_STATIC_REWRITE_MARKERS = [
 ] as const
 const TEMPLATE_DIRECTIVE_PREFIXES = getSupportedMiniProgramDirectivePrefixes()
 type EmitAsset = (asset: EmittedAsset) => void
+interface OutputAssetEntry {
+  bundleFileName: string
+  output: Extract<OutputBundle[string], { type: 'asset' }>
+}
+
+function collectOutputFinalizerAssetEntries(bundle: OutputBundle) {
+  const preprocessorStyleAssets: OutputAssetEntry[] = []
+  const templateAssets: OutputAssetEntry[] = []
+
+  for (const [bundleFileName, output] of Object.entries(bundle)) {
+    if (output?.type !== 'asset') {
+      continue
+    }
+    const fileName = output.fileName || bundleFileName
+    if (PREPROCESSOR_STYLE_ASSET_RE.test(fileName)) {
+      preprocessorStyleAssets.push({ bundleFileName, output })
+    }
+    if (TEMPLATE_ASSET_RE.test(fileName)) {
+      templateAssets.push({ bundleFileName, output })
+    }
+  }
+
+  return {
+    preprocessorStyleAssets,
+    templateAssets,
+  }
+}
 
 function outputSourceToString(output: OutputBundle[string]) {
   if (output.type === 'chunk') {
@@ -74,8 +101,9 @@ export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform
   return TEMPLATE_STATIC_REWRITE_MARKERS.some(marker => lowerCode.includes(marker))
 }
 
-export function normalizePreprocessorStyleAssets(
+function normalizePreprocessorStyleAssetEntries(
   bundle: OutputBundle,
+  entries: OutputAssetEntry[],
   styleExtension: string | undefined,
   emitAsset: EmitAsset,
 ) {
@@ -83,15 +111,8 @@ export function normalizePreprocessorStyleAssets(
     return
   }
 
-  for (const [bundleFileName, output] of Object.entries(bundle)) {
-    if (output?.type !== 'asset') {
-      continue
-    }
+  for (const { bundleFileName, output } of entries) {
     const fileName = output.fileName || bundleFileName
-    if (!PREPROCESSOR_STYLE_ASSET_RE.test(fileName)) {
-      continue
-    }
-
     const outputFileName = changeFileExtension(fileName, styleExtension)
     if (!outputFileName || outputFileName === fileName) {
       continue
@@ -121,16 +142,29 @@ export function normalizePreprocessorStyleAssets(
   }
 }
 
-export function normalizeTemplateAssets(
-  ctx: CompilerContext,
+export function normalizePreprocessorStyleAssets(
   bundle: OutputBundle,
+  styleExtension: string | undefined,
+  emitAsset: EmitAsset,
+) {
+  if (!styleExtension) {
+    return
+  }
+
+  normalizePreprocessorStyleAssetEntries(
+    bundle,
+    collectOutputFinalizerAssetEntries(bundle).preprocessorStyleAssets,
+    styleExtension,
+    emitAsset,
+  )
+}
+
+function normalizeTemplateAssetEntries(
+  ctx: CompilerContext,
+  entries: OutputAssetEntry[],
 ) {
   const { configService } = ctx
-  for (const output of Object.values(bundle)) {
-    if (output?.type !== 'asset' || !TEMPLATE_ASSET_RE.test(output.fileName)) {
-      continue
-    }
-
+  for (const { output } of entries) {
     const source = output.source
     const code = typeof source === 'string'
       ? source
@@ -155,6 +189,13 @@ export function normalizeTemplateAssets(
       output.source = result.code
     }
   }
+}
+
+export function normalizeTemplateAssets(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+) {
+  normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
 }
 
 export function pruneUneventedDevHmrChunks(
@@ -254,15 +295,18 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
     generateBundle(_options, bundle) {
+      const outputBundle = bundle as unknown as OutputBundle
       rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
       stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
-      normalizePreprocessorStyleAssets(
-        bundle as unknown as OutputBundle,
+      const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
+      normalizePreprocessorStyleAssetEntries(
+        outputBundle,
+        assetEntries.preprocessorStyleAssets,
         ctx.configService.outputExtensions?.wxss,
         asset => this.emitFile(asset),
       )
-      normalizeTemplateAssets(ctx, bundle as unknown as OutputBundle)
-      pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions, {
+      normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets)
+      pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
         runtimeRewriteDone: true,
       })
     },
