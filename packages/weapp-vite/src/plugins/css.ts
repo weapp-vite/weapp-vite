@@ -35,6 +35,14 @@ interface PreparedStyleAsset {
   processedCss: string
 }
 
+interface BundleStyleAnalysis {
+  ownersByCssAsset: Map<string, Set<string>>
+  styleAssets: Array<{
+    bundleKey: string
+    asset: OutputAsset
+  }>
+}
+
 type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
@@ -244,9 +252,22 @@ function injectSharedStyleImportsCached(
   return prependSharedStyleImports(css, missingStatements)
 }
 
-function collectCssAssetOwners(bundle: OutputBundle) {
+function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
   const ownersByCssAsset = new Map<string, Set<string>>()
-  for (const output of Object.values(bundle)) {
+  const styleAssets: BundleStyleAnalysis['styleAssets'] = []
+  for (const [bundleKey, output] of Object.entries(bundle)) {
+    if (output.type === 'asset') {
+      const fileName = output.fileName || bundleKey
+      if (
+        fileName.endsWith('.css')
+        || fileName.endsWith('.wxss')
+        || isSourceStyleAsset(fileName)
+      ) {
+        styleAssets.push({ bundleKey, asset: output })
+      }
+      continue
+    }
+
     if (output.type !== 'chunk' || !output.facadeModuleId) {
       continue
     }
@@ -260,7 +281,10 @@ function collectCssAssetOwners(bundle: OutputBundle) {
       ownersByCssAsset.set(cssAsset, owners)
     }
   }
-  return ownersByCssAsset
+  return {
+    ownersByCssAsset,
+    styleAssets,
+  }
 }
 
 export async function emitStyleSidecarAsset(
@@ -624,11 +648,17 @@ async function generateBundleSharedCss(
   resolvedConfig?: ResolvedConfig,
 ) {
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
-  const cssAssetOwners = collectCssAssetOwners(bundle)
+  const {
+    ownersByCssAsset,
+    styleAssets,
+  } = analyzeBundleStyles(bundle)
+  if (!sharedStyles.size && !styleAssets.length) {
+    return
+  }
   const emitted = new Set<string>()
   const sharedStyleImportCache: SharedStyleImportCache = new Map()
-  const tasks = Object.entries(bundle).map(([bundleKey, asset]) => {
-    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, cssAssetOwners, emitted, sharedStyleImportCache, resolvedConfig)
+  const tasks = styleAssets.map(({ bundleKey, asset }) => {
+    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, ownersByCssAsset, emitted, sharedStyleImportCache, resolvedConfig)
   })
 
   await Promise.all(tasks)
