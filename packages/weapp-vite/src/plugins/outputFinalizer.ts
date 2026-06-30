@@ -130,6 +130,9 @@ export function pruneUnchangedDevHmrOutputs(
   ctx: CompilerContext,
   bundle: OutputBundle,
   rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
+  options?: {
+    runtimeRewriteDone?: boolean
+  },
 ) {
   const cache = ctx.runtimeState?.build?.output?.emittedSource
   if (!ctx.configService?.isDev || !cache) {
@@ -138,8 +141,10 @@ export function pruneUnchangedDevHmrOutputs(
 
   const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-  rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
-  stabilizeWevuRuntimeChunkAccess(bundle)
+  if (!options?.runtimeRewriteDone) {
+    rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
+    stabilizeWevuRuntimeChunkAccess(bundle)
+  }
   pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
     const source = outputSourceToString(output)
@@ -192,7 +197,9 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
         asset => this.emitFile(asset),
       )
       normalizeTemplateAssets(ctx, bundle as unknown as OutputBundle)
-      pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
+      pruneUnchangedDevHmrOutputs(ctx, bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions, {
+        runtimeRewriteDone: true,
+      })
     },
   }
 }

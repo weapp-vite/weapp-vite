@@ -283,6 +283,55 @@ describe('weapp-vite output finalizer', () => {
     expect((hmrBundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
   })
 
+  it('prunes unchanged dev hmr outputs after the plugin runtime rewrite pass only once', () => {
+    const emittedSource = new Map<string, string>()
+    const plugin = createOutputFinalizerPlugin({
+      configService: {
+        isDev: true,
+        outputExtensions: {
+          wxss: 'wxss',
+        },
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any)
+    const bundle = {
+      'app.js': {
+        type: 'asset',
+        fileName: 'app.js',
+        source: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";setWevuDefaults({});createApp({ hmr: true });',
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as unknown as OutputBundle
+
+    plugin.generateBundle?.call({
+      emitFile: createBundleAssetEmitter(bundle),
+    } as any, {} as any, bundle, false)
+
+    const finalSource = (bundle['app.js'] as any).source
+    expect(finalSource).toContain('require("./weapp-vendors/wevu-watch.js")')
+    expect(finalSource).not.toContain('wevu/internal-runtime')
+    expect(emittedSource.get('app.js')).toBe(finalSource)
+  })
+
   it('drops unchanged outputs during dev hmr writes', () => {
     const emittedSource = new Map([
       ['app.js', 'App({})'],
