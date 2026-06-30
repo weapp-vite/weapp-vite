@@ -452,28 +452,22 @@ export function removeImplicitPagePreloads(
 }
 
 export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
-  const chunks: OutputChunk[] = []
-  let hasRequireCall = false
+  const requireChunks: OutputChunk[] = []
+  const chunkFileNames = new Set<string>()
   for (const output of Object.values(bundle)) {
     if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
       continue
     }
-    chunks.push(output as OutputChunk)
+    chunkFileNames.add(output.fileName)
     if (output.code.includes('require(')) {
-      hasRequireCall = true
+      requireChunks.push(output as OutputChunk)
     }
   }
-  if (!chunks.length || !hasRequireCall) {
+  if (!requireChunks.length) {
     return
   }
 
-  const chunkFileNames = new Set(chunks.map(chunk => chunk.fileName))
-
-  for (const chunk of chunks) {
-    if (!chunk.code.includes('require(')) {
-      continue
-    }
-
+  for (const chunk of requireChunks) {
     const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
     let importsChanged = false
 

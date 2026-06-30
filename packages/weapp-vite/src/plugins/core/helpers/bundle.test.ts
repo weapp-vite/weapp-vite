@@ -79,6 +79,28 @@ describe('core helper bundle', () => {
     ])
   })
 
+  it('keeps require-free chunks addressable while only scanning require chunks', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'const shared = require("../../common.js")',
+        imports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'export const value = 1',
+        imports: [],
+      },
+    } as any
+
+    syncChunkImportsFromRequireCalls(bundle)
+
+    expect(bundle['pages/index/index.js'].imports).toEqual(['common.js'])
+    expect(bundle['common.js'].imports).toEqual([])
+  })
+
   it('skips implicit page preload scanning when bundle has no require calls', () => {
     const bundle = {
       'pages/index/index.js': {
