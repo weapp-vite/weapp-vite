@@ -315,6 +315,29 @@ export function collectAssetModuleSourcePaths(moduleIds: Iterable<string>) {
   return sources
 }
 
+export function resolvePendingAssetFiles(
+  files: string[] | undefined,
+  bundle: OutputBundle,
+  getModuleIds: () => Iterable<string>,
+) {
+  if (!files?.length) {
+    return []
+  }
+
+  const bundledSources = collectBundledAssetSourcePaths(bundle)
+  const pendingAfterBundle = files.filter((file) => {
+    return !bundledSources.has(normalizePath(file))
+  })
+  if (!pendingAfterBundle.length) {
+    return []
+  }
+
+  const moduleSources = collectAssetModuleSourcePaths(getModuleIds())
+  return pendingAfterBundle.filter((file) => {
+    return !moduleSources.has(normalizePath(file))
+  })
+}
+
 function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig, buildTarget: BuildTarget) {
   const weappViteConfig = configService.weappViteConfig
   const include = normalizeCopyGlobs(weappViteConfig?.copy?.include)
@@ -439,12 +462,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
     async generateBundle(_options, bundle) {
       patchScopedSlotHostAssetsInBundle(ctx, this, bundle as Record<string, any>)
       const files = await state.pendingAssets
-      const bundledSources = collectBundledAssetSourcePaths(bundle as OutputBundle)
-      const moduleSources = collectAssetModuleSourcePaths(this.getModuleIds())
-      const pending = (files ?? []).filter((file) => {
-        const normalizedFile = normalizePath(file)
-        return !bundledSources.has(normalizedFile) && !moduleSources.has(normalizedFile)
-      })
+      const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
       await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
     },
   }
