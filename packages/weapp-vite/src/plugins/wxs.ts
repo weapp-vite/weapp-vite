@@ -22,6 +22,37 @@ const WXS_FILE_SUFFIX_RE = /\.(?:wxs|sjs)(\.[jt]s)?$/
 interface WxsPluginState {
   ctx: CompilerContext
   wxsMap: Map<string, { emittedFile: EmittedFile }>
+  wxsFileCache: Map<string, WxsFileCacheEntry>
+}
+
+interface WxsFileCacheEntry {
+  mtimeMs: number
+  size: number
+  emittedFile: EmittedFile
+  importees: string[]
+}
+
+async function statWxsFile(wxsPath: string) {
+  try {
+    return await fs.stat(wxsPath)
+  }
+  catch {
+    return undefined
+  }
+}
+
+function resolveWxsOutputFileName(
+  ctx: CompilerContext,
+  wxsPath: string,
+  scriptModuleExtension: string | undefined,
+) {
+  const suffixMatch = wxsPath.match(WXS_FILE_SUFFIX_RE)
+  const isRaw = suffixMatch ? !suffixMatch[1] : true
+  return resolveRelativeOutputFileNameWithExtension(
+    ctx.configService,
+    isRaw ? wxsPath : removeExtension(wxsPath),
+    scriptModuleExtension ?? 'wxs',
+  )
 }
 
 async function transformWxsFile(
@@ -34,18 +65,28 @@ async function transformWxsFile(
   const { scriptModuleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
 
   this.addWatchFile(normalizeWatchPath(wxsPath))
-  if (!(await fs.pathExists(wxsPath))) {
+  const stat = await statWxsFile(wxsPath)
+  if (!stat) {
+    state.wxsFileCache.delete(wxsPath)
     return
   }
 
-  const suffixMatch = wxsPath.match(WXS_FILE_SUFFIX_RE)
-  let isRaw = true
-  if (suffixMatch) {
-    isRaw = !suffixMatch[1]
+  const cached = state.wxsFileCache.get(wxsPath)
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    state.wxsMap.set(wxsPath, {
+      emittedFile: cached.emittedFile,
+    })
+    await Promise.all(
+      cached.importees.map((importee) => {
+        return transformWxsFile.call(this, state, importee)
+      }),
+    )
+    return
   }
 
   const rawCode = await fs.readFile(wxsPath, 'utf8')
   let code = wxsCodeCache.get(rawCode)
+  let importeePaths: string[] = []
 
   if (code === undefined) {
     const { result, importees } = transformWxsCode(rawCode, {
@@ -58,12 +99,13 @@ async function transformWxsFile(
     }
 
     const dirname = path.dirname(wxsPath)
+    importeePaths = importees.map(({ source }) => path.resolve(dirname, source))
     await Promise.all(
-      importees.map(({ source }) => {
+      importeePaths.map((importeePath) => {
         return transformWxsFile.call(
           this,
           state,
-          path.resolve(dirname, source),
+          importeePath,
         )
       }),
     )
@@ -73,17 +115,20 @@ async function transformWxsFile(
     return
   }
 
-  const outputFileName = resolveRelativeOutputFileNameWithExtension(
-    configService,
-    isRaw ? wxsPath : removeExtension(wxsPath),
-    scriptModuleExtension ?? 'wxs',
-  )
+  const outputFileName = resolveWxsOutputFileName(ctx, wxsPath, scriptModuleExtension)
+  const emittedFile: EmittedFile = {
+    type: 'asset',
+    fileName: outputFileName,
+    source: code,
+  }
   state.wxsMap.set(wxsPath, {
-    emittedFile: {
-      type: 'asset',
-      fileName: outputFileName,
-      source: code,
-    },
+    emittedFile,
+  })
+  state.wxsFileCache.set(wxsPath, {
+    mtimeMs: stat.mtimeMs,
+    size: stat.size,
+    emittedFile,
+    importees: importeePaths,
   })
 
   wxsCodeCache.set(rawCode, code)
@@ -181,6 +226,7 @@ export function wxs(ctx: CompilerContext): Plugin[] {
   const state: WxsPluginState = {
     ctx,
     wxsMap: new Map(),
+    wxsFileCache: new Map(),
   }
 
   return [createWxsPlugin(state)]

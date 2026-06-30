@@ -8,6 +8,7 @@ import { wxs } from './wxs'
 const tempDirs: string[] = []
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all(tempDirs.map(dir => fs.remove(dir)))
   tempDirs.length = 0
 })
@@ -207,5 +208,84 @@ describe('wxs plugin', () => {
     expect(emitted.fileName).toBe('components/pay-card/helper.sjs')
     expect(typeof emitted.source).toBe('string')
     expect(emitted.source.length).toBeGreaterThan(0)
+  })
+
+  it('reuses unchanged wxs file transforms across generateBundle passes', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-cache-'))
+    tempDirs.push(tempDir)
+
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/cache-card')
+    await fs.ensureDir(componentDir)
+
+    const vueFile = path.join(componentDir, 'index.vue')
+    const wxsFile = path.join(componentDir, 'tools.wxs')
+    await fs.writeFile(vueFile, '<template><view /></template>', 'utf8')
+    await fs.writeFile(wxsFile, 'module.exports = { noop: function() {} }', 'utf8')
+
+    const tokenMap = new Map([
+      [
+        vueFile,
+        {
+          deps: [
+            {
+              name: 'src',
+              value: './tools.wxs',
+              quote: '"',
+              tagName: 'wxs',
+              start: 0,
+              end: 0,
+              attrs: {
+                src: './tools.wxs',
+              },
+            },
+          ],
+        },
+      ],
+    ])
+
+    const plugin = wxs({
+      configService: {
+        absoluteSrcRoot: srcRoot,
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+        relativeOutputPath(filePath: string) {
+          return path.relative(srcRoot, filePath).replace(/\\/g, '/')
+        },
+      },
+      wxmlService: {
+        tokenMap,
+      },
+    } as any)[0]
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+    const readFileSpy = vi.spyOn(fs, 'readFile')
+
+    plugin.buildStart?.call({} as any)
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+
+    const wxsReadCount = readFileSpy.mock.calls.filter(([filePath]) => filePath === wxsFile).length
+    expect(wxsReadCount).toBe(1)
+    expect(emitFile).toHaveBeenCalledTimes(2)
+    expect(emitFile.mock.calls[1][0].fileName).toBe('components/cache-card/tools.wxs')
   })
 })
