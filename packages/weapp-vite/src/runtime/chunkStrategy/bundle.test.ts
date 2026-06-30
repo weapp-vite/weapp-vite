@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { describe, expect, it, vi } from 'vitest'
-import { ensureUniqueFileName, findChunkImporters, updateImporters } from './bundle'
+import { createChunkImporterIndex, ensureUniqueFileName, findChunkImporters, updateImporters } from './bundle'
 
 function createChunk(fileName: string, overrides: Partial<OutputChunk> = {}): OutputChunk {
   return {
@@ -67,6 +67,34 @@ describe('chunkStrategy bundle', () => {
       'pages/meta-set.js',
       'pages/meta-map.js',
       'pages/meta-by-url.js',
+      'pages/code.js',
+    ]))
+  })
+
+  it('reuses a chunk importer index across multiple importer lookups', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/a.js', 'chunks/b.js'],
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        dynamicImports: ['chunks/b.js'],
+        viteMetadata: {
+          importedScriptsByUrl: new Set(['chunks/c.js']),
+        } as any,
+      } as any),
+      'pages/code.js': createChunk('pages/code.js', {
+        code: `import "../chunks/c.js";`,
+      }),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    expect(new Set(findChunkImporters(bundle, 'chunks/a.js', index))).toEqual(new Set(['pages/home.js']))
+    expect(new Set(findChunkImporters(bundle, 'chunks/b.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+    expect(new Set(findChunkImporters(bundle, 'chunks/c.js', index))).toEqual(new Set([
+      'pages/admin.js',
       'pages/code.js',
     ]))
   })
@@ -184,7 +212,6 @@ describe('chunkStrategy bundle', () => {
     vi.doMock('./utils', () => ({
       containsImportSpecifier: () => true,
       createRelativeImport: () => '',
-      hasInCollection: () => false,
       replaceAll: (source: string) => source,
     }))
 

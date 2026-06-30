@@ -1,36 +1,158 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { posix as path } from 'pathe'
-import { containsImportSpecifier, createRelativeImport, hasInCollection, replaceAll } from './utils'
+import { containsImportSpecifier, createRelativeImport, replaceAll } from './utils'
 
-export function findChunkImporters(bundle: OutputBundle, target: string) {
-  const importers = new Set<string>()
+export interface ChunkImporterIndex {
+  directImporters: Map<string, Set<string>>
+  chunks: Map<string, OutputChunk>
+}
 
-  for (const [fileName, output] of Object.entries(bundle)) {
-    if (fileName === target) {
-      continue
+function addDirectImporter(
+  directImporters: Map<string, Set<string>>,
+  imported: unknown,
+  importer: string,
+) {
+  if (typeof imported !== 'string' || !imported || imported === importer) {
+    return
+  }
+  let importers = directImporters.get(imported)
+  if (!importers) {
+    importers = new Set<string>()
+    directImporters.set(imported, importers)
+  }
+  importers.add(importer)
+}
+
+function addCollectionImporters(
+  directImporters: Map<string, Set<string>>,
+  collection: unknown,
+  importer: string,
+) {
+  if (collection instanceof Set) {
+    for (const imported of collection) {
+      addDirectImporter(directImporters, imported, importer)
     }
+    return
+  }
+  if (Array.isArray(collection)) {
+    for (const imported of collection) {
+      addDirectImporter(directImporters, imported, importer)
+    }
+    return
+  }
+  if (collection instanceof Map) {
+    for (const imported of collection.keys()) {
+      addDirectImporter(directImporters, imported, importer)
+    }
+  }
+}
+
+function replaceInArray(
+  list: string[] | undefined,
+  searchValue: string,
+  replaceValue: string,
+  shouldInsert?: boolean,
+) {
+  const values = Array.isArray(list) ? [...list] : []
+  let replaced = false
+  for (let index = 0; index < values.length; index++) {
+    const current = values[index]
+    if (current === searchValue) {
+      values[index] = replaceValue
+      replaced = true
+    }
+  }
+  if ((replaced || shouldInsert) && replaceValue && !values.includes(replaceValue)) {
+    values.push(replaceValue)
+  }
+  return values
+}
+
+function updateViteMetadata(
+  importerChunk: OutputChunk,
+  originalFileName: string,
+  newChunkFile: string,
+  shouldInsert: boolean,
+) {
+  const metadata = (importerChunk as any).viteMetadata
+  if (!metadata || typeof metadata !== 'object') {
+    return
+  }
+
+  const candidateKeys = ['importedChunks', 'importedScripts'] as const
+  for (const key of candidateKeys) {
+    const collection = metadata[key]
+    if (collection instanceof Set) {
+      const hadOriginal = collection.delete(originalFileName)
+      if (hadOriginal || shouldInsert) {
+        collection.add(newChunkFile)
+      }
+    }
+    else if (Array.isArray(collection)) {
+      metadata[key] = replaceInArray(collection, originalFileName, newChunkFile, shouldInsert)
+    }
+    else if (collection instanceof Map) {
+      if (collection.has(originalFileName)) {
+        const originalValue = collection.get(originalFileName)
+        collection.delete(originalFileName)
+        collection.set(newChunkFile, originalValue)
+      }
+    }
+  }
+}
+
+export function createChunkImporterIndex(bundle: OutputBundle): ChunkImporterIndex {
+  const directImporters = new Map<string, Set<string>>()
+  const chunks = new Map<string, OutputChunk>()
+  const addImporter = (target: string | undefined, importer: string) => {
+    if (!target || target === importer) {
+      return
+    }
+    let importers = directImporters.get(target)
+    if (!importers) {
+      importers = new Set<string>()
+      directImporters.set(target, importers)
+    }
+    importers.add(importer)
+  }
+  for (const [fileName, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    if (chunk.imports.includes(target) || chunk.dynamicImports.includes(target)) {
-      importers.add(fileName)
-      continue
+    chunks.set(fileName, chunk)
+    for (const imported of chunk.imports ?? []) {
+      addImporter(imported, fileName)
+    }
+    for (const imported of chunk.dynamicImports ?? []) {
+      addImporter(imported, fileName)
     }
 
     const metadata = (chunk as any).viteMetadata
     if (metadata) {
-      const importedChunks = metadata.importedChunks
-      if (hasInCollection(importedChunks, target)) {
-        importers.add(fileName)
-        continue
-      }
-      const importedScripts = metadata.importedScripts ?? metadata.importedScriptsByUrl
-      if (hasInCollection(importedScripts, target)) {
-        importers.add(fileName)
-        continue
-      }
+      addCollectionImporters(directImporters, metadata.importedChunks, fileName)
+      addCollectionImporters(
+        directImporters,
+        metadata.importedScripts ?? metadata.importedScriptsByUrl,
+        fileName,
+      )
+    }
+  }
+
+  return { directImporters, chunks }
+}
+
+export function findChunkImporters(
+  bundle: OutputBundle,
+  target: string,
+  index: ChunkImporterIndex = createChunkImporterIndex(bundle),
+) {
+  const importers = new Set(index.directImporters.get(target))
+
+  for (const [fileName, chunk] of index.chunks) {
+    if (fileName === target || importers.has(fileName)) {
+      continue
     }
 
     const potentialImport = createRelativeImport(fileName, target)
@@ -108,59 +230,5 @@ export function updateImporters(
     }
 
     updateViteMetadata(importerChunk, originalFileName, newChunkFile, codeUpdated)
-  }
-}
-
-function replaceInArray(
-  list: string[] | undefined,
-  searchValue: string,
-  replaceValue: string,
-  shouldInsert?: boolean,
-) {
-  const values = Array.isArray(list) ? [...list] : []
-  let replaced = false
-  for (let index = 0; index < values.length; index++) {
-    const current = values[index]
-    if (current === searchValue) {
-      values[index] = replaceValue
-      replaced = true
-    }
-  }
-  if ((replaced || shouldInsert) && replaceValue && !values.includes(replaceValue)) {
-    values.push(replaceValue)
-  }
-  return values
-}
-
-function updateViteMetadata(
-  importerChunk: OutputChunk,
-  originalFileName: string,
-  newChunkFile: string,
-  shouldInsert: boolean,
-) {
-  const metadata = (importerChunk as any).viteMetadata
-  if (!metadata || typeof metadata !== 'object') {
-    return
-  }
-
-  const candidateKeys = ['importedChunks', 'importedScripts'] as const
-  for (const key of candidateKeys) {
-    const collection = metadata[key]
-    if (collection instanceof Set) {
-      const hadOriginal = collection.delete(originalFileName)
-      if (hadOriginal || shouldInsert) {
-        collection.add(newChunkFile)
-      }
-    }
-    else if (Array.isArray(collection)) {
-      metadata[key] = replaceInArray(collection, originalFileName, newChunkFile, shouldInsert)
-    }
-    else if (collection instanceof Map) {
-      if (collection.has(originalFileName)) {
-        const originalValue = collection.get(originalFileName)
-        collection.delete(originalFileName)
-        collection.set(newChunkFile, originalValue)
-      }
-    }
   }
 }

@@ -6,7 +6,7 @@ import type {
   SharedChunkRuntimeContext,
 } from './shared/types'
 import { posix as path } from 'pathe'
-import { findChunkImporters, updateImporters } from '../bundle'
+import { createChunkImporterIndex, findChunkImporters, updateImporters } from '../bundle'
 import { resolveSubPackagePrefix } from '../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../constants'
 import {
@@ -56,6 +56,7 @@ export function applySharedChunkStrategy(
   const emittedLocalizedDuplicateFiles = new Set<string>()
 
   const entries = Object.entries(bundle)
+  const importerIndex = createChunkImporterIndex(bundle)
   for (const [fileName, output] of entries) {
     if (!isSharedVirtualChunk(fileName, output)) {
       continue
@@ -64,7 +65,7 @@ export function applySharedChunkStrategy(
     const originalSharedFileName = fileName
     const chunk = output as OutputChunk
     const originalMap = chunk.map
-    const importers = findChunkImporters(bundle, fileName)
+    const importers = findChunkImporters(bundle, fileName, importerIndex)
     if (importers.length === 0) {
       continue
     }
