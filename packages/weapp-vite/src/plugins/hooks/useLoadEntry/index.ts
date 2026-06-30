@@ -104,8 +104,51 @@ function resolveCssImporterRepresentative(
   pending: Set<string>,
   resolvedEntryMap: Map<string, ResolvedId>,
 ) {
-  const candidates = [...pending].filter(entryId => resolvedEntryMap.has(entryId))
-  return candidates.find(entryId => !isVueEntryId(entryId)) ?? candidates[0]
+  let fallback: string | undefined
+  for (const entryId of pending) {
+    if (!resolvedEntryMap.has(entryId)) {
+      continue
+    }
+    if (!fallback) {
+      fallback = entryId
+    }
+    if (!isVueEntryId(entryId)) {
+      return entryId
+    }
+  }
+  return fallback
+}
+
+function resolveSharedChunkRepresentative(
+  importers: Set<string>,
+  pending: Set<string>,
+  resolvedEntryMap: Map<string, ResolvedId>,
+) {
+  let resolvedRepresentative: string | undefined
+  for (const entryId of importers) {
+    if (pending.has(entryId)) {
+      return entryId
+    }
+    if (!resolvedRepresentative && resolvedEntryMap.has(entryId)) {
+      resolvedRepresentative = entryId
+    }
+  }
+  return resolvedRepresentative
+}
+
+function previewChunkIds(chunkIds: Set<string>) {
+  const preview: string[] = []
+  for (const chunkId of chunkIds) {
+    if (preview.length >= 2) {
+      break
+    }
+    const segments = chunkId.split('/')
+    preview.push(segments[segments.length - 1]!)
+  }
+  return {
+    label: preview.join(','),
+    overflow: chunkIds.size > 2 ? '+' : '',
+  }
 }
 
 function resolvePendingEntryIds(options: {
@@ -228,8 +271,7 @@ function resolvePendingEntryIds(options: {
       hasStableSharedChunkExpansion = true
     }
     if (isSharedChunkSourceOnlyRefresh(options.dirtyReasonSummary)) {
-      const representative = [...importers].find(entryId => pending.has(entryId))
-        ?? [...importers].find(entryId => options.resolvedEntryMap.has(entryId))
+      const representative = resolveSharedChunkRepresentative(importers, pending, options.resolvedEntryMap)
       if (representative) {
         representativeImporters.add(representative)
       }
@@ -259,20 +301,19 @@ function resolvePendingEntryIds(options: {
   }
 
   if (expandedImporters.size > 0) {
-    const chunkPreview = [...relatedChunkIds].slice(0, 2).map((chunkId) => {
-      const segments = chunkId.split('/')
-      return segments[segments.length - 1]
-    }).join(',')
-    const overflow = relatedChunkIds.size > 2 ? '+' : ''
+    const { label: chunkPreview, overflow } = previewChunkIds(relatedChunkIds)
     const mode = expansionMode ? `:${expansionMode}` : ''
     pendingReasonSummary.push(`shared-chunk(${chunkPreview}${overflow})+${expandedImporters.size}${mode}`)
   }
 
   if (representativeImporters.size && representativeImporters.size < pending.size) {
     const hmrEntries = new Set(pending)
-    const representativePending = new Set(
-      [...representativeImporters].filter(entryId => pending.has(entryId)),
-    )
+    const representativePending = new Set<string>()
+    for (const entryId of representativeImporters) {
+      if (pending.has(entryId)) {
+        representativePending.add(entryId)
+      }
+    }
     if (representativePending.size) {
       pendingReasonSummary.push(`shared-chunk-representative:${representativePending.size}/${hmrEntries.size}`)
       return {
