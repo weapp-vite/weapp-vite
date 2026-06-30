@@ -353,7 +353,7 @@ async function handleBundleEntry(
       })
       const graphCss = freshHmrStyleSourcePath
         ? preprocessInput
-        : await readStyleGraphSource(preprocessId, source)
+        : await readStyleGraphSource(absOriginal, source)
       syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function') {
         for (const dependency of dependencies) {

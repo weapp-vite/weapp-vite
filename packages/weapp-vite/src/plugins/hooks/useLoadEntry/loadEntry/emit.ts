@@ -11,6 +11,7 @@ import path from 'pathe'
 import logger from '../../../../logger'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
 import {
   emitNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,
@@ -94,6 +95,7 @@ interface EmitEntryOutputOptions {
   }) => Promise<ResolvedEntryRecord[]>
   resolveMappedEntry?: (entry: string) => string | undefined
   configService: CompilerContext['configService']
+  runtimeState: CompilerContext['runtimeState']
   wxmlService?: CompilerContext['wxmlService']
   resolvedEntryMap: Map<string, ResolvedId>
   loadedEntrySet: Set<string>
@@ -130,6 +132,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     resolveMappedEntry,
     entryResolveRoot,
     configService,
+    runtimeState,
     wxmlService,
     resolvedEntryMap,
     loadedEntrySet,
@@ -402,6 +405,10 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   }
 
   const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+  await Promise.all(styleImports.map(async (styleImport) => {
+    const source = await readFileCached(styleImport, { checkMtime: configService.isDev })
+    syncCssImportDependencies({ configService, runtimeState } as CompilerContext, styleImport, source)
+  }))
 
   debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
 

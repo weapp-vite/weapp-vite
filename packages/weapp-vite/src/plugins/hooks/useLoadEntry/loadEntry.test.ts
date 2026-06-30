@@ -539,15 +539,21 @@ describe('createEntryLoader', () => {
       }
       return false
     })
-    readFileMock.mockResolvedValue('console.log("with styles")')
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/app.wxss') {
+        return '@import "./shared/styles/shared.scss";\n.app{}'
+      }
+      return 'console.log("with styles")'
+    })
 
-    const { loader } = createLoader()
+    const { loader, runtimeState } = createLoader()
     const pluginCtx = createPluginContext()
 
     const result = await loader.call(pluginCtx, '/project/src/app.js', 'app')
 
     expect(MagicStringMock).toHaveBeenCalledTimes(1)
     expect(magicStringPrependMock).toHaveBeenCalledWith('import \'/project/src/app.wxss\';\n')
+    expect(runtimeState.css.dependencyToImporters.get('/project/src/shared/styles/shared.scss')).toEqual(new Set(['/project/src/app.wxss']))
     expect(result.code).toBe('transformed')
   })
 

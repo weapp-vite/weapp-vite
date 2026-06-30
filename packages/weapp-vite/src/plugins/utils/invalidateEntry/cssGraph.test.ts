@@ -46,6 +46,8 @@ describe('invalidateEntry cssGraph', () => {
     await fs.ensureDir(stylesDir)
     await fs.writeFile(importer, [
       '@import "./theme.wxss";',
+      '@use "./tokens.scss" as tokens;',
+      '@forward "./mixins.scss";',
       '@import "~./legacy.less?inline=1";',
       '@wv-keep-import "@/global/base.wxss";',
       '@import "@";',
@@ -60,6 +62,8 @@ describe('invalidateEntry cssGraph', () => {
       expect(deps).toBeDefined()
 
       const theme = path.normalize(path.join(stylesDir, 'theme.wxss'))
+      const tokens = path.normalize(path.join(stylesDir, 'tokens.scss'))
+      const mixins = path.normalize(path.join(stylesDir, 'mixins.scss'))
       const legacy = path.normalize(path.join(stylesDir, 'legacy.less'))
       const base = path.normalize(path.join(srcRoot, 'global/base.wxss'))
       const rootAbsolute = path.normalize(path.join(srcRoot, 'absolute/root.wxss'))
@@ -67,6 +71,10 @@ describe('invalidateEntry cssGraph', () => {
       expect(deps).toEqual(new Set([
         theme,
         theme.slice(0, -path.extname(theme).length),
+        tokens,
+        tokens.slice(0, -path.extname(tokens).length),
+        mixins,
+        mixins.slice(0, -path.extname(mixins).length),
         legacy,
         legacy.slice(0, -path.extname(legacy).length),
         base,
@@ -175,7 +183,7 @@ describe('invalidateEntry cssGraph', () => {
 
     const dependencies = syncVueSfcStyleDependencies(ctx, vueFile, [
       {
-        content: '@import "./hello.css";\n@import "@/styles/global.scss";',
+        content: '@import "./hello.css";\n@use "@/styles/global.scss" as global;',
       },
       {
         content: '',

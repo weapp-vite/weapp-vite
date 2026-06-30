@@ -292,6 +292,29 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalled()
   })
 
+  it('tracks imports from the original final wxss asset source', async () => {
+    const originalStylePath = resolve(absoluteSrcRoot, 'pages/native/index.wxss')
+    const sharedStylePath = resolve(absoluteSrcRoot, 'shared/styles/shared.scss')
+    readFileMock.mockResolvedValueOnce('@import "../../shared/styles/shared.scss";\n.native-page{}')
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/native/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/native/index.wxss',
+        source: '.native-page{}',
+        originalFileNames: [originalStylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const graph = (ctx as any).runtimeState.css
+    expect(readFileMock).toHaveBeenCalledWith(originalStylePath, 'utf8')
+    expect(graph.dependencyToImporters.get(sharedStylePath)).toEqual(new Set([originalStylePath]))
+    expect(graph.dependencyToImporters.get(sharedStylePath.slice(0, -'.scss'.length))).toEqual(new Set([originalStylePath]))
+  })
+
   it('emits wxss from css asset via chunk viteMetadata (no originalFileNames)', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {

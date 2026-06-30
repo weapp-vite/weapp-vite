@@ -6,7 +6,7 @@ import { findJsEntry } from '../../../utils/file'
 import { normalizePath } from '../../../utils/path'
 
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
-const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
+const cssImportRE = /@(?:import|wv-keep-import|use|forward)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
 
 function ensureCssGraph(ctx: CompilerContext) {
   const graph = ctx.runtimeState?.css

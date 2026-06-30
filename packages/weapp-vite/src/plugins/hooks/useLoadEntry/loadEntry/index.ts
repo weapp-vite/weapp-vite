@@ -476,6 +476,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       resolveMappedEntry: entry => ctx.runtimeState.build.hmr.externalComponentEntryMap.get(entry),
       entryResolveRoot,
       configService,
+      runtimeState: ctx.runtimeState,
       wxmlService,
       resolvedEntryMap,
       loadedEntrySet,
