@@ -41,6 +41,7 @@ export function createAutoImportActions(
       options.registry.clear()
       options.autoImportState.matcher = undefined
       options.autoImportState.matcherKey = ''
+      options.autoImportState.preparedGlobsKey = undefined
       options.resolvedResolverComponents.clear()
       options.resolverHelpers.clearResolveCache()
       options.deferOrSchedule('manifest', true)

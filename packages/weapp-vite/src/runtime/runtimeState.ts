@@ -101,6 +101,7 @@ export interface RuntimeState {
     resolvedResolverComponents: Map<string, string>
     matcher?: (input: string) => boolean
     matcherKey: string
+    preparedGlobsKey?: string
     version: number
     pendingEntriesByImporter: Map<string, Set<string>>
   }
@@ -265,6 +266,7 @@ export function createRuntimeState(): RuntimeState {
       registry: new Map<string, LocalAutoImportMatch>(),
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
+      preparedGlobsKey: undefined,
       version: 0,
       pendingEntriesByImporter: new Map<string, Set<string>>(),
     },

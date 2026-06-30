@@ -2,7 +2,7 @@ import os from 'node:os'
 
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { syncProjectSupportFiles } from './supportFiles'
 import { createManagedTsconfigFiles, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
 
@@ -322,6 +322,55 @@ describe('tsconfig support', () => {
     expect(app.include).toContain('../miniprogram/**/*')
     expect(app.include).not.toContain('../src/**/*')
     expect(app.compilerOptions.paths['@/*']).toEqual(['../miniprogram/*'])
+  })
+
+  it('marks auto import globs as prepared after support file sync', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-auto-import-prepared-'))
+    const srcRoot = path.join(root, 'src')
+    const componentFile = path.join(srcRoot, 'components/PreparedCard/index.vue')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(componentFile, '<template><view>prepared</view></template>', 'utf8')
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: undefined,
+        },
+      },
+      configService: {
+        cwd: root,
+        configFilePath: path.join(root, 'vite.config.ts'),
+        absoluteSrcRoot: srcRoot,
+        srcRoot: 'src',
+        outDir: path.join(root, 'dist'),
+        packageJson: {},
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoRoutesService: {
+        isEnabled: () => false,
+      },
+      autoImportService: {
+        runInBatch: async (task: () => Promise<void>) => {
+          await task()
+        },
+        reset: vi.fn(),
+        registerPotentialComponent: vi.fn().mockResolvedValue(undefined),
+        resolve: vi.fn(),
+        setSupportFileResolverComponents: vi.fn(),
+        collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        clearSupportFileResolverComponents: vi.fn(),
+      },
+    } as any
+
+    await syncProjectSupportFiles(ctx)
+
+    expect(ctx.runtimeState.autoImport.preparedGlobsKey).toBe('components/**/*.vue')
+    expect(ctx.autoImportService.registerPotentialComponent).toHaveBeenCalledWith(componentFile)
   })
 
   it('bootstraps managed tsconfig files from cwd and package.json', async () => {

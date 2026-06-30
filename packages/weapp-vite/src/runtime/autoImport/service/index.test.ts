@@ -103,6 +103,7 @@ describe('autoImport service index', () => {
     ctx.runtimeState.autoImport.resolvedResolverComponents.set('van-button', '@vant/weapp/button')
     ctx.runtimeState.autoImport.matcher = () => true
     ctx.runtimeState.autoImport.matcherKey = 'dirty'
+    ctx.runtimeState.autoImport.preparedGlobsKey = 'components/**/*'
     const service = createAutoImportService(ctx)
 
     service.reset()
@@ -111,6 +112,7 @@ describe('autoImport service index', () => {
     expect(ctx.runtimeState.autoImport.resolvedResolverComponents.size).toBe(0)
     expect(ctx.runtimeState.autoImport.matcher).toBeUndefined()
     expect(ctx.runtimeState.autoImport.matcherKey).toBe('')
+    expect(ctx.runtimeState.autoImport.preparedGlobsKey).toBeUndefined()
     expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)

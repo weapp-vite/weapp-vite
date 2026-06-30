@@ -74,6 +74,10 @@ export function shouldBootstrapAutoImportWithoutGlobs(autoImportConfig: ReturnTy
   return false
 }
 
+export function createAutoImportGlobsKey(globs: string[] | undefined) {
+  return globs?.join('\0') ?? ''
+}
+
 function normalizeChangedPath(id: string) {
   if (!id || id.startsWith('\0')) {
     return undefined
@@ -402,10 +406,14 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       const globs = autoImportConfig?.globs
       registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
       startAutoImportFileWatcher(globs)
-      const globsKey = globs?.join('\0') ?? ''
+      const globsKey = createAutoImportGlobsKey(globs)
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false
         state.lastGlobsKey = globsKey
+      }
+
+      if (!state.initialScanDone && ctx.runtimeState?.autoImport?.preparedGlobsKey === globsKey) {
+        state.initialScanDone = true
       }
 
       if (!globs?.length) {

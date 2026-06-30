@@ -6,7 +6,7 @@ import { parse as parseJson } from 'comment-json'
 import { fdir as Fdir } from 'fdir'
 import { parse } from 'vue/compiler-sfc'
 import { resolveMiniPlatformWithDefault } from '../platform'
-import { findAutoImportCandidates, shouldBootstrapAutoImportWithoutGlobs } from '../plugins/autoImport'
+import { createAutoImportGlobsKey, findAutoImportCandidates, shouldBootstrapAutoImportWithoutGlobs } from '../plugins/autoImport'
 import { collectVueTemplateAutoImportTags } from '../plugins/hooks/useLoadEntry/loadEntry/template'
 import { scanWxml } from '../wxml'
 import { getAutoImportConfig } from './autoImport/config'
@@ -182,6 +182,7 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
       ctx.autoImportService!.setSupportFileResolverComponents(
         ctx.autoImportService!.collectStaticResolverComponentsForSupportFiles(),
       )
+      ctx.runtimeState.autoImport.preparedGlobsKey = createAutoImportGlobsKey(globs)
     })
     try {
       await ctx.autoImportService.awaitManifestWrites()
@@ -189,6 +190,9 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
     finally {
       ctx.autoImportService.clearSupportFileResolverComponents()
     }
+  }
+  else if (ctx.runtimeState?.autoImport) {
+    ctx.runtimeState.autoImport.preparedGlobsKey = undefined
   }
 
   return {
