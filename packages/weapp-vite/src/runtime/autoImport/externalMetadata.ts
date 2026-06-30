@@ -14,6 +14,8 @@ export interface ExternalComponentMetadata {
 
 const metadataCache = new WeakMap<Resolver[], Map<string, ExternalComponentMetadata | null>>()
 const fallbackMetadataCache = new Map<string, ExternalComponentMetadata | null>()
+const requireCache = new Map<string, ReturnType<typeof createRequire>>()
+const packageRootCache = new Map<string, string>()
 
 function getMetadataCache(resolvers?: Resolver[]) {
   if (!resolvers) {
@@ -28,19 +30,37 @@ function getMetadataCache(resolvers?: Resolver[]) {
 }
 
 function safeCreateRequire(cwd: string) {
+  const cacheKey = path.resolve(cwd)
+  const cached = requireCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   try {
-    return createRequire(path.resolve(cwd, 'package.json'))
+    const require = createRequire(path.join(cacheKey, 'package.json'))
+    requireCache.set(cacheKey, require)
+    return require
   }
   catch {
-    return createRequire(import.meta.url)
+    const require = createRequire(import.meta.url)
+    requireCache.set(cacheKey, require)
+    return require
   }
 }
 
 function tryResolvePackageRoot(packageName: string, cwd: string) {
+  const cacheKey = `${path.resolve(cwd)}\n${packageName}`
+  const cached = packageRootCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const require = safeCreateRequire(cwd)
   try {
     const pkgJson = require.resolve(`${packageName}/package.json`)
-    return path.dirname(pkgJson)
+    const packageRoot = path.dirname(pkgJson)
+    packageRootCache.set(cacheKey, packageRoot)
+    return packageRoot
   }
   catch {
     return undefined
