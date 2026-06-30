@@ -166,6 +166,7 @@ describe('css plugin shared style injection', () => {
     renderSharedStyleEntry.mockResolvedValue({
       css: '/* shared */',
       dependencies: [],
+      source: '/* shared source */',
     })
     pathExistsMock.mockReset()
     pathExistsMock.mockResolvedValue(true)
@@ -855,6 +856,7 @@ describe('css plugin shared style injection', () => {
     renderSharedStyleEntry.mockResolvedValue({
       css: '/* shared with deps */',
       dependencies: [styleAbsolutePath, dependencyPath],
+      source: '@import "./dep.wxss";\n.shared{}',
     })
 
     const plugin = css(ctx)[0]
@@ -892,6 +894,7 @@ describe('css plugin shared style injection', () => {
     expect(bundle['subpackages/foo/styles/index.wxss']).toBeUndefined()
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(styleAbsolutePath))
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(dependencyPath))
+    expect(readFileMock).not.toHaveBeenCalledWith(styleAbsolutePath, 'utf8')
   })
 
   it('skips rendering shared style entries when the same output was already emitted', async () => {

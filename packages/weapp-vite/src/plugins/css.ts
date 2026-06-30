@@ -495,8 +495,8 @@ async function emitSharedStyleEntries(
         continue
       }
 
-      const { css: renderedCss, dependencies } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
-      const graphCss = await readStyleGraphSource(absolutePath, renderedCss)
+      const { css: renderedCss, dependencies, source } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
+      const graphCss = source ?? await readStyleGraphSource(absolutePath, renderedCss)
       syncCssImportDependencies(ctx, absolutePath, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function' && dependencies.length) {
         for (const dependency of dependencies) {
