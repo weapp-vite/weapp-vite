@@ -210,6 +210,25 @@ function emitCssAssetIfChanged(
   return true
 }
 
+function collectCssAssetOwners(bundle: OutputBundle) {
+  const ownersByCssAsset = new Map<string, Set<string>>()
+  for (const output of Object.values(bundle)) {
+    if (output.type !== 'chunk' || !output.facadeModuleId) {
+      continue
+    }
+    const importedCss = (output as OutputChunkWithViteMetadata).viteMetadata?.importedCss
+    if (!importedCss?.size) {
+      continue
+    }
+    for (const cssAsset of importedCss) {
+      const owners = ownersByCssAsset.get(cssAsset) ?? new Set<string>()
+      owners.add(output.facadeModuleId)
+      ownersByCssAsset.set(cssAsset, owners)
+    }
+  }
+  return ownersByCssAsset
+}
+
 export async function emitStyleSidecarAsset(
   ctx: CompilerContext,
   pluginCtx: {
@@ -257,6 +276,7 @@ async function handleBundleEntry(
   asset: OutputAsset | OutputBundle[string],
   configService: CompilerContext['configService'],
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  cssAssetOwners: Map<string, Set<string>>,
   emitted: Set<string>,
   resolvedConfig?: ResolvedConfig,
 ) {
@@ -271,23 +291,6 @@ async function handleBundleEntry(
 
   const normalizeOwnerId = (id: string) => {
     return normalizeFsResolvedId(id, { stripLeadingNullByte: true })
-  }
-
-  const collectCssOwnersFromChunks = () => {
-    const owners = new Set<string>()
-    for (const output of Object.values(bundle)) {
-      if (output.type !== 'chunk') {
-        continue
-      }
-      const importedCss = (output as OutputChunkWithViteMetadata).viteMetadata?.importedCss
-      if (!importedCss || importedCss.size === 0) {
-        continue
-      }
-      if (importedCss.has(bundleKey) && output.facadeModuleId) {
-        owners.add(output.facadeModuleId)
-      }
-    }
-    return owners
   }
 
   const resolveOriginalStylePath = () => {
@@ -381,8 +384,8 @@ async function handleBundleEntry(
     return
   }
 
-  const ownersFromChunks = collectCssOwnersFromChunks()
-  const owners = ownersFromChunks.size
+  const ownersFromChunks = cssAssetOwners.get(bundleKey)
+  const owners = ownersFromChunks?.size
     ? ownersFromChunks
     : new Set(
         (asset.originalFileNames ?? [])
@@ -566,9 +569,10 @@ async function generateBundleSharedCss(
   resolvedConfig?: ResolvedConfig,
 ) {
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
+  const cssAssetOwners = collectCssAssetOwners(bundle)
   const emitted = new Set<string>()
   const tasks = Object.entries(bundle).map(([bundleKey, asset]) => {
-    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, emitted, resolvedConfig)
+    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, cssAssetOwners, emitted, resolvedConfig)
   })
 
   await Promise.all(tasks)
