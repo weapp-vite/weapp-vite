@@ -108,6 +108,17 @@ function isConfigFileDependencyChange(state: CorePluginState, normalizedId: stri
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
 }
 
+function collectEmittedJsonPaths(state: CorePluginState) {
+  const emittedJsonPaths = new Set<string>()
+  for (const record of state.jsonEmitFilesMap.values()) {
+    const jsonPath = record.entry.jsonPath
+    if (jsonPath) {
+      emittedJsonPaths.add(normalizeFsResolvedId(jsonPath))
+    }
+  }
+  return emittedJsonPaths
+}
+
 function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackageMetaValue | null | undefined) {
   const root = subPackageMeta?.subPackage.root
   return !root || relativeSrc === root || relativeSrc.startsWith(`${root}/`)
@@ -744,11 +755,7 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     const emittedJsonPaths = change.event === 'create'
-      ? new Set(
-          [...state.jsonEmitFilesMap.values()]
-            .map(record => record.entry.jsonPath ? normalizeFsResolvedId(record.entry.jsonPath) : '')
-            .filter(Boolean),
-        )
+      ? collectEmittedJsonPaths(state)
       : undefined
     const event = await normalizeWatchEvent(normalizedId, change.event, {
       emittedJsonPaths,
