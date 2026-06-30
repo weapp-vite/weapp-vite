@@ -237,6 +237,36 @@ const WEVU_INTERNAL_TEMPLATE_EXPORT_SET = new Set<string>(WEVU_INTERNAL_TEMPLATE
 const WEVU_INTERNAL_RUNTIME_EXPORT_SET = new Set<string>(WEVU_INTERNAL_RUNTIME_EXPORTS)
 const JS_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
+function isRegexWordCharCode(code: number) {
+  return code === 95
+    || (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+}
+
+function containsIdentifierReference(code: string, identifier: string) {
+  let index = code.indexOf(identifier)
+  while (index >= 0) {
+    const before = index > 0 ? code.charCodeAt(index - 1) : 0
+    const afterIndex = index + identifier.length
+    const after = afterIndex < code.length ? code.charCodeAt(afterIndex) : 0
+    if (!isRegexWordCharCode(before) && !isRegexWordCharCode(after)) {
+      return true
+    }
+    index = code.indexOf(identifier, afterIndex)
+  }
+  return false
+}
+
+function containsWevuInternalRuntimeExportReference(code: string) {
+  for (const exportName of WEVU_INTERNAL_RUNTIME_EXPORTS) {
+    if (containsIdentifierReference(code, exportName)) {
+      return true
+    }
+  }
+  return false
+}
+
 export function filterPluginBundleOutputs(
   bundle: OutputBundle,
   configService: CompilerContext['configService'],
@@ -850,6 +880,7 @@ export function rewriteWevuInternalRuntimeImports(
     let rewritten = code
     let changed = false
     const requiredRuntimeFileNames = new Set<string>()
+    let containsRootWevuRuntimeExport: boolean | undefined
 
     rewritten = rewritten.replace(importRe, (full, importClause: string, source: string) => {
       const bindings = parseNamedImportBindings(importClause)
@@ -888,8 +919,11 @@ export function rewriteWevuInternalRuntimeImports(
 
     rewritten = rewritten.replace(requireRe, (full, rawSpecifier: string) => {
       const specifierValue = stripQuotes(rawSpecifier)
+      if (specifierValue === 'wevu' && containsRootWevuRuntimeExport === undefined) {
+        containsRootWevuRuntimeExport = containsWevuInternalRuntimeExportReference(code)
+      }
       const canUseRememberedRuntime = specifierValue === 'wevu/internal-runtime'
-        || (specifierValue === 'wevu' && WEVU_INTERNAL_RUNTIME_EXPORTS.some(exportName => new RegExp(`\\b${exportName}\\b`).test(code)))
+        || (specifierValue === 'wevu' && containsRootWevuRuntimeExport === true)
       const rememberedRuntimeFileName = isWevuRuntimeModuleId(specifierValue)
         ? options.runtimeFileNames?.get(specifierValue)
         : undefined

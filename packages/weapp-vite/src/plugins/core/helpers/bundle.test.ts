@@ -502,6 +502,31 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
   })
 
+  it('rewrites repeated bare wevu runtime requires with one import record', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'const runtime = require("wevu");',
+          'const runtimeAgain = require("wevu");',
+          'runtime.setWevuDefaults({});',
+          'runtimeAgain.createApp({ hmr: true });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+    })
+
+    expect(bundle['app.js'].code).not.toContain('require("wevu")')
+    expect(bundle['app.js'].code).toContain('const runtime = require("./weapp-vendors/wevu-watch.js");')
+    expect(bundle['app.js'].code).toContain('const runtimeAgain = require("./weapp-vendors/wevu-watch.js");')
+    expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
   it('does not rewrite generic bare wevu require calls to app runtime chunks', () => {
     const bundle = {
       'pages/index/index.js': {
