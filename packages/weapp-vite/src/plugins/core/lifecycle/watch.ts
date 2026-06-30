@@ -12,7 +12,7 @@ import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '.
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../utils/file/vueSfcSignature'
 import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -195,6 +195,26 @@ async function isVueEntryLocalAssetOnlyUpdate(state: CorePluginState, normalized
     const source = await fs.readFile(normalizedId, 'utf-8')
     const currentScript = resolveVueSfcScriptSignature(source, normalizedId)
     return currentScript === previous
+  }
+  catch {
+    return false
+  }
+}
+
+async function isVueEntryStyleOnlyUpdate(state: CorePluginState, normalizedId: string) {
+  if (!normalizedId.endsWith('.vue')) {
+    return false
+  }
+
+  const previous = state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.get(normalizedId)
+  if (!previous) {
+    return false
+  }
+
+  try {
+    const source = await fs.readFile(normalizedId, 'utf-8')
+    const currentStyleIndependent = resolveVueSfcStyleIndependentSignature(source, normalizedId)
+    return currentStyleIndependent === previous
   }
   catch {
     return false
@@ -400,6 +420,7 @@ async function processChangedFile(
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.delete(normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
@@ -566,6 +587,8 @@ async function processChangedFile(
       && !isAppShellTopologyChanged
       && event === 'update'
       && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+    const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
+      && await isVueEntryStyleOnlyUpdate(state, normalizedId)
     markChangedEntryDirty(
       (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
@@ -573,7 +596,7 @@ async function processChangedFile(
         : isAppShellTopologyChanged
           ? 'entry-direct'
           : isLocalAssetOnlyVueEntryUpdate
-            ? 'entry-local-asset'
+            ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
             : 'entry-direct',
     )
   }

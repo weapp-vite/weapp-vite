@@ -431,7 +431,7 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
-  it('emits page SFC style assets during asset-only HMR refresh', async () => {
+  it('emits page SFC style assets during style-only HMR refresh', async () => {
     await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
@@ -441,7 +441,7 @@ describe('emitSharedVueEntryAssets', () => {
             hmr: {
               lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
               profile: {
-                dirtyReasonSummary: ['entry-local-asset:1'],
+                dirtyReasonSummary: ['entry-style-only:1'],
               },
             },
           },
@@ -483,6 +483,50 @@ describe('emitSharedVueEntryAssets', () => {
     expect(processCssWithCacheMock).toHaveBeenCalledWith('.marker { color: red; }', expect.objectContaining({
       isDev: true,
     }))
+  })
+
+  it('does not emit page SFC style assets during template-only HMR refresh', async () => {
+    await emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
+              profile: {
+                dirtyReasonSummary: ['entry-local-asset:1'],
+              },
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/pages/hmr-sfc/index.vue',
+      relativeBase: 'pages/hmr-sfc/index',
+      result: {
+        template: '<view class="next" />',
+        style: '.marker { color: red; }',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: true,
+      configService: {
+        isDev: true,
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'wxs',
+      outputExtensions: {
+        wxss: 'wxss',
+      },
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
+    expect(processCssWithCacheMock).not.toHaveBeenCalled()
   })
 
   it('does not overwrite Vite-processed page SFC style assets during css importer HMR', async () => {

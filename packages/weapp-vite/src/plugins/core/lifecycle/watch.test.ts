@@ -95,6 +95,7 @@ function createState(overrides: Record<string, any> = {}) {
             vueEntryHasTemplate: new Map(),
             vueEntryNonJsonSignatures: new Map(),
             vueEntryScriptSignatures: new Map(),
+            vueEntryStyleIndependentSignatures: new Map(),
             dirtyVueEntryIds: new Set(),
           },
         },
@@ -637,7 +638,7 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('<view>{{ count }}</view>', '<view class="next">{{ count }}</view>')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
@@ -648,6 +649,10 @@ const count = 1
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       entryId,
       resolveVueSfcScriptSignature(previousSource, entryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      entryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, entryId),
     )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
@@ -820,7 +825,7 @@ const count = 1
 defineAppJson({ window: { navigationBarTitleText: '首页' } })
 </script>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -835,6 +840,10 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       appEntry,
       resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      appEntry,
+      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
     )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
@@ -948,7 +957,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 page { color: red; }
 </style>`
     const nextSource = previousSource.replace('color: red;', 'color: blue;')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -964,6 +973,10 @@ page { color: red; }
       appEntry,
       resolveVueSfcScriptSignature(previousSource, appEntry),
     )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      appEntry,
+      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
+    )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -972,7 +985,7 @@ page { color: red; }
     expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-style-only:1'])
   })
 
   it('invalidates app shell dependents when app.vue gains a template', async () => {

@@ -212,6 +212,10 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         cached.source = source
         cached.styleIndependentSignature = currentStyleIndependentSignature
         cached.refreshToken = 0
+        ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
+          filename,
+          currentStyleIndependentSignature,
+        )
         dirtyVueEntryIds?.delete(dirtyEntryId)
         return cached.result
       }
@@ -232,6 +236,12 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     cached.autoRoutesSignature = transformed.signature
     cached.styleIndependentSignature = currentStyleIndependentSignature
     cached.refreshToken = 0
+    if (currentStyleIndependentSignature) {
+      ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
+        filename,
+        currentStyleIndependentSignature,
+      )
+    }
     if (dirtyEntryId) {
       dirtyVueEntryIds?.delete(dirtyEntryId)
     }

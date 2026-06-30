@@ -7,7 +7,7 @@ import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/co
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
@@ -290,6 +290,11 @@ export async function finalizeTransformCompiledResult(options: {
     const scriptSignature = resolveVueSfcScriptSignature(source, filename)
     if (scriptSignature && hmr?.vueEntryScriptSignatures) {
       hmr.vueEntryScriptSignatures.set(normalizedFilename, scriptSignature)
+    }
+    const nextStyleIndependentSignature = styleIndependentSignature
+      ?? resolveVueSfcStyleIndependentSignature(source, filename)
+    if (nextStyleIndependentSignature && hmr?.vueEntryStyleIndependentSignatures) {
+      hmr.vueEntryStyleIndependentSignatures.set(normalizedFilename, nextStyleIndependentSignature)
     }
     const hasTemplate = resolveVueSfcHasTemplate(source, filename)
     if (hasTemplate !== undefined && hmr?.vueEntryHasTemplate) {

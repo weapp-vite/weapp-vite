@@ -634,7 +634,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && !dirtyReasonSummary.some(reason =>
         reason.startsWith('style-sidecar:')
         || reason.startsWith('css-importer:')
-        || reason.startsWith('entry-local-asset:'),
+        || reason.startsWith('entry-style-only:'),
       )
     ) {
       return false

@@ -358,8 +358,8 @@ export async function emitCompiledEntryBundleAssets(options: {
   const shouldMergeJsonAsset = isAppVue
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
   const dirtyReasonSummary = hmrState?.profile?.dirtyReasonSummary
-  const isAssetOnlyHmr = dirtyReasonSummary?.some(item =>
-    item.startsWith('entry-local-asset:')
+  const isStyleAssetHmr = dirtyReasonSummary?.some(item =>
+    item.startsWith('entry-style-only:')
     || item.startsWith('style-sidecar:'),
   ) === true
   const isAppVueHmrUpdate = Boolean(
@@ -373,7 +373,7 @@ export async function emitCompiledEntryBundleAssets(options: {
     (isAppVue && (!options.configService.isDev || isAppVueHmrUpdate))
     || (
       options.configService.isDev
-      && isAssetOnlyHmr
+      && isStyleAssetHmr
       && hmrState?.lastHmrEntryIds?.has(options.filename)
     )
   )
