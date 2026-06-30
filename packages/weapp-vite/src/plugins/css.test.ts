@@ -352,6 +352,64 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
 
+  it('emits shared style imports for css importer hmr entries outside the representative bundle', async () => {
+    const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
+    const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const runtimeState = {
+      build: {
+        hmr: {
+          lastHmrEntryIds: new Set([pageA, pageB]),
+          lastEmittedEntryIds: new Set([pageA]),
+          profile: {
+            event: 'update',
+            dirtyReasonSummary: ['css-importer:2'],
+          },
+        },
+      },
+    }
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState,
+      scanService: {
+        subPackageMap: new Map([
+          ['pages', {
+            styleEntries: [{
+              ...subPackageStyleEntry,
+              outputRelativePath: 'pages/shared/styles/index.wxss',
+            }],
+          }],
+        ]),
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/a/index.js': {
+        type: 'chunk',
+        fileName: 'pages/a/index.js',
+        facadeModuleId: pageA,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(emitted.map(asset => asset.fileName).sort()).toEqual([
+      'pages/a/index.wxss',
+      'pages/b/index.wxss',
+      'pages/shared/styles/index.wxss',
+    ])
+  })
+
   it('normalizes source style asset filenames to wxss after Vite preprocessing', async () => {
     preprocessCSSMock.mockResolvedValue({
       code: '.page .title{color:red;background-clip:text;-webkit-background-clip:text}',

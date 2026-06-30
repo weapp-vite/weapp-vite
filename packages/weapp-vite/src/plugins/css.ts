@@ -463,6 +463,51 @@ async function emitSharedStyleEntries(
   }
 }
 
+async function emitSharedStyleImportForModule(
+  this: any,
+  ctx: CompilerContext,
+  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  emitted: Set<string>,
+  configService: CompilerContext['configService'],
+  bundle: OutputBundle,
+  moduleId: string,
+) {
+  const { outputExtensions } = configService
+  const relativeModulePath = configService.relativeAbsoluteSrcRoot(moduleId)
+  if (!relativeModulePath) {
+    return
+  }
+
+  const converted = changeFileExtension(moduleId, outputExtensions.wxss)
+  const fileName = configService.relativeOutputPath(converted)
+  if (!fileName) {
+    return
+  }
+
+  const normalizedFileName = toPosixPath(fileName)
+  if (emitted.has(normalizedFileName)) {
+    return
+  }
+
+  const cssWithImports = injectSharedStyleImports(
+    '',
+    moduleId,
+    fileName,
+    sharedStyles,
+    configService,
+  )
+
+  if (!cssWithImports.trim()) {
+    return
+  }
+
+  const processedCss = await processCssWithCache(cssWithImports, configService)
+
+  emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
+
+  emitted.add(normalizedFileName)
+}
+
 async function emitSharedStyleImportsForChunks(
   this: any,
   ctx: CompilerContext,
@@ -475,7 +520,7 @@ async function emitSharedStyleImportsForChunks(
     return
   }
 
-  const { outputExtensions } = configService
+  const handledModuleIds = new Set<string>()
 
   await Promise.all(
     Object.values(bundle).map(async (output) => {
@@ -487,40 +532,28 @@ async function emitSharedStyleImportsForChunks(
       if (!moduleId) {
         return
       }
+      handledModuleIds.add(normalizeFsResolvedId(moduleId))
 
-      const relativeModulePath = configService.relativeAbsoluteSrcRoot(moduleId)
-      if (!relativeModulePath) {
+      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, moduleId)
+    }),
+  )
+
+  if (!ctx.configService?.isDev) {
+    return
+  }
+
+  const dirtyReasonSummary = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
+  const isCssImporterHmr = dirtyReasonSummary?.some(reason => reason.startsWith('css-importer:')) === true
+  if (!isCssImporterHmr) {
+    return
+  }
+
+  await Promise.all(
+    Array.from(ctx.runtimeState?.build?.hmr?.lastHmrEntryIds ?? []).map(async (moduleId) => {
+      if (handledModuleIds.has(normalizeFsResolvedId(moduleId))) {
         return
       }
-
-      const converted = changeFileExtension(moduleId, outputExtensions.wxss)
-      const fileName = configService.relativeOutputPath(converted)
-      if (!fileName) {
-        return
-      }
-
-      const normalizedFileName = toPosixPath(fileName)
-      if (emitted.has(normalizedFileName)) {
-        return
-      }
-
-      const cssWithImports = injectSharedStyleImports(
-        '',
-        moduleId,
-        fileName,
-        sharedStyles,
-        configService,
-      )
-
-      if (!cssWithImports.trim()) {
-        return
-      }
-
-      const processedCss = await processCssWithCache(cssWithImports, configService)
-
-      emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
-
-      emitted.add(normalizedFileName)
+      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, moduleId)
     }),
   )
 }

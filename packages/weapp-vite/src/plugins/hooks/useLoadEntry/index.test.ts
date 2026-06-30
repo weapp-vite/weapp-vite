@@ -1010,6 +1010,44 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
+  it('emits one representative entry for css importer only updates while keeping all hmr entries', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['css-importer:3'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: ids[0],
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
+      'css-importer-representative:1/3',
+    ])
+  })
+
   it('keeps incremental rebuilds when dirty entries have no related shared chunk index hit', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()

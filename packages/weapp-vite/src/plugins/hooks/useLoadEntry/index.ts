@@ -89,6 +89,13 @@ function isSharedChunkSourceOnlyRefresh(dirtyReasonSummary?: string[]) {
   )
 }
 
+function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.every(item => item.startsWith('css-importer:')),
+  )
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
@@ -118,6 +125,17 @@ function resolvePendingEntryIds(options: {
   }
 
   if (!options.sharedChunkImporters?.size || !options.sharedChunksByEntry?.size) {
+    if (isCssImporterOnlyRefresh(options.dirtyReasonSummary) && pending.size > 1) {
+      const representative = [...pending].find(entryId => options.resolvedEntryMap.has(entryId))
+      if (representative) {
+        pendingReasonSummary.push(`css-importer-representative:1/${pending.size}`)
+        return {
+          pending: new Set([representative]),
+          hmrEntries: pending,
+          pendingReasonSummary,
+        }
+      }
+    }
     return {
       pending,
       pendingReasonSummary,
@@ -160,6 +178,18 @@ function resolvePendingEntryIds(options: {
   }
 
   if (!relatedChunkIds.size) {
+    if (isCssImporterOnlyRefresh(options.dirtyReasonSummary) && pending.size > 1) {
+      const representative = [...pending].find(entryId => options.resolvedEntryMap.has(entryId))
+      if (representative) {
+        pendingReasonSummary.push(`css-importer-representative:1/${pending.size}`)
+        return {
+          pending: new Set([representative]),
+          hmrEntries: pending,
+          sharedChunkResolveMs: performance.now() - startedAt,
+          pendingReasonSummary,
+        }
+      }
+    }
     return {
       pending,
       sharedChunkResolveMs: performance.now() - startedAt,
