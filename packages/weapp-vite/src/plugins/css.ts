@@ -236,8 +236,15 @@ function injectSharedStyleImportsCached(
     cache.set(cacheKey, statements)
   }
 
-  const missingStatements = statements.filter(statement => !css.includes(statement))
-  if (!missingStatements.length) {
+  let missingStatements: string[] | undefined
+  for (const statement of statements) {
+    if (css.includes(statement)) {
+      continue
+    }
+    missingStatements ??= []
+    missingStatements.push(statement)
+  }
+  if (!missingStatements?.length) {
     return css
   }
   return prependSharedStyleImports(css, missingStatements)
