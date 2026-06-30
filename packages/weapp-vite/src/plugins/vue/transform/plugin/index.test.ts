@@ -111,7 +111,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     invalidateDirtyVueEntryCaches(new Set(['/project/src/app.vue']), compilationCache)
 
     expect(compilationCache.get('/project/src/app.vue')).toEqual({
-      source: undefined,
+      source: '<template />',
       refreshToken: 2,
     })
     expect(compilationCache.get('/project/src/pages/index.vue')).toEqual({
@@ -133,7 +133,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     invalidateDirtyVueEntryCaches(new Set(['D:/project/src/app.vue']), compilationCache)
 
     expect(compilationCache.get('D:\\project\\src\\app.vue')).toEqual({
-      source: undefined,
+      source: '<script setup />',
       refreshToken: 1,
     })
   })

@@ -212,4 +212,67 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(dirtyVueEntryIds.size).toBe(0)
   })
+
+  it('reuses cached vue compilation for style-only dirty updates', async () => {
+    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
+    const previousSource = '<template><view /></template><style>.card{color:red}</style>'
+    const nextSource = '<template><view /></template><style>.card{color:blue}</style>'
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const cachedResult = {
+      template: '<view />',
+      script: 'Component({ cached: true })',
+      meta: {
+        styleBlocks: [{ attrs: {}, content: '.card{color:red}' }],
+      },
+    }
+    const nextStyleBlocks = [{ attrs: {}, content: '.card{color:blue}' }]
+    const options = createBaseOptions({
+      code: nextSource,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                eventId: 'hmr-1',
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: cachedResult,
+          source: previousSource,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: resolveVueSfcStyleIndependentSignature(previousSource, '/project/src/components/card.vue'),
+        }],
+      ]),
+      readAndParseSfc: vi.fn(async () => ({
+        descriptor: {
+          styles: nextStyleBlocks,
+        },
+      })),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ cached: true })'),
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(options.compilationCache.get('/project/src/components/card.vue')).toMatchObject({
+      source: nextSource,
+      refreshToken: 0,
+    })
+    expect(options.compilationCache.get('/project/src/components/card.vue').result.style).toContain('color:blue')
+    expect(options.styleBlocksCache.get('/project/src/components/card.vue')).toBe(nextStyleBlocks)
+    expect(options.styleRefreshTokens.get('/project/src/components/card.vue')).toBe('hmr-1')
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
 })

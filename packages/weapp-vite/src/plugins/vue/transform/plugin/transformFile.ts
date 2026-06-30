@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../../../context'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { resolveVueSfcStyleIndependentSignature } from '../../../../utils/file/vueSfcSignature'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { syncVueSfcStyleDependencies } from '../../../utils/invalidateEntry'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
@@ -11,6 +12,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
+import { refreshStyleOnlyVueTransformResult } from '../styleOnly'
 import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 function parseUsingComponents(config: string | undefined) {
@@ -47,7 +49,7 @@ export async function transformVueLikeFile(options: {
   pluginCtx: any
   code: string
   id: string
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string }>
   setAppShell: (shell: ResolvedAppShell | undefined) => void
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
@@ -155,6 +157,21 @@ export async function transformVueLikeFile(options: {
     }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const currentStyleIndependentSignature = filename.endsWith('.vue')
+      ? resolveVueSfcStyleIndependentSignature(transformedSource, filename)
+      : undefined
+    const canReuseStyleOnlyVueCompilation = Boolean(
+      configService.isDev
+      && cachedCompilation
+      && dirtyEntryId
+      && filename.endsWith('.vue')
+      && !ctx.runtimeState.scan.isDirty
+      && cachedCompilation.autoRoutesSignature === autoRoutesSignature
+      && cachedCompilation.styleIndependentSignature
+      && currentStyleIndependentSignature
+      && cachedCompilation.styleIndependentSignature === currentStyleIndependentSignature
+      && cachedCompilation.source !== transformedSource,
+    )
     if (
       configService.isDev
       && cachedCompilation
@@ -180,6 +197,43 @@ export async function transformVueLikeFile(options: {
       return {
         code: returnedCode.code,
         map: returnedCode.map,
+      }
+    }
+    if (canReuseStyleOnlyVueCompilation && cachedCompilation) {
+      const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
+      const styleBlocks = styleBlocksCache.get(filename)
+      const didRefreshStyle = refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks)
+      if (!didRefreshStyle) {
+        cachedCompilation.styleIndependentSignature = undefined
+      }
+      else {
+        cachedCompilation.source = transformedSource
+        cachedCompilation.result = cachedResult
+        cachedCompilation.styleIndependentSignature = currentStyleIndependentSignature
+        cachedCompilation.refreshToken = 0
+        const hmrEventId = ctx.runtimeState.build.hmr.profile.eventId
+        if (hmrEventId != null) {
+          styleRefreshTokens.set(filename, hmrEventId)
+        }
+        const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+          result: cachedResult,
+          filename,
+          styleBlocks,
+          isPage: cachedCompilation.isPage,
+          isApp,
+          isDev: configService.isDev,
+          hmrStyleToken: styleRefreshTokens.get(filename),
+        }))
+
+        if (dirtyEntryId) {
+          dirtyVueEntryIds?.delete(dirtyEntryId)
+        }
+        reportTiming(filename, cachedCompilation.isPage)
+
+        return {
+          code: returnedCode.code,
+          map: returnedCode.map,
+        }
       }
     }
     const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
@@ -231,6 +285,9 @@ export async function transformVueLikeFile(options: {
         autoRoutesSignature,
         result,
         compilationCache,
+        styleIndependentSignature: filename.endsWith('.vue')
+          ? (currentStyleIndependentSignature ?? resolveVueSfcStyleIndependentSignature(transformedSource, filename))
+          : undefined,
         setAppShell,
         configService,
         isPage,

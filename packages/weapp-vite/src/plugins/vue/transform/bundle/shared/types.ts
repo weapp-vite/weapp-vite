@@ -30,6 +30,7 @@ export interface CompilationCacheEntry {
   isPage: boolean
   autoRoutesSignature?: string
   refreshToken?: number
+  styleIndependentSignature?: string
 }
 
 export interface VueBundleState {

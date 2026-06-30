@@ -7,6 +7,8 @@ import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/co
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../../utils/file/vueSfcSignature'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
@@ -195,7 +197,8 @@ export async function finalizeTransformCompiledResult(options: {
   source: string
   autoRoutesSignature?: string
   result: VueTransformResult
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string }>
+  styleIndependentSignature?: string
   setAppShell?: (shell: ResolvedAppShell | undefined) => void
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
@@ -220,6 +223,7 @@ export async function finalizeTransformCompiledResult(options: {
     autoRoutesSignature,
     result,
     compilationCache,
+    styleIndependentSignature,
     setAppShell,
     configService,
     isPage,
@@ -274,7 +278,24 @@ export async function finalizeTransformCompiledResult(options: {
     isPage,
     autoRoutesSignature,
     refreshToken: 0,
+    styleIndependentSignature,
   })
+  if (configService.isDev && filename.endsWith('.vue')) {
+    const normalizedFilename = normalizeFsResolvedId(filename)
+    const hmr = ctx.runtimeState?.build?.hmr
+    const nonJsonSignature = resolveVueSfcNonJsonSignature(source, filename)
+    if (nonJsonSignature && hmr?.vueEntryNonJsonSignatures) {
+      hmr.vueEntryNonJsonSignatures.set(normalizedFilename, nonJsonSignature)
+    }
+    const scriptSignature = resolveVueSfcScriptSignature(source, filename)
+    if (scriptSignature && hmr?.vueEntryScriptSignatures) {
+      hmr.vueEntryScriptSignatures.set(normalizedFilename, scriptSignature)
+    }
+    const hasTemplate = resolveVueSfcHasTemplate(source, filename)
+    if (hasTemplate !== undefined && hmr?.vueEntryHasTemplate) {
+      hmr.vueEntryHasTemplate.set(normalizedFilename, hasTemplate)
+    }
+  }
 
   const relativeBase = resolveVueOutputBase(configService, filename)
   if (relativeBase) {

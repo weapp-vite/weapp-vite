@@ -1188,6 +1188,56 @@ describe('emitSharedVueEntryAssets', () => {
     expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
+  it('reuses cached compiled entries for style-only dirty updates in dev', async () => {
+    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
+    const previousSource = '<template><view /></template><style>.page{color:red}</style>'
+    const nextSource = '<template><view /></template><style>.page{color:blue}</style>'
+    const cached = {
+      result: { script: 'Page({ cached: true })', style: '.page{color:red}' },
+      source: previousSource,
+      isPage: true,
+      refreshToken: 1,
+      styleIndependentSignature: resolveVueSfcStyleIndependentSignature(previousSource, '/project/src/pages/index/index.vue'),
+    } as any
+    readFileMock.mockResolvedValue(nextSource)
+
+    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+            },
+          },
+        },
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(cached.source).toBe(nextSource)
+    expect(cached.result.style).toContain('color:blue')
+    expect(cached.refreshToken).toBe(0)
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(result).toBe(cached.result)
+  })
+
   it('refreshes dirty compiled app entries when dirty ids use windows separators', async () => {
     const appSource = [
       '<script setup>',

@@ -213,7 +213,8 @@ describe('vue transform plugin shared helpers', () => {
         existsSync: vi.fn(() => true),
       },
     )
-    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBe('<template />')
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.refreshToken).toBe(1)
     expect(styleBlocksCache.has('/project/src/pages/home/index.vue')).toBe(false)
 
     invalidateVueFileCaches(
@@ -276,7 +277,8 @@ describe('vue transform plugin shared helpers', () => {
       styleBlocksCache,
       existsSync,
     })).toBe(true)
-    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBe('<template />')
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.refreshToken).toBe(1)
 
     expect(handleTransformVueFileInvalidation('/project/src/pages/home/index.ts', {
       compilationCache,
@@ -1198,6 +1200,15 @@ console.log(pages, routeSubPackages)
           isDev: true,
           weappViteConfig: {},
         },
+        runtimeState: {
+          build: {
+            hmr: {
+              vueEntryHasTemplate: new Map(),
+              vueEntryNonJsonSignatures: new Map(),
+              vueEntryScriptSignatures: new Map(),
+            },
+          },
+        },
       } as any,
       pluginCtx,
       filename: '/project/src/pages/home/index.vue',
@@ -1227,6 +1238,7 @@ console.log(pages, routeSubPackages)
       isPage: true,
       autoRoutesSignature: undefined,
       refreshToken: 0,
+      styleIndependentSignature: undefined,
     })
     expect(scopedSlotEmitter).toHaveBeenCalledWith(
       pluginCtx,
@@ -1236,6 +1248,51 @@ console.log(pages, routeSubPackages)
       expect.any(Set),
       { js: 'js' },
     )
+  })
+
+  it('syncs vue sfc signatures after transform compilation', async () => {
+    const result = {
+      script: 'Component({})',
+      template: '<view />',
+      meta: {},
+    } as any
+    const hmr = {
+      vueEntryHasTemplate: new Map<string, boolean>(),
+      vueEntryNonJsonSignatures: new Map<string, string>(),
+      vueEntryScriptSignatures: new Map<string, string>(),
+    }
+    const source = '<template><view /></template><script setup>const count = 1</script>'
+
+    await finalizeTransformCompiledResult({
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr,
+          },
+        },
+      } as any,
+      pluginCtx: {},
+      filename: '/project/src/components/card.vue',
+      source,
+      result,
+      compilationCache: new Map(),
+      configService: {
+        outputExtensions: { js: 'js' },
+        relativeOutputPath: vi.fn(() => 'components/card/index'),
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+      scopedSlotModules: new Map(),
+      emittedScopedSlotChunks: new Set(),
+      addWatchFile: vi.fn(),
+      emitScopedSlotChunks: vi.fn(),
+    })
+
+    expect(hmr.vueEntryHasTemplate.get('/project/src/components/card.vue')).toBe(true)
+    expect(hmr.vueEntryNonJsonSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntryScriptSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {

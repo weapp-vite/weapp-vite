@@ -4,12 +4,15 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './type
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
+import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
+import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
@@ -178,6 +181,9 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const currentStyleIndependentSignature = filename.endsWith('.vue')
+      ? resolveVueSfcStyleIndependentSignature(source, filename)
+      : undefined
     if (
       !dirtyEntryId
       && source === cached.source
@@ -185,6 +191,30 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     ) {
       cached.refreshToken = 0
       return cached.result
+    }
+    if (
+      dirtyEntryId
+      && filename.endsWith('.vue')
+      && cached.styleIndependentSignature
+      && currentStyleIndependentSignature
+      && cached.styleIndependentSignature === currentStyleIndependentSignature
+      && transformed.signature === cached.autoRoutesSignature
+      && cached.source !== source
+    ) {
+      const { descriptor } = await readAndParseSfc(filename, {
+        source,
+        checkMtime: configService.isDev,
+      })
+      if (!refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles)) {
+        cached.styleIndependentSignature = undefined
+      }
+      else {
+        cached.source = source
+        cached.styleIndependentSignature = currentStyleIndependentSignature
+        cached.refreshToken = 0
+        dirtyVueEntryIds?.delete(dirtyEntryId)
+        return cached.result
+      }
     }
 
     const compiled = await compileAndFinalizeVueLikeFile({
@@ -200,6 +230,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
 
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
+    cached.styleIndependentSignature = currentStyleIndependentSignature
     cached.refreshToken = 0
     if (dirtyEntryId) {
       dirtyVueEntryIds?.delete(dirtyEntryId)

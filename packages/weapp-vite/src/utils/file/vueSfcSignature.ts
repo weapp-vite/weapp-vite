@@ -7,6 +7,7 @@ import { loadVueSfcSignatureNativeBindingSync, shouldUseNativeVueSfcSignature } 
 interface VueSfcSignaturePayload {
   nonJson: unknown
   script: unknown
+  styleIndependent: unknown
   hasTemplate: boolean
 }
 
@@ -75,6 +76,21 @@ function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: strin
   }
 }
 
+function buildStyleIndependentDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
+  const scriptSetupContent = descriptor.scriptSetup
+    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    : undefined
+
+  return {
+    script: serializeBlock(descriptor.script),
+    scriptSetup: serializeBlock(descriptor.scriptSetup, scriptSetupContent),
+    template: serializeBlock(descriptor.template),
+    customBlocks: descriptor.customBlocks
+      .filter(block => block.type !== 'json')
+      .map(block => serializeBlock(block)),
+  }
+}
+
 function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): VueSfcSignaturePayload | undefined {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
@@ -84,6 +100,7 @@ function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): Vu
   return {
     nonJson: buildNonJsonDescriptorPayload(descriptor, filename),
     script: buildScriptDescriptorPayload(descriptor, filename),
+    styleIndependent: buildStyleIndependentDescriptorPayload(descriptor, filename),
     hasTemplate: Boolean(descriptor.template?.content.trim()),
   }
 }
@@ -136,6 +153,11 @@ export function resolveVueSfcNonJsonSignature(source: string, filename: string) 
 export function resolveVueSfcScriptSignature(source: string, filename: string) {
   const payload = buildVueSfcSignaturePayload(source, filename)
   return payload ? hashPayload(payload.script) : undefined
+}
+
+export function resolveVueSfcStyleIndependentSignature(source: string, filename: string) {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  return payload ? hashPayload(payload.styleIndependent) : undefined
 }
 
 export function resolveVueSfcHasTemplate(source: string, filename: string) {

@@ -41,13 +41,12 @@ export function invalidateDirtyVueEntryCaches(
     if (!cached) {
       continue
     }
-    cached.source = undefined
     cached.refreshToken = (cached.refreshToken ?? 0) + 1
   }
 }
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
-  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string }>()
+  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
