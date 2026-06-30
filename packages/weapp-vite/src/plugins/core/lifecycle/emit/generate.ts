@@ -59,13 +59,17 @@ function resolveInjectWeapiGlobalName(state: CorePluginState) {
   return injectWeapi.globalName?.trim() || 'wpi'
 }
 
+function hasChunkOutputs(bundle: OutputBundle) {
+  return Object.values(bundle).some(output => output?.type === 'chunk')
+}
+
 function pruneHmrMetadataOnlyChunks(bundle: OutputBundle, state: CorePluginState) {
   if (
     !state.ctx.configService.isDev
     || !state.hmrState.hasBuiltOnce
     || !state.hmrState.skipSharedChunkRefresh
   ) {
-    return
+    return hasChunkOutputs(bundle)
   }
 
   for (const [fileName, output] of Object.entries(bundle)) {
@@ -73,17 +77,14 @@ function pruneHmrMetadataOnlyChunks(bundle: OutputBundle, state: CorePluginState
       delete bundle[fileName]
     }
   }
+  return false
 }
 
-function hasChunkOutputs(bundle: OutputBundle) {
-  return Object.values(bundle).some(output => output?.type === 'chunk')
-}
-
-function isAssetOnlyDevHmrBundle(bundle: OutputBundle, state: CorePluginState) {
+function isAssetOnlyDevHmrBundle(hasChunkOutput: boolean, state: CorePluginState) {
   return state.ctx.configService.isDev
     && state.hmrState.hasBuiltOnce
     && state.hmrState.skipSharedChunkRefresh
-    && !hasChunkOutputs(bundle)
+    && !hasChunkOutput
 }
 
 function isStableHmrSharedChunk(fileName: string) {
@@ -94,6 +95,20 @@ function isStableHmrSharedChunk(fileName: string) {
 function isRuntimeVendorSharedChunk(fileName: string) {
   return fileName.startsWith('weapp-vendors/')
     && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName)
+}
+
+function addEmittedChunkFileName(
+  emittedChunkFileNames: Set<string> | undefined,
+  fileName: string,
+  chunk: OutputChunk,
+) {
+  if (!emittedChunkFileNames) {
+    return
+  }
+  emittedChunkFileNames.add(fileName)
+  if (chunk.fileName) {
+    emittedChunkFileNames.add(chunk.fileName)
+  }
 }
 
 function isCurrentStyleSidecarUpdate(state: CorePluginState) {
@@ -277,16 +292,7 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
   const activeEntryIds = resolveActiveHmrEntryIds(state)
   const activeImportedChunkIds = new Set<string>()
   const pendingRuntimeVendorChunks: Array<{ fileName: string, chunk: OutputChunk }> = []
-  const addEmittedChunkFileName = (fileName: string, output: OutputChunk) => {
-    const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-    if (!emittedChunkFileNames) {
-      return
-    }
-    emittedChunkFileNames.add(fileName)
-    if (output.fileName) {
-      emittedChunkFileNames.add(output.fileName)
-    }
-  }
+  const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   for (const [fileName, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -311,13 +317,7 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     const isAffectedSharedChunk = state.hmrState.affectedSharedChunkIds?.has(fileName) === true
       || (output.fileName ? state.hmrState.affectedSharedChunkIds?.has(output.fileName) === true : false)
     if (isAffectedSharedChunk) {
-      const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-      if (emittedChunkFileNames) {
-        emittedChunkFileNames.add(fileName)
-        if (output.fileName) {
-          emittedChunkFileNames.add(output.fileName)
-        }
-      }
+      addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
       continue
     }
 
@@ -338,12 +338,12 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       continue
     }
 
-    addEmittedChunkFileName(fileName, chunk)
+    addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
   }
 
   for (const { fileName, chunk } of pendingRuntimeVendorChunks) {
     if (activeImportedChunkIds.has(fileName) || (chunk.fileName ? activeImportedChunkIds.has(chunk.fileName) : false)) {
-      addEmittedChunkFileName(fileName, chunk)
+      addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
       continue
     }
 
@@ -360,7 +360,7 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       continue
     }
 
-    addEmittedChunkFileName(fileName, chunk)
+    addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
   }
   return activeImportedChunkIds
 }
@@ -383,10 +383,7 @@ function retainFullEntryHmrChunks(bundle: OutputBundle, state: CorePluginState) 
     if (output?.type !== 'chunk') {
       continue
     }
-    emittedChunkFileNames.add(fileName)
-    if (output.fileName) {
-      emittedChunkFileNames.add(output.fileName)
-    }
+    addEmittedChunkFileName(emittedChunkFileNames, fileName, output as OutputChunk)
   }
 }
 
@@ -407,9 +404,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
       await flushIndependentBuilds.call(this, state)
-      pruneHmrMetadataOnlyChunks(rolldownBundle, state)
+      const hasChunkOutput = pruneHmrMetadataOnlyChunks(rolldownBundle, state)
       await emitCurrentStyleSidecarAsset.call(this, state, rolldownBundle)
-      const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(rolldownBundle, state)
+      const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(hasChunkOutput, state)
 
       if (isPluginBuild) {
         filterPluginBundleOutputs(rolldownBundle, configService)
