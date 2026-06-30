@@ -22,7 +22,7 @@ import { configSuffixes, watchedCssExts, watchedScriptModuleSuffixes, watchedTem
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
-import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks, collectAffectedSharedChunks } from '../helpers'
+import { collectAffectedEntries, collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
@@ -659,14 +659,14 @@ async function processChangedFile(
     && !dirtyReasonStats.has('style-sidecar')
     && !dirtyReasonStats.has('css-importer')
   const sharedChunkAffected = shouldExpandSharedChunkAffected
-    ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
-    : new Set<string>()
-  if (sharedChunkAffected.size) {
+    ? collectAffectedSharedChunkEntriesAndChunks(state, normalizedId)
+    : undefined
+  if (sharedChunkAffected?.affectedEntries.size) {
     state.hmrState.affectedSharedChunkIds ??= new Set<string>()
-    for (const chunkId of collectAffectedSharedChunks(state, normalizedId)) {
+    for (const chunkId of sharedChunkAffected.affectedChunks) {
       state.hmrState.affectedSharedChunkIds.add(chunkId)
     }
-    for (const entryId of sharedChunkAffected) {
+    for (const entryId of sharedChunkAffected.affectedEntries) {
       if (importerGraphAffectedEntryIds.has(entryId)) {
         continue
       }

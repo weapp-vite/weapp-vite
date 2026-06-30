@@ -4,6 +4,7 @@ import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import {
   collectAffectedEntries,
   collectAffectedEntriesFromSharedChunks,
+  collectAffectedSharedChunkEntriesAndChunks,
   collectAffectedSharedChunks,
   refreshModuleGraph,
   refreshPartialSharedChunkImporters,
@@ -75,6 +76,30 @@ describe('core helpers graph', () => {
     expect(collectAffectedEntries(state, '/src/shared.ts')).toEqual(new Set(['/src/app.ts']))
     expect(collectAffectedEntries(state, '/src/external-state.ts')).toEqual(new Set(['/src/components/card.vue']))
     expect(collectAffectedEntries(state, '/src/unknown.ts')).toEqual(new Set())
+  })
+
+  it('collects affected shared chunk entries and chunks in one pass', () => {
+    const state = createState()
+    const sharedModule = '/project/src/shared/tokens.ts'
+    const pageEntry = '/project/src/pages/index.ts'
+    const componentEntry = '/project/src/components/card/index.ts'
+    const unknownImporter = '/project/src/unused/importer.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(componentEntry, { value: true })
+    state.hmrSharedChunksByModule.set(sharedModule, new Set(['common.js', 'vendor.js']))
+    state.hmrSharedChunkImporters.set('common.js', new Set([pageEntry, unknownImporter]))
+    state.hmrSharedChunkImporters.set('vendor.js', new Set([pageEntry, componentEntry]))
+
+    const affected = collectAffectedSharedChunkEntriesAndChunks(state, sharedModule)
+
+    expect(affected.affectedEntries).toEqual(
+      collectAffectedEntriesFromSharedChunks(state, sharedModule),
+    )
+    expect(affected.affectedChunks).toEqual(
+      collectAffectedSharedChunks(state, sharedModule),
+    )
+    expect(affected.affectedEntries).toEqual(new Set([pageEntry, componentEntry]))
+    expect(affected.affectedChunks).toEqual(new Set(['common.js', 'vendor.js']))
   })
 
   it('refreshes module graph and skips virtual or node built-in ids', () => {

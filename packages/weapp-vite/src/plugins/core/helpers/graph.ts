@@ -71,6 +71,36 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
   return affected
 }
 
+export function collectAffectedSharedChunkEntriesAndChunks(state: CorePluginState, startId: string) {
+  const affectedEntries = new Set<string>()
+  const affectedChunks = new Set<string>()
+  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  if (!chunkIds?.size) {
+    return {
+      affectedChunks,
+      affectedEntries,
+    }
+  }
+
+  for (const chunkId of chunkIds) {
+    affectedChunks.add(chunkId)
+    const importers = state.hmrSharedChunkImporters.get(chunkId)
+    if (!importers?.size) {
+      continue
+    }
+    for (const importer of importers) {
+      if (state.resolvedEntryMap.has(importer)) {
+        affectedEntries.add(importer)
+      }
+    }
+  }
+
+  return {
+    affectedChunks,
+    affectedEntries,
+  }
+}
+
 function createModulesByImporter(
   moduleImporters: Map<string, Set<string>>,
   onlyImporterIds?: Set<string>,

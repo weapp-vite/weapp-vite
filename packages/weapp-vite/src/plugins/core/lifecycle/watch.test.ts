@@ -14,6 +14,10 @@ const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
+const collectAffectedSharedChunkEntriesAndChunksMock = vi.hoisted(() => vi.fn(() => ({
+  affectedChunks: new Set<string>(),
+  affectedEntries: new Set<string>(),
+})))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../utils/cache', () => ({
@@ -41,6 +45,7 @@ vi.mock('../helpers', async () => {
     ...actual,
     collectAffectedEntries: collectAffectedEntriesMock,
     collectAffectedEntriesFromSharedChunks: collectAffectedEntriesFromSharedChunksMock,
+    collectAffectedSharedChunkEntriesAndChunks: collectAffectedSharedChunkEntriesAndChunksMock,
     collectAffectedSharedChunks: collectAffectedSharedChunksMock,
   }
 })
@@ -143,6 +148,10 @@ describe('core lifecycle watch hook', () => {
     collectAffectedEntriesMock.mockReturnValue(new Set())
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
     collectAffectedSharedChunksMock.mockReturnValue(new Set())
+    collectAffectedSharedChunkEntriesAndChunksMock.mockImplementation(() => ({
+      affectedChunks: collectAffectedSharedChunksMock(),
+      affectedEntries: collectAffectedEntriesFromSharedChunksMock(),
+    }))
   })
 
   it('adds loaded config dependencies to dev build watch files', async () => {
