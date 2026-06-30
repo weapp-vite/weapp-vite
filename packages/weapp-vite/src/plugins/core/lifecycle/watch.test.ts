@@ -332,6 +332,32 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })
 
+  it('does not force vue recompilation for dependency-only shared chunk updates', async () => {
+    const sharedModuleId = '/project/src/shared/tokens.ts'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([vueEntry]))
+    collectAffectedSharedChunksMock.mockReturnValue(new Set(['common.js']))
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+      hmrSharedChunksByModule: new Map([
+        [sharedModuleId, new Set(['common.js'])],
+      ]),
+      hmrSharedChunkImporters: new Map([
+        ['common.js', new Set([vueEntry])],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedModuleId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set())
+    expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['common.js']))
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:1'])
+  })
+
   it('treats created existing style files as update-like css importers after atomic saves', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     const dependencyId = '/project/src/pages/index/hello.css'

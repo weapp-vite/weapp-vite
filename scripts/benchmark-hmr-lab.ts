@@ -17,6 +17,17 @@ interface HmrProfileJsonSample {
   file?: string
   buildCoreMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -72,8 +83,11 @@ interface ScenarioResult {
   averageMs?: number
   maxMs?: number
   averageBuildCoreMs?: number
+  averageBundlerMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
+  averageGenerateBundleMs?: number
+  averageGenerateRewriteMs?: number
   averageWriteMs?: number
   averageEmitMs?: number
   averageImpactCount?: number
@@ -251,8 +265,11 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageMs: average(samples.map(sample => sample.totalMs)),
     maxMs: max(samples.map(sample => sample.totalMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
+    averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
     averageTransformMs: averageOptional(samples.map(sample => sample.profile?.transformMs)),
+    averageGenerateBundleMs: averageOptional(samples.map(sample => sample.profile?.generateBundleMs)),
+    averageGenerateRewriteMs: averageOptional(samples.map(sample => sample.profile?.generateRewriteMs)),
     averageWriteMs: averageOptional(samples.map(sample => sample.profile?.writeMs)),
     averageEmitMs: averageOptional(samples.map(sample => sample.profile?.emitMs)),
     averageImpactCount: average(samples.map(sample => sample.impactCount)),
@@ -489,8 +506,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg watch->dirty | avg transform | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg total | max total | avg bundler | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -499,8 +516,10 @@ function renderMarkdown(report: {
       scenario.source,
       formatMs(scenario.averageMs),
       formatMs(scenario.maxMs),
-      formatMs(scenario.averageWatchToDirtyMs),
+      formatMs(scenario.averageBundlerMs),
       formatMs(scenario.averageTransformMs),
+      formatMs(scenario.averageGenerateBundleMs),
+      formatMs(scenario.averageGenerateRewriteMs),
       formatMs(scenario.averageWriteMs),
       formatMs(scenario.averageEmitMs),
       formatNumber(scenario.averageImpactCount),
