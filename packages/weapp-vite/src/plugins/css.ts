@@ -66,9 +66,28 @@ function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
   )
 }
 
+function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string) {
+  if (output.type !== 'asset') {
+    return false
+  }
+  const fileName = output.fileName || bundleKey
+  return fileName.endsWith('.css')
+    || fileName.endsWith('.wxss')
+    || isSourceStyleAsset(fileName)
+}
+
+function hasStyleBundleAsset(bundle: OutputBundle) {
+  for (const [bundleKey, output] of Object.entries(bundle)) {
+    if (isStyleBundleAsset(output, bundleKey)) {
+      return true
+    }
+  }
+  return false
+}
+
 function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
-  analysis: BundleStyleAnalysis,
+  bundle: OutputBundle,
 ) {
   if (!ctx.configService?.isDev) {
     return false
@@ -79,7 +98,7 @@ function shouldSkipUnchangedStyleHmrBundle(
     return false
   }
 
-  return !hasStyleDirtyReason(dirtyReasonSummary) && analysis.styleAssets.length === 0
+  return !hasStyleDirtyReason(dirtyReasonSummary) && !hasStyleBundleAsset(bundle)
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -255,15 +274,8 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
   const ownersByCssAsset = new Map<string, Set<string>>()
   const styleAssets: BundleStyleAnalysis['styleAssets'] = []
   for (const [bundleKey, output] of Object.entries(bundle)) {
-    if (output.type === 'asset') {
-      const fileName = output.fileName || bundleKey
-      if (
-        fileName.endsWith('.css')
-        || fileName.endsWith('.wxss')
-        || isSourceStyleAsset(fileName)
-      ) {
-        styleAssets.push({ bundleKey, asset: output })
-      }
+    if (isStyleBundleAsset(output, bundleKey)) {
+      styleAssets.push({ bundleKey, asset: output })
       continue
     }
 
@@ -677,10 +689,11 @@ export function css(ctx: CompilerContext): Plugin[] {
         resolvedConfig = config
       },
       async generateBundle(_opts, bundle) {
-        const styleAnalysis = analyzeBundleStyles(bundle as unknown as OutputBundle)
-        if (shouldSkipUnchangedStyleHmrBundle(ctx, styleAnalysis)) {
+        const rolldownBundle = bundle as unknown as OutputBundle
+        if (shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
           return
         }
+        const styleAnalysis = analyzeBundleStyles(rolldownBundle)
         await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
       },
     },
