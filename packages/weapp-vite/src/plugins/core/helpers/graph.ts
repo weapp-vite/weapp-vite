@@ -528,21 +528,34 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
   for (const [chunkId, imports] of state.hmrSharedChunkDependencies) {
     previousDependencies.set(chunkId, new Set(imports))
   }
-  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
-    for (const entryId of refreshedEntryIds) {
-      importers.delete(entryId)
-      const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
-      if (chunkIds) {
-        chunkIds.delete(chunkId)
-        if (chunkIds.size === 0) {
-          state.hmrSharedChunksByEntry.delete(entryId)
+  for (const entryId of refreshedEntryIds) {
+    const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
+    if (!chunkIds?.size) {
+      const emptyChunkIds: string[] = []
+      for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+        importers.delete(entryId)
+        if (importers.size === 0) {
+          emptyChunkIds.push(chunkId)
         }
       }
+      for (const chunkId of emptyChunkIds) {
+        state.hmrSharedChunkImporters.delete(chunkId)
+        state.hmrSharedChunkDependencies.delete(chunkId)
+      }
+      continue
     }
-    if (importers.size === 0) {
-      state.hmrSharedChunkImporters.delete(chunkId)
-      state.hmrSharedChunkDependencies.delete(chunkId)
+    for (const chunkId of chunkIds) {
+      const importers = state.hmrSharedChunkImporters.get(chunkId)
+      if (!importers) {
+        continue
+      }
+      importers.delete(entryId)
+      if (importers.size === 0) {
+        state.hmrSharedChunkImporters.delete(chunkId)
+        state.hmrSharedChunkDependencies.delete(chunkId)
+      }
     }
+    state.hmrSharedChunksByEntry.delete(entryId)
   }
 
   appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)

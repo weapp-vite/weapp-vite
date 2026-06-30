@@ -431,6 +431,46 @@ describe('core helpers graph', () => {
     )
   })
 
+  it('clears partial shared chunk importers through entry chunk index', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    const otherEntry = '/project/src/pages/other/index.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(otherEntry, { value: true })
+    state.hmrSharedChunkImporters.set('common.js', new Set([pageEntry, otherEntry]))
+    state.hmrSharedChunkImporters.set('weapp-vendors/runtime.js', new Set([pageEntry]))
+    state.hmrSharedChunkImporters.set('unrelated.js', new Set([otherEntry]))
+    state.hmrSharedChunksByEntry.set(pageEntry, new Set(['common.js', 'weapp-vendors/runtime.js']))
+    state.hmrSharedChunksByEntry.set(otherEntry, new Set(['common.js', 'unrelated.js']))
+    state.hmrSharedChunkDependencies.set('common.js', new Set(['weapp-vendors/runtime.js']))
+    state.hmrSharedChunkDependencies.set('weapp-vendors/runtime.js', new Set())
+    state.hmrSharedChunkDependencies.set('unrelated.js', new Set())
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/runtime.js'],
+      }),
+      'weapp-vendors/runtime.js': createChunk('weapp-vendors/runtime.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(new Set([otherEntry, pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/runtime.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('unrelated.js')).toEqual(new Set([otherEntry]))
+    expect(state.hmrSharedChunksByEntry.get(pageEntry)).toEqual(
+      new Set(['common.js', 'weapp-vendors/runtime.js']),
+    )
+    expect(state.hmrSharedChunksByEntry.get(otherEntry)).toEqual(
+      new Set(['common.js', 'unrelated.js']),
+    )
+  })
+
   it('refreshes module index for chunks included in partial refreshes', () => {
     const state = createState()
     const entry = '/project/src/pages/hmr/index.ts'
