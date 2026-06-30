@@ -88,7 +88,7 @@ const count = 1
     )
   })
 
-  it('uses the native backend only when explicitly enabled', async () => {
+  it('falls back to the TypeScript backend when native module path is not configured', async () => {
     const filename = '/project/src/pages/index.vue'
     const source = `<script setup lang="ts">
 const count = 1

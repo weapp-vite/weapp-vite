@@ -90,6 +90,7 @@
     "benchmark:hmr:single": "tsx ./scripts/benchmark-template-hmr.ts",
     "benchmark:hmr:wevu-template": "tsx ./scripts/benchmark-wevu-template-hmr.ts",
     "benchmark:hmr:templates": "tsx ./scripts/benchmark-templates-hmr.ts",
+    "performance:report": "tsx ./scripts/generate-performance-report.ts",
     "audit:hmr:smoke": "cross-env WORKSPACE_HMR_MODE=smoke WORKSPACE_HMR_FAIL_ON_ERROR=1 tsx ./scripts/audit-workspace-hmr.ts",
     "audit:hmr:changed": "cross-env WORKSPACE_HMR_MODE=changed-project WORKSPACE_HMR_SCOPE=workspace WORKSPACE_HMR_FAIL_ON_ERROR=1 WORKSPACE_HMR_STARTUP_TIMEOUT_MS=180000 WORKSPACE_HMR_TIMEOUT_MS=60000 WORKSPACE_HMR_MAX_STARTUP_MS=180000 WORKSPACE_HMR_MAX_SCENARIO_MS=1000 WORKSPACE_HMR_MAX_P95_MS=1000 WORKSPACE_HMR_MAX_REGRESSION_MS=12000 WORKSPACE_HMR_MAX_PENDING_COUNT=16 WORKSPACE_HMR_MAX_EMITTED_COUNT=16 WORKSPACE_HMR_MAX_PENDING_DELTA=8 WORKSPACE_HMR_MAX_EMITTED_DELTA=8 tsx ./scripts/audit-workspace-hmr.ts",
     "audit:hmr:nightly": "cross-env WORKSPACE_HMR_MODE=nightly-full WORKSPACE_HMR_SCOPE=workspace WORKSPACE_HMR_FAIL_ON_ERROR=1 WORKSPACE_HMR_STARTUP_TIMEOUT_MS=180000 WORKSPACE_HMR_TIMEOUT_MS=60000 WORKSPACE_HMR_MAX_STARTUP_MS=180000 tsx ./scripts/audit-workspace-hmr.ts",

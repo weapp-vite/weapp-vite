@@ -1,9 +1,8 @@
 import type { SFCBlock, SFCDescriptor } from 'vue/compiler-sfc'
 import { createHash } from 'node:crypto'
-import process from 'node:process'
 import { parse } from 'vue/compiler-sfc'
 import { stripJsonMacroCallsFromCode } from 'wevu/compiler'
-import { loadVueSfcSignatureNativeBindingSync } from './vueSfcSignatureNative'
+import { loadVueSfcSignatureNativeBindingSync, shouldUseNativeVueSfcSignature } from './vueSfcSignatureNative'
 
 interface VueSfcSignaturePayload {
   nonJson: unknown
@@ -113,7 +112,7 @@ function buildVueSfcSignaturePayloadWithNative(source: string): VueSfcSignatureP
 }
 
 function buildVueSfcSignaturePayload(source: string, filename: string) {
-  const cacheKey = `${filename}\0${source}\0${process.env.WEAPP_VITE_NATIVE === '1' ? 'native' : 'ts'}`
+  const cacheKey = `${filename}\0${source}\0${shouldUseNativeVueSfcSignature() ? 'native' : 'ts'}`
   if (signaturePayloadCache.has(cacheKey)) {
     return signaturePayloadCache.get(cacheKey)
   }

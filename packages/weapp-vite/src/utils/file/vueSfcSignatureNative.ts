@@ -9,8 +9,13 @@ interface VueSfcSignatureNativeBinding {
 
 let binding: VueSfcSignatureNativeBinding | false | undefined
 
+function resolveNativeAstModulePath() {
+  const modulePath = process.env.WEAPP_VITE_NATIVE_AST_PATH?.trim()
+  return modulePath || undefined
+}
+
 export function shouldUseNativeVueSfcSignature() {
-  return process.env.WEAPP_VITE_NATIVE === '1'
+  return process.env.WEAPP_VITE_NATIVE === '1' && Boolean(resolveNativeAstModulePath())
 }
 
 export async function loadVueSfcSignatureNativeBinding() {
@@ -22,7 +27,7 @@ export async function loadVueSfcSignatureNativeBinding() {
   }
 
   try {
-    binding = await import('@weapp-vite/ast-native') as VueSfcSignatureNativeBinding
+    binding = await import(resolveNativeAstModulePath()!) as VueSfcSignatureNativeBinding
   }
   catch {
     binding = false
@@ -40,7 +45,7 @@ export function loadVueSfcSignatureNativeBindingSync() {
   }
 
   try {
-    const modulePath = '@weapp-vite/ast-native'
+    const modulePath = resolveNativeAstModulePath()!
     binding = require(modulePath) as VueSfcSignatureNativeBinding
   }
   catch {
