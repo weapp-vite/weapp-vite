@@ -11,7 +11,13 @@ import { normalizeWatchPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
-import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
+import {
+  collectSharedStyleEntries,
+  injectSharedStyleImports,
+  prependSharedStyleImports,
+  resolveSharedStyleImportStatements,
+  toPosixPath,
+} from './css/shared/sharedStyles'
 import { pathExists as pathExistsCached } from './utils/cache'
 import { syncCssImportDependencies } from './utils/invalidateEntry'
 
@@ -28,6 +34,8 @@ type OutputChunkWithViteMetadata = OutputChunk & {
 interface PreparedStyleAsset {
   processedCss: string
 }
+
+type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
@@ -214,6 +222,28 @@ function emitCssAssetIfChanged(
   return true
 }
 
+function injectSharedStyleImportsCached(
+  css: string,
+  modulePath: string,
+  fileName: string,
+  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  configService: CompilerContext['configService'],
+  cache: SharedStyleImportCache,
+) {
+  const cacheKey = `${modulePath}\0${fileName}`
+  let statements = cache.get(cacheKey)
+  if (!statements) {
+    statements = resolveSharedStyleImportStatements(modulePath, fileName, sharedStyles, configService)
+    cache.set(cacheKey, statements)
+  }
+
+  const missingStatements = statements.filter(statement => !css.includes(statement))
+  if (!missingStatements.length) {
+    return css
+  }
+  return prependSharedStyleImports(css, missingStatements)
+}
+
 function collectCssAssetOwners(bundle: OutputBundle) {
   const ownersByCssAsset = new Map<string, Set<string>>()
   for (const output of Object.values(bundle)) {
@@ -282,6 +312,7 @@ async function handleBundleEntry(
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
   cssAssetOwners: Map<string, Set<string>>,
   emitted: Set<string>,
+  sharedStyleImportCache: SharedStyleImportCache,
   resolvedConfig?: ResolvedConfig,
 ) {
   if (asset.type !== 'asset') {
@@ -339,12 +370,13 @@ async function handleBundleEntry(
     const rawCss = asset.source.toString()
     const { processedCss } = await prepareStyleAssetForOwner(rawCss, preprocessId, shouldPreprocess)
 
-    const cssWithImports = injectSharedStyleImports(
+    const cssWithImports = injectSharedStyleImportsCached(
       processedCss,
       owner,
       fileName,
       sharedStyles,
       configService,
+      sharedStyleImportCache,
     )
 
     emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
@@ -493,6 +525,7 @@ async function emitSharedStyleImportForModule(
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  sharedStyleImportCache: SharedStyleImportCache,
   moduleId: string,
 ) {
   const { outputExtensions } = configService
@@ -512,12 +545,13 @@ async function emitSharedStyleImportForModule(
     return
   }
 
-  const cssWithImports = injectSharedStyleImports(
+  const cssWithImports = injectSharedStyleImportsCached(
     '',
     moduleId,
     fileName,
     sharedStyles,
     configService,
+    sharedStyleImportCache,
   )
 
   if (!cssWithImports.trim()) {
@@ -538,6 +572,7 @@ async function emitSharedStyleImportsForChunks(
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  sharedStyleImportCache: SharedStyleImportCache,
 ) {
   if (!sharedStyles.size) {
     return
@@ -557,7 +592,7 @@ async function emitSharedStyleImportsForChunks(
       }
       handledModuleIds.add(normalizeFsResolvedId(moduleId))
 
-      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, moduleId)
+      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache, moduleId)
     }),
   )
 
@@ -576,7 +611,7 @@ async function emitSharedStyleImportsForChunks(
       if (handledModuleIds.has(normalizeFsResolvedId(moduleId))) {
         return
       }
-      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, moduleId)
+      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache, moduleId)
     }),
   )
 }
@@ -591,13 +626,14 @@ async function generateBundleSharedCss(
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const cssAssetOwners = collectCssAssetOwners(bundle)
   const emitted = new Set<string>()
+  const sharedStyleImportCache: SharedStyleImportCache = new Map()
   const tasks = Object.entries(bundle).map(([bundleKey, asset]) => {
-    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, cssAssetOwners, emitted, resolvedConfig)
+    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, cssAssetOwners, emitted, sharedStyleImportCache, resolvedConfig)
   })
 
   await Promise.all(tasks)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
-  await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle)
+  await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache)
 }
 
 export function css(ctx: CompilerContext): Plugin[] {
