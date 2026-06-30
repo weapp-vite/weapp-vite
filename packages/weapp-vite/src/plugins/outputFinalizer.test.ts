@@ -488,4 +488,44 @@ describe('weapp-vite output finalizer', () => {
     expect(bundle['pages/index/index.wxml']).toBeDefined()
     expect(emittedSource.has('common.js')).toBe(false)
   })
+
+  it('skips source snapshotting for chunk outputs outside the current hmr event', () => {
+    const emittedSource = new Map<string, string>()
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'Page({})',
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'exports.shared = true',
+      },
+    } as unknown as OutputBundle
+
+    pruneUnchangedDevHmrOutputs({
+      configService: {
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            lastEmittedChunkFileNames: new Set(['pages/index/index.js']),
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any, bundle)
+
+    expect(bundle['pages/index/index.js']).toBeDefined()
+    expect(bundle['common.js']).toBeUndefined()
+    expect(emittedSource.get('pages/index/index.js')).toBe('Page({})')
+    expect(emittedSource.has('common.js')).toBe(false)
+  })
 })

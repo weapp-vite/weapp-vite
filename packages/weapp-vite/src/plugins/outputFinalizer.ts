@@ -202,13 +202,23 @@ export function pruneUnchangedDevHmrOutputs(
   }
   pruneUneventedDevHmrChunks(ctx, bundle)
   for (const [fileName, output] of Object.entries(bundle)) {
-    const source = outputSourceToString(output)
     const shouldForceEmitCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
       && (
         emittedChunkFileNames?.has(fileName) === true
         || emittedChunkFileNames?.has(output.fileName) === true
       )
+    if (
+      isHmrBuild
+      && output.type === 'chunk'
+      && emittedChunkFileNames?.size
+      && !shouldForceEmitCurrentHmrChunk
+    ) {
+      delete bundle[fileName]
+      continue
+    }
+
+    const source = outputSourceToString(output)
     if (isHmrBuild && !shouldForceEmitCurrentHmrChunk && cache.get(fileName) === source) {
       delete bundle[fileName]
       continue
