@@ -71,6 +71,21 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
   return affected
 }
 
+function createModulesByImporter(moduleImporters: Map<string, Set<string>>) {
+  const modulesByImporter = new Map<string, Set<string>>()
+  for (const [moduleId, importers] of moduleImporters) {
+    for (const importerId of importers) {
+      let modules = modulesByImporter.get(importerId)
+      if (!modules) {
+        modules = new Set<string>()
+        modulesByImporter.set(importerId, modules)
+      }
+      modules.add(moduleId)
+    }
+  }
+  return modulesByImporter
+}
+
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
@@ -97,8 +112,22 @@ export function refreshModuleGraph(
     importers.add(normalizedImporterId)
     state.moduleImporters.set(normalizedModuleId, importers)
   }
-  const removeEntryImporter = (entryId: string) => {
+  const removeEntryImporter = (entryId: string, modulesByImporter?: Map<string, Set<string>>) => {
     const normalizedEntryId = normalizeFsResolvedId(entryId)
+    const moduleIds = modulesByImporter?.get(normalizedEntryId)
+    if (moduleIds) {
+      for (const moduleId of moduleIds) {
+        const importers = state.moduleImporters.get(moduleId)
+        if (!importers) {
+          continue
+        }
+        importers.delete(normalizedEntryId)
+        if (!importers.size) {
+          state.moduleImporters.delete(moduleId)
+        }
+      }
+      return
+    }
     for (const [moduleId, importers] of state.moduleImporters) {
       importers.delete(normalizedEntryId)
       if (!importers.size) {
@@ -186,9 +215,15 @@ export function refreshModuleGraph(
   }
 
   if (mode === 'merge') {
+    const modulesByImporter = createModulesByImporter(state.moduleImporters)
+    const removedEntryIds = new Set<string>()
     for (const { entryIds } of chunkRecords) {
       for (const entryId of entryIds) {
-        removeEntryImporter(entryId)
+        if (removedEntryIds.has(entryId)) {
+          continue
+        }
+        removedEntryIds.add(entryId)
+        removeEntryImporter(entryId, modulesByImporter)
       }
     }
   }

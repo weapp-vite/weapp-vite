@@ -188,6 +188,48 @@ describe('core helpers graph', () => {
     expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
   })
 
+  it('merges partial bundle entry importers using indexed stale dependency cleanup', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const otherEntry = '/project/src/pages/other.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDepA = '/project/src/shared/stale-a.ts'
+    const staleDepB = '/project/src/shared/stale-b.ts'
+    const otherDep = '/project/src/shared/other.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.entryModuleIds.add(otherEntry)
+    state.moduleImporters.set(staleDepA, new Set([pageEntry, otherEntry]))
+    state.moduleImporters.set(staleDepB, new Set([pageEntry]))
+    state.moduleImporters.set(otherDep, new Set([otherEntry]))
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+      'pages/index-style.js': createChunk('pages/index-style.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(state.moduleImporters.get(staleDepA)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.has(staleDepB)).toBe(false)
+    expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
+  })
+
   it('refreshes shared chunk importers from entry chunks only', () => {
     const state = createState()
     state.resolvedEntryMap.set('/project/src/virtual-entry.ts', {
