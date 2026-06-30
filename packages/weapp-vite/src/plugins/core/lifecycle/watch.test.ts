@@ -439,6 +439,39 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
   })
 
+  it('walks recursively queued wxml importers without missing later entries', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared/templates/root.wxml'
+    const intermediateTemplate = '/project/src/shared/templates/intermediate.wxml'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      if (value === sharedTemplate) {
+        return new Set([intermediateTemplate])
+      }
+      if (value === intermediateTemplate) {
+        return new Set([importerTemplate])
+      }
+      return new Set()
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'create' })
+
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(intermediateTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+  })
+
   it('treats created existing shared wxs files as update-like wxml importers after atomic saves', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     const sharedWxs = '/project/src/shared/wxs/format.wxs'

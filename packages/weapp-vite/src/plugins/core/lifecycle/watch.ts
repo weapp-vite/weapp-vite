@@ -303,8 +303,8 @@ async function processChangedFile(
     const visited = new Set<string>()
     const queue = [startId]
 
-    while (queue.length) {
-      const current = queue.shift()!
+    for (let index = 0; index < queue.length; index += 1) {
+      const current = queue[index]!
       if (visited.has(current)) {
         continue
       }
@@ -669,9 +669,13 @@ async function processChangedFile(
       scanService.markDirty()
     }
 
-    const independentRoot = Array.from(scanService.independentSubPackageMap.keys()).find((root) => {
-      return relativeSrc.startsWith(`${root}/`)
-    })
+    let independentRoot: string | undefined
+    for (const root of scanService.independentSubPackageMap.keys()) {
+      if (relativeSrc.startsWith(`${root}/`)) {
+        independentRoot = root
+        break
+      }
+    }
 
     if (independentRoot) {
       independentMeta = scanService.independentSubPackageMap.get(independentRoot)
