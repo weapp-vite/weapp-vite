@@ -1,1 +1,1 @@
-export { mayContainPlatformApiAccess, platformApiIdentifiers } from '@weapp-vite/ast'
+export { mayContainPlatformApiAccess, mayContainPlatformApiIdentifierByText, platformApiIdentifiers } from '@weapp-vite/ast'

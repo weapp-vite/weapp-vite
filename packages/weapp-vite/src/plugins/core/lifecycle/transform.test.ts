@@ -331,6 +331,27 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(result).toBeNull()
   })
 
+  it('fast rejects source files without import.meta, request globals or platform api hints', async () => {
+    const profile = {}
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock(),
+        runtimeState: {
+          build: {
+            hmr: {
+              profile,
+            },
+          },
+        },
+      },
+    } as any)
+
+    const result = await transform('export const value = foo.bar({ title: "ok" })', '/project/src/pages/index/index.ts')
+
+    expect(result).toBeNull()
+    expect(profile).toEqual({})
+  })
+
   it('rewrites resolved entry files outside src root', async () => {
     const externalEntry = '/project/node_modules/pkg/index.js'
     const transform = createTransformHook({
