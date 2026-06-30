@@ -232,10 +232,10 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
       const startedAt = performance.now()
       await replaceFileByRename(sourcePath, updated)
       const matchedOutput = await waitForTarget(scenario.wait(expectedMarker), timeoutMs)
-      await sleep(250)
-      const after = await snapshotDist()
       const totalMs = performance.now() - startedAt
       const profile = await waitForHmrProfileSample(sourcePath, lineCount, 2_000)
+      await waitForDistStable()
+      const after = await snapshotDist()
       const impact = diffDistSnapshots(before, after)
 
       samples.push({
@@ -259,8 +259,7 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     }
   }
   finally {
-    await replaceFileByRename(sourcePath, original).catch(() => {})
-    await waitForTarget(scenario.wait(scenario.baselineMarker), timeoutMs).catch(() => {})
+    await restoreScenarioSource(sourcePath, original, scenario).catch(() => {})
   }
 
   return {
@@ -280,6 +279,15 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageEmitMs: averageOptional(samples.map(sample => sample.profile?.emitMs)),
     averageImpactCount: average(samples.map(sample => sample.impactCount)),
   }
+}
+
+async function restoreScenarioSource(sourcePath: string, original: string, scenario: ScenarioCase) {
+  const lineCount = await countJsonlLines(profilePath)
+  await replaceFileByRename(sourcePath, original)
+  await waitForTarget(scenario.wait(scenario.baselineMarker), timeoutMs)
+  await waitForHmrProfileSample(sourcePath, lineCount, 2_000)
+  await waitForProfileStable()
+  await waitForDistStable()
 }
 
 function createReplaceScenario(
@@ -393,6 +401,40 @@ async function snapshotDist() {
   return snapshot
 }
 
+async function waitForDistStable(stableMs = 500, waitMs = 3_000) {
+  const startedAt = Date.now()
+  let lastHash = ''
+  let stableStartedAt = 0
+  while (Date.now() - startedAt < waitMs) {
+    const currentHash = await hashDistSnapshot()
+    if (currentHash === lastHash) {
+      if (stableStartedAt === 0) {
+        stableStartedAt = Date.now()
+      }
+      if (Date.now() - stableStartedAt >= stableMs) {
+        return
+      }
+    }
+    else {
+      lastHash = currentHash
+      stableStartedAt = Date.now()
+    }
+    await sleep(100)
+  }
+}
+
+async function hashDistSnapshot() {
+  const snapshot = await snapshotDist()
+  const hash = createHash('sha1')
+  for (const [filePath, file] of snapshot) {
+    hash.update(filePath)
+    hash.update(':')
+    hash.update(file.hash)
+    hash.update('\n')
+  }
+  return hash.digest('hex')
+}
+
 function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<string, DistFileSnapshot>) {
   const result: ImpactFile[] = []
   for (const [filePath, afterFile] of after) {
@@ -466,6 +508,28 @@ async function readJsonlSamplesSince(startLineCount: number) {
       }
     })
     .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
+}
+
+async function waitForProfileStable(stableMs = 500, waitMs = 3_000) {
+  const startedAt = Date.now()
+  let lastLineCount = -1
+  let stableStartedAt = 0
+  while (Date.now() - startedAt < waitMs) {
+    const lineCount = await countJsonlLines(profilePath)
+    if (lineCount === lastLineCount) {
+      if (stableStartedAt === 0) {
+        stableStartedAt = Date.now()
+      }
+      if (Date.now() - stableStartedAt >= stableMs) {
+        return
+      }
+    }
+    else {
+      lastLineCount = lineCount
+      stableStartedAt = Date.now()
+    }
+    await sleep(100)
+  }
 }
 
 function formatProfileSample(sample: HmrProfileJsonSample): HmrProfileJsonSample {
