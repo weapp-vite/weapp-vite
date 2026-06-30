@@ -16,6 +16,7 @@ import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
+const disableCurrentSupportOutputs = process.env.BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS === '1'
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
 const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
 if (!workspaceRootNodeModulesDir) {
@@ -60,6 +61,9 @@ async function main() {
   console.log(`[auto-import-hmr-bench] iterations=${iterations}`)
   console.log(`[auto-import-hmr-bench] total resolver components=${allResolverTags.length}`)
   console.log(`[auto-import-hmr-bench] scenarios=${scenarioValues.join(',')}`)
+  if (disableCurrentSupportOutputs) {
+    console.log('[auto-import-hmr-bench] current support outputs disabled')
+  }
 
   const results = []
   for (const usedCount of scenarioValues) {
@@ -254,6 +258,14 @@ async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current'
     ? '      autoImportComponents: false,'
     : [
         '      autoImportComponents: {',
+        ...(disableCurrentSupportOutputs
+          ? [
+              '        output: false,',
+              '        typedComponents: false,',
+              '        htmlCustomData: false,',
+              '        vueComponents: false,',
+            ]
+          : []),
         '        resolvers: [',
         '          VantResolver()',
         '        ]',

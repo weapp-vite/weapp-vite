@@ -30,6 +30,7 @@ const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
 const devHotkeysSuspendMock = vi.hoisted(() => vi.fn())
 const watcherCloseAllMock = vi.hoisted(() => vi.fn())
 const buildServiceBuildMock = vi.hoisted(() => vi.fn())
+const syncSupportFileResolverComponentsMock = vi.hoisted(() => vi.fn())
 const fakeProcess = vi.hoisted(() => {
   const listeners = new Map<string, Set<(...args: any[]) => void>>()
   return {
@@ -177,6 +178,9 @@ describe('serve cli command', () => {
         buildService: {
           build: buildServiceBuildMock,
         },
+        autoImportService: {
+          syncSupportFileResolverComponents: syncSupportFileResolverComponentsMock,
+        },
         configService: {
           platform: 'weapp',
           cwd: '/project',
@@ -220,6 +224,8 @@ describe('serve cli command', () => {
       urls: ['http://127.0.0.1:4173/'],
     })
     watcherCloseAllMock.mockReset()
+    syncSupportFileResolverComponentsMock.mockReset()
+    syncSupportFileResolverComponentsMock.mockResolvedValue(undefined)
     fakeProcess.removeAllListeners()
   })
 
@@ -281,6 +287,10 @@ describe('serve cli command', () => {
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
+    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
+      syncAutoImportSupportFiles: false,
+    }))
+    expect(syncSupportFileResolverComponentsMock).toHaveBeenCalledTimes(1)
   })
 
   it('forces mcp config for dev hotkeys with --mcp', async () => {

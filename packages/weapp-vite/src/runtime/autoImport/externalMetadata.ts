@@ -16,6 +16,7 @@ const metadataCache = new WeakMap<Resolver[], Map<string, ExternalComponentMetad
 const fallbackMetadataCache = new Map<string, ExternalComponentMetadata | null>()
 const requireCache = new Map<string, ReturnType<typeof createRequire>>()
 const packageRootCache = new Map<string, string>()
+const metadataRootExistsCache = new Map<string, boolean>()
 
 function getMetadataCache(resolvers?: Resolver[]) {
   if (!resolvers) {
@@ -135,6 +136,36 @@ function resolveHeuristicExternalMetadataCandidates(from: string): ExternalMetad
   }
 }
 
+function getMetadataRootSegment(relativeFile: string) {
+  const [segment] = relativeFile.split('/').filter(Boolean)
+  if (!segment || path.extname(segment)) {
+    return undefined
+  }
+  return segment
+}
+
+function pathExistsCached(filePath: string) {
+  const cached = metadataRootExistsCache.get(filePath)
+  if (cached !== undefined) {
+    return cached
+  }
+  const exists = fs.pathExistsSync(filePath)
+  metadataRootExistsCache.set(filePath, exists)
+  return exists
+}
+
+function filterMetadataCandidatesByExistingRoots(pkgRoot: string, from: string, files: string[]) {
+  const parsed = parseNpmPackageSpecifier(from)
+  const subPathRoot = parsed?.subPath?.split('/').filter(Boolean)[0]
+  return files.filter((file) => {
+    const segment = getMetadataRootSegment(file)
+    if (!segment || segment === subPathRoot) {
+      return true
+    }
+    return pathExistsCached(path.join(pkgRoot, segment))
+  })
+}
+
 function resolveResolverMetadataFiles(from: string, cwd: string, resolvers: Resolver[] | undefined) {
   const candidates = resolveExternalMetadataCandidates(from, resolvers)
     ?? resolveHeuristicExternalMetadataCandidates(from)
@@ -148,8 +179,10 @@ function resolveResolverMetadataFiles(from: string, cwd: string, resolvers: Reso
   }
 
   return {
-    dts: candidates.dts.map(file => path.join(pkgRoot, file)),
-    js: candidates.js.map(file => path.join(pkgRoot, file)),
+    dts: filterMetadataCandidatesByExistingRoots(pkgRoot, from, candidates.dts)
+      .map(file => path.join(pkgRoot, file)),
+    js: filterMetadataCandidatesByExistingRoots(pkgRoot, from, candidates.js)
+      .map(file => path.join(pkgRoot, file)),
   }
 }
 

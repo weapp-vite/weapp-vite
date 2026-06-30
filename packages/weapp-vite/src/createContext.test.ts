@@ -72,6 +72,9 @@ describe('createCompilerContext', () => {
     })
 
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledWith(expect.anything(), {
+      syncAutoImport: undefined,
+    })
     expect(loggerWarnMock).not.toHaveBeenCalledWith(expect.stringContaining('已自动重新生成'))
 
     syncProjectSupportFilesMock.mockResolvedValueOnce({
@@ -127,5 +130,17 @@ describe('createCompilerContext', () => {
     })
 
     expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
+  })
+
+  it('can skip blocking auto-import support file generation', async () => {
+    await createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+      syncAutoImportSupportFiles: false,
+    })
+
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledWith(expect.anything(), {
+      syncAutoImport: false,
+    })
   })
 })

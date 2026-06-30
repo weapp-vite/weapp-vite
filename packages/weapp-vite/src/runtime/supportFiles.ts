@@ -18,6 +18,10 @@ export interface SyncSupportFilesResult {
   managedTsconfigWarnings: string[]
 }
 
+export interface SyncProjectSupportFilesOptions {
+  syncAutoImport?: boolean
+}
+
 interface ManagedTsconfigInspection {
   files: Awaited<ReturnType<typeof createManagedTsconfigFiles>>
   managedTsconfigChanged: boolean
@@ -140,7 +144,10 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
   return Array.from(tags.entries(), ([tag, importerBaseName]) => ({ tag, importerBaseName }))
 }
 
-export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Promise<SyncSupportFilesResult> {
+export async function syncProjectSupportFiles(
+  ctx: MutableCompilerContext,
+  options: SyncProjectSupportFilesOptions = {},
+): Promise<SyncSupportFilesResult> {
   const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
   const managedTsconfigInspection = await inspectManagedTsconfigFiles(ctx)
 
@@ -150,7 +157,8 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
     await ctx.autoRoutesService.ensureFresh()
   }
 
-  const autoImportConfig = getAutoImportConfig(ctx.configService)
+  const syncAutoImport = options.syncAutoImport ?? true
+  const autoImportConfig = syncAutoImport ? getAutoImportConfig(ctx.configService) : undefined
   if (autoImportConfig && ctx.autoImportService && ctx.configService) {
     await ctx.autoImportService.runInBatch(async () => {
       ctx.autoImportService!.reset()

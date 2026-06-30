@@ -131,6 +131,35 @@ describe('loadExternalComponentMetadata (cache)', () => {
       await fs.remove(root)
     }
   })
+
+  it('skips metadata candidates under missing package roots', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-meta-'))
+    let readSpy: ReturnType<typeof vi.spyOn> | undefined
+    try {
+      await fs.outputJson(path.join(root, 'package.json'), { name: 'app', version: '0.0.0' })
+      await fs.outputJson(path.join(root, 'node_modules/mock-lib/package.json'), { name: 'mock-lib', version: '0.0.0' })
+
+      const resolver = {
+        resolveExternalMetadataCandidates() {
+          return {
+            packageName: 'mock-lib',
+            dts: ['lib/button/index.d.ts', 'dist/button/index.d.ts'],
+            js: ['lib/button/index.js', 'dist/button/index.js'],
+          }
+        },
+      }
+
+      readSpy = vi.spyOn(fs, 'readFileSync')
+      const meta = loadExternalComponentMetadata('mock-lib/button', root, [resolver])
+
+      expect(meta).toBeUndefined()
+      expect(readSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      readSpy?.mockRestore()
+      await fs.remove(root)
+    }
+  })
 })
 
 describe('loadExternalComponentMetadata (integration)', () => {

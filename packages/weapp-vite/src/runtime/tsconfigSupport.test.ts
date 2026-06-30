@@ -362,6 +362,7 @@ describe('tsconfig support', () => {
         resolve: vi.fn(),
         setSupportFileResolverComponents: vi.fn(),
         collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
+        syncSupportFileResolverComponents: vi.fn().mockResolvedValue(undefined),
         awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
         clearSupportFileResolverComponents: vi.fn(),
       },

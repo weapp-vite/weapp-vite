@@ -171,6 +171,50 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
   })
 
+  it('syncs full resolver support outputs without resetting runtime resolver state', async () => {
+    const resolverHelpers = createResolverHelpers({
+      collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({
+        'van-cell': '@vant/weapp/cell',
+      })),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    ctx.runtimeState.autoImport.resolvedResolverComponents.set('UsedButton', '@vant/weapp/button')
+    const service = createAutoImportService(ctx)
+
+    await service.syncSupportFileResolverComponents()
+
+    expect(ctx.runtimeState.autoImport.resolvedResolverComponents.get('UsedButton')).toBe('@vant/weapp/button')
+    expect(resolverHelpers.setSupportFileResolverComponents).toHaveBeenCalledWith({
+      'van-cell': '@vant/weapp/cell',
+    })
+    expect(resolverHelpers.clearSupportFileResolverComponents).toHaveBeenCalledTimes(1)
+    expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+  })
+
   it('resolves local component first, then resolver component and schedules outputs', () => {
     const resolverHelpers = createResolverHelpers({
       resolveWithResolvers: vi

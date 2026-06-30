@@ -40,6 +40,8 @@ interface ResolverState {
 
 export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   const miniprogramDirCache = new Map<string, string | undefined>()
+  const packageRootCache = new Map<string, string>()
+  const navigationImportCache = new Map<string, string>()
   const resolveCache = new Map<string, ResolvedValue | null>()
   const supportFileResolverComponents = new Map<string, string>()
   let compiledResolversCache: CompiledResolversCache | undefined
@@ -151,9 +153,17 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   }
 
   function getPackageRoot(pkgName: string, cwd: string) {
+    const cacheKey = `${cwd}\0${pkgName}`
+    const cached = packageRootCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     try {
       const packageJsonPath = require.resolve(`${pkgName}/package.json`, { paths: [cwd] })
-      return path.dirname(packageJsonPath)
+      const packageRoot = path.dirname(packageJsonPath)
+      packageRootCache.set(cacheKey, packageRoot)
+      return packageRoot
     }
     catch {
       return undefined
@@ -165,6 +175,11 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     const cwd = configService?.cwd
     if (!cwd) {
       return undefined
+    }
+
+    const cached = navigationImportCache.get(from)
+    if (cached) {
+      return cached
     }
 
     const parsed = parseNpmPackageSpecifier(from)
@@ -185,6 +200,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
         path.join(pkgRoot, withMiniprogramSubpath, 'index.d.ts'),
       ]
       if (dtsCandidates.some(candidate => fs.pathExistsSync(candidate))) {
+        navigationImportCache.set(from, withMiniprogramDir)
         return withMiniprogramDir
       }
     }
@@ -202,6 +218,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     for (const candidate of candidates) {
       try {
         require.resolve(candidate, { paths: [cwd] })
+        navigationImportCache.set(from, candidate)
         return candidate
       }
       catch {

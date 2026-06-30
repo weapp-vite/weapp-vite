@@ -7,6 +7,7 @@ import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
   key?: string
   syncSupportFiles?: boolean
+  syncAutoImportSupportFiles?: boolean
   preloadAppEntry?: boolean
 }
 
@@ -36,7 +37,9 @@ export async function createCompilerContext(options?: CreateCompilerContextOptio
   await configService.load(options)
   if (options?.syncSupportFiles !== false) {
     try {
-      const supportFiles = await syncProjectSupportFiles(ctx)
+      const supportFiles = await syncProjectSupportFiles(ctx, {
+        syncAutoImport: options?.syncAutoImportSupportFiles,
+      })
       for (const warning of supportFiles.managedTsconfigWarnings) {
         logger.warn(warning)
       }
