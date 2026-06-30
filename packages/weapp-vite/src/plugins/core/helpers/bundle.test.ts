@@ -703,6 +703,28 @@ describe('core helper bundle', () => {
     expect(bundle['pages/hmr/index.js'].code).toContain('(require("../../weapp-vendors/wevu-src.js").__wevuCreateWevuComponent || require("../../weapp-vendors/wevu-src.js").to)({})')
   })
 
+  it('skips stable wevu access normalization when no runtime chunk exists', () => {
+    const bundle = {
+      'pages/hmr/index.js': {
+        type: 'chunk',
+        fileName: 'pages/hmr/index.js',
+        code: 'const runtime = require("../../common.js");runtime.eo({});',
+        imports: ['common.js'],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'exports.eo = function eo(value) { return value; }',
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    expect(bundle['pages/hmr/index.js'].code).toBe('const runtime = require("../../common.js");runtime.eo({});')
+    expect(bundle['pages/hmr/index.js'].imports).toEqual(['common.js'])
+  })
+
   it('resolves semantic wevu exports from ESM export lists before rewriting access', () => {
     const bundle = {
       'pages/hmr/index.js': {

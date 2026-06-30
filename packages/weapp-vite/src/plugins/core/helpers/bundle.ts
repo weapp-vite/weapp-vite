@@ -1330,20 +1330,29 @@ function rewriteStableWevuRuntimeAccess(
 }
 
 export function stabilizeWevuRuntimeChunkAccess(bundle: OutputBundle) {
-  const wevuChunks = Object.values(bundle).filter((output): output is OutputChunk => {
-    return output?.type === 'chunk'
-      && (
-        WEVU_SRC_CHUNK_RE.test(output.fileName)
-        || WEVU_VENDOR_RUNTIME_CHUNK_RE.test(output.fileName)
+  const wevuChunks: OutputChunk[] = []
+  const wevuChunkFileNames = new Set<string>()
+  for (const output of Object.values(bundle)) {
+    if (
+      output?.type !== 'chunk'
+      || (
+        !WEVU_SRC_CHUNK_RE.test(output.fileName)
+        && !WEVU_VENDOR_RUNTIME_CHUNK_RE.test(output.fileName)
       )
-  })
+    ) {
+      continue
+    }
+
+    wevuChunks.push(output as OutputChunk)
+    wevuChunkFileNames.add(output.fileName)
+  }
   if (!wevuChunks.length) {
     return
   }
   const baseChunk = resolveWevuBaseChunk(bundle)
   const usageByRuntimeChunk = collectWevuRuntimeChunkUsage(
     bundle,
-    new Set(wevuChunks.map(chunk => chunk.fileName)),
+    wevuChunkFileNames,
   )
 
   for (const wevuChunk of wevuChunks) {
