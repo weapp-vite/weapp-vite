@@ -132,6 +132,30 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
   })
 
+  it('skips chunks without wevu runtime imports during bundle runtime rewrite', () => {
+    const bundle = {
+      'pages/plain.js': {
+        type: 'chunk',
+        fileName: 'pages/plain.js',
+        code: [
+          'const value = require("./dep.js");',
+          'console.log(value);',
+        ].join('\n'),
+        imports: ['pages/dep.js'],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileName: 'weapp-vendors/wevu-watch.js',
+    })
+
+    expect(bundle['pages/plain.js'].code).toBe([
+      'const value = require("./dep.js");',
+      'console.log(value);',
+    ].join('\n'))
+    expect(bundle['pages/plain.js'].imports).toEqual(['pages/dep.js'])
+  })
+
   it('rewrites partial hmr wevu internal reactivity imports with remembered vendor files', () => {
     const bundle = {
       'app.js': {

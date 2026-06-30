@@ -732,6 +732,22 @@ function rewriteRootWevuImport(
   }
 }
 
+function mayContainWevuRuntimeImport(code: string) {
+  return code.includes('wevu/internal-runtime')
+    || code.includes('wevu/internal-reactivity')
+    || code.includes('wevu/internal-template')
+    || code.includes('wevu/router')
+    || code.includes('wevu/store')
+    || code.includes('wevu/api')
+    || code.includes('wevu/fetch')
+    || code.includes('wevu/web-apis')
+    || code.includes('from \'wevu\'')
+    || code.includes('from "wevu"')
+    || code.includes('require(\'wevu')
+    || code.includes('require("wevu')
+    || code.includes('require(`wevu')
+}
+
 export function rewriteWevuInternalRuntimeImports(
   bundle: OutputBundle,
   options: RewriteWevuInternalRuntimeImportsOptions = {},
@@ -755,6 +771,9 @@ export function rewriteWevuInternalRuntimeImports(
 
     const fileName = output.fileName
     if (!fileName.endsWith('.js')) {
+      continue
+    }
+    if (!mayContainWevuRuntimeImport(code)) {
       continue
     }
 
@@ -854,21 +873,7 @@ export function rewriteWevuInternalRuntimeImportCode(
       !options.runtimeFileName
       && !options.runtimeFileNames?.size
     )
-    || (
-      !code.includes('wevu/internal-runtime')
-      && !code.includes('wevu/internal-reactivity')
-      && !code.includes('wevu/internal-template')
-      && !code.includes('wevu/router')
-      && !code.includes('wevu/store')
-      && !code.includes('wevu/api')
-      && !code.includes('wevu/fetch')
-      && !code.includes('wevu/web-apis')
-      && !code.includes('from \'wevu\'')
-      && !code.includes('from "wevu"')
-      && !code.includes('require(\'wevu')
-      && !code.includes('require("wevu')
-      && !code.includes('require(`wevu')
-    )
+    || !mayContainWevuRuntimeImport(code)
   ) {
     return code
   }
