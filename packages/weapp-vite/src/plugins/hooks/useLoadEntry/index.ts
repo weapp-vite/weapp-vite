@@ -290,19 +290,31 @@ export function useLoadEntry(
   const lastChunkEmittedEntryIds = new Set<string>()
   const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
   const metadataEntryIds = new Set<string>()
+  const rootInputIds = options?.hmr?.rootInputIds
+  const addLastEmittedChunkFileName = (entryId: string) => {
+    lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+    if (rootInputIds?.has(entryId)) {
+      lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeAbsoluteSrcRoot(entryId), '.js'))
+    }
+  }
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
 
   const normalizeEntry = createEntryNormalizer(ctx.configService)
   const scanTemplateEntry = createTemplateScanner(ctx.wxmlService, debug)
-  const rootInputIds = options?.hmr?.rootInputIds
   let loadEntry: ReturnType<typeof createEntryLoader>
   const emitEntriesChunks = createChunkEmitter(
     ctx.configService,
     loadedEntrySet,
     debug,
     (entryId) => {
+      if (rootInputIds?.has(entryId)) {
+        addLastEmittedChunkFileName(entryId)
+        if (!metadataEntryIds.has(entryId)) {
+          lastChunkEmittedEntryIds.add(entryId)
+        }
+      }
       lastActualEmittedEntryIds.add(entryId)
     },
     (entryId) => {
@@ -447,6 +459,7 @@ export function useLoadEntry(
       lastEmittedChunkFileNames.clear()
       metadataEntryIds.clear()
       const pendingMetadataEntryIds = new Set<string>()
+      const deferredDirtyEntryIds = new Set<string>()
 
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
@@ -454,9 +467,14 @@ export function useLoadEntry(
           metadataEntryIds.add(entryId)
           pendingMetadataEntryIds.add(entryId)
         }
-        dirtyEntrySet.delete(entryId)
-        dirtyEntryReasons.delete(entryId)
-        dirtyEntryEventIds.delete(entryId)
+        if (rootInputIds?.has(entryId)) {
+          deferredDirtyEntryIds.add(entryId)
+        }
+        else {
+          dirtyEntrySet.delete(entryId)
+          dirtyEntryReasons.delete(entryId)
+          dirtyEntryEventIds.delete(entryId)
+        }
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
           continue
@@ -478,6 +496,11 @@ export function useLoadEntry(
       if (pending.length) {
         await Promise.all(emitEntriesChunks.call(this, pending))
       }
+      for (const entryId of deferredDirtyEntryIds) {
+        dirtyEntrySet.delete(entryId)
+        dirtyEntryReasons.delete(entryId)
+        dirtyEntryEventIds.delete(entryId)
+      }
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
       const actualChunkEmittedEntryIds = new Set(lastChunkEmittedEntryIds)
@@ -485,11 +508,11 @@ export function useLoadEntry(
         if (!rootInputIds?.has(entryId)) {
           continue
         }
-        lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+        addLastEmittedChunkFileName(entryId)
       }
       if (isEntryAutoRoutesRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
         for (const entryId of actualChunkEmittedEntryIds) {
-          lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+          addLastEmittedChunkFileName(entryId)
         }
       }
       let hmrEntryIds = new Set(actualEmittedEntryIds)

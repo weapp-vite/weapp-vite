@@ -1196,5 +1196,57 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(createPluginContext())
 
     expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/app.js')).toBe(true)
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(true)
+  })
+
+  it('retains root input chunk filenames when root chunk emit is skipped', async () => {
+    const ctx = createContext()
+    const id = '/project/src/app.ts'
+    const setLastEmittedEntries = vi.fn()
+    const setSkipSharedChunkRefresh = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+        rootInputIds: new Set([id]),
+        setLastEmittedEntries,
+        setSkipSharedChunkRefresh,
+      },
+    })
+
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    expect(setLastEmittedEntries).toHaveBeenCalledWith(new Set([id]))
+    expect(setSkipSharedChunkRefresh).toHaveBeenCalledWith(false)
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/app.js')).toBe(true)
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('app.js')).toBe(true)
+  })
+
+  it('keeps root input dirty while preloading skipped root chunks', async () => {
+    const ctx = createContext()
+    const id = '/project/src/app.ts'
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+        rootInputIds: new Set([id]),
+      },
+    })
+
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+    loadEntryMock.mockImplementationOnce(async () => {
+      expect(hook.dirtyEntrySet.has(id)).toBe(true)
+      return { code: '' }
+    })
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'app')
+    expect(hook.dirtyEntrySet.has(id)).toBe(false)
   })
 })
