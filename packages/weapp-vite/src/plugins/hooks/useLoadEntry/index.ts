@@ -170,7 +170,6 @@ function resolvePendingEntryIds(options: {
     }
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
-    let hasMetadataDirtyImporter = false
     for (const importer of importers) {
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
         hasDependencyDrivenImporter = true
@@ -178,23 +177,19 @@ function resolvePendingEntryIds(options: {
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
         hasDirectDirtyImporter = true
-        continue
-      }
-      if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'metadata') {
-        hasMetadataDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter && !shouldExpandLayoutSharedChunks) {
+    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !shouldExpandLayoutSharedChunks) {
       continue
     }
     if (shouldExpandStableSharedChunk(chunkId, importers)) {
       hasStableSharedChunkExpansion = true
     }
-    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter) {
+    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
     }
     else if (
-      [hasDependencyDrivenImporter, hasDirectDirtyImporter, hasMetadataDirtyImporter]
+      [hasDependencyDrivenImporter, hasDirectDirtyImporter]
         .filter(Boolean)
         .length > 1
     ) {
@@ -202,9 +197,6 @@ function resolvePendingEntryIds(options: {
     }
     else if (hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
-    }
-    else if (hasMetadataDirtyImporter) {
-      expansionMode = expansionMode && expansionMode !== 'metadata' ? 'mixed' : 'metadata'
     }
     else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -422,11 +414,13 @@ export function useLoadEntry(
       lastChunkEmittedEntryIds.clear()
       lastEmittedChunkFileNames.clear()
       metadataEntryIds.clear()
+      const pendingMetadataEntryIds = new Set<string>()
 
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
         if (reason === 'metadata') {
           metadataEntryIds.add(entryId)
+          pendingMetadataEntryIds.add(entryId)
         }
         dirtyEntrySet.delete(entryId)
         dirtyEntryReasons.delete(entryId)
@@ -466,7 +460,9 @@ export function useLoadEntry(
           lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
         }
       }
-      const hmrEntryIds = new Set(actualEmittedEntryIds)
+      const hmrEntryIds = shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
+        ? pendingMetadataEntryIds
+        : new Set(actualEmittedEntryIds)
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
       const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (
         actualEmittedEntryIds.size === resolvedEntryMap.size
@@ -486,7 +482,7 @@ export function useLoadEntry(
         sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
         dirtyCount,
         pendingCount: pending.length,
-        emittedCount: actualEmittedEntryIds.size,
+        emittedCount: hmrEntryIds.size,
         pendingReasonSummary: pendingResolution.pendingReasonSummary,
       }
 

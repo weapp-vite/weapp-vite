@@ -566,7 +566,7 @@ async function processChangedFile(
       markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
     }
   }
-  else if (state.moduleImporters.size && state.entryModuleIds.size) {
+  else if (!handledSidecarMetadataUpdate && state.moduleImporters.size && state.entryModuleIds.size) {
     const affected = collectAffectedEntries(state, normalizedId)
     if (affected.size) {
       for (const entryId of affected) {

@@ -195,6 +195,33 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
+  it('does not expand style sidecar updates through stale importer graph records', async () => {
+    const styleId = '/project/src/pages/hmr/index.scss'
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const staleImporterId = '/project/src/pages/other/index.ts'
+    findJsEntryMock.mockResolvedValue({
+      path: entryId,
+    })
+    collectAffectedEntriesMock.mockReturnValue(new Set([
+      entryId,
+      staleImporterId,
+    ]))
+    const state = createState({
+      moduleImporters: new Map([
+        [styleId, new Set([entryId, staleImporterId])],
+      ]),
+      entryModuleIds: new Set([entryId, staleImporterId]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(styleId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
+
   it('marks style sidecar updates separately for asset-only preloading', async () => {
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/components/x-child/index.ts',

@@ -2,11 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLoadEntry } from './index'
 
 const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
+const entryLoaderOptionsRef = vi.hoisted(() => ({ current: undefined as any }))
 
 vi.mock('./loadEntry', () => ({
-  createEntryLoader: vi.fn(() => Object.assign(loadEntryMock, {
-    invalidateResolveCache: vi.fn(),
-  })),
+  createEntryLoader: vi.fn((options) => {
+    entryLoaderOptionsRef.current = options
+    return Object.assign(
+      async function loadEntry(this: any, id: string, type: 'app' | 'page' | 'component') {
+        return await loadEntryMock.call(this, id, type)
+      },
+      {
+        invalidateResolveCache: vi.fn(),
+      },
+    )
+  }),
 }))
 
 function createContext() {
@@ -774,6 +783,80 @@ describe('useLoadEntry emitDirtyEntries', () => {
       type: 'chunk',
       id,
     }))
+  })
+
+  it('keeps style sidecar hmr entries scoped to direct metadata entries', async () => {
+    const ctx = createContext()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['style-sidecar:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setLastHmrEntries,
+      },
+    })
+
+    const id = '/project/src/pages/hmr/index.ts'
+    const childId = '/project/src/components/x-child/index.ts'
+    hook.entriesMap.set(id, {
+      type: 'page',
+      path: id,
+    } as any)
+    hook.entriesMap.set(childId, {
+      type: 'component',
+      path: childId,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.resolvedEntryMap.set(childId, { id: childId } as any)
+    loadEntryMock.mockImplementationOnce(async function () {
+      await Promise.all(entryLoaderOptionsRef.current.emitEntriesChunks.call(this, [{ id: childId }]))
+      return { code: '' }
+    })
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([id]))
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
+  })
+
+  it('does not expand shared chunk importers for metadata-only sidecar updates', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['style-sidecar:1'],
+    }
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.entriesMap.set(id, {
+        path: id,
+        type: 'page',
+      } as any)
+    }
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    hook.markEntryDirty(ids[0], 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('reloads Vue entry local asset metadata through loadEntry without JS chunk emit', async () => {
