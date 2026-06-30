@@ -7,6 +7,8 @@ export interface ChunkImporterIndex {
   chunks: Map<string, OutputChunk>
 }
 
+type BundleEntry = [string, OutputBundle[string]]
+
 function addDirectImporter(
   directImporters: Map<string, Set<string>>,
   imported: unknown,
@@ -21,6 +23,21 @@ function addDirectImporter(
     directImporters.set(imported, importers)
   }
   importers.add(importer)
+}
+
+function removeDirectImporter(
+  directImporters: Map<string, Set<string>>,
+  imported: string,
+  importer: string,
+) {
+  const importers = directImporters.get(imported)
+  if (!importers) {
+    return
+  }
+  importers.delete(importer)
+  if (!importers.size) {
+    directImporters.delete(imported)
+  }
 }
 
 function addCollectionImporters(
@@ -79,7 +96,7 @@ function updateViteMetadata(
     return
   }
 
-  const candidateKeys = ['importedChunks', 'importedScripts'] as const
+  const candidateKeys = ['importedChunks', 'importedScripts', 'importedScriptsByUrl'] as const
   for (const key of candidateKeys) {
     const collection = metadata[key]
     if (collection instanceof Set) {
@@ -101,7 +118,10 @@ function updateViteMetadata(
   }
 }
 
-export function createChunkImporterIndex(bundle: OutputBundle): ChunkImporterIndex {
+export function createChunkImporterIndex(
+  bundle: OutputBundle,
+  entries: BundleEntry[] = Object.entries(bundle),
+): ChunkImporterIndex {
   const directImporters = new Map<string, Set<string>>()
   const chunks = new Map<string, OutputChunk>()
   const addImporter = (target: string | undefined, importer: string) => {
@@ -115,7 +135,7 @@ export function createChunkImporterIndex(bundle: OutputBundle): ChunkImporterInd
     }
     importers.add(importer)
   }
-  for (const [fileName, output] of Object.entries(bundle)) {
+  for (const [fileName, output] of entries) {
     if (output?.type !== 'chunk') {
       continue
     }
@@ -141,6 +161,34 @@ export function createChunkImporterIndex(bundle: OutputBundle): ChunkImporterInd
   }
 
   return { directImporters, chunks }
+}
+
+export function removeChunkFromImporterIndex(index: ChunkImporterIndex, fileName: string) {
+  index.chunks.delete(fileName)
+  index.directImporters.delete(fileName)
+  for (const [target, importers] of index.directImporters) {
+    importers.delete(fileName)
+    if (!importers.size) {
+      index.directImporters.delete(target)
+    }
+  }
+}
+
+function updateChunkImporterIndex(
+  index: ChunkImporterIndex,
+  importerFile: string,
+  originalFileName: string,
+  newChunkFile: string,
+  shouldInsert: boolean,
+) {
+  if (!newChunkFile || originalFileName === newChunkFile) {
+    return
+  }
+  const hadOriginal = index.directImporters.get(originalFileName)?.has(importerFile) === true
+  removeDirectImporter(index.directImporters, originalFileName, importerFile)
+  if (hadOriginal || shouldInsert) {
+    addDirectImporter(index.directImporters, newChunkFile, importerFile)
+  }
 }
 
 export function findChunkImporters(
@@ -186,6 +234,7 @@ export function updateImporters(
   bundle: OutputBundle,
   importerToChunk: Map<string, string>,
   originalFileName: string,
+  index?: ChunkImporterIndex,
 ) {
   for (const [importerFile, newChunkFile] of importerToChunk.entries()) {
     const importer = bundle[importerFile]
@@ -230,5 +279,8 @@ export function updateImporters(
     }
 
     updateViteMetadata(importerChunk, originalFileName, newChunkFile, codeUpdated)
+    if (index) {
+      updateChunkImporterIndex(index, importerFile, originalFileName, newChunkFile, codeUpdated)
+    }
   }
 }

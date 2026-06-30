@@ -6,7 +6,7 @@ import type {
   SharedChunkRuntimeContext,
 } from './shared/types'
 import { posix as path } from 'pathe'
-import { createChunkImporterIndex, findChunkImporters, updateImporters } from '../bundle'
+import { createChunkImporterIndex, findChunkImporters, removeChunkFromImporterIndex, updateImporters } from '../bundle'
 import { resolveSubPackagePrefix } from '../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../constants'
 import {
@@ -38,7 +38,8 @@ export function applySharedChunkStrategy(
   }
 
   const subPackageRoots = Array.from(options.subPackageRoots).filter(Boolean)
-  const reservedFileNames = new Set(Object.keys(bundle))
+  const entries = Object.entries(bundle)
+  const reservedFileNames = new Set(entries.map(([fileName]) => fileName))
   const localizedDuplicateFileMap = new Map<string, string>()
   const runtimeContext: SharedChunkRuntimeContext = {
     pluginContext: this,
@@ -55,8 +56,7 @@ export function applySharedChunkStrategy(
   }> = []
   const emittedLocalizedDuplicateFiles = new Set<string>()
 
-  const entries = Object.entries(bundle)
-  const importerIndex = createChunkImporterIndex(bundle)
+  const importerIndex = createChunkImporterIndex(bundle, entries)
   for (const [fileName, output] of entries) {
     if (!isSharedVirtualChunk(fileName, output)) {
       continue
@@ -138,7 +138,7 @@ export function applySharedChunkStrategy(
         for (const importerFile of importers) {
           fallbackImporterMap.set(importerFile, finalFileName)
         }
-        updateImporters(bundle, fallbackImporterMap, originalSharedFileName)
+        updateImporters(bundle, fallbackImporterMap, originalSharedFileName, importerIndex)
       }
       options.onFallback?.({
         sharedFileName: originalSharedFileName,
@@ -177,7 +177,7 @@ export function applySharedChunkStrategy(
         for (const importerFile of mainImporters) {
           mainImporterMap.set(importerFile, newFileName)
         }
-        updateImporters(bundle, mainImporterMap, originalSharedFileName)
+        updateImporters(bundle, mainImporterMap, originalSharedFileName, importerIndex)
       }
       options.onFallback?.({
         sharedFileName: originalSharedFileName,
@@ -206,10 +206,11 @@ export function applySharedChunkStrategy(
       })
     }
 
-    updateImporters(bundle, importerToChunk, fileName)
+    updateImporters(bundle, importerToChunk, fileName, importerIndex)
 
     if (!shouldRetainOriginalChunk) {
       delete bundle[fileName]
+      removeChunkFromImporterIndex(importerIndex, fileName)
       for (const mapKey of sourceMapKeys) {
         if (mapKey && bundle[mapKey]) {
           delete bundle[mapKey]
@@ -238,6 +239,7 @@ export function applySharedChunkStrategy(
     subPackageRoots,
     reservedFileNames,
     localizedDuplicateFileMap,
+    importerIndex,
     onDuplicate: options.onDuplicate,
   })
 

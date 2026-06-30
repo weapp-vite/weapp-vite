@@ -207,6 +207,63 @@ describe('chunkStrategy bundle', () => {
     expect(sameChunk.dynamicImports).toEqual([])
   })
 
+  it('keeps a reused importer index in sync after importer updates', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/shared.js'],
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        viteMetadata: {
+          importedScriptsByUrl: new Set(['chunks/shared.js']),
+        } as any,
+      } as any),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+        ['pages/admin.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.js', index)).toEqual([])
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.copy.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+  })
+
+  it('does not add unrelated importer index edges when importer code is unchanged', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/keep.js'],
+        code: 'const keep = require("../chunks/keep.js")',
+      }),
+      'chunks/keep.js': createChunk('chunks/keep.js'),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.copy.js', index)).toEqual([])
+    expect(findChunkImporters(bundle, 'chunks/keep.js', index)).toEqual(['pages/home.js'])
+  })
+
   it('skips code fallback when relative import generation returns empty value', async () => {
     vi.resetModules()
     vi.doMock('./utils', () => ({
