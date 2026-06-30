@@ -36,6 +36,7 @@ interface PreparedStyleAsset {
 }
 
 interface BundleStyleAnalysis {
+  facadeChunks: OutputChunk[]
   ownersByCssAsset: Map<string, Set<string>>
   styleAssets: Array<{
     bundleKey: string
@@ -57,16 +58,6 @@ function isSourceStyleAsset(fileName: string) {
   return SOURCE_STYLE_ASSET_RE.test(fileName)
 }
 
-function hasStyleAssetOutput(bundle: OutputBundle) {
-  return Object.entries(bundle).some(([bundleKey, output]) => {
-    if (output?.type !== 'asset') {
-      return false
-    }
-    const fileName = output.fileName || bundleKey
-    return isSourceStyleAsset(fileName)
-  })
-}
-
 function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
   return dirtyReasonSummary.some(reason =>
     reason.startsWith('style-sidecar:')
@@ -77,7 +68,7 @@ function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
 
 function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
-  bundle: OutputBundle,
+  analysis: BundleStyleAnalysis,
 ) {
   if (!ctx.configService?.isDev) {
     return false
@@ -88,7 +79,7 @@ function shouldSkipUnchangedStyleHmrBundle(
     return false
   }
 
-  return !hasStyleDirtyReason(dirtyReasonSummary) && !hasStyleAssetOutput(bundle)
+  return !hasStyleDirtyReason(dirtyReasonSummary) && analysis.styleAssets.length === 0
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -253,6 +244,7 @@ function injectSharedStyleImportsCached(
 }
 
 function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
+  const facadeChunks: OutputChunk[] = []
   const ownersByCssAsset = new Map<string, Set<string>>()
   const styleAssets: BundleStyleAnalysis['styleAssets'] = []
   for (const [bundleKey, output] of Object.entries(bundle)) {
@@ -271,6 +263,7 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
     if (output.type !== 'chunk' || !output.facadeModuleId) {
       continue
     }
+    facadeChunks.push(output as OutputChunk)
     const importedCss = (output as OutputChunkWithViteMetadata).viteMetadata?.importedCss
     if (!importedCss?.size) {
       continue
@@ -282,6 +275,7 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
     }
   }
   return {
+    facadeChunks,
     ownersByCssAsset,
     styleAssets,
   }
@@ -596,6 +590,7 @@ async function emitSharedStyleImportsForChunks(
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  facadeChunks: OutputChunk[],
   sharedStyleImportCache: SharedStyleImportCache,
 ) {
   if (!sharedStyles.size) {
@@ -605,11 +600,7 @@ async function emitSharedStyleImportsForChunks(
   const handledModuleIds = new Set<string>()
 
   await Promise.all(
-    Object.values(bundle).map(async (output) => {
-      if (output.type !== 'chunk') {
-        return
-      }
-
+    facadeChunks.map(async (output) => {
       const moduleId = output.facadeModuleId
       if (!moduleId) {
         return
@@ -645,13 +636,15 @@ async function generateBundleSharedCss(
   ctx: CompilerContext,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  analysis: BundleStyleAnalysis,
   resolvedConfig?: ResolvedConfig,
 ) {
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const {
+    facadeChunks,
     ownersByCssAsset,
     styleAssets,
-  } = analyzeBundleStyles(bundle)
+  } = analysis
   if (!sharedStyles.size && !styleAssets.length) {
     return
   }
@@ -663,7 +656,7 @@ async function generateBundleSharedCss(
 
   await Promise.all(tasks)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
-  await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache)
+  await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
 
 export function css(ctx: CompilerContext): Plugin[] {
@@ -677,10 +670,11 @@ export function css(ctx: CompilerContext): Plugin[] {
         resolvedConfig = config
       },
       async generateBundle(_opts, bundle) {
-        if (shouldSkipUnchangedStyleHmrBundle(ctx, bundle as unknown as OutputBundle)) {
+        const styleAnalysis = analyzeBundleStyles(bundle as unknown as OutputBundle)
+        if (shouldSkipUnchangedStyleHmrBundle(ctx, styleAnalysis)) {
           return
         }
-        await generateBundleSharedCss.call(this, ctx, configService, bundle, resolvedConfig)
+        await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
       },
     },
   ]
