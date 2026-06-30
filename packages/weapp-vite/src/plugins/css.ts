@@ -25,6 +25,10 @@ type OutputChunkWithViteMetadata = OutputChunk & {
   viteMetadata?: ViteMetadata
 }
 
+interface PreparedStyleAsset {
+  processedCss: string
+}
+
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
@@ -292,12 +296,38 @@ async function handleBundleEntry(
   const normalizeOwnerId = (id: string) => {
     return normalizeFsResolvedId(id, { stripLeadingNullByte: true })
   }
+  const preparedStyleAssets = new Map<string, Promise<PreparedStyleAsset>>()
 
   const resolveOriginalStylePath = () => {
     const [rawOriginal] = asset.originalFileNames ?? []
     return rawOriginal
       ? toAbsolute(rawOriginal)
       : path.resolve(configService.absoluteSrcRoot, bundleKey)
+  }
+
+  const prepareStyleAssetForOwner = async (rawCss: string, preprocessId: string, shouldPreprocess: boolean) => {
+    const cacheKey = `${shouldPreprocess ? 1 : 0}\0${preprocessId}\0${rawCss}`
+    let cached = preparedStyleAssets.get(cacheKey)
+    if (!cached) {
+      cached = (async () => {
+        const { css, dependencies } = await preprocessStyleSource(rawCss, preprocessId, resolvedConfig, {
+          enabled: shouldPreprocess,
+        })
+        const graphCss = await readStyleGraphSource(preprocessId, rawCss)
+        syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
+        if (typeof this.addWatchFile === 'function') {
+          for (const dependency of dependencies) {
+            this.addWatchFile(normalizeWatchPath(dependency))
+          }
+        }
+        const processedCss = await processCssWithCache(css, configService)
+        return {
+          processedCss,
+        }
+      })()
+      preparedStyleAssets.set(cacheKey, cached)
+    }
+    return cached
   }
 
   const emitStyleAssetForOwner = async (owner: string, preprocessId: string, shouldPreprocess: boolean) => {
@@ -307,17 +337,7 @@ async function handleBundleEntry(
     }
     const normalizedFileName = toPosixPath(fileName)
     const rawCss = asset.source.toString()
-    const { css, dependencies } = await preprocessStyleSource(rawCss, preprocessId, resolvedConfig, {
-      enabled: shouldPreprocess,
-    })
-    const graphCss = await readStyleGraphSource(preprocessId, rawCss)
-    syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
-    if (typeof this.addWatchFile === 'function') {
-      for (const dependency of dependencies) {
-        this.addWatchFile(normalizeWatchPath(dependency))
-      }
-    }
-    const processedCss = await processCssWithCache(css, configService)
+    const { processedCss } = await prepareStyleAssetForOwner(rawCss, preprocessId, shouldPreprocess)
 
     const cssWithImports = injectSharedStyleImports(
       processedCss,

@@ -352,6 +352,85 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
 
+  it('reuses processed css asset source for multiple chunk owners', async () => {
+    preprocessCSSMock.mockResolvedValue({
+      code: '.shared{color:red}',
+      deps: ['/project/src/shared/dep.scss'],
+    })
+    processCssWithCache.mockResolvedValueOnce('.shared{color:red}/* processed */')
+    const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
+    const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const plugin = css({
+      configService,
+      scanService: { subPackageMap: new Map() },
+      runtimeState: {
+        css: {
+          importerToDependencies: new Map<string, Set<string>>(),
+          dependencyToImporters: new Map<string, Set<string>>(),
+          emittedSource: new Map(),
+        },
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/a/index.js': {
+        type: 'chunk',
+        fileName: 'pages/a/index.js',
+        facadeModuleId: pageA,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['shared.scss']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'pages/b/index.js': {
+        type: 'chunk',
+        fileName: 'pages/b/index.js',
+        facadeModuleId: pageB,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['shared.scss']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'shared.scss': {
+        type: 'asset',
+        fileName: 'shared.scss',
+        source: '$brand:red;.shared{color:$brand}',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(preprocessCSSMock).toHaveBeenCalledTimes(1)
+    expect(processCssWithCache).toHaveBeenCalledWith('.shared{color:red}', configService)
+    expect(processCssWithCache).toHaveBeenCalledTimes(1)
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/shared/dep.scss'))
+    expect(emitted.map(asset => asset.fileName).sort()).toEqual([
+      'pages/a/index.wxss',
+      'pages/b/index.wxss',
+    ])
+    expect(emitted.every(asset => asset.source.includes('/* processed */'))).toBe(true)
+  })
+
   it('emits shared style imports for css importer hmr entries outside the representative bundle', async () => {
     const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
     const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
