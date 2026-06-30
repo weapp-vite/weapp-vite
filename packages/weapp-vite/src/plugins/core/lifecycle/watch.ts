@@ -446,9 +446,13 @@ async function processChangedFile(
 
   invalidateFileCache(normalizedId)
   const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
-  const shouldHandleUpdateLikeSidecar = event === 'update' || (event === 'create' && isStyleFile && await fs.pathExists(normalizedId))
+  const isTemplateFile = isTemplate(normalizedId)
+  const isHtmlTemplateFile = normalizedId.endsWith('.html')
+  const isExistingSidecarCreate = event === 'create'
+    && (isStyleFile || isTemplateFile || isHtmlTemplateFile || isScriptModuleSidecar)
+    && await fs.pathExists(normalizedId)
+  const shouldHandleUpdateLikeSidecar = event === 'update' || isExistingSidecarCreate
   if (shouldHandleUpdateLikeSidecar) {
-    const isTemplateFile = isTemplate(normalizedId)
     const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
 
     if (isTemplateFile) {
@@ -461,8 +465,6 @@ async function processChangedFile(
     if (isTemplateSidecar || isScriptModuleSidecar) {
       await addWxmlImporterEntries(normalizedId)
     }
-
-    const isHtmlTemplateFile = normalizedId.endsWith('.html')
 
     if (isTemplateFile || configSuffix || isStyleFile || isHtmlTemplateFile) {
       const basePath = configSuffix

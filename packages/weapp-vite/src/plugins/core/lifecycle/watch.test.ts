@@ -382,6 +382,56 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })
 
+  it('treats created existing shared templates as update-like wxml importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared/templates/card.wxml'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      return value === sharedTemplate ? new Set([importerTemplate]) : new Set()
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'create' })
+
+    expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+  })
+
+  it('treats created existing shared wxs files as update-like wxml importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    const sharedWxs = '/project/src/shared/wxs/format.wxs'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      return value === sharedWxs ? new Set([importerTemplate]) : new Set()
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedWxs, { event: 'create' })
+
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedWxs)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+  })
+
   it('marks html template updates as metadata entry dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
