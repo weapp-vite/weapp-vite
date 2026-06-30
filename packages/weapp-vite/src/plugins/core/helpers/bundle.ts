@@ -377,6 +377,20 @@ export function removeImplicitPagePreloads(
     return
   }
 
+  const requireChunks: OutputChunk[] = []
+  for (const chunk of Object.values(bundle)) {
+    if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string') {
+      continue
+    }
+    if (!chunk.code.includes('require(')) {
+      continue
+    }
+    requireChunks.push(chunk)
+  }
+  if (!requireChunks.length) {
+    return
+  }
+
   const pageChunkFileNames = new Set<string>()
   for (const entry of entriesMap.values()) {
     if (!entry || entry.type !== 'page') {
@@ -391,14 +405,7 @@ export function removeImplicitPagePreloads(
     return
   }
 
-  for (const chunk of Object.values(bundle)) {
-    if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string') {
-      continue
-    }
-    if (!chunk.code.includes('require(')) {
-      continue
-    }
-
+  for (const chunk of requireChunks) {
     const targetSet = new Set<string>()
 
     if (Array.isArray(chunk.imports)) {

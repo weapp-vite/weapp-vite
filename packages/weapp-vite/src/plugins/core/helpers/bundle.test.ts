@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterPluginBundleOutputs, rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
+import { filterPluginBundleOutputs, removeImplicitPagePreloads, rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
 
 describe('core helper bundle', () => {
   it('keeps plugin assets intact in pluginOnly mode', () => {
@@ -77,6 +77,32 @@ describe('core helper bundle', () => {
     expect(bundle['weapp-vendors/request-globals-runtime.js'].imports).toEqual([
       'weapp-vendors/web-apis-shared.js',
     ])
+  })
+
+  it('skips implicit page preload scanning when bundle has no require calls', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'export default Page({})',
+        imports: [],
+      },
+    } as any
+    const entriesMap = new Map([
+      ['pages/index/index', {
+        path: '/project/src/pages/index/index.ts',
+        type: 'page',
+      }],
+    ])
+
+    expect(() => removeImplicitPagePreloads(bundle, {
+      configService: {
+        relativeAbsoluteSrcRoot() {
+          throw new Error('should not resolve pages without require chunks')
+        },
+      } as any,
+      entriesMap: entriesMap as any,
+    })).not.toThrow()
   })
 
   it('rewrites bare wevu internal runtime imports to emitted vendor requires', () => {
