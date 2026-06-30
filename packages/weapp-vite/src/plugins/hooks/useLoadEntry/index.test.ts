@@ -38,6 +38,9 @@ function createContext() {
       isDev: true,
       absoluteSrcRoot: '/project/src',
       aliasEntries: [],
+      outputExtensions: {
+        wxss: 'wxss',
+      },
       packageJson: { dependencies: {} },
       options: { cwd: '/project' },
       relativeOutputPath(id: string) {
@@ -758,6 +761,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
   it('reloads style sidecar metadata through loadEntry without JS chunk emit', async () => {
     const ctx = createContext()
     ctx.runtimeState.build.hmr.profile = {
+      file: '/project/src/components/x-child/index.scss',
       dirtyReasonSummary: ['style-sidecar:1'],
     }
     const hook = useLoadEntry(ctx, {
@@ -783,6 +787,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
       type: 'chunk',
       id,
     }))
+    expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/components/x-child/index.wxss')).toBe(true)
   })
 
   it('keeps style sidecar hmr entries scoped to direct metadata entries', async () => {

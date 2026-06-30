@@ -2,8 +2,10 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { supportedCssLangs } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { changeFileExtension } from '../../../utils'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
 import { createExtendedLibManager } from './extendedLib'
@@ -268,6 +270,20 @@ function shouldPreloadEntryAssetOnly(dirtyReasonSummary?: string[]) {
   ) === true
 }
 
+function resolveCurrentStyleOutputFileName(ctx: CompilerContext) {
+  const currentFile = ctx.runtimeState.build.hmr.profile.file
+  if (typeof currentFile !== 'string') {
+    return undefined
+  }
+  const normalizedFile = normalizeFsResolvedId(currentFile)
+  if (!supportedCssLangs.some(ext => normalizedFile.endsWith(`.${ext}`))) {
+    return undefined
+  }
+  return ctx.configService.relativeOutputPath(
+    changeFileExtension(normalizedFile, ctx.configService.outputExtensions.wxss),
+  )
+}
+
 export function useLoadEntry(
   ctx: CompilerContext,
   options?: {
@@ -521,6 +537,10 @@ export function useLoadEntry(
       }
       if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
         hmrEntryIds = pendingMetadataEntryIds
+        const currentStyleOutputFileName = resolveCurrentStyleOutputFileName(ctx)
+        if (currentStyleOutputFileName) {
+          lastEmittedChunkFileNames.add(currentStyleOutputFileName)
+        }
       }
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
       const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (

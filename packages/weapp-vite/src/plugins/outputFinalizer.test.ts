@@ -37,6 +37,30 @@ describe('weapp-vite output finalizer', () => {
     })
   })
 
+  it('updates existing final style asset from a newer preprocessor asset', () => {
+    const bundle = {
+      'pages/index/index.scss': {
+        type: 'asset',
+        fileName: 'pages/index/index.scss',
+        source: '.page{color:green}',
+      },
+      'pages/index/index.acss': {
+        type: 'asset',
+        fileName: 'pages/index/index.acss',
+        source: '.page{color:red}',
+      },
+    } as unknown as OutputBundle
+
+    normalizePreprocessorStyleAssets(bundle, 'acss', createBundleAssetEmitter(bundle))
+
+    expect(bundle['pages/index/index.scss']).toBeUndefined()
+    expect(bundle['pages/index/index.acss']).toMatchObject({
+      type: 'asset',
+      fileName: 'pages/index/index.acss',
+      source: '.page{color:green}',
+    })
+  })
+
   it('renames preprocessor style assets to the current platform style extension', () => {
     const bundle = {
       'pages/index/index.scss': {

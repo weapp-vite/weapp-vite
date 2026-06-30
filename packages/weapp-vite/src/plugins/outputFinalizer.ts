@@ -47,6 +47,11 @@ export function normalizePreprocessorStyleAssets(
 
     const existingOutput = bundle[outputFileName]
     delete bundle[bundleFileName]
+    if (existingOutput?.type === 'asset') {
+      existingOutput.source = output.source
+      existingOutput.fileName = outputFileName
+      continue
+    }
     if (existingOutput) {
       continue
     }

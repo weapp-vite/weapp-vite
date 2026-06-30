@@ -420,6 +420,62 @@ describe('css plugin shared style injection', () => {
     expect(emitted.find(asset => asset.fileName === 'pages/index/index.scss')).toBeUndefined()
   })
 
+  it('rebuilds the current hmr final style asset from the latest sidecar source', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.scss')
+    readFileMock.mockResolvedValueOnce('$brand: green;\n.page { .title { color: $brand; } }')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.page .title{color:green}',
+      deps: [],
+    })
+    const runtimeState = {
+      css: {
+        emittedSource: new Map([
+          ['pages/index/index.wxss', '.page .title{color:red}'],
+        ]),
+      },
+      build: {
+        hmr: {
+          didEmitAllEntries: false,
+          lastHmrEntryIds: new Set([resolve(absoluteSrcRoot, 'pages/index/index.ts')]),
+          lastEmittedEntryIds: new Set(),
+          profile: {
+            event: 'update',
+            file: stylePath,
+          },
+        },
+      },
+    }
+
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState,
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        source: '.page .title{color:red}',
+        originalFileNames: [stylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
+    expect(preprocessCSSMock).toHaveBeenCalledWith(
+      expect.stringContaining('$brand: green;'),
+      stylePath,
+      resolvedConfig,
+    )
+    expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:green}')
+    expect(runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:green}')
+  })
+
   it('drops unchanged existing style assets during dev hmr writes', async () => {
     const plugin = css({
       configService: {

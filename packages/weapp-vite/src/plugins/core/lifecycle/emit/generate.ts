@@ -12,6 +12,7 @@ import { resolveRequestRuntimeOptions } from '../../../../runtime/config/interna
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../../utils'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { emitStyleSidecarAsset } from '../../../css'
 import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
 import {
   filterPluginBundleOutputs,
@@ -91,6 +92,21 @@ function isStableHmrSharedChunk(fileName: string) {
 function isRuntimeVendorSharedChunk(fileName: string) {
   return fileName.startsWith('weapp-vendors/')
     && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName)
+}
+
+function isCurrentStyleSidecarUpdate(state: CorePluginState) {
+  return state.ctx.runtimeState.build?.hmr?.profile?.dirtyReasonSummary?.some(item => item.startsWith('style-sidecar:')) === true
+}
+
+async function emitCurrentStyleSidecarAsset(this: any, state: CorePluginState, bundle: OutputBundle) {
+  if (!isCurrentStyleSidecarUpdate(state)) {
+    return
+  }
+  const currentFile = state.ctx.runtimeState.build.hmr.profile.file
+  if (typeof currentFile !== 'string') {
+    return
+  }
+  await emitStyleSidecarAsset(state.ctx, this, bundle, currentFile, state.resolvedConfig)
 }
 
 function resolveImportedChunkId(importerFileName: string, imported: string) {
@@ -290,6 +306,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
       await flushIndependentBuilds.call(this, state)
       pruneHmrMetadataOnlyChunks(rolldownBundle, state)
+      await emitCurrentStyleSidecarAsset.call(this, state, rolldownBundle)
       const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(rolldownBundle, state)
 
       if (isPluginBuild) {

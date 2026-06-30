@@ -142,12 +142,42 @@ function isUnchangedDevHmrStyleAsset(
     && ctx.runtimeState?.css?.emittedSource.get(normalizedFileName) === source
 }
 
+function resolveCurrentHmrStyleSourcePath(
+  ctx: CompilerContext,
+  normalizedFileName: string,
+) {
+  const hmrState = ctx.runtimeState?.build?.hmr
+  const currentHmrFile = hmrState?.profile.file
+  if (typeof currentHmrFile !== 'string') {
+    return undefined
+  }
+  const currentOutputFile = resolveOutputStyleFileName(ctx.configService, currentHmrFile)
+  if (currentOutputFile === undefined || toPosixPath(currentOutputFile) !== normalizedFileName) {
+    return undefined
+  }
+  return currentHmrFile
+}
+
+function resolveFreshHmrStyleSourcePath(
+  ctx: CompilerContext,
+  normalizedFileName: string,
+) {
+  const currentHmrFile = resolveCurrentHmrStyleSourcePath(ctx, normalizedFileName)
+  if (!currentHmrFile || currentHmrFile.endsWith('.css') || !shouldPreprocessWithVite(currentHmrFile)) {
+    return undefined
+  }
+  return currentHmrFile
+}
+
 function emitCssAssetIfChanged(
   ctx: CompilerContext,
-  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void },
   bundle: OutputBundle,
   fileName: string,
   source: string,
+  options?: {
+    originalFileName?: string
+  },
 ) {
   const normalizedFileName = toPosixPath(fileName)
   const cache = ctx.runtimeState?.css?.emittedSource
@@ -173,6 +203,7 @@ function emitCssAssetIfChanged(
   pluginCtx.emitFile({
     type: 'asset',
     fileName,
+    ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
     source,
   })
   cache?.set(normalizedFileName, source)
@@ -182,7 +213,7 @@ function emitCssAssetIfChanged(
 export async function emitStyleSidecarAsset(
   ctx: CompilerContext,
   pluginCtx: {
-    emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
+    emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void
     addWatchFile?: (id: string) => void
   },
   bundle: OutputBundle,
@@ -213,7 +244,9 @@ export async function emitStyleSidecarAsset(
     configService,
   )
 
-  return emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, cssWithImports)
+  return emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, cssWithImports, {
+    originalFileName: stylePath,
+  })
 }
 
 async function handleBundleEntry(
@@ -309,11 +342,19 @@ async function handleBundleEntry(
 
     if (fileName) {
       const source = asset.source.toString()
-      const { css, dependencies } = await preprocessStyleSource(source, absOriginal, resolvedConfig, {
-        enabled: shouldPreprocessWithVite(absOriginal),
+      const normalizedFileName = toPosixPath(fileName)
+      const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
+      const preprocessId = freshHmrStyleSourcePath ?? absOriginal
+      const preprocessInput = freshHmrStyleSourcePath
+        ? await readStyleGraphSource(freshHmrStyleSourcePath, source)
+        : source
+      const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
+        enabled: shouldPreprocessWithVite(preprocessId),
       })
-      const graphCss = await readStyleGraphSource(absOriginal, source)
-      syncCssImportDependencies(ctx, absOriginal, graphCss, dependencies)
+      const graphCss = freshHmrStyleSourcePath
+        ? preprocessInput
+        : await readStyleGraphSource(preprocessId, source)
+      syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function') {
         for (const dependency of dependencies) {
           this.addWatchFile(normalizeWatchPath(dependency))
@@ -324,13 +365,13 @@ async function handleBundleEntry(
         delete bundle[bundleKey]
         emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
       }
-      else if (isUnchangedDevHmrStyleAsset(ctx, toPosixPath(fileName), source, processedCss)) {
+      else if (isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, source, processedCss)) {
         delete bundle[bundleKey]
       }
       else if (processedCss !== source) {
         asset.source = processedCss
       }
-      ctx.runtimeState?.css?.emittedSource.set(toPosixPath(fileName), processedCss)
+      ctx.runtimeState?.css?.emittedSource.set(normalizedFileName, processedCss)
     }
 
     return

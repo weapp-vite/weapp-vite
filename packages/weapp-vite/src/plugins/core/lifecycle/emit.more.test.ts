@@ -305,6 +305,14 @@ describe('core lifecycle emit hook extra branches', () => {
       ctx: {
         configService: {
           isDev: true,
+          packageJson: {
+            dependencies: {},
+          },
+          platform: 'weapp',
+          weappViteConfig: {},
+        },
+        scanService: {
+          subPackageMap: new Map(),
         },
         runtimeState: {
           build: {
@@ -325,19 +333,19 @@ describe('core lifecycle emit hook extra branches', () => {
         didEmitAllEntries: false,
       },
     })
-    const hook = createRenderStartHook(state)
+    const hook = createGenerateBundleHook(state, false)
     const emitFile = vi.fn()
+    const bundle = {}
 
-    await hook.call({ emitFile })
+    await hook.call({ emitFile }, {}, bundle)
 
     expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
       state.ctx,
       expect.objectContaining({ emitFile }),
-      {},
+      bundle,
       '/project/src/pages/hmr/index.wxss',
       undefined,
     )
-    expect(emitJsonAssetsMock).not.toHaveBeenCalled()
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
