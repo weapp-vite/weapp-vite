@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo } from './componentSources'
@@ -400,6 +403,56 @@ import MyCard from './my-card.vue'
     expect(result.wevuComponentTags.has('my-card')).toBe(true)
     expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
     expect(result.miniProgramComponentTags.has('my-card')).toBe(true)
+  })
+
+  it('uses optional native SFC signature payload for imported component metadata', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'wevu-compiler-ast-native-'))
+    const modulePath = join(tempDir, 'native.cjs')
+    await writeFile(modulePath, `
+exports.getVueSfcSignaturePayloadNative = () => JSON.stringify({
+  script: {
+    scriptSetup: {
+      content: "defineOptions({ name: 'NativeCard' })\\ndefineComponentJson({ component: true })",
+    },
+  },
+})
+`)
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+
+      const sfc = parse(`
+<template>
+  <my-card />
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+
+      const result = await collectComponentSourceInfo({
+        descriptor: sfc.descriptor as any,
+        descriptorForCompile: sfc.descriptor as any,
+        filename: '/project/src/pages/index/index.vue',
+        compileOptions: undefined,
+        autoUsingComponents: {
+          resolveUsingComponentPath: async () => ({
+            from: '/components/my-card',
+            resolvedId: '/project/src/components/my-card.vue',
+          }),
+        },
+        autoImportTags: undefined,
+      })
+
+      expect(result.componentNameMap.MyCard).toBe('NativeCard')
+      expect(result.componentNameMap['my-card']).toBe('NativeCard')
+      expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
+    }
+    finally {
+      vi.unstubAllEnvs()
+      await rm(tempDir, { force: true, recursive: true })
+    }
   })
 
   it('marks direct .vue imports without auto using component resolver', async () => {

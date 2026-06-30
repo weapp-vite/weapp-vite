@@ -2,17 +2,16 @@ import type { TransformScriptOptions, TransformState } from '../packages-runtime
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { compileScript } from 'vue/compiler-sfc'
-import { createTransformHook } from '../packages/weapp-vite/src/plugins/core/lifecycle/transform'
-import { injectSetDataPickInJs } from '../packages/weapp-vite/src/plugins/vue/transform/injectSetDataPick'
 import { WE_VU_RUNTIME_APIS } from '../packages-runtime/wevu-compiler/src/constants'
+import { collectComponentSourceInfo } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources'
 import { compileConfigPhase } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/config'
 import { finalizeResult } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/finalize'
 import { parseVueFile } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse'
-import { compileScriptPhase } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script'
+import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script'
 import { compileStylePhase } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/style'
 import { compileTemplatePhase } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template'
 import { stripJsonMacroCallsFromCode } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros'
-import { injectTemplateComponentMeta } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptTemplateMeta'
+import { pruneTemplateComponentMeta } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptTemplateMeta'
 import { vueSfcTransformPlugin } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptVueSfcTransform'
 import { transformScript } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript'
 import { createCollectVisitors } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/collect'
@@ -21,6 +20,8 @@ import { createMacroVisitors } from '../packages-runtime/wevu-compiler/src/plugi
 import { rewriteDefaultExport, serializeWevuDefaults } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite'
 import { collectWevuPageFeatureFlags } from '../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../packages-runtime/wevu-compiler/src/utils/babel'
+import { createTransformHook } from '../packages/weapp-vite/src/plugins/core/lifecycle/transform'
+import { injectSetDataPickInJs } from '../packages/weapp-vite/src/plugins/vue/transform/injectSetDataPick'
 
 const ITERATIONS = 160
 const WARMUP = 20
@@ -152,10 +153,6 @@ function measureSync(fn: () => void, iterations = ITERATIONS, warmup = WARMUP) {
   return average(samples)
 }
 
-function createMergeJson() {
-  return (target: Record<string, any>, source: Record<string, any>) => ({ ...target, ...source })
-}
-
 async function createTransformScriptCase() {
   const filename = '/project/src/pages/profile/index.vue'
   const source = createVueSfcFixture()
@@ -236,7 +233,7 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
 
   const macroImportCollectStart = performance.now()
   traverse(ast as any, {
-    ...createMacroVisitors(state),
+    ...createMacroVisitors((ast as any).program, state),
     ...createImportVisitors((ast as any).program, state),
     ...createCollectVisitors(state),
   } as any)
@@ -244,7 +241,7 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
 
   const metaStart = performance.now()
   if (options.templateComponentMeta) {
-    state.transformed = injectTemplateComponentMeta(ast as any, options.templateComponentMeta) || state.transformed
+    state.transformed = pruneTemplateComponentMeta(ast as any, options.templateComponentMeta) || state.transformed
   }
   timings.templateMeta += performance.now() - metaStart
 
@@ -272,6 +269,8 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
 async function profileCompileVueFilePhases(source: string, filename: string) {
   const result: Record<string, number> = {
     parseVueFile: 0,
+    collectComponentSourceInfo: 0,
+    vueCompileScript: 0,
     compileTemplatePhase: 0,
     compileScriptPhase: 0,
     compileStylePhase: 0,
@@ -281,22 +280,81 @@ async function profileCompileVueFilePhases(source: string, filename: string) {
 
   const totalStart = performance.now()
   const parseStart = performance.now()
-  const parsed = await parseVueFile(source, filename, {
+  const options = {
     isPage: true,
     wevuDefaults: {
       page: {
         virtualHost: false,
       },
     },
-  })
+    autoUsingComponents: {
+      enabled: true,
+      resolveUsingComponentPath: async (importSource: string) => importSource.startsWith('@/components/')
+        ? importSource.replace('@/components/', 'components/').toLowerCase()
+        : undefined,
+    },
+    autoImportTags: {
+      enabled: true,
+      resolveUsingComponent: async (tag: string) => tag.startsWith('t-')
+        ? { name: tag, from: `tdesign/${tag}/index` }
+        : undefined,
+    },
+  }
+  const parsed = await parseVueFile(source, filename, options)
   result.parseVueFile += performance.now() - parseStart
 
   const transformResult: any = {
     meta: { ...parsed.meta },
   }
 
+  const componentStart = performance.now()
+  const componentSourceInfo = await collectComponentSourceInfo({
+    descriptor: parsed.descriptor,
+    descriptorForCompile: parsed.descriptorForCompile,
+    filename,
+    compileOptions: options,
+    autoUsingComponents: options.autoUsingComponents,
+    autoImportTags: options.autoImportTags,
+  })
+  result.collectComponentSourceInfo = performance.now() - componentStart
+
+  const vueCompileScriptStart = performance.now()
+  const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
+    ? compileScript(parsed.descriptorForCompile, {
+        id: filename,
+        isProd: false,
+      })
+    : undefined
+  result.vueCompileScript = performance.now() - vueCompileScriptStart
+
+  const propsAliases = scriptCompiled
+    ? resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
+    : undefined
+  const propsDerivedKeys = scriptCompiled
+    ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content)
+    : undefined
+
   const templateStart = performance.now()
-  const templateCompiled = compileTemplatePhase(parsed.descriptor, filename, undefined, transformResult)
+  const baseTemplateOptions = {
+    isPage: options.isPage,
+    propsAliases,
+    propsDerivedKeys,
+    scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
+  }
+  const templateOptions = componentSourceInfo.wevuComponentTags.size
+    ? {
+        ...baseTemplateOptions,
+        wevuComponentTags: componentSourceInfo.wevuComponentTags,
+        componentNameMap: componentSourceInfo.componentNameMap,
+        miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
+      }
+    : {
+        ...baseTemplateOptions,
+        wevuComponentTags: [],
+        componentNameMap: componentSourceInfo.componentNameMap,
+        miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
+      }
+  const templateCompiled = compileTemplatePhase(parsed.descriptor, filename, templateOptions, transformResult)
   result.compileTemplatePhase += performance.now() - templateStart
 
   const scriptStart = performance.now()
@@ -304,28 +362,12 @@ async function profileCompileVueFilePhases(source: string, filename: string) {
     parsed.descriptor,
     parsed.descriptorForCompile,
     filename,
-    {
-      isPage: true,
-      wevuDefaults: {
-        page: {
-          virtualHost: false,
-        },
-      },
-      autoUsingComponents: {
-        enabled: true,
-        resolveUsingComponentPath: async importSource => importSource.startsWith('@/components/')
-          ? importSource.replace('@/components/', 'components/').toLowerCase()
-          : undefined,
-      },
-    },
-    {
-      enabled: true,
-      resolveUsingComponentPath: async importSource => importSource.startsWith('@/components/')
-        ? importSource.replace('@/components/', 'components/').toLowerCase()
-        : undefined,
-    },
+    options,
+    options.autoUsingComponents,
     templateCompiled,
     parsed.isAppFile,
+    componentSourceInfo,
+    scriptCompiled,
   )
   transformResult.script = scriptPhase.script
   result.compileScriptPhase += performance.now() - scriptStart
@@ -339,18 +381,10 @@ async function profileCompileVueFilePhases(source: string, filename: string) {
     descriptor: parsed.descriptor,
     filename,
     autoUsingComponentsMap: scriptPhase.autoUsingComponentsMap,
-    autoUsingComponents: {
-      enabled: true,
-      resolveUsingComponentPath: async () => undefined,
-    },
-    autoImportTags: {
-      enabled: true,
-      resolveUsingComponent: async tag => tag.startsWith('t-')
-        ? { name: tag, from: `tdesign/${tag}/index` }
-        : undefined,
-    },
+    autoUsingComponents: options.autoUsingComponents,
+    autoImportTags: options.autoImportTags,
     jsonDefaults: parsed.jsonDefaults as Record<string, any> | undefined,
-    mergeJson: (target, source) => createMergeJson()(target, source),
+    mergeJson: (target, source) => ({ ...target, ...source }),
     scriptSetupMacroConfig: parsed.scriptSetupMacroConfig,
     result: transformResult,
   })
@@ -430,6 +464,8 @@ async function main() {
   const compileVuePhaseAverages = {
     total: average(compileVueSamples.map(sample => sample.total)),
     parseVueFile: average(compileVueSamples.map(sample => sample.phases.parseVueFile)),
+    collectComponentSourceInfo: average(compileVueSamples.map(sample => sample.phases.collectComponentSourceInfo)),
+    vueCompileScript: average(compileVueSamples.map(sample => sample.phases.vueCompileScript)),
     compileTemplatePhase: average(compileVueSamples.map(sample => sample.phases.compileTemplatePhase)),
     compileScriptPhase: average(compileVueSamples.map(sample => sample.phases.compileScriptPhase)),
     compileStylePhase: average(compileVueSamples.map(sample => sample.phases.compileStylePhase)),
@@ -457,6 +493,14 @@ async function main() {
 
   const compileVueAstShareLowerBound = compileVuePhaseAverages.compileScriptPhase / compileVuePhaseAverages.total
   const compileVueAstShareUpperBound = (compileVuePhaseAverages.parseVueFile + compileVuePhaseAverages.compileScriptPhase) / compileVuePhaseAverages.total
+  const transformScriptBabelCoreShareInSfc = (
+    transformPhaseAverages.parse
+    + transformPhaseAverages.vueSfcTraverse
+    + transformPhaseAverages.macroImportCollectTraverse
+    + transformPhaseAverages.templateMeta
+    + transformPhaseAverages.rewriteDefaultExport
+    + transformPhaseAverages.generate
+  ) / compileVuePhaseAverages.total
 
   console.log('\nTransformScript profile')
   console.table({
@@ -476,6 +520,8 @@ async function main() {
   console.log('\nCompileVueFile profile')
   console.table({
     parseVueFile: formatMs(compileVuePhaseAverages.parseVueFile),
+    collectComponentSourceInfo: formatMs(compileVuePhaseAverages.collectComponentSourceInfo),
+    vueCompileScript: formatMs(compileVuePhaseAverages.vueCompileScript),
     compileTemplatePhase: formatMs(compileVuePhaseAverages.compileTemplatePhase),
     compileScriptPhase: formatMs(compileVuePhaseAverages.compileScriptPhase),
     compileStylePhase: formatMs(compileVuePhaseAverages.compileStylePhase),
@@ -484,6 +530,7 @@ async function main() {
     total: formatMs(compileVuePhaseAverages.total),
     astShareLowerBound: `${(compileVueAstShareLowerBound * 100).toFixed(1)}%`,
     astShareUpperBound: `${(compileVueAstShareUpperBound * 100).toFixed(1)}%`,
+    transformScriptBabelCoreShareInSfc: `${(transformScriptBabelCoreShareInSfc * 100).toFixed(1)}%`,
     estimatedSpeedupLowerBound: `${estimateSpeedup(compileVueAstShareLowerBound, AST_FULL_CHAIN_SPEEDUP).toFixed(2)}x`,
     estimatedSpeedupUpperBound: `${estimateSpeedup(compileVueAstShareUpperBound, AST_FULL_CHAIN_SPEEDUP).toFixed(2)}x`,
   })
@@ -496,6 +543,13 @@ async function main() {
 
   console.log('\nAssumption')
   console.log(`AST full-chain speedup uses the measured synthetic benchmark factor: ${AST_FULL_CHAIN_SPEEDUP.toFixed(2)}x`)
+
+  console.log('\nMigration classification')
+  console.table({
+    'native first': 'SFC signature, onPageScroll diagnostics, component SFC metadata, setData pick, require/platform API, feature flags',
+    'cautious': 'template expression, JSX auto components, script setup imports',
+    'keep Babel for now': 'transformScript, npm JS rewrite, JSX script transform',
+  })
 }
 
 main().catch((error) => {

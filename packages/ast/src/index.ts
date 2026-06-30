@@ -65,6 +65,7 @@ export type {
 export {
   collectOnPageScrollPerformanceWarnings,
   collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithNative,
   collectOnPageScrollWarningsWithOxc,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,

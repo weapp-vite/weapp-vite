@@ -5,6 +5,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { loadNativeAstBindingSync, shouldUseNativeAst } from '../../../../ast/native'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
@@ -25,6 +26,14 @@ interface ScriptSetupImportComponent {
   importSource: string
   importedName?: string
   kind: 'default' | 'named'
+}
+
+interface VueSfcSignaturePayload {
+  script?: {
+    scriptSetup?: {
+      content?: string
+    } | null
+  }
 }
 
 function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | undefined) {
@@ -146,19 +155,46 @@ function extractStaticDefineComponentJsonIsComponent(scriptSetupContent: string)
   return isComponent
 }
 
+function readNativeVueSfcScriptSetupContent(source: string) {
+  if (!shouldUseNativeAst()) {
+    return undefined
+  }
+  const payload = loadNativeAstBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
+  if (!payload) {
+    return undefined
+  }
+  try {
+    const parsed = JSON.parse(payload) as VueSfcSignaturePayload
+    return parsed.script?.scriptSetup?.content
+  }
+  catch {
+    return undefined
+  }
+}
+
+function readVueSfcScriptSetupContent(source: string, resolvedId: string) {
+  const nativeContent = readNativeVueSfcScriptSetupContent(source)
+  if (typeof nativeContent === 'string') {
+    return nativeContent
+  }
+
+  const { descriptor, errors } = parseSfc(source, {
+    filename: resolvedId,
+  })
+  if (errors.length > 0 || !descriptor.scriptSetup?.content) {
+    return undefined
+  }
+  return descriptor.scriptSetup.content
+}
+
 async function resolveVueSfcComponentName(resolvedId: string | undefined, warn?: (message: string) => void) {
   if (!resolvedId?.endsWith('.vue')) {
     return undefined
   }
   try {
     const source = await fs.readFile(resolvedId, 'utf8')
-    const { descriptor, errors } = parseSfc(source, {
-      filename: resolvedId,
-    })
-    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
-      return undefined
-    }
-    return extractStaticDefineOptionsName(descriptor.scriptSetup.content)
+    const scriptSetupContent = readVueSfcScriptSetupContent(source, resolvedId)
+    return scriptSetupContent ? extractStaticDefineOptionsName(scriptSetupContent) : undefined
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -173,13 +209,8 @@ async function resolveVueSfcIsMiniProgramComponent(resolvedId: string | undefine
   }
   try {
     const source = await fs.readFile(resolvedId, 'utf8')
-    const { descriptor, errors } = parseSfc(source, {
-      filename: resolvedId,
-    })
-    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
-      return false
-    }
-    return extractStaticDefineComponentJsonIsComponent(descriptor.scriptSetup.content)
+    const scriptSetupContent = readVueSfcScriptSetupContent(source, resolvedId)
+    return scriptSetupContent ? extractStaticDefineComponentJsonIsComponent(scriptSetupContent) : false
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)

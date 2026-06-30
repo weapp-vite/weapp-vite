@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import * as t from '@babel/types'
 import { describe, expect, it } from 'vitest'
 import * as babelModule from './babel'
@@ -1056,6 +1059,35 @@ wevu.onPageScroll?.(() => {})`
     const normalize = (warning: string) => warning.replace(/^.*?:\d+:\d+\s/, '')
 
     expect(oxcWarnings.map(normalize)).toEqual(babelWarnings.map(normalize))
+  })
+
+  it('uses optional native onPageScroll diagnostics when configured', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'weapp-vite-ast-native-'))
+    const modulePath = join(tempDir, 'native.cjs')
+    await writeFile(modulePath, `
+exports.collectOnPageScrollDiagnosticsNative = () => [
+  { kind: 'setData', line: 2, column: 3, sourceLabel: 'onPageScroll(...)' },
+  { kind: 'syncApi', line: 3, column: 3, sourceLabel: 'onPageScroll(...)', syncApi: 'wx.getStorageSync' },
+]
+`)
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+      vi.resetModules()
+      const nativeModule = await import('./index')
+
+      expect(nativeModule.collectOnPageScrollWarningsWithNative('onPageScroll(() => {})', '/src/pages/index.ts')).toEqual([
+        '[weapp-vite][onPageScroll] /src/pages/index.ts:2:3 检测到 onPageScroll(...) 内调用 setData，建议改用节流、IntersectionObserver 或合并更新。',
+        '[weapp-vite][onPageScroll] /src/pages/index.ts:3:3 检测到 onPageScroll(...) 内调用同步 API（wx.getStorageSync），可能阻塞渲染线程。',
+      ])
+      expect(nativeModule.collectOnPageScrollPerformanceWarnings('onPageScroll(() => {})', '/src/pages/index.ts')).toHaveLength(2)
+    }
+    finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+      await rm(tempDir, { force: true, recursive: true })
+    }
   })
 
   it('ignores nested function body calls in onPageScroll inspection across engines', () => {
