@@ -1,5 +1,5 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import {
   collectAffectedEntries,
@@ -262,6 +262,38 @@ describe('core helpers graph', () => {
     expect(state.moduleImporters.has(staleDep)).toBe(false)
     expect(state.moduleImporters.get(sharedDep)).toEqual(new Set([otherEntry]))
     expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
+  })
+
+  it('skips full plugin module graph scans during bundle-backed merge refreshes', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDep = '/project/src/shared/stale.ts'
+    const getModuleIds = vi.fn(() => {
+      throw new Error('getModuleIds should not be called during merge bundle refresh')
+    })
+    const getModuleInfo = vi.fn()
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.moduleImporters.set(staleDep, new Set([pageEntry]))
+
+    refreshModuleGraph({
+      getModuleIds,
+      getModuleInfo,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(getModuleIds).not.toHaveBeenCalled()
+    expect(getModuleInfo).not.toHaveBeenCalled()
+    expect(state.moduleImporters.has(staleDep)).toBe(false)
     expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
   })
 

@@ -188,7 +188,12 @@ export function refreshModuleGraph(
     return entryIds
   }
 
-  if (typeof pluginCtx.getModuleIds === 'function' && typeof pluginCtx.getModuleInfo === 'function') {
+  const shouldScanPluginModuleGraph = mode === 'replace' || !bundle
+  if (
+    shouldScanPluginModuleGraph
+    && typeof pluginCtx.getModuleIds === 'function'
+    && typeof pluginCtx.getModuleInfo === 'function'
+  ) {
     for (const rawId of pluginCtx.getModuleIds()) {
       const normalizedId = normalizeFsResolvedId(rawId)
       if (isSkippableResolvedId(normalizedId)) {
