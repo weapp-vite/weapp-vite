@@ -18,7 +18,7 @@ import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { collectAffectedScriptsAndImporters, extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
-import { configSuffixes, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
+import { configSuffixes, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
@@ -48,7 +48,7 @@ function resolveWatchPathKind(normalizedId: string): WatchPathKind {
     }
   }
 
-  for (const suffix of watchedScriptModuleExts) {
+  for (const suffix of watchedScriptModuleSuffixes) {
     if (normalizedId.endsWith(suffix)) {
       isScriptModuleSidecar = true
       break

@@ -19,8 +19,10 @@ import {
   defaultIgnoredDirNames,
   isSidecarFile,
   watchedCssExts,
-  watchedScriptModuleExts,
+  watchedCssSuffixes,
+  watchedScriptModuleSuffixes,
   watchedTemplateExts,
+  watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { findJsEntry, touch } from '../../utils/file'
@@ -171,9 +173,9 @@ function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, 
   const root = configService.absoluteSrcRoot
   const patterns: string[] = [
     ...configSuffixes.map(suffix => path.join(root, `**/*${suffix}`)),
-    ...Array.from(watchedCssExts).map(ext => path.join(root, `**/*${ext}`)),
-    ...Array.from(watchedTemplateExts).map(ext => path.join(root, `**/*${ext}`)),
-    ...Array.from(watchedScriptModuleExts).map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedCssSuffixes.map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedTemplateSuffixes.map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedScriptModuleSuffixes.map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedSnapshotScriptExts).map(ext => path.join(root, `**/*${ext}`)),
   ]
   for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {

@@ -4,7 +4,7 @@ import path from 'pathe'
 import logger from '../../../logger'
 import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
-import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from './shared'
+import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
 
 export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: string, event: ChangeEvent = 'update') {
   const configSuffix = configSuffixes.find(suffix => filePath.endsWith(suffix))
@@ -23,7 +23,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
     scriptBasePath = filePath.slice(0, -ext.length)
   }
 
-  const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedPath.endsWith(suffix))
+  const isScriptModuleSidecar = watchedScriptModuleSuffixes.some(suffix => normalizedPath.endsWith(suffix))
 
   if (!scriptBasePath && !isScriptModuleSidecar) {
     return
