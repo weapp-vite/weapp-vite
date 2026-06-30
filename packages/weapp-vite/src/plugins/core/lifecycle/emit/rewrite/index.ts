@@ -8,6 +8,7 @@ export {
 } from './literals'
 
 export {
+  rewriteBundleNpmImportsToLocalRoots,
   rewriteChunkNpmImportsToLocalRoot,
   rewriteJsonNpmImportsToLocalRoot,
   toRelativeRuntimeNpmImport,

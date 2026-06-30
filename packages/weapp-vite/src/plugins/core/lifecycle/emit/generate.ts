@@ -40,6 +40,7 @@ import {
 import {
   rewriteBundleDynamicGlobalResolution,
   rewriteBundleNpmImportsByPlatform,
+  rewriteBundleNpmImportsToLocalRoots,
   rewriteBundlePlatformApi,
   rewriteChunkNpmImportsToLocalRoot,
   rewriteJsonNpmImportsToLocalRoot,
@@ -561,9 +562,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
         const localSubPackageMetas = [...subPackageMap.values()]
           .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
-        const localSubPackageRoots = localSubPackageMetas
-          .map(meta => meta.subPackage.root)
-          .filter(Boolean)
         const hasNpmRewriteTargets = Object.keys(npmBuildCandidateDependencies ?? {}).length > 0
           || localSubPackageMetas.length > 0
 
@@ -572,40 +570,19 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             astEngine,
             cache: scriptAnalysisCache,
           })
-          for (const output of Object.values(rewriteBundle)) {
-            if (output?.type !== 'chunk') {
-              continue
-            }
-            if (localSubPackageRoots.some(root => output.fileName === root || output.fileName.startsWith(`${root}/`))) {
-              continue
-            }
-            rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+          rewriteBundleNpmImportsToLocalRoots(
+            rewriteBundle,
+            npmBuildCandidateDependencies,
+            localSubPackageMetas.map(meta => ({
+              root: meta.subPackage.root,
+              dependencies: meta.subPackage.dependencies,
+            })),
+            {
               analysisCache: scriptAnalysisCache,
               astEngine,
               basedir: configService.cwd,
-            })
-          }
-          rewriteJsonNpmImportsToLocalRoot(rewriteBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd, {
-            excludeRoots: localSubPackageRoots,
-          })
-
-          for (const meta of localSubPackageMetas) {
-            for (const output of Object.values(rewriteBundle)) {
-              if (output?.type !== 'chunk') {
-                continue
-              }
-              const chunk = output as OutputChunk
-              if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
-                continue
-              }
-              rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, {
-                analysisCache: scriptAnalysisCache,
-                astEngine,
-                basedir: configService.cwd,
-              })
-            }
-            rewriteJsonNpmImportsToLocalRoot(rewriteBundle, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, configService.cwd)
-          }
+            },
+          )
         }
       }
 

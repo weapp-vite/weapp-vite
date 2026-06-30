@@ -10,6 +10,17 @@ import {
 } from './literals'
 import { getChunkScriptAnalysis, matchesSubPackageDependency } from './platform'
 
+export interface LocalRootNpmRewriteSubPackageMeta {
+  root: string
+  dependencies: (string | RegExp)[] | undefined
+}
+
+export interface LocalRootNpmRewriteOptions {
+  analysisCache?: ChunkScriptAnalysisCache
+  astEngine?: 'babel' | 'oxc'
+  basedir?: string
+}
+
 function isRelativeMiniprogramNpmImport(importee: string) {
   return importee === 'miniprogram_npm'
     || importee.startsWith('./miniprogram_npm/')
@@ -239,5 +250,51 @@ export function rewriteJsonNpmImportsToLocalRoot(
     }
     catch {
     }
+  }
+}
+
+function matchesRootFile(fileName: string, root: string) {
+  return fileName === root || fileName.startsWith(`${root}/`)
+}
+
+function resolveChunkLocalRootRewriteTarget(
+  fileName: string,
+  localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+) {
+  return localSubPackages.find(meta => meta.root && matchesRootFile(fileName, meta.root))
+}
+
+export function rewriteBundleNpmImportsToLocalRoots(
+  bundle: OutputBundle,
+  dependencies: Record<string, string> | undefined,
+  localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+  options?: LocalRootNpmRewriteOptions,
+) {
+  const orderedLocalSubPackages = [...localSubPackages]
+    .sort((a, b) => b.root.length - a.root.length)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const subPackageTarget = resolveChunkLocalRootRewriteTarget(chunk.fileName, orderedLocalSubPackages)
+    if (subPackageTarget) {
+      rewriteChunkNpmImportsToLocalRoot(chunk, subPackageTarget.root, subPackageTarget.dependencies, dependencies, options)
+      continue
+    }
+
+    rewriteChunkNpmImportsToLocalRoot(chunk, '', undefined, dependencies, options)
+  }
+
+  const localSubPackageRoots = orderedLocalSubPackages
+    .map(meta => meta.root)
+    .filter(Boolean)
+  rewriteJsonNpmImportsToLocalRoot(bundle, '', undefined, dependencies, options?.basedir, {
+    excludeRoots: localSubPackageRoots,
+  })
+
+  for (const meta of orderedLocalSubPackages) {
+    rewriteJsonNpmImportsToLocalRoot(bundle, meta.root, meta.dependencies, dependencies, options?.basedir)
   }
 }
