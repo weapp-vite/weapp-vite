@@ -155,6 +155,22 @@ function resolveImportedChunkId(importerFileName: string, imported: string) {
   return importerSegments.join('/')
 }
 
+function collectResolvedImportedChunkIds(
+  importedChunkIds: Set<string>,
+  importerFileName: string,
+  imports: unknown,
+) {
+  if (!Array.isArray(imports)) {
+    return
+  }
+  for (const imported of imports) {
+    if (typeof imported !== 'string') {
+      continue
+    }
+    importedChunkIds.add(resolveImportedChunkId(importerFileName, imported))
+  }
+}
+
 export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEntryIds?: Set<string>) {
   if (!activeEntryIds?.size) {
     return new Set<string>()
@@ -169,13 +185,8 @@ export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEnt
       continue
     }
     const importerFileName = chunk.fileName || bundleFileName
-    const imports = [
-      ...(Array.isArray(chunk.imports) ? chunk.imports : []),
-      ...(Array.isArray(chunk.dynamicImports) ? chunk.dynamicImports : []),
-    ]
-    for (const imported of imports) {
-      importedChunkIds.add(resolveImportedChunkId(importerFileName, imported))
-    }
+    collectResolvedImportedChunkIds(importedChunkIds, importerFileName, chunk.imports)
+    collectResolvedImportedChunkIds(importedChunkIds, importerFileName, chunk.dynamicImports)
   }
   return importedChunkIds
 }
@@ -268,13 +279,8 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     const chunk = output as OutputChunk
     if (chunk.facadeModuleId && activeEntryIds?.has(chunk.facadeModuleId)) {
       const importerFileName = chunk.fileName || fileName
-      const imports = [
-        ...(Array.isArray(chunk.imports) ? chunk.imports : []),
-        ...(Array.isArray(chunk.dynamicImports) ? chunk.dynamicImports : []),
-      ]
-      for (const imported of imports) {
-        activeImportedChunkIds.add(resolveImportedChunkId(importerFileName, imported))
-      }
+      collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.imports)
+      collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.dynamicImports)
     }
 
     if (!isStableHmrSharedChunk(fileName)) {

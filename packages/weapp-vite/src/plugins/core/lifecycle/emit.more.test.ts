@@ -21,7 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
-import { createSubPackageMatcher } from './emit/generate'
+import { collectActiveHmrImportedChunkIds, createSubPackageMatcher } from './emit/generate'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -177,6 +177,30 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(matchSubPackage('pkg-a/pages/a.js')).toBe('pkg-a')
     expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
     expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
+  })
+
+  it('collects active hmr imports without including inactive entry imports', () => {
+    const importedChunkIds = collectActiveHmrImportedChunkIds({
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: 'pages/index/index.ts',
+        imports: ['../../common.js'],
+        dynamicImports: ['../../weapp-vendors/runtime.js'],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: 'pages/other/index.ts',
+        imports: ['../../inactive.js'],
+        dynamicImports: [],
+      },
+    } as any, new Set(['pages/index/index.ts']))
+
+    expect(importedChunkIds).toEqual(new Set([
+      'common.js',
+      'weapp-vendors/runtime.js',
+    ]))
   })
 
   it('creates renderStart runtime and stores watch files snapshot', async () => {
