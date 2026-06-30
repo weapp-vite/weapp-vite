@@ -711,12 +711,15 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isAutoRoutesGeneratedFileChange(state, normalizedId)) {
       return
     }
+    const emittedJsonPaths = change.event === 'create'
+      ? new Set(
+          [...state.jsonEmitFilesMap.values()]
+            .map(record => record.entry.jsonPath ? normalizeFsResolvedId(record.entry.jsonPath) : '')
+            .filter(Boolean),
+        )
+      : undefined
     const event = await normalizeWatchEvent(normalizedId, change.event, {
-      emittedJsonPaths: new Set(
-        [...state.jsonEmitFilesMap.values()]
-          .map(record => record.entry.jsonPath ? normalizeFsResolvedId(record.entry.jsonPath) : '')
-          .filter(Boolean),
-      ),
+      emittedJsonPaths,
       loadedEntrySet: state.loadedEntrySet,
       moduleImporters: state.moduleImporters,
       resolvedEntryMap: state.resolvedEntryMap,

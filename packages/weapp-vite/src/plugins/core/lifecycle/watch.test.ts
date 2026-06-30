@@ -506,6 +506,27 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
+  it('skips emitted json path collection for update events', async () => {
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+      jsonEmitFilesMap: new Map([
+        ['app.json', {
+          entry: {
+            get jsonPath() {
+              throw new Error('should not read emitted json paths on update')
+            },
+          },
+        }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await expect(hook(entryId, { event: 'update' })).resolves.toBeUndefined()
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
   it('treats config dependency updates as full dev rebuild triggers', async () => {
     const entryA = '/project/src/pages/a/index.ts'
     const entryB = '/project/src/components/card/index.ts'
