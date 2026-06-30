@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { collectOnPageScrollDiagnosticsNative, getVueSfcSignaturePayloadNative } from '../index.js'
+import {
+  collectFeatureFlagsNative,
+  collectOnPageScrollDiagnosticsNative,
+  getVueSfcSignaturePayloadNative,
+  mayContainPlatformApiAccessNative,
+  mayContainStaticRequireLiteralNative,
+} from '../index.js'
 
 describe('@weapp-vite/ast-native', () => {
   it('collects native onPageScroll diagnostics', () => {
@@ -110,5 +116,24 @@ const count = 1
         },
       },
     })
+  })
+
+  it('collects native analysis-only hot paths', () => {
+    expect(mayContainStaticRequireLiteralNative(`const dep = require('./dep')`)).toBe(true)
+    expect(mayContainStaticRequireLiteralNative('const dep = require(name)')).toBe(false)
+    expect(mayContainStaticRequireLiteralNative('const dep = import("./dep")')).toBe(false)
+
+    expect(mayContainPlatformApiAccessNative('const value = wx.getStorageSync("k")')).toBe(true)
+    expect(mayContainPlatformApiAccessNative('const value = localStorage.getItem("k")')).toBe(false)
+
+    const source = `import { onLoad as useLoad } from 'wevu'
+import * as wevuNs from 'wevu'
+useLoad(() => {})
+wevuNs.onShow?.(() => {})
+`
+    expect(collectFeatureFlagsNative(source, 'wevu', JSON.stringify({
+      onLoad: 'enableLoad',
+      onShow: 'enableShow',
+    }))).toEqual(['enableLoad', 'enableShow'])
   })
 })

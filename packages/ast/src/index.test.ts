@@ -1061,14 +1061,22 @@ wevu.onPageScroll?.(() => {})`
     expect(oxcWarnings.map(normalize)).toEqual(babelWarnings.map(normalize))
   })
 
-  it('uses optional native onPageScroll diagnostics when configured', async () => {
+  it('uses optional native AST analysis when configured', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'weapp-vite-ast-native-'))
     const modulePath = join(tempDir, 'native.cjs')
     await writeFile(modulePath, `
+exports.collectFeatureFlagsNative = (code) => {
+  if (code.includes('throwNative')) {
+    throw new Error('native failed')
+  }
+  return ['nativeFeature']
+}
 exports.collectOnPageScrollDiagnosticsNative = () => [
   { kind: 'setData', line: 2, column: 3, sourceLabel: 'onPageScroll(...)' },
   { kind: 'syncApi', line: 3, column: 3, sourceLabel: 'onPageScroll(...)', syncApi: 'wx.getStorageSync' },
 ]
+exports.mayContainPlatformApiAccessNative = code => code.includes('nativePlatform')
+exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequire')
 `)
 
     try {
@@ -1082,6 +1090,24 @@ exports.collectOnPageScrollDiagnosticsNative = () => [
         '[weapp-vite][onPageScroll] /src/pages/index.ts:3:3 检测到 onPageScroll(...) 内调用同步 API（wx.getStorageSync），可能阻塞渲染线程。',
       ])
       expect(nativeModule.collectOnPageScrollPerformanceWarnings('onPageScroll(() => {})', '/src/pages/index.ts')).toHaveLength(2)
+      expect(nativeModule.mayContainPlatformApiAccess('nativePlatform.wx.request()', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.mayContainStaticRequireLiteral('nativeRequire(); require(name)', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.collectFeatureFlagsWithNative('import { onLoad } from "wevu"; onLoad(() => {})', 'wevu', {
+        onLoad: 'nativeFeature',
+      })).toEqual(new Set(['nativeFeature']))
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; onLoad(() => {})', {
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'nativeFeature',
+        },
+      })).toEqual(new Set(['nativeFeature']))
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; throwNative(); onLoad(() => {})', {
+        astEngine: 'oxc',
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'fallbackFeature',
+        },
+      })).toEqual(new Set(['fallbackFeature']))
     }
     finally {
       vi.unstubAllEnvs()

@@ -12,3 +12,20 @@ export function collectOnPageScrollDiagnosticsNative(
 ): NativeOnPageScrollDiagnostic[]
 
 export function getVueSfcSignaturePayloadNative(source: string): string | undefined
+
+export function mayContainStaticRequireLiteralNative(
+  code: string,
+  filename?: string,
+): boolean
+
+export function mayContainPlatformApiAccessNative(
+  code: string,
+  filename?: string,
+): boolean
+
+export function collectFeatureFlagsNative(
+  code: string,
+  moduleId: string,
+  hookToFeatureJson: string,
+  filename?: string,
+): string[]

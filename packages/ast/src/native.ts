@@ -12,11 +12,25 @@ export interface NativeOnPageScrollDiagnostic {
 }
 
 export interface NativeAstBinding {
+  collectFeatureFlagsNative?: (
+    code: string,
+    moduleId: string,
+    hookToFeatureJson: string,
+    filename?: string,
+  ) => string[]
   collectOnPageScrollDiagnosticsNative?: (
     code: string,
     filename?: string,
   ) => NativeOnPageScrollDiagnostic[]
   getVueSfcSignaturePayloadNative?: (source: string) => string | undefined
+  mayContainPlatformApiAccessNative?: (
+    code: string,
+    filename?: string,
+  ) => boolean
+  mayContainStaticRequireLiteralNative?: (
+    code: string,
+    filename?: string,
+  ) => boolean
 }
 
 let binding: NativeAstBinding | false | undefined

@@ -28,6 +28,7 @@ export type { ComponentPropMap } from './operations/componentProps'
 export {
   collectFeatureFlagsFromCode,
   collectFeatureFlagsWithBabel,
+  collectFeatureFlagsWithNative,
   collectFeatureFlagsWithOxc,
   consumeNamedFeatureFlag,
   consumeNamespaceFeatureFlag,

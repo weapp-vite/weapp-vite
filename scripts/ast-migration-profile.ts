@@ -1,4 +1,5 @@
 import type { TransformScriptOptions, TransformState } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils'
+import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { compileScript } from 'vue/compiler-sfc'
@@ -20,12 +21,17 @@ import { createMacroVisitors } from '../packages-runtime/wevu-compiler/src/plugi
 import { rewriteDefaultExport, serializeWevuDefaults } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite'
 import { collectWevuPageFeatureFlags } from '../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../packages-runtime/wevu-compiler/src/utils/babel'
+import { collectFeatureFlagsFromCode } from '../packages/ast/src/operations/featureFlags'
+import { mayContainPlatformApiAccess } from '../packages/ast/src/operations/platformApi'
+import { mayContainStaticRequireLiteral } from '../packages/ast/src/operations/require'
 import { createTransformHook } from '../packages/weapp-vite/src/plugins/core/lifecycle/transform'
 import { injectSetDataPickInJs } from '../packages/weapp-vite/src/plugins/vue/transform/injectSetDataPick'
 
 const ITERATIONS = 160
 const WARMUP = 20
 const AST_FULL_CHAIN_SPEEDUP = 2.43
+const repoRoot = path.resolve(import.meta.dirname, '..')
+const nativeAstModulePath = path.join(repoRoot, 'packages/ast-native/index.js')
 
 function createVueSfcFixture() {
   const imports: string[] = []
@@ -123,6 +129,33 @@ function createLifecycleFixture() {
   return lines.join('\n')
 }
 
+function createAnalysisOnlyFixture() {
+  const lines: string[] = [
+    'import { onLoad as onLoadLocal, onShow } from "wevu"',
+    'import * as wevuNs from "wevu"',
+    'export function setupAnalysisOnly() {',
+  ]
+
+  for (let i = 0; i < 180; i++) {
+    lines.push(`  const dep${i} = require('./deps/dep-${i}')`)
+    lines.push(`  wx.showToast({ title: dep${i}.title })`)
+    lines.push(`  my.setStorageSync('dep-${i}', dep${i})`)
+    if (i % 3 === 0) {
+      lines.push('  onLoadLocal(() => dep0)')
+    }
+    if (i % 5 === 0) {
+      lines.push('  onShow(() => dep1)')
+    }
+    if (i % 7 === 0) {
+      lines.push('  wevuNs.onPageScroll(() => dep2)')
+    }
+  }
+
+  lines.push('  return true')
+  lines.push('}')
+  return lines.join('\n')
+}
+
 function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
@@ -151,6 +184,37 @@ function measureSync(fn: () => void, iterations = ITERATIONS, warmup = WARMUP) {
     samples.push(performance.now() - start)
   }
   return average(samples)
+}
+
+function withNativeAstEnv<T>(enabled: boolean, fn: () => T): T {
+  const previousNative = process.env.WEAPP_VITE_NATIVE
+  const previousNativePath = process.env.WEAPP_VITE_NATIVE_AST_PATH
+  try {
+    if (enabled) {
+      process.env.WEAPP_VITE_NATIVE = '1'
+      process.env.WEAPP_VITE_NATIVE_AST_PATH = nativeAstModulePath
+    }
+    else {
+      delete process.env.WEAPP_VITE_NATIVE
+      delete process.env.WEAPP_VITE_NATIVE_AST_PATH
+    }
+    return fn()
+  }
+  finally {
+    if (previousNative === undefined) {
+      delete process.env.WEAPP_VITE_NATIVE
+    }
+    else {
+      process.env.WEAPP_VITE_NATIVE = previousNative
+    }
+
+    if (previousNativePath === undefined) {
+      delete process.env.WEAPP_VITE_NATIVE_AST_PATH
+    }
+    else {
+      process.env.WEAPP_VITE_NATIVE_AST_PATH = previousNativePath
+    }
+  }
 }
 
 async function createTransformScriptCase() {
@@ -417,6 +481,7 @@ async function main() {
   const transformCase = await createTransformScriptCase()
   const setDataCase = createSetDataFixture()
   const lifecycleCode = createLifecycleFixture()
+  const analysisOnlyCode = createAnalysisOnlyFixture()
   const lifecycleTransform = createTransformHook({
     ctx: {
       configService: {
@@ -481,6 +546,38 @@ async function main() {
     await lifecycleTransform(lifecycleCode, '/project/src/pages/profile/index.ts')
   })
 
+  const analysisFeatureOptions = {
+    astEngine: 'oxc' as const,
+    moduleId: 'wevu',
+    hookToFeature: {
+      onLoad: 'enableLoad',
+      onShow: 'enableShow',
+      onPageScroll: 'enablePageScroll',
+    },
+  }
+  const analysisOnlyBaseline = {
+    staticRequire: withNativeAstEnv(false, () => measureSync(() => {
+      mayContainStaticRequireLiteral(analysisOnlyCode, { engine: 'oxc' })
+    })),
+    platformApi: withNativeAstEnv(false, () => measureSync(() => {
+      mayContainPlatformApiAccess(analysisOnlyCode, { engine: 'oxc' })
+    })),
+    featureFlags: withNativeAstEnv(false, () => measureSync(() => {
+      collectFeatureFlagsFromCode(analysisOnlyCode, analysisFeatureOptions)
+    })),
+  }
+  const analysisOnlyNative = {
+    staticRequire: withNativeAstEnv(true, () => measureSync(() => {
+      mayContainStaticRequireLiteral(analysisOnlyCode, { engine: 'oxc' })
+    })),
+    platformApi: withNativeAstEnv(true, () => measureSync(() => {
+      mayContainPlatformApiAccess(analysisOnlyCode, { engine: 'oxc' })
+    })),
+    featureFlags: withNativeAstEnv(true, () => measureSync(() => {
+      collectFeatureFlagsFromCode(analysisOnlyCode, analysisFeatureOptions)
+    })),
+  }
+
   const transformAstShare = (
     transformPhaseAverages.parse
     + transformPhaseAverages.pageFlags
@@ -541,13 +638,32 @@ async function main() {
     createTransformHook_transform: formatMs(lifecycleAvg),
   })
 
+  console.log('\nAnalysis-only native POC')
+  console.table({
+    staticRequire: {
+      baseline: formatMs(analysisOnlyBaseline.staticRequire),
+      native: formatMs(analysisOnlyNative.staticRequire),
+      speedup: `${(analysisOnlyBaseline.staticRequire / analysisOnlyNative.staticRequire).toFixed(2)}x`,
+    },
+    platformApi: {
+      baseline: formatMs(analysisOnlyBaseline.platformApi),
+      native: formatMs(analysisOnlyNative.platformApi),
+      speedup: `${(analysisOnlyBaseline.platformApi / analysisOnlyNative.platformApi).toFixed(2)}x`,
+    },
+    featureFlags: {
+      baseline: formatMs(analysisOnlyBaseline.featureFlags),
+      native: formatMs(analysisOnlyNative.featureFlags),
+      speedup: `${(analysisOnlyBaseline.featureFlags / analysisOnlyNative.featureFlags).toFixed(2)}x`,
+    },
+  })
+
   console.log('\nAssumption')
   console.log(`AST full-chain speedup uses the measured synthetic benchmark factor: ${AST_FULL_CHAIN_SPEEDUP.toFixed(2)}x`)
 
   console.log('\nMigration classification')
   console.table({
-    'native first': 'SFC signature, onPageScroll diagnostics, component SFC metadata, setData pick, require/platform API, feature flags',
-    'cautious': 'template expression, JSX auto components, script setup imports',
+    'native first': 'SFC signature, onPageScroll diagnostics, component SFC metadata, batch-style analysis-only entry points',
+    'cautious': 'setData pick, require/platform API, feature flags, template expression, JSX auto components, script setup imports',
     'keep Babel for now': 'transformScript, npm JS rewrite, JSX script transform',
   })
 }

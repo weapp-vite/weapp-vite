@@ -3,6 +3,7 @@ import * as t from '@babel/types'
 import { walk } from 'oxc-walker'
 import { parseJsLike, traverse } from '../babel'
 import { parseJsLikeWithEngine } from '../engine'
+import { loadNativeAstBindingSync, shouldUseNativeAst } from '../native'
 
 const CALL_EXPRESSION_TEXT_RE = /\b[a-z_$][\w$]*(?:\s*<[^(){};]+>)?\s*(?:\?\.\s*)?\(/i
 
@@ -195,6 +196,25 @@ export function collectFeatureFlagsWithOxc<TFeature extends string>(
   return enabled
 }
 
+export function collectFeatureFlagsWithNative<TFeature extends string>(
+  code: string,
+  moduleId: string,
+  hookToFeature: Record<string, TFeature>,
+) {
+  const collectNative = loadNativeAstBindingSync()?.collectFeatureFlagsNative
+  if (!collectNative) {
+    return undefined
+  }
+  const validFeatures = new Set(Object.values(hookToFeature))
+  const enabled = new Set<TFeature>()
+  for (const feature of collectNative(code, moduleId, JSON.stringify(hookToFeature), 'inline.ts')) {
+    if (validFeatures.has(feature as TFeature)) {
+      enabled.add(feature as TFeature)
+    }
+  }
+  return enabled
+}
+
 /**
  * 根据模块 ID 与 hook 映射表，从源码中收集启用的特性标识。
  */
@@ -209,6 +229,18 @@ export function collectFeatureFlagsFromCode<TFeature extends string>(
   const engine = options.astEngine ?? 'babel'
 
   try {
+    if (shouldUseNativeAst()) {
+      try {
+        const nativeEnabled = collectFeatureFlagsWithNative(code, options.moduleId, options.hookToFeature)
+        if (nativeEnabled) {
+          return nativeEnabled
+        }
+      }
+      catch {
+        // native AST 是可选快速路径，失败时回退原有解析。
+      }
+    }
+
     return engine === 'oxc'
       ? collectFeatureFlagsWithOxc(code, options.moduleId, options.hookToFeature)
       : collectFeatureFlagsWithBabel(code, options.moduleId, options.hookToFeature)

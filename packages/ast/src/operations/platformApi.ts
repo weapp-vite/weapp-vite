@@ -2,6 +2,7 @@ import type { Program } from '@oxc-project/types'
 import type { AstEngineName, AstParserLike } from '../types'
 import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../engine'
+import { loadNativeAstBindingSync, shouldUseNativeAst } from '../native'
 
 export const platformApiIdentifierList = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
 export const platformApiIdentifiers = new Set(platformApiIdentifierList)
@@ -62,6 +63,18 @@ export function mayContainPlatformApiAccess(
 
   if (!mayContainPlatformApiIdentifierByText(code)) {
     return false
+  }
+
+  if (shouldUseNativeAst()) {
+    try {
+      const checkNative = loadNativeAstBindingSync()?.mayContainPlatformApiAccessNative
+      if (checkNative) {
+        return checkNative(code, 'inline.ts')
+      }
+    }
+    catch {
+      // native AST 是可选快速路径，失败时回退原有解析。
+    }
   }
 
   try {

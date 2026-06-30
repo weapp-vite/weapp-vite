@@ -19,11 +19,17 @@ if (!bindingPath) {
 }
 
 const {
+  collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
+  mayContainPlatformApiAccessNative,
+  mayContainStaticRequireLiteralNative,
 } = require(bindingPath)
 
 export {
+  collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
   getVueSfcSignaturePayloadNative,
+  mayContainPlatformApiAccessNative,
+  mayContainStaticRequireLiteralNative,
 }
