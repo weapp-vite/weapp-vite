@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
+import type { ChunkScriptAnalysisCache } from './platform'
 import path from 'pathe'
-import { mayContainStaticRequireLiteral } from '../../../../../ast'
 import { toPosixPath } from '../../../../../utils'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
@@ -8,7 +8,7 @@ import {
   normalizeWeappLocalNpmImport,
   setRequireImportLiteral,
 } from './literals'
-import { matchesSubPackageDependency } from './platform'
+import { getChunkScriptAnalysis, matchesSubPackageDependency } from './platform'
 
 function isRelativeMiniprogramNpmImport(importee: string) {
   return importee === 'miniprogram_npm'
@@ -73,11 +73,16 @@ export function rewriteChunkNpmImportsToLocalRoot(
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   options?: {
+    analysisCache?: ChunkScriptAnalysisCache
     basedir?: string
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  if (!mayContainStaticRequireLiteral(chunk.code, { engine: options?.astEngine })) {
+  const analysis = getChunkScriptAnalysis(chunk, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+  if (!analysis.hasStaticRequireLiteral) {
     return
   }
 

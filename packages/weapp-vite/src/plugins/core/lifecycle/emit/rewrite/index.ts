@@ -14,6 +14,7 @@ export {
 } from './localRoot'
 
 export {
+  type ChunkScriptAnalysisCache,
   matchesSubPackageDependency,
   normalizeNpmImportByPlatform,
   replacePlatformApiAccess,

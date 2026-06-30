@@ -2,6 +2,7 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../../runtime/chunkStrategy'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { CorePluginState } from '../../helpers'
+import type { ChunkScriptAnalysisCache } from './rewrite'
 import process from 'node:process'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
@@ -239,6 +240,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const rolldownBundle = bundle as unknown as OutputBundle
+    const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
     await flushIndependentBuilds.call(this, state)
     pruneHmrMetadataOnlyChunks(rolldownBundle, state)
     const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(rolldownBundle, state)
@@ -249,6 +251,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         for (const output of Object.values(rolldownBundle)) {
           if (output?.type === 'chunk') {
             rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+              analysisCache: scriptAnalysisCache,
               astEngine,
               basedir: configService.cwd,
             })
@@ -478,7 +481,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         rolldownBundle,
         npmBuildCandidateDependencies,
         configService.weappViteConfig?.npm?.alipayNpmMode,
-        { astEngine },
+        { astEngine, analysisCache: scriptAnalysisCache },
       )
     }
     else {
@@ -497,6 +500,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           continue
         }
         rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+          analysisCache: scriptAnalysisCache,
           astEngine,
           basedir: configService.cwd,
         })
@@ -515,6 +519,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             continue
           }
           rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, {
+            analysisCache: scriptAnalysisCache,
             astEngine,
             basedir: configService.cwd,
           })
@@ -525,7 +530,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
     if (injectWeapiGlobalName) {
-      rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName, { astEngine })
+      rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName, {
+        analysisCache: scriptAnalysisCache,
+        astEngine,
+      })
     }
     rewriteBundleDynamicGlobalResolution(rolldownBundle)
 

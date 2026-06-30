@@ -85,7 +85,7 @@ export function analyzeScriptWithNative(
   options?: {
     filename?: string
     moduleId?: string
-    hookToFeature?: Record<string, string>
+    hookToFeature?: Record<string, unknown>
   },
 ) {
   const analyzeNative = loadNativeAstBindingSync()?.analyzeScriptNative

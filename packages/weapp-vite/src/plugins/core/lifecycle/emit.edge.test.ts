@@ -21,6 +21,11 @@ vi.mock('../../../runtime/chunkStrategy', () => ({
 }))
 
 vi.mock('../../../ast', () => ({
+  analyzeScript: () => ({
+    featureFlags: new Set(),
+    hasPlatformApiAccess: mayContainPlatformApiAccessMock(),
+    hasStaticRequireLiteral: mayContainStaticRequireLiteralMock(),
+  }),
   mayContainPlatformApiAccess: mayContainPlatformApiAccessMock,
   mayContainStaticRequireLiteral: mayContainStaticRequireLiteralMock,
   resolveAstEngine: resolveAstEngineMock,

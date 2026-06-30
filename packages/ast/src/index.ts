@@ -104,6 +104,8 @@ export {
   mayContainStaticRequireLiteral,
 } from './operations/require'
 export type { RequireToken } from './operations/require'
+export { analyzeScript } from './operations/scriptAnalysis'
+export type { ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,

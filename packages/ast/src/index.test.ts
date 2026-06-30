@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
+  analyzeScript,
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectComponentPropsWithBabel,
   collectComponentPropsWithOxc,
@@ -282,6 +283,28 @@ export function useCounter() {
     expect(engineParseSpy).not.toHaveBeenCalled()
 
     engineParseSpy.mockRestore()
+  })
+
+  it('analyzes script prechecks in one fallback entry', () => {
+    const source = `import { onLoad } from 'wevu'
+const dep = require('./dep')
+wx.getStorageSync('x')
+onLoad(() => dep)
+`
+    expect(analyzeScript(source, {
+      engine: 'oxc',
+      featureFlags: {
+        astEngine: 'oxc',
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'enableLoad',
+        },
+      },
+    })).toEqual({
+      featureFlags: new Set(['enableLoad']),
+      hasPlatformApiAccess: true,
+      hasStaticRequireLiteral: true,
+    })
   })
 
   it('exposes require prechecks', () => {
