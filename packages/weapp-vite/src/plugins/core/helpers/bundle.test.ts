@@ -127,6 +127,37 @@ describe('core helper bundle', () => {
     })).not.toThrow()
   })
 
+  it('keeps require chunks unchanged when implicit preloads do not target page chunks', () => {
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'require("../../common.js")',
+        imports: ['common.js'],
+        implicitlyLoadedBefore: ['common.js'],
+      },
+    } as any
+    const entriesMap = new Map([
+      ['pages/other/index', {
+        path: '/project/src/pages/other/index.ts',
+        type: 'page',
+      }],
+    ])
+
+    removeImplicitPagePreloads(bundle, {
+      configService: {
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      } as any,
+      entriesMap: entriesMap as any,
+    })
+
+    expect(bundle['pages/index/index.js'].code).toBe('require("../../common.js")')
+    expect(bundle['pages/index/index.js'].imports).toEqual(['common.js'])
+    expect(bundle['pages/index/index.js'].implicitlyLoadedBefore).toEqual(['common.js'])
+  })
+
   it('rewrites bare wevu internal runtime imports to emitted vendor requires', () => {
     const bundle = {
       'app.js': {

@@ -406,13 +406,18 @@ export function removeImplicitPagePreloads(
   }
 
   for (const chunk of requireChunks) {
-    const targetSet = new Set<string>()
+    let targetSet: Set<string> | undefined
+    const addTargetFileName = (fileName: string) => {
+      if (!pageChunkFileNames.has(fileName)) {
+        return
+      }
+      targetSet ??= new Set<string>()
+      targetSet.add(fileName)
+    }
 
     if (Array.isArray(chunk.imports)) {
       for (const imported of chunk.imports) {
-        if (pageChunkFileNames.has(imported)) {
-          targetSet.add(imported)
-        }
+        addTargetFileName(imported)
       }
     }
 
@@ -421,13 +426,11 @@ export function removeImplicitPagePreloads(
 
     if (implicitlyLoaded) {
       for (const eager of implicitlyLoaded) {
-        if (pageChunkFileNames.has(eager)) {
-          targetSet.add(eager)
-        }
+        addTargetFileName(eager)
       }
     }
 
-    if (targetSet.size === 0) {
+    if (!targetSet?.size) {
       continue
     }
 
