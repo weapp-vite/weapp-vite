@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
+import { createSubPackageMatcher } from './emit/generate'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -167,6 +168,15 @@ describe('core lifecycle emit hook extra branches', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     flushIndependentBuildsMock.mockResolvedValue(undefined)
+  })
+
+  it('matches subpackage roots with stable order and cached misses', () => {
+    const matchSubPackage = createSubPackageMatcher(['pkg', 'pkg-a'])
+
+    expect(matchSubPackage('pkg')).toBe('pkg')
+    expect(matchSubPackage('pkg-a/pages/a.js')).toBe('pkg-a')
+    expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
+    expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
   })
 
   it('creates renderStart runtime and stores watch files snapshot', async () => {

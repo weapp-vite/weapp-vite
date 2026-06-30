@@ -100,6 +100,31 @@ function isCurrentStyleSidecarUpdate(state: CorePluginState) {
   return state.ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(item => item.startsWith('style-sidecar:')) === true
 }
 
+export function createSubPackageMatcher(subPackageRoots: string[]) {
+  const candidates = subPackageRoots.map(root => ({
+    prefix: `${root}/`,
+    root,
+  }))
+  const cache = new Map<string, string | undefined>()
+
+  return function matchSubPackage(filePath: string) {
+    const cached = cache.get(filePath)
+    if (cached !== undefined || cache.has(filePath)) {
+      return cached
+    }
+
+    let matched: string | undefined
+    for (const { prefix, root } of candidates) {
+      if (filePath === root || filePath.startsWith(prefix)) {
+        matched = root
+        break
+      }
+    }
+    cache.set(filePath, matched)
+    return matched
+  }
+}
+
 async function emitCurrentStyleSidecarAsset(this: any, state: CorePluginState, bundle: OutputBundle) {
   if (!isCurrentStyleSidecarUpdate(state)) {
     return
@@ -441,9 +466,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           return
         }
 
-        function matchSubPackage(filePath: string) {
-          return subPackageRoots.find(root => filePath === root || filePath.startsWith(`${root}/`))
-        }
+        const matchSubPackage = createSubPackageMatcher(subPackageRoots)
 
         const resolveSharedChunkLabel = (sharedFileName: string, finalFileName: string) => {
           const prettifyModuleLabel = (label: string) => {
