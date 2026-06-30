@@ -157,6 +157,7 @@ describe('weapp-vite output finalizer', () => {
     expect(mayNeedTemplateNormalization('<view @tap="handleTap" />', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<view><!-- comment --></view>', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<view a:if="{{ready}}" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<IMPORT src="./SHARED.WXML" />', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<import src="./shared.wxml" />', 'alipay')).toBe(true)
     expect(mayNeedTemplateNormalization('<button bind:tap="handleTap" />', 'alipay')).toBe(true)
     expect(mayNeedTemplateNormalization('<HelloWorld />', 'alipay')).toBe(true)

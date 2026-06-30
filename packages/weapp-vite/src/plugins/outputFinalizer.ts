@@ -74,9 +74,14 @@ function outputSourceToString(output: OutputBundle[string]) {
 }
 
 export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform) {
-  const lowerCode = code.toLowerCase()
+  let lowerCode: string | undefined
+  const readLowerCode = () => {
+    lowerCode ??= code.toLowerCase()
+    return lowerCode
+  }
+  const hasUppercase = /[A-Z]/.test(code)
   const { directivePrefix, eventBindingStyle, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
-  if (normalizeComponentTagName && /[A-Z]/.test(code)) {
+  if (normalizeComponentTagName && hasUppercase) {
     return true
   }
 
@@ -90,15 +95,16 @@ export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform
   }
 
   if (eventBindingStyle === 'alipay' && (
-    lowerCode.includes('bind')
-    || lowerCode.includes('catch')
-    || lowerCode.includes('capture-')
-    || lowerCode.includes('mut-bind')
+    readLowerCode().includes('bind')
+    || readLowerCode().includes('catch')
+    || readLowerCode().includes('capture-')
+    || readLowerCode().includes('mut-bind')
   )) {
     return true
   }
 
-  return TEMPLATE_STATIC_REWRITE_MARKERS.some(marker => lowerCode.includes(marker))
+  const normalizedCode = hasUppercase ? readLowerCode() : code
+  return TEMPLATE_STATIC_REWRITE_MARKERS.some(marker => normalizedCode.includes(marker))
 }
 
 function normalizePreprocessorStyleAssetEntries(
