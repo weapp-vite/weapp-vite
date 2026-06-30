@@ -14,7 +14,7 @@ export const TEMPLATE_CATALOG = {
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/vite': '^4.3.1',
+  '@tailwindcss/vite': '^4.3.2',
   '@types/node': '^26.0.1',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
@@ -31,7 +31,7 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.5.1',
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.2.1',
-  'oxc-parser': '^0.137.0',
+  'oxc-parser': '^0.138.0',
   'oxc-walker': '^1.0.0',
   'pkg-types': '^2.3.1',
   'sass-embedded': '^1.100.0',
@@ -58,7 +58,7 @@ export const TEMPLATE_CATALOG = {
   rolldown: '1.1.3',
   sass: '^1.101.0',
   stylelint: '^17.14.0',
-  tailwindcss: '^4.3.1',
+  tailwindcss: '^4.3.2',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.1.0',
@@ -81,6 +81,6 @@ export const TEMPLATE_NAMED_CATALOG = {
     tailwindcss: '^3.4.19'
   },
   tailwind4: {
-    tailwindcss: '^4.3.1'
+    tailwindcss: '^4.3.2'
   }
 } as const
