@@ -451,6 +451,84 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('resolves app side sitemap and theme json concurrently', async () => {
+    const { loader, jsonService, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseSitemap: (() => void) | undefined
+    let sitemapReleased = false
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (!sitemapReleased) {
+        startedBeforeRelease.push(filepath)
+      }
+      if (filepath === '/project/src/sitemap.json') {
+        await new Promise<void>((resolve) => {
+          releaseSitemap = () => {
+            sitemapReleased = true
+            resolve()
+          }
+        })
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: [],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return { rules: [{ action: 'allow', page: '*' }] }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return { light: {}, dark: {} }
+      }
+      return {}
+    })
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseSitemap).toBeDefined()
+      expect(startedBeforeRelease.filter(filepath => filepath.endsWith('sitemap.json') || filepath.endsWith('theme.json'))).toEqual([
+        '/project/src/sitemap.json',
+        '/project/src/theme.json',
+      ])
+    })
+    releaseSitemap?.()
+    await pending
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/sitemap.json',
+      type: 'page',
+      json: {
+        rules: [{ action: 'allow', page: '*' }],
+      },
+    })
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/theme.json',
+      type: 'page',
+      json: {
+        light: {},
+        dark: {},
+      },
+    })
+  })
+
   it('prefers source app.miniapp.json over project.miniapp.json for runtime sidecar config', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader()
     const pluginCtx = createPluginContext()
@@ -481,6 +559,78 @@ describe('createEntryLoader', () => {
     })
 
     await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      fileName: 'app.miniapp.json',
+      jsonPath: '/project/src/app.miniapp.json',
+      type: 'page',
+      json: {
+        identityServiceConfig: {
+          authorizeMiniprogramType: 1,
+        },
+      },
+    })
+    expect(registerJsonAsset).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        jsonPath: '/project/project.miniapp.json',
+      }),
+    )
+  })
+
+  it('checks runtime and project miniapp configs concurrently while keeping source priority', async () => {
+    const { loader, jsonService, registerJsonAsset, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseRuntimeConfig: (() => void) | undefined
+    let runtimeConfigReleased = false
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(target)
+      }
+      if (target === '/project/src/app.miniapp.json') {
+        await new Promise<void>((resolve) => {
+          releaseRuntimeConfig = () => {
+            runtimeConfigReleased = true
+            resolve()
+          }
+        })
+        return true
+      }
+      return target === '/project/project.miniapp.json'
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.miniapp.json') {
+        return {
+          identityServiceConfig: {
+            authorizeMiniprogramType: 1,
+          },
+        }
+      }
+      if (filepath === '/project/project.miniapp.json') {
+        return {
+          miniVersion: 'v2',
+        }
+      }
+      return {}
+    })
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseRuntimeConfig).toBeDefined()
+      expect(startedBeforeRelease).toEqual(expect.arrayContaining([
+        '/project/src/app.miniapp.json',
+        '/project/project.miniapp.json',
+      ]))
+    })
+    releaseRuntimeConfig?.()
+    await pending
 
     expect(registerJsonAsset).toHaveBeenCalledWith({
       fileName: 'app.miniapp.json',

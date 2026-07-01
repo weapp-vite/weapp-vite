@@ -94,8 +94,10 @@ export async function collectAppSideFiles(
     })
   }
 
-  await processSideJson(sitemapLocation)
-  await processSideJson(themeLocation)
+  await Promise.all([
+    processSideJson(sitemapLocation),
+    processSideJson(themeLocation),
+  ])
 }
 
 export async function collectMiniappConfigFile(
@@ -112,7 +114,11 @@ export async function collectMiniappConfigFile(
   }
 
   const runtimeMiniappConfigPath = path.resolve(path.dirname(id), 'app.miniapp.json')
-  const runtimeConfigExists = await addWatchTarget(pluginCtx, runtimeMiniappConfigPath, existsCache, ttlMs)
+  const miniappConfigPath = path.resolve(configService.cwd, 'project.miniapp.json')
+  const [runtimeConfigExists, projectConfigExists] = await Promise.all([
+    addWatchTarget(pluginCtx, runtimeMiniappConfigPath, existsCache, ttlMs),
+    addWatchTarget(pluginCtx, miniappConfigPath, existsCache, ttlMs),
+  ])
   if (runtimeConfigExists) {
     const content = await jsonService.read(runtimeMiniappConfigPath)
     registerJsonAsset({
@@ -124,9 +130,7 @@ export async function collectMiniappConfigFile(
     return
   }
 
-  const miniappConfigPath = path.resolve(configService.cwd, 'project.miniapp.json')
-  const exists = await addWatchTarget(pluginCtx, miniappConfigPath, existsCache, ttlMs)
-  if (!exists) {
+  if (!projectConfigExists) {
     return
   }
 
