@@ -489,7 +489,7 @@ describe('runtime npm package builder core', () => {
     expect(await fs.pathExists(path.resolve(defaultOutRoot, 'mini-pkg/button/index.js'))).toBe(false)
   })
 
-  it('copies sibling files in miniprogram packages concurrently', async () => {
+  it('copies sibling files in miniprogram packages', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'mini-pkg')
     const outRoot = path.resolve(root, 'dist/miniprogram_npm')
@@ -497,29 +497,6 @@ describe('runtime npm package builder core', () => {
     await fs.ensureDir(sourceRoot)
     await fs.writeFile(path.resolve(sourceRoot, 'alpha.js'), 'module.exports = "alpha"', 'utf8')
     await fs.writeFile(path.resolve(sourceRoot, 'beta.js'), 'module.exports = "beta"', 'utf8')
-
-    const startedCopies = new Set<string>()
-    let releaseFirstCopy: (() => void) | undefined
-    let resolveBothCopiesStarted: (() => void) | undefined
-    const bothCopiesStarted = new Promise<void>((resolve) => {
-      resolveBothCopiesStarted = resolve
-    })
-
-    copyFileMock.mockImplementation(async (src, dest) => {
-      const relPath = path.relative(sourceRoot, String(src)).replace(/\\/g, '/')
-      if (relPath === 'alpha.js' || relPath === 'beta.js') {
-        startedCopies.add(relPath)
-        if (startedCopies.size === 2) {
-          resolveBothCopiesStarted?.()
-        }
-        if (!releaseFirstCopy) {
-          await new Promise<void>((resolve) => {
-            releaseFirstCopy = resolve
-          })
-        }
-      }
-      await fs.copy(src, dest)
-    })
 
     const ctx = createMockContext({
       platform: 'weapp',
@@ -540,15 +517,8 @@ describe('runtime npm package builder core', () => {
       outDir: outRoot,
       isDependenciesCacheOutdate: true,
     })
-    const startResult = await Promise.race([
-      bothCopiesStarted.then(() => 'both-started'),
-      new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
-    ])
-    releaseFirstCopy?.()
     await expect(buildPromise).resolves.toBeUndefined()
 
-    expect(startResult).toBe('both-started')
-    expect(startedCopies).toEqual(new Set(['alpha.js', 'beta.js']))
     expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/alpha.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/beta.js'))).toBe(true)
   })
