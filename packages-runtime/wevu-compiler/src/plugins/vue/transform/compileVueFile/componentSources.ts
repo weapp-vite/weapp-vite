@@ -37,6 +37,11 @@ interface VueSfcSignaturePayload {
   }
 }
 
+interface TemplateComponentTagInfo {
+  autoImportTags: Set<string>
+  componentNames: Set<string>
+}
+
 function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | undefined) {
   if (!result) {
     return undefined
@@ -218,15 +223,16 @@ function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: strin
   result.miniProgramComponentTags.add(pascalToKebab(tag))
 }
 
-export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
+function collectTemplateComponentTagInfo(template: string, filename: string, warn?: (message: string) => void): TemplateComponentTagInfo {
   const warnHandler = resolveWarnHandler(warn)
   const tags = collectVueTemplateTags(template, {
     filename,
-    warnLabel: '自动 usingComponents',
+    warnLabel: '组件标签',
     warn: (message: string) => warnHandler(message),
     shouldCollect: isAutoImportCandidateTag,
   })
-  for (const tag of [...tags]) {
+  const componentNames = new Set(tags)
+  for (const tag of tags) {
     if (tag.includes('-')) {
       const pascalName = tag
         .split('-')
@@ -234,11 +240,18 @@ export function collectTemplateComponentNames(template: string, filename: string
         .map(segment => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
         .join('')
       if (pascalName) {
-        tags.add(pascalName)
+        componentNames.add(pascalName)
       }
     }
   }
-  return tags
+  return {
+    autoImportTags: tags,
+    componentNames,
+  }
+}
+
+export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
+  return collectTemplateComponentTagInfo(template, filename, warn).componentNames
 }
 
 async function collectScriptSetupUsingComponents(options: {
@@ -247,6 +260,7 @@ async function collectScriptSetupUsingComponents(options: {
   filename: string
   compileOptions: CompileVueFileOptions | undefined
   autoUsingComponents: AutoUsingComponentsOptions | undefined
+  templateComponentNames: Set<string> | undefined
   result: ComponentSourceInfo
 }) {
   const {
@@ -255,14 +269,14 @@ async function collectScriptSetupUsingComponents(options: {
     filename,
     compileOptions,
     autoUsingComponents,
+    templateComponentNames,
     result,
   } = options
   if (!descriptor.scriptSetup || !descriptor.template) {
     return
   }
 
-  const templateComponentNames = collectTemplateComponentNames(descriptor.template.content, filename, autoUsingComponents?.warn ?? compileOptions?.warn)
-  if (!templateComponentNames.size) {
+  if (!templateComponentNames?.size) {
     return
   }
 
@@ -353,6 +367,7 @@ async function collectAutoImportWevuComponents(options: {
   filename: string
   compileOptions: CompileVueFileOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
+  templateAutoImportTags: Set<string> | undefined
   warn?: (message: string) => void
   result: ComponentSourceInfo
 }) {
@@ -361,6 +376,7 @@ async function collectAutoImportWevuComponents(options: {
     filename,
     compileOptions,
     autoImportTags,
+    templateAutoImportTags,
     warn,
     result,
   } = options
@@ -368,14 +384,7 @@ async function collectAutoImportWevuComponents(options: {
     return
   }
 
-  const warnHandler = resolveWarnHandler(autoImportTags.warn ?? warn)
-  const tags = collectVueTemplateTags(descriptor.template.content, {
-    filename,
-    warnLabel: '自动导入标签',
-    warn: (message: string) => warnHandler(message),
-    shouldCollect: isAutoImportCandidateTag,
-  })
-  for (const tag of tags) {
+  for (const tag of templateAutoImportTags ?? []) {
     let resolved: ({ name: string, from: string } & { resolvedId?: string, sourceType?: 'wevu-sfc' | 'native' }) | undefined
     try {
       resolved = await autoImportTags.resolveUsingComponent!(tag, filename)
@@ -423,6 +432,13 @@ export async function collectComponentSourceInfo(options: {
     miniProgramComponentTags: new Set(),
     componentNameMap: {},
   }
+  const templateComponentTagInfo = options.descriptor.template
+    ? collectTemplateComponentTagInfo(
+        options.descriptor.template.content,
+        options.filename,
+        options.autoUsingComponents?.warn ?? options.autoImportTags?.warn ?? options.compileOptions?.warn,
+      )
+    : undefined
 
   await collectScriptSetupUsingComponents({
     descriptor: options.descriptor,
@@ -430,6 +446,7 @@ export async function collectComponentSourceInfo(options: {
     filename: options.filename,
     compileOptions: options.compileOptions,
     autoUsingComponents: options.autoUsingComponents,
+    templateComponentNames: templateComponentTagInfo?.componentNames,
     result,
   })
   await collectAutoImportWevuComponents({
@@ -437,6 +454,7 @@ export async function collectComponentSourceInfo(options: {
     filename: options.filename,
     compileOptions: options.compileOptions,
     autoImportTags: options.autoImportTags,
+    templateAutoImportTags: templateComponentTagInfo?.autoImportTags,
     warn: options.compileOptions?.warn,
     result,
   })
