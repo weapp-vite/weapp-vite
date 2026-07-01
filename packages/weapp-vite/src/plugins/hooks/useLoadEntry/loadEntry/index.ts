@@ -26,7 +26,7 @@ import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
-import { addWatchTarget } from './watch'
+import { addPredictedWatchTargets } from './watch'
 
 const VUE_LIKE_PAGE_ENTRY_RE = /\.(?:vue|jsx|tsx)$/
 
@@ -133,9 +133,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let jsonPath = jsonEntry.path
     let hasJsonEntry = Boolean(jsonPath)
 
-    for (const prediction of jsonEntry.predictions) {
-      await addWatchTarget(this, prediction, existsCache, pathExistsTtlMs)
-    }
+    await addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
 
     let json: any = {}
     if (jsonPath) {
@@ -199,6 +197,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
+    const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
     const registerPageLayoutComponentEntries = async (
       layoutPlan: ResolvedPageLayoutPlan,
       options?: {
@@ -247,8 +246,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     if (type === 'app') {
-      const vueEntryPath = await findVueEntry(baseName)
-      const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
       if (configService.isDev && vueEntryPath) {
         const vueSource = await fs.readFile(vueEntryPath, 'utf-8').catch(() => undefined)
         if (vueSource) {

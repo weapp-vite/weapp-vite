@@ -587,12 +587,68 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, '/project/src/app.js', 'app')
 
-    expect(existsCalls.get('/project/src/app.json')).toBe(1)
+    expect(existsCalls.get('/project/src/app.json')).toBeUndefined()
     const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
     const watchedJson = addWatchMock.mock.calls.filter(call => normalizeWatchCall(call[0]) === '/project/src/app.json')
-    expect(watchedJson).toHaveLength(2)
+    expect(watchedJson).toHaveLength(1)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()
+  })
+
+  it('skips duplicate exists checks for resolved app side json predictions', async () => {
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: ['/project/src/sitemap.json', '/project/src/sitemap.json.ts'],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: ['/project/src/theme.json'],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockResolvedValue({})
+
+    await loader.call(createPluginContext(), '/project/src/app.vue', 'app')
+
+    expect(existsCalls.get('/project/src/sitemap.json')).toBeUndefined()
+    expect(existsCalls.get('/project/src/theme.json')).toBeUndefined()
+    expect(existsCalls.get('/project/src/sitemap.json.ts')).toBe(1)
+  })
+
+  it('reuses the resolved app vue entry instead of probing twice', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    mockFindVueEntry.mockResolvedValue('/project/src/app.vue')
+    jsonService.read.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(mockFindVueEntry).toHaveBeenCalledTimes(1)
+    expect(mockFindVueEntry).toHaveBeenCalledWith('/project/src/app')
   })
 
   it('reuses filesystem lookup cache across entries during build', async () => {

@@ -30,21 +30,35 @@ export async function addWatchTarget(
   return exists
 }
 
+export async function addPredictedWatchTargets(
+  pluginCtx: PluginContext,
+  predictions: string[],
+  existsCache: Map<string, boolean>,
+  ttlMs: number,
+  knownExistingPath?: string,
+) {
+  await Promise.all(Array.from(new Set(predictions)).map(async (prediction) => {
+    if (prediction && prediction === knownExistingPath) {
+      existsCache.set(prediction, true)
+      addNormalizedWatchFile(pluginCtx, prediction)
+      return
+    }
+    await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
+  }))
+}
+
 export async function collectStyleImports(
   pluginCtx: PluginContext,
   id: string,
   existsCache: Map<string, boolean>,
   ttlMs: number,
 ) {
-  const styleImports: string[] = []
-  for (const ext of supportedCssLangs) {
+  const styleEntries = await Promise.all(supportedCssLangs.map(async (ext) => {
     const mayBeCssPath = changeFileExtension(id, ext)
     const exists = await addWatchTarget(pluginCtx, mayBeCssPath, existsCache, ttlMs)
-    if (exists) {
-      styleImports.push(mayBeCssPath)
-    }
-  }
-  return styleImports
+    return exists ? mayBeCssPath : undefined
+  }))
+  return styleEntries.filter((entry): entry is string => Boolean(entry))
 }
 
 export async function collectAppSideFiles(
@@ -66,9 +80,7 @@ export async function collectAppSideFiles(
     const { path: jsonPath, predictions } = await findJsonEntry(
       path.resolve(path.dirname(id), location),
     )
-    for (const prediction of predictions) {
-      await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
-    }
+    await addPredictedWatchTargets(pluginCtx, predictions, existsCache, ttlMs, jsonPath)
 
     if (!jsonPath) {
       return
@@ -135,9 +147,7 @@ export async function ensureTemplateScanned(
   ttlMs: number,
 ) {
   const { path: templateEntry, predictions } = await findTemplateEntry(id)
-  for (const prediction of predictions) {
-    await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
-  }
+  await addPredictedWatchTargets(pluginCtx, predictions, existsCache, ttlMs, templateEntry)
 
   if (!templateEntry) {
     return ''
