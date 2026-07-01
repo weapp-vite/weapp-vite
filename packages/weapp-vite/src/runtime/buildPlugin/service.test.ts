@@ -1363,6 +1363,50 @@ describe('runtime buildPlugin service', () => {
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
   })
 
+  it('runs project config sync concurrently with the dev bundler build', async () => {
+    const watcher = createManualWatcher()
+    let releaseProjectConfigSync: (() => void) | undefined
+    syncProjectConfigToOutputMock.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        releaseProjectConfigSync = resolve
+      })
+    })
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        multiPlatform: {
+          ...baseCtx.configService.multiPlatform,
+          enabled: true,
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+
+    expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
+    expect(buildMock).toHaveBeenCalledTimes(1)
+
+    watcher.emit('START')
+    watcher.emit('END')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(releaseProjectConfigSync).toBeDefined()
+
+    let resolved = false
+    buildPromise.then(() => {
+      resolved = true
+    }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(resolved).toBe(false)
+
+    releaseProjectConfigSync?.()
+    await buildPromise
+    expect(resolved).toBe(true)
+  })
+
   it('cleans output in dev when cleanOutputsInDev is true', async () => {
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))

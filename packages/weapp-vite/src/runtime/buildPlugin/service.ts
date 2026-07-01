@@ -1179,14 +1179,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && configService.weappLibConfig?.dts?.enabled !== false
       && !configService.isDev,
     )
-    if (!isLibMode && !pluginOnly) {
-      await syncProjectConfigToOutput({
-        outDir: configService.outDir,
-        projectConfigPath: configService.projectConfigPath,
-        projectPrivateConfigPath: configService.projectPrivateConfigPath,
-        enabled: isMultiPlatformEnabled,
-      })
-    }
+    const projectConfigSyncTask = !isLibMode && !pluginOnly
+      ? syncProjectConfigToOutput({
+          outDir: configService.outDir,
+          projectConfigPath: configService.projectConfigPath,
+          projectPrivateConfigPath: configService.projectPrivateConfigPath,
+          enabled: isMultiPlatformEnabled,
+        })
+      : Promise.resolve()
     const shouldPreloadAppEntry = (
       !configService.isDev
       && !isLibMode
@@ -1206,6 +1206,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (shouldEmitLibDts) {
       await generateLibDts(configService)
     }
+    await projectConfigSyncTask
     await npmBuildTask
     if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
       await runIsolatedPluginBuild(options)
