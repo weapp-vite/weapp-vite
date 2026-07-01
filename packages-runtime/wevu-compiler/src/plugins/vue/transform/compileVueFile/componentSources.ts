@@ -223,6 +223,30 @@ function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: strin
   result.miniProgramComponentTags.add(pascalToKebab(tag))
 }
 
+function createComponentSourceInfo(): ComponentSourceInfo {
+  return {
+    autoUsingComponentsMap: {},
+    autoImportTagsMap: {},
+    autoComponentMeta: {},
+    wevuComponentTags: new Set(),
+    miniProgramComponentTags: new Set(),
+    componentNameMap: {},
+  }
+}
+
+function mergeComponentSourceInfo(target: ComponentSourceInfo, source: ComponentSourceInfo) {
+  Object.assign(target.autoUsingComponentsMap, source.autoUsingComponentsMap)
+  Object.assign(target.autoImportTagsMap, source.autoImportTagsMap)
+  Object.assign(target.autoComponentMeta, source.autoComponentMeta)
+  Object.assign(target.componentNameMap, source.componentNameMap)
+  for (const tag of source.wevuComponentTags) {
+    target.wevuComponentTags.add(tag)
+  }
+  for (const tag of source.miniProgramComponentTags) {
+    target.miniProgramComponentTags.add(tag)
+  }
+}
+
 function collectTemplateComponentTagInfo(template: string, filename: string, warn?: (message: string) => void): TemplateComponentTagInfo {
   const warnHandler = resolveWarnHandler(warn)
   const tags = collectVueTemplateTags(template, {
@@ -441,14 +465,7 @@ export async function collectComponentSourceInfo(options: {
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
 }) {
-  const result: ComponentSourceInfo = {
-    autoUsingComponentsMap: {},
-    autoImportTagsMap: {},
-    autoComponentMeta: {},
-    wevuComponentTags: new Set(),
-    miniProgramComponentTags: new Set(),
-    componentNameMap: {},
-  }
+  const result = createComponentSourceInfo()
   const templateComponentTagInfo = options.descriptor.template
     ? collectTemplateComponentTagInfo(
         options.descriptor.template.content,
@@ -457,24 +474,30 @@ export async function collectComponentSourceInfo(options: {
       )
     : undefined
 
-  await collectScriptSetupUsingComponents({
-    descriptor: options.descriptor,
-    descriptorForCompile: options.descriptorForCompile,
-    filename: options.filename,
-    compileOptions: options.compileOptions,
-    autoUsingComponents: options.autoUsingComponents,
-    templateComponentNames: templateComponentTagInfo?.componentNames,
-    result,
-  })
-  await collectAutoImportWevuComponents({
-    descriptor: options.descriptor,
-    filename: options.filename,
-    compileOptions: options.compileOptions,
-    autoImportTags: options.autoImportTags,
-    templateAutoImportTags: templateComponentTagInfo?.autoImportTags,
-    warn: options.compileOptions?.warn,
-    result,
-  })
+  const scriptSetupResult = createComponentSourceInfo()
+  const autoImportResult = createComponentSourceInfo()
+  await Promise.all([
+    collectScriptSetupUsingComponents({
+      descriptor: options.descriptor,
+      descriptorForCompile: options.descriptorForCompile,
+      filename: options.filename,
+      compileOptions: options.compileOptions,
+      autoUsingComponents: options.autoUsingComponents,
+      templateComponentNames: templateComponentTagInfo?.componentNames,
+      result: scriptSetupResult,
+    }),
+    collectAutoImportWevuComponents({
+      descriptor: options.descriptor,
+      filename: options.filename,
+      compileOptions: options.compileOptions,
+      autoImportTags: options.autoImportTags,
+      templateAutoImportTags: templateComponentTagInfo?.autoImportTags,
+      warn: options.compileOptions?.warn,
+      result: autoImportResult,
+    }),
+  ])
+  mergeComponentSourceInfo(result, scriptSetupResult)
+  mergeComponentSourceInfo(result, autoImportResult)
 
   return result
 }

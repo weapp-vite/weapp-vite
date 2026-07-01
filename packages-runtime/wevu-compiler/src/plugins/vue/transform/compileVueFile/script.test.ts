@@ -634,6 +634,69 @@ import NamedCard from './named-card.vue'
     })
   })
 
+  it('collects script setup imports and auto import tags concurrently', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <auto-card />
+</template>
+<script setup lang="ts">
+import FirstCard from './first-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async (importSource: string) => {
+          started.push(`script:${importSource}`)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            from: '/components/first-card',
+            resolvedId: '/project/src/components/first-card.vue',
+          }
+        },
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async (tag: string) => {
+          if (tag !== 'auto-card') {
+            return undefined
+          }
+          started.push(`auto:${tag}`)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            name: tag,
+            from: '/components/auto-card',
+          }
+        },
+      },
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['script:./first-card.vue', 'auto:auto-card'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoUsingComponentsMap).toEqual({
+      FirstCard: '/components/first-card',
+    })
+    expect(result.autoImportTagsMap).toEqual({
+      'auto-card': '/components/auto-card',
+    })
+    expect([...result.wevuComponentTags]).toEqual([
+      'FirstCard',
+      'first-card',
+    ])
+  })
+
   it('marks direct .vue imports without auto using component resolver', async () => {
     const sfc = parse(`
 <template>
