@@ -278,11 +278,24 @@ describe('createVueTransformPlugin lifecycle', () => {
 
   it('delegates resolveId to scoped slot resolution', async () => {
     const { createVueTransformPlugin } = await import('./index')
-    const plugin = createVueTransformPlugin({} as any)
+    const profile = {}
+    const plugin = createVueTransformPlugin({
+      runtimeState: {
+        build: {
+          hmr: {
+            profile,
+          },
+        },
+      },
+    } as any)
 
     const resolveId = getHookHandler(plugin.resolveId as any)
     expect(resolveId('virtual:slot')).toBe('resolved:virtual:slot')
     expect(resolveScopedSlotVirtualIdMock).toHaveBeenCalledWith('virtual:slot')
+    expect(profile).toEqual(expect.objectContaining({
+      pluginResolveMs: expect.any(Number),
+      resolveCount: 1,
+    }))
   })
 
   it('declares rolldown filters for hot transform paths', async () => {

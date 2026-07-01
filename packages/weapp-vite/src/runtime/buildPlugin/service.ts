@@ -65,6 +65,7 @@ interface HmrProfileJsonSample {
   sourceRootFile?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -87,6 +88,7 @@ interface HmrProfileJsonSample {
   sharedChunkResolveMs?: number
   chunkEmitCount?: number
   loadCount?: number
+  resolveCount?: number
   skippedLoadedCount?: number
   dirtyCount?: number
   pendingCount?: number
@@ -98,6 +100,7 @@ interface HmrProfileJsonSample {
 interface HmrPhaseRegressionCandidate {
   label: 'build-core'
     | 'build-start'
+    | 'plugin-resolve'
     | 'transform'
     | 'core-transform'
     | 'wevu-transform'
@@ -265,6 +268,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       sourceRootFile,
       buildCoreMs: profile.buildCoreMs,
       buildStartMs: profile.buildStartMs,
+      pluginResolveMs: profile.pluginResolveMs,
       transformMs: profile.transformMs,
       coreTransformMs: profile.coreTransformMs,
       wevuTransformMs: profile.wevuTransformMs,
@@ -287,6 +291,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
       chunkEmitCount: profile.chunkEmitCount,
       loadCount: profile.loadCount,
+      resolveCount: profile.resolveCount,
       skippedLoadedCount: profile.skippedLoadedCount,
       dirtyCount: profile.dirtyCount,
       pendingCount: profile.pendingCount,
@@ -321,6 +326,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const measuredMs = [
       profile.transformMs,
       profile.buildStartMs,
+      profile.pluginResolveMs,
       profile.coreLoadMs,
       profile.renderStartMs,
       profile.generateBundleMs,
@@ -419,6 +425,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const conciseSegments = [
         typeof profile.buildCoreMs === 'number' ? `build-core ${profile.buildCoreMs.toFixed(2)} ms` : undefined,
         typeof profile.buildStartMs === 'number' ? `build-start ${profile.buildStartMs.toFixed(2)} ms` : undefined,
+        typeof profile.pluginResolveMs === 'number' ? `plugin-resolve ${profile.pluginResolveMs.toFixed(2)} ms` : undefined,
         typeof profile.bundlerMs === 'number' ? `bundler ${profile.bundlerMs.toFixed(2)} ms` : undefined,
         typeof profile.renderStartMs === 'number' ? `render-start ${profile.renderStartMs.toFixed(2)} ms` : undefined,
         typeof profile.generateBundleMs === 'number' ? `generate ${profile.generateBundleMs.toFixed(2)} ms` : undefined,
@@ -447,6 +454,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.buildStartMs !== undefined) {
       verboseSegments.push(`build-start ${profile.buildStartMs.toFixed(2)} ms`)
+    }
+    if (profile.pluginResolveMs !== undefined) {
+      verboseSegments.push(`plugin-resolve ${profile.pluginResolveMs.toFixed(2)} ms`)
     }
     if (profile.bundlerMs !== undefined) {
       verboseSegments.push(`bundler ${profile.bundlerMs.toFixed(2)} ms`)
@@ -498,10 +508,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (
       profile.loadCount !== undefined
+      || profile.resolveCount !== undefined
       || profile.chunkEmitCount !== undefined
       || profile.skippedLoadedCount !== undefined
     ) {
-      verboseSegments.push(`load/chunk/skip ${profile.loadCount ?? 0}/${profile.chunkEmitCount ?? 0}/${profile.skippedLoadedCount ?? 0}`)
+      verboseSegments.push(`load/resolve/chunk/skip ${profile.loadCount ?? 0}/${profile.resolveCount ?? 0}/${profile.chunkEmitCount ?? 0}/${profile.skippedLoadedCount ?? 0}`)
     }
     if (
       profile.dirtyCount !== undefined
@@ -531,21 +542,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'shared': 1,
       'write': 2,
       'build-start': 3,
-      'transform': 4,
-      'core-transform': 5,
-      'wevu-transform': 6,
-      'vue-transform': 7,
-      'core-load': 8,
-      'entry-load': 9,
-      'request-globals': 10,
-      'weapi-resolve': 11,
-      'render-start': 12,
-      'generate': 13,
-      'generate-shared': 14,
-      'generate-rewrite': 15,
-      'module-graph': 16,
-      'watch->dirty': 17,
-      'build-core': 18,
+      'plugin-resolve': 4,
+      'transform': 5,
+      'core-transform': 6,
+      'wevu-transform': 7,
+      'vue-transform': 8,
+      'core-load': 9,
+      'entry-load': 10,
+      'request-globals': 11,
+      'weapi-resolve': 12,
+      'render-start': 13,
+      'generate': 14,
+      'generate-shared': 15,
+      'generate-rewrite': 16,
+      'module-graph': 17,
+      'watch->dirty': 18,
+      'build-core': 19,
     }
     const phases = [
       {
@@ -559,6 +571,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'buildStartMs',
         label: 'build-start',
+      },
+      {
+        key: 'pluginResolveMs',
+        label: 'plugin-resolve',
       },
       {
         key: 'coreTransformMs',

@@ -40,6 +40,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
       },
       build: {
         hmr: {
+          profile: {},
           dirtyVueEntryIds: new Set(),
           dirtyEntryReasons: new Map(),
           dirtyEntrySet: new Set(),
@@ -155,12 +156,16 @@ describe('auto-routes plugin alias fallback', () => {
   })
 
   it('handles built-in virtual ids and skips unrelated ids', async () => {
-    const { plugin } = createPlugin()
+    const { plugin, ctx } = createPlugin()
 
     expect(await plugin.resolveId?.call({}, 'weapp-vite/auto-routes')).toBe('\0weapp-vite:auto-routes')
     expect(await plugin.resolveId?.call({}, 'virtual:weapp-vite-auto-routes')).toBe('\0weapp-vite:auto-routes')
     expect(await plugin.resolveId?.call({}, '\0weapp-vite:auto-routes')).toBe('\0weapp-vite:auto-routes')
     expect(await plugin.resolveId?.call({}, '/virtual/project/src/pages/index.ts')).toBeNull()
+    expect(ctx.runtimeState.build.hmr.profile).toEqual(expect.objectContaining({
+      pluginResolveMs: expect.any(Number),
+      resolveCount: 4,
+    }))
   })
 
   it('keeps buildStart lazy before auto-routes module is requested', async () => {

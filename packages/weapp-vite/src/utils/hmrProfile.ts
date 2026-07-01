@@ -7,6 +7,7 @@ export type HmrProfileDurationKey
   = | 'transformMs'
     | 'writeMs'
     | 'buildStartMs'
+    | 'pluginResolveMs'
     | 'coreTransformMs'
     | 'wevuTransformMs'
     | 'vueTransformMs'
@@ -90,4 +91,18 @@ export function recordHmrProfileDuration(
     return
   }
   profile[key] = (profile[key] ?? 0) + durationMs
+}
+
+/**
+ * @description 为 HMR profile 累加操作次数。
+ */
+export function recordHmrProfileOperation(
+  profile: Record<string, number | undefined> | undefined,
+  key: string,
+  count = 1,
+) {
+  if (!profile || !Number.isFinite(count) || count <= 0) {
+    return
+  }
+  profile[key] = (profile[key] ?? 0) + count
 }

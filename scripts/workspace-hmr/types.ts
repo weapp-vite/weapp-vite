@@ -8,6 +8,7 @@ export interface HmrProfileSample {
   sourceRootFile?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -24,6 +25,7 @@ export interface HmrProfileSample {
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  resolveCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number

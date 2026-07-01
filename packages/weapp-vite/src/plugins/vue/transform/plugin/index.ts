@@ -6,7 +6,7 @@ import type { createPageEntryMatcher } from '../../../wevu'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
-import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
@@ -95,7 +95,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         id: SCOPED_SLOT_VIRTUAL_ID_RE,
       },
       handler(id) {
-        return resolveScopedSlotVirtualId(id)
+        const startedAt = performance.now()
+        try {
+          return resolveScopedSlotVirtualId(id)
+        }
+        finally {
+          const profile = ctx.runtimeState?.build?.hmr?.profile
+          recordHmrProfileDuration(profile, 'pluginResolveMs', performance.now() - startedAt)
+          recordHmrProfileOperation(profile, 'resolveCount')
+        }
       },
     },
 

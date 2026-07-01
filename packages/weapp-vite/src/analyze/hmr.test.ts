@@ -17,6 +17,7 @@ describe('analyze hmr profile', () => {
         file: '/project/src/pages/home/index.vue',
         buildCoreMs: 16,
         buildStartMs: 2,
+        pluginResolveMs: 0.2,
         transformMs: 8,
         coreTransformMs: 3,
         wevuTransformMs: 2,
@@ -36,6 +37,7 @@ describe('analyze hmr profile', () => {
         sharedChunkResolveMs: 1,
         chunkEmitCount: 2,
         loadCount: 1,
+        resolveCount: 5,
         skippedLoadedCount: 0,
         dirtyReasonSummary: ['entry-direct:1'],
         pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
@@ -48,6 +50,7 @@ describe('analyze hmr profile', () => {
         file: '/project/src/pages/logs/index.vue',
         buildCoreMs: 28,
         buildStartMs: 4,
+        pluginResolveMs: 0.6,
         transformMs: 12,
         coreTransformMs: 5,
         wevuTransformMs: 4,
@@ -67,6 +70,7 @@ describe('analyze hmr profile', () => {
         sharedChunkResolveMs: 2,
         chunkEmitCount: 4,
         loadCount: 3,
+        resolveCount: 7,
         skippedLoadedCount: 2,
         dirtyReasonSummary: ['entry-direct:1', 'importer-graph:1'],
         pendingReasonSummary: ['layout-propagation:1'],
@@ -89,6 +93,7 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.totalMs.maxMs).toBe(50)
     expect(result.metrics.buildCoreMs.averageMs).toBe(22)
     expect(result.metrics.buildStartMs.averageMs).toBe(3)
+    expect(result.metrics.pluginResolveMs.averageMs).toBe(0.4)
     expect(result.metrics.transformMs.averageMs).toBe(10)
     expect(result.metrics.coreTransformMs.averageMs).toBe(4)
     expect(result.metrics.wevuTransformMs.averageMs).toBe(3)
@@ -107,6 +112,7 @@ describe('analyze hmr profile', () => {
     expect(result.operations.chunkEmitCount.average).toBe(3)
     expect(result.operations.chunkEmitCount.max).toBe(4)
     expect(result.operations.loadCount.average).toBe(2)
+    expect(result.operations.resolveCount.average).toBe(6)
     expect(result.operations.skippedLoadedCount.average).toBe(1)
     expect(result.events).toEqual([
       { name: 'create', count: 1 },

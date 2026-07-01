@@ -14,6 +14,7 @@ interface HmrProfileJsonSample {
   file?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -33,6 +34,7 @@ interface HmrProfileJsonSample {
   sharedChunkResolveMs?: number
   chunkEmitCount?: number
   loadCount?: number
+  resolveCount?: number
   skippedLoadedCount?: number
 }
 
@@ -79,6 +81,10 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'build-start',
       value: sample.buildStartMs,
+    },
+    {
+      label: 'plugin-resolve',
+      value: sample.pluginResolveMs,
     },
     {
       label: 'core-transform',
@@ -195,10 +201,11 @@ export async function readLatestHmrProfileSummary(
   }
   if (
     isFiniteNumber(sample.loadCount)
+    || isFiniteNumber(sample.resolveCount)
     || isFiniteNumber(sample.chunkEmitCount)
     || isFiniteNumber(sample.skippedLoadedCount)
   ) {
-    segments.push(`load/chunk/skip ${sample.loadCount ?? 0}/${sample.chunkEmitCount ?? 0}/${sample.skippedLoadedCount ?? 0}`)
+    segments.push(`load/resolve/chunk/skip ${sample.loadCount ?? 0}/${sample.resolveCount ?? 0}/${sample.chunkEmitCount ?? 0}/${sample.skippedLoadedCount ?? 0}`)
   }
 
   return {

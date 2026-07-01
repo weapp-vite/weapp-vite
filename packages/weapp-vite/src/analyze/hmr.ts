@@ -10,6 +10,7 @@ export interface HmrProfileJsonSample {
   sourceRootFile?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -29,6 +30,7 @@ export interface HmrProfileJsonSample {
   sharedChunkResolveMs?: number
   chunkEmitCount?: number
   loadCount?: number
+  resolveCount?: number
   skippedLoadedCount?: number
   dirtyCount?: number
   pendingCount?: number
@@ -67,6 +69,7 @@ export interface HmrProfileAnalyzeResult {
     totalMs: HmrProfileMetricSummary
     buildCoreMs: HmrProfileMetricSummary
     buildStartMs: HmrProfileMetricSummary
+    pluginResolveMs: HmrProfileMetricSummary
     transformMs: HmrProfileMetricSummary
     coreTransformMs: HmrProfileMetricSummary
     wevuTransformMs: HmrProfileMetricSummary
@@ -88,6 +91,7 @@ export interface HmrProfileAnalyzeResult {
   operations: {
     chunkEmitCount: HmrProfileOperationSummary
     loadCount: HmrProfileOperationSummary
+    resolveCount: HmrProfileOperationSummary
     skippedLoadedCount: HmrProfileOperationSummary
   }
   events: HmrProfileCountItem[]
@@ -182,6 +186,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const totalValues: number[] = []
   const buildCoreValues: number[] = []
   const buildStartValues: number[] = []
+  const pluginResolveValues: number[] = []
   const transformValues: number[] = []
   const coreTransformValues: number[] = []
   const wevuTransformValues: number[] = []
@@ -201,6 +206,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const sharedChunkValues: number[] = []
   const chunkEmitCountValues: number[] = []
   const loadCountValues: number[] = []
+  const resolveCountValues: number[] = []
   const skippedLoadedCountValues: number[] = []
 
   for (const sample of samples) {
@@ -213,6 +219,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.buildStartMs)) {
       buildStartValues.push(sample.buildStartMs)
+    }
+    if (isFiniteNumber(sample.pluginResolveMs)) {
+      pluginResolveValues.push(sample.pluginResolveMs)
     }
     if (isFiniteNumber(sample.transformMs)) {
       transformValues.push(sample.transformMs)
@@ -271,6 +280,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     if (isFiniteNumber(sample.loadCount)) {
       loadCountValues.push(sample.loadCount)
     }
+    if (isFiniteNumber(sample.resolveCount)) {
+      resolveCountValues.push(sample.resolveCount)
+    }
     if (isFiniteNumber(sample.skippedLoadedCount)) {
       skippedLoadedCountValues.push(sample.skippedLoadedCount)
     }
@@ -303,6 +315,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       totalMs: createMetricSummary(totalValues),
       buildCoreMs: createMetricSummary(buildCoreValues),
       buildStartMs: createMetricSummary(buildStartValues),
+      pluginResolveMs: createMetricSummary(pluginResolveValues),
       transformMs: createMetricSummary(transformValues),
       coreTransformMs: createMetricSummary(coreTransformValues),
       wevuTransformMs: createMetricSummary(wevuTransformValues),
@@ -324,6 +337,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     operations: {
       chunkEmitCount: createOperationSummary(chunkEmitCountValues),
       loadCount: createOperationSummary(loadCountValues),
+      resolveCount: createOperationSummary(resolveCountValues),
       skippedLoadedCount: createOperationSummary(skippedLoadedCountValues),
     },
     events: sortCountEntries(eventCounts),

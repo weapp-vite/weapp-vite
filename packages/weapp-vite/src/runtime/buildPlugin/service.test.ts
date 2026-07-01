@@ -827,6 +827,7 @@ describe('runtime buildPlugin service', () => {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       buildStartMs: 4,
+      pluginResolveMs: 2,
       transformMs: 9.5,
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
@@ -837,6 +838,7 @@ describe('runtime buildPlugin service', () => {
       sharedChunkResolveMs: 1.75,
       chunkEmitCount: 3,
       loadCount: 2,
+      resolveCount: 5,
       skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
@@ -1050,6 +1052,7 @@ describe('runtime buildPlugin service', () => {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       buildStartMs: 4,
+      pluginResolveMs: 2,
       transformMs: 9.5,
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
@@ -1069,6 +1072,7 @@ describe('runtime buildPlugin service', () => {
       sharedChunkResolveMs: 1.75,
       chunkEmitCount: 3,
       loadCount: 2,
+      resolveCount: 5,
       skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
@@ -1096,6 +1100,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"buildStartMs":4')
+    expect(payload).toContain('"pluginResolveMs":2')
     expect(payload).toContain('"transformMs":9.5')
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
@@ -1111,9 +1116,10 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"generateModuleGraphMs":1')
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
-    expect(payload).toContain('"buildCoreMs":32.5')
+    expect(payload).toContain('"buildCoreMs":30.5')
     expect(payload).toContain('"chunkEmitCount":3')
     expect(payload).toContain('"loadCount":2')
+    expect(payload).toContain('"resolveCount":5')
     expect(payload).toContain('"skippedLoadedCount":1')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')

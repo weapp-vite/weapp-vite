@@ -23,6 +23,7 @@ describe('hmrProfileSummary', () => {
         file: `${root}/src/pages/logs/index.vue`,
         buildCoreMs: 70,
         buildStartMs: 6,
+        pluginResolveMs: 5,
         generateBundleMs: 72,
         coreLoadMs: 76,
         entryLoadMs: 45,
@@ -34,6 +35,7 @@ describe('hmrProfileSummary', () => {
         sharedChunkResolveMs: 10,
         chunkEmitCount: 3,
         loadCount: 2,
+        resolveCount: 4,
         skippedLoadedCount: 1,
       }),
       '',
@@ -53,7 +55,7 @@ describe('hmrProfileSummary', () => {
     expect(result?.line).toContain('最近一次热更新 120.00 ms')
     expect(result?.line).toContain('src/pages/logs/index.vue')
     expect(result?.line).toContain('主耗时 core-load 76.00 ms')
-    expect(result?.line).toContain('load/chunk/skip 2/3/1')
+    expect(result?.line).toContain('load/resolve/chunk/skip 2/4/3/1')
   })
 
   it('returns undefined when profile output is disabled', async () => {

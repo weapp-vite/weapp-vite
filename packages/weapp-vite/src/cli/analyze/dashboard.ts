@@ -47,11 +47,13 @@ export interface DashboardRuntimeEventProfile {
   sourceRootFile?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  resolveCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number

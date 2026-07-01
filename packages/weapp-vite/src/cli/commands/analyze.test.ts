@@ -130,6 +130,7 @@ describe('analyze cli command', () => {
         totalMs: { count: 2, averageMs: 40, maxMs: 60 },
         buildCoreMs: { count: 0 },
         buildStartMs: { count: 2, averageMs: 2, maxMs: 3 },
+        pluginResolveMs: { count: 2, averageMs: 0.2, maxMs: 0.3 },
         transformMs: { count: 0 },
         coreTransformMs: { count: 0 },
         wevuTransformMs: { count: 0 },
@@ -151,6 +152,7 @@ describe('analyze cli command', () => {
       operations: {
         chunkEmitCount: { count: 0 },
         loadCount: { count: 0 },
+        resolveCount: { count: 2, average: 4, max: 5 },
         skippedLoadedCount: { count: 0 },
       },
       events: [{ name: 'update', count: 2 }],

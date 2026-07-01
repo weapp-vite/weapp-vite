@@ -146,6 +146,7 @@ export interface RuntimeState {
         sourceRootFile?: string
         buildCoreMs?: number
         buildStartMs?: number
+        pluginResolveMs?: number
         transformMs?: number
         coreTransformMs?: number
         wevuTransformMs?: number
@@ -168,6 +169,7 @@ export interface RuntimeState {
         sharedChunkResolveMs?: number
         chunkEmitCount?: number
         loadCount?: number
+        resolveCount?: number
         skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number
@@ -181,6 +183,7 @@ export interface RuntimeState {
         file?: string
         buildCoreMs?: number
         buildStartMs?: number
+        pluginResolveMs?: number
         transformMs?: number
         coreTransformMs?: number
         wevuTransformMs?: number
@@ -203,6 +206,7 @@ export interface RuntimeState {
         sharedChunkResolveMs?: number
         chunkEmitCount?: number
         loadCount?: number
+        resolveCount?: number
         skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number

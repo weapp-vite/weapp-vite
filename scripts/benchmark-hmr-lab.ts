@@ -17,6 +17,7 @@ interface HmrProfileJsonSample {
   file?: string
   buildCoreMs?: number
   buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -33,6 +34,7 @@ interface HmrProfileJsonSample {
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  resolveCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
@@ -85,6 +87,7 @@ interface ScenarioResult {
   maxMs?: number
   averageBuildCoreMs?: number
   averageBuildStartMs?: number
+  averagePluginResolveMs?: number
   averageBundlerMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
@@ -273,6 +276,7 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     maxMs: max(samples.map(sample => sample.totalMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
     averageBuildStartMs: averageOptional(samples.map(sample => sample.profile?.buildStartMs)),
+    averagePluginResolveMs: averageOptional(samples.map(sample => sample.profile?.pluginResolveMs)),
     averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
     averageTransformMs: averageOptional(samples.map(sample => sample.profile?.transformMs)),
@@ -579,8 +583,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -591,6 +595,7 @@ function renderMarkdown(report: {
       formatMs(scenario.maxMs),
       formatMs(scenario.averageBundlerMs),
       formatMs(scenario.averageBuildStartMs),
+      formatMs(scenario.averagePluginResolveMs),
       formatMs(scenario.averageTransformMs),
       formatMs(scenario.averageGenerateBundleMs),
       formatMs(scenario.averageGenerateRewriteMs),
