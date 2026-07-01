@@ -213,7 +213,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         }))
       }
 
-      for (const meta of localSubPackageMetas) {
+      await Promise.all(localSubPackageMetas.map(async (meta) => {
         const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
         const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
@@ -236,7 +236,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           })
         }
         await cache.writeDependenciesCache(meta.subPackage.root)
-      }
+      }))
     }
 
     debug?.('buildNpm end')

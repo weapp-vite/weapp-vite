@@ -587,7 +587,7 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
 
-  it('serializes local subpackage copies from the shared npm source cache', async () => {
+  it('processes local subpackage npm copies concurrently from the shared source cache', async () => {
     const cwd = await createTempDir()
     const packageJson = {
       dependencies: {
@@ -654,31 +654,34 @@ describe('runtime npm service', () => {
       },
     } as any
 
-    const originalCopy = fs.copy.bind(fs)
-    let activeSharedCopy = 0
-    const copySpy = vi.spyOn(fs, 'copy').mockImplementation(async (src, dest, options) => {
-      const normalizedSrc = path.resolve(String(src))
-      if (normalizedSrc === cachedSourceOutDir) {
-        activeSharedCopy += 1
-        expect(activeSharedCopy).toBe(1)
-        await new Promise(resolve => setTimeout(resolve, 5))
-        try {
-          return await originalCopy(src, dest, options as any)
-        }
-        finally {
-          activeSharedCopy -= 1
-        }
+    let releasePackageA: (() => void) | undefined
+    const startedCacheChecks: string[] = []
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => {
+      if (key === '__all__') {
+        return false
       }
-      return originalCopy(src, dest, options as any)
+      if (key === 'packageA') {
+        startedCacheChecks.push('packageA')
+        await new Promise<void>((resolve) => {
+          releasePackageA = resolve
+        })
+        return true
+      }
+      if (key === 'packageB') {
+        startedCacheChecks.push('packageB')
+        return true
+      }
+      return true
     })
 
-    try {
-      const service = createNpmService(ctx)
-      await expect(service.build()).resolves.toBeUndefined()
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    while (startedCacheChecks.length < 2) {
+      await new Promise(resolve => setTimeout(resolve, 0))
     }
-    finally {
-      copySpy.mockRestore()
-    }
+    expect(startedCacheChecks).toEqual(['packageA', 'packageB'])
+    releasePackageA?.()
+    await expect(buildPromise).resolves.toBeUndefined()
 
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
