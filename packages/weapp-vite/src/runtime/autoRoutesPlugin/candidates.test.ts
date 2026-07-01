@@ -7,6 +7,7 @@ import {
   applyCandidateEntryToMap,
   buildDefaultSearchRoots,
   classifyPagesRootEntry,
+  collectCandidateFilesFromRoots,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
@@ -184,6 +185,41 @@ describe('auto routes candidates helpers', () => {
       hasScript: true,
       hasTemplate: true,
     })
+  })
+
+  it('collects candidate files from search roots concurrently', async () => {
+    const matcher = createAutoRoutesMatcher(['pages/**', 'pkg/**'])
+    let releaseSlowCrawl!: () => void
+    const slowCrawlStarted = new Promise<void>((resolve) => {
+      releaseSlowCrawl = resolve
+    })
+    const crawledRoots: string[] = []
+
+    const candidatesTask = collectCandidateFilesFromRoots('/project/src', matcher, [
+      '/project/src/pages',
+      '/project/src/pkg',
+    ], {
+      shouldCollectTargetRoot: async () => true,
+      safeCrawlCandidateFiles: async (_crawler, targetRoot) => {
+        crawledRoots.push(targetRoot)
+        if (targetRoot.endsWith('/pages')) {
+          await slowCrawlStarted
+          return ['/project/src/pages/home/index.vue']
+        }
+        return ['/project/src/pkg/detail/index.vue']
+      },
+      createCrawler: () => ({}) as any,
+    })
+
+    await expect.poll(() => crawledRoots.includes('/project/src/pkg')).toBe(true)
+
+    releaseSlowCrawl()
+    const candidates = await candidatesTask
+
+    expect([...candidates.keys()]).toEqual([
+      '/project/src/pages/home/index',
+      '/project/src/pkg/detail/index',
+    ])
   })
 
   it('does not treat declaration or sidecar files as scripts', () => {

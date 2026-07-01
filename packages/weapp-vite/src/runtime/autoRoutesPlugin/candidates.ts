@@ -280,47 +280,35 @@ function applyCandidateEntryToMap(
   applyCandidateEntryFile(candidate, entryPath)
 }
 
-export async function collectCandidates(
+async function collectCandidateFilesFromRoots(
   absoluteSrcRoot: string,
-  include?: string | RegExp | Array<string | RegExp>,
-  subPackageRoots?: Iterable<string>,
-  searchRoots?: Iterable<string>,
+  matcher: ReturnType<typeof createAutoRoutesMatcher>,
+  roots: string[],
+  options: {
+    shouldCollectTargetRoot: (targetRoot: string) => Promise<boolean>
+    safeCrawlCandidateFiles: (
+      crawler: ReturnType<InstanceType<typeof Fdir>['withFullPaths']>,
+      targetRoot: string,
+    ) => Promise<string[]>
+    createCrawler: () => ReturnType<InstanceType<typeof Fdir>['withFullPaths']>
+  },
 ) {
-  const candidates = new Map<string, CandidateEntry>()
-  const matcher = createAutoRoutesMatcher(include, subPackageRoots)
-  const roots = resolveCandidateSearchRoots(absoluteSrcRoot, matcher, searchRoots) ?? []
-
-  if (!searchRoots) {
-    if (matcher.isDefault) {
-      roots.push(...await resolveDefaultSearchRoots(absoluteSrcRoot, subPackageRoots))
-    }
-    else {
-      roots.push(...matcher.getSearchRoots(absoluteSrcRoot))
-    }
-  }
-
-  const crawler = new Fdir({
-    includeDirs: false,
-    pathSeparator: '/',
-    excludeSymlinks: true,
-    suppressErrors: true,
-    exclude(dirName) {
-      return SKIPPED_DIRECTORIES.has(dirName) || isAutoRoutesGeneratedDirectoryName(dirName)
-    },
-  }).withFullPaths()
-
-  for (const root of roots) {
+  const rootFiles = await Promise.all(roots.map(async (root) => {
     const targetRoot = resolveCollectTargetRoot(absoluteSrcRoot, root)
     if (!targetRoot) {
-      continue
+      return []
     }
 
-    if (!(await shouldCollectTargetRoot(targetRoot))) {
-      continue
+    if (!(await options.shouldCollectTargetRoot(targetRoot))) {
+      return []
     }
 
-    const files = await safeCrawlCandidateFiles(crawler, targetRoot)
+    const crawler = options.createCrawler()
+    return await options.safeCrawlCandidateFiles(crawler, targetRoot)
+  }))
+  const candidates = new Map<string, CandidateEntry>()
 
+  for (const files of rootFiles) {
     for (const entryPath of files) {
       const resolvedEntryPath = resolveCandidateEntryPath(absoluteSrcRoot, entryPath)
       if (!shouldCollectCandidateEntry(matcher, resolvedEntryPath)) {
@@ -334,6 +322,41 @@ export async function collectCandidates(
   }
 
   return candidates
+}
+
+export async function collectCandidates(
+  absoluteSrcRoot: string,
+  include?: string | RegExp | Array<string | RegExp>,
+  subPackageRoots?: Iterable<string>,
+  searchRoots?: Iterable<string>,
+) {
+  const matcher = createAutoRoutesMatcher(include, subPackageRoots)
+  const roots = resolveCandidateSearchRoots(absoluteSrcRoot, matcher, searchRoots) ?? []
+
+  if (!searchRoots) {
+    if (matcher.isDefault) {
+      roots.push(...await resolveDefaultSearchRoots(absoluteSrcRoot, subPackageRoots))
+    }
+    else {
+      roots.push(...matcher.getSearchRoots(absoluteSrcRoot))
+    }
+  }
+
+  const createCrawler = () => new Fdir({
+    includeDirs: false,
+    pathSeparator: '/',
+    excludeSymlinks: true,
+    suppressErrors: true,
+    exclude(dirName) {
+      return SKIPPED_DIRECTORIES.has(dirName) || isAutoRoutesGeneratedDirectoryName(dirName)
+    },
+  }).withFullPaths()
+
+  return await collectCandidateFilesFromRoots(absoluteSrcRoot, matcher, roots, {
+    shouldCollectTargetRoot,
+    safeCrawlCandidateFiles,
+    createCrawler,
+  })
 }
 
 export function cloneCandidate(candidate: CandidateEntry): CandidateEntry {
@@ -363,6 +386,7 @@ export {
   applyCandidateEntryToMap,
   buildDefaultSearchRoots,
   classifyPagesRootEntry,
+  collectCandidateFilesFromRoots,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
