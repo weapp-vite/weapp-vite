@@ -1183,7 +1183,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result).toBe(cached.result)
   })
 
-  it('refreshes dirty compiled entries even when source is unchanged in dev', async () => {
+  it('reuses dirty compiled entries when transformed source is unchanged in dev', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },
       source: '<view />',
@@ -1191,6 +1191,55 @@ describe('emitSharedVueEntryAssets', () => {
       refreshToken: 1,
     } as any
     readFileMock.mockResolvedValue('<view />')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ refreshed: true })',
+    })
+
+    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+            },
+          },
+        },
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(cached.refreshToken).toBe(0)
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(result).toBe(cached.result)
+    expect((result as any).script).toBe('Page({ cached: true })')
+  })
+
+  it('refreshes dirty compiled entries when source changes in dev', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+      refreshToken: 1,
+    } as any
+    readFileMock.mockResolvedValue('<view>{{ title }}</view>')
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: true,
       code: 'Page({ refreshed: true })',

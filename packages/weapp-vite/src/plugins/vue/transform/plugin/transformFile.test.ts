@@ -172,9 +172,53 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(options.compilationCache.get('/project/src/components/card.vue').refreshToken).toBe(0)
   })
 
-  it('recompiles dirty vue entries even when source is unchanged', async () => {
+  it('reuses dirty vue entries when transformed source is unchanged', async () => {
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
     const options = createBaseOptions({
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {},
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: {
+            template: '<view />',
+            script: 'Component({ cached: true })',
+            meta: {
+              styleBlocks: [],
+            },
+          },
+          source: '<template><view /></template>',
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+        }],
+      ]),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ cached: true })'),
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(options.compilationCache.get('/project/src/components/card.vue').refreshToken).toBe(0)
+  })
+
+  it('recompiles dirty vue entries when transformed source changes', async () => {
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const options = createBaseOptions({
+      code: '<template><view>{{ title }}</view></template>',
       ctx: {
         ...createBaseOptions().ctx,
         runtimeState: {

@@ -185,11 +185,13 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       ? resolveVueSfcStyleIndependentSignature(source, filename)
       : undefined
     if (
-      !dirtyEntryId
-      && source === cached.source
+      source === cached.source
       && transformed.signature === cached.autoRoutesSignature
     ) {
       cached.refreshToken = 0
+      if (dirtyEntryId) {
+        dirtyVueEntryIds?.delete(dirtyEntryId)
+      }
       return cached.result
     }
     if (

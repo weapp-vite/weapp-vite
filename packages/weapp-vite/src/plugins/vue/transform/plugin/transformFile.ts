@@ -136,7 +136,6 @@ export async function transformVueLikeFile(options: {
       configService.isDev
       && cachedCompilation
       && !ctx.runtimeState.scan.isDirty
-      && !dirtyEntryId
       && cachedCompilation.source === transformedSource
       && cachedCompilation.autoRoutesSignature === autoRoutesSignature
     ) {
@@ -152,6 +151,9 @@ export async function transformVueLikeFile(options: {
         hmrStyleToken: styleRefreshTokens.get(filename),
       }))
 
+      if (dirtyEntryId) {
+        dirtyVueEntryIds?.delete(dirtyEntryId)
+      }
       reportTiming(filename, cachedCompilation.isPage)
 
       return {
