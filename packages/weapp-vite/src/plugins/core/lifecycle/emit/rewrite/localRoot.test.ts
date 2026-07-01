@@ -108,6 +108,37 @@ describe('rewriteBundleNpmImportsToLocalRoots', () => {
     expect(JSON.parse(String(nestedJson.source)).usingComponents.button).toBe('../miniprogram_npm/ui-lib/button')
   })
 
+  it('reuses the same nested root target for matching script and json outputs', () => {
+    const nestedScript = createChunk('pkg-a/nested/pages/detail.js', `const comp = require('ui-lib/button')`)
+    const nestedJson = createJsonAsset('pkg-a/nested/pages/detail.json', {
+      button: 'ui-lib/button',
+    })
+    const bundle: OutputBundle = {
+      [nestedScript.fileName]: nestedScript,
+      [nestedJson.fileName]: nestedJson,
+    }
+
+    rewriteBundleNpmImportsToLocalRoots(
+      bundle,
+      {
+        'ui-lib': '1.0.0',
+      },
+      [
+        {
+          root: 'pkg-a',
+          dependencies: ['other-lib'],
+        },
+        {
+          root: 'pkg-a/nested',
+          dependencies: ['ui-lib'],
+        },
+      ],
+    )
+
+    expect(nestedScript.code).toContain(`require("../miniprogram_npm/ui-lib/button")`)
+    expect(JSON.parse(String(nestedJson.source)).usingComponents.button).toBe('../miniprogram_npm/ui-lib/button')
+  })
+
   it('does not rewrite the subpackage root chunk as a local subpackage page chunk', () => {
     const rootChunk = createChunk('pkg-a', `const comp = require('ui-lib/button')`)
     const pageChunk = createChunk('pkg-a/pages/index.js', `const comp = require('ui-lib/button')`)

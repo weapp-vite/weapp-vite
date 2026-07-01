@@ -299,17 +299,28 @@ function matchesRootFile(fileName: string, root: string) {
   return fileName.startsWith(`${root}/`)
 }
 
-function resolveChunkLocalRootRewriteTarget(
-  fileName: string,
+function createLocalRootRewriteTargetResolver(
   localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
 ) {
-  return localSubPackages.find(meta => meta.root && matchesRootFile(fileName, meta.root))
+  const orderedLocalSubPackages = localSubPackages.length > 1
+    ? [...localSubPackages].sort((a, b) => b.root.length - a.root.length)
+    : localSubPackages
+  const cache = new Map<string, LocalRootNpmRewriteSubPackageMeta | undefined>()
+
+  return (fileName: string) => {
+    if (cache.has(fileName)) {
+      return cache.get(fileName)
+    }
+    const matched = orderedLocalSubPackages.find(meta => meta.root && matchesRootFile(fileName, meta.root))
+    cache.set(fileName, matched)
+    return matched
+  }
 }
 
 function rewriteJsonNpmImportsToLocalRoots(
   bundle: OutputBundle,
   dependencies: Record<string, string> | undefined,
-  orderedLocalSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+  resolveLocalRootRewriteTarget: (fileName: string) => LocalRootNpmRewriteSubPackageMeta | undefined,
   basedir?: string,
 ) {
   for (const output of Object.values(bundle)) {
@@ -317,7 +328,7 @@ function rewriteJsonNpmImportsToLocalRoots(
       continue
     }
 
-    const subPackageTarget = resolveChunkLocalRootRewriteTarget(output.fileName, orderedLocalSubPackages)
+    const subPackageTarget = resolveLocalRootRewriteTarget(output.fileName)
     if (subPackageTarget) {
       rewriteJsonAssetNpmImportsToLocalRoot(output, subPackageTarget.root, subPackageTarget.dependencies, dependencies, basedir)
       continue
@@ -333,15 +344,14 @@ export function rewriteBundleNpmImportsToLocalRoots(
   localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
   options?: LocalRootNpmRewriteOptions,
 ) {
-  const orderedLocalSubPackages = [...localSubPackages]
-    .sort((a, b) => b.root.length - a.root.length)
+  const resolveLocalRootRewriteTarget = createLocalRootRewriteTargetResolver(localSubPackages)
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const subPackageTarget = resolveChunkLocalRootRewriteTarget(chunk.fileName, orderedLocalSubPackages)
+    const subPackageTarget = resolveLocalRootRewriteTarget(chunk.fileName)
     if (subPackageTarget) {
       rewriteChunkNpmImportsToLocalRoot(chunk, subPackageTarget.root, subPackageTarget.dependencies, dependencies, options)
       continue
@@ -350,5 +360,5 @@ export function rewriteBundleNpmImportsToLocalRoots(
     rewriteChunkNpmImportsToLocalRoot(chunk, '', undefined, dependencies, options)
   }
 
-  rewriteJsonNpmImportsToLocalRoots(bundle, dependencies, orderedLocalSubPackages, options?.basedir)
+  rewriteJsonNpmImportsToLocalRoots(bundle, dependencies, resolveLocalRootRewriteTarget, options?.basedir)
 }
