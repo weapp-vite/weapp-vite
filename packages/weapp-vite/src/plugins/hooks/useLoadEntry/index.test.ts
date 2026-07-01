@@ -1005,6 +1005,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
       'shared-chunk-representative:1/3',
     ])
@@ -1043,6 +1045,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
       'css-importer-representative:1/3',
     ])
@@ -1137,6 +1141,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(4)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
       'css-importer-representative:1/4',
     ])

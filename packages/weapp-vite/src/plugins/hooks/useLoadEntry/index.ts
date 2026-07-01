@@ -484,6 +484,12 @@ export function useLoadEntry(
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
   const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
+  const clearDirtyEntry = (entryId: string) => {
+    dirtyEntrySet.delete(entryId)
+    dirtyEntryReasons.delete(entryId)
+    dirtyEntryEventIds.delete(entryId)
+  }
+
   return {
     loadEntry,
     entriesMap,
@@ -560,9 +566,7 @@ export function useLoadEntry(
           deferredDirtyEntryIds.add(entryId)
         }
         else {
-          dirtyEntrySet.delete(entryId)
-          dirtyEntryReasons.delete(entryId)
-          dirtyEntryEventIds.delete(entryId)
+          clearDirtyEntry(entryId)
         }
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
@@ -586,9 +590,10 @@ export function useLoadEntry(
         await Promise.all(emitEntriesChunks.call(this, pending))
       }
       for (const entryId of deferredDirtyEntryIds) {
-        dirtyEntrySet.delete(entryId)
-        dirtyEntryReasons.delete(entryId)
-        dirtyEntryEventIds.delete(entryId)
+        clearDirtyEntry(entryId)
+      }
+      for (const entryId of activeDirtyEntrySet) {
+        clearDirtyEntry(entryId)
       }
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
