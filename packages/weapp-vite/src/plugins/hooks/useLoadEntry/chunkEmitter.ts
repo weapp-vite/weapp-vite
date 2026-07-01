@@ -42,9 +42,9 @@ export function createChunkEmitter(
       loadedEntrySet.add(normalizedId)
 
       const start = shouldPreload ? performance.now() : 0
-      const shouldEmitBeforePreload = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
+      const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
       if (shouldPreload) {
-        if (!shouldEmitBeforePreload && preloadAssetOnlyEntry) {
+        if (!shouldEmitChunk && preloadAssetOnlyEntry) {
           await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
         }
         else {
@@ -54,7 +54,6 @@ export function createChunkEmitter(
       }
 
       const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
-      const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
 
       if (shouldEmitChunk) {
         this.emitFile({

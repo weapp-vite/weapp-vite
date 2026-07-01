@@ -98,6 +98,7 @@ describe('createChunkEmitter', () => {
     const loadedEntrySet = new Set<string>()
     const trackedEntryIds: string[] = []
     const preloadAssetOnlyEntry = vi.fn(async () => {})
+    const shouldEmitEntryChunk = vi.fn(entryId => entryId !== '/project/src/pages/hmr/index.ts')
     const emitEntriesChunks = createChunkEmitter(
       {
         relativeOutputPath(id: string) {
@@ -108,7 +109,7 @@ describe('createChunkEmitter', () => {
       undefined,
       entryId => trackedEntryIds.push(entryId),
       undefined,
-      entryId => entryId !== '/project/src/pages/hmr/index.ts',
+      shouldEmitEntryChunk,
       preloadAssetOnlyEntry,
     )
 
@@ -129,6 +130,7 @@ describe('createChunkEmitter', () => {
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(trackedEntryIds).toEqual(['/project/src/pages/hmr/index.ts'])
+    expect(shouldEmitEntryChunk).toHaveBeenCalledTimes(1)
   })
 
   it('tracks skipped preloads for entries already loaded', async () => {
