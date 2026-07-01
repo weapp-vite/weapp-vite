@@ -116,6 +116,16 @@ describe('css plugin shared style injection', () => {
     include: ['**/*'],
     exclude: [],
   }
+  const secondStyleAbsolutePath = resolve(absoluteSrcRoot, 'subpackages/foo/styles/second.wxss')
+  const secondSubPackageStyleEntry: SubPackageStyleEntry = {
+    source: 'styles/second.wxss',
+    absolutePath: secondStyleAbsolutePath,
+    outputRelativePath: 'subpackages/foo/styles/second.wxss',
+    inputExtension: '.wxss',
+    scope: 'all',
+    include: ['**/*'],
+    exclude: [],
+  }
 
   const scanService = {
     subPackageMap: new Map([
@@ -895,6 +905,79 @@ describe('css plugin shared style injection', () => {
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(styleAbsolutePath))
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(dependencyPath))
     expect(readFileMock).not.toHaveBeenCalledWith(styleAbsolutePath, 'utf8')
+  })
+
+  it('renders shared style entries concurrently while emitting in config order', async () => {
+    const plugin = css({
+      ...ctx,
+      scanService: {
+        subPackageMap: new Map([
+          [
+            'subpackages/foo',
+            {
+              subPackage: { root: 'subpackages/foo' },
+              entries: ['subpackages/foo/pages/list'],
+              styleEntries: [subPackageStyleEntry, secondSubPackageStyleEntry],
+            },
+          ],
+        ]),
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+    const startedBeforeRelease: string[] = []
+    let releaseFirstRender!: () => void
+    let firstReleased = false
+    renderSharedStyleEntry.mockImplementation(async (entry: SubPackageStyleEntry) => {
+      if (!firstReleased) {
+        startedBeforeRelease.push(entry.absolutePath)
+      }
+      if (entry.absolutePath === styleAbsolutePath) {
+        await new Promise<void>((resolve) => {
+          releaseFirstRender = () => {
+            firstReleased = true
+            resolve()
+          }
+        })
+      }
+      return {
+        css: `/* ${entry.outputRelativePath} */`,
+        dependencies: [],
+        source: `/* source ${entry.outputRelativePath} */`,
+      }
+    })
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    const pending = invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    await vi.waitFor(() => {
+      expect(releaseFirstRender).toBeDefined()
+      expect(startedBeforeRelease).toEqual([
+        styleAbsolutePath,
+        secondStyleAbsolutePath,
+      ])
+    })
+    releaseFirstRender()
+    await pending
+
+    expect(emitted.map(asset => asset.fileName)).toEqual([
+      'subpackages/foo/styles/index.wxss',
+      'subpackages/foo/styles/second.wxss',
+      'subpackages/foo/pages/list.wxss',
+    ])
   })
 
   it('skips rendering shared style entries when the same output was already emitted', async () => {

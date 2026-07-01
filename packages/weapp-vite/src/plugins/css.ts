@@ -35,6 +35,16 @@ interface PreparedStyleAsset {
   processedCss: string
 }
 
+interface SharedStyleEmissionTask {
+  entry: SubPackageStyleEntry
+  fileName: string
+  absolutePath: string
+}
+
+interface SharedStyleEmissionResult extends SharedStyleEmissionTask {
+  css: string
+}
+
 interface BundleStyleAnalysis {
   facadeChunks: OutputChunk[]
   ownersByCssAsset: Map<string, Set<string>>
@@ -516,6 +526,7 @@ async function emitSharedStyleEntries(
     return
   }
 
+  const tasks: SharedStyleEmissionTask[] = []
   for (const entries of sharedStyles.values()) {
     for (const entry of entries) {
       const fileName = toPosixPath(entry.outputRelativePath)
@@ -528,30 +539,54 @@ async function emitSharedStyleEntries(
         this.addWatchFile(normalizeWatchPath(absolutePath))
       }
 
-      if (!await pathExistsCached(absolutePath, { ttlMs: getPathExistsTtlMs(configService) })) {
-        continue
-      }
+      tasks.push({
+        entry,
+        fileName,
+        absolutePath,
+      })
+    }
+  }
 
-      const { css: renderedCss, dependencies, source } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
-      const graphCss = source ?? await readStyleGraphSource(absolutePath, renderedCss)
-      syncCssImportDependencies(ctx, absolutePath, graphCss, dependencies)
-      if (typeof this.addWatchFile === 'function' && dependencies.length) {
-        for (const dependency of dependencies) {
-          if (dependency && dependency !== absolutePath) {
-            this.addWatchFile(normalizeWatchPath(dependency))
-          }
+  const renderedEntries = await Promise.all(tasks.map(async (task): Promise<SharedStyleEmissionResult | undefined> => {
+    const { entry, absolutePath } = task
+
+    if (!await pathExistsCached(absolutePath, { ttlMs: getPathExistsTtlMs(configService) })) {
+      return undefined
+    }
+
+    const { css: renderedCss, dependencies, source } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
+    const graphCss = source ?? await readStyleGraphSource(absolutePath, renderedCss)
+    syncCssImportDependencies(ctx, absolutePath, graphCss, dependencies)
+    if (typeof this.addWatchFile === 'function' && dependencies.length) {
+      for (const dependency of dependencies) {
+        if (dependency && dependency !== absolutePath) {
+          this.addWatchFile(normalizeWatchPath(dependency))
         }
       }
-
-      const css = await processCssWithCache(renderedCss, configService)
-
-      emitted.add(fileName)
-      if (bundle[fileName]) {
-        delete bundle[fileName]
-      }
-
-      emitCssAssetIfChanged(ctx, this, bundle, fileName, css)
     }
+
+    const css = await processCssWithCache(renderedCss, configService)
+
+    return {
+      ...task,
+      css,
+    }
+  }))
+
+  for (const result of renderedEntries) {
+    if (!result) {
+      continue
+    }
+    if (emitted.has(result.fileName)) {
+      continue
+    }
+
+    if (bundle[result.fileName]) {
+      delete bundle[result.fileName]
+    }
+
+    emitted.add(result.fileName)
+    emitCssAssetIfChanged(ctx, this, bundle, result.fileName, result.css)
   }
 }
 

@@ -29,6 +29,13 @@ const applySharedChunkStrategyMock = vi.hoisted(() => vi.fn())
 const applyRuntimeChunkLocalizationMock = vi.hoisted(() => vi.fn())
 const emitWxmlAssetsWithCacheMock = vi.hoisted(() => vi.fn())
 const emitJsonAssetsMock = vi.hoisted(() => vi.fn())
+const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<string, any>) => ({
+  chunks: new Map(
+    Object.entries(bundle)
+      .filter(([, output]) => output?.type === 'chunk')
+      .map(([key, output]) => [key, output]),
+  ),
+})))
 const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
@@ -66,6 +73,7 @@ vi.mock('../../css', () => ({
 }))
 
 vi.mock('../helpers', () => ({
+  createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: emitJsonAssetsMock,
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
   flushIndependentBuilds: flushIndependentBuildsMock,
