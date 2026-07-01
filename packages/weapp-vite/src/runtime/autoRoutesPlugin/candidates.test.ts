@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyCandidateEntryFile,
   applyCandidateEntryToMap,
-  buildDefaultSearchRoots,
-  classifyPagesRootEntry,
   collectCandidateFilesFromRoots,
-  hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
@@ -17,6 +14,12 @@ import {
   shouldCollectTargetRoot,
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
+import {
+  buildDefaultSearchRoots,
+  classifyPagesRootEntry,
+  discoverPagesRootsWithReaddir,
+  hasNestedPagesRoot,
+} from './pageRoots'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
 const packageSrcRoot = path.resolve(testDir, '../..')
@@ -74,6 +77,48 @@ describe('auto routes candidates helpers', () => {
       '/project/src',
       '/project/src/pkgA',
     ])
+  })
+
+  it('discovers sibling pages roots concurrently while preserving traversal order', async () => {
+    const started: string[] = []
+    const resume: Array<() => void> = []
+    const createDirent = (name: string) => ({
+      name,
+      isDirectory: () => true,
+    })
+
+    const pagesRootsTask = discoverPagesRootsWithReaddir('/project/src', async (dir) => {
+      started.push(dir)
+      if (dir === '/project/src') {
+        return [
+          createDirent('slow'),
+          createDirent('fast'),
+        ]
+      }
+      if (dir === '/project/src/slow') {
+        await new Promise<void>(resolve => resume.push(resolve))
+        return [createDirent('pages')]
+      }
+      if (dir === '/project/src/fast') {
+        return [createDirent('pages')]
+      }
+      return []
+    })
+
+    await expect.poll(() => started.includes('/project/src/fast')).toBe(true)
+    expect(started).toEqual([
+      '/project/src',
+      '/project/src/slow',
+      '/project/src/fast',
+    ])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    await expect(pagesRootsTask).resolves.toEqual(new Set([
+      '/project/src/slow/pages',
+      '/project/src/fast/pages',
+    ]))
   })
 
   it('resolves candidate search roots from explicit roots and matcher defaults', () => {

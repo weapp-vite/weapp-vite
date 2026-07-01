@@ -1,4 +1,3 @@
-import type { FsDirent } from '@weapp-core/shared/fs'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { fdir as Fdir } from 'fdir'
@@ -7,6 +6,7 @@ import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, 
 import { toPosixPath } from '../../utils/path'
 import { isAutoRoutesGeneratedDirectoryName, isAutoRoutesGeneratedRelativePath } from './generatedPaths'
 import { createAutoRoutesMatcher } from './matcher'
+import { resolveDefaultSearchRoots } from './pageRoots'
 
 export interface CandidateEntry {
   base: string
@@ -24,118 +24,6 @@ const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['.git', '.husky', '.idea', '.turbo'])
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
 const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
-
-interface DirentLike {
-  name: string
-  isDirectory: () => boolean
-}
-
-function hasNestedPagesRoot(
-  root: string,
-  discoveredPagesRoots: Iterable<string>,
-) {
-  const normalizedRoot = toPosixPath(root)
-  return [...discoveredPagesRoots].some((pagesRoot) => {
-    const normalizedPagesRoot = toPosixPath(pagesRoot)
-    return normalizedPagesRoot === `${normalizedRoot}/pages`
-      || normalizedPagesRoot.startsWith(`${normalizedRoot}/pages/`)
-  })
-}
-
-function classifyPagesRootEntry(
-  current: string,
-  entry: DirentLike,
-) {
-  if (!entry.isDirectory()) {
-    return undefined
-  }
-
-  if (SKIPPED_DIRECTORIES.has(entry.name) || isAutoRoutesGeneratedDirectoryName(entry.name)) {
-    return undefined
-  }
-
-  const nextPath = path.join(current, entry.name)
-  return entry.name === 'pages'
-    ? { pageRoot: nextPath }
-    : { nextPath }
-}
-
-async function discoverPagesRoots(root: string) {
-  const queue = [root]
-  const pagesRoots = new Set<string>()
-
-  while (queue.length > 0) {
-    const current = queue.shift()
-    if (!current) {
-      continue
-    }
-
-    let entries: FsDirent[]
-    try {
-      entries = await fs.readdir(current, { withFileTypes: true })
-    }
-    catch {
-      continue
-    }
-
-    for (const entry of entries) {
-      const classified = classifyPagesRootEntry(current, entry)
-      if (!classified) {
-        continue
-      }
-
-      if ('pageRoot' in classified) {
-        if (classified.pageRoot) {
-          pagesRoots.add(classified.pageRoot)
-        }
-        continue
-      }
-
-      queue.push(classified.nextPath)
-    }
-  }
-
-  return pagesRoots
-}
-
-function buildDefaultSearchRoots(
-  absoluteSrcRoot: string,
-  discoveredPagesRoots: Iterable<string>,
-  subPackageRoots?: Iterable<string>,
-) {
-  const roots: string[] = []
-  const discoveredRoots = [...discoveredPagesRoots]
-
-  if (discoveredRoots.length > 0) {
-    roots.push(...discoveredRoots)
-  }
-  else {
-    roots.push(absoluteSrcRoot)
-  }
-
-  for (const root of subPackageRoots ?? []) {
-    if (!root) {
-      continue
-    }
-
-    const absoluteRoot = path.resolve(absoluteSrcRoot, root)
-
-    if (!hasNestedPagesRoot(absoluteRoot, discoveredRoots)) {
-      roots.push(absoluteRoot)
-    }
-  }
-
-  return roots
-}
-
-async function resolveDefaultSearchRoots(
-  absoluteSrcRoot: string,
-  subPackageRoots?: Iterable<string>,
-) {
-  const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
-
-  return buildDefaultSearchRoots(absoluteSrcRoot, discoveredPagesRoots, subPackageRoots)
-}
 
 export function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
@@ -384,10 +272,7 @@ export function areSetsEqual(a: Set<string>, b: Set<string>) {
 export {
   applyCandidateEntryFile,
   applyCandidateEntryToMap,
-  buildDefaultSearchRoots,
-  classifyPagesRootEntry,
   collectCandidateFilesFromRoots,
-  hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
