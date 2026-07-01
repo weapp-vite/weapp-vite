@@ -444,6 +444,57 @@ import MyCard from './my-card.vue'
     expect(result.miniProgramComponentTags.has('my-card')).toBe(true)
   })
 
+  it('resolves script setup imported components concurrently while preserving component maps', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <second-card />
+</template>
+<script setup lang="ts">
+import FirstCard from './first-card.vue'
+import SecondCard from './second-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async (importSource: string) => {
+          started.push(importSource)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            from: `/components/${importSource.slice(2, -4)}`,
+            resolvedId: `/project/src/components/${importSource.slice(2)}`,
+          }
+        },
+      },
+      autoImportTags: undefined,
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['./first-card.vue', './second-card.vue'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoUsingComponentsMap).toEqual({
+      FirstCard: '/components/first-card',
+      SecondCard: '/components/second-card',
+    })
+    expect([...result.wevuComponentTags]).toEqual([
+      'FirstCard',
+      'first-card',
+      'SecondCard',
+      'second-card',
+    ])
+  })
+
   it('uses optional native SFC signature payload for imported component metadata', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'wevu-compiler-ast-native-'))
     const modulePath = join(tempDir, 'native.cjs')
@@ -539,6 +590,48 @@ import NamedCard from './named-card.vue'
     expect(result.componentNameMap['named-card']).toBe('NativeCard')
     expect(result.miniProgramComponentTags.has('NamedCard')).toBe(true)
     expect(result.miniProgramComponentTags.has('named-card')).toBe(true)
+  })
+
+  it('resolves auto import component tags concurrently while preserving result order', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <second-card />
+</template>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: undefined,
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async (tag: string) => {
+          started.push(tag)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            name: tag,
+            from: `/components/${tag}`,
+          }
+        },
+      },
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['first-card', 'second-card'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoImportTagsMap).toEqual({
+      'first-card': '/components/first-card',
+      'second-card': '/components/second-card',
+    })
   })
 
   it('marks direct .vue imports without auto using component resolver', async () => {

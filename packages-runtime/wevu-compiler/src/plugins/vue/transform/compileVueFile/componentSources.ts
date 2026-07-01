@@ -319,7 +319,7 @@ async function collectScriptSetupUsingComponents(options: {
       },
     })
 
-    for (const { localName, importSource, importedName, kind } of pending) {
+    const resolvedComponents = await Promise.all(pending.map(async ({ localName, importSource, importedName, kind }) => {
       let resolved = autoUsingComponents?.resolveUsingComponentPath
         ? normalizeResolvedUsingComponent(await autoUsingComponents.resolveUsingComponentPath(importSource, filename, {
             localName,
@@ -336,6 +336,19 @@ async function collectScriptSetupUsingComponents(options: {
           resolvedId: path.resolve(path.dirname(filename), importSource),
         }
       }
+      const componentMeta = await resolveVueSfcStaticComponentMeta(resolved?.resolvedId, {
+        cache: compileOptions?.componentMetaCache,
+        warn: autoUsingComponents?.warn ?? compileOptions?.warn,
+      })
+      return {
+        localName,
+        importSource,
+        resolved,
+        componentMeta,
+      }
+    }))
+
+    for (const { localName, importSource, resolved, componentMeta } of resolvedComponents) {
       if (resolved?.from) {
         result.autoUsingComponentsMap[localName] = resolved.from
         result.autoComponentMeta[localName] = resolved.from
@@ -344,10 +357,6 @@ async function collectScriptSetupUsingComponents(options: {
         result.wevuComponentTags.add(localName)
         result.wevuComponentTags.add(pascalToKebab(localName))
       }
-      const componentMeta = await resolveVueSfcStaticComponentMeta(resolved?.resolvedId, {
-        cache: compileOptions?.componentMetaCache,
-        warn: autoUsingComponents?.warn ?? compileOptions?.warn,
-      })
       registerComponentName(result, localName, componentMeta.componentName)
       registerMiniProgramComponentTag(
         result,
@@ -384,7 +393,7 @@ async function collectAutoImportWevuComponents(options: {
     return
   }
 
-  for (const tag of templateAutoImportTags ?? []) {
+  const resolvedTags = await Promise.all([...templateAutoImportTags ?? []].map(async (tag) => {
     let resolved: ({ name: string, from: string } & { resolvedId?: string, sourceType?: 'wevu-sfc' | 'native' }) | undefined
     try {
       resolved = await autoImportTags.resolveUsingComponent!(tag, filename)
@@ -392,6 +401,18 @@ async function collectAutoImportWevuComponents(options: {
     catch {
       resolved = undefined
     }
+    const componentMeta = await resolveVueSfcStaticComponentMeta(resolved?.resolvedId, {
+      cache: compileOptions?.componentMetaCache,
+      warn: autoImportTags.warn ?? warn,
+    })
+    return {
+      tag,
+      resolved,
+      componentMeta,
+    }
+  }))
+
+  for (const { tag, resolved, componentMeta } of resolvedTags) {
     if (!resolved?.from) {
       continue
     }
@@ -402,10 +423,6 @@ async function collectAutoImportWevuComponents(options: {
         result.wevuComponentTags.add(resolved.name)
       }
     }
-    const componentMeta = await resolveVueSfcStaticComponentMeta(resolved.resolvedId, {
-      cache: compileOptions?.componentMetaCache,
-      warn: autoImportTags.warn ?? warn,
-    })
     registerComponentName(result, tag, componentMeta.componentName)
     const isMiniProgramComponent = componentMeta.isMiniProgramComponent
     registerMiniProgramComponentTag(result, tag, isMiniProgramComponent)
