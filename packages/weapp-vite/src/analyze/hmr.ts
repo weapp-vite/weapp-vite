@@ -22,6 +22,9 @@ export interface HmrProfileJsonSample {
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  chunkEmitCount?: number
+  loadCount?: number
+  skippedLoadedCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
@@ -33,6 +36,12 @@ export interface HmrProfileMetricSummary {
   count: number
   averageMs?: number
   maxMs?: number
+}
+
+export interface HmrProfileOperationSummary {
+  count: number
+  average?: number
+  max?: number
 }
 
 export interface HmrProfileCountItem {
@@ -66,6 +75,11 @@ export interface HmrProfileAnalyzeResult {
     emitMs: HmrProfileMetricSummary
     sharedChunkResolveMs: HmrProfileMetricSummary
   }
+  operations: {
+    chunkEmitCount: HmrProfileOperationSummary
+    loadCount: HmrProfileOperationSummary
+    skippedLoadedCount: HmrProfileOperationSummary
+  }
   events: HmrProfileCountItem[]
   dirtyReasons: HmrProfileCountItem[]
   pendingReasons: HmrProfileCountItem[]
@@ -89,6 +103,20 @@ function createMetricSummary(values: number[]): HmrProfileMetricSummary {
     count: values.length,
     averageMs: total / values.length,
     maxMs: Math.max(...values),
+  }
+}
+
+function createOperationSummary(values: number[]): HmrProfileOperationSummary {
+  if (!values.length) {
+    return {
+      count: 0,
+    }
+  }
+  const total = values.reduce((sum, value) => sum + value, 0)
+  return {
+    count: values.length,
+    average: total / values.length,
+    max: Math.max(...values),
   }
 }
 
@@ -156,6 +184,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const watchToDirtyValues: number[] = []
   const emitValues: number[] = []
   const sharedChunkValues: number[] = []
+  const chunkEmitCountValues: number[] = []
+  const loadCountValues: number[] = []
+  const skippedLoadedCountValues: number[] = []
 
   for (const sample of samples) {
     totalValues.push(sample.totalMs!)
@@ -204,6 +235,15 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     if (isFiniteNumber(sample.sharedChunkResolveMs)) {
       sharedChunkValues.push(sample.sharedChunkResolveMs)
     }
+    if (isFiniteNumber(sample.chunkEmitCount)) {
+      chunkEmitCountValues.push(sample.chunkEmitCount)
+    }
+    if (isFiniteNumber(sample.loadCount)) {
+      loadCountValues.push(sample.loadCount)
+    }
+    if (isFiniteNumber(sample.skippedLoadedCount)) {
+      skippedLoadedCountValues.push(sample.skippedLoadedCount)
+    }
     collectCounts(dirtyReasonCounts, sample.dirtyReasonSummary)
     collectCounts(pendingReasonCounts, sample.pendingReasonSummary)
   }
@@ -245,6 +285,11 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       watchToDirtyMs: createMetricSummary(watchToDirtyValues),
       emitMs: createMetricSummary(emitValues),
       sharedChunkResolveMs: createMetricSummary(sharedChunkValues),
+    },
+    operations: {
+      chunkEmitCount: createOperationSummary(chunkEmitCountValues),
+      loadCount: createOperationSummary(loadCountValues),
+      skippedLoadedCount: createOperationSummary(skippedLoadedCountValues),
     },
     events: sortCountEntries(eventCounts),
     dirtyReasons: sortCountEntries(dirtyReasonCounts),

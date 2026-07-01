@@ -40,6 +40,12 @@ interface PendingEntryResolution {
   forceFullSharedChunkRefresh?: boolean
 }
 
+interface ChunkEmitStatsSummary {
+  chunkEmitCount: number
+  loadCount: number
+  skippedLoadedCount: number
+}
+
 function shouldExpandStableSharedChunk(chunkId: string, importers?: Set<string>) {
   if ((importers?.size ?? 0) <= 1) {
     return false
@@ -357,6 +363,23 @@ function resolveCurrentStyleOutputFileName(ctx: CompilerContext) {
   )
 }
 
+function createChunkEmitStatsSummary(): ChunkEmitStatsSummary {
+  return {
+    chunkEmitCount: 0,
+    loadCount: 0,
+    skippedLoadedCount: 0,
+  }
+}
+
+function addChunkEmitStatsSummary(
+  target: ChunkEmitStatsSummary,
+  source: ChunkEmitStatsSummary,
+) {
+  target.chunkEmitCount += source.chunkEmitCount
+  target.loadCount += source.loadCount
+  target.skippedLoadedCount += source.skippedLoadedCount
+}
+
 export function useLoadEntry(
   ctx: CompilerContext,
   options?: {
@@ -380,6 +403,7 @@ export function useLoadEntry(
   const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
   const metadataEntryIds = new Set<string>()
   const rootInputIds = options?.hmr?.rootInputIds
+  const chunkEmitStats = createChunkEmitStatsSummary()
   const addLastEmittedChunkFileName = (entryId: string) => {
     lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
     if (rootInputIds?.has(entryId)) {
@@ -409,7 +433,9 @@ export function useLoadEntry(
     (entryId) => {
       lastChunkEmittedEntryIds.add(entryId)
     },
-    entryId => !rootInputIds?.has(entryId) && !metadataEntryIds.has(entryId),
+    entryId => !rootInputIds?.has(entryId)
+      && !metadataEntryIds.has(entryId)
+      && !lastChunkEmittedEntryIds.has(entryId),
     async function preloadAssetOnlyEntry(resolvedId, entryId) {
       if (rootInputIds?.has(entryId)) {
         await loadEntry.call(this, resolvedId.id, 'app')
@@ -426,6 +452,7 @@ export function useLoadEntry(
     (fileName) => {
       lastEmittedChunkFileNames.add(fileName)
     },
+    stats => addChunkEmitStatsSummary(chunkEmitStats, stats),
   )
   const applyAutoImports = createAutoImportAugmenter(
     ctx.autoImportService,
@@ -549,6 +576,9 @@ export function useLoadEntry(
       })
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []
+      chunkEmitStats.chunkEmitCount = 0
+      chunkEmitStats.loadCount = 0
+      chunkEmitStats.skippedLoadedCount = 0
       lastActualEmittedEntryIds.clear()
       lastChunkEmittedEntryIds.clear()
       lastEmittedChunkFileNames.clear()
@@ -637,6 +667,9 @@ export function useLoadEntry(
         ...ctx.runtimeState.build.hmr.profile,
         emitMs: performance.now() - emitStartedAt,
         sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
+        chunkEmitCount: chunkEmitStats.chunkEmitCount,
+        loadCount: chunkEmitStats.loadCount,
+        skippedLoadedCount: chunkEmitStats.skippedLoadedCount,
         dirtyCount,
         pendingCount: pending.length,
         emittedCount: hmrEntryIds.size,

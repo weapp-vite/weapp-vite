@@ -26,6 +26,9 @@ interface HmrProfileJsonSample {
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  chunkEmitCount?: number
+  loadCount?: number
+  skippedLoadedCount?: number
 }
 
 interface ReadLatestHmrProfileSummaryOptions {
@@ -164,6 +167,13 @@ export async function readLatestHmrProfileSummary(
   const phaseHint = formatPhaseHint(sample)
   if (phaseHint) {
     segments.push(`主耗时 ${phaseHint}`)
+  }
+  if (
+    isFiniteNumber(sample.loadCount)
+    || isFiniteNumber(sample.chunkEmitCount)
+    || isFiniteNumber(sample.skippedLoadedCount)
+  ) {
+    segments.push(`load/chunk/skip ${sample.loadCount ?? 0}/${sample.chunkEmitCount ?? 0}/${sample.skippedLoadedCount ?? 0}`)
   }
 
   return {

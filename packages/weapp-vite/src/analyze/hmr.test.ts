@@ -29,6 +29,9 @@ describe('analyze hmr profile', () => {
         watchToDirtyMs: 3,
         emitMs: 10,
         sharedChunkResolveMs: 1,
+        chunkEmitCount: 2,
+        loadCount: 1,
+        skippedLoadedCount: 0,
         dirtyReasonSummary: ['entry-direct:1'],
         pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
       }),
@@ -52,6 +55,9 @@ describe('analyze hmr profile', () => {
         watchToDirtyMs: 4,
         emitMs: 12,
         sharedChunkResolveMs: 2,
+        chunkEmitCount: 4,
+        loadCount: 3,
+        skippedLoadedCount: 2,
         dirtyReasonSummary: ['entry-direct:1', 'importer-graph:1'],
         pendingReasonSummary: ['layout-propagation:1'],
       }),
@@ -83,6 +89,10 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.generateModuleGraphMs.averageMs).toBe(1.5)
     expect(result.metrics.writeMs.averageMs).toBe(3)
     expect(result.metrics.watchToDirtyMs.averageMs).toBe(3.5)
+    expect(result.operations.chunkEmitCount.average).toBe(3)
+    expect(result.operations.chunkEmitCount.max).toBe(4)
+    expect(result.operations.loadCount.average).toBe(2)
+    expect(result.operations.skippedLoadedCount.average).toBe(1)
     expect(result.events).toEqual([
       { name: 'create', count: 1 },
       { name: 'update', count: 1 },

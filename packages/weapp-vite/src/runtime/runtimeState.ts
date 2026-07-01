@@ -161,6 +161,9 @@ export interface RuntimeState {
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
+        chunkEmitCount?: number
+        loadCount?: number
+        skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
@@ -188,6 +191,9 @@ export interface RuntimeState {
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
+        chunkEmitCount?: number
+        loadCount?: number
+        skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number

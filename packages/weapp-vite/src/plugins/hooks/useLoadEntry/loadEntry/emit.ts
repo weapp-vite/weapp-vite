@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
+import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
@@ -114,7 +115,7 @@ interface EmitEntryOutputOptions {
   forceEmitEntrySet?: Set<string>
   forceReloadEntrySet?: Set<string>
   replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
-  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
+  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   existsCache: Map<string, boolean>
   pathExistsTtlMs: number

@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
 import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
+import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
@@ -40,7 +41,7 @@ interface EntryLoaderOptions {
   normalizeEntry: (entry: string, jsonPath: string) => string
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
-  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
+  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
   applyAutoImports: (baseName: string, json: any) => string[]
   extendedLibManager: ExtendedLibManager
   buildTarget?: BuildTarget

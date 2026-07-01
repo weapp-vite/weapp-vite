@@ -790,6 +790,9 @@ describe('runtime buildPlugin service', () => {
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      chunkEmitCount: 3,
+      loadCount: 2,
+      skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
       emittedCount: 2,
@@ -1014,6 +1017,9 @@ describe('runtime buildPlugin service', () => {
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      chunkEmitCount: 3,
+      loadCount: 2,
+      skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
       emittedCount: 2,
@@ -1051,6 +1057,9 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
     expect(payload).toContain('"buildCoreMs":40.5')
+    expect(payload).toContain('"chunkEmitCount":3')
+    expect(payload).toContain('"loadCount":2')
+    expect(payload).toContain('"skippedLoadedCount":1')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
     nowSpy.mockRestore()

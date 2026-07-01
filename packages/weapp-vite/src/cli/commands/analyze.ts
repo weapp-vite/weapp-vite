@@ -234,6 +234,13 @@ function formatMetricSummary(label: string, metric: HmrProfileAnalyzeResult['met
   return `${label} avg ${metric.averageMs.toFixed(2)} ms，max ${metric.maxMs.toFixed(2)} ms`
 }
 
+function formatOperationSummary(label: string, operation: HmrProfileAnalyzeResult['operations'][keyof HmrProfileAnalyzeResult['operations']]) {
+  if (!operation.count || operation.average === undefined || operation.max === undefined) {
+    return undefined
+  }
+  return `${label} avg ${operation.average.toFixed(1)}，max ${operation.max.toFixed(0)}`
+}
+
 function formatCountItems(items: HmrProfileAnalyzeResult['events'], limit: number = 5) {
   const entries = items.slice(0, limit).map(item => `${item.name} x${item.count}`)
   return entries.join('，')
@@ -251,8 +258,16 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const watchSummary = formatMetricSummary('watch->dirty', result.metrics.watchToDirtyMs)
   const emitSummary = formatMetricSummary('emit', result.metrics.emitMs)
   const sharedSummary = formatMetricSummary('shared', result.metrics.sharedChunkResolveMs)
+  const chunkEmitSummary = formatOperationSummary('chunk emit', result.operations.chunkEmitCount)
+  const loadSummary = formatOperationSummary('load calls', result.operations.loadCount)
+  const skippedLoadedSummary = formatOperationSummary('loaded skips', result.operations.skippedLoadedCount)
 
   for (const summary of [totalSummary, watchSummary, emitSummary, sharedSummary]) {
+    if (summary) {
+      logger.info(`- ${summary}`)
+    }
+  }
+  for (const summary of [loadSummary, chunkEmitSummary, skippedLoadedSummary]) {
     if (summary) {
       logger.info(`- ${summary}`)
     }

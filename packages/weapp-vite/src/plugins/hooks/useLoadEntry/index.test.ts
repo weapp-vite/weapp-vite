@@ -1392,4 +1392,27 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'app')
     expect(hook.dirtyEntrySet.has(id)).toBe(false)
   })
+
+  it('deduplicates repeated chunk emits in the same hmr pass', async () => {
+    const ctx = createContext()
+    const id = '/project/src/pages/index/index.ts'
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+    loadEntryMock.mockImplementationOnce(async function (loadedId: string) {
+      hook.loadedEntrySet.delete(loadedId)
+      await Promise.all(entryLoaderOptionsRef.current.emitEntriesChunks.call(this, [{ id: loadedId }]))
+      return { code: '' }
+    })
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile.mock.calls.filter(([asset]) => asset.id === id)).toHaveLength(1)
+    expect(ctx.runtimeState.build.hmr.profile.chunkEmitCount).toBe(1)
+  })
 })

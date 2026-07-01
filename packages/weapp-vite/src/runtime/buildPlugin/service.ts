@@ -80,6 +80,9 @@ interface HmrProfileJsonSample {
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  chunkEmitCount?: number
+  loadCount?: number
+  skippedLoadedCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
@@ -261,6 +264,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
+      chunkEmitCount: profile.chunkEmitCount,
+      loadCount: profile.loadCount,
+      skippedLoadedCount: profile.skippedLoadedCount,
       dirtyCount: profile.dirtyCount,
       pendingCount: profile.pendingCount,
       emittedCount: profile.emittedCount,
@@ -446,6 +452,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.sharedChunkResolveMs !== undefined) {
       verboseSegments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
+    }
+    if (
+      profile.loadCount !== undefined
+      || profile.chunkEmitCount !== undefined
+      || profile.skippedLoadedCount !== undefined
+    ) {
+      verboseSegments.push(`load/chunk/skip ${profile.loadCount ?? 0}/${profile.chunkEmitCount ?? 0}/${profile.skippedLoadedCount ?? 0}`)
     }
     if (
       profile.dirtyCount !== undefined
