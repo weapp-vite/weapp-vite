@@ -9,7 +9,7 @@ function unwrapTsExpression(node: t.Expression): t.Expression {
   return node
 }
 
-function resolveStaticJsonValue(node: t.Expression): unknown {
+export function resolveStaticLiteralValue(node: t.Expression): unknown {
   const normalized = unwrapTsExpression(node)
   if (t.isStringLiteral(normalized) || t.isNumericLiteral(normalized) || t.isBooleanLiteral(normalized)) {
     return normalized.value
@@ -30,7 +30,7 @@ function resolveStaticJsonValue(node: t.Expression): unknown {
       if (!element || t.isSpreadElement(element) || !t.isExpression(element)) {
         throw new Error('unsupported static json macro array item')
       }
-      values.push(resolveStaticJsonValue(element))
+      values.push(resolveStaticLiteralValue(element))
     }
     return values
   }
@@ -49,7 +49,7 @@ function resolveStaticJsonValue(node: t.Expression): unknown {
       if (!keyName) {
         throw new Error('unsupported static json macro object key')
       }
-      value[keyName] = resolveStaticJsonValue(property.value)
+      value[keyName] = resolveStaticLiteralValue(property.value)
     }
     return value
   }
@@ -72,7 +72,7 @@ export function resolveStaticJsonMacroConfig(
     }
     let next: unknown
     try {
-      next = resolveStaticJsonValue(arg)
+      next = resolveStaticLiteralValue(arg)
     }
     catch {
       return undefined
