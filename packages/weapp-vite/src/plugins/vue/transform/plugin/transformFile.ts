@@ -57,6 +57,7 @@ export async function transformVueLikeFile(options: {
   setScanDirtySynced: (synced: boolean) => void
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>
   styleBlocksCache: Map<string, SFCStyleBlock[]>
   styleRefreshTokens: Map<string, number | string>
   scopedSlotModules: Map<string, string>
@@ -78,6 +79,7 @@ export async function transformVueLikeFile(options: {
     setScanDirtySynced,
     reExportResolutionCache,
     compileOptionsCache,
+    componentMetaCache,
     styleBlocksCache,
     styleRefreshTokens,
     scopedSlotModules,
@@ -240,6 +242,7 @@ export async function transformVueLikeFile(options: {
       reExportResolutionCache,
       classStyleRuntimeWarned,
       compileOptionsCache,
+      componentMetaCache,
     })
 
     const result = normalizeVueTransformResult(await measureStage('compile', async () => await compileTransformEntryResult({

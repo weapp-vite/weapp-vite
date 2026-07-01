@@ -104,6 +104,7 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
     setScanDirtySynced: vi.fn(),
     reExportResolutionCache: new Map(),
     compileOptionsCache: new Map(),
+    componentMetaCache: new Map(),
     styleBlocksCache: new Map(),
     styleRefreshTokens: new Map(),
     scopedSlotModules: new Map(),

@@ -18,6 +18,7 @@ interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }
 
 type AutoImportComponentSourceType = 'wevu-sfc' | 'native'
@@ -276,6 +277,7 @@ function buildCompileVueFileOptions(
     sfcSrc: createSfcResolveSrcOptions(pluginCtx, configService),
     wevuDefaults,
     minify: wevuMinify,
+    componentMetaCache: state.componentMetaCache,
   } as const
 }
 

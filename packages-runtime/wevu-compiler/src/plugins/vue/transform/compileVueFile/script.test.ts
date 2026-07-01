@@ -3,19 +3,29 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
+import { readFile } from '../../../../utils/fs'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys } from './script'
 
-vi.mock('../../../../utils/fs', () => ({
-  readFile: vi.fn(async (filename: string) => {
-    if (filename.endsWith('/my-card.vue')) {
-      return `<script setup lang="ts">
+const readFileMock = vi.hoisted(() => vi.fn(async (filename: string) => {
+  if (filename.endsWith('/my-card.vue')) {
+    return `<script setup lang="ts">
 defineComponentJson({ component: true })
 </script>
 <template><slot /></template>`
-    }
-    throw new Error(`unexpected readFile: ${filename}`)
-  }),
+  }
+  if (filename.endsWith('/named-card.vue')) {
+    return `<script setup lang="ts">
+defineOptions({ name: 'NativeCard' })
+defineComponentJson({ component: true })
+</script>
+<template><slot /></template>`
+  }
+  throw new Error(`unexpected readFile: ${filename}`)
+}))
+
+vi.mock('../../../../utils/fs', () => ({
+  readFile: readFileMock,
 }))
 
 describe('compileScriptPhase', () => {
@@ -482,6 +492,50 @@ import MyCard from './my-card.vue'
       vi.unstubAllEnvs()
       await rm(tempDir, { force: true, recursive: true })
     }
+  })
+
+  it('reuses cached imported component metadata across script setup and auto import tags', async () => {
+    const sfc = parse(`
+<template>
+  <named-card />
+</template>
+<script setup lang="ts">
+import NamedCard from './named-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const componentMetaCache = new Map()
+    const resolvedId = '/project/src/components/named-card.vue'
+    const mockedReadFile = vi.mocked(readFile)
+    mockedReadFile.mockClear()
+
+    const result = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: { componentMetaCache },
+      autoUsingComponents: {
+        resolveUsingComponentPath: async () => ({
+          from: '/components/named-card',
+          resolvedId,
+        }),
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async () => ({
+          name: 'NamedCard',
+          from: '/components/named-card',
+          resolvedId,
+          sourceType: 'wevu-sfc',
+        }),
+      },
+    })
+
+    expect(mockedReadFile).toHaveBeenCalledTimes(1)
+    expect(mockedReadFile).toHaveBeenCalledWith(resolvedId, 'utf8')
+    expect(result.componentNameMap.NamedCard).toBe('NativeCard')
+    expect(result.componentNameMap['named-card']).toBe('NativeCard')
+    expect(result.miniProgramComponentTags.has('NamedCard')).toBe(true)
+    expect(result.miniProgramComponentTags.has('named-card')).toBe(true)
   })
 
   it('marks direct .vue imports without auto using component resolver', async () => {

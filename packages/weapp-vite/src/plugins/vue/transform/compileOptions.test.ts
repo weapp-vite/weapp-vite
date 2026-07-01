@@ -787,6 +787,30 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(1)
   })
 
+  it('passes shared component metadata cache to compile options', () => {
+    const componentMetaCache = new Map()
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+        componentMetaCache,
+      },
+    )
+
+    expect(options.componentMetaCache).toBe(componentMetaCache)
+  })
+
   it('caches auto import tag resolution until service version changes', async () => {
     const autoImportResolve = vi.fn(() => ({ value: { name: 'FooCard', from: '/components/foo-card' } }))
     let version = 1

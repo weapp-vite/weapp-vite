@@ -67,6 +67,11 @@ export interface AutoImportTagsOptions {
   warn?: (message: string) => void
 }
 
+export interface VueSfcStaticComponentMeta {
+  componentName?: string
+  isMiniProgramComponent: boolean
+}
+
 /**
  * 编译 Vue SFC 的选项集合。
  */
@@ -89,4 +94,8 @@ export interface CompileVueFileOptions {
   }
   sfcSrc?: ResolveSfcBlockSrcOptions
   wevuDefaults?: WevuDefaults
+  /**
+   * 缓存被当前 SFC 引用的 Vue 组件静态元信息，避免重复读取和解析同一组件。
+   */
+  componentMetaCache?: Map<string, Promise<VueSfcStaticComponentMeta>>
 }

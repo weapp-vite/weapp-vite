@@ -138,6 +138,22 @@ describe('createVueTransformPlugin lifecycle', () => {
     })
   })
 
+  it('invalidates component metadata cache with raw and normalized path keys', async () => {
+    normalizeFsResolvedIdMock.mockImplementation((id: string) => id.replace(/\\/g, '/'))
+    const { invalidateComponentMetaCache } = await import('./index')
+    const cache = new Map<string, any>([
+      ['D:\\project\\src\\components\\card.vue', Promise.resolve({ isMiniProgramComponent: false })],
+      ['D:/project/src/components/card.vue', Promise.resolve({ isMiniProgramComponent: true })],
+      ['D:/project/src/components/other.vue', Promise.resolve({ isMiniProgramComponent: true })],
+    ])
+
+    invalidateComponentMetaCache(cache, 'D:\\project\\src\\components\\card.vue')
+
+    expect(cache.has('D:\\project\\src\\components\\card.vue')).toBe(false)
+    expect(cache.has('D:/project/src/components/card.vue')).toBe(false)
+    expect(cache.has('D:/project/src/components/other.vue')).toBe(true)
+  })
+
   it('preloads native layout entries during buildStart', async () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({

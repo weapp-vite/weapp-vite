@@ -41,6 +41,7 @@ export interface VueBundleState {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }
 
 export interface ClassStyleWxsAsset {
@@ -52,4 +53,5 @@ export interface VueBundleCompileOptionsState {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }

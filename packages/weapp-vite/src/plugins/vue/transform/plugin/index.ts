@@ -45,6 +45,14 @@ export function invalidateDirtyVueEntryCaches(
   }
 }
 
+export function invalidateComponentMetaCache(
+  componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>,
+  id: string,
+) {
+  componentMetaCache.delete(id)
+  componentMetaCache.delete(normalizeFsResolvedId(id))
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
@@ -52,6 +60,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   let scanDirtySynced = false
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
+  const componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']> = new Map()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const styleRefreshTokens = new Map<string, number | string>()
   const scopedSlotModules = new Map<string, string>()
@@ -65,6 +74,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
+      componentMetaCache.clear()
 
       await preloadNativeLayoutEntries({
         pluginCtx: this,
@@ -136,6 +146,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             setScanDirtySynced: synced => (scanDirtySynced = synced),
             reExportResolutionCache,
             compileOptionsCache,
+            componentMetaCache,
             styleBlocksCache,
             styleRefreshTokens,
             scopedSlotModules,
@@ -161,6 +172,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         appShell,
         reExportResolutionCache,
         compileOptionsCache,
+        componentMetaCache,
         classStyleRuntimeWarned,
       })
     },
@@ -168,6 +180,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     watchChange(id, change) {
       const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
+      invalidateComponentMetaCache(componentMetaCache, normalizedId)
       handleTransformLayoutInvalidation(normalizedId, {
         configService: ctx.configService,
         compilationCache,
@@ -193,6 +206,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     },
 
     async handleHotUpdate({ file }) {
+      invalidateComponentMetaCache(componentMetaCache, file)
       if (handleTransformLayoutInvalidation(file, {
         configService: ctx.configService,
         compilationCache,

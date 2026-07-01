@@ -205,7 +205,7 @@ export async function emitCompiledVueEntryAssets(
   filename: string,
   cached: CompilationCacheEntry,
 ) {
-  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache } = state
+  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache } = state
   const { configService } = ctx
   if (!configService) {
     return
@@ -213,7 +213,7 @@ export async function emitCompiledVueEntryAssets(
 
   addBundleWatchFile(pluginCtx, filename)
 
-  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache }
+  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache }
   const {
     outputExtensions,
     templateExtension,
