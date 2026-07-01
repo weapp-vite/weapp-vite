@@ -15,6 +15,7 @@ type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup'>
 
 export interface ComponentSourceInfo {
   autoUsingComponentsMap: Record<string, string>
+  autoImportTagsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
   wevuComponentTags: Set<string>
   miniProgramComponentTags: Set<string>
@@ -385,6 +386,7 @@ async function collectAutoImportWevuComponents(options: {
     if (!resolved?.from) {
       continue
     }
+    result.autoImportTagsMap[resolved.name || tag] = resolved.from
     if (isWevuSfcComponent(resolved)) {
       result.wevuComponentTags.add(tag)
       if (resolved.name) {
@@ -415,6 +417,7 @@ export async function collectComponentSourceInfo(options: {
 }) {
   const result: ComponentSourceInfo = {
     autoUsingComponentsMap: {},
+    autoImportTagsMap: {},
     autoComponentMeta: {},
     wevuComponentTags: new Set(),
     miniProgramComponentTags: new Set(),

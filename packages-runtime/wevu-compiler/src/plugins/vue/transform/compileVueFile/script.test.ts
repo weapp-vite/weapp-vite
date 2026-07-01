@@ -532,6 +532,9 @@ import NamedCard from './named-card.vue'
 
     expect(mockedReadFile).toHaveBeenCalledTimes(1)
     expect(mockedReadFile).toHaveBeenCalledWith(resolvedId, 'utf8')
+    expect(result.autoImportTagsMap).toEqual({
+      NamedCard: '/components/named-card',
+    })
     expect(result.componentNameMap.NamedCard).toBe('NativeCard')
     expect(result.componentNameMap['named-card']).toBe('NativeCard')
     expect(result.miniProgramComponentTags.has('NamedCard')).toBe(true)

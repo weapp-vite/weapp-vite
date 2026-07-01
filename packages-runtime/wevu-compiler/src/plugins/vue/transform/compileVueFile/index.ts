@@ -131,6 +131,7 @@ export async function compileVueFile(
     descriptor: parsed.descriptor,
     filename,
     autoUsingComponentsMap: scriptPhase.autoUsingComponentsMap,
+    autoImportTagsMap: componentSourceInfo.autoImportTagsMap,
     autoUsingComponents,
     autoImportTags,
     jsonDefaults: parsed.jsonDefaults as Record<string, any> | undefined,
