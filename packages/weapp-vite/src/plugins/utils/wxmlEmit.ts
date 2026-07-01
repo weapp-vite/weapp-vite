@@ -63,32 +63,53 @@ export function resolveWxmlEmitTargets(options: {
     ? new Set(Array.from(options.targetIds, normalizeWatchPath))
     : undefined
 
-  return Array.from(wxmlService.tokenMap.entries())
-    .filter(([id]) => isTemplate(id))
-    .map(([id, token]) => {
-      const outputFileName = resolveRelativeOutputFileNameWithExtension(configService, id, templateExtension)
-      return {
-        id,
-        token,
-        fileName: outputFileName,
-      }
-    })
-    .filter(({ id, fileName }) => {
-      if (targetIds?.size && !targetIds.has(normalizeWatchPath(id))) {
+  const isAllowedTarget = (id: string, fileName: string) => {
+    if (subPackageMeta) {
+      return fileName.startsWith(subPackageMeta.subPackage.root)
+    }
+    if (buildTarget === 'plugin') {
+      const pluginRoot = configService.absolutePluginRoot
+      if (!pluginRoot) {
         return false
       }
-      if (subPackageMeta) {
-        return fileName.startsWith(subPackageMeta.subPackage.root)
+      return isPathInside(pluginRoot, id)
+    }
+    return scanService.isMainPackageFileName(fileName)
+  }
+
+  const resolveTarget = (id: string, token: any) => {
+    if (!isTemplate(id)) {
+      return undefined
+    }
+    const fileName = resolveRelativeOutputFileNameWithExtension(configService, id, templateExtension)
+    if (!isAllowedTarget(id, fileName)) {
+      return undefined
+    }
+    return {
+      id,
+      token,
+      fileName,
+    }
+  }
+
+  if (targetIds?.size) {
+    const targets: Array<{ id: string, token: any, fileName: string }> = []
+    for (const targetId of targetIds) {
+      const token = wxmlService.tokenMap.get(targetId)
+      if (!token) {
+        continue
       }
-      if (buildTarget === 'plugin') {
-        const pluginRoot = configService.absolutePluginRoot
-        if (!pluginRoot) {
-          return false
-        }
-        return isPathInside(pluginRoot, id)
+      const target = resolveTarget(targetId, token)
+      if (target) {
+        targets.push(target)
       }
-      return scanService.isMainPackageFileName(fileName)
-    })
+    }
+    return targets
+  }
+
+  return Array.from(wxmlService.tokenMap.entries())
+    .map(([id, token]) => resolveTarget(id, token))
+    .filter((target): target is { id: string, token: any, fileName: string } => Boolean(target))
 }
 
 export function emitWxmlAssetFile(options: {
