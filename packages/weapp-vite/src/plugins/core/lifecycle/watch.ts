@@ -11,7 +11,7 @@ import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '.
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry } from '../../../utils/file'
-import { createHmrProfileEventId } from '../../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
@@ -186,25 +186,31 @@ export function createBuildStartHook(state: CorePluginState) {
   const isPluginBuild = buildTarget === 'plugin'
 
   return async function buildStart(this: any) {
-    resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
-    if (configService.isDev) {
-      addNormalizedWatchFiles(this, configService.configFileDependencies)
-      if (isPluginBuild) {
-        if (configService.absolutePluginRoot) {
-          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+    const startedAt = performance.now()
+    try {
+      resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
+      if (configService.isDev) {
+        addNormalizedWatchFiles(this, configService.configFileDependencies)
+        if (isPluginBuild) {
+          if (configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
+        }
+        else {
+          const rootDir = subPackageMeta
+            ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
+            : configService.absoluteSrcRoot
+          ensureSidecarWatcher(ctx, rootDir)
+          if (!subPackageMeta && configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
         }
       }
-      else {
-        const rootDir = subPackageMeta
-          ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
-          : configService.absoluteSrcRoot
-        ensureSidecarWatcher(ctx, rootDir)
-        if (!subPackageMeta && configService.absolutePluginRoot) {
-          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
-        }
-      }
+      await emitDirtyEntries.call(this)
     }
-    await emitDirtyEntries.call(this)
+    finally {
+      recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'buildStartMs', performance.now() - startedAt)
+    }
   }
 }
 

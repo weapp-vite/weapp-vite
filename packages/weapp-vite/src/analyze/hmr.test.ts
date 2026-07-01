@@ -16,6 +16,7 @@ describe('analyze hmr profile', () => {
         event: 'update',
         file: '/project/src/pages/home/index.vue',
         buildCoreMs: 16,
+        buildStartMs: 2,
         transformMs: 8,
         coreTransformMs: 3,
         wevuTransformMs: 2,
@@ -46,6 +47,7 @@ describe('analyze hmr profile', () => {
         event: 'create',
         file: '/project/src/pages/logs/index.vue',
         buildCoreMs: 28,
+        buildStartMs: 4,
         transformMs: 12,
         coreTransformMs: 5,
         wevuTransformMs: 4,
@@ -86,6 +88,7 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.totalMs.averageMs).toBe(40)
     expect(result.metrics.totalMs.maxMs).toBe(50)
     expect(result.metrics.buildCoreMs.averageMs).toBe(22)
+    expect(result.metrics.buildStartMs.averageMs).toBe(3)
     expect(result.metrics.transformMs.averageMs).toBe(10)
     expect(result.metrics.coreTransformMs.averageMs).toBe(4)
     expect(result.metrics.wevuTransformMs.averageMs).toBe(3)

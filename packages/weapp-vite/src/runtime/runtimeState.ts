@@ -145,6 +145,7 @@ export interface RuntimeState {
         relativeFile?: string
         sourceRootFile?: string
         buildCoreMs?: number
+        buildStartMs?: number
         transformMs?: number
         coreTransformMs?: number
         wevuTransformMs?: number
@@ -179,6 +180,7 @@ export interface RuntimeState {
         event?: ChangeEvent
         file?: string
         buildCoreMs?: number
+        buildStartMs?: number
         transformMs?: number
         coreTransformMs?: number
         wevuTransformMs?: number

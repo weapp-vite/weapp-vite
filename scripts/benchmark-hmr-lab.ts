@@ -16,6 +16,7 @@ interface HmrProfileJsonSample {
   event?: string
   file?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -83,6 +84,7 @@ interface ScenarioResult {
   averageMs?: number
   maxMs?: number
   averageBuildCoreMs?: number
+  averageBuildStartMs?: number
   averageBundlerMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
@@ -270,6 +272,7 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageMs: average(samples.map(sample => sample.totalMs)),
     maxMs: max(samples.map(sample => sample.totalMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
+    averageBuildStartMs: averageOptional(samples.map(sample => sample.profile?.buildStartMs)),
     averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
     averageTransformMs: averageOptional(samples.map(sample => sample.profile?.transformMs)),
@@ -576,8 +579,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg bundler | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -587,6 +590,7 @@ function renderMarkdown(report: {
       formatMs(scenario.averageMs),
       formatMs(scenario.maxMs),
       formatMs(scenario.averageBundlerMs),
+      formatMs(scenario.averageBuildStartMs),
       formatMs(scenario.averageTransformMs),
       formatMs(scenario.averageGenerateBundleMs),
       formatMs(scenario.averageGenerateRewriteMs),

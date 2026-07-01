@@ -9,6 +9,7 @@ export interface HmrProfileJsonSample {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -65,6 +66,7 @@ export interface HmrProfileAnalyzeResult {
   metrics: {
     totalMs: HmrProfileMetricSummary
     buildCoreMs: HmrProfileMetricSummary
+    buildStartMs: HmrProfileMetricSummary
     transformMs: HmrProfileMetricSummary
     coreTransformMs: HmrProfileMetricSummary
     wevuTransformMs: HmrProfileMetricSummary
@@ -179,6 +181,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const pendingReasonCounts = new Map<string, number>()
   const totalValues: number[] = []
   const buildCoreValues: number[] = []
+  const buildStartValues: number[] = []
   const transformValues: number[] = []
   const coreTransformValues: number[] = []
   const wevuTransformValues: number[] = []
@@ -207,6 +210,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.buildCoreMs)) {
       buildCoreValues.push(sample.buildCoreMs)
+    }
+    if (isFiniteNumber(sample.buildStartMs)) {
+      buildStartValues.push(sample.buildStartMs)
     }
     if (isFiniteNumber(sample.transformMs)) {
       transformValues.push(sample.transformMs)
@@ -296,6 +302,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     metrics: {
       totalMs: createMetricSummary(totalValues),
       buildCoreMs: createMetricSummary(buildCoreValues),
+      buildStartMs: createMetricSummary(buildStartValues),
       transformMs: createMetricSummary(transformValues),
       coreTransformMs: createMetricSummary(coreTransformValues),
       wevuTransformMs: createMetricSummary(wevuTransformValues),

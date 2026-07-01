@@ -13,6 +13,7 @@ interface HmrProfileJsonSample {
   event?: string
   file?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -74,6 +75,10 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'transform',
       value: sample.transformMs,
+    },
+    {
+      label: 'build-start',
+      value: sample.buildStartMs,
     },
     {
       label: 'core-transform',

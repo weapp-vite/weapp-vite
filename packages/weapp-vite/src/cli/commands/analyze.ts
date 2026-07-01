@@ -255,6 +255,7 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   }
 
   const totalSummary = formatMetricSummary('total', result.metrics.totalMs)
+  const buildStartSummary = formatMetricSummary('build-start', result.metrics.buildStartMs)
   const coreLoadSummary = formatMetricSummary('core-load', result.metrics.coreLoadMs)
   const entryLoadSummary = formatMetricSummary('entry-load', result.metrics.entryLoadMs)
   const requestGlobalsSummary = formatMetricSummary('request-globals', result.metrics.requestGlobalsMs)
@@ -266,7 +267,7 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const loadSummary = formatOperationSummary('load calls', result.operations.loadCount)
   const skippedLoadedSummary = formatOperationSummary('loaded skips', result.operations.skippedLoadedCount)
 
-  for (const summary of [totalSummary, coreLoadSummary, entryLoadSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
+  for (const summary of [totalSummary, buildStartSummary, coreLoadSummary, entryLoadSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
     if (summary) {
       logger.info(`- ${summary}`)
     }

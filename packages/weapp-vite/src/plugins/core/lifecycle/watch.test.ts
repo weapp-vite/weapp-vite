@@ -167,6 +167,7 @@ describe('core lifecycle watch hook', () => {
 
     expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
     expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
+    expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
   })
 
   afterEach(() => {

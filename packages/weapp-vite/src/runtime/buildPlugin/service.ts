@@ -64,6 +64,7 @@ interface HmrProfileJsonSample {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
@@ -96,6 +97,7 @@ interface HmrProfileJsonSample {
 
 interface HmrPhaseRegressionCandidate {
   label: 'build-core'
+    | 'build-start'
     | 'transform'
     | 'core-transform'
     | 'wevu-transform'
@@ -262,6 +264,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       relativeFile,
       sourceRootFile,
       buildCoreMs: profile.buildCoreMs,
+      buildStartMs: profile.buildStartMs,
       transformMs: profile.transformMs,
       coreTransformMs: profile.coreTransformMs,
       wevuTransformMs: profile.wevuTransformMs,
@@ -317,6 +320,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const profile = ctx.runtimeState.build.hmr.profile
     const measuredMs = [
       profile.transformMs,
+      profile.buildStartMs,
       profile.coreLoadMs,
       profile.renderStartMs,
       profile.generateBundleMs,
@@ -414,6 +418,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (logLevel === 'concise') {
       const conciseSegments = [
         typeof profile.buildCoreMs === 'number' ? `build-core ${profile.buildCoreMs.toFixed(2)} ms` : undefined,
+        typeof profile.buildStartMs === 'number' ? `build-start ${profile.buildStartMs.toFixed(2)} ms` : undefined,
         typeof profile.bundlerMs === 'number' ? `bundler ${profile.bundlerMs.toFixed(2)} ms` : undefined,
         typeof profile.renderStartMs === 'number' ? `render-start ${profile.renderStartMs.toFixed(2)} ms` : undefined,
         typeof profile.generateBundleMs === 'number' ? `generate ${profile.generateBundleMs.toFixed(2)} ms` : undefined,
@@ -439,6 +444,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.transformMs !== undefined) {
       verboseSegments.push(`transform ${profile.transformMs.toFixed(2)} ms`)
+    }
+    if (profile.buildStartMs !== undefined) {
+      verboseSegments.push(`build-start ${profile.buildStartMs.toFixed(2)} ms`)
     }
     if (profile.bundlerMs !== undefined) {
       verboseSegments.push(`bundler ${profile.bundlerMs.toFixed(2)} ms`)
@@ -522,21 +530,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'emit': 0,
       'shared': 1,
       'write': 2,
-      'transform': 3,
-      'core-transform': 4,
-      'wevu-transform': 5,
-      'vue-transform': 6,
-      'core-load': 7,
-      'entry-load': 8,
-      'request-globals': 9,
-      'weapi-resolve': 10,
-      'render-start': 11,
-      'generate': 12,
-      'generate-shared': 13,
-      'generate-rewrite': 14,
-      'module-graph': 15,
-      'watch->dirty': 16,
-      'build-core': 17,
+      'build-start': 3,
+      'transform': 4,
+      'core-transform': 5,
+      'wevu-transform': 6,
+      'vue-transform': 7,
+      'core-load': 8,
+      'entry-load': 9,
+      'request-globals': 10,
+      'weapi-resolve': 11,
+      'render-start': 12,
+      'generate': 13,
+      'generate-shared': 14,
+      'generate-rewrite': 15,
+      'module-graph': 16,
+      'watch->dirty': 17,
+      'build-core': 18,
     }
     const phases = [
       {
@@ -546,6 +555,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'transformMs',
         label: 'transform',
+      },
+      {
+        key: 'buildStartMs',
+        label: 'build-start',
       },
       {
         key: 'coreTransformMs',

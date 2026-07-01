@@ -826,6 +826,7 @@ describe('runtime buildPlugin service', () => {
       eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      buildStartMs: 4,
       transformMs: 9.5,
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
@@ -1048,6 +1049,7 @@ describe('runtime buildPlugin service', () => {
       eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      buildStartMs: 4,
       transformMs: 9.5,
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
@@ -1093,6 +1095,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"eventId":"hmr-event-1"')
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
+    expect(payload).toContain('"buildStartMs":4')
     expect(payload).toContain('"transformMs":9.5')
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
@@ -1108,7 +1111,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"generateModuleGraphMs":1')
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
-    expect(payload).toContain('"buildCoreMs":36.5')
+    expect(payload).toContain('"buildCoreMs":32.5')
     expect(payload).toContain('"chunkEmitCount":3')
     expect(payload).toContain('"loadCount":2')
     expect(payload).toContain('"skippedLoadedCount":1')

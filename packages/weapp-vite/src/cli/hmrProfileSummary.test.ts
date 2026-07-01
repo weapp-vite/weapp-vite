@@ -22,6 +22,7 @@ describe('hmrProfileSummary', () => {
         event: 'update',
         file: `${root}/src/pages/logs/index.vue`,
         buildCoreMs: 70,
+        buildStartMs: 6,
         generateBundleMs: 72,
         coreLoadMs: 76,
         entryLoadMs: 45,

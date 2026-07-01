@@ -46,6 +46,7 @@ export interface DashboardRuntimeEventProfile {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   writeMs?: number
   watchToDirtyMs?: number

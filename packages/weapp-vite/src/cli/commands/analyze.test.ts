@@ -129,6 +129,7 @@ describe('analyze cli command', () => {
       metrics: {
         totalMs: { count: 2, averageMs: 40, maxMs: 60 },
         buildCoreMs: { count: 0 },
+        buildStartMs: { count: 2, averageMs: 2, maxMs: 3 },
         transformMs: { count: 0 },
         coreTransformMs: { count: 0 },
         wevuTransformMs: { count: 0 },

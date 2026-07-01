@@ -6,6 +6,7 @@ export const HMR_PROFILE_JSON_ENV = 'WEAPP_VITE_HMR_PROFILE_JSON'
 export type HmrProfileDurationKey
   = | 'transformMs'
     | 'writeMs'
+    | 'buildStartMs'
     | 'coreTransformMs'
     | 'wevuTransformMs'
     | 'vueTransformMs'

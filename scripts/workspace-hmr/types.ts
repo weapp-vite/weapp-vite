@@ -7,6 +7,7 @@ export interface HmrProfileSample {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
   transformMs?: number
   coreTransformMs?: number
   wevuTransformMs?: number
