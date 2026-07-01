@@ -15,10 +15,15 @@ import {
 
 const buildPackageMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => true))
+const copyFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const writeDependenciesCacheMock = vi.hoisted(() => vi.fn(async () => {}))
 const getPackNpmRelationListMock = vi.hoisted(() => vi.fn())
 const getPackageInfoMock = vi.hoisted(() => vi.fn(async () => null))
 const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => null))
+
+vi.mock('node:fs/promises', () => ({
+  copyFile: copyFileMock,
+}))
 
 vi.mock('./builder', () => ({
   createPackageBuilder: () => ({
@@ -67,6 +72,9 @@ describe('runtime npm service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     buildPackageMock.mockImplementation(async () => {})
+    copyFileMock.mockImplementation(async (src, dest) => {
+      await fs.copy(src, dest)
+    })
     getPackageInfoMock.mockImplementation(async (dep: string) => {
       if (dep === 'tdesign-miniprogram' || dep === '@vant/weapp') {
         return {
@@ -691,6 +699,98 @@ describe('runtime npm service', () => {
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/transition/type.d.ts'))).toBe(true)
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
+  })
+
+  it('copies sibling files in a local subpackage npm directory concurrently', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/alpha.js'), 'module.exports = "alpha"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/beta.js'), 'module.exports = "beta"')
+
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => key !== '__all__')
+
+    const startedSiblingCopies = new Set<string>()
+    let releaseFirstSiblingCopy: (() => void) | undefined
+    let resolveBothSiblingCopiesStarted: (() => void) | undefined
+    const bothSiblingCopiesStarted = new Promise<void>((resolve) => {
+      resolveBothSiblingCopiesStarted = resolve
+    })
+
+    copyFileMock.mockImplementation(async (src, dest) => {
+      const relPath = path.relative(cachedSourceOutDir, String(src)).replace(/\\/g, '/')
+      if (relPath === 'tdesign-miniprogram/transition/alpha.js' || relPath === 'tdesign-miniprogram/transition/beta.js') {
+        startedSiblingCopies.add(relPath)
+        if (startedSiblingCopies.size === 2) {
+          resolveBothSiblingCopiesStarted?.()
+        }
+        if (!releaseFirstSiblingCopy) {
+          await new Promise<void>((resolve) => {
+            releaseFirstSiblingCopy = resolve
+          })
+        }
+      }
+      await fs.copy(src, dest)
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    const startResult = await Promise.race([
+      bothSiblingCopiesStarted.then(() => 'both-started'),
+      new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
+    ])
+    releaseFirstSiblingCopy?.()
+    await expect(buildPromise).resolves.toBeUndefined()
+
+    expect(startResult).toBe('both-started')
+    expect(startedSiblingCopies).toEqual(new Set([
+      'tdesign-miniprogram/transition/alpha.js',
+      'tdesign-miniprogram/transition/beta.js',
+    ]))
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/alpha.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/beta.js'))).toBe(true)
   })
 
   it('reuses package info lookups across local subpackage dependency closure analysis', async () => {
