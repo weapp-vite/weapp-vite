@@ -725,6 +725,42 @@ describe('core helper bundle', () => {
     expect(bundle['pages/hmr/index.js'].imports).toEqual(['common.js'])
   })
 
+  it('skips runtime chunk usage collection for chunks without vendor references', () => {
+    const bundle = {
+      'pages/runtime/index.js': {
+        type: 'chunk',
+        fileName: 'pages/runtime/index.js',
+        code: [
+          'const require_src_ABC = require("../../weapp-vendors/wevu-src.js");',
+          'var page = require_src_ABC.eo({});',
+          'const helper = require("../../common.js");',
+          'helper.run();',
+        ].join('\n'),
+        imports: ['weapp-vendors/wevu-src.js', 'common.js'],
+      },
+      'weapp-vendors/wevu-src.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-src.js',
+        code: [
+          'function eo(e) { return e }',
+          'Object.defineProperty(exports, "eo", { enumerable: true, get: function() { return eo; } });',
+        ].join('\n'),
+        imports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'exports.run = function run() {}',
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    expect(bundle['common.js'].code).toBe('exports.run = function run() {}')
+    expect(bundle['common.js'].imports).toEqual([])
+  })
+
   it('resolves semantic wevu exports from ESM export lists before rewriting access', () => {
     const bundle = {
       'pages/hmr/index.js': {

@@ -1109,6 +1109,9 @@ function collectWevuRuntimeChunkUsage(
     if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
       continue
     }
+    if (!output.code.includes('weapp-vendors/')) {
+      continue
+    }
 
     const chunk = output as OutputChunk
     const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
