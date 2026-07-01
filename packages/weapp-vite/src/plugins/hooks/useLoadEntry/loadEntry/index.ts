@@ -113,7 +113,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   }
 
   const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
-    existsCache.clear()
+    if (configService.isDev) {
+      existsCache.clear()
+    }
     const stopwatch = debug ? createStopwatch() : undefined
     const getTime = () => (stopwatch ? stopwatch() : '0.00ms')
     const relativeCwdId = configService.relativeCwd(id)

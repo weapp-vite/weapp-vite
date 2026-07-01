@@ -225,6 +225,7 @@ interface CreateLoaderOptions {
     pluginJsonPath: string
   }
   buildTarget?: 'app' | 'plugin'
+  isDev?: boolean
   pluginOnly?: boolean
   normalizeEntry?: (entry: string, jsonPath: string) => string
   withWxmlService?: boolean
@@ -239,6 +240,7 @@ function createLoader(options?: CreateLoaderOptions) {
     absoluteSrcRoot: '/project/src',
     options: { cwd: '/project' },
     weappViteConfig: {},
+    isDev: options?.isDev,
     pluginOnly: options?.pluginOnly === true,
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
     relativeOutputPath: vi.fn((id: string) => id.replace('/project/src/', '')),
@@ -593,6 +595,64 @@ describe('createEntryLoader', () => {
     expect(MagicStringMock).not.toHaveBeenCalled()
   })
 
+  it('reuses filesystem lookup cache across entries during build', async () => {
+    const sharedPrediction = '/project/src/shared/index.json'
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath.endsWith('/a.js') || filepath.endsWith('/b.js')) {
+        return {
+          path: undefined,
+          predictions: [sharedPrediction],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/a.js', 'page')
+    await loader.call(pluginCtx, '/project/src/pages/b.js', 'page')
+
+    expect(existsCalls.get(sharedPrediction)).toBe(1)
+  })
+
+  it('refreshes filesystem lookup cache per entry during dev', async () => {
+    const sharedPrediction = '/project/src/shared/index.json'
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath.endsWith('/a.js') || filepath.endsWith('/b.js')) {
+        return {
+          path: undefined,
+          predictions: [sharedPrediction],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/a.js', 'page')
+    await loader.call(pluginCtx, '/project/src/pages/b.js', 'page')
+
+    expect(existsCalls.get(sharedPrediction)).toBe(2)
+  })
+
   it('keeps observing style sidecars across add and delete cycles', async () => {
     const stylesheet = '/project/src/app.wxss'
     const script = '/project/src/app.ts'
@@ -608,7 +668,7 @@ describe('createEntryLoader', () => {
 
     readFileMock.mockResolvedValue('console.log("noop")')
 
-    const { loader } = createLoader()
+    const { loader } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
 
     await loader.call(pluginCtx, script, 'app')
