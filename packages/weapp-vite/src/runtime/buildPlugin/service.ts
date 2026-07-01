@@ -31,7 +31,6 @@ import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
-import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -1385,16 +1384,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           enabled: isMultiPlatformEnabled,
         })
       : Promise.resolve()
-    const shouldPreloadAppEntry = (
+    const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode
       && !pluginOnly
-      && (
-        (options?.skipNpm !== true && hasLocalSubPackageNpmConfig(ctx))
-        || configService.weappViteConfig.worker?.entry !== undefined
-      )
+      && configService.weappViteConfig.worker?.entry !== undefined
     )
-    if (shouldPreloadAppEntry) {
+    if (shouldPreloadAppEntryForWorkers) {
       await scanService.loadAppEntry()
       scanService.loadSubPackages()
     }

@@ -1611,9 +1611,10 @@ describe('runtime buildPlugin service', () => {
     })
   })
 
-  it('preloads app entry before concurrent prod npm build when local subpackage npm config exists', async () => {
+  it('runs prod bundler without waiting for local subpackage npm preload', async () => {
     process.env.NODE_ENV = 'production'
     buildMock.mockResolvedValueOnce({ output: [] })
+    let releaseNpmBuild: (() => void) | undefined
 
     const baseCtx = createMockContext()
     const ctx = createMockContext({
@@ -1632,13 +1633,33 @@ describe('runtime buildPlugin service', () => {
         },
       },
     })
+    ctx.npmService.build.mockImplementationOnce(async () => {
+      await ctx.scanService.loadAppEntry()
+      ctx.scanService.loadSubPackages()
+      await new Promise<void>((resolve) => {
+        releaseNpmBuild = resolve
+      })
+    })
     const service = createBuildService(ctx)
 
-    await service.build()
+    const buildPromise = service.build()
+    await waitForMockCalls(buildMock, 1)
 
+    expect(buildMock).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
+
+    let resolved = false
+    buildPromise.then(() => {
+      resolved = true
+    }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(resolved).toBe(false)
+
+    releaseNpmBuild?.()
+    await buildPromise
+    expect(resolved).toBe(true)
   })
 
   it('preloads app entry before prod build when worker entry config needs workersDir', async () => {
