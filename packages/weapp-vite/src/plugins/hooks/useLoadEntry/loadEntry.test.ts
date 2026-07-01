@@ -709,6 +709,70 @@ describe('createEntryLoader', () => {
     expect(result.code).toBe('transformed')
   })
 
+  it('prefetches entry source and style sidecars while child chunks are emitting', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const eventsBeforeRelease: string[] = []
+    let releaseChildChunks: (() => void) | undefined
+    let childChunksReleased = false
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: '/project/src/pages/home.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (!childChunksReleased) {
+        eventsBeforeRelease.push(`read:${target}`)
+      }
+      if (target === '/project/src/pages/home.wxss') {
+        return '.page{}'
+      }
+      return 'console.log("page")'
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!childChunksReleased) {
+        eventsBeforeRelease.push(`exists:${target}`)
+      }
+      return target === '/project/src/pages/home.wxss'
+    })
+
+    const { loader, jsonService, emitEntriesChunks } = createLoader()
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        card: '/components/card/index',
+      },
+    })
+    emitEntriesChunks.mockImplementation(() => {
+      return [
+        new Promise<void>((resolve) => {
+          releaseChildChunks = () => {
+            childChunksReleased = true
+            resolve()
+          }
+        }),
+      ]
+    })
+
+    const loading = loader.call(createPluginContext(), pageScript, 'page')
+
+    await vi.waitFor(() => {
+      expect(releaseChildChunks).toBeDefined()
+      expect(eventsBeforeRelease).toContain(`read:${pageScript}`)
+      expect(eventsBeforeRelease.some(event => event.startsWith('exists:/project/src/pages/home.'))).toBe(true)
+      expect(eventsBeforeRelease).toContain('read:/project/src/pages/home.wxss')
+    })
+
+    releaseChildChunks?.()
+    await loading
+  })
+
   it('memoises filesystem lookups for repeated watch targets', async () => {
     const existsCalls = new Map<string, number>()
     existsMock.mockImplementation(async (target: string) => {

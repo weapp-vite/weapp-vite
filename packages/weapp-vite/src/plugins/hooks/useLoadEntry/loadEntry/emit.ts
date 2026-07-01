@@ -26,6 +26,17 @@ import { collectStyleImports } from './watch'
 const NON_VUE_PAGE_RE = /\.vue$|\.jsx$|\.tsx$/
 const nativeLayoutAssetSourceCache = new Map<string, string>()
 
+type PrefetchedResult<T>
+  = | { ok: true, value: T }
+    | { ok: false, error: unknown }
+
+function prefetch<T>(task: Promise<T>): Promise<PrefetchedResult<T>> {
+  return task.then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error }),
+  )
+}
+
 interface NormalizedEntryOptions {
   entries: string[]
   json: any
@@ -150,6 +161,24 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     emittedWxmlCodeCache,
   } = options
   let json = initialJson
+  const entryCodeTask = prefetch(readFileCached(id, { checkMtime: configService.isDev }))
+  const styleImportsTask = prefetch(collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs))
+  const styleImportSourcesTask = prefetch((async () => {
+    const styleImportsResult = await styleImportsTask
+    if (!styleImportsResult.ok) {
+      throw styleImportsResult.error
+    }
+    const styleSources = await Promise.all(styleImportsResult.value.map(async (styleImport) => {
+      return {
+        styleImport,
+        source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
+      }
+    }))
+    return {
+      styleImports: styleImportsResult.value,
+      styleSources,
+    }
+  })())
 
   async function emitNativeLayoutAssets(layoutBasePath: string) {
     if (typeof pluginCtx.emitFile !== 'function') {
@@ -326,10 +355,12 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
   let code: string
-  try {
-    code = await readFileCached(id, { checkMtime: configService.isDev })
+  const entryCodeResult = await entryCodeTask
+  if (entryCodeResult.ok) {
+    code = entryCodeResult.value
   }
-  catch (error) {
+  else {
+    const { error } = entryCodeResult
     const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
     if (missingEntry && configService.isDev && !await sharedFs.pathExists(id)) {
       return
@@ -404,11 +435,14 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     })
   }
 
-  const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
-  await Promise.all(styleImports.map(async (styleImport) => {
-    const source = await readFileCached(styleImport, { checkMtime: configService.isDev })
+  const styleImportSourcesResult = await styleImportSourcesTask
+  if (!styleImportSourcesResult.ok) {
+    throw styleImportSourcesResult.error
+  }
+  const { styleImports, styleSources } = styleImportSourcesResult.value
+  for (const { styleImport, source } of styleSources) {
     syncCssImportDependencies({ configService, runtimeState } as CompilerContext, styleImport, source)
-  }))
+  }
 
   debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
 
