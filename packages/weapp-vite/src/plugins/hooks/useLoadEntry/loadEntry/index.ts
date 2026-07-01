@@ -129,25 +129,30 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     addNormalizedWatchFile(this, id)
     const baseName = removeExtensionDeep(id)
 
-    const jsonEntry = await findJsonEntry(id)
+    const [jsonEntry, vueEntryPath] = await Promise.all([
+      findJsonEntry(id),
+      id.endsWith('.vue')
+        ? Promise.resolve(id)
+        : findVueEntry(baseName),
+    ])
     let jsonPath = jsonEntry.path
     let hasJsonEntry = Boolean(jsonPath)
 
-    await addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
-
     let json: any = {}
+    const addJsonWatchTargets = addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
+    const readJsonEntry = jsonPath ? jsonService.read(jsonPath) : undefined
     if (jsonPath) {
-      json = await jsonService.read(jsonPath)
+      ;[json] = await Promise.all([
+        readJsonEntry,
+        addJsonWatchTargets,
+      ])
     }
     else {
+      await addJsonWatchTargets
       jsonPath = changeFileExtension(id, '.json')
     }
 
     // 回退：当不存在 .json 时，尝试从 .vue 的 <json> 块读取配置
-    const vueEntryPath = id.endsWith('.vue')
-      ? id
-      : await findVueEntry(removeExtensionDeep(id))
-
     if (vueEntryPath) {
       addNormalizedWatchFile(this, vueEntryPath)
     }

@@ -801,6 +801,96 @@ describe('createEntryLoader', () => {
     expect(mockFindVueEntry).toHaveBeenCalledWith('/project/src/app')
   })
 
+  it('starts json and vue entry discovery concurrently while keeping json config priority', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const started: string[] = []
+    let releaseJsonEntry!: () => void
+    const jsonEntryBlocked = new Promise<void>((resolve) => {
+      releaseJsonEntry = resolve
+    })
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      started.push(`json:${filepath}`)
+      if (filepath === '/project/src/pages/home/index.ts') {
+        await jsonEntryBlocked
+        return {
+          path: '/project/src/pages/home/index.json',
+          predictions: ['/project/src/pages/home/index.json'],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    mockFindVueEntry.mockImplementation(async (filepath: string) => {
+      started.push(`vue:${filepath}`)
+      return '/project/src/pages/home/index.vue'
+    })
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        card: '/components/card/index',
+      },
+    })
+
+    const loading = loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+    await vi.waitFor(() => {
+      expect(started).toEqual([
+        'json:/project/src/pages/home/index.ts',
+        'vue:/project/src/pages/home/index',
+      ])
+    })
+
+    releaseJsonEntry()
+    await loading
+
+    expect(jsonService.read).toHaveBeenCalledWith('/project/src/pages/home/index.json')
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue')
+  })
+
+  it('reads resolved json while predicted watch targets are still being checked', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const events: string[] = []
+    let releaseWatchCheck!: () => void
+    const watchCheckBlocked = new Promise<void>((resolve) => {
+      releaseWatchCheck = resolve
+    })
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home/index.json',
+      predictions: [
+        '/project/src/pages/home/index.json',
+        '/project/src/pages/home/index.json.ts',
+      ],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      events.push(`exists:${target}`)
+      if (target === '/project/src/pages/home/index.json.ts') {
+        await watchCheckBlocked
+      }
+      return false
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      events.push(`read:${filepath}`)
+      return {}
+    })
+
+    const loading = loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    await vi.waitFor(() => {
+      expect(events).toEqual([
+        'exists:/project/src/pages/home/index.json.ts',
+        'read:/project/src/pages/home/index.json',
+      ])
+    })
+
+    releaseWatchCheck()
+    await loading
+  })
+
   it('reuses filesystem lookup cache across entries during build', async () => {
     const sharedPrediction = '/project/src/shared/index.json'
     const existsCalls = new Map<string, number>()
