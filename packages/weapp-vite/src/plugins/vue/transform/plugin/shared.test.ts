@@ -1111,6 +1111,48 @@ console.log(pages, routeSubPackages)
     expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 
+  it('preloads native layout entries concurrently', async () => {
+    const collectFallbackPageEntryIds = vi.fn(async () => ['pages/slow/index', 'pages/fast/index'])
+    const findFirstResolvedVueLikeEntry = vi.fn(async (entryId: string) => `/project/src/${entryId}.vue`)
+    const pathExists = vi.fn(async () => true)
+    let releaseSlowRead!: () => void
+    const slowReadStarted = new Promise<void>((resolve) => {
+      releaseSlowRead = resolve
+    })
+    const readFile = vi.fn(async (file: string) => {
+      if (file.includes('/slow/')) {
+        await slowReadStarted
+      }
+      return '<template />'
+    })
+    resolvePageLayoutPlanMock.mockResolvedValue(undefined)
+
+    const preloadTask = preloadNativeLayoutEntries({
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        configService: {
+          outputExtensions: { js: 'js' },
+        },
+      } as any,
+      configService: {
+        outputExtensions: { js: 'js' },
+      } as any,
+      scanService: {} as any,
+      collectFallbackPageEntryIds,
+      findFirstResolvedVueLikeEntry,
+      pathExists,
+      readFile,
+    })
+
+    await vi.waitFor(() => {
+      expect(readFile).toHaveBeenCalledWith('/project/src/pages/fast/index.vue', 'utf8')
+    })
+
+    releaseSlowRead()
+    await preloadTask
+    expect(readFile).toHaveBeenCalledTimes(2)
+  })
+
   it('loads transform style blocks from scoped slot, parsed style requests, and fallback null branches', async () => {
     const styleBlocksCache = new Map<string, any>()
     const loadScopedSlotModule = vi.fn((id: string) => id === 'virtual:scoped-slot' ? 'scoped slot module' : null)

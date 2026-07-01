@@ -164,12 +164,12 @@ export async function preloadNativeLayoutEntries(options: {
   }
 
   const entryIds = await collectFallbackPageEntryIds(configService, scanService)
-  for (const entryId of entryIds) {
+  await Promise.all(entryIds.map(async (entryId) => {
     const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
       resolve: async candidate => await pathExists(candidate) ? candidate : undefined,
     })
     if (!entryFilePath) {
-      continue
+      return
     }
 
     try {
@@ -179,7 +179,7 @@ export async function preloadNativeLayoutEntries(options: {
     catch {
       // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
     }
-  }
+  }))
 }
 
 export async function loadTransformStyleBlock(options: {
