@@ -28,9 +28,19 @@ function hasSameDependencySet(source: string[], target: string[]) {
   return source.every(dep => target.includes(dep))
 }
 
+async function loadPackageInfo(dep: string, cwd?: string) {
+  try {
+    return await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
+  }
+  catch {
+    return null
+  }
+}
+
 async function resolvePackageDependencyClosure(
   dependencies: string[],
   cwd?: string,
+  resolvePackageInfo: (dep: string, cwd?: string) => Promise<Awaited<ReturnType<typeof getPackageInfo>> | null> = loadPackageInfo,
 ) {
   const visited = new Set<string>()
 
@@ -40,14 +50,7 @@ async function resolvePackageDependencyClosure(
     }
     visited.add(dep)
 
-    let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
-    try {
-      packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
-    }
-    catch {
-      packageInfo = null
-    }
-
+    const packageInfo = await resolvePackageInfo(dep, cwd)
     const transitiveDependencies = Object.keys(packageInfo?.packageJson.dependencies ?? {})
     await Promise.all(transitiveDependencies.map(childDep => visit(childDep)))
   }
@@ -83,17 +86,22 @@ async function copyDirectoryWithFilter(
 
 export function createNpmBuildService(options: NpmBuildServiceOptions) {
   const { ctx, builder, cache } = options
+  const packageInfoPromiseCache = new Map<string, Promise<Awaited<ReturnType<typeof getPackageInfo>> | null>>()
+
+  function getPackageInfoCached(dep: string, cwd?: string) {
+    const cacheKey = `${cwd ?? ''}\0${dep}`
+    let packageInfoPromise = packageInfoPromiseCache.get(cacheKey)
+    if (!packageInfoPromise) {
+      packageInfoPromise = loadPackageInfo(dep, cwd)
+      packageInfoPromiseCache.set(cacheKey, packageInfoPromise)
+    }
+    return packageInfoPromise
+  }
 
   async function resolveMiniprogramCandidateDependencies(allDependencies: string[], cwd?: string) {
     const miniprogramDependencies = await Promise.all(
       allDependencies.map(async (dep) => {
-        let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
-        try {
-          packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
-        }
-        catch {
-          packageInfo = null
-        }
+        const packageInfo = await getPackageInfoCached(dep, cwd)
         if (packageInfo && builder.isMiniprogramPackage(packageInfo.packageJson)) {
           return dep
         }
@@ -220,6 +228,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           ? await resolvePackageDependencyClosure(
               resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
               ctx.configService.cwd,
+              getPackageInfoCached,
             )
           : []
         if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
