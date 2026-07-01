@@ -11,7 +11,6 @@ import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '.
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry } from '../../../utils/file'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../utils/file/vueSfcSignature'
 import { createHmrProfileEventId } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -24,6 +23,7 @@ import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedEntries, collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
+import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 
@@ -208,85 +208,6 @@ export function createBuildStartHook(state: CorePluginState) {
   }
 }
 
-async function isVueEntryJsonOnlyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!normalizedId.endsWith('.vue')) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.get(normalizedId)
-  if (!previous) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    return resolveVueSfcNonJsonSignature(source, normalizedId) === previous
-  }
-  catch {
-    return false
-  }
-}
-
-async function isVueEntryLocalAssetOnlyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!normalizedId.endsWith('.vue')) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.get(normalizedId)
-  if (!previous) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    const currentScript = resolveVueSfcScriptSignature(source, normalizedId)
-    return currentScript === previous
-  }
-  catch {
-    return false
-  }
-}
-
-async function isVueEntryStyleOnlyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!normalizedId.endsWith('.vue')) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.get(normalizedId)
-  if (!previous) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    const currentStyleIndependent = resolveVueSfcStyleIndependentSignature(source, normalizedId)
-    return currentStyleIndependent === previous
-  }
-  catch {
-    return false
-  }
-}
-
-async function isAppShellTopologyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!isAppVueFile(normalizedId)) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(normalizedId)
-  if (previous === undefined) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    const current = resolveVueSfcHasTemplate(source, normalizedId)
-    return current !== undefined && current !== previous
-  }
-  catch {
-    return false
-  }
-}
-
 function isAppEntryAutoRoutesSignatureStale(state: CorePluginState, normalizedId: string) {
   if (!isAppVueFile(normalizedId)) {
     return false
@@ -338,6 +259,9 @@ async function processChangedFile(
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
     : normalizedId
+  const vueEntryUpdateInspector = normalizedId.endsWith('.vue')
+    ? createVueEntryUpdateInspector(state, normalizedId)
+    : undefined
   let isAppShellTopologyChanged = false
   let handledSidecarMetadataUpdate = false
 
@@ -497,12 +421,12 @@ async function processChangedFile(
     && isAppVueFile(normalizedId)
     && resolvedEntryMap.size
   ) {
-    const isJsonOnlyVueEntryUpdate = await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isJsonOnlyVueEntryUpdate = await vueEntryUpdateInspector!.isJsonOnlyUpdate()
     const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
-    isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await isAppShellTopologyUpdate(state, normalizedId)
+    isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await vueEntryUpdateInspector!.isAppShellTopologyUpdate()
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
-      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+      && await vueEntryUpdateInspector!.isLocalAssetOnlyUpdate()
     if (isAutoRoutesStaleAppEntry) {
       ;(loadEntry as any)?.invalidateResolveCache?.()
     }
@@ -620,14 +544,16 @@ async function processChangedFile(
       || declaredEntryType === 'component'
     )
   ) {
-    const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isJsonOnlyVueEntryUpdate = event === 'update' && Boolean(vueEntryUpdateInspector) && await vueEntryUpdateInspector.isJsonOnlyUpdate()
     const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
       && event === 'update'
-      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+      && Boolean(vueEntryUpdateInspector)
+      && await vueEntryUpdateInspector.isLocalAssetOnlyUpdate()
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
-      && await isVueEntryStyleOnlyUpdate(state, normalizedId)
+      && Boolean(vueEntryUpdateInspector)
+      && await vueEntryUpdateInspector.isStyleOnlyUpdate()
     markChangedEntryDirty(
       (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
