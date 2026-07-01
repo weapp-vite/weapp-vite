@@ -375,6 +375,57 @@ function normalizeRelativeRequireSpecifier(fromFile: string, targetFile: string)
   return relative.startsWith('.') ? relative : `./${relative}`
 }
 
+export interface BundleChunkSnapshot {
+  allOutputs: Array<OutputAsset | OutputChunk>
+  chunks: OutputChunk[]
+  chunkFileNames: Set<string>
+  vendorChunks: OutputChunk[]
+  wevuChunks: OutputChunk[]
+  wevuChunkFileNames: Set<string>
+}
+
+export function createBundleChunkSnapshot(bundle: OutputBundle): BundleChunkSnapshot {
+  const allOutputs: Array<OutputAsset | OutputChunk> = []
+  const chunks: OutputChunk[] = []
+  const chunkFileNames = new Set<string>()
+  const vendorChunks: OutputChunk[] = []
+  const wevuChunks: OutputChunk[] = []
+  const wevuChunkFileNames = new Set<string>()
+
+  for (const output of Object.values(bundle)) {
+    if (!output || (output.type !== 'chunk' && output.type !== 'asset')) {
+      continue
+    }
+    allOutputs.push(output as OutputAsset | OutputChunk)
+    if (output.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    chunks.push(chunk)
+    chunkFileNames.add(chunk.fileName)
+    if (chunk.fileName.startsWith('weapp-vendors/')) {
+      vendorChunks.push(chunk)
+    }
+    if (
+      WEVU_SRC_CHUNK_RE.test(chunk.fileName)
+      || WEVU_VENDOR_RUNTIME_CHUNK_RE.test(chunk.fileName)
+    ) {
+      wevuChunks.push(chunk)
+      wevuChunkFileNames.add(chunk.fileName)
+    }
+  }
+
+  return {
+    allOutputs,
+    chunks,
+    chunkFileNames,
+    vendorChunks,
+    wevuChunks,
+    wevuChunkFileNames,
+  }
+}
+
 function findImplicitRequireRemovalRanges(
   chunk: OutputChunk,
   targetFileNames: Set<string>,
@@ -401,6 +452,7 @@ function findImplicitRequireRemovalRanges(
 export function removeImplicitPagePreloads(
   bundle: OutputBundle,
   options: RemoveImplicitPagePreloadOptions,
+  snapshot = createBundleChunkSnapshot(bundle),
 ) {
   const { configService, entriesMap } = options
   if (!entriesMap || entriesMap.size === 0) {
@@ -408,14 +460,10 @@ export function removeImplicitPagePreloads(
   }
 
   const requireChunks: OutputChunk[] = []
-  for (const chunk of Object.values(bundle)) {
-    if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string') {
-      continue
+  for (const chunk of snapshot.chunks) {
+    if (typeof chunk.code === 'string' && chunk.code.includes('require(')) {
+      requireChunks.push(chunk)
     }
-    if (!chunk.code.includes('require(')) {
-      continue
-    }
-    requireChunks.push(chunk)
   }
   if (!requireChunks.length) {
     return
@@ -484,16 +532,14 @@ export function removeImplicitPagePreloads(
   }
 }
 
-export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
+export function syncChunkImportsFromRequireCalls(
+  bundle: OutputBundle,
+  snapshot = createBundleChunkSnapshot(bundle),
+) {
   const requireChunks: OutputChunk[] = []
-  const chunkFileNames = new Set<string>()
-  for (const output of Object.values(bundle)) {
-    if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
-      continue
-    }
-    chunkFileNames.add(output.fileName)
-    if (output.code.includes('require(')) {
-      requireChunks.push(output as OutputChunk)
+  for (const chunk of snapshot.chunks) {
+    if (typeof chunk.code === 'string' && chunk.code.includes('require(')) {
+      requireChunks.push(chunk)
     }
   }
   if (!requireChunks.length) {
@@ -511,7 +557,7 @@ export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
       }
 
       const resolved = resolveRelativeImport(chunk.fileName, specifier)
-      if (!resolved || resolved === chunk.fileName || !chunkFileNames.has(resolved)) {
+      if (!resolved || resolved === chunk.fileName || !snapshot.chunkFileNames.has(resolved)) {
         continue
       }
 
@@ -567,7 +613,7 @@ function isWevuRuntimeModuleId(value: string): value is WevuRuntimeModuleId {
 }
 
 function resolveWevuInternalChunk(
-  bundle: OutputBundle,
+  bundleOrSnapshot: OutputBundle | BundleChunkSnapshot,
   importNames: Iterable<string>,
 ) {
   const requiredNames = new Set(importNames)
@@ -575,31 +621,28 @@ function resolveWevuInternalChunk(
     return undefined
   }
 
-  return Object.values(bundle).find((output): output is OutputChunk => {
-    if (!output || output.type !== 'chunk' || typeof output.code !== 'string' || !output.fileName.startsWith('weapp-vendors/')) {
+  const snapshot = 'vendorChunks' in bundleOrSnapshot
+    ? bundleOrSnapshot
+    : createBundleChunkSnapshot(bundleOrSnapshot)
+  return snapshot.vendorChunks.find((chunk): chunk is OutputChunk => {
+    if (typeof chunk.code !== 'string') {
       return false
     }
-    const exports = collectChunkExportNames(output as OutputChunk)
+    const exports = collectChunkExportNames(chunk)
     return [...requiredNames].every(name => exports.has(name))
   })
 }
 
-function createWevuRuntimeChunkIndex(bundle: OutputBundle): WevuRuntimeChunkIndex {
+function createWevuRuntimeChunkIndex(bundle: OutputBundle, snapshot = createBundleChunkSnapshot(bundle)): WevuRuntimeChunkIndex {
   const vendorChunks: OutputChunk[] = []
   const chunksByModuleId = new Map<string, OutputChunk>()
   const exportNamesByFileName = new Map<string, Set<string>>()
 
-  for (const output of Object.values(bundle)) {
-    if (
-      !output
-      || output.type !== 'chunk'
-      || typeof output.code !== 'string'
-      || !output.fileName.startsWith('weapp-vendors/')
-    ) {
+  for (const chunk of snapshot.vendorChunks) {
+    if (typeof chunk.code !== 'string') {
       continue
     }
 
-    const chunk = output as OutputChunk
     vendorChunks.push(chunk)
     const normalizedFileName = chunk.fileName.replace(/\\/g, '/')
     for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
@@ -850,21 +893,19 @@ function mayContainWevuRuntimeImport(code: string) {
 export function rewriteWevuInternalRuntimeImports(
   bundle: OutputBundle,
   options: RewriteWevuInternalRuntimeImportsOptions = {},
+  snapshot = createBundleChunkSnapshot(bundle),
 ) {
   const importRe = /\bimport\s*\{([^}]*)\}\s*from\s*["'](wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?)["'];?/g
   const requireRe = /\brequire\(\s*(`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")\s*\)/g
-  const runtimeChunkIndex = createWevuRuntimeChunkIndex(bundle)
+  const runtimeChunkIndex = createWevuRuntimeChunkIndex(bundle, snapshot)
   const currentRuntimeChunk = resolveIndexedWevuInternalChunk(runtimeChunkIndex, WEVU_INTERNAL_RUNTIME_EXPORTS)
   if (currentRuntimeChunk) {
     rememberWevuRuntimeChunk('wevu/internal-runtime', currentRuntimeChunk, options)
   }
   rememberCurrentWevuRuntimeChunks(runtimeChunkIndex, options)
 
-  for (const output of Object.values(bundle)) {
-    if (!output || (output.type !== 'chunk' && output.type !== 'asset')) {
-      continue
-    }
-    const code = resolveOutputCode(output as OutputAsset | OutputChunk)
+  for (const output of snapshot.allOutputs) {
+    const code = resolveOutputCode(output)
     if (typeof code !== 'string') {
       continue
     }
@@ -1099,21 +1140,18 @@ function getWevuRuntimeChunkUsage(
 function collectWevuRuntimeChunkUsage(
   bundle: OutputBundle,
   wevuChunkFileNames: Set<string>,
+  snapshot = createBundleChunkSnapshot(bundle),
 ) {
   const usageByRuntimeChunk = new Map<string, Map<string, WevuRuntimeChunkUsage>>()
   if (!wevuChunkFileNames.size) {
     return usageByRuntimeChunk
   }
 
-  for (const output of Object.values(bundle)) {
-    if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
-      continue
-    }
-    if (!output.code.includes('weapp-vendors/')) {
+  for (const chunk of snapshot.chunks) {
+    if (typeof chunk.code !== 'string' || !chunk.code.includes('weapp-vendors/')) {
       continue
     }
 
-    const chunk = output as OutputChunk
     const localRequireRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
     for (const match of chunk.code.matchAll(localRequireRe)) {
       const resolved = resolveRequireTarget(chunk.fileName, stripQuotes(match[2]))
@@ -1224,8 +1262,8 @@ function appendSyntheticWevuHookExports(chunk: OutputChunk, importedMembers: Set
   }
 }
 
-function resolveWevuBaseChunk(bundle: OutputBundle) {
-  return resolveWevuInternalChunk(bundle, ['assertInSetup', 'pushHook'])
+function resolveWevuBaseChunk(bundleOrSnapshot: OutputBundle | BundleChunkSnapshot) {
+  return resolveWevuInternalChunk(bundleOrSnapshot, ['assertInSetup', 'pushHook'])
 }
 
 function formatSyntheticSinglePageHookFallback(
@@ -1332,30 +1370,20 @@ function rewriteStableWevuRuntimeAccess(
   chunk.code = nextCode
 }
 
-export function stabilizeWevuRuntimeChunkAccess(bundle: OutputBundle) {
-  const wevuChunks: OutputChunk[] = []
-  const wevuChunkFileNames = new Set<string>()
-  for (const output of Object.values(bundle)) {
-    if (
-      output?.type !== 'chunk'
-      || (
-        !WEVU_SRC_CHUNK_RE.test(output.fileName)
-        && !WEVU_VENDOR_RUNTIME_CHUNK_RE.test(output.fileName)
-      )
-    ) {
-      continue
-    }
-
-    wevuChunks.push(output as OutputChunk)
-    wevuChunkFileNames.add(output.fileName)
-  }
+export function stabilizeWevuRuntimeChunkAccess(
+  bundle: OutputBundle,
+  snapshot = createBundleChunkSnapshot(bundle),
+) {
+  const wevuChunks = snapshot.wevuChunks
+  const wevuChunkFileNames = snapshot.wevuChunkFileNames
   if (!wevuChunks.length) {
     return
   }
-  const baseChunk = resolveWevuBaseChunk(bundle)
+  const baseChunk = resolveWevuBaseChunk(snapshot)
   const usageByRuntimeChunk = collectWevuRuntimeChunkUsage(
     bundle,
     wevuChunkFileNames,
+    snapshot,
   )
 
   for (const wevuChunk of wevuChunks) {

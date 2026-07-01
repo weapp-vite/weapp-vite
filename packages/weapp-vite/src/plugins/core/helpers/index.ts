@@ -1,4 +1,5 @@
 export {
+  createBundleChunkSnapshot,
   emitJsonAssets,
   filterPluginBundleOutputs,
   removeImplicitPagePreloads,

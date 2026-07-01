@@ -15,6 +15,7 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { emitStyleSidecarAsset } from '../../../css'
 import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
 import {
+  createBundleChunkSnapshot,
   filterPluginBundleOutputs,
   flushIndependentBuilds,
   formatBytes,
@@ -629,10 +630,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateSharedMs', performance.now() - sharedStartedAt)
 
+      const preloadBundleSnapshot = createBundleChunkSnapshot(rolldownBundle)
       removeImplicitPagePreloads(rolldownBundle, {
         configService,
         entriesMap: state.entriesMap,
-      })
+      }, preloadBundleSnapshot)
 
       const rewriteStartedAt = performance.now()
       const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
@@ -743,6 +745,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
       }
 
+      const finalBundleSnapshot = createBundleChunkSnapshot(rolldownBundle)
       rewriteWevuInternalRuntimeImports(rolldownBundle, {
         runtimeFileName: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
         runtimeFileNames: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
@@ -759,9 +762,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             outputState.wevuInternalRuntimeFileNames.set(moduleId, fileName)
           }
         },
-      })
-      stabilizeWevuRuntimeChunkAccess(rolldownBundle)
-      syncChunkImportsFromRequireCalls(rolldownBundle)
+      }, finalBundleSnapshot)
+      stabilizeWevuRuntimeChunkAccess(rolldownBundle, finalBundleSnapshot)
+      syncChunkImportsFromRequireCalls(rolldownBundle, finalBundleSnapshot)
       normalizePreprocessorStyleAssets(
         rolldownBundle,
         state.ctx.configService.outputExtensions?.wxss,
