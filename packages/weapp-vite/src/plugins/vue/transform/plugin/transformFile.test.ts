@@ -214,6 +214,89 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 
+  it('does not parse styled sfc blocks before reusing an unchanged cached compilation', async () => {
+    const source = '<template><view /></template><style>.card{color:red}</style>'
+    const readAndParseSfc = vi.fn()
+    const options = createBaseOptions({
+      code: source,
+      readAndParseSfc,
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: {
+            template: '<view />',
+            script: 'Component({ cached: true })',
+            meta: {
+              styleBlocks: [{ attrs: {}, content: '.card{color:red}' }],
+            },
+          },
+          source,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+        }],
+      ]),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ cached: true })'),
+    })
+
+    expect(readAndParseSfc).not.toHaveBeenCalled()
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+  })
+
+  it('does not parse styled sfc blocks before full dirty recompilation', async () => {
+    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
+    const previousSource = '<template><view /></template><script>const title = "old"</script><style>.card{color:red}</style>'
+    const nextSource = '<template><view /></template><script>const title = "new"</script><style>.card{color:red}</style>'
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const readAndParseSfc = vi.fn()
+    const options = createBaseOptions({
+      code: nextSource,
+      readAndParseSfc,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                eventId: 'hmr-1',
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: {
+            template: '<view />',
+            script: 'Component({ cached: true })',
+            meta: {
+              styleBlocks: [{ attrs: {}, content: '.card{color:red}' }],
+            },
+          },
+          source: previousSource,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: resolveVueSfcStyleIndependentSignature(previousSource, '/project/src/components/card.vue'),
+        }],
+      ]),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ refreshed: true })'),
+    })
+
+    expect(readAndParseSfc).not.toHaveBeenCalled()
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
+
   it('reuses cached vue compilation for style-only dirty updates', async () => {
     const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
     const previousSource = '<template><view /></template><style>.card{color:red}</style>'

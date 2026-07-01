@@ -13,36 +13,9 @@ import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
 import { refreshStyleOnlyVueTransformResult } from '../styleOnly'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
-
-function parseUsingComponents(config: string | undefined) {
-  if (!config) {
-    return {}
-  }
-  try {
-    const parsed = JSON.parse(config)
-    const usingComponents = parsed?.usingComponents
-    return usingComponents && typeof usingComponents === 'object' && !Array.isArray(usingComponents)
-      ? usingComponents as Record<string, string>
-      : {}
-  }
-  catch {
-    return {}
-  }
-}
-
-function createSfcStyleBlocksSignature(styleBlocks: SFCStyleBlock[] | undefined) {
-  if (!styleBlocks?.length) {
-    return ''
-  }
-  return JSON.stringify(styleBlocks.map(styleBlock => ({
-    attrs: styleBlock.attrs,
-    content: styleBlock.content,
-    lang: styleBlock.lang,
-    module: styleBlock.module,
-    scoped: styleBlock.scoped,
-  })))
-}
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from './styleOnlyRefresh'
+import { parseUsingComponents } from './usingComponents'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -120,21 +93,6 @@ export async function transformVueLikeFile(options: {
       readFileCached,
     }))
 
-    await measureStage('preloadSfcStyles', async () => {
-      await preloadTransformSfcStyleBlocks({
-        filename,
-        source,
-        styleBlocksCache,
-        load: async (target, source) => {
-          const parsed = await readAndParseSfc(target, createReadAndParseSfcOptions(pluginCtx, configService, {
-            source,
-            checkMtime: configService.isDev,
-          }))
-          return parsed.descriptor.styles
-        },
-      })
-    })
-
     const { isPage, isApp } = await measureStage('matchPageEntry', async () => await resolveTransformEntryFlags({
       pageMatcher,
       setPageMatcher,
@@ -203,7 +161,15 @@ export async function transformVueLikeFile(options: {
     }
     if (canReuseStyleOnlyVueCompilation && cachedCompilation) {
       const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
-      const styleBlocks = styleBlocksCache.get(filename)
+      const styleBlocks = await measureStage('loadStyleOnlySfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({
+        filename,
+        source: transformedSource,
+        styleBlocksCache,
+        readAndParseSfc,
+        createReadAndParseSfcOptions,
+        pluginCtx,
+        configService,
+      }))
       const didRefreshStyle = refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks)
       if (!didRefreshStyle) {
         cachedCompilation.styleIndependentSignature = undefined
