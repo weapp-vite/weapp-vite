@@ -89,24 +89,26 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
 
   if (!isPluginBuild) {
     extendedLibManager.syncFromAppJson(json)
-    await collectAppSideFiles(
-      pluginCtx,
-      id,
-      json,
-      jsonService,
-      registerJsonAsset,
-      existsCache,
-      pathExistsTtlMs,
-    )
-    await collectMiniappConfigFile(
-      pluginCtx,
-      id,
-      configService,
-      jsonService,
-      registerJsonAsset,
-      existsCache,
-      pathExistsTtlMs,
-    )
+    await Promise.all([
+      collectAppSideFiles(
+        pluginCtx,
+        id,
+        json,
+        jsonService,
+        registerJsonAsset,
+        existsCache,
+        pathExistsTtlMs,
+      ),
+      collectMiniappConfigFile(
+        pluginCtx,
+        id,
+        configService,
+        jsonService,
+        registerJsonAsset,
+        existsCache,
+        pathExistsTtlMs,
+      ),
+    ])
   }
 
   const pluginJsonPath = scanService?.pluginJsonPath

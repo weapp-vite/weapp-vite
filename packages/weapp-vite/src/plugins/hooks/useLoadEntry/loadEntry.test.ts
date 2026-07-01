@@ -649,6 +649,73 @@ describe('createEntryLoader', () => {
     )
   })
 
+  it('collects app side json and miniapp config concurrently', async () => {
+    const { loader, jsonService, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseRuntimeConfig: (() => void) | undefined
+    let runtimeConfigReleased = false
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(filepath)
+      }
+      if (filepath === '/project/src/sitemap.json') {
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: [],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(target)
+      }
+      if (target === '/project/src/app.miniapp.json') {
+        await new Promise<void>((resolve) => {
+          releaseRuntimeConfig = () => {
+            runtimeConfigReleased = true
+            resolve()
+          }
+        })
+        return true
+      }
+      return false
+    })
+    jsonService.read.mockResolvedValue({})
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseRuntimeConfig).toBeDefined()
+      expect(startedBeforeRelease).toEqual(expect.arrayContaining([
+        '/project/src/sitemap.json',
+        '/project/src/theme.json',
+        '/project/src/app.miniapp.json',
+        '/project/project.miniapp.json',
+      ]))
+    })
+    releaseRuntimeConfig?.()
+    await pending
+  })
+
   it('falls back to project.miniapp.json when source runtime sidecar is missing', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader()
     const pluginCtx = createPluginContext()
