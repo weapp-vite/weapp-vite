@@ -968,6 +968,12 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(1)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(100)
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
@@ -999,6 +1005,11 @@ describe('runtime buildPlugin service', () => {
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
       vueTransformMs: 4,
+      renderStartMs: 6,
+      generateBundleMs: 11,
+      generateSharedMs: 3,
+      generateRewriteMs: 7,
+      generateModuleGraphMs: 1,
       writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
@@ -1032,11 +1043,17 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
     expect(payload).toContain('"vueTransformMs":4')
+    expect(payload).toContain('"renderStartMs":6')
+    expect(payload).toContain('"generateBundleMs":11')
+    expect(payload).toContain('"generateSharedMs":3')
+    expect(payload).toContain('"generateRewriteMs":7')
+    expect(payload).toContain('"generateModuleGraphMs":1')
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
-    expect(payload).toContain('"buildCoreMs":')
+    expect(payload).toContain('"buildCoreMs":40.5')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
+    nowSpy.mockRestore()
   })
 
   it('writes hmr profile jsonl to custom relative path', async () => {

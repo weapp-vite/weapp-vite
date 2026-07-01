@@ -17,6 +17,14 @@ describe('analyze hmr profile', () => {
         file: '/project/src/pages/home/index.vue',
         buildCoreMs: 16,
         transformMs: 8,
+        coreTransformMs: 3,
+        wevuTransformMs: 2,
+        vueTransformMs: 4,
+        renderStartMs: 1,
+        generateBundleMs: 6,
+        generateSharedMs: 2,
+        generateRewriteMs: 3,
+        generateModuleGraphMs: 1,
         writeMs: 2,
         watchToDirtyMs: 3,
         emitMs: 10,
@@ -32,6 +40,14 @@ describe('analyze hmr profile', () => {
         file: '/project/src/pages/logs/index.vue',
         buildCoreMs: 28,
         transformMs: 12,
+        coreTransformMs: 5,
+        wevuTransformMs: 4,
+        vueTransformMs: 8,
+        renderStartMs: 3,
+        generateBundleMs: 10,
+        generateSharedMs: 4,
+        generateRewriteMs: 6,
+        generateModuleGraphMs: 2,
         writeMs: 4,
         watchToDirtyMs: 4,
         emitMs: 12,
@@ -57,6 +73,14 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.totalMs.maxMs).toBe(50)
     expect(result.metrics.buildCoreMs.averageMs).toBe(22)
     expect(result.metrics.transformMs.averageMs).toBe(10)
+    expect(result.metrics.coreTransformMs.averageMs).toBe(4)
+    expect(result.metrics.wevuTransformMs.averageMs).toBe(3)
+    expect(result.metrics.vueTransformMs.averageMs).toBe(6)
+    expect(result.metrics.renderStartMs.averageMs).toBe(2)
+    expect(result.metrics.generateBundleMs.averageMs).toBe(8)
+    expect(result.metrics.generateSharedMs.averageMs).toBe(3)
+    expect(result.metrics.generateRewriteMs.averageMs).toBe(4.5)
+    expect(result.metrics.generateModuleGraphMs.averageMs).toBe(1.5)
     expect(result.metrics.writeMs.averageMs).toBe(3)
     expect(result.metrics.watchToDirtyMs.averageMs).toBe(3.5)
     expect(result.events).toEqual([

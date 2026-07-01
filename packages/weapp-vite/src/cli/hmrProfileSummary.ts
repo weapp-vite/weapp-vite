@@ -14,6 +14,14 @@ interface HmrProfileJsonSample {
   file?: string
   buildCoreMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -59,6 +67,38 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'transform',
       value: sample.transformMs,
+    },
+    {
+      label: 'core-transform',
+      value: sample.coreTransformMs,
+    },
+    {
+      label: 'wevu-transform',
+      value: sample.wevuTransformMs,
+    },
+    {
+      label: 'vue-transform',
+      value: sample.vueTransformMs,
+    },
+    {
+      label: 'render-start',
+      value: sample.renderStartMs,
+    },
+    {
+      label: 'generate',
+      value: sample.generateBundleMs,
+    },
+    {
+      label: 'generate-shared',
+      value: sample.generateSharedMs,
+    },
+    {
+      label: 'generate-rewrite',
+      value: sample.generateRewriteMs,
+    },
+    {
+      label: 'module-graph',
+      value: sample.generateModuleGraphMs,
     },
     {
       label: 'watch->dirty',

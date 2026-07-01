@@ -88,7 +88,20 @@ interface HmrProfileJsonSample {
 }
 
 interface HmrPhaseRegressionCandidate {
-  label: 'build-core' | 'transform' | 'watch->dirty' | 'emit' | 'shared' | 'write'
+  label: 'build-core'
+    | 'transform'
+    | 'core-transform'
+    | 'wevu-transform'
+    | 'vue-transform'
+    | 'render-start'
+    | 'generate'
+    | 'generate-shared'
+    | 'generate-rewrite'
+    | 'module-graph'
+    | 'watch->dirty'
+    | 'emit'
+    | 'shared'
+    | 'write'
   currentMs: number
   averageMs: number
   ratio: number
@@ -279,6 +292,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   function finalizeHmrProfile(totalMs: number) {
     const profile = ctx.runtimeState.build.hmr.profile
     const measuredMs = [
+      profile.transformMs,
+      profile.renderStartMs,
+      profile.generateBundleMs,
       profile.watchToDirtyMs,
       profile.emitMs,
       profile.writeMs,
@@ -459,8 +475,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'shared': 1,
       'write': 2,
       'transform': 3,
-      'watch->dirty': 4,
-      'build-core': 5,
+      'core-transform': 4,
+      'wevu-transform': 5,
+      'vue-transform': 6,
+      'render-start': 7,
+      'generate': 8,
+      'generate-shared': 9,
+      'generate-rewrite': 10,
+      'module-graph': 11,
+      'watch->dirty': 12,
+      'build-core': 13,
     }
     const phases = [
       {
@@ -470,6 +494,38 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'transformMs',
         label: 'transform',
+      },
+      {
+        key: 'coreTransformMs',
+        label: 'core-transform',
+      },
+      {
+        key: 'wevuTransformMs',
+        label: 'wevu-transform',
+      },
+      {
+        key: 'vueTransformMs',
+        label: 'vue-transform',
+      },
+      {
+        key: 'renderStartMs',
+        label: 'render-start',
+      },
+      {
+        key: 'generateBundleMs',
+        label: 'generate',
+      },
+      {
+        key: 'generateSharedMs',
+        label: 'generate-shared',
+      },
+      {
+        key: 'generateRewriteMs',
+        label: 'generate-rewrite',
+      },
+      {
+        key: 'generateModuleGraphMs',
+        label: 'module-graph',
       },
       {
         key: 'watchToDirtyMs',

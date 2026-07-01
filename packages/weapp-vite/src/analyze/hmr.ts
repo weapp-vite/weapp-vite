@@ -10,6 +10,14 @@ export interface HmrProfileJsonSample {
   sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -45,6 +53,14 @@ export interface HmrProfileAnalyzeResult {
     totalMs: HmrProfileMetricSummary
     buildCoreMs: HmrProfileMetricSummary
     transformMs: HmrProfileMetricSummary
+    coreTransformMs: HmrProfileMetricSummary
+    wevuTransformMs: HmrProfileMetricSummary
+    vueTransformMs: HmrProfileMetricSummary
+    renderStartMs: HmrProfileMetricSummary
+    generateBundleMs: HmrProfileMetricSummary
+    generateSharedMs: HmrProfileMetricSummary
+    generateRewriteMs: HmrProfileMetricSummary
+    generateModuleGraphMs: HmrProfileMetricSummary
     writeMs: HmrProfileMetricSummary
     watchToDirtyMs: HmrProfileMetricSummary
     emitMs: HmrProfileMetricSummary
@@ -128,6 +144,14 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const totalValues: number[] = []
   const buildCoreValues: number[] = []
   const transformValues: number[] = []
+  const coreTransformValues: number[] = []
+  const wevuTransformValues: number[] = []
+  const vueTransformValues: number[] = []
+  const renderStartValues: number[] = []
+  const generateBundleValues: number[] = []
+  const generateSharedValues: number[] = []
+  const generateRewriteValues: number[] = []
+  const generateModuleGraphValues: number[] = []
   const writeValues: number[] = []
   const watchToDirtyValues: number[] = []
   const emitValues: number[] = []
@@ -143,6 +167,30 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.transformMs)) {
       transformValues.push(sample.transformMs)
+    }
+    if (isFiniteNumber(sample.coreTransformMs)) {
+      coreTransformValues.push(sample.coreTransformMs)
+    }
+    if (isFiniteNumber(sample.wevuTransformMs)) {
+      wevuTransformValues.push(sample.wevuTransformMs)
+    }
+    if (isFiniteNumber(sample.vueTransformMs)) {
+      vueTransformValues.push(sample.vueTransformMs)
+    }
+    if (isFiniteNumber(sample.renderStartMs)) {
+      renderStartValues.push(sample.renderStartMs)
+    }
+    if (isFiniteNumber(sample.generateBundleMs)) {
+      generateBundleValues.push(sample.generateBundleMs)
+    }
+    if (isFiniteNumber(sample.generateSharedMs)) {
+      generateSharedValues.push(sample.generateSharedMs)
+    }
+    if (isFiniteNumber(sample.generateRewriteMs)) {
+      generateRewriteValues.push(sample.generateRewriteMs)
+    }
+    if (isFiniteNumber(sample.generateModuleGraphMs)) {
+      generateModuleGraphValues.push(sample.generateModuleGraphMs)
     }
     if (isFiniteNumber(sample.writeMs)) {
       writeValues.push(sample.writeMs)
@@ -185,6 +233,14 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       totalMs: createMetricSummary(totalValues),
       buildCoreMs: createMetricSummary(buildCoreValues),
       transformMs: createMetricSummary(transformValues),
+      coreTransformMs: createMetricSummary(coreTransformValues),
+      wevuTransformMs: createMetricSummary(wevuTransformValues),
+      vueTransformMs: createMetricSummary(vueTransformValues),
+      renderStartMs: createMetricSummary(renderStartValues),
+      generateBundleMs: createMetricSummary(generateBundleValues),
+      generateSharedMs: createMetricSummary(generateSharedValues),
+      generateRewriteMs: createMetricSummary(generateRewriteValues),
+      generateModuleGraphMs: createMetricSummary(generateModuleGraphValues),
       writeMs: createMetricSummary(writeValues),
       watchToDirtyMs: createMetricSummary(watchToDirtyValues),
       emitMs: createMetricSummary(emitValues),
