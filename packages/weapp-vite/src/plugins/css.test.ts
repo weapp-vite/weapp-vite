@@ -225,6 +225,73 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
   })
 
+  it('prepares shared style import assets concurrently while committing in chunk order', async () => {
+    const plugin = css(ctx)[0]
+    const events: string[] = []
+    let releaseList!: () => void
+    const listBlocked = new Promise<void>((resolve) => {
+      releaseList = resolve
+    })
+    let sharedImportCallCount = 0
+    processCssWithCache.mockImplementation(async (code: string) => {
+      events.push(code)
+      if (code.includes('@import')) {
+        sharedImportCallCount += 1
+      }
+      if (sharedImportCallCount === 1 && code.includes('@import')) {
+        await listBlocked
+      }
+      return code
+    })
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+      'subpackages/foo/pages/detail.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/detail.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/detail.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    const generating = invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    await vi.waitFor(() => {
+      expect(events).toEqual([
+        '/* shared */',
+        '@import \'../styles/index.wxss\';\n',
+        '@import \'../styles/index.wxss\';\n',
+      ])
+    })
+    releaseList()
+    await generating
+
+    expect(emitted.map(asset => asset.fileName)).toEqual([
+      'subpackages/foo/styles/index.wxss',
+      'subpackages/foo/pages/list.wxss',
+      'subpackages/foo/pages/detail.wxss',
+    ])
+  })
+
   it('skips shared style work for hmr bundles without style changes', async () => {
     const plugin = css({
       configService: {

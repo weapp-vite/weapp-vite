@@ -45,6 +45,12 @@ interface SharedStyleEmissionResult extends SharedStyleEmissionTask {
   css: string
 }
 
+interface SharedStyleImportAsset {
+  fileName: string
+  normalizedFileName: string
+  css: string
+}
+
 interface BundleStyleAnalysis {
   facadeChunks: OutputChunk[]
   ownersByCssAsset: Map<string, Set<string>>
@@ -590,16 +596,12 @@ async function emitSharedStyleEntries(
   }
 }
 
-async function emitSharedStyleImportForModule(
-  this: any,
-  ctx: CompilerContext,
+async function prepareSharedStyleImportForModule(
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
-  emitted: Set<string>,
   configService: CompilerContext['configService'],
-  bundle: OutputBundle,
   sharedStyleImportCache: SharedStyleImportCache,
   moduleId: string,
-) {
+): Promise<SharedStyleImportAsset | undefined> {
   const { outputExtensions } = configService
   const relativeModulePath = configService.relativeAbsoluteSrcRoot(moduleId)
   if (!relativeModulePath) {
@@ -613,9 +615,6 @@ async function emitSharedStyleImportForModule(
   }
 
   const normalizedFileName = toPosixPath(fileName)
-  if (emitted.has(normalizedFileName)) {
-    return
-  }
 
   const cssWithImports = injectSharedStyleImportsCached(
     '',
@@ -632,9 +631,11 @@ async function emitSharedStyleImportForModule(
 
   const processedCss = await processCssWithCache(cssWithImports, configService)
 
-  emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
-
-  emitted.add(normalizedFileName)
+  return {
+    fileName,
+    normalizedFileName,
+    css: processedCss,
+  }
 }
 
 async function emitSharedStyleImportsForChunks(
@@ -653,7 +654,7 @@ async function emitSharedStyleImportsForChunks(
 
   const handledModuleIds = new Set<string>()
 
-  await Promise.all(
+  const chunkImportAssets = await Promise.all(
     facadeChunks.map(async (output) => {
       const moduleId = output.facadeModuleId
       if (!moduleId) {
@@ -661,9 +662,16 @@ async function emitSharedStyleImportsForChunks(
       }
       handledModuleIds.add(normalizeFsResolvedId(moduleId))
 
-      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache, moduleId)
+      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, moduleId)
     }),
   )
+  for (const asset of chunkImportAssets) {
+    if (!asset || emitted.has(asset.normalizedFileName)) {
+      continue
+    }
+    emitCssAssetIfChanged(ctx, this, bundle, asset.fileName, asset.css)
+    emitted.add(asset.normalizedFileName)
+  }
 
   if (!ctx.configService?.isDev) {
     return
@@ -675,14 +683,21 @@ async function emitSharedStyleImportsForChunks(
     return
   }
 
-  await Promise.all(
+  const hmrImportAssets = await Promise.all(
     Array.from(ctx.runtimeState?.build?.hmr?.lastHmrEntryIds ?? []).map(async (moduleId) => {
       if (handledModuleIds.has(normalizeFsResolvedId(moduleId))) {
         return
       }
-      await emitSharedStyleImportForModule.call(this, ctx, sharedStyles, emitted, configService, bundle, sharedStyleImportCache, moduleId)
+      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, moduleId)
     }),
   )
+  for (const asset of hmrImportAssets) {
+    if (!asset || emitted.has(asset.normalizedFileName)) {
+      continue
+    }
+    emitCssAssetIfChanged(ctx, this, bundle, asset.fileName, asset.css)
+    emitted.add(asset.normalizedFileName)
+  }
 }
 
 async function generateBundleSharedCss(
