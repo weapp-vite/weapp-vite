@@ -123,6 +123,11 @@ interface SnapshotBuildReason {
   file?: string
 }
 
+interface SnapshotBuildBatch {
+  reasons: SnapshotBuildReason[]
+  startedAt: number
+}
+
 function resolveSnapshotSidecarDirtySummary(filePath: string) {
   const normalizedFile = normalizeFsResolvedId(filePath)
   const configSuffix = configSuffixes.find(suffix => normalizedFile.endsWith(suffix))
@@ -141,6 +146,7 @@ function resolveSnapshotSidecarDirtySummary(filePath: string) {
 
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
 const watchedSnapshotScriptExts = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
+const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
 
 function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
   const configService = ctx.configService!
@@ -889,6 +895,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
+    let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
 
     async function resolveSnapshotSidecarEntryId(reason?: SnapshotBuildReason) {
       if (reason?.event !== 'update' || !reason.file) {
@@ -993,6 +1001,61 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
       })
       return snapshotBuildChain
+    }
+
+    function resolveSnapshotBatchReason(batch: SnapshotBuildBatch) {
+      const [firstReason] = batch.reasons
+      if (!firstReason) {
+        return undefined
+      }
+      if (batch.reasons.length === 1) {
+        return firstReason
+      }
+      const isSameReason = batch.reasons.every((reason) => {
+        return reason.event === firstReason.event && reason.file === firstReason.file
+      })
+      return isSameReason ? firstReason : undefined
+    }
+
+    function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
+      if (devWatcherClosed) {
+        return
+      }
+      if (pendingSnapshotBatch) {
+        pendingSnapshotBatch.reasons.push(reason)
+        pendingSnapshotBatch.startedAt = Math.min(pendingSnapshotBatch.startedAt, startedAt)
+      }
+      else {
+        pendingSnapshotBatch = {
+          reasons: [reason],
+          startedAt,
+        }
+      }
+      if (snapshotBatchTimer) {
+        return
+      }
+      snapshotBatchTimer = setTimeout(() => {
+        snapshotBatchTimer = undefined
+        const batch = pendingSnapshotBatch
+        pendingSnapshotBatch = undefined
+        if (!batch || devWatcherClosed) {
+          return
+        }
+        const batchReason = resolveSnapshotBatchReason(batch)
+        void runSnapshotBuild(batchReason).then((result) => {
+          if (result !== 'snapshot') {
+            return
+          }
+          const durationMs = performance.now() - batch.startedAt
+          finalizeHmrProfile(durationMs)
+          recordHmrProfile(durationMs)
+          logger.success(formatHmrLogLine(durationMs))
+          resetHmrProfile()
+        }).catch((error) => {
+          resetHmrProfile()
+          logger.error(error)
+        })
+      }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
     const watcherPromise = build(
@@ -1117,22 +1180,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           : event.startsWith('add')
             ? 'create'
             : 'update'
-        void runSnapshotBuild({
+        scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-        }).then((result) => {
-          if (result !== 'snapshot') {
-            return
-          }
-          const durationMs = performance.now() - sidecarStartedAt
-          finalizeHmrProfile(durationMs)
-          recordHmrProfile(durationMs)
-          logger.success(formatHmrLogLine(durationMs))
-          resetHmrProfile()
-        }).catch((error) => {
-          resetHmrProfile()
-          logger.error(error)
-        })
+        }, sidecarStartedAt)
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: () => snapshotWatcher.close(),

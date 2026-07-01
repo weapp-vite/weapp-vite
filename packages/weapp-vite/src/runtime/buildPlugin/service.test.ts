@@ -253,12 +253,18 @@ async function flushAsyncTasks() {
   }
 }
 
+async function waitForTimers(ms = 12) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+  await flushAsyncTasks()
+}
+
 async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: number) {
   for (let index = 0; index < 20; index += 1) {
     if (mock.mock.calls.length >= count) {
       return
     }
     await flushAsyncTasks()
+    await waitForTimers()
   }
 }
 
@@ -483,6 +489,44 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
     expect(loggerSuccessMock).toHaveBeenCalled()
     expect(forceFullValues).toEqual([undefined])
+  })
+
+  it('batches consecutive sidecar snapshot events into one build', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const dirtySummaries: Array<string[] | undefined> = []
+    const forceFullValues: Array<string | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const ctx = createMockContext()
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/about/index.ts', {
+      id: '/project/src/pages/about/index.ts',
+    })
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
+        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        return { output: [] }
+      })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.wxml')
+    sidecarWatcher.emit('change', '/project/src/pages/about/index.wxss')
+    await waitForMockCalls(buildMock, 2)
+
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(dirtySummaries).toEqual([['snapshot-full:2']])
+    expect(forceFullValues).toEqual(['1'])
+    expect(loggerSuccessMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps full snapshot fallback for sidecar topology changes', async () => {
