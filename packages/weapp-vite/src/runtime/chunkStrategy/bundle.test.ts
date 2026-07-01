@@ -264,7 +264,7 @@ describe('chunkStrategy bundle', () => {
     expect(findChunkImporters(bundle, 'chunks/keep.js', index)).toEqual(['pages/home.js'])
   })
 
-  it('skips code fallback when relative import generation returns empty value', async () => {
+  it('indexes code-based importers without relying on per-target fallback scans', async () => {
     vi.resetModules()
     vi.doMock('./utils', () => ({
       containsImportSpecifier: () => true,
@@ -280,12 +280,47 @@ describe('chunkStrategy bundle', () => {
         }),
       }
 
-      expect(findChunkImportersWithMock(bundle, 'chunks/target.js')).toEqual([])
+      expect(findChunkImportersWithMock(bundle, 'chunks/target.js')).toEqual(['pages/a.js'])
     }
     finally {
       vi.doUnmock('./utils')
       vi.resetModules()
     }
+  })
+
+  it('keeps code importer index in sync after importer updates', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        code: 'import "../chunks/shared.js";',
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        code: 'import("../chunks/shared.js");',
+      }),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+        ['pages/admin.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.js', index)).toEqual([])
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.copy.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
   })
 
   it('ensures unique name through filename-only branch when parsed dir is empty', async () => {
