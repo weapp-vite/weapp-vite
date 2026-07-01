@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import os from 'node:os'
 
 import { fs } from '@weapp-core/shared/fs'
@@ -19,6 +20,7 @@ async function createTempDir() {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all(tempDirs.map(dir => fs.remove(dir)))
   tempDirs.length = 0
 })
@@ -198,6 +200,50 @@ describe('runtime npm builder alipay adaptation', () => {
     expect(klass).toContain('exports["default"]')
     expect(noop).toContain('"import value"')
     expect(broken).toBe('import {')
+  })
+
+  it('rewrites sibling alipay text files concurrently during normalization', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'text-pkg')
+    await fs.ensureDir(pkgRoot)
+    await fs.writeFile(path.resolve(pkgRoot, 'alpha.axml'), '<import src="./cell.wxml" />', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'beta.acss'), '@import "./cell.wxss";', 'utf8')
+
+    const startedReads = new Set<string>()
+    let releaseFirstRead: (() => void) | undefined
+    let resolveBothReadsStarted: (() => void) | undefined
+    const bothReadsStarted = new Promise<void>((resolve) => {
+      resolveBothReadsStarted = resolve
+    })
+
+    vi.spyOn(fs, 'readFile').mockImplementation(async (filePath: any, ...args: any[]) => {
+      const relPath = path.relative(pkgRoot, String(filePath)).replace(/\\/g, '/')
+      if (relPath === 'alpha.axml' || relPath === 'beta.acss') {
+        startedReads.add(relPath)
+        if (startedReads.size === 2) {
+          resolveBothReadsStarted?.()
+        }
+        if (!releaseFirstRead) {
+          await new Promise<void>((resolve) => {
+            releaseFirstRead = resolve
+          })
+        }
+      }
+      return readFile(filePath, ...args)
+    })
+
+    const normalizePromise = normalizeMiniprogramPackageForAlipay(pkgRoot)
+    const startResult = await Promise.race([
+      bothReadsStarted.then(() => 'both-started'),
+      new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
+    ])
+    releaseFirstRead?.()
+    await expect(normalizePromise).resolves.toBeUndefined()
+
+    expect(startResult).toBe('both-started')
+    expect(startedReads).toEqual(new Set(['alpha.axml', 'beta.acss']))
+    expect(await fs.readFile(path.resolve(pkgRoot, 'alpha.axml'), 'utf8')).toContain('./cell.axml')
+    expect(await fs.readFile(path.resolve(pkgRoot, 'beta.acss'), 'utf8')).toContain('./cell.acss')
   })
 
   it('keeps unsupported export namespace re-exports stable while still converting surrounding esm syntax', async () => {

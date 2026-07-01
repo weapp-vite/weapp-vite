@@ -110,19 +110,19 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
     })
     .filter((item): item is { from: string, to: string } => item !== null)
 
-  for (const task of renameTasks) {
-    await fs.move(task.from, task.to, { overwrite: true })
-  }
+  await Promise.all(renameTasks.map((task) => {
+    return fs.move(task.from, task.to, { overwrite: true })
+  }))
 
   await normalizeMiniprogramPackageJsModules(pkgRoot, {
     markEsModule: true,
   })
 
   const normalizedFiles = await collectFiles(pkgRoot)
-  for (const filePath of normalizedFiles) {
+  await Promise.all(normalizedFiles.map(async (filePath) => {
     const ext = path.extname(filePath)
     if (!ALIPAY_TEXT_FILE_EXTENSIONS.has(ext)) {
-      continue
+      return
     }
 
     const source = await fs.readFile(filePath, 'utf8')
@@ -137,7 +137,7 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
     if (nextSource !== source) {
       await fs.writeFile(filePath, nextSource)
     }
-  }
+  }))
 }
 
 export async function hoistNestedMiniprogramDependenciesForAlipay(pkgRoot: string, outDir: string) {
@@ -147,12 +147,12 @@ export async function hoistNestedMiniprogramDependenciesForAlipay(pkgRoot: strin
   }
 
   const entries = await fs.readdir(nestedRoot)
-  for (const name of entries) {
+  await Promise.all(entries.map(async (name) => {
     const source = path.resolve(nestedRoot, name)
     const target = path.resolve(outDir, name)
 
     if (await fs.pathExists(target)) {
-      continue
+      return
     }
 
     await fs.copy(source, target, {
@@ -161,7 +161,7 @@ export async function hoistNestedMiniprogramDependenciesForAlipay(pkgRoot: strin
     })
 
     await normalizeMiniprogramPackageForAlipay(target)
-  }
+  }))
 }
 
 export async function copyEsModuleDirectoryForAlipay(sourceRoot: string, targetRoot: string) {
