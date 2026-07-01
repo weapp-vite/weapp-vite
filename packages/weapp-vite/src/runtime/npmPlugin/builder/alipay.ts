@@ -43,6 +43,7 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
   }
 
   const files = await collectFiles(pkgRoot)
+  const textFiles: string[] = []
   for (const filePath of files) {
     const ext = path.extname(filePath)
     if (ext === '.wxml' || ext === '.wxss' || ext === '.wxs') {
@@ -52,13 +53,17 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
     if (!ALIPAY_TEXT_FILE_EXTENSIONS.has(ext)) {
       continue
     }
+    textFiles.push(filePath)
+  }
 
+  const staleTextResults = await Promise.all(textFiles.map(async (filePath) => {
+    const ext = path.extname(filePath)
     let source = ''
     try {
       source = await fs.readFile(filePath, 'utf8')
     }
     catch {
-      continue
+      return false
     }
 
     if (WX_TEMPLATE_REFERENCE_RE.test(source)) {
@@ -72,6 +77,11 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
     if ((ext === '.axml' || ext === '.wxml') && containsIncompatibleAlipayTemplateSyntax(source)) {
       return true
     }
+    return false
+  }))
+
+  if (staleTextResults.some(Boolean)) {
+    return true
   }
 
   const nestedRoot = path.resolve(pkgRoot, 'miniprogram_npm')
@@ -80,11 +90,12 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
   }
 
   const entries = await fs.readdir(nestedRoot)
-  for (const name of entries) {
+  const missingNestedTargets = await Promise.all(entries.map(async (name) => {
     const target = path.resolve(outDir, name)
-    if (!(await fs.pathExists(target))) {
-      return true
-    }
+    return !(await fs.pathExists(target))
+  }))
+  if (missingNestedTargets.some(Boolean)) {
+    return true
   }
 
   return false

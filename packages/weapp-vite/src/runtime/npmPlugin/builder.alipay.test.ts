@@ -316,6 +316,49 @@ describe('runtime npm builder alipay adaptation', () => {
     readFileSpy.mockRestore()
   })
 
+  it('checks sibling alipay text files concurrently during stale detection', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'out/miniprogram_npm')
+    const pkgRoot = path.resolve(root, 'text-stale-pkg')
+    await fs.ensureDir(pkgRoot)
+    await fs.writeFile(path.resolve(pkgRoot, 'alpha.axml'), '<import src="./cell.wxml" />', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'beta.acss'), '@import "./cell.wxss";', 'utf8')
+
+    const startedReads = new Set<string>()
+    let releaseFirstRead: (() => void) | undefined
+    let resolveBothReadsStarted: (() => void) | undefined
+    const bothReadsStarted = new Promise<void>((resolve) => {
+      resolveBothReadsStarted = resolve
+    })
+
+    vi.spyOn(fs, 'readFile').mockImplementation(async (filePath: any, ...args: any[]) => {
+      const relPath = path.relative(pkgRoot, String(filePath)).replace(/\\/g, '/')
+      if (relPath === 'alpha.axml' || relPath === 'beta.acss') {
+        startedReads.add(relPath)
+        if (startedReads.size === 2) {
+          resolveBothReadsStarted?.()
+        }
+        if (!releaseFirstRead) {
+          await new Promise<void>((resolve) => {
+            releaseFirstRead = resolve
+          })
+        }
+      }
+      return readFile(filePath, ...args)
+    })
+
+    const stalePromise = shouldRebuildCachedAlipayMiniprogramPackage(pkgRoot, outDir)
+    const startResult = await Promise.race([
+      bothReadsStarted.then(() => 'both-started'),
+      new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
+    ])
+    releaseFirstRead?.()
+
+    await expect(stalePromise).resolves.toBe(true)
+    expect(startResult).toBe('both-started')
+    expect(startedReads).toEqual(new Set(['alpha.axml', 'beta.acss']))
+  })
+
   it('keeps normalize helper as a no-op for missing roots and non-text assets', async () => {
     const root = await createTempDir()
 
