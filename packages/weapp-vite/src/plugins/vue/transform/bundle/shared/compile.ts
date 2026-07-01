@@ -181,9 +181,6 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
-    const currentStyleIndependentSignature = filename.endsWith('.vue')
-      ? resolveVueSfcStyleIndependentSignature(source, filename)
-      : undefined
     if (
       source === cached.source
       && transformed.signature === cached.autoRoutesSignature
@@ -194,6 +191,9 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       }
       return cached.result
     }
+    const currentStyleIndependentSignature = (dirtyEntryId && filename.endsWith('.vue'))
+      ? resolveVueSfcStyleIndependentSignature(source, filename)
+      : undefined
     if (
       dirtyEntryId
       && filename.endsWith('.vue')

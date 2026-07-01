@@ -117,21 +117,6 @@ export async function transformVueLikeFile(options: {
     }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
-    const currentStyleIndependentSignature = filename.endsWith('.vue')
-      ? resolveVueSfcStyleIndependentSignature(transformedSource, filename)
-      : undefined
-    const canReuseStyleOnlyVueCompilation = Boolean(
-      configService.isDev
-      && cachedCompilation
-      && dirtyEntryId
-      && filename.endsWith('.vue')
-      && !ctx.runtimeState.scan.isDirty
-      && cachedCompilation.autoRoutesSignature === autoRoutesSignature
-      && cachedCompilation.styleIndependentSignature
-      && currentStyleIndependentSignature
-      && cachedCompilation.styleIndependentSignature === currentStyleIndependentSignature
-      && cachedCompilation.source !== transformedSource,
-    )
     if (
       configService.isDev
       && cachedCompilation
@@ -161,6 +146,21 @@ export async function transformVueLikeFile(options: {
         map: returnedCode.map,
       }
     }
+    const currentStyleIndependentSignature = (configService.isDev && dirtyEntryId && filename.endsWith('.vue'))
+      ? resolveVueSfcStyleIndependentSignature(transformedSource, filename)
+      : undefined
+    const canReuseStyleOnlyVueCompilation = Boolean(
+      configService.isDev
+      && cachedCompilation
+      && dirtyEntryId
+      && filename.endsWith('.vue')
+      && !ctx.runtimeState.scan.isDirty
+      && cachedCompilation.autoRoutesSignature === autoRoutesSignature
+      && cachedCompilation.styleIndependentSignature
+      && currentStyleIndependentSignature
+      && cachedCompilation.styleIndependentSignature === currentStyleIndependentSignature
+      && cachedCompilation.source !== transformedSource,
+    )
     if (canReuseStyleOnlyVueCompilation && cachedCompilation) {
       const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
       const styleBlocks = await measureStage('loadStyleOnlySfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({

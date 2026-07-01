@@ -26,6 +26,7 @@ const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({})))
 const emitScopedSlotChunksMock = vi.hoisted(() => vi.fn())
 const registerScopedSlotHostGenericsMock = vi.hoisted(() => vi.fn())
 const addNormalizedWatchFileMock = vi.hoisted(() => vi.fn())
+const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
 vi.mock('wevu/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('wevu/compiler')>()
@@ -64,6 +65,14 @@ vi.mock('../scopedSlot', () => ({
   emitScopedSlotChunks: emitScopedSlotChunksMock,
   registerScopedSlotHostGenerics: registerScopedSlotHostGenericsMock,
 }))
+
+vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../utils/file/vueSfcSignature')>()
+  return {
+    ...actual,
+    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
+  }
+})
 
 function createBaseOptions(overrides: Record<string, any> = {}) {
   return {
@@ -141,6 +150,7 @@ describe('transformVueLikeFile cache reuse', () => {
     })
     getSourceFromVirtualIdMock.mockImplementation((id: string) => id)
     createCompileVueFileOptionsMock.mockReturnValue({})
+    resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
   })
 
   it('reuses cached vue compilation when source and invalidation state are unchanged', async () => {
@@ -213,6 +223,7 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(compileVueFileMock).not.toHaveBeenCalled()
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(options.compilationCache.get('/project/src/components/card.vue').refreshToken).toBe(0)
+    expect(resolveVueSfcStyleIndependentSignatureMock).not.toHaveBeenCalled()
   })
 
   it('recompiles dirty vue entries when transformed source changes', async () => {

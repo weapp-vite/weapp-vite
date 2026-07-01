@@ -46,6 +46,7 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
 const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
+const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -132,6 +133,14 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   }
 })
 
+vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../utils/file/vueSfcSignature')>()
+  return {
+    ...actual,
+    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
+  }
+})
+
 describe('emitSharedVueEntryAssets', () => {
   beforeEach(() => {
     emitPlatformTemplateAssetMock.mockReset()
@@ -195,6 +204,8 @@ describe('emitSharedVueEntryAssets', () => {
     applyPageLayoutPlanMock.mockImplementation((result: any) => result)
     addResolvedPageLayoutWatchFilesMock.mockReset()
     addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
+    resolveVueSfcStyleIndependentSignatureMock.mockReset()
+    resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -1230,6 +1241,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(result).toBe(cached.result)
     expect((result as any).script).toBe('Page({ cached: true })')
+    expect(resolveVueSfcStyleIndependentSignatureMock).not.toHaveBeenCalled()
   })
 
   it('refreshes dirty compiled entries when source changes in dev', async () => {
