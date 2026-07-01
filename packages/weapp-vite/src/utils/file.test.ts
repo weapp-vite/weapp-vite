@@ -535,6 +535,53 @@ defineAppJson(nonExistentMacroValue)
       expect(spy.mock.calls.length).toBe(jsExtensions.length)
       spy.mockRestore()
     })
+
+    it('checks candidate extensions concurrently but keeps extension priority', async () => {
+      const base = path.join(os.tmpdir(), `weapp-vite-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`, 'entry')
+      const tsEntry = `${base}.ts`
+      const jsEntry = `${base}.js`
+      const startedBeforeRelease: string[] = []
+      let releaseTs: (() => void) | undefined
+      let tsReleased = false
+      const spy = vi.spyOn(fs, 'pathExists').mockImplementation(async (target: string) => {
+        if (!tsReleased) {
+          startedBeforeRelease.push(target)
+        }
+        if (target === tsEntry) {
+          await new Promise<void>((resolve) => {
+            releaseTs = () => {
+              tsReleased = true
+              resolve()
+            }
+          })
+          return true
+        }
+        return target === jsEntry
+      })
+
+      try {
+        const pending = findJsEntry(base)
+        await vi.waitFor(() => {
+          expect(releaseTs).toBeDefined()
+          expect(startedBeforeRelease.map(normalizePath)).toEqual([
+            normalizePath(tsEntry),
+            normalizePath(jsEntry),
+          ])
+        })
+        releaseTs?.()
+
+        const result = await pending
+
+        expect(normalizePath(result.path || '')).toBe(normalizePath(tsEntry))
+        expect(result.predictions.map(normalizePath)).toEqual([
+          normalizePath(tsEntry),
+          normalizePath(jsEntry),
+        ])
+      }
+      finally {
+        spy.mockRestore()
+      }
+    })
   })
 
   describe('entry discovery helpers', () => {
