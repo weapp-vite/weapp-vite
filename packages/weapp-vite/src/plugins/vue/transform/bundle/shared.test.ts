@@ -732,7 +732,7 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'], { sourceMap: false })
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
   })
 
@@ -764,7 +764,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['title'])
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -797,7 +797,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -826,7 +826,7 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />')
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -854,7 +854,7 @@ describe('emitSharedVueEntryAssets', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
     expect(result.script).toContain('__wvSlotOwnerId')
   })
 
@@ -879,7 +879,7 @@ describe('emitSharedVueEntryAssets', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -906,7 +906,7 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'), { sourceMap: false })
     expect(result.script).toContain('vueSlots')
   })
 

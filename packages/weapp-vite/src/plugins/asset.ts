@@ -178,7 +178,7 @@ function withScopedSlotHostProperties(
     return source
   }
 
-  const injected = injectScopedSlotHostPropertiesInJs(source)
+  const injected = injectScopedSlotHostPropertiesInJs(source, { sourceMap: false })
   if (injected.transformed) {
     return injected.code
   }

@@ -110,6 +110,7 @@ export async function compileJsxFile(
     isApp: options?.isApp,
     isPage: options?.isPage,
     minify: options?.minify,
+    sourceMap: options?.sourceMap,
     warn: options?.warn,
     wevuDefaults: options?.wevuDefaults,
     inlineExpressions,
@@ -158,6 +159,7 @@ export async function compileJsxFile(
 
   const result: VueTransformResult = {
     script: transformedScript.code,
+    scriptMap: transformedScript.map ?? null,
     template: compiledTemplateStr,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)

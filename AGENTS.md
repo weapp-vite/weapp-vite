@@ -132,6 +132,13 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - `foo/helpers.ts`
   - avoid `foo.style.ts` / `foo.helpers.ts`.
 
+### 3.1 Rust / Native Performance Guard
+
+- 使用 Rust/native 加速 JS 构建链路时，默认把“减少 JS 与 Rust 往返次数”作为首要性能约束；跨语言调用的固定成本、序列化/反序列化和 AST 数据搬运通常会吞掉单点 native 优化收益。
+- 优先设计粗粒度 native API：一次传入完整源码、配置和需要的分析/转换任务，一次返回结构化结果；避免把 parse、traverse、query、patch、generate 拆成多次 JS<->Rust 请求。
+- 如果一个优化需要多次跨边界读取 AST 节点或逐节点回调 JS，先重新评估是否应继续留在 JS/Babel/Oxc，或改成 native 端批处理后再返回摘要。
+- 引入 native POC 前必须保留 JS/Oxc fallback，并用 benchmark 证明真实热路径收益；只有在减少通信次数后仍有稳定收益，才扩大迁移范围。
+
 ## 4. Test and E2E Requirements
 
 - Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.

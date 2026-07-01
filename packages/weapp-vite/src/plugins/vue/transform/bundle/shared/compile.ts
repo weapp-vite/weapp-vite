@@ -81,6 +81,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
       checkMtime: configService.isDev,
       minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
+      sourceMap: false,
     })
     if (injected.transformed) {
       result.script = injected.code
@@ -103,8 +104,8 @@ export async function finalizeCompiledVueLikeResult(options: {
       ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
       : keys
     const injectedPick = shouldInjectScopedSlotOwnerPick
-      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys)
-      : injectSetDataPickInJs(result.script!, keys)
+      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys, { sourceMap: false })
+      : injectSetDataPickInJs(result.script!, keys, { sourceMap: false })
     if (injectedPick.transformed) {
       result.script = injectedPick.code
     }
@@ -114,6 +115,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
       result.script!,
       pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
+      { sourceMap: false },
     )
     if (injectedPick.transformed) {
       result.script = injectedPick.code
@@ -123,7 +125,7 @@ export async function finalizeCompiledVueLikeResult(options: {
   const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
   const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
   if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
-    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
+    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script, { sourceMap: false })
     if (injectedProps.transformed) {
       result.script = injectedProps.code
     }

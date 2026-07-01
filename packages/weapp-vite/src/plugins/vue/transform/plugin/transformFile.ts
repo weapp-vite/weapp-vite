@@ -10,7 +10,7 @@ import { syncVueSfcStyleDependencies } from '../../../utils/invalidateEntry'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
-import { createCompileVueFileOptions } from '../compileOptions'
+import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
 import { refreshStyleOnlyVueTransformResult } from '../styleOnly'
 import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
@@ -79,6 +79,7 @@ export async function transformVueLikeFile(options: {
   if (!filename) {
     return null
   }
+  const sourceMap = isVueTransformSourceMapEnabled(configService)
 
   try {
     const cachedCompilation = compilationCache.get(filename)
@@ -133,6 +134,7 @@ export async function transformVueLikeFile(options: {
         isPage: cachedCompilation.isPage,
         isApp,
         isDev: configService.isDev,
+        sourceMap,
         hmrStyleToken: styleRefreshTokens.get(filename),
       }))
 
@@ -192,6 +194,7 @@ export async function transformVueLikeFile(options: {
           isPage: cachedCompilation.isPage,
           isApp,
           isDev: configService.isDev,
+          sourceMap,
           hmrStyleToken: styleRefreshTokens.get(filename),
         }))
 
@@ -263,6 +266,7 @@ export async function transformVueLikeFile(options: {
         configService,
         isPage,
         isApp,
+        sourceMap,
         scopedSlotModules,
         emittedScopedSlotChunks,
         addWatchFile: addNormalizedWatchFile,
@@ -277,6 +281,7 @@ export async function transformVueLikeFile(options: {
       isPage,
       isApp,
       isDev: configService.isDev,
+      sourceMap,
       hmrStyleToken: configService.isDev ? styleRefreshTokens.get(filename) : undefined,
     }))
 

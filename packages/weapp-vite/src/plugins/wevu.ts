@@ -141,6 +141,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
               { readFile: readFileCached },
               { checkMtime: getReadFileCheckMtime(configService) },
             ),
+            sourceMap: false,
           })
           if (!result.transformed) {
             return null

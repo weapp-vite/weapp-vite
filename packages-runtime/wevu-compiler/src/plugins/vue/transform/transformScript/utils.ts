@@ -43,6 +43,10 @@ export interface TransformScriptOptions {
    */
   minify?: boolean
   /**
+   * 是否生成脚本 sourcemap。
+   */
+  sourceMap?: boolean
+  /**
    * 编译期警告回调
    */
   warn?: (message: string) => void

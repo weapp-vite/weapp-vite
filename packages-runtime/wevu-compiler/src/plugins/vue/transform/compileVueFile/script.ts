@@ -277,7 +277,7 @@ export async function compileScriptPhase(
     propsDerivedKeys = hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsDerivedKeys')
       ? precomputedScriptPhaseInfo.propsDerivedKeys
       : resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
-    scriptMap = scriptCompiled.map && typeof scriptCompiled.map === 'object'
+    scriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
       ? scriptCompiled.map
       : null
 
@@ -303,6 +303,7 @@ export async function compileScriptPhase(
       isApp: isAppFile,
       isPage: options?.isPage === true,
       minify: options?.minify,
+      sourceMap: options?.sourceMap,
       warn: options?.warn,
       templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
       wevuDefaults: options?.wevuDefaults,

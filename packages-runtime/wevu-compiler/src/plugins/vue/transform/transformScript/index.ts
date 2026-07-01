@@ -91,17 +91,18 @@ export function transformScript(source: string, options?: TransformScriptOptions
     }
   }
 
+  const sourceMap = options?.sourceMap !== false
   const generated = generate(ast, {
     compact: options?.minify === true,
     minified: options?.minify === true,
     retainLines: options?.minify !== true,
-    sourceMaps: true,
+    sourceMaps: sourceMap,
     sourceFileName: 'inline.ts',
   }, source)
 
   return {
     code: generated.code,
-    map: generated.map as TransformResult['map'],
+    map: sourceMap ? generated.map as TransformResult['map'] : null,
     transformed: state.transformed,
   }
 }

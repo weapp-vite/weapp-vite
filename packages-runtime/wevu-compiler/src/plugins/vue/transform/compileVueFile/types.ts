@@ -83,6 +83,10 @@ export interface CompileVueFileOptions {
    * 是否压缩生成的 wevu 脚本输出。
    */
   minify?: boolean
+  /**
+   * 是否生成脚本 sourcemap。默认开启；构建工具可在未启用 sourcemap 时显式关闭以减少 codegen 成本。
+   */
+  sourceMap?: boolean
   warn?: (message: string) => void
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions

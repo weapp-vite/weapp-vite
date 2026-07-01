@@ -618,7 +618,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{ count }}</view>', {
       astEngine: 'oxc',
     })
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ enhanced: true })', ['count'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ enhanced: true })', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ enhanced: true, __setDataPick: ["count"] })')
   })
 
@@ -656,7 +656,7 @@ describe('vue transform plugin shared helpers', () => {
       astEngine: 'oxc',
     })
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {} })', ['count'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {} })', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ onReachBottom() {}, __setDataPick: ["count"] })')
   })
 
@@ -692,7 +692,7 @@ describe('vue transform plugin shared helpers', () => {
     })
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['count'])
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -729,7 +729,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -762,7 +762,7 @@ describe('vue transform plugin shared helpers', () => {
       astEngine: 'oxc',
     })
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -812,7 +812,7 @@ describe('vue transform plugin shared helpers', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -838,7 +838,7 @@ describe('vue transform plugin shared helpers', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -866,7 +866,7 @@ describe('vue transform plugin shared helpers', () => {
     })
 
     expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'), { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -896,6 +896,30 @@ describe('vue transform plugin shared helpers', () => {
     expect(output.code).toContain('"define-options-hash"')
     expect(output.map).toBeTruthy()
     expect(output.map?.sources).toEqual(['index.vue'])
+  })
+
+  it('skips transform entry sourcemap generation when disabled', () => {
+    const output = finalizeTransformEntryCode({
+      result: {
+        script: 'Page({})',
+        scriptMap: {
+          version: 3,
+          names: [],
+          sources: ['/project/src/pages/home/index.vue'],
+          sourcesContent: ['Page({})'],
+          mappings: 'AAAA',
+        },
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      styleBlocks: [{ content: '.page{}' }] as any,
+      isPage: true,
+      isApp: false,
+      isDev: true,
+      sourceMap: false,
+    })
+
+    expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=0";')
+    expect(output.map).toBeNull()
   })
 
   it('passes hmr style token into transform entry style requests', () => {
