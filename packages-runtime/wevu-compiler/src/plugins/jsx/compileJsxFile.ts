@@ -2,7 +2,7 @@ import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformRes
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
-import { extractJsonMacroFromScriptSetup } from '../vue/transform/jsonMacros'
+import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
 import { stripRenderOptionFromScript } from './compileJsx/script'
@@ -36,17 +36,19 @@ export async function compileJsxFile(
   let scriptMacroHash: string | undefined
   const scriptLang = path.extname(filename).replace(LEADING_DOT_RE, '') || undefined
 
-  try {
-    const extracted = await extractJsonMacroFromScriptSetup(source, filename, scriptLang, {
-      merge: (target, incoming) => mergeJson(target, incoming, 'macro'),
-    })
-    scriptSource = extracted.stripped
-    scriptMacroConfig = extracted.config
-    scriptMacroHash = extracted.macroHash
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`解析 ${filename} 失败：${message}`)
+  if (mayContainJsonMacro(source)) {
+    try {
+      const extracted = await extractJsonMacroFromScriptSetup(source, filename, scriptLang, {
+        merge: (target, incoming) => mergeJson(target, incoming, 'macro'),
+      })
+      scriptSource = extracted.stripped
+      scriptMacroConfig = extracted.config
+      scriptMacroHash = extracted.macroHash
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`解析 ${filename} 失败：${message}`)
+    }
   }
 
   const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext } = compileJsxTemplateAndCollectComponents(source, filename, options)

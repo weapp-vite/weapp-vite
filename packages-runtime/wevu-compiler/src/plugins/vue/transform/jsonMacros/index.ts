@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { collectKeptStatementPaths } from './analyze'
 import { evaluateScriptSetupJsonMacro } from './execute'
-import { assertSingleMacro, collectMacroCallPaths, findProgramPath, parseScriptSetupAst } from './parse'
+import { assertSingleMacro, collectMacroCallPaths, findProgramPath, mayContainJsonMacro, parseScriptSetupAst } from './parse'
 import { stripJsonMacroCallsFromCode, stripScriptSetupMacroStatements } from './rewrite'
 
 async function evaluateJsonMacroConfig(
@@ -55,6 +55,10 @@ export async function extractJsonMacroFromScriptSetup(
     preambleContent?: string
   },
 ): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string, dependencies?: string[] }> {
+  if (!mayContainJsonMacro(content)) {
+    return { stripped: content }
+  }
+
   const ast = parseScriptSetupAst(content, filename)
   const { macroNames } = collectMacroCallPaths(ast, filename)
   assertSingleMacro(macroNames, filename)
@@ -76,3 +80,4 @@ export async function extractJsonMacroFromScriptSetup(
 }
 
 export { stripJsonMacroCallsFromCode }
+export { mayContainJsonMacro }

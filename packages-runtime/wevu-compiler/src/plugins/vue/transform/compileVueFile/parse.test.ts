@@ -19,6 +19,7 @@ vi.mock('vue/compiler-sfc', async (importOriginal) => {
 vi.mock('../jsonMacros', () => {
   return {
     extractJsonMacroFromScriptSetup: extractJsonMacroFromScriptSetupMock,
+    mayContainJsonMacro: (content: string) => /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/.test(content),
   }
 })
 
@@ -110,6 +111,36 @@ const title = 'home'
 
     expect(result.meta.hasScriptSetup).toBe(true)
     expect(result.meta.hasSetupOption).toBe(true)
+  })
+
+  it('skips json macro extraction for script setup without json macro names', async () => {
+    const source = `
+<template><view>{{ title }}</view></template>
+<script setup lang="ts">
+const title = 'home'
+</script>
+    `.trim()
+
+    const result = await parseVueFile(source, '/project/src/pages/no-json-macro.vue')
+
+    expect(result.meta.hasScriptSetup).toBe(true)
+    expect(result.scriptSetupMacroConfig).toBeUndefined()
+    expect(result.scriptSetupMacroHash).toBeUndefined()
+    expect(extractJsonMacroFromScriptSetupMock).not.toHaveBeenCalled()
+  })
+
+  it('skips defineOptions inline work when only a similarly named binding exists', async () => {
+    const source = `
+<template><view>{{ defineOptionsLabel }}</view></template>
+<script setup lang="ts">
+const defineOptionsLabel = 'home'
+</script>
+    `.trim()
+
+    const result = await parseVueFile(source, '/project/src/pages/no-define-options.vue')
+
+    expect(result.defineOptionsHash).toBeUndefined()
+    expect(inlineScriptSetupDefineOptionsArgsMock).not.toHaveBeenCalled()
   })
 
   it('throws when script and script setup use different lang values', async () => {
