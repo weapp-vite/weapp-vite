@@ -53,7 +53,7 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@vue/language-plugin-pug": "^3.3.5",
+    "@vue/language-plugin-pug": "^3.3.6",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.2.1",
     "@weapp-vite/dashboard": "workspace:*",
@@ -65,7 +65,7 @@
     "miniprogram-simulate": "^1.6.2",
     "postcss": "catalog:",
     "sass-embedded": "catalog:",
-    "sharp": "^0.35.2",
+    "sharp": "^0.35.3",
     "svgo": "^4.0.1",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",

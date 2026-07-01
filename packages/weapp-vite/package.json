@@ -137,7 +137,7 @@
     "merge": "catalog:",
     "obug": "catalog:",
     "p-queue": "^9.3.0",
-    "package-manager-detector": "^1.6.0",
+    "package-manager-detector": "^1.7.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.4",
     "postcss": "catalog:",
