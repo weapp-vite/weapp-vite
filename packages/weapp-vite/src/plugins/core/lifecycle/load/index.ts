@@ -1,16 +1,16 @@
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import { fs } from '@weapp-core/shared/fs'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { isCSSRequest } from '../../../../utils'
+import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGlobals'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { readFile as readFileCached } from '../../../utils/cache'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
 import {
   injectRequestGlobalsIntoLoadResult,
@@ -30,6 +30,7 @@ export function createLoadHook(state: CorePluginState) {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet, resolvedEntryMap } = state
   const { configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
+  const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const weapiResolution = { checked: false, available: false }
   const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
     appPrelude: configService.weappViteConfig?.appPrelude,
@@ -96,12 +97,14 @@ export function createLoadHook(state: CorePluginState) {
     const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
     const isDeclaredEntry = Boolean(declaredEntryType)
 
+    const shouldCheckDeletedDeclaredEntry = configService.isDev
+      && ctx.runtimeState?.build?.hmr?.profile?.event === 'delete'
     if (
-      configService.isDev
+      shouldCheckDeletedDeclaredEntry
       && isDeclaredEntry
       && sourceId
       && !sourceId.startsWith('\0')
-      && await fs.pathExists(sourceId) === false
+      && await pathExistsCached(sourceId, { ttlMs: pathExistsTtlMs }) === false
     ) {
       return {
         code: sourceId.endsWith('.vue') ? '<template />' : '',
