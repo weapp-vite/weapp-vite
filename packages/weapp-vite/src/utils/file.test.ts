@@ -582,6 +582,45 @@ defineAppJson(nonExistentMacroValue)
         spy.mockRestore()
       }
     })
+
+    it('appends script extensions for basename segments that contain dots', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-entry-dot-'))
+      try {
+        const appEntry = path.join(root, 'app.ts')
+        const appPreludeBase = path.join(root, 'app.prelude')
+        await fs.writeFile(appEntry, 'App({})', 'utf8')
+
+        const result = await findJsEntry(appPreludeBase)
+
+        expect(result.path).toBeUndefined()
+        expect(result.predictions.map(normalizePath)).toEqual([
+          normalizePath(`${appPreludeBase}.ts`),
+          normalizePath(`${appPreludeBase}.js`),
+        ])
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('still replaces known entry extensions when probing adjacent sidecar files', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-entry-known-ext-'))
+      try {
+        const scriptEntry = path.join(root, 'pages/native/index.ts')
+        const jsonEntry = path.join(root, 'pages/native/index.json')
+        await fs.ensureDir(path.dirname(scriptEntry))
+        await fs.writeFile(scriptEntry, 'Page({})', 'utf8')
+        await fs.writeFile(jsonEntry, '{}', 'utf8')
+
+        const result = await findJsonEntry(scriptEntry)
+
+        expect(normalizePath(result.path || '')).toBe(normalizePath(jsonEntry))
+        expect(result.predictions.map(normalizePath)).toContain(normalizePath(jsonEntry))
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
   })
 
   describe('entry discovery helpers', () => {

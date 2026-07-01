@@ -32,6 +32,14 @@ export function normalizeFileExtension(extension: string) {
   return extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
 }
 
+const knownEntryExtensions = new Set([
+  ...configExtensions,
+  ...jsExtensions,
+  ...supportedCssLangs,
+  ...templateExtensions,
+  ...vueExtensions,
+].map(normalizeFileExtension))
+
 export function changeFileExtension(filePath: string, extension: string) {
   if (typeof filePath !== 'string') {
     throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)
@@ -52,7 +60,16 @@ export function changeFileExtension(filePath: string, extension: string) {
 }
 
 async function findEntryByExtensions(filepath: string, extensions: readonly string[]) {
-  const predictions = extensions.map(ext => changeFileExtension(filepath, ext))
+  const normalizedExtensions = extensions.map(normalizeFileExtension)
+  const currentExtension = path.extname(filepath)
+  const shouldReplaceExtension = currentExtension
+    ? knownEntryExtensions.has(currentExtension)
+    : false
+  const predictions = normalizedExtensions.map((ext) => {
+    return shouldReplaceExtension
+      ? changeFileExtension(filepath, ext)
+      : `${filepath}${ext}`
+  })
   const exists = await Promise.all(predictions.map(targetPath => pathExistsCached(targetPath)))
   const matchedIndex = exists.findIndex(Boolean)
   return {
