@@ -465,6 +465,42 @@ export function createRequestGlobalsPassiveBindingsCode(
 const MANUAL_REQUEST_GLOBALS_IMPORT_RE = /from\s*['"](?:@wevu\/web-apis|weapp-vite\/web-apis)['"]/
 const MANUAL_INSTALL_REQUEST_GLOBALS_CALL_RE = /\binstallRequestGlobals\s*\(/
 const MANUAL_INSTALL_ABORT_GLOBALS_CALL_RE = /\binstallAbortGlobals\s*\(/
+const REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS = [
+  'axios',
+  'graphql-request',
+  'socket.io-client',
+  'engine.io-client',
+  '@tanstack/query-core',
+  '@tanstack/vue-query',
+]
+
+function isIdentifierBoundary(char: string | undefined) {
+  if (char === undefined) {
+    return true
+  }
+  const code = char.charCodeAt(0)
+  return !(
+    code === 36
+    || code === 95
+    || (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+  )
+}
+
+function containsIdentifierByText(code: string, identifier: string) {
+  let cursor = code.indexOf(identifier)
+  while (cursor !== -1) {
+    if (
+      isIdentifierBoundary(code[cursor - 1])
+      && isIdentifierBoundary(code[cursor + identifier.length])
+    ) {
+      return true
+    }
+    cursor = code.indexOf(identifier, cursor + identifier.length)
+  }
+  return false
+}
 
 function normalizeResolvedRequestGlobalTargets(
   targets: Iterable<WeappInjectRequestGlobalsTarget>,
@@ -472,6 +508,15 @@ function normalizeResolvedRequestGlobalTargets(
 ) {
   const resolvedSet = new Set(targets)
   return allowedTargets.filter(target => resolvedSet.has(target))
+}
+
+export function mayContainRequestGlobalsUsageByText(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  return allowedTargets.some(target => containsIdentifierByText(code, target))
+    || REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+    || (allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code))
 }
 
 function extractRequestGlobalsUsageSource(code: string) {
@@ -565,15 +610,7 @@ function resolveImportedRequestGlobalsTargets(
   }
 
   const matchedSpecifiers = new Set<string>()
-  const knownDependencyLiterals = [
-    'axios',
-    'graphql-request',
-    'socket.io-client',
-    'engine.io-client',
-    '@tanstack/query-core',
-    '@tanstack/vue-query',
-  ]
-  if (!knownDependencyLiterals.some(specifier => code.includes(specifier))) {
+  if (!REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))) {
     return []
   }
 
@@ -611,7 +648,7 @@ function resolveImportedRequestGlobalsTargets(
     })
   }
   catch {
-    for (const specifier of knownDependencyLiterals) {
+    for (const specifier of REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS) {
       if (code.includes(specifier)) {
         matchedSpecifiers.add(specifier)
       }
@@ -666,6 +703,9 @@ export function resolveAutoRequestGlobalsTargets(
   code: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
 ): WeappInjectRequestGlobalsTarget[] {
+  if (!mayContainRequestGlobalsUsageByText(code, allowedTargets)) {
+    return []
+  }
   const importedTargets = resolveImportedRequestGlobalsTargets(code, allowedTargets)
   const referencedTargets = resolveReferencedRequestGlobalsTargets(code, allowedTargets)
   const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)

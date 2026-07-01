@@ -7,6 +7,7 @@ import logger from '../../../../logger'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
+  mayContainRequestGlobalsUsageByText,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
@@ -85,8 +86,14 @@ export function createTransformHook(state: CorePluginState) {
   }
 
   function mayNeedTransformWork(code: string) {
+    const mayNeedRequestGlobals = injectRequestGlobalsOptions
+      ? injectRequestGlobalsOptions.mode === 'auto'
+        ? mayContainRequestGlobalsUsageByText(code, injectRequestGlobalsOptions.targets as any)
+        : true
+      : false
+
     return code.includes('import.meta')
-      || Boolean(injectRequestGlobalsOptions)
+      || mayNeedRequestGlobals
       || mayContainManualRequestGlobalsInstall(code)
       || Boolean(injectOptions && mayContainPlatformApiIdentifierByText(code))
   }

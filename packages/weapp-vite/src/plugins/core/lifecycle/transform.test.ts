@@ -352,6 +352,40 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(profile).toEqual({})
   })
 
+  it('fast rejects auto request globals projects when source has no usage hints', async () => {
+    const profile = {}
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock({
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+        }),
+        runtimeState: {
+          build: {
+            hmr: {
+              profile,
+            },
+          },
+        },
+      },
+      loadedEntrySet: new Set(['/project/src/pages/request-globals/plain.ts']),
+      entriesMap: new Map([
+        ['pages/request-globals/plain', { type: 'page', path: 'pages/request-globals/plain' }],
+      ]),
+    } as any)
+
+    const result = await transform(
+      'export const value = createClient({ baseURL: "/api" })',
+      '/project/src/pages/request-globals/plain.ts',
+    )
+
+    expect(result).toBeNull()
+    expect(profile).toEqual({})
+  })
+
   it('rewrites resolved entry files outside src root', async () => {
     const externalEntry = '/project/node_modules/pkg/index.js'
     const transform = createTransformHook({
