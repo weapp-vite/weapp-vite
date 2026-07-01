@@ -10,6 +10,13 @@ import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vu
 import { resolveUsingComponentReference } from '../../../vue/transform/usingComponentResolver'
 import { ensureTemplateScanned } from './watch'
 
+interface ResolvedScriptSetupUsingComponent {
+  localName: string
+  importSource: string
+  resolvedId?: string
+  from?: string
+}
+
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
@@ -95,8 +102,8 @@ export async function applyScriptSetupUsingComponents(options: {
               : {}
           )
 
-          for (const { localName, importSource, importedName, kind } of imports) {
-            const resolved = await resolveUsingComponentReference(
+          const resolvedImports = await Promise.all(imports.map(async ({ localName, importSource, importedName, kind }) => {
+            const { resolvedId, from: resolvedFrom } = await resolveUsingComponentReference(
               pluginCtx,
               configService,
               reExportResolutionCache,
@@ -109,7 +116,16 @@ export async function applyScriptSetupUsingComponents(options: {
                 fallbackRelativeImporterDir: true,
               },
             )
-            let { from } = resolved
+            return {
+              localName,
+              importSource,
+              resolvedId,
+              from: resolvedFrom,
+            } satisfies ResolvedScriptSetupUsingComponent
+          }))
+
+          for (const { localName, importSource, resolvedId, from: resolvedFrom } of resolvedImports) {
+            let from = resolvedFrom
 
             if (!from && importSource.startsWith('/')) {
               from = removeExtensionDeep(importSource)
@@ -126,8 +142,8 @@ export async function applyScriptSetupUsingComponents(options: {
             }
 
             usingComponents[localName] = from
-            if (resolved.resolvedId) {
-              externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolved.resolvedId)
+            if (resolvedId) {
+              externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolvedId)
             }
           }
 
