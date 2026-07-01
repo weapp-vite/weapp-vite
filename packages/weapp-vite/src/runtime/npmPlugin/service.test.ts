@@ -874,6 +874,72 @@ describe('runtime npm service', () => {
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/common/style/theme/index.wxss'))).toBe(true)
   })
 
+  it('skips local subpackage dependency closure analysis when cache and output are fresh', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
+    await fs.outputFile(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "existing"')
+
+    checkDependenciesCacheOutdateMock.mockResolvedValue(false)
+    getPackageInfoMock.mockImplementation(async () => {
+      throw new Error('package info should not be queried for fresh local subpackage npm output')
+    })
+    copyFileMock.mockImplementation(async () => {
+      throw new Error('fresh local subpackage npm output should not be copied')
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(getPackageInfoMock).not.toHaveBeenCalled()
+    expect(copyFileMock).not.toHaveBeenCalled()
+    expect(await fs.readFile(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'), 'utf8')).toBe('module.exports = "existing"')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
+  })
+
   it('uses pluginPackage dependency scope in pluginOnly mode', async () => {
     const cwd = await createTempDir()
     const packageJson = {

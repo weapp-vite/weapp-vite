@@ -224,14 +224,15 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       await Promise.all(localSubPackageMetas.map(async (meta) => {
         const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
-        const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
-          ? await resolvePackageDependencyClosure(
-              resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
-              ctx.configService.cwd,
-              getPackageInfoCached,
-            )
-          : []
-        if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
+        const shouldRefreshLocalSubPackageNpm = isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))
+        if (shouldRefreshLocalSubPackageNpm) {
+          const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
+            ? await resolvePackageDependencyClosure(
+                resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
+                ctx.configService.cwd,
+                getPackageInfoCached,
+              )
+            : []
           await fs.remove(targetDir)
           await copyDirectoryWithFilter(sourceOutDir, targetDir, (sourcePath) => {
             if (subPackageDependencies.length > 0) {
