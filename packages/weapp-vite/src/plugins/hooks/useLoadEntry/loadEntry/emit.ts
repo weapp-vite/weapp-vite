@@ -60,7 +60,7 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
     : entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
   const normalizedEntries = skipOwnEntries
     ? []
-    : filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
+    : Array.from(new Set(filteredEntries.map(entry => normalizeEntry(entry, jsonPath))))
   if (!skipOwnEntries) {
     for (const normalizedEntry of normalizedEntries) {
       const resolvedEntryType = explicitEntryTypes?.get(normalizedEntry) ?? entryType ?? (json.component ? 'component' : 'page')

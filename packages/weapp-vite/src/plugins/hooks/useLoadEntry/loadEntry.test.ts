@@ -748,6 +748,36 @@ describe('createEntryLoader', () => {
     expect(runtimeState.autoImport.pendingEntriesByImporter.has('/project/src/pages/home')).toBe(false)
   })
 
+  it('dedupes normalized component entries before chunk emission', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, runtimeState } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    runtimeState.autoImport.pendingEntriesByImporter.set(
+      '/project/src/pages/home',
+      new Set(['/components/HotCard/index']),
+    )
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        hot: '/components/HotCard/index',
+      },
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+
+    expect(emittedResolvedIds.filter(id => id === '/project/src/components/HotCard/index')).toHaveLength(1)
+  })
+
   it('force emits auto-import entries injected during the current load', async () => {
     const pageScript = '/project/src/pages/home.js'
     mockFindJsonEntry.mockResolvedValue({
