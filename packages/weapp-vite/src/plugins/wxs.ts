@@ -214,10 +214,40 @@ function shouldScanWxsTokenMap(state: WxsPluginState) {
   return WXS_SCAN_RELEVANT_HMR_RE.test(hmrProfile.file)
 }
 
-function createWxsPlugin(state: WxsPluginState): Plugin {
-  const { ctx } = state
-  const { wxmlService } = ctx
+function shouldScanFullWxsTokenMap(state: WxsPluginState) {
+  const hmrProfile = state.ctx.runtimeState?.build?.hmr?.profile
+  if (!state.ctx.configService.isDev || hmrProfile?.event === undefined) {
+    return true
+  }
+  if (!hmrProfile.file) {
+    return true
+  }
+  const normalizedFile = normalizeFsResolvedId(hmrProfile.file)
+  if (state.wxsDependencyImporters.has(normalizedFile)) {
+    return true
+  }
+  return WXS_FILE_SUFFIX_RE.test(hmrProfile.file)
+}
 
+function resolveWxsTokenScanEntries(state: WxsPluginState): Array<[string, any]> {
+  const tokenMap = state.ctx.wxmlService.tokenMap
+  if (!shouldScanWxsTokenMap(state)) {
+    return []
+  }
+
+  if (shouldScanFullWxsTokenMap(state)) {
+    return Array.from(tokenMap.entries())
+  }
+
+  const hmrFile = state.ctx.runtimeState?.build?.hmr?.profile?.file
+  if (!hmrFile) {
+    return []
+  }
+  const token = tokenMap.get(hmrFile)
+  return token ? [[hmrFile, token]] : []
+}
+
+function createWxsPlugin(state: WxsPluginState): Plugin {
   return {
     name: 'weapp-vite:wxs',
     enforce: 'post',
@@ -228,9 +258,10 @@ function createWxsPlugin(state: WxsPluginState): Plugin {
 
     async generateBundle(_options, bundle) {
       state.wxsMap.clear()
-      if (shouldScanWxsTokenMap(state)) {
+      const tokenEntries = resolveWxsTokenScanEntries(state)
+      if (tokenEntries.length) {
         await Promise.all(
-          Array.from(wxmlService.tokenMap.entries()).map(([id, token]) => {
+          tokenEntries.map(([id, token]) => {
             return handleWxsDeps.call(
               // @ts-ignore Rolldown 上下文类型不完整
               this,

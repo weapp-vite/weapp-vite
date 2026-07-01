@@ -370,6 +370,88 @@ describe('wxs plugin', () => {
     expect(addWatchFile).not.toHaveBeenCalled()
   })
 
+  it('uses the changed template token directly during template hmr', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-template-hmr-'))
+    tempDirs.push(tempDir)
+
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/template-card')
+    await fs.ensureDir(componentDir)
+
+    const templateFile = path.join(componentDir, 'index.wxml')
+    const wxsFile = path.join(componentDir, 'tools.wxs')
+    await fs.writeFile(templateFile, '<wxs src="./tools.wxs" module="tools" /><view />', 'utf8')
+    await fs.writeFile(wxsFile, 'module.exports = { noop: function() {} }', 'utf8')
+
+    const token = {
+      deps: [
+        {
+          name: 'src',
+          value: './tools.wxs',
+          quote: '"',
+          tagName: 'wxs',
+          start: 0,
+          end: 0,
+          attrs: {
+            src: './tools.wxs',
+          },
+        },
+      ],
+    }
+    const tokenMap = {
+      get: vi.fn((id: string) => id === templateFile ? token : undefined),
+      entries: vi.fn(() => {
+        throw new Error('should not scan tokenMap entries during targeted template hmr')
+      }),
+    }
+
+    const plugin = wxs({
+      configService: {
+        absoluteSrcRoot: srcRoot,
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: {
+          wxml: 'wxml',
+          wxs: 'wxs',
+        },
+        relativeOutputPath(filePath: string) {
+          return path.relative(srcRoot, filePath).replace(/\\/g, '/')
+        },
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              event: 'update',
+              file: templateFile,
+            },
+          },
+        },
+      },
+      wxmlService: {
+        tokenMap,
+      },
+    } as any)[0]
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+
+    plugin.buildStart?.call({} as any)
+    await plugin.generateBundle?.call(
+      {
+        emitFile,
+        addWatchFile,
+      } as any,
+      {},
+      {},
+    )
+
+    expect(tokenMap.get).toHaveBeenCalledWith(templateFile)
+    expect(tokenMap.entries).not.toHaveBeenCalled()
+    expect(emitFile).toHaveBeenCalledTimes(1)
+    expect(emitFile.mock.calls[0][0].fileName).toBe('components/template-card/tools.wxs')
+  })
+
   it('keeps tokenMap scans for wxs hmr updates', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-file-hmr-'))
     tempDirs.push(tempDir)
