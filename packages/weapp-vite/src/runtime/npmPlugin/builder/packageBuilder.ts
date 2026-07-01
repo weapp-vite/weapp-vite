@@ -94,18 +94,18 @@ async function copyDirectory(sourceDir: string, targetDir: string) {
   await fs.ensureDir(targetDir)
   const entries = await fs.readdir(sourceDir, { withFileTypes: true })
 
-  for (const entry of entries) {
+  await Promise.all(entries.map(async (entry) => {
     const sourcePath = path.resolve(sourceDir, entry.name)
     const targetPath = path.resolve(targetDir, entry.name)
 
     if (entry.isDirectory()) {
       await copyDirectory(sourcePath, targetPath)
-      continue
+      return
     }
 
     await fs.ensureDir(path.dirname(targetPath))
     await copyFile(sourcePath, targetPath)
-  }
+  }))
 }
 
 export function createPackageBuilder(
