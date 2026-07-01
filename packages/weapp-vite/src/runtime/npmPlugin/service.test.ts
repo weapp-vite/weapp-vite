@@ -595,6 +595,90 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
 
+  it('starts shared source and main npm builds concurrently before refreshing local subpackages', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+        'lodash': '^4.17.21',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    checkDependenciesCacheOutdateMock.mockResolvedValue(false)
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: ['dayjs'],
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['dayjs'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const startedBuildTargets = new Set<string>()
+    let releaseSourceBuild: (() => void) | undefined
+    let resolveMainBuildStarted: (() => void) | undefined
+    const mainBuildStarted = new Promise<void>((resolve) => {
+      resolveMainBuildStarted = resolve
+    })
+
+    buildPackageMock.mockImplementation(async ({ outDir }) => {
+      const relOutDir = path.relative(cwd, outDir).replace(/\\/g, '/')
+      if (relOutDir === '.weapp-vite/npm-source/miniprogram_npm') {
+        startedBuildTargets.add(relOutDir)
+        if (!releaseSourceBuild) {
+          await new Promise<void>((resolve) => {
+            releaseSourceBuild = resolve
+          })
+        }
+        return
+      }
+      if (relOutDir === 'dist/miniprogram_npm') {
+        startedBuildTargets.add(relOutDir)
+        resolveMainBuildStarted?.()
+      }
+    })
+
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    await mainBuildStarted
+    expect(startedBuildTargets).toEqual(new Set([
+      '.weapp-vite/npm-source/miniprogram_npm',
+      'dist/miniprogram_npm',
+    ]))
+
+    releaseSourceBuild?.()
+    await expect(buildPromise).rejects.toThrow(/ENOENT/)
+  })
+
   it('processes local subpackage npm copies concurrently from the shared source cache', async () => {
     const cwd = await createTempDir()
     const packageJson = {

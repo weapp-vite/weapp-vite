@@ -190,21 +190,26 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
         .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
 
-      if (sourceOutDir !== outDir) {
-        await buildTargetDependencies({
-          cacheKey: '__all__',
-          dependencies: allDependencies,
-          npmDistDir: sourceOutDir,
-          options,
-        })
-      }
+      const sourceBuildPromise = sourceOutDir !== outDir
+        ? buildTargetDependencies({
+            cacheKey: '__all__',
+            dependencies: allDependencies,
+            npmDistDir: sourceOutDir,
+            options,
+          })
+        : Promise.resolve()
 
-      await buildTargetDependencies({
+      const mainBuildPromise = buildTargetDependencies({
         cacheKey: ctx.configService.pluginOnly ? '__plugin__' : undefined,
         dependencies: mainDependencies,
         npmDistDir: outDir,
         options,
       })
+
+      await Promise.all([
+        sourceBuildPromise,
+        mainBuildPromise,
+      ])
 
       if (mainDependencies.length === 0) {
         await Promise.all(subRelations.map((relation) => {
