@@ -30,6 +30,10 @@ type SfcDescriptor = Parameters<typeof compileScript>[0]
 type CompiledScript = ReturnType<typeof compileScript>
 
 function hasDefaultExport(scriptCode: string) {
+  if (!EXPORT_DEFAULT_RE.test(scriptCode)) {
+    return false
+  }
+
   try {
     const ast = parseJsLike(scriptCode)
     let found = false
@@ -289,7 +293,7 @@ export async function compileScriptPhase(
       scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
     }
 
-    if (!isAppFile && !hasDefaultExport(scriptCode)) {
+    if (!isAppFile && !descriptor.scriptSetup && !hasDefaultExport(scriptCode)) {
       scriptCode += '\nexport default {}'
     }
   }

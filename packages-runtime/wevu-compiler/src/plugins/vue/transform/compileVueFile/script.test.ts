@@ -157,6 +157,31 @@ const props = defineProps({
     expect(result.script).toContain('createWevuComponent')
   })
 
+  it('adds fallback default export for normal script without default export', async () => {
+    const sfc = parse(`
+<template>
+  <view>{{ count }}</view>
+</template>
+<script lang="ts">
+export const count = 1
+</script>
+    `.trim(), { filename: '/project/src/components/NormalScriptCard/index.vue' })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/NormalScriptCard/index.vue',
+      undefined,
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(result.script).toContain('export const count = 1')
+    expect(result.script).toContain('export default __wevuOptions')
+    expect(result.script).toContain('createWevuComponent')
+  })
+
   it('keeps auto using component imports when script setup references them', async () => {
     const sfc = parse(`
 <template>
