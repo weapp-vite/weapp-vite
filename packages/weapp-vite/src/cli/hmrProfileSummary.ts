@@ -17,6 +17,10 @@ interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  requestGlobalsMs?: number
+  weapiResolveMs?: number
   renderStartMs?: number
   generateBundleMs?: number
   generateSharedMs?: number
@@ -82,6 +86,22 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'vue-transform',
       value: sample.vueTransformMs,
+    },
+    {
+      label: 'core-load',
+      value: sample.coreLoadMs,
+    },
+    {
+      label: 'entry-load',
+      value: sample.entryLoadMs,
+    },
+    {
+      label: 'request-globals',
+      value: sample.requestGlobalsMs,
+    },
+    {
+      label: 'weapi-resolve',
+      value: sample.weapiResolveMs,
     },
     {
       label: 'render-start',

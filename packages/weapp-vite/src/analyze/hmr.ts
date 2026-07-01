@@ -13,6 +13,10 @@ export interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  requestGlobalsMs?: number
+  weapiResolveMs?: number
   renderStartMs?: number
   generateBundleMs?: number
   generateSharedMs?: number
@@ -65,6 +69,10 @@ export interface HmrProfileAnalyzeResult {
     coreTransformMs: HmrProfileMetricSummary
     wevuTransformMs: HmrProfileMetricSummary
     vueTransformMs: HmrProfileMetricSummary
+    coreLoadMs: HmrProfileMetricSummary
+    entryLoadMs: HmrProfileMetricSummary
+    requestGlobalsMs: HmrProfileMetricSummary
+    weapiResolveMs: HmrProfileMetricSummary
     renderStartMs: HmrProfileMetricSummary
     generateBundleMs: HmrProfileMetricSummary
     generateSharedMs: HmrProfileMetricSummary
@@ -175,6 +183,10 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const coreTransformValues: number[] = []
   const wevuTransformValues: number[] = []
   const vueTransformValues: number[] = []
+  const coreLoadValues: number[] = []
+  const entryLoadValues: number[] = []
+  const requestGlobalsValues: number[] = []
+  const weapiResolveValues: number[] = []
   const renderStartValues: number[] = []
   const generateBundleValues: number[] = []
   const generateSharedValues: number[] = []
@@ -207,6 +219,18 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.vueTransformMs)) {
       vueTransformValues.push(sample.vueTransformMs)
+    }
+    if (isFiniteNumber(sample.coreLoadMs)) {
+      coreLoadValues.push(sample.coreLoadMs)
+    }
+    if (isFiniteNumber(sample.entryLoadMs)) {
+      entryLoadValues.push(sample.entryLoadMs)
+    }
+    if (isFiniteNumber(sample.requestGlobalsMs)) {
+      requestGlobalsValues.push(sample.requestGlobalsMs)
+    }
+    if (isFiniteNumber(sample.weapiResolveMs)) {
+      weapiResolveValues.push(sample.weapiResolveMs)
     }
     if (isFiniteNumber(sample.renderStartMs)) {
       renderStartValues.push(sample.renderStartMs)
@@ -276,6 +300,10 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       coreTransformMs: createMetricSummary(coreTransformValues),
       wevuTransformMs: createMetricSummary(wevuTransformValues),
       vueTransformMs: createMetricSummary(vueTransformValues),
+      coreLoadMs: createMetricSummary(coreLoadValues),
+      entryLoadMs: createMetricSummary(entryLoadValues),
+      requestGlobalsMs: createMetricSummary(requestGlobalsValues),
+      weapiResolveMs: createMetricSummary(weapiResolveValues),
       renderStartMs: createMetricSummary(renderStartValues),
       generateBundleMs: createMetricSummary(generateBundleValues),
       generateSharedMs: createMetricSummary(generateSharedValues),

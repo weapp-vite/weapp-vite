@@ -647,7 +647,7 @@ describe('scanPlugin service', () => {
     await expect(service.loadAppEntry()).rejects.toThrow('`app.json` 解析失败')
   })
 
-  it('builds subpackage metadata, tracks independent roots and refreshes entries', async () => {
+  it('builds subpackage metadata, tracks independent roots and reuses cached entries while clean', async () => {
     const ctx = createCtx()
     ctx.runtimeState.scan.appEntry = {
       path: '/project/src/app.ts',
@@ -673,13 +673,18 @@ describe('scanPlugin service', () => {
     expect(service.drainIndependentDirtyRoots()).toEqual([])
     expect(service.isMainPackageFileName('pages/home/index')).toBe(true)
     expect(service.isMainPackageFileName('pkgA/pages/a')).toBe(false)
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(2)
 
     service.markIndependentDirty('pkgA')
     expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA'])
 
     ctx.runtimeState.scan.isDirty = false
     service.loadSubPackages()
-    expect(resolveSubPackageEntriesMock).toHaveBeenCalled()
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(2)
+
+    ctx.runtimeState.scan.isDirty = true
+    service.loadSubPackages()
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(4)
   })
 
   it('normalizes windows-style subpackage roots before config lookup and tracking', async () => {

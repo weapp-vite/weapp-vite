@@ -149,6 +149,10 @@ export interface RuntimeState {
         coreTransformMs?: number
         wevuTransformMs?: number
         vueTransformMs?: number
+        coreLoadMs?: number
+        entryLoadMs?: number
+        requestGlobalsMs?: number
+        weapiResolveMs?: number
         bundlerMs?: number
         renderStartMs?: number
         generateBundleMs?: number
@@ -179,6 +183,10 @@ export interface RuntimeState {
         coreTransformMs?: number
         wevuTransformMs?: number
         vueTransformMs?: number
+        coreLoadMs?: number
+        entryLoadMs?: number
+        requestGlobalsMs?: number
+        weapiResolveMs?: number
         bundlerMs?: number
         renderStartMs?: number
         generateBundleMs?: number

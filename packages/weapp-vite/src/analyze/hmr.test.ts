@@ -20,6 +20,10 @@ describe('analyze hmr profile', () => {
         coreTransformMs: 3,
         wevuTransformMs: 2,
         vueTransformMs: 4,
+        coreLoadMs: 5,
+        entryLoadMs: 3,
+        requestGlobalsMs: 1,
+        weapiResolveMs: 0.5,
         renderStartMs: 1,
         generateBundleMs: 6,
         generateSharedMs: 2,
@@ -46,6 +50,10 @@ describe('analyze hmr profile', () => {
         coreTransformMs: 5,
         wevuTransformMs: 4,
         vueTransformMs: 8,
+        coreLoadMs: 9,
+        entryLoadMs: 5,
+        requestGlobalsMs: 3,
+        weapiResolveMs: 1.5,
         renderStartMs: 3,
         generateBundleMs: 10,
         generateSharedMs: 4,
@@ -82,6 +90,10 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.coreTransformMs.averageMs).toBe(4)
     expect(result.metrics.wevuTransformMs.averageMs).toBe(3)
     expect(result.metrics.vueTransformMs.averageMs).toBe(6)
+    expect(result.metrics.coreLoadMs.averageMs).toBe(7)
+    expect(result.metrics.entryLoadMs.averageMs).toBe(4)
+    expect(result.metrics.requestGlobalsMs.averageMs).toBe(2)
+    expect(result.metrics.weapiResolveMs.averageMs).toBe(1)
     expect(result.metrics.renderStartMs.averageMs).toBe(2)
     expect(result.metrics.generateBundleMs.averageMs).toBe(8)
     expect(result.metrics.generateSharedMs.averageMs).toBe(3)

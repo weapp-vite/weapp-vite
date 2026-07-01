@@ -1008,6 +1008,10 @@ describe('runtime buildPlugin service', () => {
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
       vueTransformMs: 4,
+      coreLoadMs: 4,
+      entryLoadMs: 2.5,
+      requestGlobalsMs: 1,
+      weapiResolveMs: 0.5,
       renderStartMs: 6,
       generateBundleMs: 11,
       generateSharedMs: 3,
@@ -1049,6 +1053,10 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
     expect(payload).toContain('"vueTransformMs":4')
+    expect(payload).toContain('"coreLoadMs":4')
+    expect(payload).toContain('"entryLoadMs":2.5')
+    expect(payload).toContain('"requestGlobalsMs":1')
+    expect(payload).toContain('"weapiResolveMs":0.5')
     expect(payload).toContain('"renderStartMs":6')
     expect(payload).toContain('"generateBundleMs":11')
     expect(payload).toContain('"generateSharedMs":3')
@@ -1056,7 +1064,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"generateModuleGraphMs":1')
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
-    expect(payload).toContain('"buildCoreMs":40.5')
+    expect(payload).toContain('"buildCoreMs":36.5')
     expect(payload).toContain('"chunkEmitCount":3')
     expect(payload).toContain('"loadCount":2')
     expect(payload).toContain('"skippedLoadedCount":1')
