@@ -636,6 +636,23 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
       const rewriteStartedAt = performance.now()
       const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
+      const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
+      const localSubPackageMetas = [...subPackageMap.values()]
+        .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
+      const hasNpmBuildCandidateDependencies = npmBuildCandidateDependencies
+        ? Object.keys(npmBuildCandidateDependencies).some(() => true)
+        : false
+      const hasLocalRootNpmRewriteTargets = localSubPackageMetas.length > 0
+      const needsScriptAnalysisWarmup = !shouldRewriteBundleNpmImports(configService.platform)
+        || Boolean(configService.weappViteConfig?.injectWeapiGlobal?.replaceWx)
+        || hasNpmBuildCandidateDependencies
+        || hasLocalRootNpmRewriteTargets
+      if (needsScriptAnalysisWarmup) {
+        warmupBundleScriptAnalysis(rewriteBundle, {
+          astEngine,
+          cache: scriptAnalysisCache,
+        })
+      }
       if (shouldRewriteBundleNpmImports(configService.platform)) {
         rewriteBundleNpmImportsByPlatform(
           configService.platform,
@@ -645,32 +662,20 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           { astEngine, analysisCache: scriptAnalysisCache },
         )
       }
-      else {
-        const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
-        const localSubPackageMetas = [...subPackageMap.values()]
-          .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
-        const hasNpmRewriteTargets = Object.keys(npmBuildCandidateDependencies ?? {}).length > 0
-          || localSubPackageMetas.length > 0
-
-        if (hasNpmRewriteTargets) {
-          warmupBundleScriptAnalysis(rewriteBundle, {
+      else if (hasNpmBuildCandidateDependencies || hasLocalRootNpmRewriteTargets) {
+        rewriteBundleNpmImportsToLocalRoots(
+          rewriteBundle,
+          npmBuildCandidateDependencies,
+          localSubPackageMetas.map(meta => ({
+            root: meta.subPackage.root,
+            dependencies: meta.subPackage.dependencies,
+          })),
+          {
+            analysisCache: scriptAnalysisCache,
             astEngine,
-            cache: scriptAnalysisCache,
-          })
-          rewriteBundleNpmImportsToLocalRoots(
-            rewriteBundle,
-            npmBuildCandidateDependencies,
-            localSubPackageMetas.map(meta => ({
-              root: meta.subPackage.root,
-              dependencies: meta.subPackage.dependencies,
-            })),
-            {
-              analysisCache: scriptAnalysisCache,
-              astEngine,
-              basedir: configService.cwd,
-            },
-          )
-        }
+            basedir: configService.cwd,
+          },
+        )
       }
 
       const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)

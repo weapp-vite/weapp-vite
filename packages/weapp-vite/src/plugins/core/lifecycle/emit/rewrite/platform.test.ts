@@ -147,6 +147,42 @@ describe('bundle script analysis warmup', () => {
     expect(chunk.code).toContain('__weappViteInjectedApi__.getStorageSync')
   })
 
+  it('reuses the same warmup cache across npm and platform api rewrites', () => {
+    const cache = new WeakMap<OutputChunk, {
+      analysis: {
+        hasPlatformApiAccess: boolean
+        hasStaticRequireLiteral: boolean
+      }
+      code: string
+    }>()
+    const chunk = createChunk('pages/index.js', [
+      `const dep = require('pkg')`,
+      `wx.getStorageSync('k')`,
+    ].join('\n'))
+    const bundle: OutputBundle = {
+      [chunk.fileName]: chunk,
+    }
+
+    warmupBundleScriptAnalysis(bundle, {
+      astEngine: 'oxc',
+      cache,
+    })
+    rewriteBundleNpmImportsByPlatform('alipay', bundle, {
+      pkg: '1.0.0',
+    }, undefined, {
+      astEngine: 'oxc',
+      analysisCache: cache,
+    })
+    rewriteBundlePlatformApi(bundle, 'my', {
+      astEngine: 'oxc',
+      analysisCache: cache,
+    })
+
+    expect(analyzeScripts).toHaveBeenCalledTimes(1)
+    expect(chunk.code).toContain('/node_modules/pkg')
+    expect(chunk.code).toContain('__weappViteInjectedApi__.getStorageSync')
+  })
+
   it('rewrites dynamic global resolution only for matching chunks', () => {
     const plain = createChunk('pages/plain.js', `const value = globalThis`)
     const functionGlobal = createChunk('pages/function.js', `const root = Function("return this")()`)
