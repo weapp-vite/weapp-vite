@@ -173,6 +173,65 @@ describe('invalidateEntry cssGraph', () => {
     expect(result.scripts).toEqual(new Set(['/project/src/styles/reset.ts', '/project/src/app.ts']))
   })
 
+  it('resolves scripts in the same css graph layer concurrently and caches misses', async () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const theme = '/project/src/styles/theme.wxss'
+    const slowWxss = '/project/src/styles/slow.wxss'
+    const fastWxss = '/project/src/styles/fast.wxss'
+    const repeatedWxss = '/project/src/styles/repeated.wxss'
+    const repeatedScss = '/project/src/styles/repeated.scss'
+    const appWxss = '/project/src/app.wxss'
+    let releaseSlow: (() => void) | undefined
+    let startedBeforeRelease = 0
+    let slowReleased = false
+
+    ctx.runtimeState.css.dependencyToImporters.set(theme, new Set([slowWxss, fastWxss, repeatedWxss]))
+    ctx.runtimeState.css.dependencyToImporters.set(repeatedWxss, new Set([repeatedScss]))
+    ctx.runtimeState.css.dependencyToImporters.set('/project/src/styles/repeated', new Set([appWxss]))
+
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (!slowReleased) {
+        startedBeforeRelease += 1
+      }
+      if (basePath === '/project/src/styles/slow') {
+        await new Promise<void>((resolve) => {
+          releaseSlow = () => {
+            slowReleased = true
+            resolve()
+          }
+        })
+      }
+      if (basePath === '/project/src/styles/fast') {
+        return {
+          path: '/project/src/styles/fast.ts',
+          predictions: [],
+        }
+      }
+      return {
+        predictions: [],
+      }
+    })
+
+    const pending = collectAffectedScriptsAndImporters(ctx, theme)
+    await vi.waitFor(() => {
+      expect(releaseSlow).toBeDefined()
+      expect(startedBeforeRelease).toBe(4)
+    })
+    releaseSlow?.()
+
+    const result = await pending
+
+    expect(findJsEntryMock).toHaveBeenCalledTimes(5)
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/theme')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/slow')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/fast')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/repeated')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/app')
+    expect(result.importers).toEqual(new Set([slowWxss, fastWxss, repeatedWxss, repeatedScss, appWxss]))
+    expect(result.scripts).toEqual(new Set(['/project/src/styles/fast.ts']))
+  })
+
   it('tracks vue sfc style imports and src blocks as css importers', async () => {
     const srcRoot = '/project/src'
     const ctx = createCtx(srcRoot)
