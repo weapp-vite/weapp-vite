@@ -49,6 +49,22 @@ function readStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
+function shouldCollectAutoImportTemplateTags(
+  autoImportConfig: NonNullable<ReturnType<typeof getAutoImportConfig>>,
+) {
+  const resolvers = autoImportConfig.resolvers
+  if (!Array.isArray(resolvers) || resolvers.length === 0) {
+    return false
+  }
+
+  return resolvers.some((resolver: any) => {
+    return resolver?.supportFilesStrategy !== 'full'
+      || !resolver?.components
+      || typeof resolver.components !== 'object'
+      || Array.isArray(resolver.components)
+  })
+}
+
 function getExpectedAppSrcInclude(expectedAppTsconfig: Record<string, unknown> | undefined) {
   return readStringArray(expectedAppTsconfig?.include)[0]
 }
@@ -201,9 +217,11 @@ async function syncAutoImportSupportFiles(
         // noop
       }
 
-      const templateTags = await collectAutoImportTemplateTags(ctx)
-      for (const { tag, importerBaseName } of templateTags) {
-        ctx.autoImportService!.resolve(tag, importerBaseName)
+      if (shouldCollectAutoImportTemplateTags(autoImportConfig)) {
+        const templateTags = await collectAutoImportTemplateTags(ctx)
+        for (const { tag, importerBaseName } of templateTags) {
+          ctx.autoImportService!.resolve(tag, importerBaseName)
+        }
       }
 
       ctx.autoImportService!.setSupportFileResolverComponents(

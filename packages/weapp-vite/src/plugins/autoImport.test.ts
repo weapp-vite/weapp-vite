@@ -158,6 +158,9 @@ describe('autoImport plugin', () => {
     const reset = vi.fn()
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+    const runInBatch = vi.fn(async (task: () => Promise<void>) => {
+      await task()
+    })
 
     const ctx = {
       configService: {
@@ -172,6 +175,7 @@ describe('autoImport plugin', () => {
         },
       },
       autoImportService: {
+        runInBatch,
         reset,
         awaitManifestWrites,
         filter: () => true,
@@ -189,6 +193,7 @@ describe('autoImport plugin', () => {
       await plugin.buildStart?.()
 
       expect(reset).toHaveBeenCalledTimes(1)
+      expect(runInBatch).toHaveBeenCalledTimes(1)
       expect(registerPotentialComponent).toHaveBeenCalledWith(vueFile)
     }
     finally {

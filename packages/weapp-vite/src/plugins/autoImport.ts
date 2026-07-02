@@ -265,6 +265,16 @@ function registerAutoImportWatchTargets(
   return watchTargets
 }
 
+async function runAutoImportBatch<T>(
+  autoImportService: CompilerContext['autoImportService'],
+  task: () => T | Promise<T>,
+) {
+  if (typeof autoImportService?.runInBatch === 'function') {
+    return await autoImportService.runInBatch(task)
+  }
+  return await task()
+}
+
 async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
   const { wxmlService, configService, autoImportService } = ctx
   if (!wxmlService || !configService) {
@@ -418,7 +428,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
 
       if (!globs?.length) {
         if (!state.initialScanDone && shouldBootstrapAutoImportWithoutGlobs(autoImportConfig)) {
-          autoImportService.reset()
+          await runAutoImportBatch(autoImportService, () => {
+            autoImportService.reset()
+          })
           state.initialScanDone = true
         }
         return
@@ -428,10 +440,11 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
         return
       }
 
-      autoImportService.reset()
-
-      const files = await findAutoImportCandidates(state, globs)
-      await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+      await runAutoImportBatch(autoImportService, async () => {
+        autoImportService.reset()
+        const files = await findAutoImportCandidates(state, globs)
+        await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+      })
 
       state.initialScanDone = true
     },

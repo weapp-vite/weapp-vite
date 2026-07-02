@@ -405,6 +405,66 @@ describe('tsconfig support', () => {
     expect(ctx.autoImportService.registerPotentialComponent).toHaveBeenCalledWith(componentFile)
   })
 
+  it('skips template tag scan when static full resolvers already cover support files', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-auto-import-static-full-'))
+    const srcRoot = path.join(root, 'src')
+    const pageFile = path.join(srcRoot, 'pages/index/index.vue')
+    const resolverComponents = {
+      'van-button': '@vant/weapp/button',
+      'van-cell': '@vant/weapp/cell',
+    }
+    await fs.ensureDir(path.dirname(pageFile))
+    await fs.writeFile(pageFile, '<template><view><van-button /></view></template>', 'utf8')
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: undefined,
+        },
+      },
+      configService: {
+        cwd: root,
+        configFilePath: path.join(root, 'vite.config.ts'),
+        absoluteSrcRoot: srcRoot,
+        srcRoot: 'src',
+        outDir: path.join(root, 'dist'),
+        packageJson: {},
+        weappViteConfig: {
+          autoImportComponents: {
+            resolvers: [
+              {
+                components: resolverComponents,
+                supportFilesStrategy: 'full',
+              },
+            ],
+          },
+        },
+      },
+      autoRoutesService: {
+        isEnabled: () => false,
+      },
+      autoImportService: {
+        runInBatch: async (task: () => Promise<void>) => {
+          await task()
+        },
+        reset: vi.fn(),
+        registerPotentialComponent: vi.fn().mockResolvedValue(undefined),
+        resolve: vi.fn(),
+        setSupportFileResolverComponents: vi.fn(),
+        collectStaticResolverComponentsForSupportFiles: vi.fn(() => resolverComponents),
+        syncSupportFileResolverComponents: vi.fn().mockResolvedValue(undefined),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        clearSupportFileResolverComponents: vi.fn(),
+      },
+    } as any
+
+    await syncProjectSupportFiles(ctx)
+
+    expect(ctx.autoImportService.resolve).not.toHaveBeenCalled()
+    expect(ctx.autoImportService.setSupportFileResolverComponents).toHaveBeenCalledWith(resolverComponents)
+    expect(ctx.runtimeState.autoImport.preparedGlobsKey).toBe('components/**/*.wxml')
+  })
+
   it('avoids rereading inspected managed tsconfig files while syncing support files', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-tsconfig-reuse-'))
     const ctx = {
@@ -474,6 +534,16 @@ describe('tsconfig support', () => {
         weappViteConfig: {
           autoImportComponents: {
             globs: ['components/**/*.vue', 'components/**/*.wxml'],
+            resolvers: [
+              {
+                resolve(componentName: string) {
+                  return {
+                    name: componentName,
+                    from: `resolver/${componentName}`,
+                  }
+                },
+              },
+            ],
           },
         },
       },
