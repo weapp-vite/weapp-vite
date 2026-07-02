@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
 import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
+import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
 import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
@@ -128,6 +129,27 @@ interface EmitEntryOutputOptions {
   skipEntries?: boolean
   entryResolveRoot: string
   emittedWxmlCodeCache?: Map<string, string>
+  styleImportsCache?: Map<string, string[]>
+  resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
+}
+
+function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
+  const profile = runtimeState?.build?.hmr?.profile
+  if (profile?.event === undefined) {
+    return false
+  }
+  const dirtyReasonSummary = profile.dirtyReasonSummary
+  if (!dirtyReasonSummary?.length) {
+    return false
+  }
+  return dirtyReasonSummary.every(reason =>
+    reason.startsWith('entry-direct:')
+    || reason.startsWith('importer-graph:')
+    || reason.startsWith('shared-chunk-source:')
+    || reason.startsWith('json-sidecar:')
+    || reason.startsWith('sidecar-direct:')
+    || reason.startsWith('entry-local-asset:'),
+  )
 }
 
 export async function emitEntryOutput(options: EmitEntryOutputOptions) {
@@ -163,6 +185,8 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     relativeCwdId,
     getTime,
     emittedWxmlCodeCache,
+    styleImportsCache,
+    resolvedPageLayoutPlan,
   } = options
   let json = initialJson
   function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
@@ -178,10 +202,18 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       recordEntryDuration('entryCodeReadMs', startedAt)
     }
   })())
+  const cachedStyleImports = configService.isDev && isEntryStyleStableHmr(runtimeState)
+    ? styleImportsCache?.get(id)
+    : undefined
   const styleImportsTask = prefetch((async () => {
+    if (cachedStyleImports) {
+      return cachedStyleImports
+    }
     const startedAt = performance.now()
     try {
-      return await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+      const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+      styleImportsCache?.set(id, styleImports)
+      return styleImports
     }
     finally {
       recordEntryDuration('entryStyleScanMs', startedAt)
@@ -195,12 +227,14 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const styleReadStartedAt = performance.now()
     let styleSources: Array<{ styleImport: string, source: string }>
     try {
-      styleSources = await Promise.all(styleImportsResult.value.map(async (styleImport) => {
-        return {
-          styleImport,
-          source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
-        }
-      }))
+      styleSources = cachedStyleImports
+        ? []
+        : await Promise.all(styleImportsResult.value.map(async (styleImport) => {
+            return {
+              styleImport,
+              source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
+            }
+          }))
     }
     finally {
       recordEntryDuration('entryStyleReadMs', styleReadStartedAt)
@@ -421,7 +455,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const layoutStartedAt = performance.now()
     try {
       replaceLayoutDependencies(id, [])
-      const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
+      const layoutPlan = resolvedPageLayoutPlan === undefined
+        ? await resolvePageLayoutPlan(code, id, configService as any)
+        : resolvedPageLayoutPlan ?? undefined
       if (layoutPlan) {
         const layoutDependencies = new Set<string>()
         for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {

@@ -113,6 +113,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   } = {}
   const emittedScriptlessVueLayoutJs = new Set<string>()
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
+  const templateEntryPathCache = new Map<string, string>()
+  const styleImportsCache = new Map<string, string[]>()
   let resolveCacheVersion = 0
 
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
@@ -266,6 +268,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const forceEmitEntrySet = new Set<string>()
     const forceReloadEntrySet = new Set<string>()
     const nativeLayoutScriptEntries = new Set<string>()
+    let resolvedPageLayoutPlan: ResolvedPageLayoutPlan | null | undefined
     let autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
@@ -389,7 +392,11 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     else {
       const templateScanStartedAt = performance.now()
       try {
-        templatePath = await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
+        const cachedTemplatePath = isJsonStableHmr
+          ? templateEntryPathCache.get(normalizedId)
+          : undefined
+        templatePath = cachedTemplatePath ?? await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
+        templateEntryPathCache.set(normalizedId, templatePath)
       }
       finally {
         recordEntryDuration('entryTemplateScanMs', templateScanStartedAt)
@@ -453,6 +460,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             const layoutStartedAt = performance.now()
             try {
               const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+              resolvedPageLayoutPlan = layoutPlan ?? null
               replaceLayoutDependencies(normalizedId, [])
               if (layoutPlan) {
                 await registerPageLayoutComponentEntries(layoutPlan, {
@@ -472,6 +480,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           replaceLayoutDependencies(normalizedId, [])
           const source = await fs.readFile(id, 'utf-8')
           const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
+          resolvedPageLayoutPlan = layoutPlan ?? null
           if (layoutPlan) {
             await registerPageLayoutComponentEntries(layoutPlan, {
               trackLayoutDependencies: true,
@@ -605,6 +614,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           relativeCwdId,
           getTime,
           emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
+          styleImportsCache,
+          resolvedPageLayoutPlan,
           skipEntries: shouldSkipAppEntries,
         })
       }
@@ -632,6 +643,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     invalidateResolveCache() {
       entryResolver.invalidate()
       scriptlessVueLayoutDecisionCache.clear()
+      templateEntryPathCache.clear()
+      styleImportsCache.clear()
       resolveCacheVersion += 1
       appEntryOutputCache.current = undefined
     },

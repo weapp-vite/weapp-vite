@@ -522,6 +522,113 @@ describe('createEntryLoader', () => {
     }))
   })
 
+  it('reuses cached template path during direct script hmr', async () => {
+    const { loader, runtimeState, scanTemplateEntry } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const templatePath = '/project/src/pages/home/index.wxml'
+
+    mockFindTemplateEntry.mockResolvedValue({
+      path: templatePath,
+      predictions: [templatePath],
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).toHaveBeenCalledTimes(1)
+    expect(scanTemplateEntry).toHaveBeenCalledWith(templatePath)
+    mockFindTemplateEntry.mockClear()
+    scanTemplateEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).not.toHaveBeenCalled()
+    expect(scanTemplateEntry).not.toHaveBeenCalled()
+  })
+
+  it('rescans template path for template sidecar hmr', async () => {
+    const { loader, runtimeState, scanTemplateEntry } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const templatePath = '/project/src/pages/home/index.wxml'
+
+    mockFindTemplateEntry.mockResolvedValue({
+      path: templatePath,
+      predictions: [templatePath],
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    mockFindTemplateEntry.mockClear()
+    scanTemplateEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['sidecar-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).toHaveBeenCalledTimes(1)
+    expect(scanTemplateEntry).toHaveBeenCalledWith(templatePath)
+  })
+
+  it('reuses cached style imports during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, { checkMtime: true })
+    magicStringPrependMock.mockClear()
+    readFileMock.mockClear()
+    existsMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
+  })
+
+  it('rescans style imports for style sidecar hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    existsMock.mockClear()
+    readFileMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['style-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, { checkMtime: true })
+  })
+
   it('resolves app side sitemap and theme json concurrently', async () => {
     const { loader, jsonService, registerJsonAsset } = createLoader()
     const pluginCtx = createPluginContext()
@@ -2321,6 +2428,7 @@ import { VueCard } from '../../components'
 
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
     expect(registerJsonAsset).toHaveBeenCalledWith({
       jsonPath: '/project/src/pages/index/index.json',
       json: {
