@@ -522,6 +522,70 @@ describe('createEntryLoader', () => {
     }))
   })
 
+  it('reuses cached json and vue sidecar resolution during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const jsonPath = '/project/src/pages/home/index.json'
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).toHaveBeenCalledTimes(1)
+    expect(mockFindVueEntry).toHaveBeenCalledTimes(1)
+    mockFindJsonEntry.mockClear()
+    mockFindVueEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).not.toHaveBeenCalled()
+    expect(mockFindVueEntry).not.toHaveBeenCalled()
+  })
+
+  it('resolves json sidecar again for json sidecar hmr', async () => {
+    const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const oldJsonPath = '/project/src/pages/home/index.json'
+    const newJsonPath = '/project/src/pages/home/index.json.ts'
+    const oldJson = { usingComponents: { old: '../../components/old/index' } }
+    const newJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValueOnce({
+      path: oldJsonPath,
+      predictions: [oldJsonPath],
+    }).mockResolvedValueOnce({
+      path: newJsonPath,
+      predictions: [newJsonPath],
+    })
+    jsonService.read.mockResolvedValueOnce(oldJson).mockResolvedValueOnce(newJson)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockFindJsonEntry.mockClear()
+    registerJsonAsset.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['json-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).toHaveBeenCalledTimes(1)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: newJsonPath,
+      json: newJson,
+    }))
+  })
+
   it('reuses cached template path during direct script hmr', async () => {
     const { loader, runtimeState, scanTemplateEntry } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

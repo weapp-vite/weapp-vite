@@ -50,6 +50,11 @@ interface EntryLoaderOptions {
   debug?: (...args: any[]) => void
 }
 
+interface EntrySidecarResolution {
+  jsonEntry: Awaited<ReturnType<typeof findJsonEntry>>
+  vueEntryPath?: string
+}
+
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
@@ -113,6 +118,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   } = {}
   const emittedScriptlessVueLayoutJs = new Set<string>()
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
+  const entrySidecarResolutionCache = new Map<string, EntrySidecarResolution>()
   const templateEntryPathCache = new Map<string, string>()
   const styleImportsCache = new Map<string, string[]>()
   let resolveCacheVersion = 0
@@ -162,13 +168,26 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const sidecarResolveStartedAt = performance.now()
     let jsonEntry!: Awaited<ReturnType<typeof findJsonEntry>>
     let vueEntryPath: string | undefined
+    const isStableHmr = type !== 'app' && isEntryJsonStableHmr(ctx)
     try {
-      ;[jsonEntry, vueEntryPath] = await Promise.all([
-        findJsonEntry(id),
-        id.endsWith('.vue')
-          ? Promise.resolve(id)
-          : findVueEntry(baseName),
-      ])
+      const cachedSidecarResolution = isStableHmr
+        ? entrySidecarResolutionCache.get(normalizedId)
+        : undefined
+      if (cachedSidecarResolution) {
+        ;({ jsonEntry, vueEntryPath } = cachedSidecarResolution)
+      }
+      else {
+        ;[jsonEntry, vueEntryPath] = await Promise.all([
+          findJsonEntry(id),
+          id.endsWith('.vue')
+            ? Promise.resolve(id)
+            : findVueEntry(baseName),
+        ])
+        entrySidecarResolutionCache.set(normalizedId, {
+          jsonEntry,
+          vueEntryPath,
+        })
+      }
     }
     finally {
       recordEntryDuration('entrySidecarResolveMs', sidecarResolveStartedAt)
@@ -177,7 +196,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let hasJsonEntry = Boolean(jsonPath)
 
     let json: any = {}
-    const isJsonStableHmr = type !== 'app' && isEntryJsonStableHmr(ctx)
+    const isJsonStableHmr = isStableHmr
     const addJsonWatchTargets = isJsonStableHmr
       ? Promise.resolve()
       : addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
@@ -646,6 +665,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     invalidateResolveCache() {
       entryResolver.invalidate()
       scriptlessVueLayoutDecisionCache.clear()
+      entrySidecarResolutionCache.clear()
       templateEntryPathCache.clear()
       styleImportsCache.clear()
       resolveCacheVersion += 1
