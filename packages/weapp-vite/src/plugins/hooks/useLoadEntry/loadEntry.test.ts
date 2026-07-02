@@ -581,6 +581,134 @@ describe('createEntryLoader', () => {
     expect(mockFindVueEntry).not.toHaveBeenCalled()
   })
 
+  it('reuses cached vue json block config during direct script hmr', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const config = { navigationBarTitleText: 'Home' }
+    const source = [
+      '<json>{"navigationBarTitleText":"Home"}</json>',
+      '<script setup>const count = 1</script>',
+      '<template><view>{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source })
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: config,
+    }))
+  })
+
+  it('reuses empty vue config result during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = [
+      '<script setup>const count = 1</script>',
+      '<template><view>{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(undefined)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    mockExtractConfigFromVue.mockClear()
+    readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+  })
+
+  it('extracts vue json block config again when the json block changes during hmr', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const firstSource = '<json>{"navigationBarTitleText":"Home"}</json><script setup>const count = 1</script>'
+    const nextSource = '<json>{"navigationBarTitleText":"Next"}</json><script setup>const count = 2</script>'
+    const firstConfig = { navigationBarTitleText: 'Home' }
+    const nextConfig = { navigationBarTitleText: 'Next' }
+
+    readFileMock.mockResolvedValue(firstSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(firstConfig)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(nextSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(nextConfig)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: nextConfig,
+    }))
+  })
+
+  it('does not reuse entry-level vue config cache for json macros', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const firstSource = '<script setup>definePageJson({ navigationBarTitleText: "Home" })</script>'
+    const nextSource = '<script setup>definePageJson({ navigationBarTitleText: "Next" })</script>'
+    const firstConfig = { navigationBarTitleText: 'Home' }
+    const nextConfig = { navigationBarTitleText: 'Next' }
+
+    readFileMock.mockResolvedValue(firstSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(firstConfig)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(nextSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(nextConfig)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: nextConfig,
+    }))
+  })
+
   it('resolves json sidecar again for json sidecar hmr', async () => {
     const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

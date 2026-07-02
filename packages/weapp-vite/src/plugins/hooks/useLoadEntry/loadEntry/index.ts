@@ -8,6 +8,7 @@ import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
+import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -32,6 +33,9 @@ import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addPredictedWatchTargets } from './watch'
 
 const VUE_LIKE_PAGE_ENTRY_RE = /\.(?:vue|jsx|tsx)$/
+const VUE_JSON_BLOCK_RE = /<json\b[^>]*>[\s\S]*?<\/json>/gi
+const VUE_JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+const NO_VUE_CONFIG_SIGNATURE = 'no-vue-config'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -55,8 +59,37 @@ interface EntrySidecarResolution {
   vueEntryPath?: string
 }
 
+interface VueConfigCacheRecord {
+  signature: string
+  config?: Record<string, any>
+}
+
 function hasPageLayoutSourceHint(source: string) {
   return source.includes('definePageMeta') || source.includes('setPageLayout')
+}
+
+function hashText(value: string) {
+  return createHash('sha256')
+    .update(value)
+    .digest('hex')
+    .slice(0, 16)
+}
+
+function collectMatches(source: string, pattern: RegExp) {
+  return source.match(pattern) ?? []
+}
+
+function resolveCacheableVueConfigSignature(source: string) {
+  if (VUE_JSON_MACRO_HINT_RE.test(source)) {
+    return undefined
+  }
+
+  const jsonBlocks = collectMatches(source, VUE_JSON_BLOCK_RE)
+  if (jsonBlocks.length === 0) {
+    return NO_VUE_CONFIG_SIGNATURE
+  }
+
+  return hashText(jsonBlocks.join('\0'))
 }
 
 function cloneJsonValue<T>(value: T): T {
@@ -133,6 +166,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
   const entrySidecarResolutionCache = new Map<string, EntrySidecarResolution>()
   const entryJsonCache = new Map<string, any>()
+  const vueConfigCache = new Map<string, VueConfigCacheRecord>()
   const staticPageLayoutPlanCache = new Map<string, ResolvedPageLayoutPlan | null>()
   const templateEntryPathCache = new Map<string, string>()
   const styleImportsCache = new Map<string, string[]>()
@@ -283,9 +317,35 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         const vueConfigStartedAt = performance.now()
         const configFromVue = await (async () => {
           try {
-            return await extractConfigFromVue(vueEntryPath, {
-              readSource: readVueSource,
+            const source = await readVueSource()
+            const cacheSignature = source === undefined
+              ? undefined
+              : resolveCacheableVueConfigSignature(source)
+            const cachedVueConfig = isJsonStableHmr && cacheSignature
+              ? vueConfigCache.get(vueEntryPath)
+              : undefined
+            if (cachedVueConfig && cachedVueConfig.signature === cacheSignature) {
+              return cloneJsonValue(cachedVueConfig.config)
+            }
+            if (isJsonStableHmr && cacheSignature === NO_VUE_CONFIG_SIGNATURE) {
+              vueConfigCache.set(vueEntryPath, {
+                signature: cacheSignature,
+                config: undefined,
+              })
+              return undefined
+            }
+            const config = await extractConfigFromVue(vueEntryPath, {
+              ...(source === undefined
+                ? { readSource: readVueSource }
+                : { source }),
             })
+            if (cacheSignature) {
+              vueConfigCache.set(vueEntryPath, {
+                signature: cacheSignature,
+                config: cloneJsonValue(config),
+              })
+            }
+            return config
           }
           finally {
             recordEntryDuration('entryVueConfigMs', vueConfigStartedAt)
@@ -714,6 +774,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       scriptlessVueLayoutDecisionCache.clear()
       entrySidecarResolutionCache.clear()
       entryJsonCache.clear()
+      vueConfigCache.clear()
       staticPageLayoutPlanCache.clear()
       templateEntryPathCache.clear()
       styleImportsCache.clear()
