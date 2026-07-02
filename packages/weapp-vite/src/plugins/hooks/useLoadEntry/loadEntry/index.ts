@@ -59,6 +59,15 @@ function hasPageLayoutSourceHint(source: string) {
   return source.includes('definePageMeta') || source.includes('setPageLayout')
 }
 
+function cloneJsonValue<T>(value: T): T {
+  try {
+    return structuredClone(value)
+  }
+  catch {
+    return value
+  }
+}
+
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
@@ -123,6 +132,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const emittedScriptlessVueLayoutJs = new Set<string>()
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
   const entrySidecarResolutionCache = new Map<string, EntrySidecarResolution>()
+  const entryJsonCache = new Map<string, any>()
   const staticPageLayoutPlanCache = new Map<string, ResolvedPageLayoutPlan | null>()
   const templateEntryPathCache = new Map<string, string>()
   const styleImportsCache = new Map<string, string[]>()
@@ -208,9 +218,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const cachedJson = jsonPath && isJsonStableHmr
       ? jsonService.cache.get(jsonPath)
       : undefined
+    const cachedEntryJson = jsonPath && isJsonStableHmr && cachedJson === undefined
+      ? entryJsonCache.get(jsonPath)
+      : undefined
     const readJsonEntry = jsonPath
       ? cachedJson === undefined
-        ? jsonService.read(jsonPath)
+        ? cachedEntryJson === undefined
+          ? jsonService.read(jsonPath)
+          : Promise.resolve(cloneJsonValue(cachedEntryJson))
         : Promise.resolve(cachedJson)
       : undefined
     const jsonReadStartedAt = performance.now()
@@ -220,6 +235,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           readJsonEntry,
           addJsonWatchTargets,
         ])
+        if (json !== undefined) {
+          entryJsonCache.set(jsonPath, cloneJsonValue(json))
+        }
       }
       finally {
         recordEntryDuration('entryJsonReadMs', jsonReadStartedAt)
@@ -683,6 +701,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       entryResolver.invalidate()
       scriptlessVueLayoutDecisionCache.clear()
       entrySidecarResolutionCache.clear()
+      entryJsonCache.clear()
       staticPageLayoutPlanCache.clear()
       templateEntryPathCache.clear()
       styleImportsCache.clear()

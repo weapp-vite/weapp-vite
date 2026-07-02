@@ -493,6 +493,37 @@ describe('createEntryLoader', () => {
     }))
   })
 
+  it('reuses entry json cached by loadEntry when json service cache misses during direct script hmr', async () => {
+    const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const freshJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonService.read.mockResolvedValue(freshJson)
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.read).toHaveBeenCalledTimes(1)
+    jsonService.read.mockClear()
+    registerJsonAsset.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.read).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: freshJson,
+    }))
+  })
+
   it('reads entry json again for json sidecar hmr', async () => {
     const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
