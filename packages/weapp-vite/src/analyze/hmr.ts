@@ -17,6 +17,21 @@ export interface HmrProfileJsonSample {
   vueTransformMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
+  entryCodeReadMs?: number
+  entrySidecarResolveMs?: number
+  entryJsonReadMs?: number
+  entryVueConfigMs?: number
+  entryTemplateScanMs?: number
+  entryScriptSetupMs?: number
+  entryVueSignatureMs?: number
+  entryAutoImportMs?: number
+  entryPrepareMs?: number
+  entryEmitOutputMs?: number
+  entryStyleScanMs?: number
+  entryStyleReadMs?: number
+  entryResolveMs?: number
+  entryChunkEmitMs?: number
+  entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
   renderStartMs?: number
@@ -76,6 +91,21 @@ export interface HmrProfileAnalyzeResult {
     vueTransformMs: HmrProfileMetricSummary
     coreLoadMs: HmrProfileMetricSummary
     entryLoadMs: HmrProfileMetricSummary
+    entryCodeReadMs: HmrProfileMetricSummary
+    entrySidecarResolveMs: HmrProfileMetricSummary
+    entryJsonReadMs: HmrProfileMetricSummary
+    entryVueConfigMs: HmrProfileMetricSummary
+    entryTemplateScanMs: HmrProfileMetricSummary
+    entryScriptSetupMs: HmrProfileMetricSummary
+    entryVueSignatureMs: HmrProfileMetricSummary
+    entryAutoImportMs: HmrProfileMetricSummary
+    entryPrepareMs: HmrProfileMetricSummary
+    entryEmitOutputMs: HmrProfileMetricSummary
+    entryStyleScanMs: HmrProfileMetricSummary
+    entryStyleReadMs: HmrProfileMetricSummary
+    entryResolveMs: HmrProfileMetricSummary
+    entryChunkEmitMs: HmrProfileMetricSummary
+    entryLayoutMs: HmrProfileMetricSummary
     requestGlobalsMs: HmrProfileMetricSummary
     weapiResolveMs: HmrProfileMetricSummary
     renderStartMs: HmrProfileMetricSummary
@@ -193,6 +223,21 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const vueTransformValues: number[] = []
   const coreLoadValues: number[] = []
   const entryLoadValues: number[] = []
+  const entryCodeReadValues: number[] = []
+  const entrySidecarResolveValues: number[] = []
+  const entryJsonReadValues: number[] = []
+  const entryVueConfigValues: number[] = []
+  const entryTemplateScanValues: number[] = []
+  const entryScriptSetupValues: number[] = []
+  const entryVueSignatureValues: number[] = []
+  const entryAutoImportValues: number[] = []
+  const entryPrepareValues: number[] = []
+  const entryEmitOutputValues: number[] = []
+  const entryStyleScanValues: number[] = []
+  const entryStyleReadValues: number[] = []
+  const entryResolveValues: number[] = []
+  const entryChunkEmitValues: number[] = []
+  const entryLayoutValues: number[] = []
   const requestGlobalsValues: number[] = []
   const weapiResolveValues: number[] = []
   const renderStartValues: number[] = []
@@ -240,6 +285,51 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.entryLoadMs)) {
       entryLoadValues.push(sample.entryLoadMs)
+    }
+    if (isFiniteNumber(sample.entryCodeReadMs)) {
+      entryCodeReadValues.push(sample.entryCodeReadMs)
+    }
+    if (isFiniteNumber(sample.entrySidecarResolveMs)) {
+      entrySidecarResolveValues.push(sample.entrySidecarResolveMs)
+    }
+    if (isFiniteNumber(sample.entryJsonReadMs)) {
+      entryJsonReadValues.push(sample.entryJsonReadMs)
+    }
+    if (isFiniteNumber(sample.entryVueConfigMs)) {
+      entryVueConfigValues.push(sample.entryVueConfigMs)
+    }
+    if (isFiniteNumber(sample.entryTemplateScanMs)) {
+      entryTemplateScanValues.push(sample.entryTemplateScanMs)
+    }
+    if (isFiniteNumber(sample.entryScriptSetupMs)) {
+      entryScriptSetupValues.push(sample.entryScriptSetupMs)
+    }
+    if (isFiniteNumber(sample.entryVueSignatureMs)) {
+      entryVueSignatureValues.push(sample.entryVueSignatureMs)
+    }
+    if (isFiniteNumber(sample.entryAutoImportMs)) {
+      entryAutoImportValues.push(sample.entryAutoImportMs)
+    }
+    if (isFiniteNumber(sample.entryPrepareMs)) {
+      entryPrepareValues.push(sample.entryPrepareMs)
+    }
+    if (isFiniteNumber(sample.entryEmitOutputMs)) {
+      entryEmitOutputValues.push(sample.entryEmitOutputMs)
+    }
+    if (isFiniteNumber(sample.entryStyleScanMs)) {
+      entryStyleScanValues.push(sample.entryStyleScanMs)
+    }
+    if (isFiniteNumber(sample.entryStyleReadMs)) {
+      entryStyleReadValues.push(sample.entryStyleReadMs)
+    }
+    if (isFiniteNumber(sample.entryResolveMs)) {
+      entryResolveValues.push(sample.entryResolveMs)
+    }
+    if (isFiniteNumber(sample.entryChunkEmitMs)) {
+      entryChunkEmitValues.push(sample.entryChunkEmitMs)
+    }
+    if (isFiniteNumber(sample.entryLayoutMs)) {
+      entryLayoutValues.push(sample.entryLayoutMs)
     }
     if (isFiniteNumber(sample.requestGlobalsMs)) {
       requestGlobalsValues.push(sample.requestGlobalsMs)
@@ -322,6 +412,21 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       vueTransformMs: createMetricSummary(vueTransformValues),
       coreLoadMs: createMetricSummary(coreLoadValues),
       entryLoadMs: createMetricSummary(entryLoadValues),
+      entryCodeReadMs: createMetricSummary(entryCodeReadValues),
+      entrySidecarResolveMs: createMetricSummary(entrySidecarResolveValues),
+      entryJsonReadMs: createMetricSummary(entryJsonReadValues),
+      entryVueConfigMs: createMetricSummary(entryVueConfigValues),
+      entryTemplateScanMs: createMetricSummary(entryTemplateScanValues),
+      entryScriptSetupMs: createMetricSummary(entryScriptSetupValues),
+      entryVueSignatureMs: createMetricSummary(entryVueSignatureValues),
+      entryAutoImportMs: createMetricSummary(entryAutoImportValues),
+      entryPrepareMs: createMetricSummary(entryPrepareValues),
+      entryEmitOutputMs: createMetricSummary(entryEmitOutputValues),
+      entryStyleScanMs: createMetricSummary(entryStyleScanValues),
+      entryStyleReadMs: createMetricSummary(entryStyleReadValues),
+      entryResolveMs: createMetricSummary(entryResolveValues),
+      entryChunkEmitMs: createMetricSummary(entryChunkEmitValues),
+      entryLayoutMs: createMetricSummary(entryLayoutValues),
       requestGlobalsMs: createMetricSummary(requestGlobalsValues),
       weapiResolveMs: createMetricSummary(weapiResolveValues),
       renderStartMs: createMetricSummary(renderStartValues),

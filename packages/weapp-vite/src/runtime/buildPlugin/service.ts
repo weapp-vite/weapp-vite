@@ -71,6 +71,21 @@ interface HmrProfileJsonSample {
   vueTransformMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
+  entryCodeReadMs?: number
+  entrySidecarResolveMs?: number
+  entryJsonReadMs?: number
+  entryVueConfigMs?: number
+  entryTemplateScanMs?: number
+  entryScriptSetupMs?: number
+  entryVueSignatureMs?: number
+  entryAutoImportMs?: number
+  entryPrepareMs?: number
+  entryEmitOutputMs?: number
+  entryStyleScanMs?: number
+  entryStyleReadMs?: number
+  entryResolveMs?: number
+  entryChunkEmitMs?: number
+  entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
   bundlerMs?: number
@@ -106,6 +121,21 @@ interface HmrPhaseRegressionCandidate {
     | 'vue-transform'
     | 'core-load'
     | 'entry-load'
+    | 'entry-code-read'
+    | 'entry-sidecar-resolve'
+    | 'entry-json-read'
+    | 'entry-vue-config'
+    | 'entry-template-scan'
+    | 'entry-script-setup'
+    | 'entry-vue-signature'
+    | 'entry-auto-import'
+    | 'entry-prepare'
+    | 'entry-emit-output'
+    | 'entry-style-scan'
+    | 'entry-style-read'
+    | 'entry-resolve'
+    | 'entry-chunk-emit'
+    | 'entry-layout'
     | 'request-globals'
     | 'weapi-resolve'
     | 'render-start'
@@ -274,6 +304,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       vueTransformMs: profile.vueTransformMs,
       coreLoadMs: profile.coreLoadMs,
       entryLoadMs: profile.entryLoadMs,
+      entryCodeReadMs: profile.entryCodeReadMs,
+      entrySidecarResolveMs: profile.entrySidecarResolveMs,
+      entryJsonReadMs: profile.entryJsonReadMs,
+      entryVueConfigMs: profile.entryVueConfigMs,
+      entryTemplateScanMs: profile.entryTemplateScanMs,
+      entryScriptSetupMs: profile.entryScriptSetupMs,
+      entryVueSignatureMs: profile.entryVueSignatureMs,
+      entryAutoImportMs: profile.entryAutoImportMs,
+      entryPrepareMs: profile.entryPrepareMs,
+      entryEmitOutputMs: profile.entryEmitOutputMs,
+      entryStyleScanMs: profile.entryStyleScanMs,
+      entryStyleReadMs: profile.entryStyleReadMs,
+      entryResolveMs: profile.entryResolveMs,
+      entryChunkEmitMs: profile.entryChunkEmitMs,
+      entryLayoutMs: profile.entryLayoutMs,
       requestGlobalsMs: profile.requestGlobalsMs,
       weapiResolveMs: profile.weapiResolveMs,
       bundlerMs: profile.bundlerMs,
@@ -433,6 +478,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         typeof profile.generateModuleGraphMs === 'number' ? `module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms` : undefined,
         typeof profile.coreLoadMs === 'number' ? `core-load ${profile.coreLoadMs.toFixed(2)} ms` : undefined,
         typeof profile.entryLoadMs === 'number' ? `entry-load ${profile.entryLoadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryEmitOutputMs === 'number' ? `entry-emit-output ${profile.entryEmitOutputMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryTemplateScanMs === 'number' ? `entry-template-scan ${profile.entryTemplateScanMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryAutoImportMs === 'number' ? `entry-auto-import ${profile.entryAutoImportMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryScriptSetupMs === 'number' ? `entry-script-setup ${profile.entryScriptSetupMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryVueSignatureMs === 'number' ? `entry-vue-signature ${profile.entryVueSignatureMs.toFixed(2)} ms` : undefined,
+        typeof profile.entrySidecarResolveMs === 'number' ? `entry-sidecar-resolve ${profile.entrySidecarResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryJsonReadMs === 'number' ? `entry-json-read ${profile.entryJsonReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryVueConfigMs === 'number' ? `entry-vue-config ${profile.entryVueConfigMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryPrepareMs === 'number' ? `entry-prepare ${profile.entryPrepareMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryResolveMs === 'number' ? `entry-resolve ${profile.entryResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryStyleScanMs === 'number' ? `entry-style-scan ${profile.entryStyleScanMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryStyleReadMs === 'number' ? `entry-style-read ${profile.entryStyleReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryCodeReadMs === 'number' ? `entry-code-read ${profile.entryCodeReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkEmitMs === 'number' ? `entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryLayoutMs === 'number' ? `entry-layout ${profile.entryLayoutMs.toFixed(2)} ms` : undefined,
         typeof profile.requestGlobalsMs === 'number' ? `request-globals ${profile.requestGlobalsMs.toFixed(2)} ms` : undefined,
         typeof profile.weapiResolveMs === 'number' ? `weapi-resolve ${profile.weapiResolveMs.toFixed(2)} ms` : undefined,
         typeof profile.transformMs === 'number' ? `transform ${profile.transformMs.toFixed(2)} ms` : undefined,
@@ -465,6 +525,51 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.entryLoadMs !== undefined) {
       verboseSegments.push(`entry-load ${profile.entryLoadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryEmitOutputMs !== undefined) {
+      verboseSegments.push(`entry-emit-output ${profile.entryEmitOutputMs.toFixed(2)} ms`)
+    }
+    if (profile.entryTemplateScanMs !== undefined) {
+      verboseSegments.push(`entry-template-scan ${profile.entryTemplateScanMs.toFixed(2)} ms`)
+    }
+    if (profile.entryAutoImportMs !== undefined) {
+      verboseSegments.push(`entry-auto-import ${profile.entryAutoImportMs.toFixed(2)} ms`)
+    }
+    if (profile.entryScriptSetupMs !== undefined) {
+      verboseSegments.push(`entry-script-setup ${profile.entryScriptSetupMs.toFixed(2)} ms`)
+    }
+    if (profile.entryVueSignatureMs !== undefined) {
+      verboseSegments.push(`entry-vue-signature ${profile.entryVueSignatureMs.toFixed(2)} ms`)
+    }
+    if (profile.entrySidecarResolveMs !== undefined) {
+      verboseSegments.push(`entry-sidecar-resolve ${profile.entrySidecarResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.entryJsonReadMs !== undefined) {
+      verboseSegments.push(`entry-json-read ${profile.entryJsonReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryVueConfigMs !== undefined) {
+      verboseSegments.push(`entry-vue-config ${profile.entryVueConfigMs.toFixed(2)} ms`)
+    }
+    if (profile.entryPrepareMs !== undefined) {
+      verboseSegments.push(`entry-prepare ${profile.entryPrepareMs.toFixed(2)} ms`)
+    }
+    if (profile.entryResolveMs !== undefined) {
+      verboseSegments.push(`entry-resolve ${profile.entryResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.entryStyleScanMs !== undefined) {
+      verboseSegments.push(`entry-style-scan ${profile.entryStyleScanMs.toFixed(2)} ms`)
+    }
+    if (profile.entryStyleReadMs !== undefined) {
+      verboseSegments.push(`entry-style-read ${profile.entryStyleReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryCodeReadMs !== undefined) {
+      verboseSegments.push(`entry-code-read ${profile.entryCodeReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkEmitMs !== undefined) {
+      verboseSegments.push(`entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms`)
+    }
+    if (profile.entryLayoutMs !== undefined) {
+      verboseSegments.push(`entry-layout ${profile.entryLayoutMs.toFixed(2)} ms`)
     }
     if (profile.requestGlobalsMs !== undefined) {
       verboseSegments.push(`request-globals ${profile.requestGlobalsMs.toFixed(2)} ms`)
@@ -548,15 +653,30 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'vue-transform': 8,
       'core-load': 9,
       'entry-load': 10,
-      'request-globals': 11,
-      'weapi-resolve': 12,
-      'render-start': 13,
-      'generate': 14,
-      'generate-shared': 15,
-      'generate-rewrite': 16,
-      'module-graph': 17,
-      'watch->dirty': 18,
-      'build-core': 19,
+      'entry-emit-output': 11,
+      'entry-template-scan': 12,
+      'entry-auto-import': 13,
+      'entry-script-setup': 14,
+      'entry-vue-signature': 15,
+      'entry-sidecar-resolve': 16,
+      'entry-json-read': 17,
+      'entry-vue-config': 18,
+      'entry-prepare': 19,
+      'entry-resolve': 20,
+      'entry-style-scan': 21,
+      'entry-style-read': 22,
+      'entry-code-read': 23,
+      'entry-chunk-emit': 24,
+      'entry-layout': 25,
+      'request-globals': 26,
+      'weapi-resolve': 27,
+      'render-start': 28,
+      'generate': 29,
+      'generate-shared': 30,
+      'generate-rewrite': 31,
+      'module-graph': 32,
+      'watch->dirty': 33,
+      'build-core': 34,
     }
     const phases = [
       {
@@ -594,6 +714,66 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'entryLoadMs',
         label: 'entry-load',
+      },
+      {
+        key: 'entryEmitOutputMs',
+        label: 'entry-emit-output',
+      },
+      {
+        key: 'entryTemplateScanMs',
+        label: 'entry-template-scan',
+      },
+      {
+        key: 'entryAutoImportMs',
+        label: 'entry-auto-import',
+      },
+      {
+        key: 'entryScriptSetupMs',
+        label: 'entry-script-setup',
+      },
+      {
+        key: 'entryVueSignatureMs',
+        label: 'entry-vue-signature',
+      },
+      {
+        key: 'entrySidecarResolveMs',
+        label: 'entry-sidecar-resolve',
+      },
+      {
+        key: 'entryJsonReadMs',
+        label: 'entry-json-read',
+      },
+      {
+        key: 'entryVueConfigMs',
+        label: 'entry-vue-config',
+      },
+      {
+        key: 'entryPrepareMs',
+        label: 'entry-prepare',
+      },
+      {
+        key: 'entryResolveMs',
+        label: 'entry-resolve',
+      },
+      {
+        key: 'entryStyleScanMs',
+        label: 'entry-style-scan',
+      },
+      {
+        key: 'entryStyleReadMs',
+        label: 'entry-style-read',
+      },
+      {
+        key: 'entryCodeReadMs',
+        label: 'entry-code-read',
+      },
+      {
+        key: 'entryChunkEmitMs',
+        label: 'entry-chunk-emit',
+      },
+      {
+        key: 'entryLayoutMs',
+        label: 'entry-layout',
       },
       {
         key: 'requestGlobalsMs',

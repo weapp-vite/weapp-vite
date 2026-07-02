@@ -21,6 +21,21 @@ interface HmrProfileJsonSample {
   vueTransformMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
+  entryCodeReadMs?: number
+  entrySidecarResolveMs?: number
+  entryJsonReadMs?: number
+  entryVueConfigMs?: number
+  entryTemplateScanMs?: number
+  entryScriptSetupMs?: number
+  entryVueSignatureMs?: number
+  entryAutoImportMs?: number
+  entryPrepareMs?: number
+  entryEmitOutputMs?: number
+  entryStyleScanMs?: number
+  entryStyleReadMs?: number
+  entryResolveMs?: number
+  entryChunkEmitMs?: number
+  entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
   renderStartMs?: number
@@ -105,6 +120,66 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'entry-load',
       value: sample.entryLoadMs,
+    },
+    {
+      label: 'entry-emit-output',
+      value: sample.entryEmitOutputMs,
+    },
+    {
+      label: 'entry-template-scan',
+      value: sample.entryTemplateScanMs,
+    },
+    {
+      label: 'entry-auto-import',
+      value: sample.entryAutoImportMs,
+    },
+    {
+      label: 'entry-script-setup',
+      value: sample.entryScriptSetupMs,
+    },
+    {
+      label: 'entry-vue-signature',
+      value: sample.entryVueSignatureMs,
+    },
+    {
+      label: 'entry-sidecar-resolve',
+      value: sample.entrySidecarResolveMs,
+    },
+    {
+      label: 'entry-json-read',
+      value: sample.entryJsonReadMs,
+    },
+    {
+      label: 'entry-vue-config',
+      value: sample.entryVueConfigMs,
+    },
+    {
+      label: 'entry-prepare',
+      value: sample.entryPrepareMs,
+    },
+    {
+      label: 'entry-resolve',
+      value: sample.entryResolveMs,
+    },
+    {
+      label: 'entry-style-scan',
+      value: sample.entryStyleScanMs,
+    },
+    {
+      label: 'entry-style-read',
+      value: sample.entryStyleReadMs,
+    },
+    {
+      label: 'entry-code-read',
+      value: sample.entryCodeReadMs,
+    },
+    {
+      label: 'entry-chunk-emit',
+      value: sample.entryChunkEmitMs,
+    },
+    {
+      label: 'entry-layout',
+      value: sample.entryLayoutMs,
     },
     {
       label: 'request-globals',

@@ -1,15 +1,18 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
+import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
 import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
 import fs from 'node:fs/promises'
+import { performance } from 'node:perf_hooks'
 import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
@@ -162,19 +165,46 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     emittedWxmlCodeCache,
   } = options
   let json = initialJson
-  const entryCodeTask = prefetch(readFileCached(id, { checkMtime: configService.isDev }))
-  const styleImportsTask = prefetch(collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs))
+  function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
+    recordHmrProfileDuration(runtimeState?.build?.hmr?.profile, key, performance.now() - startedAt)
+  }
+
+  const entryCodeTask = prefetch((async () => {
+    const startedAt = performance.now()
+    try {
+      return await readFileCached(id, { checkMtime: configService.isDev })
+    }
+    finally {
+      recordEntryDuration('entryCodeReadMs', startedAt)
+    }
+  })())
+  const styleImportsTask = prefetch((async () => {
+    const startedAt = performance.now()
+    try {
+      return await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+    }
+    finally {
+      recordEntryDuration('entryStyleScanMs', startedAt)
+    }
+  })())
   const styleImportSourcesTask = prefetch((async () => {
     const styleImportsResult = await styleImportsTask
     if (!styleImportsResult.ok) {
       throw styleImportsResult.error
     }
-    const styleSources = await Promise.all(styleImportsResult.value.map(async (styleImport) => {
-      return {
-        styleImport,
-        source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
-      }
-    }))
+    const styleReadStartedAt = performance.now()
+    let styleSources: Array<{ styleImport: string, source: string }>
+    try {
+      styleSources = await Promise.all(styleImportsResult.value.map(async (styleImport) => {
+        return {
+          styleImport,
+          source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
+        }
+      }))
+    }
+    finally {
+      recordEntryDuration('entryStyleReadMs', styleReadStartedAt)
+    }
     return {
       styleImports: styleImportsResult.value,
       styleSources,
@@ -278,15 +308,23 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   const resolvedIds = shouldSkipEntries
     ? []
     : normalizedEntries.length
-      ? await resolveEntriesWithCache(
-          pluginCtx,
-          normalizedEntries,
-          entryResolveRoot,
-          {
-            fallbackRoots: [configService.cwd],
-            resolveMappedEntry,
-          },
-        )
+      ? await (async () => {
+          const startedAt = performance.now()
+          try {
+            return await resolveEntriesWithCache(
+              pluginCtx,
+              normalizedEntries,
+              entryResolveRoot,
+              {
+                fallbackRoots: [configService.cwd],
+                resolveMappedEntry,
+              },
+            )
+          }
+          finally {
+            recordEntryDuration('entryResolveMs', startedAt)
+          }
+        })()
       : []
 
   debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
@@ -350,7 +388,13 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   }
 
   if (pendingResolvedIds.length) {
-    await Promise.all(emitEntriesChunks.call(pluginCtx, pendingResolvedIds))
+    const startedAt = performance.now()
+    try {
+      await Promise.all(emitEntriesChunks.call(pluginCtx, pendingResolvedIds))
+    }
+    finally {
+      recordEntryDuration('entryChunkEmitMs', startedAt)
+    }
   }
 
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
@@ -374,51 +418,57 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     && templatePath
     && !NON_VUE_PAGE_RE.test(id)
   ) {
-    replaceLayoutDependencies(id, [])
-    const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
-    if (layoutPlan) {
-      const layoutDependencies = new Set<string>()
-      for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
-        addNormalizedWatchFile(pluginCtx, file)
-        layoutDependencies.add(normalizeFsResolvedId(file))
-      }
-      replaceLayoutDependencies(id, layoutDependencies)
+    const layoutStartedAt = performance.now()
+    try {
+      replaceLayoutDependencies(id, [])
+      const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
+      if (layoutPlan) {
+        const layoutDependencies = new Set<string>()
+        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+          addNormalizedWatchFile(pluginCtx, file)
+          layoutDependencies.add(normalizeFsResolvedId(file))
+        }
+        replaceLayoutDependencies(id, layoutDependencies)
 
-      const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
-      const transformed = applyPageLayoutPlanToNativePage(
-        {
-          script: code,
-          template: nativeTemplate,
-          config: JSON.stringify(json),
-        },
-        id,
-        layoutPlan,
-        {
-          platform: configService.platform,
-        },
-      )
+        const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
+        const transformed = applyPageLayoutPlanToNativePage(
+          {
+            script: code,
+            template: nativeTemplate,
+            config: JSON.stringify(json),
+          },
+          id,
+          layoutPlan,
+          {
+            platform: configService.platform,
+          },
+        )
 
-      code = transformed.script ?? code
+        code = transformed.script ?? code
 
-      if (transformed.config) {
-        json = JSON.parse(transformed.config)
-      }
+        if (transformed.config) {
+          json = JSON.parse(transformed.config)
+        }
 
-      if (transformed.template && wxmlService) {
-        const token = wxmlService.analyze(transformed.template)
-        wxmlService.tokenMap.set(templatePath, token)
-        void wxmlService.setDeps(templatePath, wxmlService.collectDepsFromToken(templatePath, token.deps))
-        wxmlService.setWxmlComponentsMap(templatePath, token.components)
-      }
+        if (transformed.template && wxmlService) {
+          const token = wxmlService.analyze(transformed.template)
+          wxmlService.tokenMap.set(templatePath, token)
+          void wxmlService.setDeps(templatePath, wxmlService.collectDepsFromToken(templatePath, token.deps))
+          wxmlService.setWxmlComponentsMap(templatePath, token.components)
+        }
 
-      for (const layout of layoutPlan.layouts) {
-        if (layout.kind === 'native') {
-          await emitNativeLayoutAssets(layout.file)
+        for (const layout of layoutPlan.layouts) {
+          if (layout.kind === 'native') {
+            await emitNativeLayoutAssets(layout.file)
+          }
         }
       }
-    }
 
-    code = injectNativePageLayoutRuntime(code, id, layoutPlan) ?? code
+      code = injectNativePageLayoutRuntime(code, id, layoutPlan) ?? code
+    }
+    finally {
+      recordEntryDuration('entryLayoutMs', layoutStartedAt)
+    }
   }
 
   if (!isPluginBuild || type !== 'app') {

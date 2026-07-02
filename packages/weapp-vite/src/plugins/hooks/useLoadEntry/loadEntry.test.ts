@@ -239,8 +239,13 @@ interface CreateLoaderOptions {
 }
 
 function createLoader(options?: CreateLoaderOptions) {
+  const jsonCache = new Map<string, any>()
   const jsonService = {
     read: vi.fn(),
+    cache: {
+      get: vi.fn((filepath: string) => jsonCache.get(filepath)),
+      set: vi.fn((filepath: string, value: any) => jsonCache.set(filepath, value)),
+    },
   }
   const configService: any = {
     relativeCwd: vi.fn((id: string) => id),
@@ -292,6 +297,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const compilerCtx = {
     autoImportService: options?.autoImportService,
     jsonService,
+    jsonCache,
     configService,
     scanService,
     runtimeState,
@@ -320,6 +326,7 @@ function createLoader(options?: CreateLoaderOptions) {
   return {
     loader,
     jsonService,
+    jsonCache,
     configService,
     entriesMap,
     loadedEntrySet,
@@ -457,6 +464,62 @@ describe('createEntryLoader', () => {
         dark: {},
       },
     })
+  })
+
+  it('reuses cached entry json during direct script hmr', async () => {
+    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const cachedJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonCache.set(jsonPath, cachedJson)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.cache.get).toHaveBeenCalledWith(jsonPath)
+    expect(jsonService.read).not.toHaveBeenCalled()
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(jsonPath)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: cachedJson,
+    }))
+  })
+
+  it('reads entry json again for json sidecar hmr', async () => {
+    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const cachedJson = { usingComponents: { old: '../../components/old/index' } }
+    const freshJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonCache.set(jsonPath, cachedJson)
+    jsonService.read.mockResolvedValue(freshJson)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['json-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.cache.get).not.toHaveBeenCalled()
+    expect(jsonService.read).toHaveBeenCalledWith(jsonPath)
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith(jsonPath)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: freshJson,
+    }))
   })
 
   it('resolves app side sitemap and theme json concurrently', async () => {

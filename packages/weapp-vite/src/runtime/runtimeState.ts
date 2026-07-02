@@ -153,6 +153,21 @@ export interface RuntimeState {
         vueTransformMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
+        entryCodeReadMs?: number
+        entrySidecarResolveMs?: number
+        entryJsonReadMs?: number
+        entryVueConfigMs?: number
+        entryTemplateScanMs?: number
+        entryScriptSetupMs?: number
+        entryVueSignatureMs?: number
+        entryAutoImportMs?: number
+        entryPrepareMs?: number
+        entryEmitOutputMs?: number
+        entryStyleScanMs?: number
+        entryStyleReadMs?: number
+        entryResolveMs?: number
+        entryChunkEmitMs?: number
+        entryLayoutMs?: number
         requestGlobalsMs?: number
         weapiResolveMs?: number
         bundlerMs?: number
@@ -190,6 +205,21 @@ export interface RuntimeState {
         vueTransformMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
+        entryCodeReadMs?: number
+        entrySidecarResolveMs?: number
+        entryJsonReadMs?: number
+        entryVueConfigMs?: number
+        entryTemplateScanMs?: number
+        entryScriptSetupMs?: number
+        entryVueSignatureMs?: number
+        entryAutoImportMs?: number
+        entryPrepareMs?: number
+        entryEmitOutputMs?: number
+        entryStyleScanMs?: number
+        entryStyleReadMs?: number
+        entryResolveMs?: number
+        entryChunkEmitMs?: number
+        entryLayoutMs?: number
         requestGlobalsMs?: number
         weapiResolveMs?: number
         bundlerMs?: number

@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
+import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
 import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
 import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
@@ -13,6 +14,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { resolveVueSfcHmrSignatures } from '../../../../utils/file/vueSfcSignature'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -51,6 +53,27 @@ interface EntryLoaderOptions {
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
+}
+
+function isEntryJsonStableHmr(ctx: CompilerContext) {
+  const profile = ctx.runtimeState?.build?.hmr?.profile
+  if (!ctx.configService.isDev || profile?.event === undefined) {
+    return false
+  }
+  const dirtyReasonSummary = profile.dirtyReasonSummary
+  if (!dirtyReasonSummary?.length) {
+    return false
+  }
+  return dirtyReasonSummary.every(reason =>
+    reason.startsWith('entry-direct:')
+    || reason.startsWith('importer-graph:')
+    || reason.startsWith('shared-chunk-source:')
+    || reason.startsWith('css-importer:')
+    || reason.startsWith('css-importer-fallback:')
+    || reason.startsWith('entry-style-only:')
+    || reason.startsWith('style-sidecar:')
+    || reason.startsWith('entry-local-asset:'),
+  )
 }
 
 export function createEntryLoader(options: EntryLoaderOptions) {
@@ -130,26 +153,59 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     addNormalizedWatchFile(this, id)
     const baseName = removeExtensionDeep(id)
 
-    const [jsonEntry, vueEntryPath] = await Promise.all([
-      findJsonEntry(id),
-      id.endsWith('.vue')
-        ? Promise.resolve(id)
-        : findVueEntry(baseName),
-    ])
+    function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
+      recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, key, performance.now() - startedAt)
+    }
+
+    const sidecarResolveStartedAt = performance.now()
+    let jsonEntry!: Awaited<ReturnType<typeof findJsonEntry>>
+    let vueEntryPath: string | undefined
+    try {
+      ;[jsonEntry, vueEntryPath] = await Promise.all([
+        findJsonEntry(id),
+        id.endsWith('.vue')
+          ? Promise.resolve(id)
+          : findVueEntry(baseName),
+      ])
+    }
+    finally {
+      recordEntryDuration('entrySidecarResolveMs', sidecarResolveStartedAt)
+    }
     let jsonPath = jsonEntry.path
     let hasJsonEntry = Boolean(jsonPath)
 
     let json: any = {}
-    const addJsonWatchTargets = addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
-    const readJsonEntry = jsonPath ? jsonService.read(jsonPath) : undefined
+    const isJsonStableHmr = type !== 'app' && isEntryJsonStableHmr(ctx)
+    const addJsonWatchTargets = isJsonStableHmr
+      ? Promise.resolve()
+      : addPredictedWatchTargets(this, jsonEntry.predictions, existsCache, pathExistsTtlMs, jsonEntry.path)
+    const cachedJson = jsonPath && isJsonStableHmr
+      ? jsonService.cache.get(jsonPath)
+      : undefined
+    const readJsonEntry = jsonPath
+      ? cachedJson === undefined
+        ? jsonService.read(jsonPath)
+        : Promise.resolve(cachedJson)
+      : undefined
+    const jsonReadStartedAt = performance.now()
     if (jsonPath) {
-      ;[json] = await Promise.all([
-        readJsonEntry,
-        addJsonWatchTargets,
-      ])
+      try {
+        ;[json] = await Promise.all([
+          readJsonEntry,
+          addJsonWatchTargets,
+        ])
+      }
+      finally {
+        recordEntryDuration('entryJsonReadMs', jsonReadStartedAt)
+      }
     }
     else {
-      await addJsonWatchTargets
+      try {
+        await addJsonWatchTargets
+      }
+      finally {
+        recordEntryDuration('entryJsonReadMs', jsonReadStartedAt)
+      }
       jsonPath = changeFileExtension(id, '.json')
     }
 
@@ -180,9 +236,17 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     if (!jsonEntry.path) {
       if (vueEntryPath) {
-        const configFromVue = await extractConfigFromVue(vueEntryPath, {
-          readSource: readVueSource,
-        })
+        const vueConfigStartedAt = performance.now()
+        const configFromVue = await (async () => {
+          try {
+            return await extractConfigFromVue(vueEntryPath, {
+              readSource: readVueSource,
+            })
+          }
+          finally {
+            recordEntryDuration('entryVueConfigMs', vueConfigStartedAt)
+          }
+        })()
         if (configFromVue && typeof configFromVue === 'object') {
           json = configFromVue
           hasJsonEntry = true
@@ -257,7 +321,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (configService.isDev && vueEntryPath) {
         const vueSource = await readVueSource()
         if (vueSource) {
+          const signatureStartedAt = performance.now()
           const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
+          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
           appVueNonJsonSignature = signatures.nonJsonSignature
           if (signatures.nonJsonSignature) {
             ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedVueEntryPath!, signatures.nonJsonSignature)
@@ -321,7 +387,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       )
     }
     else {
-      templatePath = await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
+      const templateScanStartedAt = performance.now()
+      try {
+        templatePath = await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
+      }
+      finally {
+        recordEntryDuration('entryTemplateScanMs', templateScanStartedAt)
+      }
 
       if (libEntry && libConfig) {
         const componentJson = libConfig.componentJson ?? 'auto'
@@ -357,46 +429,66 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         const vueSourceForEntry = type === 'page' || (configService.isDev && hasJsonEntry)
           ? await readVueSource()
           : undefined
-        await applyScriptSetupUsingComponents({
-          pluginCtx: this,
-          vueEntryPath,
-          source: vueSourceForEntry,
-          templatePath,
-          json,
-          configService,
-          wxmlService,
-          reExportResolutionCache,
-          externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,
-        })
+        const scriptSetupStartedAt = performance.now()
+        try {
+          await applyScriptSetupUsingComponents({
+            pluginCtx: this,
+            vueEntryPath,
+            source: vueSourceForEntry,
+            templatePath,
+            json,
+            configService,
+            wxmlService,
+            reExportResolutionCache,
+            externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,
+          })
+        }
+        finally {
+          recordEntryDuration('entryScriptSetupMs', scriptSetupStartedAt)
+        }
 
         if (type === 'page') {
           const vueSource = await readVueSource()
           if (vueSource) {
-            const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
-            replaceLayoutDependencies(normalizedId, [])
-            if (layoutPlan) {
-              await registerPageLayoutComponentEntries(layoutPlan, {
-                trackLayoutDependencies: vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout'),
-              })
+            const layoutStartedAt = performance.now()
+            try {
+              const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+              replaceLayoutDependencies(normalizedId, [])
+              if (layoutPlan) {
+                await registerPageLayoutComponentEntries(layoutPlan, {
+                  trackLayoutDependencies: vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout'),
+                })
+              }
+            }
+            finally {
+              recordEntryDuration('entryLayoutMs', layoutStartedAt)
             }
           }
         }
       }
       else if (type === 'page' && templatePath && !VUE_LIKE_PAGE_ENTRY_RE.test(id)) {
-        replaceLayoutDependencies(normalizedId, [])
-        const source = await fs.readFile(id, 'utf-8')
-        const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
-        if (layoutPlan) {
-          await registerPageLayoutComponentEntries(layoutPlan, {
-            trackLayoutDependencies: true,
-          })
+        const layoutStartedAt = performance.now()
+        try {
+          replaceLayoutDependencies(normalizedId, [])
+          const source = await fs.readFile(id, 'utf-8')
+          const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
+          if (layoutPlan) {
+            await registerPageLayoutComponentEntries(layoutPlan, {
+              trackLayoutDependencies: true,
+            })
+          }
+        }
+        finally {
+          recordEntryDuration('entryLayoutMs', layoutStartedAt)
         }
       }
 
       if (configService.isDev && hasJsonEntry && vueEntryPath) {
         const vueSource = await readVueSource()
         if (vueSource) {
+          const signatureStartedAt = performance.now()
           const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
+          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
           if (signatures.nonJsonSignature) {
             ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, signatures.nonJsonSignature)
           }
@@ -409,41 +501,48 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
       }
 
-      if (ctx.autoImportService?.hasPendingRegistrations?.() !== false) {
-        await ctx.autoImportService?.awaitPendingRegistrations?.()
-      }
-      const injectedAutoImportEntries = applyAutoImports(baseName, json) ?? []
-      const componentEntries = analyzeCommonJson(json)
-      const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
-      const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined
-      const pendingAutoImportEntries = Array.from(new Set([
-        ...Array.from(pendingAutoImportMap?.get(baseName) ?? []),
-        ...Array.from(vueBaseName ? pendingAutoImportMap?.get(vueBaseName) ?? [] : []),
-      ]))
-      if (pendingAutoImportEntries.length) {
-        pendingAutoImportMap?.delete(baseName)
-        if (vueBaseName) {
-          pendingAutoImportMap?.delete(vueBaseName)
+      const autoImportStartedAt = performance.now()
+      try {
+        if (ctx.autoImportService?.hasPendingRegistrations?.() !== false) {
+          await ctx.autoImportService?.awaitPendingRegistrations?.()
+        }
+        const injectedAutoImportEntries = applyAutoImports(baseName, json) ?? []
+        const componentEntries = analyzeCommonJson(json)
+        const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
+        const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined
+        const pendingAutoImportEntries = Array.from(new Set([
+          ...Array.from(pendingAutoImportMap?.get(baseName) ?? []),
+          ...Array.from(vueBaseName ? pendingAutoImportMap?.get(vueBaseName) ?? [] : []),
+        ]))
+        if (pendingAutoImportEntries.length) {
+          pendingAutoImportMap?.delete(baseName)
+          if (vueBaseName) {
+            pendingAutoImportMap?.delete(vueBaseName)
+          }
+        }
+        const mergedComponentEntries = Array.from(new Set([
+          ...componentEntries,
+          ...pendingAutoImportEntries,
+        ]))
+        entries.push(...mergedComponentEntries)
+        for (const componentEntry of mergedComponentEntries) {
+          const normalizedComponentEntry = normalizeEntry(componentEntry, jsonPath)
+          explicitEntryTypes.set(normalizedComponentEntry, 'component')
+          const isPendingAutoImportEntry = pendingAutoImportEntries.includes(componentEntry)
+          if (isPendingAutoImportEntry || injectedAutoImportEntries.includes(componentEntry)) {
+            forceEmitEntrySet.add(normalizedComponentEntry)
+          }
+          if (isPendingAutoImportEntry) {
+            forceReloadEntrySet.add(normalizedComponentEntry)
+          }
         }
       }
-      const mergedComponentEntries = Array.from(new Set([
-        ...componentEntries,
-        ...pendingAutoImportEntries,
-      ]))
-      entries.push(...mergedComponentEntries)
-      for (const componentEntry of mergedComponentEntries) {
-        const normalizedComponentEntry = normalizeEntry(componentEntry, jsonPath)
-        explicitEntryTypes.set(normalizedComponentEntry, 'component')
-        const isPendingAutoImportEntry = pendingAutoImportEntries.includes(componentEntry)
-        if (isPendingAutoImportEntry || injectedAutoImportEntries.includes(componentEntry)) {
-          forceEmitEntrySet.add(normalizedComponentEntry)
-        }
-        if (isPendingAutoImportEntry) {
-          forceReloadEntrySet.add(normalizedComponentEntry)
-        }
+      finally {
+        recordEntryDuration('entryAutoImportMs', autoImportStartedAt)
       }
     }
 
+    const prepareStartedAt = performance.now()
     const normalizedEntries = shouldSkipAppEntries
       ? []
       : prepareNormalizedEntries({
@@ -461,6 +560,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         })
 
     markComponentEntries(entriesMap, nativeLayoutScriptEntries)
+    recordEntryDuration('entryPrepareMs', prepareStartedAt)
 
     const entryResolveRoot = (
       isPluginBuild
@@ -470,40 +570,48 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? configService.absolutePluginRoot
       : configService.absoluteSrcRoot
 
-    const result = await emitEntryOutput({
-      pluginCtx: this,
-      id,
-      type,
-      json,
-      jsonPath,
-      templatePath,
-      isPluginBuild,
-      normalizedEntries,
-      pluginResolvedRecords,
-      pluginJsonPathForRegistration,
-      pluginJsonForRegistration,
-      resolveEntriesWithCache: entryResolver.resolveEntriesWithCache,
-      resolveMappedEntry: entry => ctx.runtimeState.build.hmr.externalComponentEntryMap.get(entry),
-      entryResolveRoot,
-      configService,
-      runtimeState: ctx.runtimeState,
-      wxmlService,
-      resolvedEntryMap,
-      loadedEntrySet,
-      dirtyEntrySet,
-      forceEmitEntrySet,
-      forceReloadEntrySet,
-      replaceLayoutDependencies,
-      emitEntriesChunks,
-      registerJsonAsset,
-      existsCache,
-      pathExistsTtlMs,
-      debug,
-      relativeCwdId,
-      getTime,
-      emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
-      skipEntries: shouldSkipAppEntries,
-    })
+    const emitOutputStartedAt = performance.now()
+    const result = await (async () => {
+      try {
+        return await emitEntryOutput({
+          pluginCtx: this,
+          id,
+          type,
+          json,
+          jsonPath,
+          templatePath,
+          isPluginBuild,
+          normalizedEntries,
+          pluginResolvedRecords,
+          pluginJsonPathForRegistration,
+          pluginJsonForRegistration,
+          resolveEntriesWithCache: entryResolver.resolveEntriesWithCache,
+          resolveMappedEntry: entry => ctx.runtimeState.build.hmr.externalComponentEntryMap.get(entry),
+          entryResolveRoot,
+          configService,
+          runtimeState: ctx.runtimeState,
+          wxmlService,
+          resolvedEntryMap,
+          loadedEntrySet,
+          dirtyEntrySet,
+          forceEmitEntrySet,
+          forceReloadEntrySet,
+          replaceLayoutDependencies,
+          emitEntriesChunks,
+          registerJsonAsset,
+          existsCache,
+          pathExistsTtlMs,
+          debug,
+          relativeCwdId,
+          getTime,
+          emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
+          skipEntries: shouldSkipAppEntries,
+        })
+      }
+      finally {
+        recordEntryDuration('entryEmitOutputMs', emitOutputStartedAt)
+      }
+    })()
 
     if (type === 'app' && !shouldSkipAppEntries && appResult) {
       ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = autoRoutesSignature

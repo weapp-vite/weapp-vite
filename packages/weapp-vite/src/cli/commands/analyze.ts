@@ -259,6 +259,21 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const pluginResolveSummary = formatMetricSummary('plugin-resolve', result.metrics.pluginResolveMs)
   const coreLoadSummary = formatMetricSummary('core-load', result.metrics.coreLoadMs)
   const entryLoadSummary = formatMetricSummary('entry-load', result.metrics.entryLoadMs)
+  const entryEmitOutputSummary = formatMetricSummary('entry-emit-output', result.metrics.entryEmitOutputMs)
+  const entryTemplateScanSummary = formatMetricSummary('entry-template-scan', result.metrics.entryTemplateScanMs)
+  const entryAutoImportSummary = formatMetricSummary('entry-auto-import', result.metrics.entryAutoImportMs)
+  const entryScriptSetupSummary = formatMetricSummary('entry-script-setup', result.metrics.entryScriptSetupMs)
+  const entryVueSignatureSummary = formatMetricSummary('entry-vue-signature', result.metrics.entryVueSignatureMs)
+  const entrySidecarResolveSummary = formatMetricSummary('entry-sidecar-resolve', result.metrics.entrySidecarResolveMs)
+  const entryJsonReadSummary = formatMetricSummary('entry-json-read', result.metrics.entryJsonReadMs)
+  const entryVueConfigSummary = formatMetricSummary('entry-vue-config', result.metrics.entryVueConfigMs)
+  const entryPrepareSummary = formatMetricSummary('entry-prepare', result.metrics.entryPrepareMs)
+  const entryResolveSummary = formatMetricSummary('entry-resolve', result.metrics.entryResolveMs)
+  const entryStyleScanSummary = formatMetricSummary('entry-style-scan', result.metrics.entryStyleScanMs)
+  const entryStyleReadSummary = formatMetricSummary('entry-style-read', result.metrics.entryStyleReadMs)
+  const entryCodeReadSummary = formatMetricSummary('entry-code-read', result.metrics.entryCodeReadMs)
+  const entryChunkEmitSummary = formatMetricSummary('entry-chunk-emit', result.metrics.entryChunkEmitMs)
+  const entryLayoutSummary = formatMetricSummary('entry-layout', result.metrics.entryLayoutMs)
   const requestGlobalsSummary = formatMetricSummary('request-globals', result.metrics.requestGlobalsMs)
   const weapiResolveSummary = formatMetricSummary('weapi-resolve', result.metrics.weapiResolveMs)
   const watchSummary = formatMetricSummary('watch->dirty', result.metrics.watchToDirtyMs)
@@ -269,7 +284,7 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const resolveSummary = formatOperationSummary('resolve calls', result.operations.resolveCount)
   const skippedLoadedSummary = formatOperationSummary('loaded skips', result.operations.skippedLoadedCount)
 
-  for (const summary of [totalSummary, buildStartSummary, pluginResolveSummary, coreLoadSummary, entryLoadSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
+  for (const summary of [totalSummary, buildStartSummary, pluginResolveSummary, coreLoadSummary, entryLoadSummary, entryEmitOutputSummary, entryTemplateScanSummary, entryAutoImportSummary, entryScriptSetupSummary, entryVueSignatureSummary, entrySidecarResolveSummary, entryJsonReadSummary, entryVueConfigSummary, entryPrepareSummary, entryResolveSummary, entryStyleScanSummary, entryStyleReadSummary, entryCodeReadSummary, entryChunkEmitSummary, entryLayoutSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
     if (summary) {
       logger.info(`- ${summary}`)
     }
