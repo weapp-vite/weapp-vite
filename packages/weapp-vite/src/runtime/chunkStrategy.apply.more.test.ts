@@ -1,6 +1,7 @@
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
+import { shouldAnalyzeSharedChunkBundle } from './chunkStrategy/apply/shared'
 
 function createChunk(fileName: string, code: string, imports: string[] = []): OutputChunk {
   return {
@@ -59,6 +60,21 @@ function createPluginContext(emitted: Array<{ fileName: string, source: string }
 }
 
 describe('chunkStrategy apply helpers more branches', () => {
+  it('skips shared chunk analysis for main-package-only hmr bundles', () => {
+    expect(shouldAnalyzeSharedChunkBundle([
+      ['pages/home/index.js', createChunk('pages/home/index.js', 'Page({})')],
+      ['common.js', createChunk('common.js', 'export const value = 1')],
+    ], ['subpackages/lab'])).toBe(false)
+
+    expect(shouldAnalyzeSharedChunkBundle([
+      [`${SHARED_CHUNK_VIRTUAL_PREFIX}/common.js`, createChunk(`${SHARED_CHUNK_VIRTUAL_PREFIX}/common.js`, 'export const value = 1')],
+    ], ['subpackages/lab'])).toBe(true)
+
+    expect(shouldAnalyzeSharedChunkBundle([
+      ['subpackages/lab/pages/detail/index.js', createChunk('subpackages/lab/pages/detail/index.js', 'Page({})')],
+    ], ['subpackages/lab'])).toBe(true)
+  })
+
   it('throws when runtime localization is called without plugin context', () => {
     expect(() => applyRuntimeChunkLocalization.call(undefined as any, {} as OutputBundle, {
       subPackageRoots: ['pages/order'],

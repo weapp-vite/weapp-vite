@@ -39,6 +39,10 @@ export function applySharedChunkStrategy(
 
   const subPackageRoots = Array.from(options.subPackageRoots).filter(Boolean)
   const entries = Object.entries(bundle)
+  if (!shouldAnalyzeSharedChunkBundle(entries, subPackageRoots)) {
+    return
+  }
+
   const reservedFileNames = new Set(entries.map(([fileName]) => fileName))
   const localizedDuplicateFileMap = new Map<string, string>()
   const runtimeContext: SharedChunkRuntimeContext = {
@@ -255,6 +259,25 @@ export function applySharedChunkStrategy(
 
 function isSharedVirtualChunk(fileName: string, output: OutputBundle[string]) {
   return output?.type === 'chunk' && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)
+}
+
+export function shouldAnalyzeSharedChunkBundle(
+  entries: Array<[string, OutputBundle[string]]>,
+  subPackageRoots: string[],
+) {
+  for (const [fileName, output] of entries) {
+    if (isSharedVirtualChunk(fileName, output)) {
+      return true
+    }
+    if (
+      subPackageRoots.length
+      && output?.type === 'chunk'
+      && resolveSubPackagePrefix(fileName, subPackageRoots)
+    ) {
+      return true
+    }
+  }
+  return false
 }
 
 export type {
