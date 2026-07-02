@@ -64,6 +64,7 @@ import TButton from './TButton'
         resolve: vi.fn(),
       } as any,
       vueEntryPath: '/project/src/components/demo.vue',
+      source: '<template><TButton /></template><script setup>import TButton from "./TButton"</script>',
       templatePath: '',
       json: {},
       configService: {
@@ -82,6 +83,13 @@ import TButton from './TButton'
       new Set(['TButton']),
       {
         astEngine: 'oxc',
+      },
+    )
+    expect(createReadAndParseSfcOptionsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      {
+        source: '<template><TButton /></template><script setup>import TButton from "./TButton"</script>',
       },
     )
   })

@@ -195,8 +195,8 @@ vi.mock('wevu/compiler', async (importOriginal) => {
     getSfcCheckMtime: vi.fn(() => false),
     invalidateFileCache: compilerInvalidateFileCacheMock,
     pathExists: existsMock,
-    readAndParseSfc: vi.fn(async (filename: string) => {
-      const source = await readFileMock(filename, 'utf-8')
+    readAndParseSfc: vi.fn(async (filename: string, options?: { source?: string }) => {
+      const source = options?.source ?? await readFileMock(filename, 'utf-8')
       const parsed = parse(source, { filename })
       return {
         descriptor: parsed.descriptor,
@@ -1944,6 +1944,7 @@ import FooBar from '../../components/foo-bar/index.vue'
         FooBar: '/components/foo-bar/index',
       },
     })
+    expect(readFileMock.mock.calls.filter(([target]) => target === '/project/src/pages/auto/index.vue')).toHaveLength(1)
   })
 
   it('tracks external <script setup> component output mapping for compile flow', async () => {

@@ -353,9 +353,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
+        const vueSourceForEntry = type === 'page' || (configService.isDev && hasJsonEntry)
+          ? await readVueSource()
+          : undefined
         await applyScriptSetupUsingComponents({
           pluginCtx: this,
           vueEntryPath,
+          source: vueSourceForEntry,
           templatePath,
           json,
           configService,

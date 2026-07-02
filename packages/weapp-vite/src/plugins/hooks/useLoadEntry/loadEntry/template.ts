@@ -56,6 +56,7 @@ export async function scanTemplateEntry(
 export async function applyScriptSetupUsingComponents(options: {
   pluginCtx: PluginContext
   vueEntryPath: string
+  source?: string
   templatePath: string
   json: any
   configService: CompilerContext['configService']
@@ -66,6 +67,7 @@ export async function applyScriptSetupUsingComponents(options: {
   const {
     pluginCtx,
     vueEntryPath,
+    source,
     templatePath,
     json,
     configService,
@@ -76,7 +78,11 @@ export async function applyScriptSetupUsingComponents(options: {
 
   try {
     const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
-      ...createReadAndParseSfcOptions(pluginCtx, configService),
+      ...createReadAndParseSfcOptions(
+        pluginCtx,
+        configService,
+        source === undefined ? undefined : { source },
+      ),
     })
     if (!errors?.length && descriptor?.template && !templatePath) {
       const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
