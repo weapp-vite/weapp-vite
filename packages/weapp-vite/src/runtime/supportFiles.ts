@@ -119,27 +119,27 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
   const tags = new Map<string, string>()
   const platform = resolveMiniPlatformWithDefault(ctx.configService?.platform)
 
-  for (const filePath of files) {
+  await Promise.all(files.map(async (filePath) => {
     const source = await readFile(filePath, 'utf8').catch(() => undefined)
     if (!source) {
-      continue
+      return
     }
 
     if (filePath.endsWith('.vue')) {
       const { descriptor, errors } = parse(source, { filename: filePath })
       if (errors.length > 0 || !descriptor.template?.content) {
-        continue
+        return
       }
       for (const tag of collectVueTemplateAutoImportTags(descriptor.template.content, filePath)) {
         tags.set(tag, removeExtensionDeep(filePath))
       }
-      continue
+      return
     }
 
     for (const tag of Object.keys(scanWxml(source, { platform }).components)) {
       tags.set(tag, removeExtensionDeep(filePath))
     }
-  }
+  }))
 
   return Array.from(tags.entries(), ([tag, importerBaseName]) => ({ tag, importerBaseName }))
 }
