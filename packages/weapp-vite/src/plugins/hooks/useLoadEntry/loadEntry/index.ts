@@ -502,12 +502,24 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           if (vueSource) {
             const layoutStartedAt = performance.now()
             try {
-              const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+              const hasLayoutHint = hasPageLayoutSourceHint(vueSource)
+              const cachedLayoutPlan = isStableHmr && !hasLayoutHint
+                ? staticPageLayoutPlanCache.get(normalizedId)
+                : undefined
+              const layoutPlan = cachedLayoutPlan === undefined
+                ? await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+                : cachedLayoutPlan ?? undefined
               resolvedPageLayoutPlan = layoutPlan ?? null
               replaceLayoutDependencies(normalizedId, [])
+              if (hasLayoutHint) {
+                staticPageLayoutPlanCache.delete(normalizedId)
+              }
+              else if (cachedLayoutPlan === undefined) {
+                staticPageLayoutPlanCache.set(normalizedId, layoutPlan ?? null)
+              }
               if (layoutPlan) {
                 await registerPageLayoutComponentEntries(layoutPlan, {
-                  trackLayoutDependencies: vueSource.includes('definePageMeta') || vueSource.includes('setPageLayout'),
+                  trackLayoutDependencies: hasLayoutHint,
                 })
               }
             }
