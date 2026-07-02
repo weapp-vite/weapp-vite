@@ -471,6 +471,7 @@ describe('createEntryLoader', () => {
     const pluginCtx = createPluginContext()
     const jsonPath = '/project/src/pages/home/index.json'
     const cachedJson = { usingComponents: { card: '../../components/card/index' } }
+    const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone')
 
     mockFindJsonEntry.mockResolvedValue({
       path: jsonPath,
@@ -486,11 +487,13 @@ describe('createEntryLoader', () => {
 
     expect(jsonService.cache.get).toHaveBeenCalledWith(jsonPath)
     expect(jsonService.read).not.toHaveBeenCalled()
+    expect(structuredCloneSpy).not.toHaveBeenCalled()
     expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(jsonPath)
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath,
       json: cachedJson,
     }))
+    structuredCloneSpy.mockRestore()
   })
 
   it('reuses entry json cached by loadEntry when json service cache misses during direct script hmr', async () => {

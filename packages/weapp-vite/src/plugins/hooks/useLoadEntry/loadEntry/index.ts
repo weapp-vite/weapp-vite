@@ -269,7 +269,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           readJsonEntry,
           addJsonWatchTargets,
         ])
-        if (json !== undefined) {
+        if (json !== undefined && cachedJson === undefined && cachedEntryJson === undefined) {
           entryJsonCache.set(jsonPath, cloneJsonValue(json))
         }
       }
