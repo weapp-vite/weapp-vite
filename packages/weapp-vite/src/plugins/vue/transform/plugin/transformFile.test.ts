@@ -418,6 +418,85 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 
+  it('refreshes cached style blocks for unchanged vue files when style sidecars are dirty', async () => {
+    const source = '<template><view /></template><style src="./external.css"></style>'
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const previousStyleBlocks = [{
+      attrs: { src: './external.css' },
+      content: '.external{color:red}',
+      lang: 'css',
+      src: './external.css',
+    }]
+    const nextStyleBlocks = [{
+      attrs: { src: './external.css' },
+      content: '.external{--hmr-marker: refreshed;}',
+      lang: 'css',
+      src: './external.css',
+    }]
+    const cachedResult = {
+      template: '<view />',
+      script: 'Component({ cached: true })',
+      style: '.external{color:red}',
+      meta: {
+        styleBlocks: previousStyleBlocks,
+      },
+    }
+    const readAndParseSfc = vi.fn(async () => ({
+      descriptor: {
+        styles: nextStyleBlocks,
+      },
+    }))
+    const options = createBaseOptions({
+      code: source,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                eventId: 'hmr-2',
+                dirtyReasonSummary: ['style-sidecar:1'],
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: cachedResult,
+          source,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock(source, '/project/src/components/card.vue'),
+        }],
+      ]),
+      styleBlocksCache: new Map([
+        ['/project/src/components/card.vue', previousStyleBlocks],
+      ]),
+      readAndParseSfc,
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ cached: true })'),
+    })
+
+    expect(readAndParseSfc).toHaveBeenCalledTimes(1)
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(options.compilationCache.get('/project/src/components/card.vue')).toMatchObject({
+      source,
+      refreshToken: 0,
+    })
+    expect(options.compilationCache.get('/project/src/components/card.vue').result.style).toContain('--hmr-marker: refreshed')
+    expect(options.styleBlocksCache.get('/project/src/components/card.vue')).toBe(nextStyleBlocks)
+    expect(options.styleRefreshTokens.get('/project/src/components/card.vue')).toBe('hmr-2')
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
+
   it('recompiles json-only dirty updates even when style-independent signature is unchanged', async () => {
     const previousSource = [
       '<script setup>',

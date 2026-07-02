@@ -149,25 +149,61 @@ export async function transformVueLikeFile(options: {
     ) {
       cachedCompilation.refreshToken = 0
       const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
-      const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
-        result: cachedResult,
-        filename,
-        styleBlocks: (cachedResult.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
-        isPage: cachedCompilation.isPage,
-        isApp,
-        isDev: configService.isDev,
-        sourceMap,
-        hmrStyleToken: styleRefreshTokens.get(filename),
-      }))
-
-      if (dirtyEntryId) {
-        dirtyVueEntryIds?.delete(dirtyEntryId)
+      let cachedStyleBlocks = (cachedResult.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename)
+      let canReturnCachedCompilation = true
+      if (dirtyEntryId && canAttemptStyleOnlyReuse && filename.endsWith('.vue')) {
+        const refreshedStyleBlocks = await measureStage('loadStyleOnlySfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({
+          filename,
+          source: transformedSource,
+          styleBlocksCache,
+          force: true,
+          readAndParseSfc,
+          createReadAndParseSfcOptions,
+          pluginCtx,
+          configService,
+        }))
+        const didRefreshStyle = refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks)
+        if (!didRefreshStyle) {
+          cachedCompilation.styleIndependentSignature = undefined
+          canReturnCachedCompilation = false
+        }
+        else {
+          cachedStyleBlocks = refreshedStyleBlocks
+          cachedCompilation.result = cachedResult
+          const currentStyleSignature = createSfcStyleBlocksSignature(cachedStyleBlocks)
+          const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
+          if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
+            styleRefreshTokens.set(filename, hmrEventId)
+          }
+          else {
+            styleRefreshTokens.delete(filename)
+          }
+        }
       }
-      reportTiming(filename, cachedCompilation.isPage)
+      if (!canReturnCachedCompilation) {
+        cachedCompilation.refreshToken = 1
+      }
+      else {
+        const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
+          result: cachedResult,
+          filename,
+          styleBlocks: cachedStyleBlocks,
+          isPage: cachedCompilation.isPage,
+          isApp,
+          isDev: configService.isDev,
+          sourceMap,
+          hmrStyleToken: styleRefreshTokens.get(filename),
+        }))
 
-      return {
-        code: returnedCode.code,
-        map: returnedCode.map,
+        if (dirtyEntryId) {
+          dirtyVueEntryIds?.delete(dirtyEntryId)
+        }
+        reportTiming(filename, cachedCompilation.isPage)
+
+        return {
+          code: returnedCode.code,
+          map: returnedCode.map,
+        }
       }
     }
     const currentStyleIndependentSignature = (configService.isDev && dirtyEntryId && canAttemptStyleOnlyReuse && filename.endsWith('.vue'))
@@ -192,6 +228,7 @@ export async function transformVueLikeFile(options: {
         filename,
         source: transformedSource,
         styleBlocksCache,
+        force: true,
         readAndParseSfc,
         createReadAndParseSfcOptions,
         pluginCtx,

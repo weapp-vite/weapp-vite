@@ -19,6 +19,7 @@ export async function loadStyleBlocksForStyleOnlyRefresh(options: {
   filename: string
   source: string
   styleBlocksCache: Map<string, SFCStyleBlock[]>
+  force?: boolean
   readAndParseSfc: typeof import('../../../utils/vueSfc').readAndParseSfc
   createReadAndParseSfcOptions: typeof import('../../../utils/vueSfc').createReadAndParseSfcOptions
   pluginCtx: any
@@ -28,11 +29,15 @@ export async function loadStyleBlocksForStyleOnlyRefresh(options: {
     filename,
     source,
     styleBlocksCache,
+    force,
     readAndParseSfc,
     createReadAndParseSfcOptions,
     pluginCtx,
     configService,
   } = options
+  if (force) {
+    styleBlocksCache.delete(filename)
+  }
   await preloadTransformSfcStyleBlocks({
     filename,
     source,
