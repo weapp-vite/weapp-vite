@@ -14,6 +14,7 @@ const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*requir
 const REQUIRE_CALL_RE = /\brequire\((`[^`]+`|'[^']+'|"[^"]+")\)/g
 const WEVU_SRC_CHUNK_RE = /(?:^|\/)wevu-src\.js$/
 const WEVU_VENDOR_RUNTIME_CHUNK_RE = /(?:^|\/)weapp-vendors\/wevu-[^/]+\.js$/
+const WEVU_RUNTIME_IMPORT_HINT_RE = /\bfrom\s*["']wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?["']|\brequire\(\s*(?:`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")/
 const WEVU_EXPORT_ALIASES = [
   ['defineComponent', '__wevuDefineComponent'],
   ['createWevuComponent', '__wevuCreateWevuComponent'],
@@ -875,19 +876,7 @@ function rewriteRootWevuImport(
 }
 
 function mayContainWevuRuntimeImport(code: string) {
-  return code.includes('wevu/internal-runtime')
-    || code.includes('wevu/internal-reactivity')
-    || code.includes('wevu/internal-template')
-    || code.includes('wevu/router')
-    || code.includes('wevu/store')
-    || code.includes('wevu/api')
-    || code.includes('wevu/fetch')
-    || code.includes('wevu/web-apis')
-    || code.includes('from \'wevu\'')
-    || code.includes('from "wevu"')
-    || code.includes('require(\'wevu')
-    || code.includes('require("wevu')
-    || code.includes('require(`wevu')
+  return WEVU_RUNTIME_IMPORT_HINT_RE.test(code)
 }
 
 export function rewriteWevuInternalRuntimeImports(

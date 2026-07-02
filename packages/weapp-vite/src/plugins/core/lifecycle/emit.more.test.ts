@@ -21,7 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
-import { collectActiveHmrImportedChunkIds, createSubPackageMatcher } from './emit/generate'
+import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -209,6 +209,36 @@ describe('core lifecycle emit hook extra branches', () => {
       'common.js',
       'weapp-vendors/runtime.js',
     ]))
+  })
+
+  it('warms bundle script analysis only when a follow-up rewrite consumes it', () => {
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: false,
+      hasPlatformApiRewrite: false,
+    })).toBe(false)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: true,
+      hasPlatformApiRewrite: false,
+    })).toBe(true)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: false,
+      hasPlatformApiRewrite: true,
+    })).toBe(true)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: true,
+      hasNpmBuildCandidateDependencies: true,
+      hasLocalRootNpmRewriteTargets: true,
+      hasPlatformApiRewrite: true,
+    })).toBe(false)
   })
 
   it('creates renderStart runtime and stores watch files snapshot', async () => {

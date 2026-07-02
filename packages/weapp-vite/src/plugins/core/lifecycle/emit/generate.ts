@@ -279,6 +279,19 @@ function resolveDevHmrRewriteBundle(
   return rewriteBundle
 }
 
+export function shouldWarmupBundleScriptAnalysis(options: {
+  rewritesBundleNpmImports: boolean
+  hasNpmBuildCandidateDependencies: boolean
+  hasLocalRootNpmRewriteTargets: boolean
+  hasPlatformApiRewrite: boolean
+}) {
+  return !options.rewritesBundleNpmImports && (
+    options.hasNpmBuildCandidateDependencies
+    || options.hasLocalRootNpmRewriteTargets
+    || options.hasPlatformApiRewrite
+  )
+}
+
 function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePluginState) {
   if (
     !state.ctx.configService.isDev
@@ -645,17 +658,21 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         ? Object.keys(npmBuildCandidateDependencies).some(() => true)
         : false
       const hasLocalRootNpmRewriteTargets = localSubPackageMetas.length > 0
-      const needsScriptAnalysisWarmup = !shouldRewriteBundleNpmImports(configService.platform)
-        || Boolean(configService.weappViteConfig?.injectWeapiGlobal?.replaceWx)
-        || hasNpmBuildCandidateDependencies
-        || hasLocalRootNpmRewriteTargets
+      const rewritesBundleNpmImports = shouldRewriteBundleNpmImports(configService.platform)
+      const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
+      const needsScriptAnalysisWarmup = shouldWarmupBundleScriptAnalysis({
+        rewritesBundleNpmImports,
+        hasNpmBuildCandidateDependencies,
+        hasLocalRootNpmRewriteTargets,
+        hasPlatformApiRewrite: Boolean(injectWeapiGlobalName),
+      })
       if (needsScriptAnalysisWarmup) {
         warmupBundleScriptAnalysis(rewriteBundle, {
           astEngine,
           cache: scriptAnalysisCache,
         })
       }
-      if (shouldRewriteBundleNpmImports(configService.platform)) {
+      if (rewritesBundleNpmImports) {
         rewriteBundleNpmImportsByPlatform(
           configService.platform,
           rewriteBundle,
@@ -680,7 +697,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         )
       }
 
-      const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
       if (injectWeapiGlobalName) {
         rewriteBundlePlatformApi(rewriteBundle, injectWeapiGlobalName, {
           analysisCache: scriptAnalysisCache,

@@ -293,7 +293,7 @@ export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
 
     const chunk = output as OutputChunk
     if (
-      !chunk.code.includes('Function(')
+      !(chunk.code.includes('Function(') && chunk.code.includes('return this'))
       && !chunk.code.includes('typeof self<')
     ) {
       continue

@@ -185,10 +185,12 @@ describe('bundle script analysis warmup', () => {
 
   it('rewrites dynamic global resolution only for matching chunks', () => {
     const plain = createChunk('pages/plain.js', `const value = globalThis`)
+    const setupFunction = createChunk('pages/setup.js', `function runSetupFunction(setup) { return setup() }`)
     const functionGlobal = createChunk('pages/function.js', `const root = Function("return this")()`)
     const browserTernary = createChunk('pages/browser.js', `const root = typeof self<"u"?self:typeof window<"u"?window:globalThis`)
     const bundle: OutputBundle = {
       [plain.fileName]: plain,
+      [setupFunction.fileName]: setupFunction,
       [functionGlobal.fileName]: functionGlobal,
       [browserTernary.fileName]: browserTernary,
     }
@@ -196,6 +198,7 @@ describe('bundle script analysis warmup', () => {
     rewriteBundleDynamicGlobalResolution(bundle)
 
     expect(plain.code).toBe(`const value = globalThis`)
+    expect(setupFunction.code).toBe(`function runSetupFunction(setup) { return setup() }`)
     expect(functionGlobal.code).toBe(`const root = globalThis`)
     expect(browserTernary.code).toBe(`const root = globalThis`)
   })
