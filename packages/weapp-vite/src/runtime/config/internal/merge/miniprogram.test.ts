@@ -193,7 +193,7 @@ describe('runtime config merge miniprogram', () => {
       '/project/src/**',
       '/plugin-root/**',
     ])
-    expect(result.build?.watch?.buildDelay).toBe(60)
+    expect(result.build?.watch?.buildDelay).toBe(10)
     expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect((result.build as any).rolldownOptions.tsconfig).toBeUndefined()
