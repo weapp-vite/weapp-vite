@@ -385,6 +385,13 @@ export interface BundleChunkSnapshot {
   wevuChunkFileNames: Set<string>
 }
 
+function isBundleChunkSnapshot(value: OutputBundle | BundleChunkSnapshot): value is BundleChunkSnapshot {
+  const snapshot = value as BundleChunkSnapshot
+  return Array.isArray(snapshot.chunks)
+    && Array.isArray(snapshot.vendorChunks)
+    && snapshot.chunkFileNames instanceof Set
+}
+
 export function createBundleChunkSnapshot(bundle: OutputBundle): BundleChunkSnapshot {
   const allOutputs: Array<OutputAsset | OutputChunk> = []
   const chunks: OutputChunk[] = []
@@ -513,7 +520,8 @@ export function removeImplicitPagePreloads(
       continue
     }
 
-    const ranges = findImplicitRequireRemovalRanges(chunk, targetSet)
+    const targets = targetSet
+    const ranges = findImplicitRequireRemovalRanges(chunk, targets)
     if (!ranges.length) {
       continue
     }
@@ -525,10 +533,10 @@ export function removeImplicitPagePreloads(
     chunk.code = ms.toString()
 
     if (Array.isArray(chunk.imports) && chunk.imports.length) {
-      chunk.imports = chunk.imports.filter(name => !targetSet.has(name))
+      chunk.imports = chunk.imports.filter(name => !targets.has(name))
     }
     if (implicitlyLoaded && implicitlyLoaded.length) {
-      (chunk as any).implicitlyLoadedBefore = implicitlyLoaded.filter(name => !targetSet.has(name))
+      (chunk as any).implicitlyLoadedBefore = implicitlyLoaded.filter(name => !targets.has(name))
     }
   }
 }
@@ -622,7 +630,7 @@ function resolveWevuInternalChunk(
     return undefined
   }
 
-  const snapshot = 'vendorChunks' in bundleOrSnapshot
+  const snapshot: BundleChunkSnapshot = isBundleChunkSnapshot(bundleOrSnapshot)
     ? bundleOrSnapshot
     : createBundleChunkSnapshot(bundleOrSnapshot)
   return snapshot.vendorChunks.find((chunk): chunk is OutputChunk => {

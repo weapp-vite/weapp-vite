@@ -161,7 +161,16 @@ async function syncManagedTsconfigBootstrapFiles(projectRoot) {
     const file = path.join(managedDir, filename)
     const existing = await fs.readFile(file, 'utf8').catch(() => undefined)
     if (existing == null) {
-      await fs.writeFile(file, content, 'utf8')
+      try {
+        await fs.writeFile(file, content, 'utf8')
+      }
+      catch (error) {
+        if (error?.code !== 'ENOENT') {
+          throw error
+        }
+        await fs.mkdir(managedDir, { recursive: true })
+        await fs.writeFile(file, content, 'utf8')
+      }
     }
   }))
 }

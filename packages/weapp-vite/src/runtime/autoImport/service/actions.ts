@@ -1,3 +1,4 @@
+import type { MutableCompilerContext } from '../../../context'
 import type { ComponentMetadata } from '../metadata'
 import type { LocalAutoImportMatch } from '../types'
 import type { RegistryHelpers } from './registry'
@@ -7,7 +8,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 
 interface AutoImportActionsOptions {
   registry: Map<string, LocalAutoImportMatch>
-  autoImportState: { version: number, matcher?: (input: string) => boolean, matcherKey: string }
+  autoImportState: MutableCompilerContext['runtimeState']['autoImport']
   resolvedResolverComponents: Map<string, string>
   componentMetadataMap: Map<string, ComponentMetadata>
   resolverComponentNames: Set<string>

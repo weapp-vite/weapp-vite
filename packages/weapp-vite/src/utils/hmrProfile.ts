@@ -45,6 +45,15 @@ export type HmrProfileDurationKey
     | 'snapshotResolveMs'
     | 'snapshotBuildMs'
 
+export type HmrProfileOperationKey
+  = | 'chunkEmitCount'
+    | 'loadCount'
+    | 'resolveCount'
+    | 'skippedLoadedCount'
+    | 'dirtyCount'
+    | 'pendingCount'
+    | 'emittedCount'
+
 interface ResolveHmrProfileJsonPathOptions {
   cwd: string
   option?: boolean | string
@@ -118,8 +127,8 @@ export function recordHmrProfileDuration(
  * @description 为 HMR profile 累加操作次数。
  */
 export function recordHmrProfileOperation(
-  profile: Record<string, number | undefined> | undefined,
-  key: string,
+  profile: Partial<Record<HmrProfileOperationKey, number | undefined>> | undefined,
+  key: HmrProfileOperationKey,
   count = 1,
 ) {
   if (!profile || !Number.isFinite(count) || count <= 0) {

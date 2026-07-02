@@ -73,8 +73,9 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
    * 重编译都会触发，提前销毁会导致后续文件变更无法感知）。
    */
   function invalidateAutoRoutesVirtualModule() {
-    const virtualModule = devServer?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
-    if (!virtualModule || !devServer) {
+    const server = devServer
+    const virtualModule = server?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
+    if (!virtualModule || !server) {
       return
     }
 
@@ -84,7 +85,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         return
       }
       seen.add(module)
-      devServer.moduleGraph.invalidateModule(module)
+      server.moduleGraph.invalidateModule(module)
       for (const importer of module.importers) {
         invalidateModuleWithImporters(importer)
       }

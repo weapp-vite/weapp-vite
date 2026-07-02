@@ -1187,6 +1187,46 @@ exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequ
     }
   })
 
+  it('falls back to JS analysis when optional native AST binding is missing', async () => {
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', join(tmpdir(), 'missing-weapp-vite-ast-native.cjs'))
+      vi.resetModules()
+      const nativeModule = await import('./index')
+
+      expect(nativeModule.mayContainPlatformApiAccess('wx.request()', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.mayContainStaticRequireLiteral('require("pkg")', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; onLoad(() => {})', {
+        astEngine: 'oxc',
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'pageLoad',
+        },
+      })).toEqual(new Set(['pageLoad']))
+      expect(nativeModule.analyzeScripts([
+        {
+          code: 'wx.request(); require("pkg"); import { onLoad } from "wevu"; onLoad(() => {})',
+          featureFlags: {
+            moduleId: 'wevu',
+            hookToFeature: {
+              onLoad: 'pageLoad',
+            },
+          },
+        },
+      ], { engine: 'oxc' })).toEqual([
+        {
+          featureFlags: new Set(['pageLoad']),
+          hasPlatformApiAccess: true,
+          hasStaticRequireLiteral: true,
+        },
+      ])
+    }
+    finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
   it('ignores nested function body calls in onPageScroll inspection across engines', () => {
     const source = `import { onPageScroll } from 'wevu'
 

@@ -165,6 +165,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     if (!ctx.configService?.weappViteConfig?.npm?.enable) {
       return
     }
+    const configService = ctx.configService
 
     debug?.('buildNpm start')
 
@@ -177,13 +178,13 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
 
     const packNpmRelationList = getPackNpmRelationList(ctx)
     const [mainRelation, ...subRelations] = packNpmRelationList
-    const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
+    const packageJsonPath = path.resolve(configService.cwd, mainRelation.packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
       const pkgJson = ((await fs.readJson(packageJsonPath)) ?? {}) as PackageJson
-      const npmDistDirName = resolveNpmDistDirName(ctx.configService)
-      const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
-      const cachedSourceOutDir = resolveNpmSourceCacheOutDir(ctx.configService.cwd, npmDistDirName)
-      const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)
+      const npmDistDirName = resolveNpmDistDirName(configService)
+      const outDir = path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
+      const cachedSourceOutDir = resolveNpmSourceCacheOutDir(configService.cwd, npmDistDirName)
+      const localSubPackageOutRoot = configService.outDir || path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir)
       const allDependencies = await resolveBuildCandidateDependencies(pkgJson)
       const mainDependencies = resolveTargetDependencies(allDependencies, resolveMainBuildDependencyPatterns(ctx))
       const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
@@ -200,7 +201,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         : Promise.resolve()
 
       const mainBuildPromise = buildTargetDependencies({
-        cacheKey: ctx.configService.pluginOnly ? '__plugin__' : undefined,
+        cacheKey: configService.pluginOnly ? '__plugin__' : undefined,
         dependencies: mainDependencies,
         npmDistDir: outDir,
         options,
@@ -213,12 +214,12 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
 
       if (mainDependencies.length === 0) {
         await Promise.all(subRelations.map((relation) => {
-          return fs.remove(path.resolve(ctx.configService!.cwd, relation.miniprogramNpmDistDir, npmDistDirName))
+          return fs.remove(path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName))
         }))
       }
       else {
         await Promise.all(subRelations.map(async (relation) => {
-          const targetDir = path.resolve(ctx.configService!.cwd, relation.miniprogramNpmDistDir, npmDistDirName)
+          const targetDir = path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName)
           await fs.remove(targetDir)
           await fs.copy(outDir, targetDir, {
             overwrite: true,
@@ -234,7 +235,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
             ? await resolvePackageDependencyClosure(
                 resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
-                ctx.configService.cwd,
+                configService.cwd,
                 getPackageInfoCached,
               )
             : []
