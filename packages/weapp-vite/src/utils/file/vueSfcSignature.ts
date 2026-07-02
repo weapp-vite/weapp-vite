@@ -11,6 +11,13 @@ interface VueSfcSignaturePayload {
   hasTemplate: boolean
 }
 
+export interface VueSfcHmrSignatures {
+  nonJsonSignature?: string
+  scriptSignature?: string
+  styleIndependentSignature?: string
+  hasTemplate?: boolean
+}
+
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
@@ -162,4 +169,18 @@ export function resolveVueSfcStyleIndependentSignature(source: string, filename:
 
 export function resolveVueSfcHasTemplate(source: string, filename: string) {
   return buildVueSfcSignaturePayload(source, filename)?.hasTemplate
+}
+
+export function resolveVueSfcHmrSignatures(source: string, filename: string): VueSfcHmrSignatures {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  if (!payload) {
+    return {}
+  }
+
+  return {
+    nonJsonSignature: hashPayload(payload.nonJson),
+    scriptSignature: hashPayload(payload.script),
+    styleIndependentSignature: hashPayload(payload.styleIndependent),
+    hasTemplate: payload.hasTemplate,
+  }
 }

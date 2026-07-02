@@ -1,6 +1,6 @@
 import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHmrSignatures } from '../../../utils/file/vueSfcSignature'
 import { isAppVueFile } from '../../vue/transform/appShell'
 
 export interface VueEntryUpdateInspector {
@@ -19,66 +19,22 @@ export function createVueEntryUpdateInspector(
 ): VueEntryUpdateInspector {
   const readFile = options.readFile ?? fs.readFile
   let sourcePromise: Promise<string | undefined> | undefined
-  let hasTemplate: boolean | undefined
-  let hasTemplateResolved = false
-  let nonJsonSignature: string | undefined
-  let nonJsonSignatureResolved = false
-  let scriptSignature: string | undefined
-  let scriptSignatureResolved = false
-  let styleIndependentSignature: string | undefined
-  let styleIndependentSignatureResolved = false
+  let signatures: ReturnType<typeof resolveVueSfcHmrSignatures> | undefined
 
   async function loadSource() {
     sourcePromise ??= readFile(normalizedId, 'utf-8').catch(() => undefined)
     return await sourcePromise
   }
 
-  async function resolveNonJsonSignature() {
+  async function resolveSignatures() {
     const source = await loadSource()
     if (source === undefined) {
       return undefined
     }
-    if (!nonJsonSignatureResolved) {
-      nonJsonSignature = resolveVueSfcNonJsonSignature(source, normalizedId)
-      nonJsonSignatureResolved = true
+    if (!signatures) {
+      signatures = resolveVueSfcHmrSignatures(source, normalizedId)
     }
-    return nonJsonSignature
-  }
-
-  async function resolveScriptSignature() {
-    const source = await loadSource()
-    if (source === undefined) {
-      return undefined
-    }
-    if (!scriptSignatureResolved) {
-      scriptSignature = resolveVueSfcScriptSignature(source, normalizedId)
-      scriptSignatureResolved = true
-    }
-    return scriptSignature
-  }
-
-  async function resolveStyleIndependentSignature() {
-    const source = await loadSource()
-    if (source === undefined) {
-      return undefined
-    }
-    if (!styleIndependentSignatureResolved) {
-      styleIndependentSignature = resolveVueSfcStyleIndependentSignature(source, normalizedId)
-      styleIndependentSignatureResolved = true
-    }
-    return styleIndependentSignature
-  }
-
-  async function resolveHasTemplate() {
-    const source = await loadSource()
-    if (source === undefined) {
-      return undefined
-    }
-    if (!hasTemplateResolved) {
-      hasTemplate = resolveVueSfcHasTemplate(source, normalizedId)
-      hasTemplateResolved = true
-    }
-    return hasTemplate
+    return signatures
   }
 
   return {
@@ -92,7 +48,7 @@ export function createVueEntryUpdateInspector(
         return false
       }
 
-      const current = await resolveHasTemplate()
+      const current = (await resolveSignatures())?.hasTemplate
       return current !== undefined && current !== previous
     },
 
@@ -102,7 +58,7 @@ export function createVueEntryUpdateInspector(
         return false
       }
 
-      return await resolveNonJsonSignature() === previous
+      return (await resolveSignatures())?.nonJsonSignature === previous
     },
 
     async isLocalAssetOnlyUpdate() {
@@ -111,7 +67,7 @@ export function createVueEntryUpdateInspector(
         return false
       }
 
-      return await resolveScriptSignature() === previous
+      return (await resolveSignatures())?.scriptSignature === previous
     },
 
     async isStyleOnlyUpdate() {
@@ -120,7 +76,7 @@ export function createVueEntryUpdateInspector(
         return false
       }
 
-      return await resolveStyleIndependentSignature() === previous
+      return (await resolveSignatures())?.styleIndependentSignature === previous
     },
   }
 }

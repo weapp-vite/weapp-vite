@@ -12,7 +12,7 @@ import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHmrSignatures } from '../../../../utils/file/vueSfcSignature'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -255,17 +255,16 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (configService.isDev && vueEntryPath) {
         const vueSource = await fs.readFile(vueEntryPath, 'utf-8').catch(() => undefined)
         if (vueSource) {
-          appVueNonJsonSignature = resolveVueSfcNonJsonSignature(vueSource, vueEntryPath)
-          if (appVueNonJsonSignature) {
-            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizeFsResolvedId(vueEntryPath), appVueNonJsonSignature)
+          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
+          appVueNonJsonSignature = signatures.nonJsonSignature
+          if (signatures.nonJsonSignature) {
+            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedVueEntryPath!, signatures.nonJsonSignature)
           }
-          const scriptSignature = resolveVueSfcScriptSignature(vueSource, vueEntryPath)
-          if (scriptSignature) {
-            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizeFsResolvedId(vueEntryPath), scriptSignature)
+          if (signatures.scriptSignature) {
+            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedVueEntryPath!, signatures.scriptSignature)
           }
-          const hasTemplate = resolveVueSfcHasTemplate(vueSource, vueEntryPath)
-          if (hasTemplate !== undefined) {
-            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizeFsResolvedId(vueEntryPath), hasTemplate)
+          if (signatures.hasTemplate !== undefined) {
+            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedVueEntryPath!, signatures.hasTemplate)
           }
         }
       }
@@ -395,17 +394,15 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (configService.isDev && hasJsonEntry && vueEntryPath) {
         const vueSource = await readVueSource()
         if (vueSource) {
-          const nonJsonSignature = resolveVueSfcNonJsonSignature(vueSource, vueEntryPath)
-          if (nonJsonSignature) {
-            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, nonJsonSignature)
+          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
+          if (signatures.nonJsonSignature) {
+            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, signatures.nonJsonSignature)
           }
-          const scriptSignature = resolveVueSfcScriptSignature(vueSource, vueEntryPath)
-          if (scriptSignature) {
-            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, scriptSignature)
+          if (signatures.scriptSignature) {
+            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, signatures.scriptSignature)
           }
-          const hasTemplate = resolveVueSfcHasTemplate(vueSource, vueEntryPath)
-          if (hasTemplate !== undefined) {
-            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedId, hasTemplate)
+          if (signatures.hasTemplate !== undefined) {
+            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedId, signatures.hasTemplate)
           }
         }
       }
