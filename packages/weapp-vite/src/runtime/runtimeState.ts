@@ -270,6 +270,7 @@ export interface RuntimeState {
     importerToDependencies: Map<string, Set<string>>
     dependencyToImporters: Map<string, Set<string>>
     emittedSource: Map<string, string>
+    sidecarImports: Set<string>
   }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
@@ -381,6 +382,7 @@ export function createRuntimeState(): RuntimeState {
       importerToDependencies: new Map<string, Set<string>>(),
       dependencyToImporters: new Map<string, Set<string>>(),
       emittedSource: new Map<string, string>(),
+      sidecarImports: new Set<string>(),
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),

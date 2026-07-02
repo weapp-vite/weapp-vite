@@ -216,6 +216,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const startedAt = performance.now()
     try {
       const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+      for (const styleImport of styleImports) {
+        runtimeState?.css?.sidecarImports.add(styleImport)
+      }
       styleImportsCache?.set(id, styleImports)
       return styleImports
     }

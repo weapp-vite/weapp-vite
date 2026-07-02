@@ -148,6 +148,7 @@ describe('css plugin shared style injection', () => {
         importerToDependencies: new Map<string, Set<string>>(),
         dependencyToImporters: new Map<string, Set<string>>(),
         emittedSource: new Map(),
+        sidecarImports: new Set<string>(),
       },
     },
   } as unknown as CompilerContext
@@ -184,6 +185,21 @@ describe('css plugin shared style injection', () => {
     ;(ctx as any).runtimeState.css.importerToDependencies.clear()
     ;(ctx as any).runtimeState.css.dependencyToImporters.clear()
     ;(ctx as any).runtimeState.css.emittedSource.clear()
+    ;(ctx as any).runtimeState.css.sidecarImports.clear()
+  })
+
+  it('emits collected entry style sidecars when bundle misses the style asset', async () => {
+    const plugin = css(ctx)[0]
+    const stylePath = resolve(absoluteSrcRoot, 'pages/diff/index.wxss')
+    ;(ctx as any).runtimeState.css.sidecarImports.add(stylePath)
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, false)
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
+    const sidecarAsset = emitted.find(asset => asset.fileName === 'pages/diff/index.wxss')
+    expect(sidecarAsset).toBeTruthy()
+    expect(sidecarAsset?.source).toBe('.sidecar{color:red}')
   })
 
   it('emits wxss asset with shared style imports for modules without local styles', async () => {

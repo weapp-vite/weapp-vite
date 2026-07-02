@@ -728,6 +728,22 @@ async function generateBundleSharedCss(
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
 
+async function emitCollectedStyleSidecars(
+  this: any,
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
+) {
+  const sidecarImports = ctx.runtimeState?.css?.sidecarImports
+  if (!sidecarImports?.size) {
+    return
+  }
+
+  await Promise.all(Array.from(sidecarImports).map(async (stylePath) => {
+    await emitStyleSidecarAsset(ctx, this, bundle, stylePath, resolvedConfig)
+  }))
+}
+
 export function css(ctx: CompilerContext): Plugin[] {
   const { configService } = ctx
   let resolvedConfig: ResolvedConfig | undefined
@@ -745,6 +761,7 @@ export function css(ctx: CompilerContext): Plugin[] {
         }
         const styleAnalysis = analyzeBundleStyles(rolldownBundle)
         await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
+        await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, resolvedConfig)
       },
     },
   ]
