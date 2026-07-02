@@ -35,7 +35,9 @@ describe('createChunkEmitter', () => {
 
     expect(stats).toEqual([{
       chunkEmitCount: 1,
+      emitFileMs: expect.any(Number),
       loadCount: 1,
+      loadMs: expect.any(Number),
       skippedLoadedCount: 0,
     }])
     expect(trackedEntryIds).toEqual([
@@ -73,12 +75,16 @@ describe('createChunkEmitter', () => {
     expect(stats).toEqual([
       {
         chunkEmitCount: 0,
+        emitFileMs: 0,
         loadCount: 1,
+        loadMs: expect.any(Number),
         skippedLoadedCount: 0,
       },
       {
         chunkEmitCount: 1,
+        emitFileMs: expect.any(Number),
         loadCount: 1,
+        loadMs: expect.any(Number),
         skippedLoadedCount: 0,
       },
     ])
@@ -123,7 +129,9 @@ describe('createChunkEmitter', () => {
 
     expect(stats).toEqual([{
       chunkEmitCount: 0,
+      emitFileMs: 0,
       loadCount: 1,
+      loadMs: expect.any(Number),
       skippedLoadedCount: 0,
     }])
     expect(preloadAssetOnlyEntry).toHaveBeenCalledWith(resolvedId, '/project/src/pages/hmr/index.ts')
@@ -153,7 +161,9 @@ describe('createChunkEmitter', () => {
 
     expect(stats).toEqual([{
       chunkEmitCount: 1,
+      emitFileMs: expect.any(Number),
       loadCount: 0,
+      loadMs: 0,
       skippedLoadedCount: 1,
     }])
     expect(pluginCtx.load).not.toHaveBeenCalled()

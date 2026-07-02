@@ -171,6 +171,8 @@ export interface RuntimeState {
         entryStyleReadMs?: number
         entryResolveMs?: number
         entryChunkEmitMs?: number
+        entryChunkLoadMs?: number
+        entryChunkEmitFileMs?: number
         entryLayoutMs?: number
         requestGlobalsMs?: number
         weapiResolveMs?: number
@@ -227,6 +229,8 @@ export interface RuntimeState {
         entryStyleReadMs?: number
         entryResolveMs?: number
         entryChunkEmitMs?: number
+        entryChunkLoadMs?: number
+        entryChunkEmitFileMs?: number
         entryLayoutMs?: number
         requestGlobalsMs?: number
         weapiResolveMs?: number

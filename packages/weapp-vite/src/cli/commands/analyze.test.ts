@@ -155,6 +155,8 @@ describe('analyze cli command', () => {
         entryStyleReadMs: { count: 0 },
         entryResolveMs: { count: 0 },
         entryChunkEmitMs: { count: 0 },
+        entryChunkLoadMs: { count: 0 },
+        entryChunkEmitFileMs: { count: 0 },
         entryLayoutMs: { count: 0 },
         requestGlobalsMs: { count: 2, averageMs: 1, maxMs: 1.5 },
         weapiResolveMs: { count: 0 },

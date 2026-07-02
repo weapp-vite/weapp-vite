@@ -42,6 +42,8 @@ describe('analyze hmr profile', () => {
         entryStyleReadMs: 0.3,
         entryResolveMs: 1,
         entryChunkEmitMs: 2,
+        entryChunkLoadMs: 1.5,
+        entryChunkEmitFileMs: 0.2,
         entryLayoutMs: 0.4,
         requestGlobalsMs: 1,
         weapiResolveMs: 0.5,
@@ -94,6 +96,8 @@ describe('analyze hmr profile', () => {
         entryStyleReadMs: 0.7,
         entryResolveMs: 3,
         entryChunkEmitMs: 4,
+        entryChunkLoadMs: 2.5,
+        entryChunkEmitFileMs: 0.4,
         entryLayoutMs: 0.6,
         requestGlobalsMs: 3,
         weapiResolveMs: 1.5,
@@ -156,6 +160,8 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.entryStyleReadMs.averageMs).toBe(0.5)
     expect(result.metrics.entryResolveMs.averageMs).toBe(2)
     expect(result.metrics.entryChunkEmitMs.averageMs).toBe(3)
+    expect(result.metrics.entryChunkLoadMs.averageMs).toBe(2)
+    expect(result.metrics.entryChunkEmitFileMs.averageMs).toBeCloseTo(0.3)
     expect(result.metrics.entryLayoutMs.averageMs).toBe(0.5)
     expect(result.metrics.requestGlobalsMs.averageMs).toBe(2)
     expect(result.metrics.weapiResolveMs.averageMs).toBe(1)

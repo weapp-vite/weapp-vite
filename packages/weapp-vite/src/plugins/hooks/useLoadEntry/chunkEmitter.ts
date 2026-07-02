@@ -7,6 +7,8 @@ import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFi
 export interface ChunkEmitStats {
   chunkEmitCount: number
   loadCount: number
+  loadMs: number
+  emitFileMs: number
   skippedLoadedCount: number
 }
 
@@ -27,7 +29,9 @@ export function createChunkEmitter(
     return resolvedIds.map(async (resolvedId): ChunkEmitTask => {
       const stats: ChunkEmitStats = {
         chunkEmitCount: 0,
+        emitFileMs: 0,
         loadCount: 0,
+        loadMs: 0,
         skippedLoadedCount: 0,
       }
       if (!resolvedId) {
@@ -44,6 +48,7 @@ export function createChunkEmitter(
       const start = shouldPreload ? performance.now() : 0
       const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
       if (shouldPreload) {
+        const loadStartedAt = performance.now()
         if (!shouldEmitChunk && preloadAssetOnlyEntry) {
           await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
         }
@@ -51,11 +56,13 @@ export function createChunkEmitter(
           await this.load(resolvedId)
         }
         stats.loadCount += 1
+        stats.loadMs += performance.now() - loadStartedAt
       }
 
       const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
 
       if (shouldEmitChunk) {
+        const emitFileStartedAt = performance.now()
         this.emitFile({
           type: 'chunk',
           id: resolvedId.id,
@@ -66,6 +73,7 @@ export function createChunkEmitter(
         trackEmittedChunkId?.(normalizedId)
         trackEmittedChunkFileName?.(fileName)
         stats.chunkEmitCount += 1
+        stats.emitFileMs += performance.now() - emitFileStartedAt
       }
       trackEmittedEntryId?.(normalizedId)
 

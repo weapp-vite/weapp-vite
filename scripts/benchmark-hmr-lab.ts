@@ -37,6 +37,8 @@ interface HmrProfileJsonSample {
   coreLoadMs?: number
   entryLoadMs?: number
   entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -103,6 +105,8 @@ interface ScenarioResult {
   averageCoreLoadMs?: number
   averageEntryLoadMs?: number
   averageEntryChunkEmitMs?: number
+  averageEntryChunkLoadMs?: number
+  averageEntryChunkEmitFileMs?: number
   averagePluginResolveMs?: number
   averageBundlerMs?: number
   averageWatchToDirtyMs?: number
@@ -307,6 +311,8 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageCoreLoadMs: averageOptional(samples.map(sample => sample.profile?.coreLoadMs)),
     averageEntryLoadMs: averageOptional(samples.map(sample => sample.profile?.entryLoadMs)),
     averageEntryChunkEmitMs: averageOptional(samples.map(sample => sample.profile?.entryChunkEmitMs)),
+    averageEntryChunkLoadMs: averageOptional(samples.map(sample => sample.profile?.entryChunkLoadMs)),
+    averageEntryChunkEmitFileMs: averageOptional(samples.map(sample => sample.profile?.entryChunkEmitFileMs)),
     averagePluginResolveMs: averageOptional(samples.map(sample => sample.profile?.pluginResolveMs)),
     averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
@@ -622,8 +628,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-core | avg build-start | avg core-load | avg entry-load | avg chunk-emit | load/chunk/skip | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-core | avg build-start | avg core-load | avg entry-load | avg chunk-emit | avg chunk-load | avg emit-file | load/chunk/skip | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -640,6 +646,8 @@ function renderMarkdown(report: {
       formatMs(scenario.averageCoreLoadMs),
       formatMs(scenario.averageEntryLoadMs),
       formatMs(scenario.averageEntryChunkEmitMs),
+      formatMs(scenario.averageEntryChunkLoadMs),
+      formatMs(scenario.averageEntryChunkEmitFileMs),
       formatCountTriplet(scenario.averageLoadCount, scenario.averageChunkEmitCount, scenario.averageSkippedLoadedCount),
       formatMs(scenario.averagePluginResolveMs),
       formatMs(scenario.averageTransformMs),

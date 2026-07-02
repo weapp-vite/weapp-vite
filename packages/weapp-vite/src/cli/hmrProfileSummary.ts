@@ -39,6 +39,8 @@ interface HmrProfileJsonSample {
   entryStyleReadMs?: number
   entryResolveMs?: number
   entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
   entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
@@ -196,6 +198,14 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'entry-chunk-emit',
       value: sample.entryChunkEmitMs,
+    },
+    {
+      label: 'entry-chunk-load',
+      value: sample.entryChunkLoadMs,
+    },
+    {
+      label: 'entry-chunk-emit-file',
+      value: sample.entryChunkEmitFileMs,
     },
     {
       label: 'entry-layout',

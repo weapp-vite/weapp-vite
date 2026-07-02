@@ -35,6 +35,8 @@ export interface HmrProfileJsonSample {
   entryStyleReadMs?: number
   entryResolveMs?: number
   entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
   entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
@@ -113,6 +115,8 @@ export interface HmrProfileAnalyzeResult {
     entryStyleReadMs: HmrProfileMetricSummary
     entryResolveMs: HmrProfileMetricSummary
     entryChunkEmitMs: HmrProfileMetricSummary
+    entryChunkLoadMs: HmrProfileMetricSummary
+    entryChunkEmitFileMs: HmrProfileMetricSummary
     entryLayoutMs: HmrProfileMetricSummary
     requestGlobalsMs: HmrProfileMetricSummary
     weapiResolveMs: HmrProfileMetricSummary
@@ -249,6 +253,8 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const entryStyleReadValues: number[] = []
   const entryResolveValues: number[] = []
   const entryChunkEmitValues: number[] = []
+  const entryChunkLoadValues: number[] = []
+  const entryChunkEmitFileValues: number[] = []
   const entryLayoutValues: number[] = []
   const requestGlobalsValues: number[] = []
   const weapiResolveValues: number[] = []
@@ -352,6 +358,12 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     if (isFiniteNumber(sample.entryChunkEmitMs)) {
       entryChunkEmitValues.push(sample.entryChunkEmitMs)
     }
+    if (isFiniteNumber(sample.entryChunkLoadMs)) {
+      entryChunkLoadValues.push(sample.entryChunkLoadMs)
+    }
+    if (isFiniteNumber(sample.entryChunkEmitFileMs)) {
+      entryChunkEmitFileValues.push(sample.entryChunkEmitFileMs)
+    }
     if (isFiniteNumber(sample.entryLayoutMs)) {
       entryLayoutValues.push(sample.entryLayoutMs)
     }
@@ -454,6 +466,8 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       entryStyleReadMs: createMetricSummary(entryStyleReadValues),
       entryResolveMs: createMetricSummary(entryResolveValues),
       entryChunkEmitMs: createMetricSummary(entryChunkEmitValues),
+      entryChunkLoadMs: createMetricSummary(entryChunkLoadValues),
+      entryChunkEmitFileMs: createMetricSummary(entryChunkEmitFileValues),
       entryLayoutMs: createMetricSummary(entryLayoutValues),
       requestGlobalsMs: createMetricSummary(requestGlobalsValues),
       weapiResolveMs: createMetricSummary(weapiResolveValues),

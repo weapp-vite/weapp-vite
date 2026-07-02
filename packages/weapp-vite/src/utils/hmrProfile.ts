@@ -31,6 +31,8 @@ export type HmrProfileDurationKey
     | 'entryStyleReadMs'
     | 'entryResolveMs'
     | 'entryChunkEmitMs'
+    | 'entryChunkLoadMs'
+    | 'entryChunkEmitFileMs'
     | 'entryLayoutMs'
     | 'requestGlobalsMs'
     | 'weapiResolveMs'

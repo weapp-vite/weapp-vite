@@ -43,7 +43,9 @@ interface PendingEntryResolution {
 
 interface ChunkEmitStatsSummary {
   chunkEmitCount: number
+  emitFileMs: number
   loadCount: number
+  loadMs: number
   skippedLoadedCount: number
 }
 
@@ -367,7 +369,9 @@ function resolveCurrentStyleOutputFileName(ctx: CompilerContext) {
 function createChunkEmitStatsSummary(): ChunkEmitStatsSummary {
   return {
     chunkEmitCount: 0,
+    emitFileMs: 0,
     loadCount: 0,
+    loadMs: 0,
     skippedLoadedCount: 0,
   }
 }
@@ -377,7 +381,9 @@ function addChunkEmitStatsSummary(
   source: ChunkEmitStatsSummary,
 ) {
   target.chunkEmitCount += source.chunkEmitCount
+  target.emitFileMs += source.emitFileMs
   target.loadCount += source.loadCount
+  target.loadMs += source.loadMs
   target.skippedLoadedCount += source.skippedLoadedCount
 }
 
@@ -578,7 +584,9 @@ export function useLoadEntry(
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []
       chunkEmitStats.chunkEmitCount = 0
+      chunkEmitStats.emitFileMs = 0
       chunkEmitStats.loadCount = 0
+      chunkEmitStats.loadMs = 0
       chunkEmitStats.skippedLoadedCount = 0
       lastActualEmittedEntryIds.clear()
       lastChunkEmittedEntryIds.clear()
@@ -678,6 +686,8 @@ export function useLoadEntry(
         ...ctx.runtimeState.build.hmr.profile,
         emitMs: performance.now() - emitStartedAt,
         sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
+        entryChunkLoadMs: chunkEmitStats.loadMs,
+        entryChunkEmitFileMs: chunkEmitStats.emitFileMs,
         chunkEmitCount: chunkEmitStats.chunkEmitCount,
         loadCount: chunkEmitStats.loadCount,
         skippedLoadedCount: chunkEmitStats.skippedLoadedCount,

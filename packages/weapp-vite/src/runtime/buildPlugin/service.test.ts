@@ -836,6 +836,8 @@ describe('runtime buildPlugin service', () => {
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      entryChunkLoadMs: 6.5,
+      entryChunkEmitFileMs: 0.75,
       chunkEmitCount: 3,
       loadCount: 2,
       resolveCount: 5,
@@ -1081,6 +1083,8 @@ describe('runtime buildPlugin service', () => {
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      entryChunkLoadMs: 6.5,
+      entryChunkEmitFileMs: 0.75,
       chunkEmitCount: 3,
       loadCount: 2,
       resolveCount: 5,
@@ -1132,6 +1136,8 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
     expect(payload).toContain('"buildCoreMs":30.5')
+    expect(payload).toContain('"entryChunkLoadMs":6.5')
+    expect(payload).toContain('"entryChunkEmitFileMs":0.75')
     expect(payload).toContain('"chunkEmitCount":3')
     expect(payload).toContain('"loadCount":2')
     expect(payload).toContain('"resolveCount":5')

@@ -89,6 +89,8 @@ interface HmrProfileJsonSample {
   entryStyleReadMs?: number
   entryResolveMs?: number
   entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
   entryLayoutMs?: number
   requestGlobalsMs?: number
   weapiResolveMs?: number
@@ -143,6 +145,8 @@ interface HmrPhaseRegressionCandidate {
     | 'entry-style-read'
     | 'entry-resolve'
     | 'entry-chunk-emit'
+    | 'entry-chunk-load'
+    | 'entry-chunk-emit-file'
     | 'entry-layout'
     | 'request-globals'
     | 'weapi-resolve'
@@ -330,6 +334,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       entryStyleReadMs: profile.entryStyleReadMs,
       entryResolveMs: profile.entryResolveMs,
       entryChunkEmitMs: profile.entryChunkEmitMs,
+      entryChunkLoadMs: profile.entryChunkLoadMs,
+      entryChunkEmitFileMs: profile.entryChunkEmitFileMs,
       entryLayoutMs: profile.entryLayoutMs,
       requestGlobalsMs: profile.requestGlobalsMs,
       weapiResolveMs: profile.weapiResolveMs,
@@ -504,6 +510,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         typeof profile.entryStyleReadMs === 'number' ? `entry-style-read ${profile.entryStyleReadMs.toFixed(2)} ms` : undefined,
         typeof profile.entryCodeReadMs === 'number' ? `entry-code-read ${profile.entryCodeReadMs.toFixed(2)} ms` : undefined,
         typeof profile.entryChunkEmitMs === 'number' ? `entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkLoadMs === 'number' ? `entry-chunk-load ${profile.entryChunkLoadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkEmitFileMs === 'number' ? `entry-chunk-emit-file ${profile.entryChunkEmitFileMs.toFixed(2)} ms` : undefined,
         typeof profile.entryLayoutMs === 'number' ? `entry-layout ${profile.entryLayoutMs.toFixed(2)} ms` : undefined,
         typeof profile.requestGlobalsMs === 'number' ? `request-globals ${profile.requestGlobalsMs.toFixed(2)} ms` : undefined,
         typeof profile.weapiResolveMs === 'number' ? `weapi-resolve ${profile.weapiResolveMs.toFixed(2)} ms` : undefined,
@@ -595,6 +603,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.entryChunkEmitMs !== undefined) {
       verboseSegments.push(`entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkLoadMs !== undefined) {
+      verboseSegments.push(`entry-chunk-load ${profile.entryChunkLoadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkEmitFileMs !== undefined) {
+      verboseSegments.push(`entry-chunk-emit-file ${profile.entryChunkEmitFileMs.toFixed(2)} ms`)
     }
     if (profile.entryLayoutMs !== undefined) {
       verboseSegments.push(`entry-layout ${profile.entryLayoutMs.toFixed(2)} ms`)
@@ -699,16 +713,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'entry-style-read': 26,
       'entry-code-read': 27,
       'entry-chunk-emit': 28,
-      'entry-layout': 29,
-      'request-globals': 30,
-      'weapi-resolve': 31,
-      'render-start': 32,
-      'generate': 33,
-      'generate-shared': 34,
-      'generate-rewrite': 35,
-      'module-graph': 36,
-      'watch->dirty': 37,
-      'build-core': 38,
+      'entry-chunk-load': 29,
+      'entry-chunk-emit-file': 30,
+      'entry-layout': 31,
+      'request-globals': 32,
+      'weapi-resolve': 33,
+      'render-start': 34,
+      'generate': 35,
+      'generate-shared': 36,
+      'generate-rewrite': 37,
+      'module-graph': 38,
+      'watch->dirty': 39,
+      'build-core': 40,
     }
     const phases = [
       {
@@ -818,6 +834,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'entryChunkEmitMs',
         label: 'entry-chunk-emit',
+      },
+      {
+        key: 'entryChunkLoadMs',
+        label: 'entry-chunk-load',
+      },
+      {
+        key: 'entryChunkEmitFileMs',
+        label: 'entry-chunk-emit-file',
       },
       {
         key: 'entryLayoutMs',
