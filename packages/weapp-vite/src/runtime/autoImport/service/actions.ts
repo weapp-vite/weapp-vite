@@ -35,6 +35,24 @@ export function createAutoImportActions(
     options.autoImportState.version += 1
   }
 
+  async function awaitOutputWrites() {
+    while (true) {
+      const pending = [
+        ...options.pendingRegistrations,
+        options.outputsState.pendingWrite,
+        options.outputsState.pendingTypedWrite,
+        options.outputsState.pendingHtmlCustomDataWrite,
+        options.outputsState.pendingVueComponentsWrite,
+      ].filter((task): task is Promise<void> => Boolean(task))
+
+      if (!pending.length) {
+        return
+      }
+
+      await Promise.all(pending)
+    }
+  }
+
   function setSupportFileResolverComponents(components: Record<string, string>) {
     const changed = options.resolverHelpers.setSupportFileResolverComponents(components)
     if (!changed) {
@@ -131,13 +149,7 @@ export function createAutoImportActions(
     async syncSupportFileResolverComponents() {
       try {
         setSupportFileResolverComponents(options.resolverHelpers.collectStaticResolverComponentsForSupportFiles())
-        await Promise.all([
-          Promise.all([...options.pendingRegistrations]),
-          options.outputsState.pendingWrite ?? Promise.resolve(),
-          options.outputsState.pendingTypedWrite ?? Promise.resolve(),
-          options.outputsState.pendingHtmlCustomDataWrite ?? Promise.resolve(),
-          options.outputsState.pendingVueComponentsWrite ?? Promise.resolve(),
-        ])
+        await awaitOutputWrites()
       }
       finally {
         clearSupportFileResolverComponents()
@@ -215,13 +227,7 @@ export function createAutoImportActions(
     },
 
     awaitManifestWrites() {
-      return Promise.all([
-        Promise.all([...options.pendingRegistrations]),
-        options.outputsState.pendingWrite ?? Promise.resolve(),
-        options.outputsState.pendingTypedWrite ?? Promise.resolve(),
-        options.outputsState.pendingHtmlCustomDataWrite ?? Promise.resolve(),
-        options.outputsState.pendingVueComponentsWrite ?? Promise.resolve(),
-      ]).then(() => {})
+      return awaitOutputWrites()
     },
   }
 }

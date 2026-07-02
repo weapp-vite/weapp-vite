@@ -15,7 +15,7 @@ import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
 import { refreshStyleOnlyVueTransformResult } from '../styleOnly'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, isVueCssImporterDirtyReasonSummary, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from './styleOnlyRefresh'
 import { parseUsingComponents } from './usingComponents'
 
@@ -137,6 +137,9 @@ export async function transformVueLikeFile(options: {
     }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const isCssImporterDirty = isVueCssImporterDirtyReasonSummary(
+      ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary,
+    )
     const canAttemptStyleOnlyReuse = isVueStyleOnlyDirtyReasonSummary(
       ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary,
     )
@@ -172,7 +175,13 @@ export async function transformVueLikeFile(options: {
           cachedCompilation.result = cachedResult
           const currentStyleSignature = createSfcStyleBlocksSignature(cachedStyleBlocks)
           const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
-          if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
+          if (
+            hmrEventId != null
+            && (
+              isCssImporterDirty
+              || (currentStyleSignature && currentStyleSignature !== previousStyleSignature)
+            )
+          ) {
             styleRefreshTokens.set(filename, hmrEventId)
           }
           else {
@@ -244,7 +253,7 @@ export async function transformVueLikeFile(options: {
         cachedCompilation.styleIndependentSignature = currentStyleIndependentSignature
         cachedCompilation.refreshToken = 0
         const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
-        if (hmrEventId != null) {
+        if (hmrEventId != null && (isCssImporterDirty || styleBlocks?.length)) {
           styleRefreshTokens.set(filename, hmrEventId)
         }
         const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
@@ -303,7 +312,13 @@ export async function transformVueLikeFile(options: {
     if (configService.isDev && dirtyEntryId) {
       const currentStyleSignature = createSfcStyleBlocksSignature(currentStyleBlocks)
       const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
-      if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
+      if (
+        hmrEventId != null
+        && (
+          isCssImporterDirty
+          || (currentStyleSignature && currentStyleSignature !== previousStyleSignature)
+        )
+      ) {
         styleRefreshTokens.set(filename, hmrEventId)
       }
       else {

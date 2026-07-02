@@ -84,6 +84,10 @@ export function isVueStyleOnlyDirtyReasonSummary(dirtyReasonSummary: string[] | 
   ) === true
 }
 
+export function isVueCssImporterDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
+  return dirtyReasonSummary?.some(item => item.startsWith('css-importer')) === true
+}
+
 export function mayNeedTransformSetDataPick(
   template: string,
   options?: {

@@ -1219,6 +1219,30 @@ console.log(pages, routeSubPackages)
       map: null,
     })
 
+    styleBlocksCache.clear()
+    fsReadFileMock.mockResolvedValueOnce('.external{}')
+    readAndParseSfc.mockResolvedValueOnce({
+      descriptor: {
+        styles: [{ content: '', src: './external.css' }],
+      },
+    })
+    await expect(loadTransformStyleBlock({
+      id: 'virtual:style',
+      pluginCtx: {},
+      ctx: {} as any,
+      configService: {} as any,
+      styleBlocksCache,
+      loadScopedSlotModule,
+      scopedSlotModules: new Map(),
+      parseWeappVueStyleRequest,
+      readAndParseSfc,
+      createReadAndParseSfcOptions,
+    })).resolves.toEqual({
+      code: '.external{}',
+      map: null,
+    })
+    expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/external.css', 'utf8')
+
     await expect(loadTransformStyleBlock({
       id: 'virtual:none',
       pluginCtx: {},

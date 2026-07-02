@@ -422,7 +422,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
         state.lastGlobsKey = globsKey
       }
 
-      if (!state.initialScanDone && ctx.runtimeState?.autoImport?.preparedGlobsKey === globsKey) {
+      if (configService?.isDev && !state.initialScanDone && ctx.runtimeState?.autoImport?.preparedGlobsKey === globsKey) {
         state.initialScanDone = true
       }
 

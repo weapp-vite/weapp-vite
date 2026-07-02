@@ -497,6 +497,70 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 
+  it('keeps style refresh tokens for css importer updates with unchanged style signatures', async () => {
+    const source = '<template><view /></template><style>@import "./external.css";</style>'
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const styleBlocks = [{
+      attrs: {},
+      content: '@import "./external.css";',
+      lang: 'css',
+    }]
+    const cachedResult = {
+      template: '<view />',
+      script: 'Component({ cached: true })',
+      style: '@import "./external.css";',
+      meta: {
+        styleBlocks,
+      },
+    }
+    const options = createBaseOptions({
+      code: source,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                eventId: 'hmr-css-importer',
+                dirtyReasonSummary: ['css-importer:1'],
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: cachedResult,
+          source,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock(source, '/project/src/components/card.vue'),
+        }],
+      ]),
+      styleBlocksCache: new Map([
+        ['/project/src/components/card.vue', styleBlocks],
+      ]),
+      readAndParseSfc: vi.fn(async () => ({
+        descriptor: {
+          styles: styleBlocks,
+        },
+      })),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ cached: true })'),
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(options.styleRefreshTokens.get('/project/src/components/card.vue')).toBe('hmr-css-importer')
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
+
   it('recompiles json-only dirty updates even when style-independent signature is unchanged', async () => {
     const previousSource = [
       '<script setup>',

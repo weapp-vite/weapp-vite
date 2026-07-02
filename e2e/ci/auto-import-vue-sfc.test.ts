@@ -114,6 +114,19 @@ async function waitForFileContains(
   )
 }
 
+async function waitForFileRead(filePath: string, timeoutMs = 30_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await fs.readFile(filePath, 'utf8')
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+  return await fs.readFile(filePath, 'utf8')
+}
+
 async function waitForUsingComponent(
   pageJsonPath: string,
   name: string,
@@ -399,10 +412,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
     await runBuild(APP_ROOT, PLATFORM_LIST[0])
 
-    expect(await fs.pathExists(TYPED_COMPONENTS_DTS)).toBe(true)
-    expect(await fs.pathExists(VUE_COMPONENTS_DTS)).toBe(true)
-
-    const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
+    const typedDts = await waitForFileRead(TYPED_COMPONENTS_DTS)
     expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
     expect(typedDts).toContain('AutoCard: {')
     expect(typedDts).toContain('readonly title?: string;')
@@ -424,7 +434,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
     expect(typedDts).toContain('ResolverCard: Record<string, any>;')
 
-    const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
+    const vueDts = await waitForFileRead(VUE_COMPONENTS_DTS)
     expect(
       vueDts.includes('declare module \'vue\'')
       || vueDts.includes('declare module \'wevu\''),

@@ -361,18 +361,26 @@ describe('autoImport service index', () => {
     capturedOutputsState.pendingWrite = new Promise<void>((resolve) => {
       pending.manifestResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingWrite = undefined
     })
     capturedOutputsState.pendingTypedWrite = new Promise<void>((resolve) => {
       pending.typedResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingTypedWrite = undefined
     })
     capturedOutputsState.pendingHtmlCustomDataWrite = new Promise<void>((resolve) => {
       pending.htmlResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingHtmlCustomDataWrite = undefined
     })
     capturedOutputsState.pendingVueComponentsWrite = new Promise<void>((resolve) => {
       pending.vueResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingVueComponentsWrite = undefined
     })
 
     await service.awaitManifestWrites()
@@ -725,5 +733,53 @@ describe('autoImport service index', () => {
     expect(getTypedComponentsSettingsMock).toHaveBeenCalledTimes(1)
     expect(getHtmlCustomDataSettingsMock).toHaveBeenCalledTimes(1)
     expect(getVueComponentsSettingsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for output writes scheduled after pending registrations resolve', async () => {
+    const resolverHelpers = createResolverHelpers()
+    let capturedOutputsState: any
+    let resolveTypedWrite: (() => void) | undefined
+    const typedWriteDone = vi.fn()
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockImplementation((args: any) => {
+      capturedOutputsState = args.outputsState
+      return {
+        scheduleManifestWrite: vi.fn(),
+        scheduleTypedComponentsWrite: vi.fn(),
+        scheduleHtmlCustomDataWrite: vi.fn(),
+        scheduleVueComponentsWrite: vi.fn(),
+      }
+    })
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(async () => {
+        capturedOutputsState.pendingTypedWrite = new Promise<void>((resolve) => {
+          resolveTypedWrite = resolve
+        }).then(() => {
+          typedWriteDone()
+        }).finally(() => {
+          capturedOutputsState.pendingTypedWrite = undefined
+        })
+      }),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    })
+
+    const service = createAutoImportService(createContext())
+    const registration = service.registerPotentialComponent('/project/src/components/card.vue')
+    await vi.waitFor(() => {
+      expect(resolveTypedWrite).toBeTypeOf('function')
+    })
+
+    const awaitingWrites = service.awaitManifestWrites()
+    expect(typedWriteDone).not.toHaveBeenCalled()
+    resolveTypedWrite?.()
+    await awaitingWrites
+    await registration
+
+    expect(typedWriteDone).toHaveBeenCalledTimes(1)
   })
 })

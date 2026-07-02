@@ -344,6 +344,71 @@ describe('autoImport plugin', () => {
     }
   })
 
+  it('rescans prepared auto import globs during production build', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-prod-prepared-scan-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const componentFile = path.join(srcRoot, 'components/PreparedCard/index.vue')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(componentFile, '<template><view>prepared</view></template>', 'utf8')
+
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: 'components/**/*.vue',
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: false,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+      await plugin.buildStart?.()
+
+      expect(reset).toHaveBeenCalledTimes(1)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(componentFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
   it('registers watch targets for auto import globs during build start', async () => {
     const addWatchFile = vi.fn()
     const reset = vi.fn()
