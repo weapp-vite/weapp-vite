@@ -418,7 +418,7 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 
-  it('refreshes cached style blocks for unchanged vue files when style sidecars are dirty', async () => {
+  it('refreshes cached style blocks for unchanged vue files when css importers are dirty', async () => {
     const source = '<template><view /></template><style src="./external.css"></style>'
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
     const previousStyleBlocks = [{
@@ -459,7 +459,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               profile: {
                 eventId: 'hmr-2',
-                dirtyReasonSummary: ['style-sidecar:1'],
+                dirtyReasonSummary: ['css-importer:1'],
               },
             },
           },

@@ -79,6 +79,7 @@ export function resolveDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined
 export function isVueStyleOnlyDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
   return dirtyReasonSummary?.some(item =>
     item.startsWith('entry-style-only:')
+    || item.startsWith('css-importer')
     || item.startsWith('style-sidecar:'),
   ) === true
 }
