@@ -17,6 +17,12 @@ interface ResolvedScriptSetupUsingComponent {
   from?: string
 }
 
+const TEMPLATE_COMPONENT_TAG_HINT_RE = /<\s*(?:[A-Z_$]|[a-z][\w$]*-)/
+
+function hasTemplateComponentTagHint(source: string) {
+  return TEMPLATE_COMPONENT_TAG_HINT_RE.test(source)
+}
+
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
@@ -77,6 +83,10 @@ export async function applyScriptSetupUsingComponents(options: {
   } = options
 
   try {
+    if (source !== undefined && !hasTemplateComponentTagHint(source)) {
+      return
+    }
+
     const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
       ...createReadAndParseSfcOptions(
         pluginCtx,

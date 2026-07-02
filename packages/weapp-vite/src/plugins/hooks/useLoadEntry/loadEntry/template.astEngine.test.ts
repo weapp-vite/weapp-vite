@@ -94,6 +94,28 @@ import TButton from './TButton'
     )
   })
 
+  it('skips sfc parse when provided source has no component tag candidates', async () => {
+    const { applyScriptSetupUsingComponents } = await import('./template')
+
+    await applyScriptSetupUsingComponents({
+      pluginCtx: {
+        resolve: vi.fn(),
+      } as any,
+      vueEntryPath: '/project/src/pages/plain/index.vue',
+      source: '<template><view>{{ title }}</view></template><script setup>const title = "plain"</script>',
+      templatePath: '',
+      json: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      reExportResolutionCache: new Map(),
+    })
+
+    expect(readAndParseSfcMock).not.toHaveBeenCalled()
+    expect(collectScriptSetupImportsFromCodeMock).not.toHaveBeenCalled()
+  })
+
   it('resolves script setup usingComponents concurrently and applies them in import order', async () => {
     const { applyScriptSetupUsingComponents } = await import('./template')
     const json: any = {
