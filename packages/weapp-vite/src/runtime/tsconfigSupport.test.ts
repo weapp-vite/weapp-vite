@@ -143,6 +143,37 @@ describe('tsconfig support', () => {
     expect(server.files).toContain('../server/entry.ts')
   })
 
+  it('reads legacy root tsconfig files without path existence prechecks', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-legacy-tsconfig-direct-read-'))
+    await fs.writeFile(path.join(root, 'tsconfig.app.json'), `{
+      "compilerOptions": {
+        "paths": {
+          "legacy/*": ["./legacy/*"]
+        }
+      }
+    }`)
+
+    const legacyPaths = new Set([
+      path.join(root, 'tsconfig.shared.json'),
+      path.join(root, 'tsconfig.app.json'),
+      path.join(root, 'tsconfig.node.json'),
+      path.join(root, 'tsconfig.server.json'),
+    ])
+    const pathExistsSpy = vi.spyOn(fs, 'pathExists')
+
+    await createManagedTsconfigFiles(createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      weappViteConfig: {},
+    }))
+
+    const checkedLegacyPaths = pathExistsSpy.mock.calls
+      .map(([filePath]) => path.resolve(String(filePath)))
+      .filter(filePath => legacyPaths.has(filePath))
+
+    expect(checkedLegacyPaths).toEqual([])
+  })
+
   it('keeps shared tsconfig as an empty project when referenced directly', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-empty-shared-tsconfig-'))
     await fs.writeFile(path.join(root, 'tsconfig.shared.json'), `{

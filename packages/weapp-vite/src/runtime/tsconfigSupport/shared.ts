@@ -90,10 +90,6 @@ export function getManagedTypeScriptConfig(ctx: MutableCompilerContext): Managed
 }
 
 async function readLegacyManagedTsconfigFile(filePath: string): Promise<LegacyManagedTsconfigFile | undefined> {
-  if (!await fs.pathExists(filePath)) {
-    return undefined
-  }
-
   try {
     const content = await fs.readFile(filePath, 'utf8')
     const parsed = parseJson(content, undefined, true)
