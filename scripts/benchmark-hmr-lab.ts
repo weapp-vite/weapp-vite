@@ -76,6 +76,7 @@ interface ScenarioSample {
   iteration: number
   marker: string
   totalMs: number
+  observedMs: number
   profile?: HmrProfileJsonSample
   impact: ImpactFile[]
   impactCount: number
@@ -89,6 +90,8 @@ interface ScenarioResult {
   samples: ScenarioSample[]
   averageMs?: number
   maxMs?: number
+  averageObservedMs?: number
+  maxObservedMs?: number
   averageBuildCoreMs?: number
   averageBuildStartMs?: number
   averagePluginResolveMs?: number
@@ -119,6 +122,7 @@ const reportJsonPath = path.join(reportRoot, 'report.json')
 const reportMdPath = path.join(reportRoot, 'report.md')
 const iterations = readPositiveIntegerEnv('HMR_LAB_ITERATIONS', 2)
 const timeoutMs = readPositiveIntegerEnv('HMR_LAB_TIMEOUT_MS', 30_000)
+const pollIntervalMs = readPositiveIntegerEnv('HMR_LAB_POLL_INTERVAL_MS', 25)
 const filter = process.env.HMR_LAB_FILTER?.trim()
 const failOnError = process.env.HMR_LAB_FAIL_ON_ERROR === '1'
 const astEngine = process.env.HMR_LAB_AST_ENGINE === 'oxc' ? 'oxc' : 'babel'
@@ -256,6 +260,7 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
         iteration: index + 1,
         marker,
         totalMs: profile?.totalMs ?? totalMs,
+        observedMs: totalMs,
         profile,
         impact,
         impactCount: impact.length,
@@ -283,6 +288,8 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     samples,
     averageMs: average(samples.map(sample => sample.totalMs)),
     maxMs: max(samples.map(sample => sample.totalMs)),
+    averageObservedMs: average(samples.map(sample => sample.observedMs)),
+    maxObservedMs: max(samples.map(sample => sample.observedMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
     averageBuildStartMs: averageOptional(samples.map(sample => sample.profile?.buildStartMs)),
     averagePluginResolveMs: averageOptional(samples.map(sample => sample.profile?.pluginResolveMs)),
@@ -367,7 +374,7 @@ async function waitForFile(filePath: string, waitMs = timeoutMs) {
     if (await pathExists(filePath)) {
       return
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for file: ${formatReportPath(filePath)}`)
 }
@@ -381,7 +388,7 @@ async function waitForFileContains(filePath: string, marker: string, waitMs = ti
         return
       }
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to contain marker: ${marker}`)
 }
@@ -393,7 +400,7 @@ async function waitForDistContains(marker: string, waitMs = timeoutMs) {
     if (matched) {
       return matched
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for dist to contain marker: ${marker}`)
 }
@@ -506,7 +513,7 @@ async function waitForHmrProfileSample(sourcePath: string, startLineCount: numbe
     if (latest) {
       return formatProfileSample(latest)
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   return undefined
 }
@@ -597,8 +604,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -607,6 +614,8 @@ function renderMarkdown(report: {
       scenario.source,
       formatMs(scenario.averageMs),
       formatMs(scenario.maxMs),
+      formatMs(scenario.averageObservedMs),
+      formatMs(scenario.maxObservedMs),
       formatMs(scenario.averageBundlerMs),
       formatMs(scenario.averageBuildStartMs),
       formatMs(scenario.averagePluginResolveMs),
@@ -636,12 +645,13 @@ function renderMarkdown(report: {
       lines.push(`- error: ${scenario.error}`)
     }
     lines.push('')
-    lines.push('| run | total | profile file | dirty/pending/emitted | changed outputs | sample impact |')
-    lines.push('| ---: | ---: | --- | --- | ---: | --- |')
+    lines.push('| run | profile | observed | profile file | dirty/pending/emitted | changed outputs | sample impact |')
+    lines.push('| ---: | ---: | ---: | --- | --- | ---: | --- |')
     for (const sample of scenario.samples) {
       lines.push([
         String(sample.iteration),
         formatMs(sample.totalMs),
+        formatMs(sample.observedMs),
         sample.profile?.file ?? '-',
         `${sample.profile?.dirtyCount ?? '-'}/${sample.profile?.pendingCount ?? '-'}/${sample.profile?.emittedCount ?? '-'}`,
         String(sample.impactCount),
