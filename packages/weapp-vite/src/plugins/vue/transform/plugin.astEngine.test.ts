@@ -10,6 +10,7 @@ const mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock = vi.hoisted(() => vi
 const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys))
 const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
+const isVueTransformSourceMapEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
 const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn((_pluginCtx: any, _configService: any, options?: any) => ({
   source: options?.source,
@@ -46,6 +47,7 @@ vi.mock('./injectSetDataPick', () => ({
 
 vi.mock('./compileOptions', () => ({
   createCompileVueFileOptions: createCompileVueFileOptionsMock,
+  isVueTransformSourceMapEnabled: isVueTransformSourceMapEnabledMock,
 }))
 
 vi.mock('../../utils/vueSfc', () => ({
@@ -143,6 +145,8 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys)
     shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()
     shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(false)
+    isVueTransformSourceMapEnabledMock.mockReset()
+    isVueTransformSourceMapEnabledMock.mockReturnValue(false)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockClear()
     collectOnPageScrollPerformanceWarningsMock.mockClear()
     pageMatcherIsPageFileMock.mockReset()
@@ -235,6 +239,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
   })
 
   it('returns a component stub for scriptless vue components', async () => {
+    isVueTransformSourceMapEnabledMock.mockReturnValue(true)
     compileVueFileMock.mockResolvedValueOnce({
       template: '<view />',
       meta: {},

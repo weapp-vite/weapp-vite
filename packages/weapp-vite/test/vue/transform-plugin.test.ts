@@ -308,7 +308,20 @@ describe('vue transform plugin', () => {
     })
 
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
-    const plugin = createVueTransformPlugin(createCtx() as any)
+    const plugin = createVueTransformPlugin(createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        inlineConfig: {
+          build: {
+            sourcemap: true,
+          },
+        },
+        relativeOutputPath: (abs: string) => path.basename(abs),
+        outputExtensions: {},
+        weappViteConfig: {},
+      },
+    }) as any)
 
     const result = await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 

@@ -1216,6 +1216,9 @@ describe('emitSharedVueEntryAssets', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              profile: {
+                dirtyReasonSummary: ['entry-style-only:1'],
+              },
             },
           },
         },
@@ -1266,6 +1269,9 @@ describe('emitSharedVueEntryAssets', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              profile: {
+                dirtyReasonSummary: ['entry-style-only:1'],
+              },
             },
           },
         },
@@ -1307,6 +1313,9 @@ describe('emitSharedVueEntryAssets', () => {
     readFileMock.mockResolvedValue(nextSource)
 
     const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const hmrProfile = {
+      dirtyReasonSummary: ['entry-style-only:1'],
+    }
     const result = await refreshCompiledVueEntryCacheInDev({
       filename: '/project/src/pages/index/index.vue',
       cached,
@@ -1315,6 +1324,7 @@ describe('emitSharedVueEntryAssets', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              profile: hmrProfile,
             },
           },
         },

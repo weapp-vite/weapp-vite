@@ -76,6 +76,13 @@ export function resolveDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined
   return undefined
 }
 
+export function isVueStyleOnlyDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
+  return dirtyReasonSummary?.some(item =>
+    item.startsWith('entry-style-only:')
+    || item.startsWith('style-sidecar:'),
+  ) === true
+}
+
 export function mayNeedTransformSetDataPick(
   template: string,
   options?: {

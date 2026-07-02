@@ -11,7 +11,7 @@ import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
-import { resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
+import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
 import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
@@ -194,6 +194,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       return cached.result
     }
     const currentStyleIndependentSignature = (dirtyEntryId && filename.endsWith('.vue'))
+      && isVueStyleOnlyDirtyReasonSummary(ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary)
       ? resolveVueSfcStyleIndependentSignature(source, filename)
       : undefined
     if (
@@ -236,14 +237,18 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       compileOptionsState,
     })
 
+    const nextStyleIndependentSignature = filename.endsWith('.vue')
+      ? (currentStyleIndependentSignature ?? resolveVueSfcStyleIndependentSignature(source, filename))
+      : undefined
+
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
-    cached.styleIndependentSignature = currentStyleIndependentSignature
+    cached.styleIndependentSignature = nextStyleIndependentSignature
     cached.refreshToken = 0
-    if (currentStyleIndependentSignature) {
+    if (nextStyleIndependentSignature) {
       ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
         filename,
-        currentStyleIndependentSignature,
+        nextStyleIndependentSignature,
       )
     }
     if (dirtyEntryId) {

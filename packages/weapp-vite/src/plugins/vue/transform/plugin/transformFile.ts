@@ -15,7 +15,7 @@ import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../scopedSlot'
 import { refreshStyleOnlyVueTransformResult } from '../styleOnly'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from './styleOnlyRefresh'
 import { parseUsingComponents } from './usingComponents'
 
@@ -93,7 +93,7 @@ export async function transformVueLikeFile(options: {
     }
     finally {
       recordHmrProfileDuration(
-        ctx.runtimeState.build.hmr.profile,
+        ctx.runtimeState.build?.hmr?.profile,
         profileKey,
         performance.now() - startedAt,
       )
@@ -137,6 +137,9 @@ export async function transformVueLikeFile(options: {
     }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const canAttemptStyleOnlyReuse = isVueStyleOnlyDirtyReasonSummary(
+      ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary,
+    )
     if (
       configService.isDev
       && cachedCompilation
@@ -167,13 +170,14 @@ export async function transformVueLikeFile(options: {
         map: returnedCode.map,
       }
     }
-    const currentStyleIndependentSignature = (configService.isDev && dirtyEntryId && filename.endsWith('.vue'))
+    const currentStyleIndependentSignature = (configService.isDev && dirtyEntryId && canAttemptStyleOnlyReuse && filename.endsWith('.vue'))
       ? resolveVueSfcStyleIndependentSignature(transformedSource, filename)
       : undefined
     const canReuseStyleOnlyVueCompilation = Boolean(
       configService.isDev
       && cachedCompilation
       && dirtyEntryId
+      && canAttemptStyleOnlyReuse
       && filename.endsWith('.vue')
       && !ctx.runtimeState.scan.isDirty
       && cachedCompilation.autoRoutesSignature === autoRoutesSignature
@@ -202,7 +206,7 @@ export async function transformVueLikeFile(options: {
         cachedCompilation.result = cachedResult
         cachedCompilation.styleIndependentSignature = currentStyleIndependentSignature
         cachedCompilation.refreshToken = 0
-        const hmrEventId = ctx.runtimeState.build.hmr.profile.eventId
+        const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
         if (hmrEventId != null) {
           styleRefreshTokens.set(filename, hmrEventId)
         }
@@ -242,15 +246,26 @@ export async function transformVueLikeFile(options: {
       compileVueFile,
       compileJsxFile,
     })))
-    const currentStyleBlocks = Array.isArray(result.meta?.styleBlocks)
+    let currentStyleBlocks = Array.isArray(result.meta?.styleBlocks)
       ? result.meta.styleBlocks as SFCStyleBlock[]
       : styleBlocksCache.get(filename)
+    if (!currentStyleBlocks) {
+      currentStyleBlocks = await measureStage('preloadSfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({
+        filename,
+        source: transformedSource,
+        styleBlocksCache,
+        readAndParseSfc,
+        createReadAndParseSfcOptions,
+        pluginCtx,
+        configService,
+      }))
+    }
     if (currentStyleBlocks) {
       styleBlocksCache.set(filename, currentStyleBlocks)
     }
     if (configService.isDev && dirtyEntryId) {
       const currentStyleSignature = createSfcStyleBlocksSignature(currentStyleBlocks)
-      const hmrEventId = ctx.runtimeState.build.hmr.profile.eventId
+      const hmrEventId = ctx.runtimeState.build?.hmr?.profile?.eventId
       if (hmrEventId != null && currentStyleSignature && currentStyleSignature !== previousStyleSignature) {
         styleRefreshTokens.set(filename, hmrEventId)
       }

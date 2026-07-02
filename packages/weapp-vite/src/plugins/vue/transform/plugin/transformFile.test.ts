@@ -59,6 +59,7 @@ vi.mock('../../resolver', () => ({
 
 vi.mock('../compileOptions', () => ({
   createCompileVueFileOptions: createCompileVueFileOptionsMock,
+  isVueTransformSourceMapEnabled: vi.fn(() => false),
 }))
 
 vi.mock('../scopedSlot', () => ({
@@ -320,6 +321,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               profile: {
                 eventId: 'hmr-1',
+                dirtyReasonSummary: ['entry-style-only:1'],
               },
             },
           },
@@ -378,6 +380,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               profile: {
                 eventId: 'hmr-1',
+                dirtyReasonSummary: ['entry-style-only:1'],
               },
             },
           },
@@ -412,6 +415,58 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(options.compilationCache.get('/project/src/components/card.vue').result.style).toContain('color:blue')
     expect(options.styleBlocksCache.get('/project/src/components/card.vue')).toBe(nextStyleBlocks)
     expect(options.styleRefreshTokens.get('/project/src/components/card.vue')).toBe('hmr-1')
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
+
+  it('recompiles json-only dirty updates even when style-independent signature is unchanged', async () => {
+    const previousSource = [
+      '<script setup>',
+      'definePageJson({ navigationBarTitleText: "before" })',
+      '</script>',
+      '<template><view /></template>',
+    ].join('\n')
+    const nextSource = previousSource.replace('before', 'after')
+    const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
+    const options = createBaseOptions({
+      code: nextSource,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                dirtyReasonSummary: ['entry-json-only:1'],
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result: {
+            template: '<view />',
+            script: 'Component({ cached: true })',
+            meta: {},
+          },
+          source: previousSource,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: 'same-signature',
+        }],
+      ]),
+    })
+    resolveVueSfcStyleIndependentSignatureMock.mockReturnValue('same-signature')
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ refreshed: true })'),
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 })

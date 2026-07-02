@@ -645,7 +645,11 @@ describe('runtime npm service', () => {
 
     const startedBuildTargets = new Set<string>()
     let releaseSourceBuild: (() => void) | undefined
+    let resolveSourceBuildStarted: (() => void) | undefined
     let resolveMainBuildStarted: (() => void) | undefined
+    const sourceBuildStarted = new Promise<void>((resolve) => {
+      resolveSourceBuildStarted = resolve
+    })
     const mainBuildStarted = new Promise<void>((resolve) => {
       resolveMainBuildStarted = resolve
     })
@@ -654,6 +658,7 @@ describe('runtime npm service', () => {
       const relOutDir = path.relative(cwd, outDir).replace(/\\/g, '/')
       if (relOutDir === '.weapp-vite/npm-source/miniprogram_npm') {
         startedBuildTargets.add(relOutDir)
+        resolveSourceBuildStarted?.()
         if (!releaseSourceBuild) {
           await new Promise<void>((resolve) => {
             releaseSourceBuild = resolve
@@ -669,7 +674,7 @@ describe('runtime npm service', () => {
 
     const service = createNpmService(ctx)
     const buildPromise = service.build()
-    await mainBuildStarted
+    await Promise.all([sourceBuildStarted, mainBuildStarted])
     expect(startedBuildTargets).toEqual(new Set([
       '.weapp-vite/npm-source/miniprogram_npm',
       'dist/miniprogram_npm',
@@ -1078,7 +1083,8 @@ describe('runtime npm service', () => {
       outDir: path.relative(cwd, args.outDir).replace(/\\/g, '/'),
     }))
 
-    expect(buildCalls).toEqual([
+    expect(buildCalls).toHaveLength(3)
+    expect(buildCalls).toEqual(expect.arrayContaining([
       {
         dep: 'dayjs',
         outDir: '.weapp-vite/npm-source/miniprogram_npm',
@@ -1091,7 +1097,7 @@ describe('runtime npm service', () => {
         dep: 'dayjs',
         outDir: 'dist-plugin/miniprogram_npm',
       },
-    ])
+    ]))
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__plugin__')
   })

@@ -141,6 +141,7 @@ var __wevuOptions = {
 	allowNullPropInput: true,
 	__wevu_isPage: true,
 	setup(__props, { expose }) {
+		expose();
 		return { tabItems: [{
 			label: "home",
 			icon: "home",
