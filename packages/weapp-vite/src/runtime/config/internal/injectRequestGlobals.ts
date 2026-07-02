@@ -510,6 +510,12 @@ function normalizeResolvedRequestGlobalTargets(
   return allowedTargets.filter(target => resolvedSet.has(target))
 }
 
+interface RequestGlobalsUsageAnalysis {
+  hasWebSocketUsageHint: boolean
+  importedTargets: WeappInjectRequestGlobalsTarget[]
+  referencedTargets: WeappInjectRequestGlobalsTarget[]
+}
+
 export function mayContainRequestGlobalsUsageByText(
   code: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
@@ -540,57 +546,11 @@ function extractRequestGlobalsUsageSource(code: string) {
   return blocks.join('\n')
 }
 
-function resolveReferencedRequestGlobalsTargets(
-  code: string,
+function resolveFallbackReferencedRequestGlobalsTargets(
+  usageSource: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
 ) {
-  if (allowedTargets.length === 0) {
-    return []
-  }
-
-  const usageSource = extractRequestGlobalsUsageSource(code)
-  if (!usageSource.trim()) {
-    return []
-  }
-
-  const allowedTargetSet = new Set(allowedTargets)
-  const fastPathMatched = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
-  if (!fastPathMatched) {
-    return []
-  }
-
-  try {
-    const ast = parseJsLike(usageSource)
-    const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
-
-    traverse(ast as any, {
-      Identifier(path: any) {
-        const identifierName = path.node?.name
-        if (!identifierName || !allowedTargetSet.has(identifierName)) {
-          return
-        }
-        if (typeof path.isReferencedIdentifier === 'function' && !path.isReferencedIdentifier()) {
-          return
-        }
-        if (path.scope?.hasBinding?.(identifierName)) {
-          return
-        }
-        resolvedTargets.add(identifierName)
-      },
-    })
-
-    return [...resolvedTargets]
-  }
-  catch {
-    return allowedTargets.filter(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
-  }
-}
-
-export function hasReferencedRequestGlobalsUsage(
-  code: string,
-  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
-) {
-  return resolveReferencedRequestGlobalsTargets(code, allowedTargets).length > 0
+  return allowedTargets.filter(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
 }
 
 function matchesRequestGlobalDependencyPattern(specifier: string, pattern: string | RegExp) {
@@ -601,27 +561,77 @@ function matchesRequestGlobalDependencyPattern(specifier: string, pattern: strin
   return pattern.test(specifier)
 }
 
-function resolveImportedRequestGlobalsTargets(
-  code: string,
+function resolveImportedRequestGlobalsTargetsFromSpecifiers(
+  specifiers: Iterable<string>,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
 ) {
-  if (allowedTargets.length === 0) {
-    return []
+  const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  for (const specifier of specifiers) {
+    for (const rule of CODE_USAGE_AUTO_RULES) {
+      if (!rule.dependencyPatterns.some(pattern => matchesRequestGlobalDependencyPattern(specifier, pattern))) {
+        continue
+      }
+      for (const target of rule.targets) {
+        if (allowedTargets.includes(target)) {
+          resolvedTargets.add(target)
+        }
+      }
+    }
   }
 
+  return normalizeResolvedRequestGlobalTargets(resolvedTargets, allowedTargets)
+}
+
+function resolveFallbackImportedRequestGlobalsSpecifiers(code: string) {
   const matchedSpecifiers = new Set<string>()
-  if (!REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))) {
-    return []
+  for (const specifier of REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS) {
+    if (code.includes(specifier)) {
+      matchedSpecifiers.add(specifier)
+    }
+  }
+  return matchedSpecifiers
+}
+
+function analyzeRequestGlobalsUsage(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+): RequestGlobalsUsageAnalysis {
+  const emptyAnalysis: RequestGlobalsUsageAnalysis = {
+    hasWebSocketUsageHint: false,
+    importedTargets: [],
+    referencedTargets: [],
+  }
+  if (allowedTargets.length === 0) {
+    return emptyAnalysis
   }
 
+  const usageSource = extractRequestGlobalsUsageSource(code)
+  const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)
+  if (!usageSource.trim()) {
+    return {
+      ...emptyAnalysis,
+      hasWebSocketUsageHint,
+    }
+  }
+
+  const allowedTargetSet = new Set(allowedTargets)
+  const mayHaveReferencedTargets = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
+  const mayHaveImportedTargets = REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+  if (!mayHaveReferencedTargets && !mayHaveImportedTargets) {
+    return {
+      ...emptyAnalysis,
+      hasWebSocketUsageHint,
+    }
+  }
+  const referencedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  const matchedSpecifiers = new Set<string>()
   const addSpecifier = (specifier: unknown) => {
     if (typeof specifier === 'string' && specifier.length > 0) {
       matchedSpecifiers.add(specifier)
     }
   }
-
   try {
-    const ast = parseJsLike(extractRequestGlobalsUsageSource(code))
+    const ast = parseJsLike(usageSource)
 
     traverse(ast as any, {
       ImportDeclaration(path: any) {
@@ -645,35 +655,44 @@ function resolveImportedRequestGlobalsTargets(
           addSpecifier(path.node.arguments?.[0]?.value)
         }
       },
+      Identifier(path: any) {
+        const identifierName = path.node?.name
+        if (!identifierName || !allowedTargetSet.has(identifierName)) {
+          return
+        }
+        if (typeof path.isReferencedIdentifier === 'function' && !path.isReferencedIdentifier()) {
+          return
+        }
+        if (path.scope?.hasBinding?.(identifierName)) {
+          return
+        }
+        referencedTargets.add(identifierName)
+      },
     })
+
+    return {
+      hasWebSocketUsageHint,
+      importedTargets: resolveImportedRequestGlobalsTargetsFromSpecifiers(matchedSpecifiers, allowedTargets),
+      referencedTargets: [...referencedTargets],
+    }
   }
   catch {
-    for (const specifier of REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS) {
-      if (code.includes(specifier)) {
-        matchedSpecifiers.add(specifier)
-      }
+    return {
+      hasWebSocketUsageHint,
+      importedTargets: resolveImportedRequestGlobalsTargetsFromSpecifiers(
+        resolveFallbackImportedRequestGlobalsSpecifiers(code),
+        allowedTargets,
+      ),
+      referencedTargets: resolveFallbackReferencedRequestGlobalsTargets(usageSource, allowedTargets),
     }
   }
+}
 
-  if (matchedSpecifiers.size === 0) {
-    return []
-  }
-
-  const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
-  for (const specifier of matchedSpecifiers) {
-    for (const rule of CODE_USAGE_AUTO_RULES) {
-      if (!rule.dependencyPatterns.some(pattern => matchesRequestGlobalDependencyPattern(specifier, pattern))) {
-        continue
-      }
-      for (const target of rule.targets) {
-        if (allowedTargets.includes(target)) {
-          resolvedTargets.add(target)
-        }
-      }
-    }
-  }
-
-  return normalizeResolvedRequestGlobalTargets(resolvedTargets, allowedTargets)
+export function hasReferencedRequestGlobalsUsage(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  return analyzeRequestGlobalsUsage(code, allowedTargets).referencedTargets.length > 0
 }
 
 export function resolveManualRequestGlobalsTargets(code: string): WeappInjectRequestGlobalsTarget[] {
@@ -706,9 +725,11 @@ export function resolveAutoRequestGlobalsTargets(
   if (!mayContainRequestGlobalsUsageByText(code, allowedTargets)) {
     return []
   }
-  const importedTargets = resolveImportedRequestGlobalsTargets(code, allowedTargets)
-  const referencedTargets = resolveReferencedRequestGlobalsTargets(code, allowedTargets)
-  const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)
+  const {
+    hasWebSocketUsageHint,
+    importedTargets,
+    referencedTargets,
+  } = analyzeRequestGlobalsUsage(code, allowedTargets)
   if (referencedTargets.length === 0 && importedTargets.length === 0 && !hasWebSocketUsageHint) {
     return []
   }
