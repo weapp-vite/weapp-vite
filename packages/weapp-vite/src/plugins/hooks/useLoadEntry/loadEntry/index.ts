@@ -437,6 +437,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           if (signatures.scriptSignature) {
             ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedVueEntryPath!, signatures.scriptSignature)
           }
+          if (signatures.tailwindContentSignature) {
+            ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(normalizedVueEntryPath!, signatures.tailwindContentSignature)
+          }
           if (signatures.hasTemplate !== undefined) {
             ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedVueEntryPath!, signatures.hasTemplate)
           }
@@ -631,6 +634,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           }
           if (signatures.scriptSignature) {
             ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, signatures.scriptSignature)
+          }
+          if (signatures.tailwindContentSignature) {
+            ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(normalizedId, signatures.tailwindContentSignature)
           }
           if (signatures.hasTemplate !== undefined) {
             ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedId, signatures.hasTemplate)

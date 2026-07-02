@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from './vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from './vueSfcSignature'
 
 describe('vueSfcSignature', () => {
   afterEach(() => {
@@ -104,6 +104,7 @@ const count = 1
       nonJsonSignature: resolveVueSfcNonJsonSignature(source, filename),
       scriptSignature: resolveVueSfcScriptSignature(source, filename),
       styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
+      tailwindContentSignature: resolveVueSfcTailwindContentSignature(source, filename),
       hasTemplate: resolveVueSfcHasTemplate(source, filename),
     })
   })

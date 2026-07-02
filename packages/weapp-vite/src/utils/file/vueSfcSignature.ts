@@ -8,6 +8,7 @@ interface VueSfcSignaturePayload {
   nonJson: unknown
   script: unknown
   styleIndependent: unknown
+  tailwindContent: unknown
   hasTemplate: boolean
 }
 
@@ -15,10 +16,13 @@ export interface VueSfcHmrSignatures {
   nonJsonSignature?: string
   scriptSignature?: string
   styleIndependentSignature?: string
+  tailwindContentSignature?: string
   hasTemplate?: boolean
 }
 
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+const JS_STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/
+const JS_STRING_LITERALS_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
@@ -98,6 +102,28 @@ function buildStyleIndependentDescriptorPayload(descriptor: SFCDescriptor, filen
   }
 }
 
+function collectScriptLiteralCandidates(content: string) {
+  const candidates: string[] = []
+  for (const match of content.matchAll(JS_STRING_LITERALS_RE)) {
+    candidates.push(match[0]!)
+  }
+  return candidates
+}
+
+function buildTailwindContentPayload(descriptor: SFCDescriptor) {
+  const script = descriptor.script?.content ?? ''
+  const scriptSetup = descriptor.scriptSetup?.content ?? ''
+  const scriptLiterals = [
+    ...collectScriptLiteralCandidates(script),
+    ...collectScriptLiteralCandidates(scriptSetup),
+  ]
+
+  return {
+    template: descriptor.template?.content ?? '',
+    scriptLiterals,
+  }
+}
+
 function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): VueSfcSignaturePayload | undefined {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
@@ -108,6 +134,7 @@ function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): Vu
     nonJson: buildNonJsonDescriptorPayload(descriptor, filename),
     script: buildScriptDescriptorPayload(descriptor, filename),
     styleIndependent: buildStyleIndependentDescriptorPayload(descriptor, filename),
+    tailwindContent: buildTailwindContentPayload(descriptor),
     hasTemplate: Boolean(descriptor.template?.content.trim()),
   }
 }
@@ -128,7 +155,11 @@ function buildVueSfcSignaturePayloadWithNative(source: string): VueSfcSignatureP
   }
 
   try {
-    return JSON.parse(payload) as VueSfcSignaturePayload
+    const parsed = JSON.parse(payload) as VueSfcSignaturePayload
+    if (!('tailwindContent' in parsed)) {
+      return undefined
+    }
+    return parsed
   }
   catch {
     return undefined
@@ -167,6 +198,19 @@ export function resolveVueSfcStyleIndependentSignature(source: string, filename:
   return payload ? hashPayload(payload.styleIndependent) : undefined
 }
 
+export function resolveVueSfcTailwindContentSignature(source: string, filename: string) {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  if (payload) {
+    return hashPayload(payload.tailwindContent)
+  }
+
+  if (!JS_STRING_LITERAL_RE.test(source)) {
+    return hashPayload(source)
+  }
+
+  return undefined
+}
+
 export function resolveVueSfcHasTemplate(source: string, filename: string) {
   return buildVueSfcSignaturePayload(source, filename)?.hasTemplate
 }
@@ -181,6 +225,7 @@ export function resolveVueSfcHmrSignatures(source: string, filename: string): Vu
     nonJsonSignature: hashPayload(payload.nonJson),
     scriptSignature: hashPayload(payload.script),
     styleIndependentSignature: hashPayload(payload.styleIndependent),
+    tailwindContentSignature: hashPayload(payload.tailwindContent),
     hasTemplate: payload.hasTemplate,
   }
 }

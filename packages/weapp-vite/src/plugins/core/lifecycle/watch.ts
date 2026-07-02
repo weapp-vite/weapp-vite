@@ -398,6 +398,9 @@ async function processChangedFile(
     if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !tailwindContentExtensions.has(pathKind.extension)) {
       return false
     }
+    if (vueEntryUpdateInspector && !await vueEntryUpdateInspector.isTailwindContentUpdate()) {
+      return false
+    }
     if (!shouldRefreshAppStyleForTailwindContent(state)) {
       return false
     }
@@ -450,6 +453,7 @@ async function processChangedFile(
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {

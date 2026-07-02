@@ -115,6 +115,7 @@ function createState(overrides: Record<string, any> = {}) {
             vueEntryNonJsonSignatures: new Map(),
             vueEntryScriptSignatures: new Map(),
             vueEntryStyleIndependentSignatures: new Map(),
+            vueEntryTailwindContentSignatures: new Map(),
             dirtyVueEntryIds: new Set(),
           },
         },
@@ -630,6 +631,98 @@ describe('core lifecycle watch hook', () => {
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
       'entry-direct:1',
+      'tailwind-content:2',
+    ])
+  })
+
+  it('skips Tailwind content hmr for vue script updates without content signature changes', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+const count = 1
+const klass = 'text-red-500'
+</script>
+
+<template><view :class="klass">{{ count }}</view></template>`
+    const nextSource = previousSource.replace('const count = 1', 'const count = 2')
+    const { resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
+      pageEntryId,
+      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      pageEntryId,
+      resolveVueSfcScriptSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      pageEntryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(findCssEntryMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('keeps Tailwind content hmr for vue template class changes', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view class="text-red-500">{{ count }}</view></template>`
+    const nextSource = previousSource.replace('text-red-500', 'text-blue-500')
+    const { resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
+      pageEntryId,
+      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      pageEntryId,
+      resolveVueSfcScriptSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      pageEntryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-local-asset:1',
       'tailwind-content:2',
     ])
   })

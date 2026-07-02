@@ -129,6 +129,7 @@ export interface RuntimeState {
       vueEntryNonJsonSignatures: Map<string, string>
       vueEntryScriptSignatures: Map<string, string>
       vueEntryStyleIndependentSignatures: Map<string, string>
+      vueEntryTailwindContentSignatures: Map<string, string>
       appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
       didEmitAllEntries: boolean
@@ -359,6 +360,7 @@ export function createRuntimeState(): RuntimeState {
         vueEntryNonJsonSignatures: new Map<string, string>(),
         vueEntryScriptSignatures: new Map<string, string>(),
         vueEntryStyleIndependentSignatures: new Map<string, string>(),
+        vueEntryTailwindContentSignatures: new Map<string, string>(),
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
         didEmitAllEntries: false,

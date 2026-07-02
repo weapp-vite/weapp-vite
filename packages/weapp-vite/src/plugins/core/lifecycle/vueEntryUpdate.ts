@@ -8,6 +8,7 @@ export interface VueEntryUpdateInspector {
   isJsonOnlyUpdate: () => Promise<boolean>
   isLocalAssetOnlyUpdate: () => Promise<boolean>
   isStyleOnlyUpdate: () => Promise<boolean>
+  isTailwindContentUpdate: () => Promise<boolean>
 }
 
 export function createVueEntryUpdateInspector(
@@ -77,6 +78,16 @@ export function createVueEntryUpdateInspector(
       }
 
       return (await resolveSignatures())?.styleIndependentSignature === previous
+    },
+
+    async isTailwindContentUpdate() {
+      const previous = state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.get(normalizedId)
+      if (!previous) {
+        return true
+      }
+
+      const current = (await resolveSignatures())?.tailwindContentSignature
+      return !current || current !== previous
     },
   }
 }

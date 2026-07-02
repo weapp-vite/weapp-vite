@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from '../../../utils/file/vueSfcSignature'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 function createState(filename: string, source: string) {
@@ -19,6 +19,9 @@ function createState(filename: string, source: string) {
             ]),
             vueEntryStyleIndependentSignatures: new Map([
               [filename, resolveVueSfcStyleIndependentSignature(source, filename)],
+            ]),
+            vueEntryTailwindContentSignatures: new Map([
+              [filename, resolveVueSfcTailwindContentSignature(source, filename)],
             ]),
           },
         },
@@ -46,6 +49,7 @@ const title = 'same'
     await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(true)
     await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(true)
     await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(true)
+    await expect(inspector.isTailwindContentUpdate()).resolves.toBe(false)
     await expect(inspector.isAppShellTopologyUpdate()).resolves.toBe(false)
     await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(true)
 

@@ -299,6 +299,9 @@ export async function finalizeTransformCompiledResult(options: {
     if (signatures.scriptSignature && hmr?.vueEntryScriptSignatures) {
       hmr.vueEntryScriptSignatures.set(normalizedFilename, signatures.scriptSignature)
     }
+    if (signatures.tailwindContentSignature && hmr?.vueEntryTailwindContentSignatures) {
+      hmr.vueEntryTailwindContentSignatures.set(normalizedFilename, signatures.tailwindContentSignature)
+    }
     const nextStyleIndependentSignature = styleIndependentSignature
       ?? signatures.styleIndependentSignature
     if (nextStyleIndependentSignature && hmr?.vueEntryStyleIndependentSignatures) {

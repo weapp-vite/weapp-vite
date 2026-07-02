@@ -2,6 +2,7 @@
   <view class="sfc-page">
     <view class="sfc-page__title">SFC_TEMPLATE_MARKER</view>
     <view class="sfc-page__script">{{ scriptMarker }}</view>
+    <view class="sfc-page__state">{{ scriptState }}</view>
     <view class="sfc-page__shared">{{ shared }}</view>
   </view>
 </template>
@@ -10,6 +11,7 @@
 import { createSharedLabel } from '../../shared/tokens'
 
 const scriptMarker = 'SFC_SCRIPT_MARKER'
+const scriptState = SFC_SCRIPT_STATE_MARKER
 const shared = createSharedLabel('sfc-page')
 </script>
 

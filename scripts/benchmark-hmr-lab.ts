@@ -156,6 +156,7 @@ const SCENARIOS: ScenarioCase[] = [
   createReplaceScenario('component-json', 'component json', 'src/components/probe-card/index.json', 'COMP_JSON_MARKER', fileWait('components/probe-card/index.json')),
   createReplaceScenario('sfc-template', 'Vue SFC template', 'src/pages/sfc/index.vue', 'SFC_TEMPLATE_MARKER', fileWait('pages/sfc/index.wxml')),
   createReplaceScenario('sfc-script', 'Vue SFC script', 'src/pages/sfc/index.vue', 'SFC_SCRIPT_MARKER', fileWait('pages/sfc/index.js')),
+  createReplaceScenario('sfc-script-state', 'Vue SFC script state', 'src/pages/sfc/index.vue', 'SFC_SCRIPT_STATE_MARKER', fileWait('pages/sfc/index.js'), marker => String(createNumericMarker(marker))),
   createReplaceScenario('sfc-style', 'Vue SFC style', 'src/pages/sfc/index.vue', 'sfc-style-marker', fileWait('pages/sfc/index.wxss'), cssExpected),
   createReplaceScenario('html-template', 'HTML template', 'src/pages/html/index.html', 'HTML_TEMPLATE_MARKER', fileWait('pages/html/index.wxml')),
   createReplaceScenario('shared-ts', 'shared TypeScript dependency', 'src/shared/tokens.ts', 'SHARED_TOKEN_MARKER', distWait),
@@ -362,6 +363,10 @@ function createReplaceScenario(
       return source.replace(baselineMarker, replacement)
     },
   }
+}
+
+function createNumericMarker(marker: string) {
+  return Number.parseInt(createHash('sha256').update(marker).digest('hex').slice(0, 8), 16)
 }
 
 function fileWait(distRel: string) {

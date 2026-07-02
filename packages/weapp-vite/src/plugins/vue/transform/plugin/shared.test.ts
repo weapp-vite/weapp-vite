@@ -1296,6 +1296,7 @@ console.log(pages, routeSubPackages)
               vueEntryHasTemplate: new Map(),
               vueEntryNonJsonSignatures: new Map(),
               vueEntryScriptSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
             },
           },
         },
@@ -1350,6 +1351,7 @@ console.log(pages, routeSubPackages)
       vueEntryHasTemplate: new Map<string, boolean>(),
       vueEntryNonJsonSignatures: new Map<string, string>(),
       vueEntryScriptSignatures: new Map<string, string>(),
+      vueEntryTailwindContentSignatures: new Map<string, string>(),
     }
     const source = '<template><view /></template><script setup>const count = 1</script>'
 
@@ -1383,6 +1385,7 @@ console.log(pages, routeSubPackages)
     expect(hmr.vueEntryHasTemplate.get('/project/src/components/card.vue')).toBe(true)
     expect(hmr.vueEntryNonJsonSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
     expect(hmr.vueEntryScriptSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntryTailwindContentSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {
