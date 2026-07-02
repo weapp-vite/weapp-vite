@@ -29,6 +29,7 @@ export interface AutoImportService {
   collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
+  hasPendingRegistrations?: () => boolean
   awaitPendingRegistrations?: () => Promise<void>
   awaitManifestWrites: () => Promise<void>
 }

@@ -230,6 +230,7 @@ interface CreateLoaderOptions {
     absoluteRoot: string
     pluginJsonPath: string
   }
+  autoImportService?: any
   buildTarget?: 'app' | 'plugin'
   isDev?: boolean
   pluginOnly?: boolean
@@ -289,6 +290,7 @@ function createLoader(options?: CreateLoaderOptions) {
   }
 
   const compilerCtx = {
+    autoImportService: options?.autoImportService,
     jsonService,
     configService,
     scanService,
@@ -1179,6 +1181,28 @@ describe('createEntryLoader', () => {
 
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
     expect(runtimeState.autoImport.pendingEntriesByImporter.has('/project/src/pages/home')).toBe(false)
+  })
+
+  it('skips awaiting auto-import registrations when none are pending', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+    const awaitPendingRegistrations = vi.fn(async () => {})
+    const { loader, jsonService } = createLoader({
+      autoImportService: {
+        hasPendingRegistrations: vi.fn(() => false),
+        awaitPendingRegistrations,
+      },
+    })
+    jsonService.read.mockResolvedValue({
+      usingComponents: {},
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    expect(awaitPendingRegistrations).not.toHaveBeenCalled()
   })
 
   it('dedupes normalized component entries before chunk emission', async () => {

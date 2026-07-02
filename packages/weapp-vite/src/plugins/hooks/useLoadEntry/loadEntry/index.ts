@@ -409,7 +409,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
       }
 
-      await ctx.autoImportService?.awaitPendingRegistrations?.()
+      if (ctx.autoImportService?.hasPendingRegistrations?.() !== false) {
+        await ctx.autoImportService?.awaitPendingRegistrations?.()
+      }
       const injectedAutoImportEntries = applyAutoImports(baseName, json) ?? []
       const componentEntries = analyzeCommonJson(json)
       const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter

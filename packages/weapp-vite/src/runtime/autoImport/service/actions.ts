@@ -206,6 +206,10 @@ export function createAutoImportActions(
       return Array.from(options.registry.values())
     },
 
+    hasPendingRegistrations() {
+      return options.pendingRegistrations.size > 0
+    },
+
     awaitPendingRegistrations() {
       return Promise.all([...options.pendingRegistrations]).then(() => {})
     },

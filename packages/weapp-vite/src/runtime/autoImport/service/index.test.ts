@@ -618,7 +618,9 @@ describe('autoImport service index', () => {
     })
 
     const service = createAutoImportService(createContext())
+    expect(service.hasPendingRegistrations?.()).toBe(false)
     const registerPromise = service.registerPotentialComponent('/project/src/components/hot-card/index.vue')
+    expect(service.hasPendingRegistrations?.()).toBe(true)
     const pendingPromise = service.awaitPendingRegistrations?.()
     await Promise.resolve()
 
@@ -635,6 +637,7 @@ describe('autoImport service index', () => {
     await registerPromise
     await pendingPromise
     expect(settled).toBe(true)
+    expect(service.hasPendingRegistrations?.()).toBe(false)
   })
 
   it('does not reschedule unchanged resolver outputs repeatedly', () => {
