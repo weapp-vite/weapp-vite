@@ -15,6 +15,10 @@ export interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
   entryCodeReadMs?: number
@@ -89,6 +93,10 @@ export interface HmrProfileAnalyzeResult {
     coreTransformMs: HmrProfileMetricSummary
     wevuTransformMs: HmrProfileMetricSummary
     vueTransformMs: HmrProfileMetricSummary
+    vueReadSourceMs: HmrProfileMetricSummary
+    vueCompileMs: HmrProfileMetricSummary
+    vueFinalizeCompiledMs: HmrProfileMetricSummary
+    vueFinalizeCodeMs: HmrProfileMetricSummary
     coreLoadMs: HmrProfileMetricSummary
     entryLoadMs: HmrProfileMetricSummary
     entryCodeReadMs: HmrProfileMetricSummary
@@ -221,6 +229,10 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const coreTransformValues: number[] = []
   const wevuTransformValues: number[] = []
   const vueTransformValues: number[] = []
+  const vueReadSourceValues: number[] = []
+  const vueCompileValues: number[] = []
+  const vueFinalizeCompiledValues: number[] = []
+  const vueFinalizeCodeValues: number[] = []
   const coreLoadValues: number[] = []
   const entryLoadValues: number[] = []
   const entryCodeReadValues: number[] = []
@@ -279,6 +291,18 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     }
     if (isFiniteNumber(sample.vueTransformMs)) {
       vueTransformValues.push(sample.vueTransformMs)
+    }
+    if (isFiniteNumber(sample.vueReadSourceMs)) {
+      vueReadSourceValues.push(sample.vueReadSourceMs)
+    }
+    if (isFiniteNumber(sample.vueCompileMs)) {
+      vueCompileValues.push(sample.vueCompileMs)
+    }
+    if (isFiniteNumber(sample.vueFinalizeCompiledMs)) {
+      vueFinalizeCompiledValues.push(sample.vueFinalizeCompiledMs)
+    }
+    if (isFiniteNumber(sample.vueFinalizeCodeMs)) {
+      vueFinalizeCodeValues.push(sample.vueFinalizeCodeMs)
     }
     if (isFiniteNumber(sample.coreLoadMs)) {
       coreLoadValues.push(sample.coreLoadMs)
@@ -410,6 +434,10 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       coreTransformMs: createMetricSummary(coreTransformValues),
       wevuTransformMs: createMetricSummary(wevuTransformValues),
       vueTransformMs: createMetricSummary(vueTransformValues),
+      vueReadSourceMs: createMetricSummary(vueReadSourceValues),
+      vueCompileMs: createMetricSummary(vueCompileValues),
+      vueFinalizeCompiledMs: createMetricSummary(vueFinalizeCompiledValues),
+      vueFinalizeCodeMs: createMetricSummary(vueFinalizeCodeValues),
       coreLoadMs: createMetricSummary(coreLoadValues),
       entryLoadMs: createMetricSummary(entryLoadValues),
       entryCodeReadMs: createMetricSummary(entryCodeReadValues),

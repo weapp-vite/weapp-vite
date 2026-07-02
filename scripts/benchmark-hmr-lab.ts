@@ -22,6 +22,10 @@ interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
   bundlerMs?: number
   renderStartMs?: number
   generateBundleMs?: number
@@ -91,6 +95,11 @@ interface ScenarioResult {
   averageBundlerMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
+  averageVueTransformMs?: number
+  averageVueReadSourceMs?: number
+  averageVueCompileMs?: number
+  averageVueFinalizeCompiledMs?: number
+  averageVueFinalizeCodeMs?: number
   averageGenerateBundleMs?: number
   averageGenerateRewriteMs?: number
   averageWriteMs?: number
@@ -280,6 +289,11 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
     averageTransformMs: averageOptional(samples.map(sample => sample.profile?.transformMs)),
+    averageVueTransformMs: averageOptional(samples.map(sample => sample.profile?.vueTransformMs)),
+    averageVueReadSourceMs: averageOptional(samples.map(sample => sample.profile?.vueReadSourceMs)),
+    averageVueCompileMs: averageOptional(samples.map(sample => sample.profile?.vueCompileMs)),
+    averageVueFinalizeCompiledMs: averageOptional(samples.map(sample => sample.profile?.vueFinalizeCompiledMs)),
+    averageVueFinalizeCodeMs: averageOptional(samples.map(sample => sample.profile?.vueFinalizeCodeMs)),
     averageGenerateBundleMs: averageOptional(samples.map(sample => sample.profile?.generateBundleMs)),
     averageGenerateRewriteMs: averageOptional(samples.map(sample => sample.profile?.generateRewriteMs)),
     averageWriteMs: averageOptional(samples.map(sample => sample.profile?.writeMs)),
@@ -583,8 +597,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg total | max total | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -597,6 +611,12 @@ function renderMarkdown(report: {
       formatMs(scenario.averageBuildStartMs),
       formatMs(scenario.averagePluginResolveMs),
       formatMs(scenario.averageTransformMs),
+      formatMs(scenario.averageVueTransformMs),
+      formatMs(scenario.averageVueCompileMs),
+      formatMs(sumOptional([
+        scenario.averageVueFinalizeCompiledMs,
+        scenario.averageVueFinalizeCodeMs,
+      ])),
       formatMs(scenario.averageGenerateBundleMs),
       formatMs(scenario.averageGenerateRewriteMs),
       formatMs(scenario.averageWriteMs),
@@ -665,6 +685,14 @@ function max(values: number[]) {
     return undefined
   }
   return Math.max(...values)
+}
+
+function sumOptional(values: Array<number | undefined>) {
+  const finiteValues = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+  if (!finiteValues.length) {
+    return undefined
+  }
+  return finiteValues.reduce((sum, value) => sum + value, 0)
 }
 
 function formatMs(value: number | undefined) {

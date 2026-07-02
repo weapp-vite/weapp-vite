@@ -3,8 +3,10 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
+import { performance } from 'node:perf_hooks'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../utils/file/vueSfcSignature'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { syncVueSfcStyleDependencies } from '../../../utils/invalidateEntry'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
@@ -80,6 +82,23 @@ export async function transformVueLikeFile(options: {
     return null
   }
   const sourceMap = isVueTransformSourceMapEnabled(configService)
+  const measureVueHmrStage = async <T>(
+    stage: string,
+    profileKey: Parameters<typeof recordHmrProfileDuration>[1],
+    action: () => Promise<T>,
+  ) => {
+    const startedAt = performance.now()
+    try {
+      return await measureStage(stage, action)
+    }
+    finally {
+      recordHmrProfileDuration(
+        ctx.runtimeState.build.hmr.profile,
+        profileKey,
+        performance.now() - startedAt,
+      )
+    }
+  }
 
   try {
     const cachedCompilation = compilationCache.get(filename)
@@ -87,7 +106,7 @@ export async function transformVueLikeFile(options: {
       (cachedCompilation?.result.meta?.styleBlocks as SFCStyleBlock[] | undefined)
       ?? styleBlocksCache.get(filename),
     )
-    const source = await measureStage('readSource', async () => await loadTransformSource({
+    const source = await measureVueHmrStage('readSource', 'vueReadSourceMs', async () => await loadTransformSource({
       code,
       filename,
       isDev: configService.isDev,
@@ -127,7 +146,7 @@ export async function transformVueLikeFile(options: {
     ) {
       cachedCompilation.refreshToken = 0
       const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
-      const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+      const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
         result: cachedResult,
         filename,
         styleBlocks: (cachedResult.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
@@ -187,7 +206,7 @@ export async function transformVueLikeFile(options: {
         if (hmrEventId != null) {
           styleRefreshTokens.set(filename, hmrEventId)
         }
-        const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+        const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
           result: cachedResult,
           filename,
           styleBlocks,
@@ -216,7 +235,7 @@ export async function transformVueLikeFile(options: {
       componentMetaCache,
     })
 
-    const result = normalizeVueTransformResult(await measureStage('compile', async () => await compileTransformEntryResult({
+    const result = normalizeVueTransformResult(await measureVueHmrStage('compile', 'vueCompileMs', async () => await compileTransformEntryResult({
       transformedSource,
       filename,
       compileOptions,
@@ -250,7 +269,7 @@ export async function transformVueLikeFile(options: {
     }
     registerScopedSlotHostGenerics(ctx, result.scopedSlotComponents, parseUsingComponents(result.config))
 
-    await measureStage('finalizeCompiledResult', async () => {
+    await measureVueHmrStage('finalizeCompiledResult', 'vueFinalizeCompiledMs', async () => {
       await finalizeTransformCompiledResult({
         ctx,
         pluginCtx,
@@ -274,7 +293,7 @@ export async function transformVueLikeFile(options: {
       })
     })
 
-    const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+    const returnedCode = await measureVueHmrStage('finalizeCode', 'vueFinalizeCodeMs', async () => finalizeTransformEntryCode({
       result,
       filename,
       styleBlocks: (result.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),

@@ -151,6 +151,10 @@ export interface RuntimeState {
         coreTransformMs?: number
         wevuTransformMs?: number
         vueTransformMs?: number
+        vueReadSourceMs?: number
+        vueCompileMs?: number
+        vueFinalizeCompiledMs?: number
+        vueFinalizeCodeMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
         entryCodeReadMs?: number
@@ -203,6 +207,10 @@ export interface RuntimeState {
         coreTransformMs?: number
         wevuTransformMs?: number
         vueTransformMs?: number
+        vueReadSourceMs?: number
+        vueCompileMs?: number
+        vueFinalizeCompiledMs?: number
+        vueFinalizeCodeMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
         entryCodeReadMs?: number

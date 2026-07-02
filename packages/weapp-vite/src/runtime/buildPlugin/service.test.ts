@@ -923,6 +923,8 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile = {
       buildCoreMs: 120.5,
       transformMs: 40.25,
+      vueCompileMs: 12.5,
+      vueFinalizeCodeMs: 2.25,
       writeMs: 6.5,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
@@ -934,6 +936,8 @@ describe('runtime buildPlugin service', () => {
       expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 40.25 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-compile 12.50 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-finalize-code 2.25 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 6.50 ms'))
     expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('watch->dirty'))
     expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('d/p/e'))
@@ -976,6 +980,7 @@ describe('runtime buildPlugin service', () => {
       {
         buildCoreMs: 40,
         transformMs: 10,
+        vueCompileMs: 4,
         writeMs: 3,
         watchToDirtyMs: 2,
         emitMs: 8,
@@ -989,6 +994,7 @@ describe('runtime buildPlugin service', () => {
       {
         buildCoreMs: 42,
         transformMs: 11,
+        vueCompileMs: 5,
         writeMs: 4,
         watchToDirtyMs: 3,
         emitMs: 9,
@@ -1009,6 +1015,7 @@ describe('runtime buildPlugin service', () => {
       expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 11.00 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-compile 5.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 4.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('d/p/e 1/2/2'))
@@ -1057,6 +1064,10 @@ describe('runtime buildPlugin service', () => {
       coreTransformMs: 2.5,
       wevuTransformMs: 3,
       vueTransformMs: 4,
+      vueReadSourceMs: 0.5,
+      vueCompileMs: 2,
+      vueFinalizeCompiledMs: 0.75,
+      vueFinalizeCodeMs: 0.75,
       coreLoadMs: 4,
       entryLoadMs: 2.5,
       requestGlobalsMs: 1,
@@ -1105,6 +1116,10 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"coreTransformMs":2.5')
     expect(payload).toContain('"wevuTransformMs":3')
     expect(payload).toContain('"vueTransformMs":4')
+    expect(payload).toContain('"vueReadSourceMs":0.5')
+    expect(payload).toContain('"vueCompileMs":2')
+    expect(payload).toContain('"vueFinalizeCompiledMs":0.75')
+    expect(payload).toContain('"vueFinalizeCodeMs":0.75')
     expect(payload).toContain('"coreLoadMs":4')
     expect(payload).toContain('"entryLoadMs":2.5')
     expect(payload).toContain('"requestGlobalsMs":1')

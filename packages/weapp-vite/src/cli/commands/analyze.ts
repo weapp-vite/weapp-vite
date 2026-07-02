@@ -259,6 +259,10 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const pluginResolveSummary = formatMetricSummary('plugin-resolve', result.metrics.pluginResolveMs)
   const coreLoadSummary = formatMetricSummary('core-load', result.metrics.coreLoadMs)
   const entryLoadSummary = formatMetricSummary('entry-load', result.metrics.entryLoadMs)
+  const vueReadSourceSummary = formatMetricSummary('vue-read', result.metrics.vueReadSourceMs)
+  const vueCompileSummary = formatMetricSummary('vue-compile', result.metrics.vueCompileMs)
+  const vueFinalizeCompiledSummary = formatMetricSummary('vue-finalize-compiled', result.metrics.vueFinalizeCompiledMs)
+  const vueFinalizeCodeSummary = formatMetricSummary('vue-finalize-code', result.metrics.vueFinalizeCodeMs)
   const entryEmitOutputSummary = formatMetricSummary('entry-emit-output', result.metrics.entryEmitOutputMs)
   const entryTemplateScanSummary = formatMetricSummary('entry-template-scan', result.metrics.entryTemplateScanMs)
   const entryAutoImportSummary = formatMetricSummary('entry-auto-import', result.metrics.entryAutoImportMs)
@@ -284,7 +288,7 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   const resolveSummary = formatOperationSummary('resolve calls', result.operations.resolveCount)
   const skippedLoadedSummary = formatOperationSummary('loaded skips', result.operations.skippedLoadedCount)
 
-  for (const summary of [totalSummary, buildStartSummary, pluginResolveSummary, coreLoadSummary, entryLoadSummary, entryEmitOutputSummary, entryTemplateScanSummary, entryAutoImportSummary, entryScriptSetupSummary, entryVueSignatureSummary, entrySidecarResolveSummary, entryJsonReadSummary, entryVueConfigSummary, entryPrepareSummary, entryResolveSummary, entryStyleScanSummary, entryStyleReadSummary, entryCodeReadSummary, entryChunkEmitSummary, entryLayoutSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
+  for (const summary of [totalSummary, buildStartSummary, pluginResolveSummary, coreLoadSummary, entryLoadSummary, vueReadSourceSummary, vueCompileSummary, vueFinalizeCompiledSummary, vueFinalizeCodeSummary, entryEmitOutputSummary, entryTemplateScanSummary, entryAutoImportSummary, entryScriptSetupSummary, entryVueSignatureSummary, entrySidecarResolveSummary, entryJsonReadSummary, entryVueConfigSummary, entryPrepareSummary, entryResolveSummary, entryStyleScanSummary, entryStyleReadSummary, entryCodeReadSummary, entryChunkEmitSummary, entryLayoutSummary, requestGlobalsSummary, weapiResolveSummary, watchSummary, emitSummary, sharedSummary]) {
     if (summary) {
       logger.info(`- ${summary}`)
     }

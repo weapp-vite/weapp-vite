@@ -19,6 +19,10 @@ interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
   entryCodeReadMs?: number
@@ -112,6 +116,22 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'vue-transform',
       value: sample.vueTransformMs,
+    },
+    {
+      label: 'vue-read',
+      value: sample.vueReadSourceMs,
+    },
+    {
+      label: 'vue-compile',
+      value: sample.vueCompileMs,
+    },
+    {
+      label: 'vue-finalize-compiled',
+      value: sample.vueFinalizeCompiledMs,
+    },
+    {
+      label: 'vue-finalize-code',
+      value: sample.vueFinalizeCodeMs,
     },
     {
       label: 'core-load',

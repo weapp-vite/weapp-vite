@@ -69,6 +69,10 @@ interface HmrProfileJsonSample {
   coreTransformMs?: number
   wevuTransformMs?: number
   vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
   entryCodeReadMs?: number
@@ -119,6 +123,10 @@ interface HmrPhaseRegressionCandidate {
     | 'core-transform'
     | 'wevu-transform'
     | 'vue-transform'
+    | 'vue-read'
+    | 'vue-compile'
+    | 'vue-finalize-compiled'
+    | 'vue-finalize-code'
     | 'core-load'
     | 'entry-load'
     | 'entry-code-read'
@@ -302,6 +310,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       coreTransformMs: profile.coreTransformMs,
       wevuTransformMs: profile.wevuTransformMs,
       vueTransformMs: profile.vueTransformMs,
+      vueReadSourceMs: profile.vueReadSourceMs,
+      vueCompileMs: profile.vueCompileMs,
+      vueFinalizeCompiledMs: profile.vueFinalizeCompiledMs,
+      vueFinalizeCodeMs: profile.vueFinalizeCodeMs,
       coreLoadMs: profile.coreLoadMs,
       entryLoadMs: profile.entryLoadMs,
       entryCodeReadMs: profile.entryCodeReadMs,
@@ -496,6 +508,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         typeof profile.requestGlobalsMs === 'number' ? `request-globals ${profile.requestGlobalsMs.toFixed(2)} ms` : undefined,
         typeof profile.weapiResolveMs === 'number' ? `weapi-resolve ${profile.weapiResolveMs.toFixed(2)} ms` : undefined,
         typeof profile.transformMs === 'number' ? `transform ${profile.transformMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueReadSourceMs === 'number' ? `vue-read ${profile.vueReadSourceMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueCompileMs === 'number' ? `vue-compile ${profile.vueCompileMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueFinalizeCompiledMs === 'number' ? `vue-finalize-compiled ${profile.vueFinalizeCompiledMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueFinalizeCodeMs === 'number' ? `vue-finalize-code ${profile.vueFinalizeCodeMs.toFixed(2)} ms` : undefined,
         typeof profile.writeMs === 'number' ? `write ${profile.writeMs.toFixed(2)} ms` : undefined,
       ].filter((segment): segment is string => Boolean(segment))
 
@@ -510,6 +526,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.transformMs !== undefined) {
       verboseSegments.push(`transform ${profile.transformMs.toFixed(2)} ms`)
+    }
+    if (profile.vueReadSourceMs !== undefined) {
+      verboseSegments.push(`vue-read ${profile.vueReadSourceMs.toFixed(2)} ms`)
+    }
+    if (profile.vueCompileMs !== undefined) {
+      verboseSegments.push(`vue-compile ${profile.vueCompileMs.toFixed(2)} ms`)
+    }
+    if (profile.vueFinalizeCompiledMs !== undefined) {
+      verboseSegments.push(`vue-finalize-compiled ${profile.vueFinalizeCompiledMs.toFixed(2)} ms`)
+    }
+    if (profile.vueFinalizeCodeMs !== undefined) {
+      verboseSegments.push(`vue-finalize-code ${profile.vueFinalizeCodeMs.toFixed(2)} ms`)
     }
     if (profile.buildStartMs !== undefined) {
       verboseSegments.push(`build-start ${profile.buildStartMs.toFixed(2)} ms`)
@@ -651,32 +679,36 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'core-transform': 6,
       'wevu-transform': 7,
       'vue-transform': 8,
-      'core-load': 9,
-      'entry-load': 10,
-      'entry-emit-output': 11,
-      'entry-template-scan': 12,
-      'entry-auto-import': 13,
-      'entry-script-setup': 14,
-      'entry-vue-signature': 15,
-      'entry-sidecar-resolve': 16,
-      'entry-json-read': 17,
-      'entry-vue-config': 18,
-      'entry-prepare': 19,
-      'entry-resolve': 20,
-      'entry-style-scan': 21,
-      'entry-style-read': 22,
-      'entry-code-read': 23,
-      'entry-chunk-emit': 24,
-      'entry-layout': 25,
-      'request-globals': 26,
-      'weapi-resolve': 27,
-      'render-start': 28,
-      'generate': 29,
-      'generate-shared': 30,
-      'generate-rewrite': 31,
-      'module-graph': 32,
-      'watch->dirty': 33,
-      'build-core': 34,
+      'vue-read': 9,
+      'vue-compile': 10,
+      'vue-finalize-compiled': 11,
+      'vue-finalize-code': 12,
+      'core-load': 13,
+      'entry-load': 14,
+      'entry-emit-output': 15,
+      'entry-template-scan': 16,
+      'entry-auto-import': 17,
+      'entry-script-setup': 18,
+      'entry-vue-signature': 19,
+      'entry-sidecar-resolve': 20,
+      'entry-json-read': 21,
+      'entry-vue-config': 22,
+      'entry-prepare': 23,
+      'entry-resolve': 24,
+      'entry-style-scan': 25,
+      'entry-style-read': 26,
+      'entry-code-read': 27,
+      'entry-chunk-emit': 28,
+      'entry-layout': 29,
+      'request-globals': 30,
+      'weapi-resolve': 31,
+      'render-start': 32,
+      'generate': 33,
+      'generate-shared': 34,
+      'generate-rewrite': 35,
+      'module-graph': 36,
+      'watch->dirty': 37,
+      'build-core': 38,
     }
     const phases = [
       {
@@ -706,6 +738,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'vueTransformMs',
         label: 'vue-transform',
+      },
+      {
+        key: 'vueReadSourceMs',
+        label: 'vue-read',
+      },
+      {
+        key: 'vueCompileMs',
+        label: 'vue-compile',
+      },
+      {
+        key: 'vueFinalizeCompiledMs',
+        label: 'vue-finalize-compiled',
+      },
+      {
+        key: 'vueFinalizeCodeMs',
+        label: 'vue-finalize-code',
       },
       {
         key: 'coreLoadMs',
