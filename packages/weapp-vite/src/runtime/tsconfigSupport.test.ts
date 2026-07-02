@@ -504,6 +504,80 @@ describe('tsconfig support', () => {
     expect(ctx.autoImportService.resolve).toHaveBeenCalled()
   })
 
+  it('runs independent support file tasks concurrently', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-files-concurrent-'))
+    const srcRoot = path.join(root, 'src')
+    const componentFile = path.join(srcRoot, 'components/ConcurrentSupport/index.vue')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(componentFile, '<template><view>support</view></template>', 'utf8')
+
+    let resolveAutoRoutes!: () => void
+    let autoRoutesFinished = false
+    let resolveAutoImportRegistered!: () => void
+    const autoImportRegistered = new Promise<void>((resolve) => {
+      resolveAutoImportRegistered = resolve
+    })
+    const autoRoutesBlocked = new Promise<void>((resolve) => {
+      resolveAutoRoutes = () => {
+        autoRoutesFinished = true
+        resolve()
+      }
+    })
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: undefined,
+        },
+      },
+      configService: {
+        cwd: root,
+        configFilePath: path.join(root, 'vite.config.ts'),
+        absoluteSrcRoot: srcRoot,
+        srcRoot: 'src',
+        outDir: path.join(root, 'dist'),
+        packageJson: {},
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoRoutesService: {
+        isEnabled: () => true,
+        ensureFresh: vi.fn(async () => {
+          await autoRoutesBlocked
+        }),
+      },
+      autoImportService: {
+        runInBatch: async (task: () => Promise<void>) => {
+          await task()
+        },
+        reset: vi.fn(),
+        registerPotentialComponent: vi.fn(async () => {
+          resolveAutoImportRegistered()
+        }),
+        resolve: vi.fn(),
+        setSupportFileResolverComponents: vi.fn(),
+        collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
+        syncSupportFileResolverComponents: vi.fn().mockResolvedValue(undefined),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        clearSupportFileResolverComponents: vi.fn(),
+      },
+    } as any
+
+    const syncPromise = syncProjectSupportFiles(ctx)
+    await autoImportRegistered
+
+    expect(autoRoutesFinished).toBe(false)
+    expect(ctx.autoImportService.registerPotentialComponent).toHaveBeenCalledWith(componentFile)
+
+    resolveAutoRoutes()
+    await expect(syncPromise).resolves.toMatchObject({
+      managedTsconfigChanged: expect.any(Boolean),
+      managedTsconfigWarnings: expect.any(Array),
+    })
+  })
+
   it('bootstraps managed tsconfig files from cwd and package.json', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-'))
     await fs.writeJson(path.join(root, 'package.json'), {

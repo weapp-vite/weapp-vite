@@ -151,11 +151,7 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
   return Array.from(tags.entries(), ([tag, importerBaseName]) => ({ tag, importerBaseName }))
 }
 
-export async function syncProjectSupportFiles(
-  ctx: MutableCompilerContext,
-  options: SyncProjectSupportFilesOptions = {},
-): Promise<SyncSupportFilesResult> {
-  const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
+async function syncManagedTsconfigSupportFiles(ctx: MutableCompilerContext) {
   const managedTsconfigInspection = await inspectManagedTsconfigFiles(ctx)
 
   await syncManagedTsconfigFiles(
@@ -164,12 +160,24 @@ export async function syncProjectSupportFiles(
     managedTsconfigInspection.existingContents,
   )
 
+  return {
+    managedTsconfigChanged: managedTsconfigInspection.managedTsconfigChanged,
+    managedTsconfigWarnings: managedTsconfigInspection.managedTsconfigWarnings,
+  }
+}
+
+async function syncAutoRoutesSupportFiles(ctx: MutableCompilerContext) {
   if (ctx.autoRoutesService?.isEnabled()) {
     await ctx.autoRoutesService.ensureFresh()
   }
+}
 
-  const syncAutoImport = options.syncAutoImport ?? true
-  const autoImportConfig = syncAutoImport ? getAutoImportConfig(ctx.configService) : undefined
+async function syncAutoImportSupportFiles(
+  ctx: MutableCompilerContext,
+  syncAutoImport: boolean,
+  configService: NonNullable<MutableCompilerContext['configService']>,
+) {
+  const autoImportConfig = syncAutoImport ? getAutoImportConfig(configService) : undefined
   if (autoImportConfig && ctx.autoImportService && ctx.configService) {
     await ctx.autoImportService.runInBatch(async () => {
       ctx.autoImportService!.reset()
@@ -213,9 +221,24 @@ export async function syncProjectSupportFiles(
   else if (ctx.runtimeState?.autoImport) {
     ctx.runtimeState.autoImport.preparedGlobsKey = undefined
   }
+}
+
+export async function syncProjectSupportFiles(
+  ctx: MutableCompilerContext,
+  options: SyncProjectSupportFilesOptions = {},
+): Promise<SyncSupportFilesResult> {
+  const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
+  const syncAutoImport = options.syncAutoImport ?? true
+  const [
+    managedTsconfigResult,
+  ] = await Promise.all([
+    syncManagedTsconfigSupportFiles(ctx),
+    syncAutoRoutesSupportFiles(ctx),
+    syncAutoImportSupportFiles(ctx, syncAutoImport, configService),
+  ])
 
   return {
-    managedTsconfigChanged: managedTsconfigInspection.managedTsconfigChanged,
-    managedTsconfigWarnings: managedTsconfigInspection.managedTsconfigWarnings,
+    managedTsconfigChanged: managedTsconfigResult.managedTsconfigChanged,
+    managedTsconfigWarnings: managedTsconfigResult.managedTsconfigWarnings,
   }
 }

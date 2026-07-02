@@ -32,6 +32,7 @@ vi.mock('./logger', () => ({
 describe('createCompilerContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    syncManagedTsconfigBootstrapFilesMock.mockResolvedValue(false)
     getCompilerContextMock.mockReturnValue({
       configService: {
         load: vi.fn(async () => {}),
@@ -63,6 +64,40 @@ describe('createCompilerContext', () => {
       cwd: '/project',
       mode: 'development',
     })
+  })
+
+  it('loads config while managed tsconfig bootstrap is still pending', async () => {
+    let resolveBootstrap!: (changed: boolean) => void
+    syncManagedTsconfigBootstrapFilesMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+      resolveBootstrap = resolve
+    }))
+
+    const ctx = {
+      configService: {
+        load: vi.fn(async () => {}),
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+      },
+    }
+    getCompilerContextMock.mockReturnValueOnce(ctx)
+
+    const createPromise = createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+    })
+
+    await Promise.resolve()
+    expect(ctx.configService.load).toHaveBeenCalledWith({
+      cwd: '/project',
+      mode: 'development',
+    })
+    expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
+
+    resolveBootstrap(false)
+    await createPromise
+
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 
   it('warns and auto-syncs when managed support files are stale', async () => {
