@@ -63,6 +63,7 @@ interface BundleStyleAnalysis {
 type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
+const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
 const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 
@@ -93,6 +94,10 @@ function appendTailwindContentHmrNonce(ctx: CompilerContext, source: string) {
   }
   const eventId = ctx.runtimeState?.build?.hmr?.profile?.eventId ?? 'unknown'
   return `${source}\n/* weapp-vite tailwind-content ${eventId} */`
+}
+
+function stripTailwindContentHmrNonce(source: string) {
+  return source.replace(TAILWIND_CONTENT_HMR_NONCE_RE, '')
 }
 
 function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): output is OutputAsset {
@@ -196,8 +201,11 @@ function isUnchangedDevHmrStyleAsset(
       || (hmrState?.lastEmittedEntryIds?.size ?? 0) > 0
       || hmrState?.profile.event !== undefined
     )
+  const canonicalCurrent = hasTailwindContentDirtyReason(ctx)
+    ? current
+    : stripTailwindContentHmrNonce(current)
   return isDevHmr
-    && current === source
+    && canonicalCurrent === source
     && ctx.runtimeState?.css?.emittedSource.get(normalizedFileName) === source
 }
 
@@ -253,11 +261,11 @@ function emitCssAssetIfChanged(
     if (current !== emittedSource) {
       existing.source = emittedSource
     }
-    cache?.set(normalizedFileName, emittedSource)
+    cache?.set(normalizedFileName, source)
     return true
   }
 
-  if (!forceEmit && cache?.get(normalizedFileName) === emittedSource) {
+  if (!forceEmit && cache?.get(normalizedFileName) === source) {
     return false
   }
 
@@ -267,7 +275,7 @@ function emitCssAssetIfChanged(
     ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
     source: emittedSource,
   })
-  cache?.set(normalizedFileName, emittedSource)
+  cache?.set(normalizedFileName, source)
   return true
 }
 
@@ -465,18 +473,21 @@ async function handleBundleEntry(
 
     if (fileName) {
       const source = asset.source.toString()
+      const canonicalSource = hasTailwindContentDirtyReason(ctx)
+        ? source
+        : stripTailwindContentHmrNonce(source)
       const normalizedFileName = toPosixPath(fileName)
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
       const preprocessInput = freshHmrStyleSourcePath
-        ? await readStyleGraphSource(freshHmrStyleSourcePath, source)
-        : source
+        ? await readStyleGraphSource(freshHmrStyleSourcePath, canonicalSource)
+        : canonicalSource
       const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
         enabled: shouldPreprocessWithVite(preprocessId),
       })
       const graphCss = freshHmrStyleSourcePath
         ? preprocessInput
-        : await readStyleGraphSource(absOriginal, source)
+        : await readStyleGraphSource(absOriginal, canonicalSource)
       syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function') {
         for (const dependency of dependencies) {

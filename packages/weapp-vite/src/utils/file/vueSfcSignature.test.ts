@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from './vueSfcSignature'
 
@@ -124,6 +126,25 @@ const count = 1
     const tsScript = resolveVueSfcScriptSignature(source, filename)
 
     vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.resetModules()
+    const nativeModule = await import('./vueSfcSignature')
+
+    expect(nativeModule.resolveVueSfcNonJsonSignature(source, filename)).toBe(tsNonJson)
+    expect(nativeModule.resolveVueSfcScriptSignature(source, filename)).toBe(tsScript)
+  })
+
+  it('falls back to the TypeScript backend when native binding cannot be loaded', async () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const tsNonJson = resolveVueSfcNonJsonSignature(source, filename)
+    const tsScript = resolveVueSfcScriptSignature(source, filename)
+
+    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', join(tmpdir(), 'missing-weapp-vite-ast-native.cjs'))
     vi.resetModules()
     const nativeModule = await import('./vueSfcSignature')
 

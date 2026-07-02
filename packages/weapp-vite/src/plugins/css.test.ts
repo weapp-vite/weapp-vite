@@ -247,6 +247,69 @@ describe('css plugin shared style injection', () => {
         source: `${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`,
       }),
     ])
+    expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
+  })
+
+  it('keeps Tailwind content hmr nonce out of the canonical emitted cache', async () => {
+    const appCssPath = resolve(absoluteSrcRoot, 'app.css')
+    const placeholder = '/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{wxml,js,ts,vue}";'
+    readFileMock.mockResolvedValue('@import "tailwindcss";\n@source "./**/*.{wxml,js,ts,vue}";')
+    preprocessCSSMock.mockResolvedValue({
+      code: placeholder,
+      deps: [],
+    })
+    const runtimeState = {
+      css: {
+        importerToDependencies: new Map<string, Set<string>>(),
+        dependencyToImporters: new Map<string, Set<string>>(),
+        emittedSource: new Map([
+          ['app.wxss', placeholder],
+        ]),
+        sidecarImports: new Set([appCssPath]),
+      },
+      build: {
+        hmr: {
+          profile: {
+            eventId: 'tailwind-hmr-1',
+            dirtyReasonSummary: ['tailwind-content:1'],
+          },
+        },
+      },
+    }
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      scanService: { subPackageMap: new Map() },
+      runtimeState,
+    } as unknown as CompilerContext)[0]
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true)
+
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0]?.source).toBe(`${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`)
+    expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
+
+    emitted = []
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      eventId: 'script-hmr-1',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    const bundle: Record<string, any> = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: `${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`,
+      },
+    }
+
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(bundle['app.wxss']).toBeUndefined()
+    expect(emitted).toEqual([])
   })
 
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
