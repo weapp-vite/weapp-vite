@@ -808,7 +808,11 @@ describe('runtime npm service', () => {
 
     const startedSiblingCopies = new Set<string>()
     let releaseFirstSiblingCopy: (() => void) | undefined
+    let resolveFirstSiblingCopyStarted: (() => void) | undefined
     let resolveBothSiblingCopiesStarted: (() => void) | undefined
+    const firstSiblingCopyStarted = new Promise<void>((resolve) => {
+      resolveFirstSiblingCopyStarted = resolve
+    })
     const bothSiblingCopiesStarted = new Promise<void>((resolve) => {
       resolveBothSiblingCopiesStarted = resolve
     })
@@ -817,6 +821,7 @@ describe('runtime npm service', () => {
       const relPath = path.relative(cachedSourceOutDir, String(src)).replace(/\\/g, '/')
       if (relPath === 'tdesign-miniprogram/transition/alpha.js' || relPath === 'tdesign-miniprogram/transition/beta.js') {
         startedSiblingCopies.add(relPath)
+        resolveFirstSiblingCopyStarted?.()
         if (startedSiblingCopies.size === 2) {
           resolveBothSiblingCopiesStarted?.()
         }
@@ -866,6 +871,7 @@ describe('runtime npm service', () => {
 
     const service = createNpmService(ctx)
     const buildPromise = service.build()
+    await firstSiblingCopyStarted
     const startResult = await Promise.race([
       bothSiblingCopiesStarted.then(() => 'both-started'),
       new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
