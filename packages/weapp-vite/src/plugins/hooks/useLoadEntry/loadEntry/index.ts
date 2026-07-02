@@ -269,6 +269,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const forceReloadEntrySet = new Set<string>()
     const nativeLayoutScriptEntries = new Set<string>()
     let resolvedPageLayoutPlan: ResolvedPageLayoutPlan | null | undefined
+    let entryCodeSource: string | undefined
     let autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
@@ -479,6 +480,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         try {
           replaceLayoutDependencies(normalizedId, [])
           const source = await fs.readFile(id, 'utf-8')
+          entryCodeSource = source
           const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
           resolvedPageLayoutPlan = layoutPlan ?? null
           if (layoutPlan) {
@@ -616,6 +618,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
           styleImportsCache,
           resolvedPageLayoutPlan,
+          entryCodeSource,
           skipEntries: shouldSkipAppEntries,
         })
       }

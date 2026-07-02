@@ -131,6 +131,7 @@ interface EmitEntryOutputOptions {
   emittedWxmlCodeCache?: Map<string, string>
   styleImportsCache?: Map<string, string[]>
   resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
+  entryCodeSource?: string
 }
 
 function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
@@ -187,21 +188,24 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     emittedWxmlCodeCache,
     styleImportsCache,
     resolvedPageLayoutPlan,
+    entryCodeSource,
   } = options
   let json = initialJson
   function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
     recordHmrProfileDuration(runtimeState?.build?.hmr?.profile, key, performance.now() - startedAt)
   }
 
-  const entryCodeTask = prefetch((async () => {
-    const startedAt = performance.now()
-    try {
-      return await readFileCached(id, { checkMtime: configService.isDev })
-    }
-    finally {
-      recordEntryDuration('entryCodeReadMs', startedAt)
-    }
-  })())
+  const entryCodeTask = entryCodeSource === undefined
+    ? prefetch((async () => {
+        const startedAt = performance.now()
+        try {
+          return await readFileCached(id, { checkMtime: configService.isDev })
+        }
+        finally {
+          recordEntryDuration('entryCodeReadMs', startedAt)
+        }
+      })())
+    : prefetch(Promise.resolve(entryCodeSource))
   const cachedStyleImports = configService.isDev && isEntryStyleStableHmr(runtimeState)
     ? styleImportsCache?.get(id)
     : undefined

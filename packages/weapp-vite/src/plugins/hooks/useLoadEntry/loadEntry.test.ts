@@ -2429,6 +2429,7 @@ import { VueCard } from '../../components'
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
     expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+    expect(readFileMock.mock.calls.filter(([target]) => target === '/project/src/pages/index/index.ts')).toHaveLength(1)
     expect(registerJsonAsset).toHaveBeenCalledWith({
       jsonPath: '/project/src/pages/index/index.json',
       json: {
