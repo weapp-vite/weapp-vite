@@ -180,7 +180,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     if (!jsonEntry.path) {
       if (vueEntryPath) {
-        const configFromVue = await extractConfigFromVue(vueEntryPath)
+        const configFromVue = await extractConfigFromVue(vueEntryPath, {
+          readSource: readVueSource,
+        })
         if (configFromVue && typeof configFromVue === 'object') {
           json = configFromVue
           hasJsonEntry = true
@@ -253,7 +255,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     if (type === 'app') {
       if (configService.isDev && vueEntryPath) {
-        const vueSource = await fs.readFile(vueEntryPath, 'utf-8').catch(() => undefined)
+        const vueSource = await readVueSource()
         if (vueSource) {
           const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
           appVueNonJsonSignature = signatures.nonJsonSignature

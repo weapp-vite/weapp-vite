@@ -120,6 +120,35 @@ describe('utils/file', () => {
       }
     })
 
+    it('extracts config from provided SFC source without reading the file', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'page.vue')
+      const readSpy = vi.spyOn(fs, 'readFile')
+      try {
+        await fs.writeFile(
+          file,
+          '<template><view /></template>',
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file, {
+          source: [
+            '<template><view /></template>',
+            '<json>{ "navigationBarTitleText": "provided source" }</json>',
+          ].join('\n'),
+        })
+
+        expect(config).toMatchObject({
+          navigationBarTitleText: 'provided source',
+        })
+        expect(readSpy).not.toHaveBeenCalledWith(file, 'utf-8')
+      }
+      finally {
+        readSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
+
     it('extracts defineAppJson from <script setup> when <json> is absent', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'app.vue')
@@ -312,10 +341,14 @@ defineThemeJson({
         )
 
         const first = await extractConfigFromVue(file)
-        const second = await extractConfigFromVue(file)
+        const readSource = vi.fn(async () => {
+          throw new Error('cached config should not read source')
+        })
+        const second = await extractConfigFromVue(file, { readSource })
 
         expect(first).toMatchObject({ navigationBarTitleText: 'cached' })
         expect(second).toMatchObject({ navigationBarTitleText: 'cached' })
+        expect(readSource).not.toHaveBeenCalled()
         const readCalls = readSpy.mock.calls.filter(call => String(call[0]) === file)
         expect(readCalls.length).toBe(1)
       }

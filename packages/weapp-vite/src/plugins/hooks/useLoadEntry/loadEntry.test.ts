@@ -66,7 +66,13 @@ const {
 
   const innerFindVueEntry = vi.fn(async () => undefined) as unknown as Mock<(filepath: string) => Promise<string | undefined>>
   const innerFindJsEntry = vi.fn(async () => ({ path: undefined, predictions: [] as string[] })) as unknown as Mock<(filepath: string) => Promise<{ path?: string, predictions: string[] }>>
-  const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(vueFilePath: string) => Promise<Record<string, any> | undefined>>
+  const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(
+    vueFilePath: string,
+    options?: {
+      readSource?: () => Promise<string | undefined>
+      source?: string
+    },
+  ) => Promise<Record<string, any> | undefined>>
   const innerResolvePageLayoutPlan = vi.fn(async () => undefined)
   const innerApplyPageLayoutPlanToNativePage = vi.fn((result: any) => result)
   const innerInjectNativePageLayoutRuntime = vi.fn((script: string | undefined) => script)
