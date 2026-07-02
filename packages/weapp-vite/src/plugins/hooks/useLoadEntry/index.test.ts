@@ -900,6 +900,37 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([id]))
   })
 
+  it('reloads wxml import-only metadata through loadEntry without JS chunk emit', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['wxml-importer-import:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const id = '/project/src/pages/native/index.ts'
+    hook.entriesMap.set(id, {
+      type: 'page',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
+  })
+
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {
     const ctx = createContext()
     ctx.scanService.subPackageMap.set('subpackages/account', {})
@@ -1049,6 +1080,48 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
       'css-importer-representative:1/3',
+    ])
+  })
+
+  it('emits one representative entry for wxml import-only updates while keeping all hmr entries', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['wxml-importer-import:3'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.entriesMap.set(id, {
+        type: 'page',
+        path: id,
+      } as any)
+      hook.markEntryDirty(id, 'metadata')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledTimes(1)
+    expect(loadEntryMock).toHaveBeenCalledWith(ids[0], 'page')
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
+      'wxml-importer-import-representative:1/3',
     ])
   })
 

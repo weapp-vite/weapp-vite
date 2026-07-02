@@ -278,6 +278,7 @@ export interface RuntimeState {
   wxml: {
     depsMap: Map<string, Set<string>>
     importerMap: Map<string, Set<string>>
+    depKindMap: Map<string, Map<string, Set<'template-import' | 'template-include' | 'script-module' | 'unknown'>>>
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
     aggregatedComponentsMap: Map<string, ComponentsMap>
@@ -388,6 +389,7 @@ export function createRuntimeState(): RuntimeState {
     wxml: {
       depsMap: new Map<string, Set<string>>(),
       importerMap: new Map<string, Set<string>>(),
+      depKindMap: new Map<string, Map<string, Set<'template-import' | 'template-include' | 'script-module' | 'unknown'>>>(),
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
       aggregatedComponentsMap: new Map<string, ComponentsMap>(),

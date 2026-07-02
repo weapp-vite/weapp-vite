@@ -278,20 +278,29 @@ async function processChangedFile(
     }
 
     const visited = new Set<string>()
-    const queue = [startId]
+    const queue: Array<{ id: string, importOnly: boolean }> = [{ id: startId, importOnly: true }]
 
     for (let index = 0; index < queue.length; index += 1) {
       const current = queue[index]!
-      if (visited.has(current)) {
+      const visitKey = `${current.id}\0${current.importOnly ? 'import' : 'fallback'}`
+      if (visited.has(visitKey)) {
         continue
       }
-      visited.add(current)
+      visited.add(visitKey)
 
-      const importers = wxmlService.getImporters(current)
+      const importers = wxmlService.getImporters(current.id)
       for (const importer of importers) {
         const normalizedImporter = normalizeFsResolvedId(importer)
-        if (!visited.has(normalizedImporter)) {
-          queue.push(normalizedImporter)
+        const dependencyKind = typeof wxmlService.getImporterDependencyKind === 'function'
+          ? wxmlService.getImporterDependencyKind(current.id, normalizedImporter)
+          : undefined
+        const nextImportOnly = current.importOnly && dependencyKind === 'template-import'
+        const nextVisitKey = `${normalizedImporter}\0${nextImportOnly ? 'import' : 'fallback'}`
+        if (!visited.has(nextVisitKey)) {
+          queue.push({
+            id: normalizedImporter,
+            importOnly: nextImportOnly,
+          })
         }
 
         const ext = path.extname(normalizedImporter)
@@ -311,7 +320,11 @@ async function processChangedFile(
           affectedLayoutEntryIds.add(primaryScriptId)
         }
         else {
-          markEntryDirtyWithCause(primaryScriptId, 'metadata', 'wxml-importer')
+          markEntryDirtyWithCause(
+            primaryScriptId,
+            'metadata',
+            nextImportOnly ? 'wxml-importer-import' : 'wxml-importer',
+          )
           handledSidecarMetadataUpdate = true
         }
       }

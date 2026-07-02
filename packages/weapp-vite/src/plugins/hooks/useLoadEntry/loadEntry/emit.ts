@@ -299,8 +299,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       if (asset.kind === 'template' && assets.template && wxmlService && wxmlEmitContext) {
         const token = wxmlService.analyze(asset.source)
         wxmlService.tokenMap.set(assets.template, token)
-        const deps = wxmlService.collectDepsFromToken(assets.template, token.deps)
-        await wxmlService.setDeps(assets.template, deps)
+        await wxmlService.setTokenDeps(assets.template, token.deps)
         wxmlService.setWxmlComponentsMap(assets.template, token.components)
         emitWxmlAssetFile({
           runtime: {
@@ -493,7 +492,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         if (transformed.template && wxmlService) {
           const token = wxmlService.analyze(transformed.template)
           wxmlService.tokenMap.set(templatePath, token)
-          void wxmlService.setDeps(templatePath, wxmlService.collectDepsFromToken(templatePath, token.deps))
+          void wxmlService.setTokenDeps(templatePath, token.deps)
           wxmlService.setWxmlComponentsMap(templatePath, token.components)
         }
 

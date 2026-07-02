@@ -105,6 +105,13 @@ function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
   )
 }
 
+function isWxmlImportOnlyRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.every(item => item.startsWith('wxml-importer-import:')),
+  )
+}
+
 function isVueEntryId(entryId: string) {
   return vueExtensions.some(ext => entryId.endsWith(`.${ext}`))
 }
@@ -188,10 +195,15 @@ function resolvePendingEntryIds(options: {
     }
   }
 
-  if (isCssImporterOnlyRefresh(options.dirtyReasonSummary) && pending.size > 1) {
+  const isRepresentativeOnlyRefresh = isCssImporterOnlyRefresh(options.dirtyReasonSummary)
+    || isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
+  if (isRepresentativeOnlyRefresh && pending.size > 1) {
     const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap)
     if (representative) {
-      pendingReasonSummary.push(`css-importer-representative:1/${pending.size}`)
+      const reason = isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
+        ? 'wxml-importer-import-representative'
+        : 'css-importer-representative'
+      pendingReasonSummary.push(`${reason}:1/${pending.size}`)
       return {
         pending: new Set([representative]),
         hmrEntries: pending,
@@ -348,7 +360,8 @@ function shouldPreloadEntryAssetOnly(dirtyReasonSummary?: string[]) {
     item.startsWith('json-sidecar:')
     || item.startsWith('style-sidecar:')
     || item.startsWith('entry-style-only:')
-    || item.startsWith('entry-local-asset:'),
+    || item.startsWith('entry-local-asset:')
+    || item.startsWith('wxml-importer-import:'),
   ) === true
 }
 
@@ -663,7 +676,9 @@ export function useLoadEntry(
         hmrEntryIds = pendingResolution.hmrEntries
       }
       if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
-        hmrEntryIds = pendingMetadataEntryIds
+        if (!isWxmlImportOnlyRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
+          hmrEntryIds = pendingMetadataEntryIds
+        }
         const currentStyleOutputFileName = resolveCurrentStyleOutputFileName(ctx)
         if (currentStyleOutputFileName) {
           lastEmittedChunkFileNames.add(currentStyleOutputFileName)

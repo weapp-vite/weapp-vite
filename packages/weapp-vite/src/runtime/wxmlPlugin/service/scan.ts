@@ -11,8 +11,7 @@ import { invalidateAggregatedComponents } from './shared'
 export function createWxmlScanner(
   state: WxmlServiceState,
   options: {
-    collectDepsFromToken: (filepath: string, deps?: ScanWxmlResult['deps']) => string[]
-    setDeps: (filepath: string, deps?: string[]) => Promise<void>
+    setTokenDeps: (filepath: string, deps?: ScanWxmlResult['deps']) => Promise<void>
   },
 ) {
   function analyze(wxml: string) {
@@ -61,7 +60,7 @@ export function createWxmlScanner(
       state.autoImportComponentsMap.set(baseName, autoImportComponentEntries)
     }
     invalidateAggregatedComponents(state, filepath, state.aggregatedAutoImportComponentsMap)
-    await options.setDeps(filepath, options.collectDepsFromToken(filepath, res.deps))
+    await options.setTokenDeps(filepath, res.deps)
     return res
   }
 
