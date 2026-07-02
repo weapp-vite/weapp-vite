@@ -2,7 +2,7 @@ import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
 import logger from './logger'
 import { syncProjectSupportFiles } from './runtime/supportFiles'
-import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
+import { hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 
 interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
   key?: string
@@ -15,7 +15,7 @@ interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
  * @description 创建并初始化编译上下文（加载配置、扫描入口）
  */
 export async function createCompilerContext(options?: CreateCompilerContextOptions) {
-  const bootstrapManagedTsconfigPromise = options?.cwd
+  const bootstrapManagedTsconfigPromise = options?.cwd && !hasManagedTsconfigBootstrapCompleted(options.cwd)
     ? Promise.resolve().then(() => syncManagedTsconfigBootstrapFiles(options.cwd!)).catch((error) => {
         const message = error instanceof Error ? error.message : String(error)
         logger.warn(`[tsconfig] 跳过 .weapp-vite 支持文件预生成：${message}`)

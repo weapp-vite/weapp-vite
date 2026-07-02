@@ -5,6 +5,7 @@ import { createCompilerContext } from './createContext'
 const resetCompilerContextMock = vi.hoisted(() => vi.fn())
 const setActiveCompilerContextKeyMock = vi.hoisted(() => vi.fn())
 const getCompilerContextMock = vi.hoisted(() => vi.fn())
+const hasManagedTsconfigBootstrapCompletedMock = vi.hoisted(() => vi.fn())
 const syncManagedTsconfigBootstrapFilesMock = vi.hoisted(() => vi.fn())
 const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -16,6 +17,7 @@ vi.mock('./context/getInstance', () => ({
 }))
 
 vi.mock('./runtime/tsconfigSupport', () => ({
+  hasManagedTsconfigBootstrapCompleted: hasManagedTsconfigBootstrapCompletedMock,
   syncManagedTsconfigBootstrapFiles: syncManagedTsconfigBootstrapFilesMock,
 }))
 
@@ -32,6 +34,7 @@ vi.mock('./logger', () => ({
 describe('createCompilerContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    hasManagedTsconfigBootstrapCompletedMock.mockReturnValue(false)
     syncManagedTsconfigBootstrapFilesMock.mockResolvedValue(false)
     getCompilerContextMock.mockReturnValue({
       configService: {
@@ -97,6 +100,19 @@ describe('createCompilerContext', () => {
     resolveBootstrap(false)
     await createPromise
 
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips duplicate managed tsconfig bootstrap for already bootstrapped cwd', async () => {
+    hasManagedTsconfigBootstrapCompletedMock.mockReturnValueOnce(true)
+
+    await createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+    })
+
+    expect(hasManagedTsconfigBootstrapCompletedMock).toHaveBeenCalledWith('/project')
+    expect(syncManagedTsconfigBootstrapFilesMock).not.toHaveBeenCalled()
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 

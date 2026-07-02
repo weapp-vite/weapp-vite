@@ -4,7 +4,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { syncProjectSupportFiles } from './supportFiles'
-import { createManagedTsconfigFiles, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
+import { createManagedTsconfigFiles, hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
 
 function createCtx(overrides: Record<string, any> = {}) {
   return {
@@ -658,6 +658,7 @@ describe('tsconfig support', () => {
 
     await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(true)
 
+    expect(hasManagedTsconfigBootstrapCompleted(root)).toBe(true)
     const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
     const server = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.server.json'))
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])

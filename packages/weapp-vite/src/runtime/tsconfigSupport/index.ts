@@ -96,6 +96,15 @@ const MANAGED_TSCONFIG_MARKERS = [
   '.weapp-vite/tsconfig.app.json',
   '.weapp-vite/tsconfig.shared.json',
 ]
+const bootstrappedManagedTsconfigRoots = new Set<string>()
+
+export function markManagedTsconfigBootstrapComplete(cwd: string) {
+  bootstrappedManagedTsconfigRoots.add(path.resolve(cwd))
+}
+
+export function hasManagedTsconfigBootstrapCompleted(cwd: string | undefined) {
+  return Boolean(cwd && bootstrappedManagedTsconfigRoots.has(path.resolve(cwd)))
+}
 
 async function readTsconfigData(filePath: string): Promise<TsconfigBootstrapData | undefined> {
   const content = await fs.readFile(filePath, 'utf8').catch(() => undefined)
@@ -213,6 +222,7 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
   let changed = await syncSingleProjectManagedTsconfigBootstrapFiles(cwd)
   const workspace = await findReferencingWorkspaceTsconfig(cwd)
   if (!workspace) {
+    markManagedTsconfigBootstrapComplete(cwd)
     return changed
   }
 
@@ -225,5 +235,6 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
     changed = await syncSingleProjectManagedTsconfigBootstrapFiles(projectRoot) || changed
   }
 
+  markManagedTsconfigBootstrapComplete(cwd)
   return changed
 }
