@@ -23,6 +23,7 @@ export interface SyncProjectSupportFilesOptions {
 }
 
 interface ManagedTsconfigInspection {
+  existingContents: Map<string, string | undefined>
   files: Awaited<ReturnType<typeof createManagedTsconfigFiles>>
   managedTsconfigChanged: boolean
   managedTsconfigWarnings: string[]
@@ -89,8 +90,10 @@ async function inspectManagedTsconfigFiles(ctx: MutableCompilerContext): Promise
     }
   }))
   const managedTsconfigChanged = inspections.some(({ existing, file }) => existing !== file.content)
+  const existingContents = new Map<string, string | undefined>()
 
   for (const { existing, file } of inspections) {
+    existingContents.set(file.path, existing)
     if (file.path.endsWith('tsconfig.app.json')) {
       expectedAppContent = file.content
       existingAppContent = existing
@@ -98,6 +101,7 @@ async function inspectManagedTsconfigFiles(ctx: MutableCompilerContext): Promise
   }
 
   return {
+    existingContents,
     files,
     managedTsconfigChanged,
     managedTsconfigWarnings: createManagedTsconfigWarnings(ctx, expectedAppContent, existingAppContent),
@@ -154,7 +158,11 @@ export async function syncProjectSupportFiles(
   const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
   const managedTsconfigInspection = await inspectManagedTsconfigFiles(ctx)
 
-  await syncManagedTsconfigFiles(ctx, managedTsconfigInspection.files)
+  await syncManagedTsconfigFiles(
+    ctx,
+    managedTsconfigInspection.files,
+    managedTsconfigInspection.existingContents,
+  )
 
   if (ctx.autoRoutesService?.isEnabled()) {
     await ctx.autoRoutesService.ensureFresh()

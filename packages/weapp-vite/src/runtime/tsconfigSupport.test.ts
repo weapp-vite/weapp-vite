@@ -374,6 +374,49 @@ describe('tsconfig support', () => {
     expect(ctx.autoImportService.registerPotentialComponent).toHaveBeenCalledWith(componentFile)
   })
 
+  it('avoids rereading inspected managed tsconfig files while syncing support files', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-tsconfig-reuse-'))
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: undefined,
+        },
+      },
+      configService: {
+        cwd: root,
+        configFilePath: path.join(root, 'vite.config.ts'),
+        absoluteSrcRoot: path.join(root, 'src'),
+        srcRoot: 'src',
+        outDir: path.join(root, 'dist'),
+        packageJson: {},
+        weappViteConfig: {
+          autoImportComponents: false,
+        },
+      },
+      autoRoutesService: {
+        isEnabled: () => false,
+      },
+    } as any
+
+    await syncManagedTsconfigFiles(ctx)
+    const managedFiles = await createManagedTsconfigFiles(ctx)
+    const managedReadCounts = new Map<string, number>()
+    const originalReadFile = fs.readFile.bind(fs)
+    vi.spyOn(fs, 'readFile').mockImplementation(async (filePath: any, ...args: any[]) => {
+      const normalizedPath = path.resolve(String(filePath))
+      if (managedFiles.some(file => file.path === normalizedPath)) {
+        managedReadCounts.set(normalizedPath, (managedReadCounts.get(normalizedPath) ?? 0) + 1)
+      }
+      return originalReadFile(filePath, ...args)
+    })
+
+    await syncProjectSupportFiles(ctx)
+
+    for (const file of managedFiles) {
+      expect(managedReadCounts.get(file.path) ?? 0).toBe(0)
+    }
+  })
+
   it('processes auto import template files in a shared batch during support file sync', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-auto-import-concurrent-'))
     const srcRoot = path.join(root, 'src')

@@ -61,8 +61,10 @@ function createManagedRootTsconfig() {
   })
 }
 
-async function outputFileIfChanged(file: ManagedTsconfigFile) {
-  const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
+async function outputFileIfChanged(file: ManagedTsconfigFile, existingContents?: Map<string, string | undefined>) {
+  const existing = existingContents?.has(file.path)
+    ? existingContents.get(file.path)
+    : await fs.readFile(file.path, 'utf8').catch(() => undefined)
   if (existing === file.content) {
     return false
   }
@@ -71,9 +73,13 @@ async function outputFileIfChanged(file: ManagedTsconfigFile) {
   return true
 }
 
-export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext, files?: ManagedTsconfigFile[]) {
+export async function syncManagedTsconfigFiles(
+  ctx: MutableCompilerContext,
+  files?: ManagedTsconfigFile[],
+  existingContents?: Map<string, string | undefined>,
+) {
   const targetFiles = files ?? await createManagedTsconfigFiles(ctx)
-  const changed = await Promise.all(targetFiles.map(file => outputFileIfChanged(file)))
+  const changed = await Promise.all(targetFiles.map(file => outputFileIfChanged(file, existingContents)))
   return changed.some(Boolean)
 }
 
