@@ -1,3 +1,4 @@
+import type { FSWatcher } from 'chokidar'
 import type PQueue from 'p-queue'
 import type {
   RolldownOutput,
@@ -193,6 +194,48 @@ function resolveSnapshotSidecarDirtySummary(filePath: string) {
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
 const watchedSnapshotScriptExts = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
 const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
+const SIDECAR_WATCHER_READY_TIMEOUT_MS = 30_000
+
+function waitForSidecarWatcherReady(watcher: FSWatcher) {
+  const candidate = watcher as { off?: unknown, once?: unknown }
+  if (typeof candidate.once !== 'function' || typeof candidate.off !== 'function') {
+    return Promise.resolve()
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    let timer: ReturnType<typeof setTimeout>
+    let cleanup = () => {}
+    const finish = (error?: unknown) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      cleanup()
+      if (error) {
+        reject(error)
+      }
+      else {
+        resolve()
+      }
+    }
+    const onReady = () => finish()
+    const onError = (error: unknown) => finish(error)
+
+    cleanup = () => {
+      clearTimeout(timer)
+      watcher.off('ready', onReady)
+      watcher.off('error', onError)
+    }
+
+    timer = setTimeout(() => {
+      finish(new Error('Sidecar watcher ready timed out'))
+    }, SIDECAR_WATCHER_READY_TIMEOUT_MS)
+
+    watcher.once('ready', onReady)
+    watcher.once('error', onError)
+  })
+}
 
 function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
   const configService = ctx.configService!
@@ -1466,6 +1509,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           devWatcherClosed = true
         },
       })
+      await waitForSidecarWatcherReady(snapshotWatcher)
     }
     watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher

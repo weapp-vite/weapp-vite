@@ -113,9 +113,9 @@ function isConfigFileDependencyChange(state: CorePluginState, normalizedId: stri
 function shouldRefreshAppStyleForTailwindContent(state: CorePluginState) {
   const configService = state.ctx.configService
   return resolveTouchAppWxssEnabled({
-    option: configService.weappViteConfig.hmr?.touchAppWxss,
+    option: configService.weappViteConfig?.hmr?.touchAppWxss,
     platform: configService.platform,
-    packageJson: configService.packageJson,
+    packageJson: configService.packageJson ?? {},
     cwd: configService.cwd,
   })
 }

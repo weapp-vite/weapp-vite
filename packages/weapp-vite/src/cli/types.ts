@@ -32,6 +32,7 @@ export interface GlobalCLIOptions {
   'nonInteractive'?: boolean
   'analyze'?: boolean
   'ui'?: boolean
+  'watch'?: boolean
   'scope'?: string
 }
 
