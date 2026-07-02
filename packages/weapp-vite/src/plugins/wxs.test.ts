@@ -7,6 +7,10 @@ import { wxs } from './wxs'
 
 const tempDirs: string[] = []
 
+function normalizeTestPath(filePath: unknown) {
+  return typeof filePath === 'string' ? filePath.replace(/\\/g, '/') : filePath
+}
+
 afterEach(async () => {
   vi.restoreAllMocks()
   await Promise.all(tempDirs.map(dir => fs.remove(dir)))
@@ -283,7 +287,9 @@ describe('wxs plugin', () => {
       {},
     )
 
-    const wxsReadCount = readFileSpy.mock.calls.filter(([filePath]) => filePath === wxsFile).length
+    const wxsReadCount = readFileSpy.mock.calls.filter(([filePath]) => {
+      return normalizeTestPath(filePath) === normalizeTestPath(wxsFile)
+    }).length
     expect(wxsReadCount).toBe(1)
     expect(emitFile).toHaveBeenCalledTimes(2)
     expect(emitFile.mock.calls[1][0].fileName).toBe('components/cache-card/tools.wxs')
@@ -528,7 +534,7 @@ describe('wxs plugin', () => {
 
     expect(emitFile).toHaveBeenCalledTimes(1)
     expect(emitFile.mock.calls[0][0].fileName).toBe('components/wxs-card/tools.wxs')
-    expect(addWatchFile).toHaveBeenCalledWith(wxsFile)
+    expect(addWatchFile.mock.calls.map(([filePath]) => normalizeTestPath(filePath))).toContain(normalizeTestPath(wxsFile))
   })
 
   it('keeps tokenMap scans for cached wxs importee hmr updates without wxs suffix', async () => {
@@ -620,6 +626,6 @@ describe('wxs plugin', () => {
     )
 
     expect(emitFile.mock.calls.map(([asset]) => asset.fileName)).toContain('components/importee-card/tools.wxs')
-    expect(addWatchFile).toHaveBeenCalledWith(helperFile)
+    expect(addWatchFile.mock.calls.map(([filePath]) => normalizeTestPath(filePath))).toContain(normalizeTestPath(helperFile))
   })
 })
