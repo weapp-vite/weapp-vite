@@ -190,12 +190,25 @@ export function normalizeAutomatorWxml(wxml: string) {
     .replace(X_SCOPED_HOST_WRAPPER_PATTERN, '$1')
 }
 
+async function readFileWithRetry(filePath: string, timeoutMs = 30_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await readFile(filePath, 'utf-8')
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+  return await readFile(filePath, 'utf-8')
+}
+
 export async function readPageOutput(platform: RuntimePlatform, pagePath: string) {
   const ext = PLATFORM_EXT[platform]
   const templatePath = path.join(DIST_ROOT, `${pagePath}.${ext.template}`)
   const stylePath = path.join(DIST_ROOT, `${pagePath}.${ext.style}`)
-  const template = await readFile(templatePath, 'utf-8')
-  const style = await readFile(stylePath, 'utf-8')
+  const template = await readFileWithRetry(templatePath)
+  const style = await readFileWithRetry(stylePath)
   return {
     template,
     style,

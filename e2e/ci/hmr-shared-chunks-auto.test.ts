@@ -23,6 +23,7 @@ const PAGE_HMR_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/hmr/index.ts')
 const PAGE_HMR_DIST_PATH = path.join(DIST_ROOT, 'pages/hmr/index.js')
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
+const REBUILD_READY_RE = /小程序已重新构建（[\d.]+ ms/
 
 function enableHmrProfileJson(configSource: string) {
   const injectedConfig = configSource.replace(
@@ -151,7 +152,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       expect(sample.pendingCount).toBe(1)
       expect(sample.emittedCount).toBe(1)
       expect(sample.pendingReasonSummary ?? []).toEqual([])
-      expect(dev.getOutput()).toContain('小程序已重新构建（')
+      await dev.waitForOutput(REBUILD_READY_RE, 'direct page edit rebuild log')
     }
     finally {
       await dev.stop(5_000)
@@ -207,7 +208,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       )
       expect(sample.pendingCount).toBeGreaterThan(1)
       expect(sample.emittedCount).toBeGreaterThan(1)
-      expect(dev.getOutput()).toContain('小程序已重新构建（')
+      await dev.waitForOutput(REBUILD_READY_RE, 'shared dependency rebuild log')
     }
     finally {
       await dev.stop(5_000)
