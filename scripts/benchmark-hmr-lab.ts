@@ -34,14 +34,20 @@ interface HmrProfileJsonSample {
   generateModuleGraphMs?: number
   snapshotResolveMs?: number
   snapshotBuildMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  entryChunkEmitMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
   resolveCount?: number
+  loadCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
+  chunkEmitCount?: number
+  skippedLoadedCount?: number
   dirtyReasonSummary?: string[]
   pendingReasonSummary?: string[]
 }
@@ -94,6 +100,9 @@ interface ScenarioResult {
   maxObservedMs?: number
   averageBuildCoreMs?: number
   averageBuildStartMs?: number
+  averageCoreLoadMs?: number
+  averageEntryLoadMs?: number
+  averageEntryChunkEmitMs?: number
   averagePluginResolveMs?: number
   averageBundlerMs?: number
   averageWatchToDirtyMs?: number
@@ -107,6 +116,9 @@ interface ScenarioResult {
   averageGenerateRewriteMs?: number
   averageWriteMs?: number
   averageEmitMs?: number
+  averageLoadCount?: number
+  averageChunkEmitCount?: number
+  averageSkippedLoadedCount?: number
   averageImpactCount?: number
   error?: string
 }
@@ -292,6 +304,9 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     maxObservedMs: max(samples.map(sample => sample.observedMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
     averageBuildStartMs: averageOptional(samples.map(sample => sample.profile?.buildStartMs)),
+    averageCoreLoadMs: averageOptional(samples.map(sample => sample.profile?.coreLoadMs)),
+    averageEntryLoadMs: averageOptional(samples.map(sample => sample.profile?.entryLoadMs)),
+    averageEntryChunkEmitMs: averageOptional(samples.map(sample => sample.profile?.entryChunkEmitMs)),
     averagePluginResolveMs: averageOptional(samples.map(sample => sample.profile?.pluginResolveMs)),
     averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
@@ -305,6 +320,9 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     averageGenerateRewriteMs: averageOptional(samples.map(sample => sample.profile?.generateRewriteMs)),
     averageWriteMs: averageOptional(samples.map(sample => sample.profile?.writeMs)),
     averageEmitMs: averageOptional(samples.map(sample => sample.profile?.emitMs)),
+    averageLoadCount: averageOptional(samples.map(sample => sample.profile?.loadCount)),
+    averageChunkEmitCount: averageOptional(samples.map(sample => sample.profile?.chunkEmitCount)),
+    averageSkippedLoadedCount: averageOptional(samples.map(sample => sample.profile?.skippedLoadedCount)),
     averageImpactCount: average(samples.map(sample => sample.impactCount)),
   }
 }
@@ -604,8 +622,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-start | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-core | avg build-start | avg core-load | avg entry-load | avg chunk-emit | load/chunk/skip | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -617,7 +635,12 @@ function renderMarkdown(report: {
       formatMs(scenario.averageObservedMs),
       formatMs(scenario.maxObservedMs),
       formatMs(scenario.averageBundlerMs),
+      formatMs(scenario.averageBuildCoreMs),
       formatMs(scenario.averageBuildStartMs),
+      formatMs(scenario.averageCoreLoadMs),
+      formatMs(scenario.averageEntryLoadMs),
+      formatMs(scenario.averageEntryChunkEmitMs),
+      formatCountTriplet(scenario.averageLoadCount, scenario.averageChunkEmitCount, scenario.averageSkippedLoadedCount),
       formatMs(scenario.averagePluginResolveMs),
       formatMs(scenario.averageTransformMs),
       formatMs(scenario.averageVueTransformMs),
@@ -711,6 +734,18 @@ function formatMs(value: number | undefined) {
 
 function formatNumber(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '-'
+}
+
+function formatCountTriplet(
+  loadCount: number | undefined,
+  chunkEmitCount: number | undefined,
+  skippedLoadedCount: number | undefined,
+) {
+  return [
+    formatNumber(loadCount),
+    formatNumber(chunkEmitCount),
+    formatNumber(skippedLoadedCount),
+  ].join('/')
 }
 
 function formatReportPath(value: string | undefined) {

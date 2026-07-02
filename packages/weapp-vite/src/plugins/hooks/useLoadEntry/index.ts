@@ -5,6 +5,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { changeFileExtension } from '../../../utils'
+import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
@@ -617,7 +618,17 @@ export function useLoadEntry(
       }
 
       if (pending.length) {
-        await Promise.all(emitEntriesChunks.call(this, pending))
+        const entryChunkEmitStartedAt = performance.now()
+        try {
+          await Promise.all(emitEntriesChunks.call(this, pending))
+        }
+        finally {
+          recordHmrProfileDuration(
+            ctx.runtimeState?.build?.hmr?.profile,
+            'entryChunkEmitMs',
+            performance.now() - entryChunkEmitStartedAt,
+          )
+        }
       }
       for (const entryId of deferredDirtyEntryIds) {
         clearDirtyEntry(entryId)

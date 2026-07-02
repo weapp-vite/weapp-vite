@@ -1414,5 +1414,6 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.emitFile.mock.calls.filter(([asset]) => asset.id === id)).toHaveLength(1)
     expect(ctx.runtimeState.build.hmr.profile.chunkEmitCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.entryChunkEmitMs).toBeGreaterThanOrEqual(0)
   })
 })
