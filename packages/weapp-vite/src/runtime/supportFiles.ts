@@ -79,15 +79,18 @@ function createManagedTsconfigWarnings(
 
 async function inspectManagedTsconfigFiles(ctx: MutableCompilerContext): Promise<ManagedTsconfigInspection> {
   const files = await createManagedTsconfigFiles(ctx)
-  let managedTsconfigChanged = false
   let expectedAppContent: string | undefined
   let existingAppContent: string | undefined
 
-  for (const file of files) {
-    const existing = await readFile(file.path, 'utf8').catch(() => undefined)
-    if (existing !== file.content) {
-      managedTsconfigChanged = true
+  const inspections = await Promise.all(files.map(async (file) => {
+    return {
+      existing: await readFile(file.path, 'utf8').catch(() => undefined),
+      file,
     }
+  }))
+  const managedTsconfigChanged = inspections.some(({ existing, file }) => existing !== file.content)
+
+  for (const { existing, file } of inspections) {
     if (file.path.endsWith('tsconfig.app.json')) {
       expectedAppContent = file.content
       existingAppContent = existing
@@ -151,7 +154,7 @@ export async function syncProjectSupportFiles(
   const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
   const managedTsconfigInspection = await inspectManagedTsconfigFiles(ctx)
 
-  await syncManagedTsconfigFiles(ctx)
+  await syncManagedTsconfigFiles(ctx, managedTsconfigInspection.files)
 
   if (ctx.autoRoutesService?.isEnabled()) {
     await ctx.autoRoutesService.ensureFresh()
