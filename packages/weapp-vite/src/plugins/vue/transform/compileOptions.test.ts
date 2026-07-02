@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createCompileVueFileOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
+import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const createSfcResolveSrcOptionsMock = vi.hoisted(() => vi.fn((pluginCtx: any) => ({
@@ -605,6 +605,58 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(explicitBuildOptions.template.formatWxml).toBe(true)
   })
 
+  it('enables script sourcemaps only when Vite sourcemap is enabled', () => {
+    const disabledConfigService = {
+      platform: 'weapp',
+      isDev: true,
+      outputExtensions: {},
+      inlineConfig: {
+        build: {
+          sourcemap: false,
+        },
+      },
+      weappViteConfig: {},
+      relativeOutputPath: () => undefined,
+    } as any
+    const disabledOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      disabledConfigService,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    expect(isVueTransformSourceMapEnabled(disabledConfigService)).toBe(false)
+    expect(disabledOptions.sourceMap).toBe(false)
+
+    const enabledConfigService = {
+      ...disabledConfigService,
+      inlineConfig: {
+        build: {
+          sourcemap: true,
+        },
+      },
+    }
+    const enabledOptions = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      enabledConfigService,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    expect(isVueTransformSourceMapEnabled(enabledConfigService)).toBe(true)
+    expect(enabledOptions.sourceMap).toBe(true)
+  })
+
   it('allows disabling mapped tag class injection in compile options', () => {
     const options = createCompileVueFileOptions(
       {} as any,
@@ -785,6 +837,30 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(second).toBe(first)
     expect(createUsingComponentPathResolverMock).toHaveBeenCalledTimes(1)
     expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes shared component metadata cache to compile options', () => {
+    const componentMetaCache = new Map()
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+        componentMetaCache,
+      },
+    )
+
+    expect(options.componentMetaCache).toBe(componentMetaCache)
   })
 
   it('caches auto import tag resolution until service version changes', async () => {

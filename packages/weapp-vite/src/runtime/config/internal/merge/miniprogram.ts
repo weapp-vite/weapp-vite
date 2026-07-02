@@ -247,7 +247,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
 
   if (isDev) {
-    const hmrWatchBuildDelay = 60
+    const hmrWatchBuildDelay = 10
     const userBuildWatch = config.build?.watch
     const watchInclude = resolveMiniprogramWatchInclude({
       cwd,

@@ -16,14 +16,40 @@ interface HmrProfileJsonSample {
   event?: string
   file?: string
   buildCoreMs?: number
+  buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  resolveCount?: number
+  loadCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
+  chunkEmitCount?: number
+  skippedLoadedCount?: number
   dirtyReasonSummary?: string[]
   pendingReasonSummary?: string[]
 }
@@ -58,6 +84,7 @@ interface ScenarioSample {
   iteration: number
   marker: string
   totalMs: number
+  observedMs: number
   profile?: HmrProfileJsonSample
   impact: ImpactFile[]
   impactCount: number
@@ -71,11 +98,31 @@ interface ScenarioResult {
   samples: ScenarioSample[]
   averageMs?: number
   maxMs?: number
+  averageObservedMs?: number
+  maxObservedMs?: number
   averageBuildCoreMs?: number
+  averageBuildStartMs?: number
+  averageCoreLoadMs?: number
+  averageEntryLoadMs?: number
+  averageEntryChunkEmitMs?: number
+  averageEntryChunkLoadMs?: number
+  averageEntryChunkEmitFileMs?: number
+  averagePluginResolveMs?: number
+  averageBundlerMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
+  averageVueTransformMs?: number
+  averageVueReadSourceMs?: number
+  averageVueCompileMs?: number
+  averageVueFinalizeCompiledMs?: number
+  averageVueFinalizeCodeMs?: number
+  averageGenerateBundleMs?: number
+  averageGenerateRewriteMs?: number
   averageWriteMs?: number
   averageEmitMs?: number
+  averageLoadCount?: number
+  averageChunkEmitCount?: number
+  averageSkippedLoadedCount?: number
   averageImpactCount?: number
   error?: string
 }
@@ -91,6 +138,7 @@ const reportJsonPath = path.join(reportRoot, 'report.json')
 const reportMdPath = path.join(reportRoot, 'report.md')
 const iterations = readPositiveIntegerEnv('HMR_LAB_ITERATIONS', 2)
 const timeoutMs = readPositiveIntegerEnv('HMR_LAB_TIMEOUT_MS', 30_000)
+const pollIntervalMs = readPositiveIntegerEnv('HMR_LAB_POLL_INTERVAL_MS', 25)
 const filter = process.env.HMR_LAB_FILTER?.trim()
 const failOnError = process.env.HMR_LAB_FAIL_ON_ERROR === '1'
 const astEngine = process.env.HMR_LAB_AST_ENGINE === 'oxc' ? 'oxc' : 'babel'
@@ -154,7 +202,7 @@ async function main() {
   try {
     const startupStart = performance.now()
     await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), 120_000), 'hmr-lab app.json generated', 120_000)
-    await dev.waitFor(waitForTarget(SCENARIOS[0]!.wait(SCENARIOS[0]!.baselineMarker), 120_000), 'hmr-lab initial output generated', 120_000)
+    await dev.waitFor(waitForInitialScenarioOutputs(selectedScenarios, 120_000), 'hmr-lab selected initial outputs generated', 120_000)
     const startupMs = performance.now() - startupStart
 
     const results: ScenarioResult[] = []
@@ -193,6 +241,12 @@ async function main() {
   }
 }
 
+async function waitForInitialScenarioOutputs(scenarios: ScenarioCase[], waitMs: number) {
+  for (const scenario of scenarios) {
+    await waitForTarget(scenario.wait(scenario.baselineMarker), waitMs)
+  }
+}
+
 async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
   const sourcePath = path.join(appRoot, scenario.sourceRel)
   const original = await readFile(sourcePath, 'utf8')
@@ -212,16 +266,17 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
       const startedAt = performance.now()
       await replaceFileByRename(sourcePath, updated)
       const matchedOutput = await waitForTarget(scenario.wait(expectedMarker), timeoutMs)
-      await sleep(250)
-      const after = await snapshotDist()
       const totalMs = performance.now() - startedAt
       const profile = await waitForHmrProfileSample(sourcePath, lineCount, 2_000)
+      await waitForDistStable()
+      const after = await snapshotDist()
       const impact = diffDistSnapshots(before, after)
 
       samples.push({
         iteration: index + 1,
         marker,
         totalMs: profile?.totalMs ?? totalMs,
+        observedMs: totalMs,
         profile,
         impact,
         impactCount: impact.length,
@@ -239,8 +294,7 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     }
   }
   finally {
-    await replaceFileByRename(sourcePath, original).catch(() => {})
-    await waitForTarget(scenario.wait(scenario.baselineMarker), timeoutMs).catch(() => {})
+    await restoreScenarioSource(sourcePath, original, scenario).catch(() => {})
   }
 
   return {
@@ -250,13 +304,42 @@ async function runScenario(scenario: ScenarioCase): Promise<ScenarioResult> {
     samples,
     averageMs: average(samples.map(sample => sample.totalMs)),
     maxMs: max(samples.map(sample => sample.totalMs)),
+    averageObservedMs: average(samples.map(sample => sample.observedMs)),
+    maxObservedMs: max(samples.map(sample => sample.observedMs)),
     averageBuildCoreMs: averageOptional(samples.map(sample => sample.profile?.buildCoreMs)),
+    averageBuildStartMs: averageOptional(samples.map(sample => sample.profile?.buildStartMs)),
+    averageCoreLoadMs: averageOptional(samples.map(sample => sample.profile?.coreLoadMs)),
+    averageEntryLoadMs: averageOptional(samples.map(sample => sample.profile?.entryLoadMs)),
+    averageEntryChunkEmitMs: averageOptional(samples.map(sample => sample.profile?.entryChunkEmitMs)),
+    averageEntryChunkLoadMs: averageOptional(samples.map(sample => sample.profile?.entryChunkLoadMs)),
+    averageEntryChunkEmitFileMs: averageOptional(samples.map(sample => sample.profile?.entryChunkEmitFileMs)),
+    averagePluginResolveMs: averageOptional(samples.map(sample => sample.profile?.pluginResolveMs)),
+    averageBundlerMs: averageOptional(samples.map(sample => sample.profile?.bundlerMs)),
     averageWatchToDirtyMs: averageOptional(samples.map(sample => sample.profile?.watchToDirtyMs)),
     averageTransformMs: averageOptional(samples.map(sample => sample.profile?.transformMs)),
+    averageVueTransformMs: averageOptional(samples.map(sample => sample.profile?.vueTransformMs)),
+    averageVueReadSourceMs: averageOptional(samples.map(sample => sample.profile?.vueReadSourceMs)),
+    averageVueCompileMs: averageOptional(samples.map(sample => sample.profile?.vueCompileMs)),
+    averageVueFinalizeCompiledMs: averageOptional(samples.map(sample => sample.profile?.vueFinalizeCompiledMs)),
+    averageVueFinalizeCodeMs: averageOptional(samples.map(sample => sample.profile?.vueFinalizeCodeMs)),
+    averageGenerateBundleMs: averageOptional(samples.map(sample => sample.profile?.generateBundleMs)),
+    averageGenerateRewriteMs: averageOptional(samples.map(sample => sample.profile?.generateRewriteMs)),
     averageWriteMs: averageOptional(samples.map(sample => sample.profile?.writeMs)),
     averageEmitMs: averageOptional(samples.map(sample => sample.profile?.emitMs)),
+    averageLoadCount: averageOptional(samples.map(sample => sample.profile?.loadCount)),
+    averageChunkEmitCount: averageOptional(samples.map(sample => sample.profile?.chunkEmitCount)),
+    averageSkippedLoadedCount: averageOptional(samples.map(sample => sample.profile?.skippedLoadedCount)),
     averageImpactCount: average(samples.map(sample => sample.impactCount)),
   }
+}
+
+async function restoreScenarioSource(sourcePath: string, original: string, scenario: ScenarioCase) {
+  const lineCount = await countJsonlLines(profilePath)
+  await replaceFileByRename(sourcePath, original)
+  await waitForTarget(scenario.wait(scenario.baselineMarker), timeoutMs)
+  await waitForHmrProfileSample(sourcePath, lineCount, 2_000)
+  await waitForProfileStable()
+  await waitForDistStable()
 }
 
 function createReplaceScenario(
@@ -315,7 +398,7 @@ async function waitForFile(filePath: string, waitMs = timeoutMs) {
     if (await pathExists(filePath)) {
       return
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for file: ${formatReportPath(filePath)}`)
 }
@@ -329,7 +412,7 @@ async function waitForFileContains(filePath: string, marker: string, waitMs = ti
         return
       }
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to contain marker: ${marker}`)
 }
@@ -341,7 +424,7 @@ async function waitForDistContains(marker: string, waitMs = timeoutMs) {
     if (matched) {
       return matched
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   throw new Error(`Timed out waiting for dist to contain marker: ${marker}`)
 }
@@ -368,6 +451,40 @@ async function snapshotDist() {
     })
   }
   return snapshot
+}
+
+async function waitForDistStable(stableMs = 500, waitMs = 3_000) {
+  const startedAt = Date.now()
+  let lastHash = ''
+  let stableStartedAt = 0
+  while (Date.now() - startedAt < waitMs) {
+    const currentHash = await hashDistSnapshot()
+    if (currentHash === lastHash) {
+      if (stableStartedAt === 0) {
+        stableStartedAt = Date.now()
+      }
+      if (Date.now() - stableStartedAt >= stableMs) {
+        return
+      }
+    }
+    else {
+      lastHash = currentHash
+      stableStartedAt = Date.now()
+    }
+    await sleep(100)
+  }
+}
+
+async function hashDistSnapshot() {
+  const snapshot = await snapshotDist()
+  const hash = createHash('sha1')
+  for (const [filePath, file] of snapshot) {
+    hash.update(filePath)
+    hash.update(':')
+    hash.update(file.hash)
+    hash.update('\n')
+  }
+  return hash.digest('hex')
 }
 
 function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<string, DistFileSnapshot>) {
@@ -420,7 +537,7 @@ async function waitForHmrProfileSample(sourcePath: string, startLineCount: numbe
     if (latest) {
       return formatProfileSample(latest)
     }
-    await sleep(250)
+    await sleep(pollIntervalMs)
   }
   return undefined
 }
@@ -443,6 +560,28 @@ async function readJsonlSamplesSince(startLineCount: number) {
       }
     })
     .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
+}
+
+async function waitForProfileStable(stableMs = 500, waitMs = 3_000) {
+  const startedAt = Date.now()
+  let lastLineCount = -1
+  let stableStartedAt = 0
+  while (Date.now() - startedAt < waitMs) {
+    const lineCount = await countJsonlLines(profilePath)
+    if (lineCount === lastLineCount) {
+      if (stableStartedAt === 0) {
+        stableStartedAt = Date.now()
+      }
+      if (Date.now() - stableStartedAt >= stableMs) {
+        return
+      }
+    }
+    else {
+      lastLineCount = lineCount
+      stableStartedAt = Date.now()
+    }
+    await sleep(100)
+  }
 }
 
 function formatProfileSample(sample: HmrProfileJsonSample): HmrProfileJsonSample {
@@ -489,8 +628,8 @@ function renderMarkdown(report: {
     `- iterations: ${report.iterations}`,
     `- timeoutMs: ${report.timeoutMs}`,
     '',
-    '| scenario | source | avg total | max total | avg watch->dirty | avg transform | avg write | avg emit | avg impact | status |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| scenario | source | avg profile | max profile | avg observed | max observed | avg bundler | avg build-core | avg build-start | avg core-load | avg entry-load | avg chunk-emit | avg chunk-load | avg emit-file | load/chunk/skip | avg plugin-resolve | avg transform | avg vue | avg vue compile | avg vue finalize | avg generate | avg rewrite | avg write | avg emit | avg impact | status |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
   for (const scenario of report.scenarios) {
@@ -499,8 +638,27 @@ function renderMarkdown(report: {
       scenario.source,
       formatMs(scenario.averageMs),
       formatMs(scenario.maxMs),
-      formatMs(scenario.averageWatchToDirtyMs),
+      formatMs(scenario.averageObservedMs),
+      formatMs(scenario.maxObservedMs),
+      formatMs(scenario.averageBundlerMs),
+      formatMs(scenario.averageBuildCoreMs),
+      formatMs(scenario.averageBuildStartMs),
+      formatMs(scenario.averageCoreLoadMs),
+      formatMs(scenario.averageEntryLoadMs),
+      formatMs(scenario.averageEntryChunkEmitMs),
+      formatMs(scenario.averageEntryChunkLoadMs),
+      formatMs(scenario.averageEntryChunkEmitFileMs),
+      formatCountTriplet(scenario.averageLoadCount, scenario.averageChunkEmitCount, scenario.averageSkippedLoadedCount),
+      formatMs(scenario.averagePluginResolveMs),
       formatMs(scenario.averageTransformMs),
+      formatMs(scenario.averageVueTransformMs),
+      formatMs(scenario.averageVueCompileMs),
+      formatMs(sumOptional([
+        scenario.averageVueFinalizeCompiledMs,
+        scenario.averageVueFinalizeCodeMs,
+      ])),
+      formatMs(scenario.averageGenerateBundleMs),
+      formatMs(scenario.averageGenerateRewriteMs),
       formatMs(scenario.averageWriteMs),
       formatMs(scenario.averageEmitMs),
       formatNumber(scenario.averageImpactCount),
@@ -518,12 +676,13 @@ function renderMarkdown(report: {
       lines.push(`- error: ${scenario.error}`)
     }
     lines.push('')
-    lines.push('| run | total | profile file | dirty/pending/emitted | changed outputs | sample impact |')
-    lines.push('| ---: | ---: | --- | --- | ---: | --- |')
+    lines.push('| run | profile | observed | profile file | dirty/pending/emitted | changed outputs | sample impact |')
+    lines.push('| ---: | ---: | ---: | --- | --- | ---: | --- |')
     for (const sample of scenario.samples) {
       lines.push([
         String(sample.iteration),
         formatMs(sample.totalMs),
+        formatMs(sample.observedMs),
         sample.profile?.file ?? '-',
         `${sample.profile?.dirtyCount ?? '-'}/${sample.profile?.pendingCount ?? '-'}/${sample.profile?.emittedCount ?? '-'}`,
         String(sample.impactCount),
@@ -569,12 +728,32 @@ function max(values: number[]) {
   return Math.max(...values)
 }
 
+function sumOptional(values: Array<number | undefined>) {
+  const finiteValues = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+  if (!finiteValues.length) {
+    return undefined
+  }
+  return finiteValues.reduce((sum, value) => sum + value, 0)
+}
+
 function formatMs(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(2)} ms` : '-'
 }
 
 function formatNumber(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '-'
+}
+
+function formatCountTriplet(
+  loadCount: number | undefined,
+  chunkEmitCount: number | undefined,
+  skippedLoadedCount: number | undefined,
+) {
+  return [
+    formatNumber(loadCount),
+    formatNumber(chunkEmitCount),
+    formatNumber(skippedLoadedCount),
+  ].join('/')
 }
 
 function formatReportPath(value: string | undefined) {

@@ -67,6 +67,11 @@ export interface AutoImportTagsOptions {
   warn?: (message: string) => void
 }
 
+export interface VueSfcStaticComponentMeta {
+  componentName?: string
+  isMiniProgramComponent: boolean
+}
+
 /**
  * 编译 Vue SFC 的选项集合。
  */
@@ -78,6 +83,10 @@ export interface CompileVueFileOptions {
    * 是否压缩生成的 wevu 脚本输出。
    */
   minify?: boolean
+  /**
+   * 是否生成脚本 sourcemap。默认开启；构建工具可在未启用 sourcemap 时显式关闭以减少 codegen 成本。
+   */
+  sourceMap?: boolean
   warn?: (message: string) => void
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions
@@ -89,4 +98,8 @@ export interface CompileVueFileOptions {
   }
   sfcSrc?: ResolveSfcBlockSrcOptions
   wevuDefaults?: WevuDefaults
+  /**
+   * 缓存被当前 SFC 引用的 Vue 组件静态元信息，避免重复读取和解析同一组件。
+   */
+  componentMetaCache?: Map<string, Promise<VueSfcStaticComponentMeta>>
 }

@@ -3,9 +3,7 @@ import type { MutableCompilerContext } from '../../../context'
 import type { AppEntry, SubPackage } from '../../../types'
 import type { ScanServiceStateLike } from './shared'
 import { isObject } from '@weapp-core/shared'
-import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { jsExtensions } from '../../../constants'
 import { findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
 import { applyBuildScopeToAppConfig, resolveBuildScope } from '../../buildScope'
 import { createWarnOnce, mergeAutoRoutePages } from './shared'
@@ -20,12 +18,7 @@ export function resolveScanAppPreludeBasename(absoluteSrcRoot: string) {
 
 async function resolveScanAppPreludePath(absoluteSrcRoot: string) {
   const basename = resolveScanAppPreludeBasename(absoluteSrcRoot)
-  for (const extension of jsExtensions) {
-    const candidate = `${basename}.${extension}`
-    if (await fs.pathExists(candidate)) {
-      return candidate
-    }
-  }
+  return (await findJsEntry(basename)).path
 }
 
 export function resolveScanPluginBasename(absolutePluginRoot?: string) {
@@ -42,6 +35,25 @@ export function resolveScanJsonEntryBasename(
     return undefined
   }
   return path.resolve(appDirname, value || fallbackName)
+}
+
+async function resolveOptionalAppSideJson<T>(
+  ctx: MutableCompilerContext,
+  basename: string | undefined,
+): Promise<{ jsonPath?: string, json?: T }> {
+  if (!basename) {
+    return {}
+  }
+
+  const { path: jsonPath } = await findJsonEntry(basename)
+  if (!jsonPath) {
+    return {}
+  }
+
+  return {
+    jsonPath,
+    json: await ctx.jsonService!.read(jsonPath) as T,
+  }
 }
 
 function mergeAutoRouteSubPackages(
@@ -172,11 +184,21 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
   const warnOnce = createWarnOnce(scanState.warnedMessages)
   const appDirname = ctx.configService.absoluteSrcRoot
   const appBasename = resolveScanAppBasename(appDirname)
-  let { path: appConfigFile } = await findJsonEntry(appBasename)
+  const [
+    appConfigEntry,
+    appEntry,
+    appPreludePath,
+    vueAppPath,
+  ] = await Promise.all([
+    findJsonEntry(appBasename),
+    findJsEntry(appBasename),
+    resolveScanAppPreludePath(appDirname),
+    findVueEntry(appBasename),
+  ])
+
+  let { path: appConfigFile } = appConfigEntry
   const discoveredAppConfigFile = appConfigFile
-  const { path: appEntryPath } = await findJsEntry(appBasename)
-  const appPreludePath = await resolveScanAppPreludePath(appDirname)
-  const vueAppPath = await findVueEntry(appBasename)
+  const { path: appEntryPath } = appEntry
 
   let configFromVue: Record<string, any> | undefined
   if (!appConfigFile && vueAppPath) {
@@ -238,19 +260,18 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
 
       const sitemapBasename = resolveScanJsonEntryBasename(appDirname, config.sitemapLocation, 'sitemap.json')
       const themeBasename = resolveScanJsonEntryBasename(appDirname, config.themeLocation, 'theme.json')
-      if (sitemapBasename) {
-        const { path: sitemapJsonPath } = await findJsonEntry(sitemapBasename)
-        if (sitemapJsonPath) {
-          resolvedAppEntry.sitemapJsonPath = sitemapJsonPath
-          resolvedAppEntry.sitemapJson = await ctx.jsonService.read(sitemapJsonPath) as SitemapJson
-        }
+      const [sitemapEntry, themeEntry] = await Promise.all([
+        resolveOptionalAppSideJson<SitemapJson>(ctx, sitemapBasename),
+        resolveOptionalAppSideJson<ThemeJson>(ctx, themeBasename),
+      ])
+
+      if (sitemapEntry.jsonPath) {
+        resolvedAppEntry.sitemapJsonPath = sitemapEntry.jsonPath
+        resolvedAppEntry.sitemapJson = sitemapEntry.json
       }
-      if (themeBasename) {
-        const { path: themeJsonPath } = await findJsonEntry(themeBasename)
-        if (themeJsonPath) {
-          resolvedAppEntry.themeJsonPath = themeJsonPath
-          resolvedAppEntry.themeJson = await ctx.jsonService.read(themeJsonPath) as ThemeJson
-        }
+      if (themeEntry.jsonPath) {
+        resolvedAppEntry.themeJsonPath = themeEntry.jsonPath
+        resolvedAppEntry.themeJson = themeEntry.json
       }
 
       scanState.appEntry = resolvedAppEntry

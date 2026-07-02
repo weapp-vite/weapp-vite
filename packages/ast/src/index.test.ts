@@ -1,8 +1,12 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import * as t from '@babel/types'
 import { describe, expect, it } from 'vitest'
 import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
+  analyzeScript,
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectComponentPropsWithBabel,
   collectComponentPropsWithOxc,
@@ -279,6 +283,28 @@ export function useCounter() {
     expect(engineParseSpy).not.toHaveBeenCalled()
 
     engineParseSpy.mockRestore()
+  })
+
+  it('analyzes script prechecks in one fallback entry', () => {
+    const source = `import { onLoad } from 'wevu'
+const dep = require('./dep')
+wx.getStorageSync('x')
+onLoad(() => dep)
+`
+    expect(analyzeScript(source, {
+      engine: 'oxc',
+      featureFlags: {
+        astEngine: 'oxc',
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'enableLoad',
+        },
+      },
+    })).toEqual({
+      featureFlags: new Set(['enableLoad']),
+      hasPlatformApiAccess: true,
+      hasStaticRequireLiteral: true,
+    })
   })
 
   it('exposes require prechecks', () => {
@@ -1056,6 +1082,109 @@ wevu.onPageScroll?.(() => {})`
     const normalize = (warning: string) => warning.replace(/^.*?:\d+:\d+\s/, '')
 
     expect(oxcWarnings.map(normalize)).toEqual(babelWarnings.map(normalize))
+  })
+
+  it('uses optional native AST analysis when configured', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'weapp-vite-ast-native-'))
+    const modulePath = join(tempDir, 'native.cjs')
+    await writeFile(modulePath, `
+globalThis.__weappViteNativeAnalysisCalls = 0
+globalThis.__weappViteNativeBatchAnalysisCalls = 0
+exports.analyzeScriptNative = (code) => {
+  globalThis.__weappViteNativeAnalysisCalls += 1
+  if (code.includes('throwBatchNative')) {
+    throw new Error('native batch failed')
+  }
+  return {
+    featureFlags: ['nativeFeature'],
+    hasPlatformApiAccess: code.includes('nativePlatform'),
+    hasStaticRequireLiteral: code.includes('nativeRequire'),
+  }
+}
+exports.analyzeScriptsNative = (inputs) => {
+  globalThis.__weappViteNativeBatchAnalysisCalls += 1
+  return inputs.map(input => ({
+    featureFlags: input.code.includes('nativeFeature') ? ['nativeFeature'] : [],
+    hasPlatformApiAccess: input.code.includes('nativePlatform'),
+    hasStaticRequireLiteral: input.code.includes('nativeRequire'),
+  }))
+}
+exports.collectFeatureFlagsNative = (code) => {
+  if (code.includes('throwNative')) {
+    throw new Error('native failed')
+  }
+  return ['nativeFeature']
+}
+exports.collectOnPageScrollDiagnosticsNative = () => [
+  { kind: 'setData', line: 2, column: 3, sourceLabel: 'onPageScroll(...)' },
+  { kind: 'syncApi', line: 3, column: 3, sourceLabel: 'onPageScroll(...)', syncApi: 'wx.getStorageSync' },
+]
+exports.mayContainPlatformApiAccessNative = code => code.includes('nativePlatform')
+exports.mayContainStaticRequireLiteralNative = code => code.includes('nativeRequire')
+`)
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+      vi.resetModules()
+      const nativeModule = await import('./index')
+
+      expect(nativeModule.collectOnPageScrollWarningsWithNative('onPageScroll(() => {})', '/src/pages/index.ts')).toEqual([
+        '[weapp-vite][onPageScroll] /src/pages/index.ts:2:3 检测到 onPageScroll(...) 内调用 setData，建议改用节流、IntersectionObserver 或合并更新。',
+        '[weapp-vite][onPageScroll] /src/pages/index.ts:3:3 检测到 onPageScroll(...) 内调用同步 API（wx.getStorageSync），可能阻塞渲染线程。',
+      ])
+      expect(nativeModule.collectOnPageScrollPerformanceWarnings('onPageScroll(() => {})', '/src/pages/index.ts')).toHaveLength(2)
+      expect(nativeModule.mayContainPlatformApiAccess('nativePlatform.wx.request()', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.mayContainStaticRequireLiteral('nativeRequire(); require(name)', { engine: 'oxc' })).toBe(true)
+      expect(nativeModule.collectFeatureFlagsWithNativeBatch('import { onLoad } from "wevu"; onLoad(() => {})', 'wevu', {
+        onLoad: 'nativeFeature',
+      })).toEqual(new Set(['nativeFeature']))
+      expect(nativeModule.collectFeatureFlagsWithNative('import { onLoad } from "wevu"; onLoad(() => {})', 'wevu', {
+        onLoad: 'nativeFeature',
+      })).toEqual(new Set(['nativeFeature']))
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; onLoad(() => {})', {
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'nativeFeature',
+        },
+      })).toEqual(new Set(['nativeFeature']))
+      expect(nativeModule.collectFeatureFlagsFromCode('import { onLoad } from "wevu"; throwBatchNative(); onLoad(() => {})', {
+        astEngine: 'oxc',
+        moduleId: 'wevu',
+        hookToFeature: {
+          onLoad: 'fallbackFeature',
+        },
+      })).toEqual(new Set(['fallbackFeature']))
+      expect(nativeModule.analyzeScripts([
+        { code: 'nativePlatform.wx.request()' },
+        { code: 'nativeRequire(); nativeFeature(); import { onLoad } from "wevu"; onLoad(() => {})', featureFlags: {
+          moduleId: 'wevu',
+          hookToFeature: {
+            onLoad: 'nativeFeature',
+          },
+        } },
+      ], { engine: 'oxc' })).toEqual([
+        {
+          featureFlags: new Set(),
+          hasPlatformApiAccess: true,
+          hasStaticRequireLiteral: false,
+        },
+        {
+          featureFlags: new Set(['nativeFeature']),
+          hasPlatformApiAccess: false,
+          hasStaticRequireLiteral: true,
+        },
+      ])
+      expect((globalThis as any).__weappViteNativeAnalysisCalls).toBe(4)
+      expect((globalThis as any).__weappViteNativeBatchAnalysisCalls).toBe(1)
+    }
+    finally {
+      delete (globalThis as any).__weappViteNativeAnalysisCalls
+      delete (globalThis as any).__weappViteNativeBatchAnalysisCalls
+      vi.unstubAllEnvs()
+      vi.resetModules()
+      await rm(tempDir, { force: true, recursive: true })
+    }
   })
 
   it('ignores nested function body calls in onPageScroll inspection across engines', () => {

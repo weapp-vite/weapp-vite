@@ -58,12 +58,6 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
 
     scanState.isDirty = false
   }
-  else {
-    for (const meta of subPackageMap.values()) {
-      meta.entries = resolveSubPackageEntries(meta.subPackage)
-    }
-  }
-
   if (scanState.appEntry) {
     return [...subPackageMap.values()]
   }

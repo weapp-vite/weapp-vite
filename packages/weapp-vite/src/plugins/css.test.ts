@@ -116,6 +116,16 @@ describe('css plugin shared style injection', () => {
     include: ['**/*'],
     exclude: [],
   }
+  const secondStyleAbsolutePath = resolve(absoluteSrcRoot, 'subpackages/foo/styles/second.wxss')
+  const secondSubPackageStyleEntry: SubPackageStyleEntry = {
+    source: 'styles/second.wxss',
+    absolutePath: secondStyleAbsolutePath,
+    outputRelativePath: 'subpackages/foo/styles/second.wxss',
+    inputExtension: '.wxss',
+    scope: 'all',
+    include: ['**/*'],
+    exclude: [],
+  }
 
   const scanService = {
     subPackageMap: new Map([
@@ -135,6 +145,8 @@ describe('css plugin shared style injection', () => {
     scanService,
     runtimeState: {
       css: {
+        importerToDependencies: new Map<string, Set<string>>(),
+        dependencyToImporters: new Map<string, Set<string>>(),
         emittedSource: new Map(),
       },
     },
@@ -152,9 +164,10 @@ describe('css plugin shared style injection', () => {
 
   beforeEach(() => {
     emitted = []
-    readFileMock.mockClear()
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue('.sidecar{color:red}')
     processCssWithCache.mockClear()
-    preprocessCSSMock.mockClear()
+    preprocessCSSMock.mockReset()
     preprocessCSSMock.mockImplementation(async (code: string) => ({
       code,
       deps: [],
@@ -163,10 +176,13 @@ describe('css plugin shared style injection', () => {
     renderSharedStyleEntry.mockResolvedValue({
       css: '/* shared */',
       dependencies: [],
+      source: '/* shared source */',
     })
     pathExistsMock.mockReset()
     pathExistsMock.mockResolvedValue(true)
     pluginContext.addWatchFile.mockClear()
+    ;(ctx as any).runtimeState.css.importerToDependencies.clear()
+    ;(ctx as any).runtimeState.css.dependencyToImporters.clear()
     ;(ctx as any).runtimeState.css.emittedSource.clear()
   })
 
@@ -207,6 +223,73 @@ describe('css plugin shared style injection', () => {
     expect(pageAsset?.source).toBe('@import \'../styles/index.wxss\';\n')
 
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
+  })
+
+  it('prepares shared style import assets concurrently while committing in chunk order', async () => {
+    const plugin = css(ctx)[0]
+    const events: string[] = []
+    let releaseList!: () => void
+    const listBlocked = new Promise<void>((resolve) => {
+      releaseList = resolve
+    })
+    let sharedImportCallCount = 0
+    processCssWithCache.mockImplementation(async (code: string) => {
+      events.push(code)
+      if (code.includes('@import')) {
+        sharedImportCallCount += 1
+      }
+      if (sharedImportCallCount === 1 && code.includes('@import')) {
+        await listBlocked
+      }
+      return code
+    })
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+      'subpackages/foo/pages/detail.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/detail.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/detail.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    const generating = invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    await vi.waitFor(() => {
+      expect(events).toEqual([
+        '/* shared */',
+        '@import \'../styles/index.wxss\';\n',
+        '@import \'../styles/index.wxss\';\n',
+      ])
+    })
+    releaseList()
+    await generating
+
+    expect(emitted.map(asset => asset.fileName)).toEqual([
+      'subpackages/foo/styles/index.wxss',
+      'subpackages/foo/pages/list.wxss',
+      'subpackages/foo/pages/detail.wxss',
+    ])
   })
 
   it('skips shared style work for hmr bundles without style changes', async () => {
@@ -287,6 +370,29 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalled()
   })
 
+  it('tracks imports from the original final wxss asset source', async () => {
+    const originalStylePath = resolve(absoluteSrcRoot, 'pages/native/index.wxss')
+    const sharedStylePath = resolve(absoluteSrcRoot, 'shared/styles/shared.scss')
+    readFileMock.mockResolvedValueOnce('@import "../../shared/styles/shared.scss";\n.native-page{}')
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/native/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/native/index.wxss',
+        source: '.native-page{}',
+        originalFileNames: [originalStylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const graph = (ctx as any).runtimeState.css
+    expect(readFileMock).toHaveBeenCalledWith(originalStylePath, 'utf8')
+    expect(graph.dependencyToImporters.get(sharedStylePath)).toEqual(new Set([originalStylePath]))
+    expect(graph.dependencyToImporters.get(sharedStylePath.slice(0, -'.scss'.length))).toEqual(new Set([originalStylePath]))
+  })
+
   it('emits wxss from css asset via chunk viteMetadata (no originalFileNames)', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
@@ -324,6 +430,143 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
 
+  it('reuses processed css asset source for multiple chunk owners', async () => {
+    preprocessCSSMock.mockResolvedValue({
+      code: '.shared{color:red}',
+      deps: ['/project/src/shared/dep.scss'],
+    })
+    processCssWithCache.mockResolvedValueOnce('.shared{color:red}/* processed */')
+    const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
+    const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const plugin = css({
+      configService,
+      scanService: { subPackageMap: new Map() },
+      runtimeState: {
+        css: {
+          importerToDependencies: new Map<string, Set<string>>(),
+          dependencyToImporters: new Map<string, Set<string>>(),
+          emittedSource: new Map(),
+        },
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/a/index.js': {
+        type: 'chunk',
+        fileName: 'pages/a/index.js',
+        facadeModuleId: pageA,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['shared.scss']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'pages/b/index.js': {
+        type: 'chunk',
+        fileName: 'pages/b/index.js',
+        facadeModuleId: pageB,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['shared.scss']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'shared.scss': {
+        type: 'asset',
+        fileName: 'shared.scss',
+        source: '$brand:red;.shared{color:$brand}',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(preprocessCSSMock).toHaveBeenCalledTimes(1)
+    expect(processCssWithCache).toHaveBeenCalledWith('.shared{color:red}', configService)
+    expect(processCssWithCache).toHaveBeenCalledTimes(1)
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/shared/dep.scss'))
+    expect(emitted.map(asset => asset.fileName).sort()).toEqual([
+      'pages/a/index.wxss',
+      'pages/b/index.wxss',
+    ])
+    expect(emitted.every(asset => asset.source.includes('/* processed */'))).toBe(true)
+  })
+
+  it('emits shared style imports for css importer hmr entries outside the representative bundle', async () => {
+    const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
+    const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const runtimeState = {
+      build: {
+        hmr: {
+          lastHmrEntryIds: new Set([pageA, pageB]),
+          lastEmittedEntryIds: new Set([pageA]),
+          profile: {
+            event: 'update',
+            dirtyReasonSummary: ['css-importer:2'],
+          },
+        },
+      },
+    }
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState,
+      scanService: {
+        subPackageMap: new Map([
+          ['pages', {
+            styleEntries: [{
+              ...subPackageStyleEntry,
+              outputRelativePath: 'pages/shared/styles/index.wxss',
+            }],
+          }],
+        ]),
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/a/index.js': {
+        type: 'chunk',
+        fileName: 'pages/a/index.js',
+        facadeModuleId: pageA,
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(emitted.map(asset => asset.fileName).sort()).toEqual([
+      'pages/a/index.wxss',
+      'pages/b/index.wxss',
+      'pages/shared/styles/index.wxss',
+    ])
+  })
+
   it('normalizes source style asset filenames to wxss after Vite preprocessing', async () => {
     preprocessCSSMock.mockResolvedValue({
       code: '.page .title{color:red;background-clip:text;-webkit-background-clip:text}',
@@ -356,9 +599,39 @@ describe('css plugin shared style injection', () => {
       resolvedConfig,
     )
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/project/src/pages/index/tokens.scss'))
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get('/project/src/pages/index/tokens.scss')).toEqual(
+      new Set([resolve(absoluteSrcRoot, 'pages/index/index.scss')]),
+    )
   })
 
-  it('keeps existing wxss asset source instead of rereading raw scss original files', async () => {
+  it('registers css import graph from original source assets after Vite preprocessing removed imports', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/native/index.wxss')
+    const sharedPath = resolve(absoluteSrcRoot, 'shared/styles/shared.scss')
+    readFileMock.mockResolvedValueOnce('@import "../../shared/styles/shared.scss";\n.native{color:red}')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.shared{color:green}.native{color:red}',
+      deps: [sharedPath],
+    })
+
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'pages/native/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/native/index.wxss',
+        source: '.shared{color:green}.native{color:red}',
+        originalFileNames: [stylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get(sharedPath)).toEqual(new Set([stylePath]))
+    expect((ctx as any).runtimeState.css.dependencyToImporters.get(sharedPath.slice(0, -'.scss'.length))).toEqual(new Set([stylePath]))
+    expect(bundle['pages/native/index.wxss']?.source).toContain('.native{color:red}')
+  })
+
+  it('keeps existing wxss asset source instead of using raw scss original files as output', async () => {
     readFileMock.mockResolvedValueOnce('$brand: red;\n.page { .title { color: $brand; } }')
 
     const plugin = css(ctx)[0]
@@ -374,7 +647,7 @@ describe('css plugin shared style injection', () => {
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
-    expect(readFileMock).not.toHaveBeenCalled()
+    expect(readFileMock).toHaveBeenCalledWith(resolve(absoluteSrcRoot, 'pages/index/index.scss'), 'utf8')
     expect(preprocessCSSMock).toHaveBeenCalledWith(
       '.page .title{color:red}',
       resolve(absoluteSrcRoot, 'pages/index/index.scss'),
@@ -383,6 +656,62 @@ describe('css plugin shared style injection', () => {
     expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:red}')
     expect((ctx as any).runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:red}')
     expect(emitted.find(asset => asset.fileName === 'pages/index/index.scss')).toBeUndefined()
+  })
+
+  it('rebuilds the current hmr final style asset from the latest sidecar source', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.scss')
+    readFileMock.mockResolvedValueOnce('$brand: green;\n.page { .title { color: $brand; } }')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.page .title{color:green}',
+      deps: [],
+    })
+    const runtimeState = {
+      css: {
+        emittedSource: new Map([
+          ['pages/index/index.wxss', '.page .title{color:red}'],
+        ]),
+      },
+      build: {
+        hmr: {
+          didEmitAllEntries: false,
+          lastHmrEntryIds: new Set([resolve(absoluteSrcRoot, 'pages/index/index.ts')]),
+          lastEmittedEntryIds: new Set(),
+          profile: {
+            event: 'update',
+            file: stylePath,
+          },
+        },
+      },
+    }
+
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState,
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        source: '.page .title{color:red}',
+        originalFileNames: [stylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
+    expect(preprocessCSSMock).toHaveBeenCalledWith(
+      expect.stringContaining('$brand: green;'),
+      stylePath,
+      resolvedConfig,
+    )
+    expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:green}')
+    expect(runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:green}')
   })
 
   it('drops unchanged existing style assets during dev hmr writes', async () => {
@@ -604,6 +933,7 @@ describe('css plugin shared style injection', () => {
     renderSharedStyleEntry.mockResolvedValue({
       css: '/* shared with deps */',
       dependencies: [styleAbsolutePath, dependencyPath],
+      source: '@import "./dep.wxss";\n.shared{}',
     })
 
     const plugin = css(ctx)[0]
@@ -641,6 +971,80 @@ describe('css plugin shared style injection', () => {
     expect(bundle['subpackages/foo/styles/index.wxss']).toBeUndefined()
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(styleAbsolutePath))
     expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(dependencyPath))
+    expect(readFileMock).not.toHaveBeenCalledWith(styleAbsolutePath, 'utf8')
+  })
+
+  it('renders shared style entries concurrently while emitting in config order', async () => {
+    const plugin = css({
+      ...ctx,
+      scanService: {
+        subPackageMap: new Map([
+          [
+            'subpackages/foo',
+            {
+              subPackage: { root: 'subpackages/foo' },
+              entries: ['subpackages/foo/pages/list'],
+              styleEntries: [subPackageStyleEntry, secondSubPackageStyleEntry],
+            },
+          ],
+        ]),
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+    const startedBeforeRelease: string[] = []
+    let releaseFirstRender!: () => void
+    let firstReleased = false
+    renderSharedStyleEntry.mockImplementation(async (entry: SubPackageStyleEntry) => {
+      if (!firstReleased) {
+        startedBeforeRelease.push(entry.absolutePath)
+      }
+      if (entry.absolutePath === styleAbsolutePath) {
+        await new Promise<void>((resolve) => {
+          releaseFirstRender = () => {
+            firstReleased = true
+            resolve()
+          }
+        })
+      }
+      return {
+        css: `/* ${entry.outputRelativePath} */`,
+        dependencies: [],
+        source: `/* source ${entry.outputRelativePath} */`,
+      }
+    })
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    const pending = invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    await vi.waitFor(() => {
+      expect(releaseFirstRender).toBeDefined()
+      expect(startedBeforeRelease).toEqual([
+        styleAbsolutePath,
+        secondStyleAbsolutePath,
+      ])
+    })
+    releaseFirstRender()
+    await pending
+
+    expect(emitted.map(asset => asset.fileName)).toEqual([
+      'subpackages/foo/styles/index.wxss',
+      'subpackages/foo/styles/second.wxss',
+      'subpackages/foo/pages/list.wxss',
+    ])
   })
 
   it('skips rendering shared style entries when the same output was already emitted', async () => {

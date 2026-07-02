@@ -8,12 +8,14 @@ export {
 } from './literals'
 
 export {
+  rewriteBundleNpmImportsToLocalRoots,
   rewriteChunkNpmImportsToLocalRoot,
   rewriteJsonNpmImportsToLocalRoot,
   toRelativeRuntimeNpmImport,
 } from './localRoot'
 
 export {
+  type ChunkScriptAnalysisCache,
   matchesSubPackageDependency,
   normalizeNpmImportByPlatform,
   replacePlatformApiAccess,
@@ -21,4 +23,5 @@ export {
   rewriteBundleNpmImportsByPlatform,
   rewriteBundlePlatformApi,
   rewriteChunkNpmImportsByPlatform,
+  warmupBundleScriptAnalysis,
 } from './platform'

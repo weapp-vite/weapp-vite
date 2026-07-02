@@ -30,6 +30,28 @@ export default defineComponent({
     expect(result.script).not.toContain('<view')
   })
 
+  it('skips json macro metadata when tsx source has no json macro call', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+const definePageJsonValue = 'not a macro'
+
+export default defineComponent({
+  render() {
+    return <view>{definePageJsonValue}</view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, '/project/src/pages/no-json-macro/index.tsx', {
+      isPage: true,
+    })
+
+    expect(result.template).toContain('<view')
+    expect(result.meta?.jsonMacroHash).toBeUndefined()
+    expect(result.script).toContain('definePageJsonValue')
+  })
+
   it('supports class attribute in tsx render', async () => {
     const source = `
 import { defineComponent } from 'vue'

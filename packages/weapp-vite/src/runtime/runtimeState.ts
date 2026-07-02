@@ -101,6 +101,7 @@ export interface RuntimeState {
     resolvedResolverComponents: Map<string, string>
     matcher?: (input: string) => boolean
     matcherKey: string
+    preparedGlobsKey?: string
     version: number
     pendingEntriesByImporter: Map<string, Set<string>>
   }
@@ -127,6 +128,7 @@ export interface RuntimeState {
       vueEntryHasTemplate: Map<string, boolean>
       vueEntryNonJsonSignatures: Map<string, string>
       vueEntryScriptSignatures: Map<string, string>
+      vueEntryStyleIndependentSignatures: Map<string, string>
       appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
       didEmitAllEntries: boolean
@@ -143,11 +145,53 @@ export interface RuntimeState {
         relativeFile?: string
         sourceRootFile?: string
         buildCoreMs?: number
+        buildStartMs?: number
+        pluginResolveMs?: number
         transformMs?: number
+        coreTransformMs?: number
+        wevuTransformMs?: number
+        vueTransformMs?: number
+        vueReadSourceMs?: number
+        vueCompileMs?: number
+        vueFinalizeCompiledMs?: number
+        vueFinalizeCodeMs?: number
+        coreLoadMs?: number
+        entryLoadMs?: number
+        entryCodeReadMs?: number
+        entrySidecarResolveMs?: number
+        entryJsonReadMs?: number
+        entryVueConfigMs?: number
+        entryTemplateScanMs?: number
+        entryScriptSetupMs?: number
+        entryVueSignatureMs?: number
+        entryAutoImportMs?: number
+        entryPrepareMs?: number
+        entryEmitOutputMs?: number
+        entryStyleScanMs?: number
+        entryStyleReadMs?: number
+        entryResolveMs?: number
+        entryChunkEmitMs?: number
+        entryChunkLoadMs?: number
+        entryChunkEmitFileMs?: number
+        entryLayoutMs?: number
+        requestGlobalsMs?: number
+        weapiResolveMs?: number
+        bundlerMs?: number
+        renderStartMs?: number
+        generateBundleMs?: number
+        generateSharedMs?: number
+        generateRewriteMs?: number
+        generateModuleGraphMs?: number
+        snapshotResolveMs?: number
+        snapshotBuildMs?: number
         writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
+        chunkEmitCount?: number
+        loadCount?: number
+        resolveCount?: number
+        skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
@@ -159,11 +203,53 @@ export interface RuntimeState {
         event?: ChangeEvent
         file?: string
         buildCoreMs?: number
+        buildStartMs?: number
+        pluginResolveMs?: number
         transformMs?: number
+        coreTransformMs?: number
+        wevuTransformMs?: number
+        vueTransformMs?: number
+        vueReadSourceMs?: number
+        vueCompileMs?: number
+        vueFinalizeCompiledMs?: number
+        vueFinalizeCodeMs?: number
+        coreLoadMs?: number
+        entryLoadMs?: number
+        entryCodeReadMs?: number
+        entrySidecarResolveMs?: number
+        entryJsonReadMs?: number
+        entryVueConfigMs?: number
+        entryTemplateScanMs?: number
+        entryScriptSetupMs?: number
+        entryVueSignatureMs?: number
+        entryAutoImportMs?: number
+        entryPrepareMs?: number
+        entryEmitOutputMs?: number
+        entryStyleScanMs?: number
+        entryStyleReadMs?: number
+        entryResolveMs?: number
+        entryChunkEmitMs?: number
+        entryChunkLoadMs?: number
+        entryChunkEmitFileMs?: number
+        entryLayoutMs?: number
+        requestGlobalsMs?: number
+        weapiResolveMs?: number
+        bundlerMs?: number
+        renderStartMs?: number
+        generateBundleMs?: number
+        generateSharedMs?: number
+        generateRewriteMs?: number
+        generateModuleGraphMs?: number
+        snapshotResolveMs?: number
+        snapshotBuildMs?: number
         writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
+        chunkEmitCount?: number
+        loadCount?: number
+        resolveCount?: number
+        skippedLoadedCount?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
@@ -192,6 +278,7 @@ export interface RuntimeState {
   wxml: {
     depsMap: Map<string, Set<string>>
     importerMap: Map<string, Set<string>>
+    depKindMap: Map<string, Map<string, Set<'template-import' | 'template-include' | 'script-module' | 'unknown'>>>
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
     aggregatedComponentsMap: Map<string, ComponentsMap>
@@ -243,6 +330,7 @@ export function createRuntimeState(): RuntimeState {
       registry: new Map<string, LocalAutoImportMatch>(),
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
+      preparedGlobsKey: undefined,
       version: 0,
       pendingEntriesByImporter: new Map<string, Set<string>>(),
     },
@@ -269,6 +357,7 @@ export function createRuntimeState(): RuntimeState {
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntryNonJsonSignatures: new Map<string, string>(),
         vueEntryScriptSignatures: new Map<string, string>(),
+        vueEntryStyleIndependentSignatures: new Map<string, string>(),
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
         didEmitAllEntries: false,
@@ -300,6 +389,7 @@ export function createRuntimeState(): RuntimeState {
     wxml: {
       depsMap: new Map<string, Set<string>>(),
       importerMap: new Map<string, Set<string>>(),
+      depKindMap: new Map<string, Map<string, Set<'template-import' | 'template-include' | 'script-module' | 'unknown'>>>(),
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
       aggregatedComponentsMap: new Map<string, ComponentsMap>(),

@@ -333,6 +333,7 @@ describe('wxmlService', () => {
       { tagName: 'import', value: '/header.wxml' },
     ])
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/header.wxml']))
+    expect(wxmlService.getImporterDependencyKind('/mock/project/header.wxml', filepath)).toBe('template-import')
   })
 
   it('resolves include template deps from current directory', async () => {
@@ -346,6 +347,7 @@ describe('wxmlService', () => {
       { tagName: 'include', value: './footer.wxml' },
     ])
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/footer.wxml']))
+    expect(wxmlService.getImporterDependencyKind('/mock/project/footer.wxml', filepath)).toBe('template-include')
   })
 
   it('collects wxs deps for reverse invalidation', async () => {
@@ -367,6 +369,26 @@ describe('wxmlService', () => {
 
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/helper.wxs']))
     expect(wxmlService.getImporters('/mock/project/helper.wxs')).toEqual(new Set([filepath]))
+    expect(wxmlService.getImporterDependencyKind('/mock/project/helper.wxs', filepath)).toBe('unknown')
+  })
+
+  it('records token dependency kinds for wxs reverse invalidation', async () => {
+    const filepath = '/mock/project/file.wxml'
+
+    await wxmlService.setTokenDeps(filepath, [
+      {
+        tagName: 'wxs',
+        value: './helper.wxs',
+        name: 'src',
+        quote: '"',
+        start: 0,
+        end: 0,
+        attrs: { src: './helper.wxs' },
+      },
+    ] as any)
+
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/helper.wxs']))
+    expect(wxmlService.getImporterDependencyKind('/mock/project/helper.wxs', filepath)).toBe('script-module')
   })
 
   it('does not recursively scan wxs deps as template tokens', async () => {
@@ -403,6 +425,8 @@ describe('wxmlService', () => {
 
     wxmlService.depsMap.set(packageAFile, new Set([packageBFile]))
     wxmlService.depsMap.set(packageBFile, new Set([packageAFile]))
+    wxmlService.depKindMap.set(packageAFile, new Map([[packageBFile, new Set(['template-import'])]]))
+    wxmlService.depKindMap.set(packageBFile, new Map([[packageAFile, new Set(['template-include'])]]))
     wxmlService.tokenMap.set(packageAFile, { deps: [] } as any)
     wxmlService.tokenMap.set(packageBFile, { deps: [] } as any)
     wxmlService.wxmlComponentsMap.set('/mock/project/packageA/pages/a', {} as any)
@@ -419,6 +443,8 @@ describe('wxmlService', () => {
 
     expect(wxmlService.depsMap.has(packageAFile)).toBe(false)
     expect(wxmlService.depsMap.get(packageBFile)?.has(packageAFile)).toBe(false)
+    expect(wxmlService.depKindMap.has(packageAFile)).toBe(false)
+    expect(wxmlService.depKindMap.has(packageBFile)).toBe(false)
     expect(wxmlService.tokenMap.has(packageAFile)).toBe(false)
     expect(wxmlService.tokenMap.has(packageBFile)).toBe(true)
     expect(wxmlService.wxmlComponentsMap.has('/mock/project/packageA/pages/a')).toBe(false)

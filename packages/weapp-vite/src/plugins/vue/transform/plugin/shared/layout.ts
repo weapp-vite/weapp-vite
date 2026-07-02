@@ -1,6 +1,8 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
@@ -164,12 +166,12 @@ export async function preloadNativeLayoutEntries(options: {
   }
 
   const entryIds = await collectFallbackPageEntryIds(configService, scanService)
-  for (const entryId of entryIds) {
+  await Promise.all(entryIds.map(async (entryId) => {
     const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
       resolve: async candidate => await pathExists(candidate) ? candidate : undefined,
     })
     if (!entryFilePath) {
-      continue
+      return
     }
 
     try {
@@ -179,7 +181,7 @@ export async function preloadNativeLayoutEntries(options: {
     catch {
       // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
     }
-  }
+  }))
 }
 
 export async function loadTransformStyleBlock(options: {
@@ -239,6 +241,20 @@ export async function loadTransformStyleBlock(options: {
 
   const dependencies = syncVueSfcStyleDependencies(ctx, filename, styles)
   addNormalizedWatchFiles(options.pluginCtx, dependencies)
+
+  if (typeof block.src === 'string' && block.src.trim()) {
+    const srcPath = path.resolve(path.dirname(filename), block.src.trim())
+    try {
+      const source = await fs.readFile(srcPath, 'utf8')
+      return {
+        code: source,
+        map: null,
+      }
+    }
+    catch {
+      return null
+    }
+  }
 
   return {
     code: block.content,

@@ -10,6 +10,7 @@ import {
   resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
+import { recordHmrProfileDuration, recordHmrProfileOperation } from '../utils/hmrProfile'
 import {
   addAutoRoutesWatchTargets,
   collectAutoRoutesWatchDirs,
@@ -200,7 +201,15 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     resolveId(id) {
-      return resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
+      const startedAt = performance.now()
+      try {
+        return resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
+      }
+      finally {
+        const profile = ctx.runtimeState?.build?.hmr?.profile
+        recordHmrProfileDuration(profile, 'pluginResolveMs', performance.now() - startedAt)
+        recordHmrProfileOperation(profile, 'resolveCount')
+      }
     },
 
     async load(id) {

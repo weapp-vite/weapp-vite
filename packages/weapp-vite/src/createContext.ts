@@ -2,11 +2,12 @@ import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
 import logger from './logger'
 import { syncProjectSupportFiles } from './runtime/supportFiles'
-import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
+import { hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 
 interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
   key?: string
   syncSupportFiles?: boolean
+  syncAutoImportSupportFiles?: boolean
   preloadAppEntry?: boolean
 }
 
@@ -14,16 +15,13 @@ interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
  * @description 创建并初始化编译上下文（加载配置、扫描入口）
  */
 export async function createCompilerContext(options?: CreateCompilerContextOptions) {
-  let bootstrapManagedTsconfigChanged = false
-  if (options?.cwd) {
-    try {
-      bootstrapManagedTsconfigChanged = await syncManagedTsconfigBootstrapFiles(options.cwd)
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`[tsconfig] 跳过 .weapp-vite 支持文件预生成：${message}`)
-    }
-  }
+  const bootstrapManagedTsconfigPromise = options?.cwd && !hasManagedTsconfigBootstrapCompleted(options.cwd)
+    ? Promise.resolve().then(() => syncManagedTsconfigBootstrapFiles(options.cwd!)).catch((error) => {
+        const message = error instanceof Error ? error.message : String(error)
+        logger.warn(`[tsconfig] 跳过 .weapp-vite 支持文件预生成：${message}`)
+        return false
+      })
+    : Promise.resolve(false)
   // 先初始化 ConfigService
   const key = options?.key ?? 'default'
   if (!options?.key) {
@@ -34,9 +32,12 @@ export async function createCompilerContext(options?: CreateCompilerContextOptio
   const ctx = getCompilerContext(key)
   const { configService, scanService } = ctx
   await configService.load(options)
+  const bootstrapManagedTsconfigChanged = await bootstrapManagedTsconfigPromise
   if (options?.syncSupportFiles !== false) {
     try {
-      const supportFiles = await syncProjectSupportFiles(ctx)
+      const supportFiles = await syncProjectSupportFiles(ctx, {
+        syncAutoImport: options?.syncAutoImportSupportFiles,
+      })
       for (const warning of supportFiles.managedTsconfigWarnings) {
         logger.warn(warning)
       }

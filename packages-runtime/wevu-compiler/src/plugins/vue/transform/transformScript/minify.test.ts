@@ -24,4 +24,11 @@ export default {
     expect(result.code).toContain('count:1')
     expect(result.code).not.toContain('count: 1')
   })
+
+  it('can skip sourcemap generation', () => {
+    const result = transformScript(source, { sourceMap: false })
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('createWevuComponent')
+    expect(result.map).toBeNull()
+  })
 })

@@ -3,7 +3,6 @@ import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
@@ -11,24 +10,60 @@ import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
-import { findJsEntry, isTemplate } from '../../../utils/file'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from '../../../utils/file/vueSfcSignature'
-import { createHmrProfileEventId } from '../../../utils/hmrProfile'
+import { findJsEntry } from '../../../utils/file'
+import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
-import { collectAffectedScriptsAndImporters } from '../../utils/invalidateEntry/cssGraph'
-import { watchedScriptModuleExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
+import { collectAffectedScriptsAndImporters, extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
+import { configSuffixes, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
-import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks, collectAffectedSharedChunks } from '../helpers'
+import { collectAffectedEntries, collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
+import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
-const configSuffixes = configExtensions.map(ext => `.${ext}`)
-const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
+
+interface WatchPathKind {
+  configSuffix?: string
+  extension: string
+  isHtmlTemplate: boolean
+  isScriptModuleSidecar: boolean
+  isStyle: boolean
+  isTemplate: boolean
+}
+
+function resolveWatchPathKind(normalizedId: string): WatchPathKind {
+  const extension = path.extname(normalizedId)
+  let configSuffix: string | undefined
+  let isScriptModuleSidecar = false
+
+  for (const suffix of configSuffixes) {
+    if (normalizedId.endsWith(suffix)) {
+      configSuffix = suffix
+      break
+    }
+  }
+
+  for (const suffix of watchedScriptModuleSuffixes) {
+    if (normalizedId.endsWith(suffix)) {
+      isScriptModuleSidecar = true
+      break
+    }
+  }
+
+  return {
+    configSuffix,
+    extension,
+    isHtmlTemplate: normalizedId.endsWith('.html'),
+    isScriptModuleSidecar,
+    isStyle: watchedCssExts.has(extension),
+    isTemplate: watchedTemplateExts.has(extension),
+  }
+}
 
 function isOutputFileChange(state: CorePluginState, normalizedId: string) {
   const outDir = state.ctx.configService?.outDir
@@ -71,6 +106,17 @@ function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: st
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
   return state.ctx.configService.configFileDependencies
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
+}
+
+function collectEmittedJsonPaths(state: CorePluginState) {
+  const emittedJsonPaths = new Set<string>()
+  for (const record of state.jsonEmitFilesMap.values()) {
+    const jsonPath = record.entry.jsonPath
+    if (jsonPath) {
+      emittedJsonPaths.add(normalizeFsResolvedId(jsonPath))
+    }
+  }
+  return emittedJsonPaths
 }
 
 function isCurrentSubPackageFile(relativeSrc: string, subPackageMeta: SubPackageMetaValue | null | undefined) {
@@ -140,84 +186,31 @@ export function createBuildStartHook(state: CorePluginState) {
   const isPluginBuild = buildTarget === 'plugin'
 
   return async function buildStart(this: any) {
-    resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
-    if (configService.isDev) {
-      addNormalizedWatchFiles(this, configService.configFileDependencies)
-      if (isPluginBuild) {
-        if (configService.absolutePluginRoot) {
-          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+    const startedAt = performance.now()
+    try {
+      resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
+      if (configService.isDev) {
+        addNormalizedWatchFiles(this, configService.configFileDependencies)
+        if (isPluginBuild) {
+          if (configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
+        }
+        else {
+          const rootDir = subPackageMeta
+            ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
+            : configService.absoluteSrcRoot
+          ensureSidecarWatcher(ctx, rootDir)
+          if (!subPackageMeta && configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
         }
       }
-      else {
-        const rootDir = subPackageMeta
-          ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
-          : configService.absoluteSrcRoot
-        ensureSidecarWatcher(ctx, rootDir)
-        if (!subPackageMeta && configService.absolutePluginRoot) {
-          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
-        }
-      }
+      await emitDirtyEntries.call(this)
     }
-    await emitDirtyEntries.call(this)
-  }
-}
-
-async function isVueEntryJsonOnlyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!normalizedId.endsWith('.vue')) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.get(normalizedId)
-  if (!previous) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    return resolveVueSfcNonJsonSignature(source, normalizedId) === previous
-  }
-  catch {
-    return false
-  }
-}
-
-async function isVueEntryLocalAssetOnlyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!normalizedId.endsWith('.vue')) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.get(normalizedId)
-  if (!previous) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    const currentScript = resolveVueSfcScriptSignature(source, normalizedId)
-    return currentScript === previous
-  }
-  catch {
-    return false
-  }
-}
-
-async function isAppShellTopologyUpdate(state: CorePluginState, normalizedId: string) {
-  if (!isAppVueFile(normalizedId)) {
-    return false
-  }
-
-  const previous = state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(normalizedId)
-  if (previous === undefined) {
-    return false
-  }
-
-  try {
-    const source = await fs.readFile(normalizedId, 'utf-8')
-    const current = resolveVueSfcHasTemplate(source, normalizedId)
-    return current !== undefined && current !== previous
-  }
-  catch {
-    return false
+    finally {
+      recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'buildStartMs', performance.now() - startedAt)
+    }
   }
 }
 
@@ -256,7 +249,7 @@ async function processChangedFile(
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
-    if (entryId.endsWith('.vue')) {
+    if (entryId.endsWith('.vue') && reason !== 'dependency') {
       const hmr = ctx.runtimeState.build.hmr
       hmr.dirtyVueEntryIds ??= new Set<string>()
       hmr.dirtyVueEntryIds.add(entryId)
@@ -266,11 +259,15 @@ async function processChangedFile(
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
-  const isTemplateSidecar = Boolean(path.extname(normalizedId) && watchedTemplateExts.has(path.extname(normalizedId)))
-  const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedId.endsWith(suffix))
+  const pathKind = resolveWatchPathKind(normalizedId)
+  const isTemplateSidecar = Boolean(pathKind.extension && pathKind.isTemplate)
+  const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
     : normalizedId
+  const vueEntryUpdateInspector = normalizedId.endsWith('.vue')
+    ? createVueEntryUpdateInspector(state, normalizedId)
+    : undefined
   let isAppShellTopologyChanged = false
   let handledSidecarMetadataUpdate = false
 
@@ -281,20 +278,29 @@ async function processChangedFile(
     }
 
     const visited = new Set<string>()
-    const queue = [startId]
+    const queue: Array<{ id: string, importOnly: boolean }> = [{ id: startId, importOnly: true }]
 
-    while (queue.length) {
-      const current = queue.shift()!
-      if (visited.has(current)) {
+    for (let index = 0; index < queue.length; index += 1) {
+      const current = queue[index]!
+      const visitKey = `${current.id}\0${current.importOnly ? 'import' : 'fallback'}`
+      if (visited.has(visitKey)) {
         continue
       }
-      visited.add(current)
+      visited.add(visitKey)
 
-      const importers = wxmlService.getImporters(current)
+      const importers = wxmlService.getImporters(current.id)
       for (const importer of importers) {
         const normalizedImporter = normalizeFsResolvedId(importer)
-        if (!visited.has(normalizedImporter)) {
-          queue.push(normalizedImporter)
+        const dependencyKind = typeof wxmlService.getImporterDependencyKind === 'function'
+          ? wxmlService.getImporterDependencyKind(current.id, normalizedImporter)
+          : undefined
+        const nextImportOnly = current.importOnly && dependencyKind === 'template-import'
+        const nextVisitKey = `${normalizedImporter}\0${nextImportOnly ? 'import' : 'fallback'}`
+        if (!visited.has(nextVisitKey)) {
+          queue.push({
+            id: normalizedImporter,
+            importOnly: nextImportOnly,
+          })
         }
 
         const ext = path.extname(normalizedImporter)
@@ -314,7 +320,11 @@ async function processChangedFile(
           affectedLayoutEntryIds.add(primaryScriptId)
         }
         else {
-          markEntryDirtyWithCause(primaryScriptId, 'metadata', 'wxml-importer')
+          markEntryDirtyWithCause(
+            primaryScriptId,
+            'metadata',
+            nextImportOnly ? 'wxml-importer-import' : 'wxml-importer',
+          )
           handledSidecarMetadataUpdate = true
         }
       }
@@ -375,6 +385,7 @@ async function processChangedFile(
 
   const addCssImporterEntries = async (startId: string) => {
     const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
+    let affectedCount = 0
 
     for (const importer of importers) {
       const normalizedImporter = normalizeFsResolvedId(importer)
@@ -383,18 +394,23 @@ async function processChangedFile(
         && (loadedEntrySet.has(normalizedImporter) || resolvedEntryMap.has(normalizedImporter))
       ) {
         markScriptDirty(normalizedImporter, 'css-importer')
+        affectedCount += 1
       }
     }
 
     for (const script of scripts) {
       markScriptDirty(script, 'css-importer')
+      affectedCount += 1
     }
+
+    return affectedCount
   }
 
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.delete(normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
@@ -424,12 +440,12 @@ async function processChangedFile(
     && isAppVueFile(normalizedId)
     && resolvedEntryMap.size
   ) {
-    const isJsonOnlyVueEntryUpdate = await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isJsonOnlyVueEntryUpdate = await vueEntryUpdateInspector!.isJsonOnlyUpdate()
     const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
-    isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await isAppShellTopologyUpdate(state, normalizedId)
+    isAppShellTopologyChanged = !isJsonOnlyVueEntryUpdate && await vueEntryUpdateInspector!.isAppShellTopologyUpdate()
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
-      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+      && await vueEntryUpdateInspector!.isLocalAssetOnlyUpdate()
     if (isAutoRoutesStaleAppEntry) {
       ;(loadEntry as any)?.invalidateResolveCache?.()
     }
@@ -445,13 +461,15 @@ async function processChangedFile(
   }
 
   invalidateFileCache(normalizedId)
-  const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
-  const shouldHandleUpdateLikeSidecar = event === 'update' || (event === 'create' && isStyleFile && await fs.pathExists(normalizedId))
+  const isSidecarCreate = event === 'create'
+    && (pathKind.isStyle || pathKind.isTemplate || pathKind.isHtmlTemplate || isScriptModuleSidecar)
+  const shouldHandleUpdateLikeSidecar = event === 'update' || isSidecarCreate
   if (shouldHandleUpdateLikeSidecar) {
-    const isTemplateFile = isTemplate(normalizedId)
-    const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
+    if (pathKind.isStyle) {
+      await extractCssImportDependencies(ctx, normalizedId)
+    }
 
-    if (isTemplateFile) {
+    if (pathKind.isTemplate) {
       const wxmlService = ctx.wxmlService
       if (wxmlService) {
         await wxmlService.scan(normalizedId)
@@ -462,25 +480,27 @@ async function processChangedFile(
       await addWxmlImporterEntries(normalizedId)
     }
 
-    const isHtmlTemplateFile = normalizedId.endsWith('.html')
-
-    if (isTemplateFile || configSuffix || isStyleFile || isHtmlTemplateFile) {
-      const basePath = configSuffix
-        ? normalizedId.slice(0, -configSuffix.length)
-        : (() => {
-            const ext = path.extname(normalizedId)
-            return ext ? normalizedId.slice(0, -ext.length) : normalizedId
-          })()
+    if (pathKind.isTemplate || pathKind.configSuffix || pathKind.isStyle || pathKind.isHtmlTemplate) {
+      const basePath = pathKind.configSuffix
+        ? normalizedId.slice(0, -pathKind.configSuffix.length)
+        : pathKind.extension ? normalizedId.slice(0, -pathKind.extension.length) : normalizedId
       const primaryScript = await findJsEntry(basePath)
       if (primaryScript.path) {
-        markScriptDirty(primaryScript.path, configSuffix ? 'json-sidecar' : isStyleFile ? 'style-sidecar' : 'sidecar-direct')
+        markScriptDirty(primaryScript.path, pathKind.configSuffix ? 'json-sidecar' : pathKind.isStyle ? 'style-sidecar' : 'sidecar-direct')
         handledSidecarMetadataUpdate = true
       }
-      else if (configSuffix && markAppEntryForJsonEmit()) {
+      else if (pathKind.configSuffix && markAppEntryForJsonEmit()) {
         handledSidecarMetadataUpdate = true
       }
-      else if (isStyleFile) {
-        await addCssImporterEntries(normalizedId)
+      else if (pathKind.isStyle) {
+        const affectedCount = await addCssImporterEntries(normalizedId)
+        if (affectedCount === 0 && resolvedEntryMap.size) {
+          for (const entryId of resolvedEntryMap.keys()) {
+            if (isCurrentSubPackageFile(configService.relativeAbsoluteSrcRoot(entryId), subPackageMeta)) {
+              markEntryDirtyWithCause(entryId, 'dependency', 'css-importer-fallback')
+            }
+          }
+        }
         handledSidecarMetadataUpdate = true
       }
     }
@@ -543,12 +563,16 @@ async function processChangedFile(
       || declaredEntryType === 'component'
     )
   ) {
-    const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    const isJsonOnlyVueEntryUpdate = event === 'update' && Boolean(vueEntryUpdateInspector) && await vueEntryUpdateInspector.isJsonOnlyUpdate()
     const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
       && event === 'update'
-      && await isVueEntryLocalAssetOnlyUpdate(state, normalizedId)
+      && Boolean(vueEntryUpdateInspector)
+      && await vueEntryUpdateInspector.isLocalAssetOnlyUpdate()
+    const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
+      && Boolean(vueEntryUpdateInspector)
+      && await vueEntryUpdateInspector.isStyleOnlyUpdate()
     markChangedEntryDirty(
       (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
@@ -556,7 +580,7 @@ async function processChangedFile(
         : isAppShellTopologyChanged
           ? 'entry-direct'
           : isLocalAssetOnlyVueEntryUpdate
-            ? 'entry-local-asset'
+            ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
             : 'entry-direct',
     )
   }
@@ -566,7 +590,7 @@ async function processChangedFile(
       markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
     }
   }
-  else if (state.moduleImporters.size && state.entryModuleIds.size) {
+  else if (!handledSidecarMetadataUpdate && state.moduleImporters.size && state.entryModuleIds.size) {
     const affected = collectAffectedEntries(state, normalizedId)
     if (affected.size) {
       for (const entryId of affected) {
@@ -580,14 +604,14 @@ async function processChangedFile(
     && !dirtyReasonStats.has('style-sidecar')
     && !dirtyReasonStats.has('css-importer')
   const sharedChunkAffected = shouldExpandSharedChunkAffected
-    ? collectAffectedEntriesFromSharedChunks(state, normalizedId)
-    : new Set<string>()
-  if (sharedChunkAffected.size) {
+    ? collectAffectedSharedChunkEntriesAndChunks(state, normalizedId)
+    : undefined
+  if (sharedChunkAffected?.affectedEntries.size) {
     state.hmrState.affectedSharedChunkIds ??= new Set<string>()
-    for (const chunkId of collectAffectedSharedChunks(state, normalizedId)) {
+    for (const chunkId of sharedChunkAffected.affectedChunks) {
       state.hmrState.affectedSharedChunkIds.add(chunkId)
     }
-    for (const entryId of sharedChunkAffected) {
+    for (const entryId of sharedChunkAffected.affectedEntries) {
       if (importerGraphAffectedEntryIds.has(entryId)) {
         continue
       }
@@ -629,9 +653,13 @@ async function processChangedFile(
       scanService.markDirty()
     }
 
-    const independentRoot = Array.from(scanService.independentSubPackageMap.keys()).find((root) => {
-      return relativeSrc.startsWith(`${root}/`)
-    })
+    let independentRoot: string | undefined
+    for (const root of scanService.independentSubPackageMap.keys()) {
+      if (relativeSrc.startsWith(`${root}/`)) {
+        independentRoot = root
+        break
+      }
+    }
 
     if (independentRoot) {
       independentMeta = scanService.independentSubPackageMap.get(independentRoot)
@@ -671,12 +699,11 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isAutoRoutesGeneratedFileChange(state, normalizedId)) {
       return
     }
+    const emittedJsonPaths = change.event === 'create'
+      ? collectEmittedJsonPaths(state)
+      : undefined
     const event = await normalizeWatchEvent(normalizedId, change.event, {
-      emittedJsonPaths: new Set(
-        [...state.jsonEmitFilesMap.values()]
-          .map(record => record.entry.jsonPath ? normalizeFsResolvedId(record.entry.jsonPath) : '')
-          .filter(Boolean),
-      ),
+      emittedJsonPaths,
       loadedEntrySet: state.loadedEntrySet,
       moduleImporters: state.moduleImporters,
       resolvedEntryMap: state.resolvedEntryMap,

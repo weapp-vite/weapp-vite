@@ -67,7 +67,7 @@ export type {
 } from './plugins/vue/transform/compileVueFile'
 export { compileConfigBlocks, evaluateJsLikeConfig, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang } from './plugins/vue/transform/config'
 export type { JsLikeLang } from './plugins/vue/transform/config'
-export { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './plugins/vue/transform/jsonMacros'
+export { extractJsonMacroFromScriptSetup, mayContainJsonMacro, stripJsonMacroCallsFromCode } from './plugins/vue/transform/jsonMacros'
 export { createJsonMerger, mergeJsonWithStrategy } from './plugins/vue/transform/jsonMerge'
 
 export { generateScopedId } from './plugins/vue/transform/scopedId'

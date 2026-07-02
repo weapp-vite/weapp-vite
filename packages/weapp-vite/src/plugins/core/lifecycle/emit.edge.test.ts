@@ -8,6 +8,9 @@ const mayContainStaticRequireLiteralMock = vi.hoisted(() => vi.fn(() => true))
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
+const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<string, any>) => ({
+  chunksByFileName: new Map(Object.entries(bundle).filter(([, output]) => (output as any).type === 'chunk')),
+})))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const rewriteWevuInternalRuntimeImportsMock = vi.hoisted(() => vi.fn())
@@ -21,8 +24,14 @@ vi.mock('../../../runtime/chunkStrategy', () => ({
 }))
 
 vi.mock('../../../ast', () => ({
+  analyzeScript: () => ({
+    featureFlags: new Set(),
+    hasPlatformApiAccess: mayContainPlatformApiAccessMock(),
+    hasStaticRequireLiteral: mayContainStaticRequireLiteralMock(),
+  }),
   mayContainPlatformApiAccess: mayContainPlatformApiAccessMock,
   mayContainStaticRequireLiteral: mayContainStaticRequireLiteralMock,
+  platformApiIdentifiers: ['wx', 'my'],
   resolveAstEngine: resolveAstEngineMock,
 }))
 
@@ -37,6 +46,7 @@ vi.mock('../../utils/wxmlEmit', () => ({
 }))
 
 vi.mock('../helpers', () => ({
+  createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: vi.fn(),
   filterPluginBundleOutputs: vi.fn(),
   flushIndependentBuilds: flushIndependentBuildsMock,

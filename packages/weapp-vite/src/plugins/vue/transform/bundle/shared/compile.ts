@@ -4,13 +4,15 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './type
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
-import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
+import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
+import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
-import { resolveTransformAutoRoutesSource } from '../../plugin/shared'
+import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
+import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
@@ -79,6 +81,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
       checkMtime: configService.isDev,
       minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
+      sourceMap: false,
     })
     if (injected.transformed) {
       result.script = injected.code
@@ -101,8 +104,8 @@ export async function finalizeCompiledVueLikeResult(options: {
       ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
       : keys
     const injectedPick = shouldInjectScopedSlotOwnerPick
-      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys)
-      : injectSetDataPickInJs(result.script!, keys)
+      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys, { sourceMap: false })
+      : injectSetDataPickInJs(result.script!, keys, { sourceMap: false })
     if (injectedPick.transformed) {
       result.script = injectedPick.code
     }
@@ -112,6 +115,7 @@ export async function finalizeCompiledVueLikeResult(options: {
     const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
       result.script!,
       pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
+      { sourceMap: false },
     )
     if (injectedPick.transformed) {
       result.script = injectedPick.code
@@ -121,7 +125,7 @@ export async function finalizeCompiledVueLikeResult(options: {
   const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
   const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
   if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
-    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
+    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script, { sourceMap: false })
     if (injectedProps.transformed) {
       result.script = injectedProps.code
     }
@@ -151,28 +155,6 @@ export async function compileAndFinalizeVueLikeFile(options: {
   })
 }
 
-function takeDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined, filename: string) {
-  if (!dirtyVueEntryIds?.size) {
-    return undefined
-  }
-
-  const normalizedFilename = normalizeFsResolvedId(filename)
-  if (dirtyVueEntryIds.has(filename)) {
-    return filename
-  }
-  if (dirtyVueEntryIds.has(normalizedFilename)) {
-    return normalizedFilename
-  }
-
-  for (const entryId of dirtyVueEntryIds) {
-    if (normalizeFsResolvedId(entryId) === normalizedFilename) {
-      return entryId
-    }
-  }
-
-  return undefined
-}
-
 export async function refreshCompiledVueEntryCacheInDev(options: {
   filename: string
   cached: CompilationCacheEntry
@@ -200,14 +182,48 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         }
     const source = transformed.source
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
-    const dirtyEntryId = takeDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
     if (
-      !dirtyEntryId
-      && source === cached.source
+      source === cached.source
       && transformed.signature === cached.autoRoutesSignature
     ) {
       cached.refreshToken = 0
+      if (dirtyEntryId) {
+        dirtyVueEntryIds?.delete(dirtyEntryId)
+      }
       return cached.result
+    }
+    const currentStyleIndependentSignature = (dirtyEntryId && filename.endsWith('.vue'))
+      && isVueStyleOnlyDirtyReasonSummary(ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary)
+      ? resolveVueSfcStyleIndependentSignature(source, filename)
+      : undefined
+    if (
+      dirtyEntryId
+      && filename.endsWith('.vue')
+      && cached.styleIndependentSignature
+      && currentStyleIndependentSignature
+      && cached.styleIndependentSignature === currentStyleIndependentSignature
+      && transformed.signature === cached.autoRoutesSignature
+      && cached.source !== source
+    ) {
+      const { descriptor } = await readAndParseSfc(filename, {
+        source,
+        checkMtime: configService.isDev,
+      })
+      if (!refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles)) {
+        cached.styleIndependentSignature = undefined
+      }
+      else {
+        cached.source = source
+        cached.styleIndependentSignature = currentStyleIndependentSignature
+        cached.refreshToken = 0
+        ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
+          filename,
+          currentStyleIndependentSignature,
+        )
+        dirtyVueEntryIds?.delete(dirtyEntryId)
+        return cached.result
+      }
     }
 
     const compiled = await compileAndFinalizeVueLikeFile({
@@ -221,9 +237,20 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       compileOptionsState,
     })
 
+    const nextStyleIndependentSignature = filename.endsWith('.vue')
+      ? (currentStyleIndependentSignature ?? resolveVueSfcStyleIndependentSignature(source, filename))
+      : undefined
+
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
+    cached.styleIndependentSignature = nextStyleIndependentSignature
     cached.refreshToken = 0
+    if (nextStyleIndependentSignature) {
+      ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
+        filename,
+        nextStyleIndependentSignature,
+      )
+    }
     if (dirtyEntryId) {
       dirtyVueEntryIds?.delete(dirtyEntryId)
     }

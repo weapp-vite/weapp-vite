@@ -9,6 +9,11 @@ export const JSON_MACROS = new Set([
   'defineSitemapJson',
   'defineThemeJson',
 ])
+const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+
+export function mayContainJsonMacro(content: string) {
+  return JSON_MACRO_HINT_RE.test(content)
+}
 
 export function parseScriptSetupAst(content: string, filename: string): BabelFile {
   try {

@@ -105,6 +105,31 @@ describe('emitWxmlAssetsWithCache', () => {
     }))
   })
 
+  it('resolves targeted hmr wxml assets without scanning the full token map', () => {
+    const token = ctx.wxmlService!.tokenMap.get(filePath)
+    const tokenMap = {
+      get: vi.fn((id: string) => id === filePath ? token : undefined),
+      entries: vi.fn(() => {
+        throw new Error('should not scan tokenMap entries in targeted mode')
+      }),
+    }
+    ;(ctx.wxmlService as any).tokenMap = tokenMap
+
+    const result = resolveWxmlEmitTargets({
+      compiler: ctx as any,
+      targetIds: new Set([filePath]),
+    })
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: filePath,
+        fileName: 'pages/index/index.wxml',
+      }),
+    ])
+    expect(tokenMap.get).toHaveBeenCalledWith(filePath)
+    expect(tokenMap.entries).not.toHaveBeenCalled()
+  })
+
   it('resolves emit context and throws when required services are missing', () => {
     expect(resolveWxmlEmitContext(ctx as any)).toEqual(expect.objectContaining({
       wxmlService: ctx.wxmlService,

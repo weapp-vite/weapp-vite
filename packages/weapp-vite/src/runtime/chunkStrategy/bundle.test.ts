@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { describe, expect, it, vi } from 'vitest'
-import { ensureUniqueFileName, findChunkImporters, updateImporters } from './bundle'
+import { createChunkImporterIndex, ensureUniqueFileName, findChunkImporters, updateImporters } from './bundle'
 
 function createChunk(fileName: string, overrides: Partial<OutputChunk> = {}): OutputChunk {
   return {
@@ -67,6 +67,34 @@ describe('chunkStrategy bundle', () => {
       'pages/meta-set.js',
       'pages/meta-map.js',
       'pages/meta-by-url.js',
+      'pages/code.js',
+    ]))
+  })
+
+  it('reuses a chunk importer index across multiple importer lookups', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/a.js', 'chunks/b.js'],
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        dynamicImports: ['chunks/b.js'],
+        viteMetadata: {
+          importedScriptsByUrl: new Set(['chunks/c.js']),
+        } as any,
+      } as any),
+      'pages/code.js': createChunk('pages/code.js', {
+        code: `import "../chunks/c.js";`,
+      }),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    expect(new Set(findChunkImporters(bundle, 'chunks/a.js', index))).toEqual(new Set(['pages/home.js']))
+    expect(new Set(findChunkImporters(bundle, 'chunks/b.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+    expect(new Set(findChunkImporters(bundle, 'chunks/c.js', index))).toEqual(new Set([
+      'pages/admin.js',
       'pages/code.js',
     ]))
   })
@@ -179,12 +207,68 @@ describe('chunkStrategy bundle', () => {
     expect(sameChunk.dynamicImports).toEqual([])
   })
 
-  it('skips code fallback when relative import generation returns empty value', async () => {
+  it('keeps a reused importer index in sync after importer updates', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/shared.js'],
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        viteMetadata: {
+          importedScriptsByUrl: new Set(['chunks/shared.js']),
+        } as any,
+      } as any),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+        ['pages/admin.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.js', index)).toEqual([])
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.copy.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+  })
+
+  it('does not add unrelated importer index edges when importer code is unchanged', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        imports: ['chunks/keep.js'],
+        code: 'const keep = require("../chunks/keep.js")',
+      }),
+      'chunks/keep.js': createChunk('chunks/keep.js'),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.copy.js', index)).toEqual([])
+    expect(findChunkImporters(bundle, 'chunks/keep.js', index)).toEqual(['pages/home.js'])
+  })
+
+  it('indexes code-based importers without relying on per-target fallback scans', async () => {
     vi.resetModules()
     vi.doMock('./utils', () => ({
       containsImportSpecifier: () => true,
       createRelativeImport: () => '',
-      hasInCollection: () => false,
       replaceAll: (source: string) => source,
     }))
 
@@ -196,12 +280,47 @@ describe('chunkStrategy bundle', () => {
         }),
       }
 
-      expect(findChunkImportersWithMock(bundle, 'chunks/target.js')).toEqual([])
+      expect(findChunkImportersWithMock(bundle, 'chunks/target.js')).toEqual(['pages/a.js'])
     }
     finally {
       vi.doUnmock('./utils')
       vi.resetModules()
     }
+  })
+
+  it('keeps code importer index in sync after importer updates', () => {
+    const bundle: OutputBundle = {
+      'pages/home.js': createChunk('pages/home.js', {
+        code: 'import "../chunks/shared.js";',
+      }),
+      'pages/admin.js': createChunk('pages/admin.js', {
+        code: 'import("../chunks/shared.js");',
+      }),
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+    const index = createChunkImporterIndex(bundle)
+
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
+
+    updateImporters(
+      bundle,
+      new Map([
+        ['pages/home.js', 'chunks/shared.copy.js'],
+        ['pages/admin.js', 'chunks/shared.copy.js'],
+      ]),
+      'chunks/shared.js',
+      index,
+    )
+
+    expect(findChunkImporters(bundle, 'chunks/shared.js', index)).toEqual([])
+    expect(new Set(findChunkImporters(bundle, 'chunks/shared.copy.js', index))).toEqual(new Set([
+      'pages/home.js',
+      'pages/admin.js',
+    ]))
   })
 
   it('ensures unique name through filename-only branch when parsed dir is empty', async () => {

@@ -83,4 +83,40 @@ describe('compileConfigPhase', () => {
     expect(autoImportWarn).not.toHaveBeenCalled()
     expect(autoUsingWarn).not.toHaveBeenCalled()
   })
+
+  it('uses precomputed auto import tags map without resolving template tags again', async () => {
+    const sfc = parse(`
+<template>
+  <view><t-card /></view>
+</template>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const resolveUsingComponent = vi.fn()
+    const result: any = {}
+
+    await compileConfigPhase({
+      descriptor: {
+        template: sfc.descriptor.template,
+        customBlocks: sfc.descriptor.customBlocks,
+      } as any,
+      filename: '/project/src/pages/index/index.vue',
+      autoUsingComponentsMap: {},
+      autoImportTagsMap: {
+        't-card': 'tdesign/card/card',
+      },
+      autoUsingComponents: undefined,
+      autoImportTags: {
+        resolveUsingComponent,
+      },
+      jsonDefaults: undefined,
+      mergeJson: (target, source) => ({ ...target, ...source }),
+      scriptSetupMacroConfig: undefined,
+      result,
+      warn: vi.fn(),
+    })
+
+    expect(resolveUsingComponent).not.toHaveBeenCalled()
+    expect(JSON.parse(result.config).usingComponents).toEqual({
+      't-card': 'tdesign/card/card',
+    })
+  })
 })

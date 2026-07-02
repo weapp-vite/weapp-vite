@@ -79,31 +79,43 @@ async function rebuildCandidateForBase(base: string): Promise<CandidateEntry | u
   let hasScript = false
   let hasTemplate = false
   let jsonPath: string | undefined
+  const [
+    vueEntry,
+    jsEntry,
+    templateEntry,
+    styleEntry,
+    jsonEntry,
+  ] = await Promise.all([
+    findVueEntry(base),
+    findJsEntry(base),
+    findTemplateEntry(base),
+    findCssEntry(base),
+    findJsonEntry(base),
+  ])
 
-  const vueEntry = await findVueEntry(base)
   if (vueEntry) {
     files.add(vueEntry)
     hasScript = true
   }
 
-  const { path: jsEntryPath } = await findJsEntry(base)
+  const { path: jsEntryPath } = jsEntry
   if (jsEntryPath) {
     files.add(jsEntryPath)
     hasScript = true
   }
 
-  const { path: templateEntryPath } = await findTemplateEntry(base)
+  const { path: templateEntryPath } = templateEntry
   if (templateEntryPath) {
     files.add(templateEntryPath)
     hasTemplate = true
   }
 
-  const { path: styleEntryPath } = await findCssEntry(base)
+  const { path: styleEntryPath } = styleEntry
   if (styleEntryPath) {
     files.add(styleEntryPath)
   }
 
-  const { path: jsonEntryPath } = await findJsonEntry(base)
+  const { path: jsonEntryPath } = jsonEntry
   if (jsonEntryPath) {
     files.add(jsonEntryPath)
     jsonPath = jsonEntryPath

@@ -6,6 +6,7 @@ import { escapeStringRegexp } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getWxmlDirectivePrefix } from '../../../../../platform'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../../../utils/toAbsoluteId'
 import { isVueLikeFile } from '../../shared'
 
@@ -32,6 +33,15 @@ const WEVU_RUNTIME_MODULE_HINTS = [
   '"wevu/internal-runtime"',
 ]
 
+interface VueTransformCacheEntry {
+  result: VueTransformResult
+  source?: string
+  isPage: boolean
+  autoRoutesSignature?: string
+  refreshToken?: number
+  styleIndependentSignature?: string
+}
+
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
   return isPage ? 'Page({})' : 'Component({})'
 }
@@ -42,6 +52,40 @@ export function isAppEntry(filename: string) {
 
 export function isVueLikeId(id: string) {
   return isVueLikeFile(id)
+}
+
+export function resolveDirtyVueEntryId(dirtyVueEntryIds: Set<string> | undefined, filename: string) {
+  if (!dirtyVueEntryIds?.size) {
+    return undefined
+  }
+
+  const normalizedFilename = normalizeFsResolvedId(filename)
+  if (dirtyVueEntryIds.has(filename)) {
+    return filename
+  }
+  if (dirtyVueEntryIds.has(normalizedFilename)) {
+    return normalizedFilename
+  }
+
+  for (const entryId of dirtyVueEntryIds) {
+    if (normalizeFsResolvedId(entryId) === normalizedFilename) {
+      return entryId
+    }
+  }
+
+  return undefined
+}
+
+export function isVueStyleOnlyDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
+  return dirtyReasonSummary?.some(item =>
+    item.startsWith('entry-style-only:')
+    || item.startsWith('css-importer')
+    || item.startsWith('style-sidecar:'),
+  ) === true
+}
+
+export function isVueCssImporterDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
+  return dirtyReasonSummary?.some(item => item.startsWith('css-importer')) === true
 }
 
 export function mayNeedTransformSetDataPick(
@@ -115,7 +159,7 @@ export async function loadTransformPageEntries(scanService: CompilerContext['sca
 
 export function invalidatePageLayoutCaches(
   configService: NonNullable<CompilerContext['configService']> | undefined,
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>,
+  compilationCache: Map<string, VueTransformCacheEntry>,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
   styleRefreshTokens?: Map<string, number | string>,
 ) {
@@ -126,6 +170,7 @@ export function invalidatePageLayoutCaches(
   for (const [cachedId, cached] of compilationCache.entries()) {
     if (cached.isPage) {
       cached.source = undefined
+      cached.styleIndependentSignature = undefined
     }
     styleBlocksCache.delete(cachedId)
     styleRefreshTokens?.delete(cachedId)
@@ -134,7 +179,7 @@ export function invalidatePageLayoutCaches(
 
 export function invalidateVueFileCaches(
   file: string,
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>,
+  compilationCache: Map<string, VueTransformCacheEntry>,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
   options: {
     existsSync: (filePath: string) => boolean
@@ -148,7 +193,6 @@ export function invalidateVueFileCaches(
   else {
     const cached = compilationCache.get(file)
     if (cached) {
-      cached.source = undefined
       cached.refreshToken = (cached.refreshToken ?? 0) + 1
     }
   }
@@ -159,7 +203,7 @@ export function handleTransformLayoutInvalidation(
   file: string,
   options: {
     configService: NonNullable<CompilerContext['configService']> | undefined
-    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
+    compilationCache: Map<string, VueTransformCacheEntry>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
     styleRefreshTokens?: Map<string, number | string>
     isLayoutFile: (file: string, configService: NonNullable<CompilerContext['configService']>) => boolean
@@ -179,7 +223,7 @@ export function handleTransformLayoutInvalidation(
 export function handleTransformVueFileInvalidation(
   file: string,
   options: {
-    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
+    compilationCache: Map<string, VueTransformCacheEntry>
     styleBlocksCache: Map<string, SFCStyleBlock[]>
     styleRefreshTokens?: Map<string, number | string>
     existsSync: (filePath: string) => boolean

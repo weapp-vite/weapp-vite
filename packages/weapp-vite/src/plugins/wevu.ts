@@ -141,6 +141,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
               { readFile: readFileCached },
               { checkMtime: getReadFileCheckMtime(configService) },
             ),
+            sourceMap: false,
           })
           if (!result.transformed) {
             return null
@@ -152,7 +153,9 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
           }
         }
         finally {
-          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+          const durationMs = performance.now() - startedAt
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', durationMs)
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'wevuTransformMs', durationMs)
         }
       },
     },

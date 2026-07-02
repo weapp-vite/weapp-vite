@@ -274,9 +274,9 @@ export async function normalizeMiniprogramPackageJsModules(
   }
 
   const files = await collectFiles(pkgRoot)
-  for (const filePath of files) {
+  await Promise.all(files.map(async (filePath) => {
     if (path.extname(filePath) !== '.js') {
-      continue
+      return
     }
 
     let source = ''
@@ -284,12 +284,12 @@ export async function normalizeMiniprogramPackageJsModules(
       source = await fs.readFile(filePath, 'utf8')
     }
     catch {
-      continue
+      return
     }
 
     const nextSource = await transformJsModuleToCjs(source, options)
     if (nextSource !== source) {
       await fs.writeFile(filePath, nextSource)
     }
-  }
+  }))
 }

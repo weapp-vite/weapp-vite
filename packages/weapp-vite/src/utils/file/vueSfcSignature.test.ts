@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from './vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } from './vueSfcSignature'
 
 describe('vueSfcSignature', () => {
   afterEach(() => {
@@ -86,6 +86,26 @@ const count = 1
     expect(resolveVueSfcNonJsonSignature(second, filename)).toBe(
       resolveVueSfcNonJsonSignature(first, filename),
     )
+  })
+
+  it('resolves hmr signatures from one payload', () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>
+
+<style scoped>
+.count { color: red; }
+</style>`
+
+    expect(resolveVueSfcHmrSignatures(source, filename)).toEqual({
+      nonJsonSignature: resolveVueSfcNonJsonSignature(source, filename),
+      scriptSignature: resolveVueSfcScriptSignature(source, filename),
+      styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
+      hasTemplate: resolveVueSfcHasTemplate(source, filename),
+    })
   })
 
   it('falls back to the TypeScript backend when native module path is not configured', async () => {

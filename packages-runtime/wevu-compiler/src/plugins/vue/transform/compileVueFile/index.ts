@@ -117,6 +117,10 @@ export async function compileVueFile(
     parsed.isAppFile,
     componentSourceInfo,
     scriptCompiled,
+    {
+      propsAliases,
+      propsDerivedKeys,
+    },
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
@@ -127,6 +131,7 @@ export async function compileVueFile(
     descriptor: parsed.descriptor,
     filename,
     autoUsingComponentsMap: scriptPhase.autoUsingComponentsMap,
+    autoImportTagsMap: componentSourceInfo.autoImportTagsMap,
     autoUsingComponents,
     autoImportTags,
     jsonDefaults: parsed.jsonDefaults as Record<string, any> | undefined,

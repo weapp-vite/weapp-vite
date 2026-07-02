@@ -19,17 +19,18 @@ import {
   defaultIgnoredDirNames,
   isSidecarFile,
   watchedCssExts,
-  watchedScriptModuleExts,
+  watchedCssSuffixes,
+  watchedScriptModuleSuffixes,
   watchedTemplateExts,
+  watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { findJsEntry, touch } from '../../utils/file'
-import { createHmrProfileEventId, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
-import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -62,11 +63,53 @@ interface HmrProfileJsonSample {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  entryCodeReadMs?: number
+  entrySidecarResolveMs?: number
+  entryJsonReadMs?: number
+  entryVueConfigMs?: number
+  entryTemplateScanMs?: number
+  entryScriptSetupMs?: number
+  entryVueSignatureMs?: number
+  entryAutoImportMs?: number
+  entryPrepareMs?: number
+  entryEmitOutputMs?: number
+  entryStyleScanMs?: number
+  entryStyleReadMs?: number
+  entryResolveMs?: number
+  entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
+  entryLayoutMs?: number
+  requestGlobalsMs?: number
+  weapiResolveMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  chunkEmitCount?: number
+  loadCount?: number
+  resolveCount?: number
+  skippedLoadedCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
@@ -75,7 +118,47 @@ interface HmrProfileJsonSample {
 }
 
 interface HmrPhaseRegressionCandidate {
-  label: 'build-core' | 'transform' | 'watch->dirty' | 'emit' | 'shared' | 'write'
+  label: 'build-core'
+    | 'build-start'
+    | 'plugin-resolve'
+    | 'transform'
+    | 'core-transform'
+    | 'wevu-transform'
+    | 'vue-transform'
+    | 'vue-read'
+    | 'vue-compile'
+    | 'vue-finalize-compiled'
+    | 'vue-finalize-code'
+    | 'core-load'
+    | 'entry-load'
+    | 'entry-code-read'
+    | 'entry-sidecar-resolve'
+    | 'entry-json-read'
+    | 'entry-vue-config'
+    | 'entry-template-scan'
+    | 'entry-script-setup'
+    | 'entry-vue-signature'
+    | 'entry-auto-import'
+    | 'entry-prepare'
+    | 'entry-emit-output'
+    | 'entry-style-scan'
+    | 'entry-style-read'
+    | 'entry-resolve'
+    | 'entry-chunk-emit'
+    | 'entry-chunk-load'
+    | 'entry-chunk-emit-file'
+    | 'entry-layout'
+    | 'request-globals'
+    | 'weapi-resolve'
+    | 'render-start'
+    | 'generate'
+    | 'generate-shared'
+    | 'generate-rewrite'
+    | 'module-graph'
+    | 'watch->dirty'
+    | 'emit'
+    | 'shared'
+    | 'write'
   currentMs: number
   averageMs: number
   ratio: number
@@ -84,6 +167,11 @@ interface HmrPhaseRegressionCandidate {
 interface SnapshotBuildReason {
   event?: ChangeEvent
   file?: string
+}
+
+interface SnapshotBuildBatch {
+  reasons: SnapshotBuildReason[]
+  startedAt: number
 }
 
 function resolveSnapshotSidecarDirtySummary(filePath: string) {
@@ -104,6 +192,7 @@ function resolveSnapshotSidecarDirtySummary(filePath: string) {
 
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
 const watchedSnapshotScriptExts = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
+const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
 
 function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
   const configService = ctx.configService!
@@ -160,9 +249,9 @@ function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, 
   const root = configService.absoluteSrcRoot
   const patterns: string[] = [
     ...configSuffixes.map(suffix => path.join(root, `**/*${suffix}`)),
-    ...Array.from(watchedCssExts).map(ext => path.join(root, `**/*${ext}`)),
-    ...Array.from(watchedTemplateExts).map(ext => path.join(root, `**/*${ext}`)),
-    ...Array.from(watchedScriptModuleExts).map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedCssSuffixes.map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedTemplateSuffixes.map(ext => path.join(root, `**/*${ext}`)),
+    ...watchedScriptModuleSuffixes.map(ext => path.join(root, `**/*${ext}`)),
     ...Array.from(watchedSnapshotScriptExts).map(ext => path.join(root, `**/*${ext}`)),
   ]
   for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
@@ -219,11 +308,53 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       relativeFile,
       sourceRootFile,
       buildCoreMs: profile.buildCoreMs,
+      buildStartMs: profile.buildStartMs,
+      pluginResolveMs: profile.pluginResolveMs,
       transformMs: profile.transformMs,
+      coreTransformMs: profile.coreTransformMs,
+      wevuTransformMs: profile.wevuTransformMs,
+      vueTransformMs: profile.vueTransformMs,
+      vueReadSourceMs: profile.vueReadSourceMs,
+      vueCompileMs: profile.vueCompileMs,
+      vueFinalizeCompiledMs: profile.vueFinalizeCompiledMs,
+      vueFinalizeCodeMs: profile.vueFinalizeCodeMs,
+      coreLoadMs: profile.coreLoadMs,
+      entryLoadMs: profile.entryLoadMs,
+      entryCodeReadMs: profile.entryCodeReadMs,
+      entrySidecarResolveMs: profile.entrySidecarResolveMs,
+      entryJsonReadMs: profile.entryJsonReadMs,
+      entryVueConfigMs: profile.entryVueConfigMs,
+      entryTemplateScanMs: profile.entryTemplateScanMs,
+      entryScriptSetupMs: profile.entryScriptSetupMs,
+      entryVueSignatureMs: profile.entryVueSignatureMs,
+      entryAutoImportMs: profile.entryAutoImportMs,
+      entryPrepareMs: profile.entryPrepareMs,
+      entryEmitOutputMs: profile.entryEmitOutputMs,
+      entryStyleScanMs: profile.entryStyleScanMs,
+      entryStyleReadMs: profile.entryStyleReadMs,
+      entryResolveMs: profile.entryResolveMs,
+      entryChunkEmitMs: profile.entryChunkEmitMs,
+      entryChunkLoadMs: profile.entryChunkLoadMs,
+      entryChunkEmitFileMs: profile.entryChunkEmitFileMs,
+      entryLayoutMs: profile.entryLayoutMs,
+      requestGlobalsMs: profile.requestGlobalsMs,
+      weapiResolveMs: profile.weapiResolveMs,
+      bundlerMs: profile.bundlerMs,
+      renderStartMs: profile.renderStartMs,
+      generateBundleMs: profile.generateBundleMs,
+      generateSharedMs: profile.generateSharedMs,
+      generateRewriteMs: profile.generateRewriteMs,
+      generateModuleGraphMs: profile.generateModuleGraphMs,
+      snapshotResolveMs: profile.snapshotResolveMs,
+      snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
+      chunkEmitCount: profile.chunkEmitCount,
+      loadCount: profile.loadCount,
+      resolveCount: profile.resolveCount,
+      skippedLoadedCount: profile.skippedLoadedCount,
       dirtyCount: profile.dirtyCount,
       pendingCount: profile.pendingCount,
       emittedCount: profile.emittedCount,
@@ -255,6 +386,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   function finalizeHmrProfile(totalMs: number) {
     const profile = ctx.runtimeState.build.hmr.profile
     const measuredMs = [
+      profile.transformMs,
+      profile.buildStartMs,
+      profile.pluginResolveMs,
+      profile.coreLoadMs,
+      profile.renderStartMs,
+      profile.generateBundleMs,
       profile.watchToDirtyMs,
       profile.emitMs,
       profile.writeMs,
@@ -349,7 +486,40 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (logLevel === 'concise') {
       const conciseSegments = [
         typeof profile.buildCoreMs === 'number' ? `build-core ${profile.buildCoreMs.toFixed(2)} ms` : undefined,
+        typeof profile.buildStartMs === 'number' ? `build-start ${profile.buildStartMs.toFixed(2)} ms` : undefined,
+        typeof profile.pluginResolveMs === 'number' ? `plugin-resolve ${profile.pluginResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.bundlerMs === 'number' ? `bundler ${profile.bundlerMs.toFixed(2)} ms` : undefined,
+        typeof profile.renderStartMs === 'number' ? `render-start ${profile.renderStartMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateBundleMs === 'number' ? `generate ${profile.generateBundleMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateSharedMs === 'number' ? `generate-shared ${profile.generateSharedMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateRewriteMs === 'number' ? `generate-rewrite ${profile.generateRewriteMs.toFixed(2)} ms` : undefined,
+        typeof profile.generateModuleGraphMs === 'number' ? `module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms` : undefined,
+        typeof profile.coreLoadMs === 'number' ? `core-load ${profile.coreLoadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryLoadMs === 'number' ? `entry-load ${profile.entryLoadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryEmitOutputMs === 'number' ? `entry-emit-output ${profile.entryEmitOutputMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryTemplateScanMs === 'number' ? `entry-template-scan ${profile.entryTemplateScanMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryAutoImportMs === 'number' ? `entry-auto-import ${profile.entryAutoImportMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryScriptSetupMs === 'number' ? `entry-script-setup ${profile.entryScriptSetupMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryVueSignatureMs === 'number' ? `entry-vue-signature ${profile.entryVueSignatureMs.toFixed(2)} ms` : undefined,
+        typeof profile.entrySidecarResolveMs === 'number' ? `entry-sidecar-resolve ${profile.entrySidecarResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryJsonReadMs === 'number' ? `entry-json-read ${profile.entryJsonReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryVueConfigMs === 'number' ? `entry-vue-config ${profile.entryVueConfigMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryPrepareMs === 'number' ? `entry-prepare ${profile.entryPrepareMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryResolveMs === 'number' ? `entry-resolve ${profile.entryResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryStyleScanMs === 'number' ? `entry-style-scan ${profile.entryStyleScanMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryStyleReadMs === 'number' ? `entry-style-read ${profile.entryStyleReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryCodeReadMs === 'number' ? `entry-code-read ${profile.entryCodeReadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkEmitMs === 'number' ? `entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkLoadMs === 'number' ? `entry-chunk-load ${profile.entryChunkLoadMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryChunkEmitFileMs === 'number' ? `entry-chunk-emit-file ${profile.entryChunkEmitFileMs.toFixed(2)} ms` : undefined,
+        typeof profile.entryLayoutMs === 'number' ? `entry-layout ${profile.entryLayoutMs.toFixed(2)} ms` : undefined,
+        typeof profile.requestGlobalsMs === 'number' ? `request-globals ${profile.requestGlobalsMs.toFixed(2)} ms` : undefined,
+        typeof profile.weapiResolveMs === 'number' ? `weapi-resolve ${profile.weapiResolveMs.toFixed(2)} ms` : undefined,
         typeof profile.transformMs === 'number' ? `transform ${profile.transformMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueReadSourceMs === 'number' ? `vue-read ${profile.vueReadSourceMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueCompileMs === 'number' ? `vue-compile ${profile.vueCompileMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueFinalizeCompiledMs === 'number' ? `vue-finalize-compiled ${profile.vueFinalizeCompiledMs.toFixed(2)} ms` : undefined,
+        typeof profile.vueFinalizeCodeMs === 'number' ? `vue-finalize-code ${profile.vueFinalizeCodeMs.toFixed(2)} ms` : undefined,
         typeof profile.writeMs === 'number' ? `write ${profile.writeMs.toFixed(2)} ms` : undefined,
       ].filter((segment): segment is string => Boolean(segment))
 
@@ -365,6 +535,111 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (profile.transformMs !== undefined) {
       verboseSegments.push(`transform ${profile.transformMs.toFixed(2)} ms`)
     }
+    if (profile.vueReadSourceMs !== undefined) {
+      verboseSegments.push(`vue-read ${profile.vueReadSourceMs.toFixed(2)} ms`)
+    }
+    if (profile.vueCompileMs !== undefined) {
+      verboseSegments.push(`vue-compile ${profile.vueCompileMs.toFixed(2)} ms`)
+    }
+    if (profile.vueFinalizeCompiledMs !== undefined) {
+      verboseSegments.push(`vue-finalize-compiled ${profile.vueFinalizeCompiledMs.toFixed(2)} ms`)
+    }
+    if (profile.vueFinalizeCodeMs !== undefined) {
+      verboseSegments.push(`vue-finalize-code ${profile.vueFinalizeCodeMs.toFixed(2)} ms`)
+    }
+    if (profile.buildStartMs !== undefined) {
+      verboseSegments.push(`build-start ${profile.buildStartMs.toFixed(2)} ms`)
+    }
+    if (profile.pluginResolveMs !== undefined) {
+      verboseSegments.push(`plugin-resolve ${profile.pluginResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.bundlerMs !== undefined) {
+      verboseSegments.push(`bundler ${profile.bundlerMs.toFixed(2)} ms`)
+    }
+    if (profile.coreLoadMs !== undefined) {
+      verboseSegments.push(`core-load ${profile.coreLoadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryLoadMs !== undefined) {
+      verboseSegments.push(`entry-load ${profile.entryLoadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryEmitOutputMs !== undefined) {
+      verboseSegments.push(`entry-emit-output ${profile.entryEmitOutputMs.toFixed(2)} ms`)
+    }
+    if (profile.entryTemplateScanMs !== undefined) {
+      verboseSegments.push(`entry-template-scan ${profile.entryTemplateScanMs.toFixed(2)} ms`)
+    }
+    if (profile.entryAutoImportMs !== undefined) {
+      verboseSegments.push(`entry-auto-import ${profile.entryAutoImportMs.toFixed(2)} ms`)
+    }
+    if (profile.entryScriptSetupMs !== undefined) {
+      verboseSegments.push(`entry-script-setup ${profile.entryScriptSetupMs.toFixed(2)} ms`)
+    }
+    if (profile.entryVueSignatureMs !== undefined) {
+      verboseSegments.push(`entry-vue-signature ${profile.entryVueSignatureMs.toFixed(2)} ms`)
+    }
+    if (profile.entrySidecarResolveMs !== undefined) {
+      verboseSegments.push(`entry-sidecar-resolve ${profile.entrySidecarResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.entryJsonReadMs !== undefined) {
+      verboseSegments.push(`entry-json-read ${profile.entryJsonReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryVueConfigMs !== undefined) {
+      verboseSegments.push(`entry-vue-config ${profile.entryVueConfigMs.toFixed(2)} ms`)
+    }
+    if (profile.entryPrepareMs !== undefined) {
+      verboseSegments.push(`entry-prepare ${profile.entryPrepareMs.toFixed(2)} ms`)
+    }
+    if (profile.entryResolveMs !== undefined) {
+      verboseSegments.push(`entry-resolve ${profile.entryResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.entryStyleScanMs !== undefined) {
+      verboseSegments.push(`entry-style-scan ${profile.entryStyleScanMs.toFixed(2)} ms`)
+    }
+    if (profile.entryStyleReadMs !== undefined) {
+      verboseSegments.push(`entry-style-read ${profile.entryStyleReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryCodeReadMs !== undefined) {
+      verboseSegments.push(`entry-code-read ${profile.entryCodeReadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkEmitMs !== undefined) {
+      verboseSegments.push(`entry-chunk-emit ${profile.entryChunkEmitMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkLoadMs !== undefined) {
+      verboseSegments.push(`entry-chunk-load ${profile.entryChunkLoadMs.toFixed(2)} ms`)
+    }
+    if (profile.entryChunkEmitFileMs !== undefined) {
+      verboseSegments.push(`entry-chunk-emit-file ${profile.entryChunkEmitFileMs.toFixed(2)} ms`)
+    }
+    if (profile.entryLayoutMs !== undefined) {
+      verboseSegments.push(`entry-layout ${profile.entryLayoutMs.toFixed(2)} ms`)
+    }
+    if (profile.requestGlobalsMs !== undefined) {
+      verboseSegments.push(`request-globals ${profile.requestGlobalsMs.toFixed(2)} ms`)
+    }
+    if (profile.weapiResolveMs !== undefined) {
+      verboseSegments.push(`weapi-resolve ${profile.weapiResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.renderStartMs !== undefined) {
+      verboseSegments.push(`render-start ${profile.renderStartMs.toFixed(2)} ms`)
+    }
+    if (profile.generateBundleMs !== undefined) {
+      verboseSegments.push(`generate ${profile.generateBundleMs.toFixed(2)} ms`)
+    }
+    if (profile.generateSharedMs !== undefined) {
+      verboseSegments.push(`generate-shared ${profile.generateSharedMs.toFixed(2)} ms`)
+    }
+    if (profile.generateRewriteMs !== undefined) {
+      verboseSegments.push(`generate-rewrite ${profile.generateRewriteMs.toFixed(2)} ms`)
+    }
+    if (profile.generateModuleGraphMs !== undefined) {
+      verboseSegments.push(`module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms`)
+    }
+    if (profile.snapshotResolveMs !== undefined) {
+      verboseSegments.push(`snapshot-resolve ${profile.snapshotResolveMs.toFixed(2)} ms`)
+    }
+    if (profile.snapshotBuildMs !== undefined) {
+      verboseSegments.push(`snapshot-build ${profile.snapshotBuildMs.toFixed(2)} ms`)
+    }
     if (profile.writeMs !== undefined) {
       verboseSegments.push(`write ${profile.writeMs.toFixed(2)} ms`)
     }
@@ -376,6 +651,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.sharedChunkResolveMs !== undefined) {
       verboseSegments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
+    }
+    if (
+      profile.loadCount !== undefined
+      || profile.resolveCount !== undefined
+      || profile.chunkEmitCount !== undefined
+      || profile.skippedLoadedCount !== undefined
+    ) {
+      verboseSegments.push(`load/resolve/chunk/skip ${profile.loadCount ?? 0}/${profile.resolveCount ?? 0}/${profile.chunkEmitCount ?? 0}/${profile.skippedLoadedCount ?? 0}`)
     }
     if (
       profile.dirtyCount !== undefined
@@ -404,9 +687,44 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'emit': 0,
       'shared': 1,
       'write': 2,
-      'transform': 3,
-      'watch->dirty': 4,
-      'build-core': 5,
+      'build-start': 3,
+      'plugin-resolve': 4,
+      'transform': 5,
+      'core-transform': 6,
+      'wevu-transform': 7,
+      'vue-transform': 8,
+      'vue-read': 9,
+      'vue-compile': 10,
+      'vue-finalize-compiled': 11,
+      'vue-finalize-code': 12,
+      'core-load': 13,
+      'entry-load': 14,
+      'entry-emit-output': 15,
+      'entry-template-scan': 16,
+      'entry-auto-import': 17,
+      'entry-script-setup': 18,
+      'entry-vue-signature': 19,
+      'entry-sidecar-resolve': 20,
+      'entry-json-read': 21,
+      'entry-vue-config': 22,
+      'entry-prepare': 23,
+      'entry-resolve': 24,
+      'entry-style-scan': 25,
+      'entry-style-read': 26,
+      'entry-code-read': 27,
+      'entry-chunk-emit': 28,
+      'entry-chunk-load': 29,
+      'entry-chunk-emit-file': 30,
+      'entry-layout': 31,
+      'request-globals': 32,
+      'weapi-resolve': 33,
+      'render-start': 34,
+      'generate': 35,
+      'generate-shared': 36,
+      'generate-rewrite': 37,
+      'module-graph': 38,
+      'watch->dirty': 39,
+      'build-core': 40,
     }
     const phases = [
       {
@@ -416,6 +734,146 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'transformMs',
         label: 'transform',
+      },
+      {
+        key: 'buildStartMs',
+        label: 'build-start',
+      },
+      {
+        key: 'pluginResolveMs',
+        label: 'plugin-resolve',
+      },
+      {
+        key: 'coreTransformMs',
+        label: 'core-transform',
+      },
+      {
+        key: 'wevuTransformMs',
+        label: 'wevu-transform',
+      },
+      {
+        key: 'vueTransformMs',
+        label: 'vue-transform',
+      },
+      {
+        key: 'vueReadSourceMs',
+        label: 'vue-read',
+      },
+      {
+        key: 'vueCompileMs',
+        label: 'vue-compile',
+      },
+      {
+        key: 'vueFinalizeCompiledMs',
+        label: 'vue-finalize-compiled',
+      },
+      {
+        key: 'vueFinalizeCodeMs',
+        label: 'vue-finalize-code',
+      },
+      {
+        key: 'coreLoadMs',
+        label: 'core-load',
+      },
+      {
+        key: 'entryLoadMs',
+        label: 'entry-load',
+      },
+      {
+        key: 'entryEmitOutputMs',
+        label: 'entry-emit-output',
+      },
+      {
+        key: 'entryTemplateScanMs',
+        label: 'entry-template-scan',
+      },
+      {
+        key: 'entryAutoImportMs',
+        label: 'entry-auto-import',
+      },
+      {
+        key: 'entryScriptSetupMs',
+        label: 'entry-script-setup',
+      },
+      {
+        key: 'entryVueSignatureMs',
+        label: 'entry-vue-signature',
+      },
+      {
+        key: 'entrySidecarResolveMs',
+        label: 'entry-sidecar-resolve',
+      },
+      {
+        key: 'entryJsonReadMs',
+        label: 'entry-json-read',
+      },
+      {
+        key: 'entryVueConfigMs',
+        label: 'entry-vue-config',
+      },
+      {
+        key: 'entryPrepareMs',
+        label: 'entry-prepare',
+      },
+      {
+        key: 'entryResolveMs',
+        label: 'entry-resolve',
+      },
+      {
+        key: 'entryStyleScanMs',
+        label: 'entry-style-scan',
+      },
+      {
+        key: 'entryStyleReadMs',
+        label: 'entry-style-read',
+      },
+      {
+        key: 'entryCodeReadMs',
+        label: 'entry-code-read',
+      },
+      {
+        key: 'entryChunkEmitMs',
+        label: 'entry-chunk-emit',
+      },
+      {
+        key: 'entryChunkLoadMs',
+        label: 'entry-chunk-load',
+      },
+      {
+        key: 'entryChunkEmitFileMs',
+        label: 'entry-chunk-emit-file',
+      },
+      {
+        key: 'entryLayoutMs',
+        label: 'entry-layout',
+      },
+      {
+        key: 'requestGlobalsMs',
+        label: 'request-globals',
+      },
+      {
+        key: 'weapiResolveMs',
+        label: 'weapi-resolve',
+      },
+      {
+        key: 'renderStartMs',
+        label: 'render-start',
+      },
+      {
+        key: 'generateBundleMs',
+        label: 'generate',
+      },
+      {
+        key: 'generateSharedMs',
+        label: 'generate-shared',
+      },
+      {
+        key: 'generateRewriteMs',
+        label: 'generate-rewrite',
+      },
+      {
+        key: 'generateModuleGraphMs',
+        label: 'module-graph',
       },
       {
         key: 'watchToDirtyMs',
@@ -582,7 +1040,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && !dirtyReasonSummary.some(reason =>
         reason.startsWith('style-sidecar:')
         || reason.startsWith('css-importer:')
-        || reason.startsWith('entry-local-asset:'),
+        || reason.startsWith('entry-style-only:'),
       )
     ) {
       return false
@@ -717,6 +1175,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
+    let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
 
     async function resolveSnapshotSidecarEntryId(reason?: SnapshotBuildReason) {
       if (reason?.event !== 'update' || !reason.file) {
@@ -795,10 +1255,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             watchToDirtyMs: performance.now() - startedAt,
           }
         }
+        const snapshotResolveStartedAt = performance.now()
         const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
+        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
+        const snapshotBuildStartedAt = performance.now()
         if (sidecarEntryId) {
           markSnapshotEntryDirty(sidecarEntryId, reason)
-          await build(snapshotBuildOptions)
+          try {
+            await build(snapshotBuildOptions)
+          }
+          finally {
+            recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+          }
           return 'snapshot'
         }
         markSnapshotEntriesFullDirty()
@@ -808,10 +1276,66 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return 'snapshot'
         }
         finally {
+          recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
         }
       })
       return snapshotBuildChain
+    }
+
+    function resolveSnapshotBatchReason(batch: SnapshotBuildBatch) {
+      const [firstReason] = batch.reasons
+      if (!firstReason) {
+        return undefined
+      }
+      if (batch.reasons.length === 1) {
+        return firstReason
+      }
+      const isSameReason = batch.reasons.every((reason) => {
+        return reason.event === firstReason.event && reason.file === firstReason.file
+      })
+      return isSameReason ? firstReason : undefined
+    }
+
+    function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
+      if (devWatcherClosed) {
+        return
+      }
+      if (pendingSnapshotBatch) {
+        pendingSnapshotBatch.reasons.push(reason)
+        pendingSnapshotBatch.startedAt = Math.min(pendingSnapshotBatch.startedAt, startedAt)
+      }
+      else {
+        pendingSnapshotBatch = {
+          reasons: [reason],
+          startedAt,
+        }
+      }
+      if (snapshotBatchTimer) {
+        return
+      }
+      snapshotBatchTimer = setTimeout(() => {
+        snapshotBatchTimer = undefined
+        const batch = pendingSnapshotBatch
+        pendingSnapshotBatch = undefined
+        if (!batch || devWatcherClosed) {
+          return
+        }
+        const batchReason = resolveSnapshotBatchReason(batch)
+        void runSnapshotBuild(batchReason).then((result) => {
+          if (result !== 'snapshot') {
+            return
+          }
+          const durationMs = performance.now() - batch.startedAt
+          finalizeHmrProfile(durationMs)
+          recordHmrProfile(durationMs)
+          logger.success(formatHmrLogLine(durationMs))
+          resetHmrProfile()
+        }).catch((error) => {
+          resetHmrProfile()
+          logger.error(error)
+        })
+      }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
     const watcherPromise = build(
@@ -853,6 +1377,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
+        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'bundlerMs', durationMs)
         void (async () => {
           const shouldRestart = shouldRestartDevBuild(target)
           if (shouldRestart) {
@@ -935,22 +1460,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           : event.startsWith('add')
             ? 'create'
             : 'update'
-        void runSnapshotBuild({
+        scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-        }).then((result) => {
-          if (result !== 'snapshot') {
-            return
-          }
-          const durationMs = performance.now() - sidecarStartedAt
-          finalizeHmrProfile(durationMs)
-          recordHmrProfile(durationMs)
-          logger.success(formatHmrLogLine(durationMs))
-          resetHmrProfile()
-        }).catch((error) => {
-          resetHmrProfile()
-          logger.error(error)
-        })
+        }, sidecarStartedAt)
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: () => snapshotWatcher.close(),
@@ -1115,24 +1628,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && configService.weappLibConfig?.dts?.enabled !== false
       && !configService.isDev,
     )
-    if (!isLibMode && !pluginOnly) {
-      await syncProjectConfigToOutput({
-        outDir: configService.outDir,
-        projectConfigPath: configService.projectConfigPath,
-        projectPrivateConfigPath: configService.projectPrivateConfigPath,
-        enabled: isMultiPlatformEnabled,
-      })
-    }
-    const shouldPreloadAppEntry = (
+    const projectConfigSyncTask = !isLibMode && !pluginOnly
+      ? syncProjectConfigToOutput({
+          outDir: configService.outDir,
+          projectConfigPath: configService.projectConfigPath,
+          projectPrivateConfigPath: configService.projectPrivateConfigPath,
+          enabled: isMultiPlatformEnabled,
+        })
+      : Promise.resolve()
+    const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode
       && !pluginOnly
-      && (
-        (options?.skipNpm !== true && hasLocalSubPackageNpmConfig(ctx))
-        || configService.weappViteConfig.worker?.entry !== undefined
-      )
+      && configService.weappViteConfig.worker?.entry !== undefined
     )
-    if (shouldPreloadAppEntry) {
+    if (shouldPreloadAppEntryForWorkers) {
       await scanService.loadAppEntry()
       scanService.loadSubPackages()
     }
@@ -1142,6 +1652,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (shouldEmitLibDts) {
       await generateLibDts(configService)
     }
+    await projectConfigSyncTask
     await npmBuildTask
     if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
       await runIsolatedPluginBuild(options)

@@ -5,6 +5,7 @@ import { createCompilerContext } from './createContext'
 const resetCompilerContextMock = vi.hoisted(() => vi.fn())
 const setActiveCompilerContextKeyMock = vi.hoisted(() => vi.fn())
 const getCompilerContextMock = vi.hoisted(() => vi.fn())
+const hasManagedTsconfigBootstrapCompletedMock = vi.hoisted(() => vi.fn())
 const syncManagedTsconfigBootstrapFilesMock = vi.hoisted(() => vi.fn())
 const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -16,6 +17,7 @@ vi.mock('./context/getInstance', () => ({
 }))
 
 vi.mock('./runtime/tsconfigSupport', () => ({
+  hasManagedTsconfigBootstrapCompleted: hasManagedTsconfigBootstrapCompletedMock,
   syncManagedTsconfigBootstrapFiles: syncManagedTsconfigBootstrapFilesMock,
 }))
 
@@ -32,6 +34,8 @@ vi.mock('./logger', () => ({
 describe('createCompilerContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    hasManagedTsconfigBootstrapCompletedMock.mockReturnValue(false)
+    syncManagedTsconfigBootstrapFilesMock.mockResolvedValue(false)
     getCompilerContextMock.mockReturnValue({
       configService: {
         load: vi.fn(async () => {}),
@@ -65,6 +69,53 @@ describe('createCompilerContext', () => {
     })
   })
 
+  it('loads config while managed tsconfig bootstrap is still pending', async () => {
+    let resolveBootstrap!: (changed: boolean) => void
+    syncManagedTsconfigBootstrapFilesMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+      resolveBootstrap = resolve
+    }))
+
+    const ctx = {
+      configService: {
+        load: vi.fn(async () => {}),
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+      },
+    }
+    getCompilerContextMock.mockReturnValueOnce(ctx)
+
+    const createPromise = createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+    })
+
+    await Promise.resolve()
+    expect(ctx.configService.load).toHaveBeenCalledWith({
+      cwd: '/project',
+      mode: 'development',
+    })
+    expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
+
+    resolveBootstrap(false)
+    await createPromise
+
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips duplicate managed tsconfig bootstrap for already bootstrapped cwd', async () => {
+    hasManagedTsconfigBootstrapCompletedMock.mockReturnValueOnce(true)
+
+    await createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+    })
+
+    expect(hasManagedTsconfigBootstrapCompletedMock).toHaveBeenCalledWith('/project')
+    expect(syncManagedTsconfigBootstrapFilesMock).not.toHaveBeenCalled()
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+  })
+
   it('warns and auto-syncs when managed support files are stale', async () => {
     await createCompilerContext({
       cwd: '/project',
@@ -72,6 +123,9 @@ describe('createCompilerContext', () => {
     })
 
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledWith(expect.anything(), {
+      syncAutoImport: undefined,
+    })
     expect(loggerWarnMock).not.toHaveBeenCalledWith(expect.stringContaining('已自动重新生成'))
 
     syncProjectSupportFilesMock.mockResolvedValueOnce({
@@ -127,5 +181,17 @@ describe('createCompilerContext', () => {
     })
 
     expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
+  })
+
+  it('can skip blocking auto-import support file generation', async () => {
+    await createCompilerContext({
+      cwd: '/project',
+      mode: 'development',
+      syncAutoImportSupportFiles: false,
+    })
+
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledWith(expect.anything(), {
+      syncAutoImport: false,
+    })
   })
 })

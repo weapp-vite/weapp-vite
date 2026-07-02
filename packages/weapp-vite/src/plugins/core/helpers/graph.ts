@@ -71,6 +71,72 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
   return affected
 }
 
+export function collectAffectedSharedChunkEntriesAndChunks(state: CorePluginState, startId: string) {
+  const affectedEntries = new Set<string>()
+  const affectedChunks = new Set<string>()
+  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  if (!chunkIds?.size) {
+    return {
+      affectedChunks,
+      affectedEntries,
+    }
+  }
+
+  for (const chunkId of chunkIds) {
+    affectedChunks.add(chunkId)
+    const importers = state.hmrSharedChunkImporters.get(chunkId)
+    if (!importers?.size) {
+      continue
+    }
+    for (const importer of importers) {
+      if (state.resolvedEntryMap.has(importer)) {
+        affectedEntries.add(importer)
+      }
+    }
+  }
+
+  return {
+    affectedChunks,
+    affectedEntries,
+  }
+}
+
+function createModulesByImporter(
+  moduleImporters: Map<string, Set<string>>,
+  onlyImporterIds?: Set<string>,
+) {
+  const modulesByImporter = new Map<string, Set<string>>()
+  for (const [moduleId, importers] of moduleImporters) {
+    for (const importerId of importers) {
+      if (onlyImporterIds && !onlyImporterIds.has(importerId)) {
+        continue
+      }
+      let modules = modulesByImporter.get(importerId)
+      if (!modules) {
+        modules = new Set<string>()
+        modulesByImporter.set(importerId, modules)
+      }
+      modules.add(moduleId)
+    }
+  }
+  return modulesByImporter
+}
+
+function createSharedModulesByChunk(sharedChunksByModule: Map<string, Set<string>>) {
+  const modulesByChunk = new Map<string, Set<string>>()
+  for (const [moduleId, chunkIds] of sharedChunksByModule) {
+    for (const chunkId of chunkIds) {
+      let moduleIds = modulesByChunk.get(chunkId)
+      if (!moduleIds) {
+        moduleIds = new Set<string>()
+        modulesByChunk.set(chunkId, moduleIds)
+      }
+      moduleIds.add(moduleId)
+    }
+  }
+  return modulesByChunk
+}
+
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
@@ -97,8 +163,22 @@ export function refreshModuleGraph(
     importers.add(normalizedImporterId)
     state.moduleImporters.set(normalizedModuleId, importers)
   }
-  const removeEntryImporter = (entryId: string) => {
+  const removeEntryImporter = (entryId: string, modulesByImporter?: Map<string, Set<string>>) => {
     const normalizedEntryId = normalizeFsResolvedId(entryId)
+    const moduleIds = modulesByImporter?.get(normalizedEntryId)
+    if (moduleIds) {
+      for (const moduleId of moduleIds) {
+        const importers = state.moduleImporters.get(moduleId)
+        if (!importers) {
+          continue
+        }
+        importers.delete(normalizedEntryId)
+        if (!importers.size) {
+          state.moduleImporters.delete(moduleId)
+        }
+      }
+      return
+    }
     for (const [moduleId, importers] of state.moduleImporters) {
       importers.delete(normalizedEntryId)
       if (!importers.size) {
@@ -138,7 +218,12 @@ export function refreshModuleGraph(
     return entryIds
   }
 
-  if (typeof pluginCtx.getModuleIds === 'function' && typeof pluginCtx.getModuleInfo === 'function') {
+  const shouldScanPluginModuleGraph = mode === 'replace' || !bundle
+  if (
+    shouldScanPluginModuleGraph
+    && typeof pluginCtx.getModuleIds === 'function'
+    && typeof pluginCtx.getModuleInfo === 'function'
+  ) {
     for (const rawId of pluginCtx.getModuleIds()) {
       const normalizedId = normalizeFsResolvedId(rawId)
       if (isSkippableResolvedId(normalizedId)) {
@@ -186,10 +271,15 @@ export function refreshModuleGraph(
   }
 
   if (mode === 'merge') {
+    const removedEntryIds = new Set<string>()
     for (const { entryIds } of chunkRecords) {
       for (const entryId of entryIds) {
-        removeEntryImporter(entryId)
+        removedEntryIds.add(entryId)
       }
+    }
+    const modulesByImporter = createModulesByImporter(state.moduleImporters, removedEntryIds)
+    for (const entryId of removedEntryIds) {
+      removeEntryImporter(entryId, modulesByImporter)
     }
   }
 
@@ -300,12 +390,21 @@ function appendSharedChunkImporters(
       state.hmrSharedChunksByModule.set(moduleId, new Set([chunkId]))
     }
   }
+  const previousSharedModulesByChunk = createSharedModulesByChunk(state.hmrSharedChunksByModule)
   const pruneSharedChunkModules = (chunkId: string, nextModuleIds: Set<string>) => {
     if (!nextModuleIds.size) {
       return
     }
-    for (const [moduleId, chunkIds] of state.hmrSharedChunksByModule) {
+    const previousModuleIds = previousSharedModulesByChunk.get(chunkId)
+    if (!previousModuleIds?.size) {
+      return
+    }
+    for (const moduleId of previousModuleIds) {
       if (nextModuleIds.has(moduleId)) {
+        continue
+      }
+      const chunkIds = state.hmrSharedChunksByModule.get(moduleId)
+      if (!chunkIds) {
         continue
       }
       chunkIds.delete(chunkId)
@@ -443,6 +542,52 @@ function appendSharedChunkImporters(
   }
 }
 
+function collectPreviousSharedChunkSnapshot(state: CorePluginState, entryIds: Set<string>) {
+  const previousImporters = new Map<string, Set<string>>()
+  const previousDependencies = new Map<string, Set<string>>()
+  const visited = new Set<string>()
+
+  const addChunk = (chunkId: string) => {
+    if (visited.has(chunkId)) {
+      return
+    }
+    visited.add(chunkId)
+
+    const importers = state.hmrSharedChunkImporters.get(chunkId)
+    if (importers) {
+      previousImporters.set(chunkId, new Set(importers))
+    }
+
+    const dependencies = state.hmrSharedChunkDependencies.get(chunkId)
+    if (!dependencies?.size) {
+      return
+    }
+
+    previousDependencies.set(chunkId, new Set(dependencies))
+    for (const dependency of dependencies) {
+      addChunk(dependency)
+    }
+  }
+
+  for (const entryId of entryIds) {
+    const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
+    if (!chunkIds?.size) {
+      for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+        if (importers.has(entryId)) {
+          addChunk(chunkId)
+        }
+      }
+      continue
+    }
+
+    for (const chunkId of chunkIds) {
+      addChunk(chunkId)
+    }
+  }
+
+  return { previousImporters, previousDependencies }
+}
+
 export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
   state.hmrSharedChunkImporters.clear()
   state.hmrSharedChunksByEntry.clear()
@@ -485,29 +630,35 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     return
   }
 
-  const previousImporters = new Map<string, Set<string>>()
-  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
-    previousImporters.set(chunkId, new Set(importers))
-  }
-  const previousDependencies = new Map<string, Set<string>>()
-  for (const [chunkId, imports] of state.hmrSharedChunkDependencies) {
-    previousDependencies.set(chunkId, new Set(imports))
-  }
-  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
-    for (const entryId of refreshedEntryIds) {
-      importers.delete(entryId)
-      const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
-      if (chunkIds) {
-        chunkIds.delete(chunkId)
-        if (chunkIds.size === 0) {
-          state.hmrSharedChunksByEntry.delete(entryId)
+  const { previousImporters, previousDependencies } = collectPreviousSharedChunkSnapshot(state, refreshedEntryIds)
+  for (const entryId of refreshedEntryIds) {
+    const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
+    if (!chunkIds?.size) {
+      const emptyChunkIds: string[] = []
+      for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+        importers.delete(entryId)
+        if (importers.size === 0) {
+          emptyChunkIds.push(chunkId)
         }
       }
+      for (const chunkId of emptyChunkIds) {
+        state.hmrSharedChunkImporters.delete(chunkId)
+        state.hmrSharedChunkDependencies.delete(chunkId)
+      }
+      continue
     }
-    if (importers.size === 0) {
-      state.hmrSharedChunkImporters.delete(chunkId)
-      state.hmrSharedChunkDependencies.delete(chunkId)
+    for (const chunkId of chunkIds) {
+      const importers = state.hmrSharedChunkImporters.get(chunkId)
+      if (!importers) {
+        continue
+      }
+      importers.delete(entryId)
+      if (importers.size === 0) {
+        state.hmrSharedChunkImporters.delete(chunkId)
+        state.hmrSharedChunkDependencies.delete(chunkId)
+      }
     }
+    state.hmrSharedChunksByEntry.delete(entryId)
   }
 
   appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)

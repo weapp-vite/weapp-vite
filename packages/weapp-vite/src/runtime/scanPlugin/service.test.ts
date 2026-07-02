@@ -112,6 +112,21 @@ function createCtx(overrides: Record<string, any> = {}) {
   } as any
 }
 
+function mockAppScriptEntries(options: {
+  appPath?: string
+  preludePath?: string
+} = {}) {
+  findJsEntryMock.mockImplementation(async (id: string) => {
+    if (id.endsWith('/project/src/app.prelude')) {
+      return { path: options.preludePath }
+    }
+    if (id.endsWith('/project/src/app')) {
+      return { path: options.appPath }
+    }
+    return { path: undefined }
+  })
+}
+
 describe('scanPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -162,8 +177,10 @@ describe('scanPlugin service', () => {
       }
       return { path: undefined }
     })
-    vi.spyOn(fs, 'pathExists').mockImplementation(async (id: string) => id === '/project/src/app.prelude.ts')
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({
+      appPath: '/project/src/app.ts',
+      preludePath: '/project/src/app.prelude.ts',
+    })
     findVueEntryMock.mockResolvedValue(undefined)
 
     const readMock = vi.fn(async (file: string) => {
@@ -208,12 +225,139 @@ describe('scanPlugin service', () => {
     expect(service.pluginJsonPath).toBe('/project/plugin-root/plugin.json')
     expect(service.workersDir).toBe('workers')
     expect(second).toStrictEqual(first)
-    expect(findJsEntryMock).toHaveBeenCalledTimes(1)
+    expect(findJsEntryMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('starts app config, script, prelude and vue discovery without waiting for the first probe', async () => {
+    const started: string[] = []
+    let releaseAppConfig!: () => void
+    const appConfigBlocked = new Promise<void>((resolve) => {
+      releaseAppConfig = resolve
+    })
+
+    findJsonEntryMock.mockImplementation(async (id: string) => {
+      started.push(`json:${id}`)
+      if (id.endsWith('/project/src/app')) {
+        await appConfigBlocked
+        return { path: '/project/src/app.json' }
+      }
+      return { path: undefined }
+    })
+    findJsEntryMock.mockImplementation(async (id: string) => {
+      started.push(`js:${id}`)
+      if (id.endsWith('/project/src/app')) {
+        return { path: '/project/src/app.ts' }
+      }
+      return { path: undefined }
+    })
+    findVueEntryMock.mockImplementation(async (id: string) => {
+      started.push(`vue:${id}`)
+      return undefined
+    })
+
+    const ctx = createCtx({
+      jsonService: {
+        read: vi.fn(async () => ({
+          pages: ['pages/index/index'],
+        })),
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const loading = service.loadAppEntry()
+    await Promise.resolve()
+
+    expect(started).toEqual([
+      'json:/project/src/app',
+      'js:/project/src/app',
+      'js:/project/src/app.prelude',
+      'vue:/project/src/app',
+    ])
+
+    releaseAppConfig()
+    await loading
+  })
+
+  it('loads sitemap and theme side json files concurrently after app config resolves', async () => {
+    findJsonEntryMock.mockImplementation(async (id: string) => {
+      if (id.endsWith('/project/src/app')) {
+        return { path: '/project/src/app.json' }
+      }
+      if (id.endsWith('/project/src/sitemap.json')) {
+        return { path: '/project/src/sitemap.json' }
+      }
+      if (id.endsWith('/project/src/theme.json')) {
+        return { path: '/project/src/theme.json' }
+      }
+      return { path: undefined }
+    })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue(undefined)
+
+    const readStarted: string[] = []
+    let releaseSitemapRead!: () => void
+    const sitemapReadBlocked = new Promise<void>((resolve) => {
+      releaseSitemapRead = resolve
+    })
+    const readMock = vi.fn(async (file: string) => {
+      readStarted.push(file)
+      if (file.endsWith('app.json')) {
+        return {
+          pages: ['pages/index/index'],
+          sitemapLocation: 'sitemap.json',
+          themeLocation: 'theme.json',
+        }
+      }
+      if (file.endsWith('sitemap.json')) {
+        await sitemapReadBlocked
+        return { rules: [] }
+      }
+      if (file.endsWith('theme.json')) {
+        return { light: true }
+      }
+      return {}
+    })
+    const ctx = createCtx({
+      jsonService: {
+        read: readMock,
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const loading = service.loadAppEntry()
+
+    while (!readStarted.includes('/project/src/theme.json')) {
+      await Promise.resolve()
+    }
+
+    expect(readStarted).toEqual([
+      '/project/src/app.json',
+      '/project/src/sitemap.json',
+      '/project/src/theme.json',
+    ])
+
+    releaseSitemapRead()
+    const entry = await loading
+
+    expect(entry.sitemapJsonPath).toBe('/project/src/sitemap.json')
+    expect(entry.themeJsonPath).toBe('/project/src/theme.json')
   })
 
   it('warns when app.ts and app.vue both exist but app.ts wins', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
 
     const ctx = createCtx({
@@ -245,7 +389,7 @@ describe('scanPlugin service', () => {
 
   it('normalizes missing app config subPackages to a stable empty array', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue(undefined)
 
     const ctx = createCtx({
@@ -270,7 +414,7 @@ describe('scanPlugin service', () => {
 
   it('uses app.json.ts as config source with app.ts entry', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json.ts' })
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue(undefined)
 
     const ctx = createCtx({
@@ -302,7 +446,7 @@ describe('scanPlugin service', () => {
 
   it('warns app/app config conflicts only once within the same scan context', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
 
     const ctx = createCtx({
@@ -330,7 +474,7 @@ describe('scanPlugin service', () => {
 
   it('uses app.vue fallback when app.json/app.ts are missing', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
-    findJsEntryMock.mockResolvedValue({ path: undefined })
+    mockAppScriptEntries()
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
     extractConfigFromVueMock.mockResolvedValue({
       pages: ['pages/home/index'],
@@ -362,7 +506,7 @@ describe('scanPlugin service', () => {
 
   it('hydrates app.vue config with auto-routes pages when static extraction is incomplete', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
-    findJsEntryMock.mockResolvedValue({ path: undefined })
+    mockAppScriptEntries()
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
     extractConfigFromVueMock.mockResolvedValue({})
 
@@ -399,7 +543,7 @@ describe('scanPlugin service', () => {
 
   it('merges auto-routes pages and subPackages into partially extracted app.vue config', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
-    findJsEntryMock.mockResolvedValue({ path: undefined })
+    mockAppScriptEntries()
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
     extractConfigFromVueMock.mockResolvedValue({
       pages: ['components/router-origin-probe/target/index'],
@@ -448,7 +592,7 @@ describe('scanPlugin service', () => {
 
   it('applies build scope after auto-routes hydrate app config', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
-    findJsEntryMock.mockResolvedValue({ path: undefined })
+    mockAppScriptEntries()
     findVueEntryMock.mockResolvedValue('/project/src/app.vue')
     extractConfigFromVueMock.mockResolvedValue({})
 
@@ -489,7 +633,7 @@ describe('scanPlugin service', () => {
 
   it('throws when app config resolves but is not an object', async () => {
     findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
-    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue(undefined)
 
     const ctx = createCtx({
@@ -503,7 +647,7 @@ describe('scanPlugin service', () => {
     await expect(service.loadAppEntry()).rejects.toThrow('`app.json` 解析失败')
   })
 
-  it('builds subpackage metadata, tracks independent roots and refreshes entries', async () => {
+  it('builds subpackage metadata, tracks independent roots and reuses cached entries while clean', async () => {
     const ctx = createCtx()
     ctx.runtimeState.scan.appEntry = {
       path: '/project/src/app.ts',
@@ -529,13 +673,18 @@ describe('scanPlugin service', () => {
     expect(service.drainIndependentDirtyRoots()).toEqual([])
     expect(service.isMainPackageFileName('pages/home/index')).toBe(true)
     expect(service.isMainPackageFileName('pkgA/pages/a')).toBe(false)
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(2)
 
     service.markIndependentDirty('pkgA')
     expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA'])
 
     ctx.runtimeState.scan.isDirty = false
     service.loadSubPackages()
-    expect(resolveSubPackageEntriesMock).toHaveBeenCalled()
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(2)
+
+    ctx.runtimeState.scan.isDirty = true
+    service.loadSubPackages()
+    expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(4)
   })
 
   it('normalizes windows-style subpackage roots before config lookup and tracking', async () => {

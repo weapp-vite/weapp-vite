@@ -74,6 +74,10 @@ export function shouldBootstrapAutoImportWithoutGlobs(autoImportConfig: ReturnTy
   return false
 }
 
+export function createAutoImportGlobsKey(globs: string[] | undefined) {
+  return globs?.join('\0') ?? ''
+}
+
 function normalizeChangedPath(id: string) {
   if (!id || id.startsWith('\0')) {
     return undefined
@@ -261,6 +265,16 @@ function registerAutoImportWatchTargets(
   return watchTargets
 }
 
+async function runAutoImportBatch<T>(
+  autoImportService: CompilerContext['autoImportService'],
+  task: () => T | Promise<T>,
+) {
+  if (typeof autoImportService?.runInBatch === 'function') {
+    return await autoImportService.runInBatch(task)
+  }
+  return await task()
+}
+
 async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
   const { wxmlService, configService, autoImportService } = ctx
   if (!wxmlService || !configService) {
@@ -402,15 +416,21 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       const globs = autoImportConfig?.globs
       registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
       startAutoImportFileWatcher(globs)
-      const globsKey = globs?.join('\0') ?? ''
+      const globsKey = createAutoImportGlobsKey(globs)
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false
         state.lastGlobsKey = globsKey
       }
 
+      if (configService?.isDev && !state.initialScanDone && ctx.runtimeState?.autoImport?.preparedGlobsKey === globsKey) {
+        state.initialScanDone = true
+      }
+
       if (!globs?.length) {
         if (!state.initialScanDone && shouldBootstrapAutoImportWithoutGlobs(autoImportConfig)) {
-          autoImportService.reset()
+          await runAutoImportBatch(autoImportService, () => {
+            autoImportService.reset()
+          })
           state.initialScanDone = true
         }
         return
@@ -420,10 +440,11 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
         return
       }
 
-      autoImportService.reset()
-
-      const files = await findAutoImportCandidates(state, globs)
-      await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+      await runAutoImportBatch(autoImportService, async () => {
+        autoImportService.reset()
+        const files = await findAutoImportCandidates(state, globs)
+        await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+      })
 
       state.initialScanDone = true
     },

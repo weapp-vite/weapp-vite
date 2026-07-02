@@ -1,14 +1,14 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import type { parse } from 'vue/compiler-sfc'
 import type { JsonConfig } from '../../../../types/json'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { normalizeLineEndings } from '../../../../utils/text'
-import { preprocessScriptSetupSrc, preprocessScriptSrc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
+import { preprocessScriptSetupSrc, preprocessScriptSrc, readAndParseSfc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
-import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
+import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -116,14 +116,16 @@ function restoreTemplateImportMetaInDescriptor(
   }
 }
 
-function parseSfc(
+async function parseSfc(
   source: string,
   filename: string,
   ignoreEmpty: boolean,
 ) {
   const preprocessedSource = preprocessTemplateImportMeta(source)
-  const parsed = parse(preprocessedSource, {
-    filename,
+  const parsed = await readAndParseSfc(filename, {
+    source,
+    preprocessedSource,
+    checkMtime: false,
     ignoreEmpty,
   })
 
@@ -141,7 +143,7 @@ export async function parseVueFile(
   const normalizedInputSource = normalizeLineEndings(source)
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
   let descriptorForCompileSource = normalizedSource
-  const { descriptor, errors } = parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
+  const { descriptor, errors } = await parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
   restoreScriptSetupSrc(descriptor)
   restoreScriptSrc(descriptor)
 
@@ -179,58 +181,62 @@ export async function parseVueFile(
 
   const scriptSetup = resolvedDescriptor.scriptSetup
   if (scriptSetup?.content) {
-    const extracted = await extractJsonMacroFromScriptSetup(
-      scriptSetup.content,
-      filename,
-      scriptSetup.lang,
-      {
-        merge: (target, source) => mergeJson(target, source, 'macro'),
-        preambleContent: resolvedDescriptor.script?.content,
-      },
-    )
-    if (extracted.stripped !== scriptSetup.content) {
-      if (scriptSetup.src) {
-        descriptorForCompile = {
-          ...descriptorForCompile,
-          scriptSetup: {
-            ...descriptorForCompile.scriptSetup!,
-            content: extracted.stripped,
-          },
-        }
-      }
-      else {
-        const setupLoc = scriptSetup.loc
-        const startOffset = setupLoc.start.offset
-        const endOffset = setupLoc.end.offset
-        const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
-        restoreScriptSetupSrc(nextDescriptor)
-        restoreScriptSrc(nextDescriptor)
-
-        if (nextErrors.length > 0) {
-          const error = nextErrors[0]
-          throw new Error(`解析 ${filename} 失败：${error.message}`)
-        }
-        assertMatchingSfcScriptLang(nextDescriptor, filename)
-
-        if (options?.sfcSrc) {
-          const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
-          descriptorForCompile = resolvedNext.descriptor
-          if (resolvedNext.deps.length) {
-            const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
-            sfcSrcDeps = [...deps]
-            meta.sfcSrcDeps = sfcSrcDeps
+    if (mayContainJsonMacro(scriptSetup.content)) {
+      const extracted = await extractJsonMacroFromScriptSetup(
+        scriptSetup.content,
+        filename,
+        scriptSetup.lang,
+        {
+          merge: (target, source) => mergeJson(target, source, 'macro'),
+          preambleContent: resolvedDescriptor.script?.content,
+        },
+      )
+      if (extracted.stripped !== scriptSetup.content) {
+        if (scriptSetup.src) {
+          descriptorForCompile = {
+            ...descriptorForCompile,
+            scriptSetup: {
+              ...descriptorForCompile.scriptSetup!,
+              content: extracted.stripped,
+            },
           }
         }
         else {
-          descriptorForCompile = nextDescriptor
+          const setupLoc = scriptSetup.loc
+          const startOffset = setupLoc.start.offset
+          const endOffset = setupLoc.end.offset
+          const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
+          const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
+          restoreScriptSetupSrc(nextDescriptor)
+          restoreScriptSrc(nextDescriptor)
+
+          if (nextErrors.length > 0) {
+            const error = nextErrors[0]
+            throw new Error(`解析 ${filename} 失败：${error.message}`)
+          }
+          assertMatchingSfcScriptLang(nextDescriptor, filename)
+
+          if (options?.sfcSrc) {
+            const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
+            descriptorForCompile = resolvedNext.descriptor
+            if (resolvedNext.deps.length) {
+              const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
+              sfcSrcDeps = [...deps]
+              meta.sfcSrcDeps = sfcSrcDeps
+            }
+          }
+          else {
+            descriptorForCompile = nextDescriptor
+          }
+          descriptorForCompileSource = nextSource
         }
-        descriptorForCompileSource = nextSource
       }
+      scriptSetupMacroConfig = extracted.config
+      scriptSetupMacroHash = extracted.macroHash
     }
-    scriptSetupMacroConfig = extracted.config
-    scriptSetupMacroHash = extracted.macroHash
-    defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
+    if (DEFINE_OPTIONS_CALL_RE.test(scriptSetup.content)) {
+      defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
+    }
   }
 
   const compileScriptSetup = descriptorForCompile.scriptSetup
@@ -255,7 +261,7 @@ export async function parseVueFile(
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + inlined.code + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
+        const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
         restoreScriptSetupSrc(nextDescriptor)
         restoreScriptSrc(nextDescriptor)
 

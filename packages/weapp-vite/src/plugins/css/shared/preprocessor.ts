@@ -62,6 +62,7 @@ function dedupeAndNormalizeDependencies(base: string, dependencies: Iterable<str
 export interface PreprocessedStyleResult {
   css: string
   dependencies: string[]
+  source: string
 }
 
 export async function renderSharedStyleEntry(
@@ -86,6 +87,7 @@ export async function renderSharedStyleEntry(
     return {
       css: cached.result.css,
       dependencies: [...cached.result.dependencies],
+      source: cached.result.source,
     }
   }
 
@@ -95,6 +97,7 @@ export async function renderSharedStyleEntry(
       const result = {
         css,
         dependencies: [],
+        source: css,
       }
       sharedStyleCache.set(cacheKey, {
         mtimeMs: stats.mtimeMs,
@@ -104,6 +107,7 @@ export async function renderSharedStyleEntry(
       return {
         css: result.css,
         dependencies: [...result.dependencies],
+        source: result.source,
       }
     }
 
@@ -115,6 +119,7 @@ export async function renderSharedStyleEntry(
     const result = {
       css: processed.code,
       dependencies,
+      source: css,
     }
 
     sharedStyleCache.set(cacheKey, {
@@ -126,6 +131,7 @@ export async function renderSharedStyleEntry(
     return {
       css: result.css,
       dependencies: [...result.dependencies],
+      source: result.source,
     }
   }
   catch (error) {
