@@ -362,7 +362,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
-  it('does not touch app wxss for non-style hmr updates', async () => {
+  it('touches app wxss for Tailwind content hmr updates', async () => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
@@ -373,13 +373,17 @@ describe('runtime buildPlugin service', () => {
 
     const buildPromise = service.build({ skipNpm: true })
     await watcher.subscribed
-    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
     watcher.emit('START')
     watcher.emit('END')
     await buildPromise
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
-    expect(touchMock).not.toHaveBeenCalled()
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(touchMock, 1)
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
+    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
   it('forces dev watch builds to keep writing files to outDir', async () => {

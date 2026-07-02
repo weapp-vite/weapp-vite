@@ -202,6 +202,53 @@ describe('css plugin shared style injection', () => {
     expect(sidecarAsset?.source).toBe('.sidecar{color:red}')
   })
 
+  it('re-emits cached Tailwind sidecar placeholders for content hmr', async () => {
+    const appCssPath = resolve(absoluteSrcRoot, 'app.css')
+    const placeholder = '/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{wxml,js,ts,vue}";'
+    readFileMock.mockResolvedValueOnce('@import "tailwindcss";\n@source "./**/*.{wxml,js,ts,vue}";')
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: placeholder,
+      deps: [],
+    })
+    const runtimeState = {
+      css: {
+        importerToDependencies: new Map<string, Set<string>>(),
+        dependencyToImporters: new Map<string, Set<string>>(),
+        emittedSource: new Map([
+          ['app.wxss', placeholder],
+        ]),
+        sidecarImports: new Set([appCssPath]),
+      },
+      build: {
+        hmr: {
+          profile: {
+            eventId: 'tailwind-hmr-1',
+            dirtyReasonSummary: ['entry-local-asset:1', 'tailwind-content:1'],
+          },
+        },
+      },
+    }
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      scanService: { subPackageMap: new Map() },
+      runtimeState,
+    } as unknown as CompilerContext)[0]
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true)
+
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: `${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`,
+      }),
+    ])
+  })
+
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
@@ -352,6 +399,46 @@ describe('css plugin shared style injection', () => {
     expect(renderSharedStyleEntry).not.toHaveBeenCalled()
     expect(processCssWithCache).not.toHaveBeenCalled()
     expect(emitted).toEqual([])
+  })
+
+  it('keeps style work for Tailwind content hmr bundles without style assets', async () => {
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {
+              dirtyReasonSummary: ['tailwind-content:1'],
+            },
+          },
+        },
+      },
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'pages/index/index.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(renderSharedStyleEntry).toHaveBeenCalled()
+    expect(processCssWithCache).toHaveBeenCalled()
   })
 
   it('keeps style asset processing during asset-only dev hmr bundles', async () => {

@@ -8,9 +8,10 @@ import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
+import { resolveTouchAppWxssEnabled } from '../../../runtime/buildPlugin/touchAppWxss'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
-import { findJsEntry } from '../../../utils/file'
+import { findCssEntry, findJsEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -26,6 +27,7 @@ import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyD
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
+const tailwindContentExtensions = new Set(['.vue', '.wxml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
 
 interface WatchPathKind {
   configSuffix?: string
@@ -106,6 +108,16 @@ function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: st
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
   return state.ctx.configService.configFileDependencies
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
+}
+
+function shouldRefreshAppStyleForTailwindContent(state: CorePluginState) {
+  const configService = state.ctx.configService
+  return resolveTouchAppWxssEnabled({
+    option: configService.weappViteConfig.hmr?.touchAppWxss,
+    platform: configService.platform,
+    packageJson: configService.packageJson,
+    cwd: configService.cwd,
+  })
 }
 
 function collectEmittedJsonPaths(state: CorePluginState) {
@@ -382,6 +394,33 @@ async function processChangedFile(
       markEntryDirty: entryId => markEntryDirtyWithCause(entryId, 'direct', 'auto-routes-topology'),
     })
   }
+  const markAppEntryForTailwindContent = async () => {
+    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !tailwindContentExtensions.has(pathKind.extension)) {
+      return false
+    }
+    if (!shouldRefreshAppStyleForTailwindContent(state)) {
+      return false
+    }
+    const appEntryId = scanService.appEntry?.path
+      ? normalizeFsResolvedId(scanService.appEntry.path)
+      : undefined
+    if (!appEntryId || appEntryId === normalizedId || !resolvedEntryMap.has(appEntryId)) {
+      return false
+    }
+    const styleEntry = await findCssEntry(appEntryId)
+    if (!styleEntry.path) {
+      return false
+    }
+    if (
+      concreteChangedEntryId !== appEntryId
+      && (loadedEntrySet.has(concreteChangedEntryId) || resolvedEntryMap.has(concreteChangedEntryId))
+    ) {
+      markEntryDirtyWithCause(concreteChangedEntryId, 'direct', 'tailwind-content')
+    }
+    markEntryDirtyWithCause(appEntryId, 'dependency', 'tailwind-content')
+    invalidateSharedStyleCache()
+    return true
+  }
 
   const addCssImporterEntries = async (startId: string) => {
     const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
@@ -563,16 +602,16 @@ async function processChangedFile(
       || declaredEntryType === 'component'
     )
   ) {
-    const isJsonOnlyVueEntryUpdate = event === 'update' && Boolean(vueEntryUpdateInspector) && await vueEntryUpdateInspector.isJsonOnlyUpdate()
+    const isJsonOnlyVueEntryUpdate = event === 'update' && vueEntryUpdateInspector
+      ? await vueEntryUpdateInspector.isJsonOnlyUpdate()
+      : false
     const isAutoRoutesStaleAppEntry = isJsonOnlyVueEntryUpdate && isAppEntryAutoRoutesSignatureStale(state, normalizedId)
     const isLocalAssetOnlyVueEntryUpdate = !isJsonOnlyVueEntryUpdate
       && !isAppShellTopologyChanged
       && event === 'update'
-      && Boolean(vueEntryUpdateInspector)
-      && await vueEntryUpdateInspector.isLocalAssetOnlyUpdate()
+      && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isLocalAssetOnlyUpdate() : false)
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
-      && Boolean(vueEntryUpdateInspector)
-      && await vueEntryUpdateInspector.isStyleOnlyUpdate()
+      && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
     markChangedEntryDirty(
       (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
       isJsonOnlyVueEntryUpdate
@@ -599,6 +638,7 @@ async function processChangedFile(
       }
     }
   }
+  await markAppEntryForTailwindContent()
   const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct')
     && !dirtyReasonStats.has('json-sidecar')
     && !dirtyReasonStats.has('style-sidecar')

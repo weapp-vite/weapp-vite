@@ -1034,17 +1034,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   } = createIndependentBuilder(configService, buildState)
 
   function shouldTouchAppWxss() {
-    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
-    if (
-      dirtyReasonSummary?.length
-      && !dirtyReasonSummary.some(reason =>
-        reason.startsWith('style-sidecar:')
-        || reason.startsWith('css-importer:')
-        || reason.startsWith('entry-style-only:'),
-      )
-    ) {
-      return false
-    }
     const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
     if (option === true) {
       return true

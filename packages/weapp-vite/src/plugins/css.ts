@@ -78,11 +78,24 @@ function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
   return dirtyReasonSummary.some(reason =>
     reason.startsWith('style-sidecar:')
     || reason.startsWith('css-importer:')
-    || reason.startsWith('entry-style-only:'),
+    || reason.startsWith('entry-style-only:')
+    || reason.startsWith('tailwind-content:'),
   )
 }
 
-function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string) {
+function hasTailwindContentDirtyReason(ctx: CompilerContext) {
+  return ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(reason => reason.startsWith('tailwind-content:')) === true
+}
+
+function appendTailwindContentHmrNonce(ctx: CompilerContext, source: string) {
+  if (!hasTailwindContentDirtyReason(ctx)) {
+    return source
+  }
+  const eventId = ctx.runtimeState?.build?.hmr?.profile?.eventId ?? 'unknown'
+  return `${source}\n/* weapp-vite tailwind-content ${eventId} */`
+}
+
+function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): output is OutputAsset {
   if (output.type !== 'asset') {
     return false
   }
@@ -228,21 +241,23 @@ function emitCssAssetIfChanged(
   const normalizedFileName = toPosixPath(fileName)
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
+  const forceEmit = hasTailwindContentDirtyReason(ctx)
+  const emittedSource = appendTailwindContentHmrNonce(ctx, source)
 
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
-    if (isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, source)) {
+    if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
       delete bundle[fileName]
       return false
     }
-    if (current !== source) {
-      existing.source = source
+    if (current !== emittedSource) {
+      existing.source = emittedSource
     }
-    cache?.set(normalizedFileName, source)
+    cache?.set(normalizedFileName, emittedSource)
     return true
   }
 
-  if (cache?.get(normalizedFileName) === source) {
+  if (!forceEmit && cache?.get(normalizedFileName) === emittedSource) {
     return false
   }
 
@@ -250,9 +265,9 @@ function emitCssAssetIfChanged(
     type: 'asset',
     fileName,
     ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
-    source,
+    source: emittedSource,
   })
-  cache?.set(normalizedFileName, source)
+  cache?.set(normalizedFileName, emittedSource)
   return true
 }
 

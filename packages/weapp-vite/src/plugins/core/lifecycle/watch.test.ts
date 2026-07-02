@@ -9,8 +9,11 @@ const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () =
   scripts: new Set<string>(),
 })))
 const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
+const findCssEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
+const invalidateSharedStyleCacheMock = vi.hoisted(() => vi.fn())
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
+const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
@@ -34,9 +37,18 @@ vi.mock('../../utils/invalidateEntry/cssGraph', () => ({
   extractCssImportDependencies: extractCssImportDependenciesMock,
 }))
 
+vi.mock('../../css/shared/preprocessor', () => ({
+  invalidateSharedStyleCache: invalidateSharedStyleCacheMock,
+}))
+
 vi.mock('../../../utils/file', () => ({
+  findCssEntry: findCssEntryMock,
   findJsEntry: findJsEntryMock,
   isTemplate: isTemplateMock,
+}))
+
+vi.mock('../../../runtime/buildPlugin/touchAppWxss', () => ({
+  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
 }))
 
 vi.mock('../helpers', async () => {
@@ -82,6 +94,7 @@ function createState(overrides: Record<string, any> = {}) {
         relativeCwd: (id: string) => id.replace('/project/', ''),
         weappViteConfig: {},
         cwd: '/project',
+        packageJson: {},
         isDev: true,
         configFileDependencies: [],
       },
@@ -140,7 +153,9 @@ describe('core lifecycle watch hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    findCssEntryMock.mockResolvedValue({ path: null })
     findJsEntryMock.mockResolvedValue({ path: null })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(false)
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
       importers: new Set<string>(),
       scripts: new Set<string>(),
@@ -588,6 +603,57 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.eventId).toBeTypeOf('string')
     expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('marks app entry dirty for Tailwind content hmr when app style exists', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])
+  })
+
+  it('does not mark app entry dirty for Tailwind content hmr without app style', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: null })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
