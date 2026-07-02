@@ -55,6 +55,10 @@ interface EntrySidecarResolution {
   vueEntryPath?: string
 }
 
+function hasPageLayoutSourceHint(source: string) {
+  return source.includes('definePageMeta') || source.includes('setPageLayout')
+}
+
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
@@ -119,6 +123,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const emittedScriptlessVueLayoutJs = new Set<string>()
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
   const entrySidecarResolutionCache = new Map<string, EntrySidecarResolution>()
+  const staticPageLayoutPlanCache = new Map<string, ResolvedPageLayoutPlan | null>()
   const templateEntryPathCache = new Map<string, string>()
   const styleImportsCache = new Map<string, string[]>()
   let resolveCacheVersion = 0
@@ -500,7 +505,19 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           replaceLayoutDependencies(normalizedId, [])
           const source = await fs.readFile(id, 'utf-8')
           entryCodeSource = source
-          const layoutPlan = await resolvePageLayoutPlan(source, id, configService as any)
+          const hasLayoutHint = hasPageLayoutSourceHint(source)
+          const cachedLayoutPlan = isStableHmr && !hasLayoutHint
+            ? staticPageLayoutPlanCache.get(normalizedId)
+            : undefined
+          const layoutPlan = cachedLayoutPlan === undefined
+            ? await resolvePageLayoutPlan(source, id, configService as any)
+            : cachedLayoutPlan ?? undefined
+          if (hasLayoutHint) {
+            staticPageLayoutPlanCache.delete(normalizedId)
+          }
+          else if (cachedLayoutPlan === undefined) {
+            staticPageLayoutPlanCache.set(normalizedId, layoutPlan ?? null)
+          }
           resolvedPageLayoutPlan = layoutPlan ?? null
           if (layoutPlan) {
             await registerPageLayoutComponentEntries(layoutPlan, {
@@ -666,6 +683,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       entryResolver.invalidate()
       scriptlessVueLayoutDecisionCache.clear()
       entrySidecarResolutionCache.clear()
+      staticPageLayoutPlanCache.clear()
       templateEntryPathCache.clear()
       styleImportsCache.clear()
       resolveCacheVersion += 1

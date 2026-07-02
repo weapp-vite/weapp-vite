@@ -2547,6 +2547,67 @@ import { VueCard } from '../../components'
     }))
   })
 
+  it('reuses static native page layout plan during direct script hmr', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('Page({ data: { title: "one" } })')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue('Page({ data: { title: "two" } })')
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves native page layout again when direct script hmr adds layout hints', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('Page({ data: { title: "one" } })')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue('definePageMeta({ layout: false })\nPage({})')
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(2)
+    expect(mockResolvePageLayoutPlan.mock.calls[1][0]).toContain('definePageMeta')
+  })
+
   it('registers native layout shared template and wxs deps through the wxml pipeline', async () => {
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/pages/index/index.json',
