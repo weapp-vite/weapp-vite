@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { readFile } from '../../../../utils/fs'
 import { collectComponentSourceInfo } from './componentSources'
+import { compileVueFile } from './index'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys } from './script'
 
 const readFileMock = vi.hoisted(() => vi.fn(async (filename: string) => {
@@ -155,6 +156,29 @@ const props = defineProps({
 
     expect(result.script).toContain('export default __wevuOptions')
     expect(result.script).toContain('createWevuComponent')
+  })
+
+  it('uses the compiled script setup fast path through compileVueFile when sourcemap is disabled', async () => {
+    const result = await compileVueFile(`
+<template><view /></template>
+<script setup lang="ts">
+import { createSharedLabel } from '../../shared/tokens'
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+const shared = createSharedLabel('sfc-page')
+</script>
+    `.trim(), '/project/src/pages/sfc/index.vue', {
+      isPage: true,
+      sourceMap: false,
+    })
+
+    expect(result.scriptMap).toBeNull()
+    expect(result.script).toContain('const __wevuOptions =')
+    expect(result.script).toContain('__wevu_isPage: true')
+    expect(result.script).toContain('export default __wevuOptions')
+    expect(result.script).toContain('createWevuComponent(__wevuOptions)')
+    expect(result.script).not.toContain('from \'vue\'')
+    expect(result.script).not.toContain('__isScriptSetup')
+    expect(result.script).not.toContain('__expose')
   })
 
   it('adds fallback default export for normal script without default export', async () => {
