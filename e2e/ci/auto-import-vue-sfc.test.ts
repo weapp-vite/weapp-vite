@@ -715,6 +715,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
       await fs.remove(TYPED_COMPONENTS_DTS)
       await fs.remove(VUE_COMPONENTS_DTS)
       await fs.remove(HOT_COMPONENT_DIR)
+      await fs.ensureDir(HOT_COMPONENT_DIR)
 
       const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
       const pageSourceWithHotCard = /<HotCard\s*\/>/.test(originalPageSource)
