@@ -172,15 +172,24 @@ function detectEol(source: string) {
   return source.includes('\r\n') ? '\r\n' : '\n'
 }
 
+function insertVueTemplateHeartbeat(source: string, marker: string, eol: string) {
+  const templateCloseIndex = source.lastIndexOf('</template>')
+  if (templateCloseIndex < 0) {
+    return `${source}${eol}<!-- ${marker} -->${eol}`
+  }
+
+  return `${source.slice(0, templateCloseIndex)}${eol}<view style="display: none;">${marker}</view>${eol}${source.slice(templateCloseIndex)}`
+}
+
 async function rewriteVueSourceForWatch(
   sourcePath: string,
   targetSource: string,
 ) {
   const eol = detectEol(targetSource)
-  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
+  const marker = `auto-import-e2e-retry-${Date.now()}`
   await replaceFileByRename(
     sourcePath,
-    `${targetSource}${eol}${marker}${eol}`,
+    insertVueTemplateHeartbeat(targetSource, marker, eol),
   )
   await new Promise(resolve => setTimeout(resolve, 120))
   await replaceFileByRename(sourcePath, targetSource)
@@ -756,7 +765,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         await replaceFileByRename(PAGE_SOURCE_PATH, pageSourceWithHotCard)
 
         await devProcess.waitFor(
-          waitForTaskWithSourceHeartbeat(
+          waitForTaskWithSourceHeartbeats(
             () =>
               waitForUsingComponent(
                 pageJsonPath,
@@ -764,8 +773,16 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
                 '/components/HotCard/index',
                 1_000,
               ),
-            PAGE_SOURCE_PATH,
-            pageSourceWithHotCard,
+            [
+              {
+                touchFilePath: HOT_COMPONENT_SOURCE_PATH,
+                touchContent: hotCardSource,
+              },
+              {
+                touchFilePath: PAGE_SOURCE_PATH,
+                touchContent: pageSourceWithHotCard,
+              },
+            ],
           ),
           `${platform} hotCard registration`,
         )
