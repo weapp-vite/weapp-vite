@@ -105,7 +105,10 @@ function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[])
 function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
   return Boolean(
     dirtyReasonSummary?.length
-    && dirtyReasonSummary.every(item => item.startsWith('css-importer:')),
+    && dirtyReasonSummary.every(item =>
+      item.startsWith('css-importer:')
+      || item.startsWith('css-importer-fallback:'),
+    ),
   )
 }
 
@@ -123,20 +126,26 @@ function isVueEntryId(entryId: string) {
 function resolveCssImporterRepresentative(
   pending: Set<string>,
   resolvedEntryMap: Map<string, ResolvedId>,
+  rootInputIds?: Set<string>,
 ) {
   let fallback: string | undefined
+  let nonRootFallback: string | undefined
   for (const entryId of pending) {
     if (!resolvedEntryMap.has(entryId)) {
       continue
     }
+    const isRootInput = rootInputIds?.has(entryId) === true
     if (!fallback) {
       fallback = entryId
     }
-    if (!isVueEntryId(entryId)) {
+    if (!isRootInput && !nonRootFallback) {
+      nonRootFallback = entryId
+    }
+    if (!isRootInput && !isVueEntryId(entryId)) {
       return entryId
     }
   }
-  return fallback
+  return nonRootFallback ?? fallback
 }
 
 function resolveSharedChunkRepresentative(
@@ -181,6 +190,7 @@ function resolvePendingEntryIds(options: {
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
+  rootInputIds?: Set<string>
 }): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
   const pendingReasonSummary = resolveUpstreamPendingReasonSummary(options.dirtyReasonSummary)
@@ -202,7 +212,7 @@ function resolvePendingEntryIds(options: {
   const isRepresentativeOnlyRefresh = isCssImporterOnlyRefresh(options.dirtyReasonSummary)
     || isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
   if (isRepresentativeOnlyRefresh && pending.size > 1) {
-    const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap)
+    const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap, options.rootInputIds)
     if (representative) {
       const reason = isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
         ? 'wxml-importer-import-representative'
@@ -597,6 +607,7 @@ export function useLoadEntry(
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
         sourceSharedChunks: options?.hmr?.sourceSharedChunks,
+        rootInputIds,
       })
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []

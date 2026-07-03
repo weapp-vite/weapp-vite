@@ -79,6 +79,7 @@ function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
   return dirtyReasonSummary.some(reason =>
     reason.startsWith('style-sidecar:')
     || reason.startsWith('css-importer:')
+    || reason.startsWith('css-importer-fallback:')
     || reason.startsWith('entry-style-only:')
     || reason.startsWith('tailwind-content:'),
   )
@@ -704,7 +705,10 @@ async function emitSharedStyleImportsForChunks(
   }
 
   const dirtyReasonSummary = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
-  const isCssImporterHmr = dirtyReasonSummary?.some(reason => reason.startsWith('css-importer:')) === true
+  const isCssImporterHmr = dirtyReasonSummary?.some(reason =>
+    reason.startsWith('css-importer:')
+    || reason.startsWith('css-importer-fallback:'),
+  ) === true
   if (!isCssImporterHmr) {
     return
   }
