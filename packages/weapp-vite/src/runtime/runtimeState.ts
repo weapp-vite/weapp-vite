@@ -130,6 +130,8 @@ export interface RuntimeState {
       vueEntryScriptSignatures: Map<string, string>
       vueEntryStyleIndependentSignatures: Map<string, string>
       vueEntryTailwindContentSignatures: Map<string, string>
+      vueEntryTailwindTemplateContentSignatures: Map<string, string>
+      vueEntryTailwindScriptContentSignatures: Map<string, string>
       appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
       didEmitAllEntries: boolean
@@ -361,6 +363,8 @@ export function createRuntimeState(): RuntimeState {
         vueEntryScriptSignatures: new Map<string, string>(),
         vueEntryStyleIndependentSignatures: new Map<string, string>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
+        vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
+        vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
         didEmitAllEntries: false,

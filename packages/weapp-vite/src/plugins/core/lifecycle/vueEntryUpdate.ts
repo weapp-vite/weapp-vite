@@ -81,13 +81,20 @@ export function createVueEntryUpdateInspector(
     },
 
     async isTailwindContentUpdate() {
-      const previous = state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.get(normalizedId)
-      if (!previous) {
+      const previousTemplate = state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.get(normalizedId)
+      const previousScript = state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.get(normalizedId)
+      if (!previousTemplate || !previousScript) {
         return true
       }
 
-      const current = (await resolveSignatures())?.tailwindContentSignature
-      return !current || current !== previous
+      const signatures = await resolveSignatures()
+      const currentTemplate = signatures?.tailwindTemplateContentSignature
+      if (!currentTemplate || currentTemplate !== previousTemplate) {
+        return true
+      }
+
+      const currentScript = signatures.tailwindScriptContentSignature
+      return !currentScript || currentScript !== previousScript
     },
   }
 }

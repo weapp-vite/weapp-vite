@@ -118,6 +118,8 @@ function createState(overrides: Record<string, any> = {}) {
             vueEntryScriptSignatures: new Map(),
             vueEntryStyleIndependentSignatures: new Map(),
             vueEntryTailwindContentSignatures: new Map(),
+            vueEntryTailwindTemplateContentSignatures: new Map(),
+            vueEntryTailwindScriptContentSignatures: new Map(),
             dirtyVueEntryIds: new Set(),
           },
         },
@@ -671,7 +673,7 @@ const klass = 'text-red-500'
 
 <template><view :class="klass">{{ count }}</view></template>`
     const nextSource = previousSource.replace('const count = 1', 'const count = 2')
-    const { resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
@@ -682,9 +684,18 @@ const klass = 'text-red-500'
       ]),
     })
     state.ctx.scanService.appEntry = { path: appEntryId }
+    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
     state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
       pageEntryId,
       resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindTemplateContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindScriptContentSignature,
     )
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       pageEntryId,
@@ -715,7 +726,7 @@ const count = 1
 
 <template><view class="text-red-500">{{ count }}</view></template>`
     const nextSource = previousSource.replace('text-red-500', 'text-blue-500')
-    const { resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
@@ -726,9 +737,18 @@ const count = 1
       ]),
     })
     state.ctx.scanService.appEntry = { path: appEntryId }
+    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
     state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
       pageEntryId,
       resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindTemplateContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindScriptContentSignature,
     )
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       pageEntryId,

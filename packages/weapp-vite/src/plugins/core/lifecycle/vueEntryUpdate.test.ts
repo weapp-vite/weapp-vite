@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHasTemplate, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from '../../../utils/file/vueSfcSignature'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 function createState(filename: string, source: string) {
+  const signatures = resolveVueSfcHmrSignatures(source, filename)
+
   return {
     ctx: {
       runtimeState: {
@@ -22,6 +24,12 @@ function createState(filename: string, source: string) {
             ]),
             vueEntryTailwindContentSignatures: new Map([
               [filename, resolveVueSfcTailwindContentSignature(source, filename)],
+            ]),
+            vueEntryTailwindTemplateContentSignatures: new Map([
+              [filename, signatures.tailwindTemplateContentSignature],
+            ]),
+            vueEntryTailwindScriptContentSignatures: new Map([
+              [filename, signatures.tailwindScriptContentSignature],
             ]),
           },
         },

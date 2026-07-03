@@ -454,6 +454,8 @@ async function processChangedFile(
     ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {

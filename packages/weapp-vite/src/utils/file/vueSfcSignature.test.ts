@@ -68,6 +68,23 @@ const scriptMarker = 'SFC_SCRIPT_MARKER'
     )
   })
 
+  it('keeps the tailwind content signature when non-call script literals change next to imported helpers', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+import { createSharedLabel } from '../../shared/tokens'
+
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+const shared = createSharedLabel('sfc-page')
+</script>
+
+<template><view class="sfc-page">{{ scriptMarker }}{{ shared }}</view></template>`
+    const second = first.replace('SFC_SCRIPT_MARKER', 'SFC_SCRIPT_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
   it('changes the tailwind content signature for script literals used by dynamic class binding', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">
@@ -129,6 +146,36 @@ const activeClass = 'text-red-500'
     const first = `<script setup lang="ts">
 import { cva } from 'class-variance-authority'
 const button = cva('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for aliased class utility imports', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { cva as createVariants } from 'class-variance-authority'
+const button = createVariants('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for locally re-exported class utilities', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { buttonClass } from '../class-utils'
+const button = buttonClass('rounded text-red-500')
 </script>
 
 <template><view>button</view></template>`
@@ -240,6 +287,8 @@ const count = 1
       scriptSignature: resolveVueSfcScriptSignature(source, filename),
       styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
       tailwindContentSignature: resolveVueSfcTailwindContentSignature(source, filename),
+      tailwindTemplateContentSignature: expect.any(String),
+      tailwindScriptContentSignature: expect.any(String),
       hasTemplate: resolveVueSfcHasTemplate(source, filename),
     })
   })

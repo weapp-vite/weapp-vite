@@ -302,6 +302,12 @@ export async function finalizeTransformCompiledResult(options: {
     if (signatures.tailwindContentSignature && hmr?.vueEntryTailwindContentSignatures) {
       hmr.vueEntryTailwindContentSignatures.set(normalizedFilename, signatures.tailwindContentSignature)
     }
+    if (signatures.tailwindTemplateContentSignature && hmr?.vueEntryTailwindTemplateContentSignatures) {
+      hmr.vueEntryTailwindTemplateContentSignatures.set(normalizedFilename, signatures.tailwindTemplateContentSignature)
+    }
+    if (signatures.tailwindScriptContentSignature && hmr?.vueEntryTailwindScriptContentSignatures) {
+      hmr.vueEntryTailwindScriptContentSignatures.set(normalizedFilename, signatures.tailwindScriptContentSignature)
+    }
     const nextStyleIndependentSignature = styleIndependentSignature
       ?? signatures.styleIndependentSignature
     if (nextStyleIndependentSignature && hmr?.vueEntryStyleIndependentSignatures) {
