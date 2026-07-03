@@ -51,7 +51,7 @@ function serializeBlock(block: SFCBlock | null | undefined, content?: string) {
   }
 }
 
-function stripScriptSetupJsonMacros(content: string, filename: string) {
+function stripJsonMacrosFromScriptContent(content: string, filename: string) {
   try {
     return stripJsonMacroCallsFromCode(content, filename)
   }
@@ -62,7 +62,7 @@ function stripScriptSetupJsonMacros(content: string, filename: string) {
 
 function buildNonJsonDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
   const scriptSetupContent = descriptor.scriptSetup
-    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
     : undefined
 
   return {
@@ -78,7 +78,7 @@ function buildNonJsonDescriptorPayload(descriptor: SFCDescriptor, filename: stri
 
 function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
   const scriptSetupContent = descriptor.scriptSetup
-    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
     : undefined
 
   return {
@@ -89,7 +89,7 @@ function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: strin
 
 function buildStyleIndependentDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
   const scriptSetupContent = descriptor.scriptSetup
-    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
     : undefined
 
   return {
@@ -110,9 +110,13 @@ function collectScriptLiteralCandidates(content: string) {
   return candidates
 }
 
-function buildTailwindContentPayload(descriptor: SFCDescriptor) {
-  const script = descriptor.script?.content ?? ''
-  const scriptSetup = descriptor.scriptSetup?.content ?? ''
+function buildTailwindContentPayload(descriptor: SFCDescriptor, filename: string) {
+  const script = descriptor.script
+    ? stripJsonMacrosFromScriptContent(descriptor.script.content, filename)
+    : ''
+  const scriptSetup = descriptor.scriptSetup
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
+    : ''
   const scriptLiterals = [
     ...collectScriptLiteralCandidates(script),
     ...collectScriptLiteralCandidates(scriptSetup),
@@ -134,7 +138,7 @@ function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): Vu
     nonJson: buildNonJsonDescriptorPayload(descriptor, filename),
     script: buildScriptDescriptorPayload(descriptor, filename),
     styleIndependent: buildStyleIndependentDescriptorPayload(descriptor, filename),
-    tailwindContent: buildTailwindContentPayload(descriptor),
+    tailwindContent: buildTailwindContentPayload(descriptor, filename),
     hasTemplate: Boolean(descriptor.template?.content.trim()),
   }
 }

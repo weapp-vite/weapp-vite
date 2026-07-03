@@ -24,6 +24,36 @@ const count = 1
     )
   })
 
+  it('keeps the tailwind content signature when only definePageJson content changes', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const titleClass = 'text-red-500'
+</script>
+
+<template><view :class="titleClass">title</view></template>`
+    const second = first.replace('首页', '新标题')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature when runtime class literals change', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const titleClass = 'text-red-500'
+</script>
+
+<template><view :class="titleClass">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
   it('changes the signature when runtime script changes', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">

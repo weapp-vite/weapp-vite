@@ -758,6 +758,39 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
   })
 
+  it('reloads json-only Vue metadata through loadEntry without Tailwind side effects', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['entry-json-only:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const id = '/project/src/pages/home/home.vue'
+    hook.entriesMap.set(id, {
+      type: 'page',
+      path: id,
+    } as any)
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id,
+    }))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+  })
+
   it('reloads style sidecar metadata through loadEntry without JS chunk emit', async () => {
     const ctx = createContext()
     ctx.runtimeState.build.hmr.profile = {

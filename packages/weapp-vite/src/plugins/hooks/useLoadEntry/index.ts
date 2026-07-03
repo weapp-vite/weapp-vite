@@ -372,6 +372,7 @@ function resolvePendingEntryIds(options: {
 function shouldPreloadEntryAssetOnly(dirtyReasonSummary?: string[]) {
   return dirtyReasonSummary?.some(item =>
     item.startsWith('json-sidecar:')
+    || item.startsWith('entry-json-only:')
     || item.startsWith('style-sidecar:')
     || item.startsWith('entry-style-only:')
     || item.startsWith('entry-local-asset:')
