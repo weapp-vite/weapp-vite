@@ -48,7 +48,7 @@ interface EntryLoaderOptions {
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
-  applyAutoImports: (baseName: string, json: any) => string[]
+  applyAutoImports: (baseName: string, json: any) => string[] | Promise<string[]>
   extendedLibManager: ExtendedLibManager
   buildTarget?: BuildTarget
   debug?: (...args: any[]) => void
