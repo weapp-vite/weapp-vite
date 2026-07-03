@@ -36,6 +36,10 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 describe.sequential('app vue hmr alias watch shared chunk rebuild', () => {
   it('rewrites common.js after editing the aliased bootstrap dependency', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/app-vue-hmr-alias')
@@ -72,6 +76,7 @@ describe.sequential('app vue hmr alias watch shared chunk rebuild', () => {
       const updatedMarker = 'app-vue-hmr-alias-bootstrap-updated'
 
       await waitForFileContains(commonOutputPath, initialMarker)
+      await sleep(500)
       const originalSource = await fs.readFile(bootstrapSourcePath, 'utf8')
       const updatedSource = originalSource.replace(initialMarker, updatedMarker)
       expect(updatedSource).not.toBe(originalSource)

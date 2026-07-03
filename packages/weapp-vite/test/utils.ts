@@ -65,6 +65,7 @@ export async function scanFiles(root: string) {
 
 const REGION_PREFIX = '//#region '
 const FIXTURE_REGION_MARKER = 'test/fixture-projects/weapp-vite/'
+const VITE_CSS_MARKER_RE = /\/\*\$vite\$:\d+\*\//g
 
 export function normalizeFixtureRegionPaths(content: string) {
   return content
@@ -81,6 +82,10 @@ export function normalizeFixtureRegionPaths(content: string) {
       return `//#region ${normalizedSource.slice(markerIndex)}`
     })
     .join('\n')
+}
+
+export function normalizeBuildOutputContent(content: string) {
+  return normalizeFixtureRegionPaths(content).replace(VITE_CSS_MARKER_RE, '')
 }
 
 export function createTask() {

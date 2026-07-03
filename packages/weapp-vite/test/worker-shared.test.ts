@@ -3,7 +3,7 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
-import { getFixture, normalizeFixtureRegionPaths, scanFiles } from './utils'
+import { getFixture, normalizeBuildOutputContent, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({
   // ...await importOriginal<typeof import('@/logger')>(),
@@ -40,7 +40,7 @@ describe.skipIf(CI.isCI)('worker-shared', () => {
     expect(files).toMatchSnapshot()
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
-      expect(normalizeFixtureRegionPaths(content)).toMatchSnapshot(file)
+      expect(normalizeBuildOutputContent(content)).toMatchSnapshot(file)
     }
     expect(logger.success).toHaveBeenCalled()
   })
