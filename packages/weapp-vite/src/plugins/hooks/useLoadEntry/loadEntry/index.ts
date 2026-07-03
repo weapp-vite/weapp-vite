@@ -650,7 +650,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         if (ctx.autoImportService?.hasPendingRegistrations?.() !== false) {
           await ctx.autoImportService?.awaitPendingRegistrations?.()
         }
-        const injectedAutoImportEntries = applyAutoImports(baseName, json) ?? []
+        const injectedAutoImportEntries = await applyAutoImports(baseName, json) ?? []
         const componentEntries = analyzeCommonJson(json)
         const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
         const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined

@@ -493,6 +493,7 @@ export function useLoadEntry(
     ctx.autoImportService,
     ctx.wxmlService,
     ctx.runtimeState.build.hmr.externalComponentEntryMap,
+    ctx.configService,
   )
   const extendedLibManager = createExtendedLibManager()
 
