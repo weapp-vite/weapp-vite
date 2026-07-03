@@ -15,6 +15,7 @@ interface VueSfcSignaturePayload {
 interface TailwindContentPayload {
   template?: unknown
   scriptLiterals?: unknown
+  hasScriptTailwindClassHint?: unknown
 }
 
 export interface VueSfcHmrSignatures {
@@ -28,9 +29,9 @@ export interface VueSfcHmrSignatures {
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const JS_STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/
 const JS_STRING_LITERALS_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
-const VUE_DYNAMIC_CLASS_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::class)?|:class)(?:\.[\w-]+)*\s*=/
-const VUE_STATIC_CLASS_ATTR_RE = /(?:^|[\s<])class\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s>]+)/g
-const VUE_CLASS_RELEVANT_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::class)?|:class)(?:\.[\w-]+)*\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^\s>]+)/g
+const CLASS_LIKE_TEMPLATE_ATTR_RE = /(?:^|[\s<])(?:[\w-]*class[\w-]*|v-bind(?::[\w-]*class[\w-]*)?|:[\w-]*class[\w-]*)(?:\.[\w-]+)*\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^\s>]+)/g
+const VUE_DYNAMIC_CLASS_LIKE_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::[\w-]*class[\w-]*)?|:[\w-]*class[\w-]*)(?:\.[\w-]+)*\s*=/
+const SCRIPT_TAILWIND_CLASS_HINT_RE = /\b(?:cva|cx|clsx|classnames|classNames|twMerge|twJoin|tv)\s*\(|\bfrom\s*["'](?:class-variance-authority|tailwind-merge|clsx|classnames|tailwind-variants)["']/
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
@@ -120,13 +121,14 @@ function collectScriptLiteralCandidates(content: string) {
 
 function collectTemplateTailwindCandidates(content: string) {
   const candidates = new Set<string>()
-  for (const match of content.matchAll(VUE_STATIC_CLASS_ATTR_RE)) {
-    candidates.add(match[0]!.trim())
-  }
-  for (const match of content.matchAll(VUE_CLASS_RELEVANT_BINDING_RE)) {
+  for (const match of content.matchAll(CLASS_LIKE_TEMPLATE_ATTR_RE)) {
     candidates.add(match[0]!.trim())
   }
   return Array.from(candidates).sort()
+}
+
+function hasScriptTailwindClassHint(content: string) {
+  return SCRIPT_TAILWIND_CLASS_HINT_RE.test(content)
 }
 
 function normalizeTailwindContentPayload(payload: unknown) {
@@ -136,12 +138,13 @@ function normalizeTailwindContentPayload(payload: unknown) {
 
   const content = payload as TailwindContentPayload
   const template = typeof content.template === 'string' ? content.template : ''
-  const hasDynamicClassBinding = VUE_DYNAMIC_CLASS_BINDING_RE.test(template)
+  const hasDynamicClassLikeBinding = VUE_DYNAMIC_CLASS_LIKE_BINDING_RE.test(template)
+  const shouldTrackScriptLiterals = hasDynamicClassLikeBinding || content.hasScriptTailwindClassHint === true
 
   return {
     ...content,
     template: collectTemplateTailwindCandidates(template),
-    scriptLiterals: hasDynamicClassBinding ? content.scriptLiterals : [],
+    scriptLiterals: shouldTrackScriptLiterals ? content.scriptLiterals : [],
   }
 }
 
@@ -164,6 +167,7 @@ function buildTailwindContentPayload(descriptor: SFCDescriptor, filename: string
   return {
     template: descriptor.template?.content ?? '',
     scriptLiterals,
+    hasScriptTailwindClassHint: hasScriptTailwindClassHint(`${script}\n${scriptSetup}`),
   }
 }
 
@@ -199,7 +203,13 @@ function buildVueSfcSignaturePayloadWithNative(source: string): VueSfcSignatureP
 
   try {
     const parsed = JSON.parse(payload) as VueSfcSignaturePayload
-    if (!('tailwindContent' in parsed)) {
+    const tailwindContent = parsed.tailwindContent
+    if (
+      !tailwindContent
+      || typeof tailwindContent !== 'object'
+      || Array.isArray(tailwindContent)
+      || !('hasScriptTailwindClassHint' in tailwindContent)
+    ) {
       return undefined
     }
     return parsed

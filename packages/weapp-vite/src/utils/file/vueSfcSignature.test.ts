@@ -124,6 +124,39 @@ const activeClass = 'text-red-500'
     )
   })
 
+  it('changes the tailwind content signature for cva script literals without template class binding', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { cva } from 'class-variance-authority'
+const button = cva('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for class-like component props', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const rootClass = 'text-red-500'
+</script>
+
+<template><van-button custom-class="px-2" :hover-class="rootClass">button</van-button></template>`
+    const secondStatic = first.replace('px-2', 'px-4')
+    const secondDynamic = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(secondStatic, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+    expect(resolveVueSfcTailwindContentSignature(secondDynamic, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
   it('changes the signature when runtime script changes', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">
