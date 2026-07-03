@@ -11,7 +11,7 @@ import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '.
 import { resolveTouchAppWxssEnabled } from '../../../runtime/buildPlugin/touchAppWxss'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
-import { findCssEntry, findJsEntry } from '../../../utils/file'
+import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -528,8 +528,9 @@ async function processChangedFile(
         ? normalizedId.slice(0, -pathKind.configSuffix.length)
         : pathKind.extension ? normalizedId.slice(0, -pathKind.extension.length) : normalizedId
       const primaryScript = await findJsEntry(basePath)
-      if (primaryScript.path) {
-        markScriptDirty(primaryScript.path, pathKind.configSuffix ? 'json-sidecar' : pathKind.isStyle ? 'style-sidecar' : 'sidecar-direct')
+      const primaryEntry = primaryScript.path ?? (pathKind.isStyle ? await findVueEntry(basePath) : undefined)
+      if (primaryEntry) {
+        markScriptDirty(primaryEntry, pathKind.configSuffix ? 'json-sidecar' : pathKind.isStyle ? 'style-sidecar' : 'sidecar-direct')
         handledSidecarMetadataUpdate = true
       }
       else if (pathKind.configSuffix && markAppEntryForJsonEmit()) {

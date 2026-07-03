@@ -11,6 +11,7 @@ const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () =
 const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
 const findCssEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
+const findVueEntryMock = vi.hoisted(() => vi.fn(async () => undefined))
 const invalidateSharedStyleCacheMock = vi.hoisted(() => vi.fn())
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => false))
@@ -44,6 +45,7 @@ vi.mock('../../css/shared/preprocessor', () => ({
 vi.mock('../../../utils/file', () => ({
   findCssEntry: findCssEntryMock,
   findJsEntry: findJsEntryMock,
+  findVueEntry: findVueEntryMock,
   isTemplate: isTemplateMock,
 }))
 
@@ -156,6 +158,7 @@ describe('core lifecycle watch hook', () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     findCssEntryMock.mockResolvedValue({ path: null })
     findJsEntryMock.mockResolvedValue({ path: null })
+    findVueEntryMock.mockResolvedValue(undefined)
     resolveTouchAppWxssEnabledMock.mockReturnValue(false)
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
       importers: new Set<string>(),
@@ -417,6 +420,29 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('create')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+  })
+
+  it('marks same-name vue entry dirty for external style sidecars', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
+    const styleId = '/project/src/pages/index/index.css'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    findVueEntryMock.mockResolvedValue(vueEntry)
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(styleId, { event: 'create' })
+
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(findVueEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(collectAffectedScriptsAndImportersMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
   it('falls back to resolved entries when created style dependency graph has no importers yet', async () => {
