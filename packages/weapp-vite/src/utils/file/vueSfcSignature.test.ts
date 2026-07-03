@@ -54,6 +54,48 @@ const titleClass = 'text-red-500'
     )
   })
 
+  it('keeps the tailwind content signature when script literals change without dynamic class binding', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="sfc-page">{{ scriptMarker }}</view></template>`
+    const second = first.replace('SFC_SCRIPT_MARKER', 'SFC_SCRIPT_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for script literals used by dynamic class binding', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptClass = 'text-red-500'
+</script>
+
+<template><view :class="scriptClass">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature when static template classes change', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="text-red-500">{{ scriptMarker }}</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
   it('changes the signature when runtime script changes', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">

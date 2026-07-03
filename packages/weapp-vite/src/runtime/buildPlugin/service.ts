@@ -1084,6 +1084,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let autoTouchResolved = false
   let autoTouchChecked = false
 
+  function hasAutoTouchAppWxssReason() {
+    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
+    return dirtyReasonSummary.some((reason) => {
+      return reason.startsWith('tailwind-content:')
+        || reason.startsWith('style-sidecar:')
+        || reason.startsWith('entry-style-only:')
+        || reason.startsWith('css-importer:')
+        || reason.startsWith('css-importer-fallback:')
+    })
+  }
+
   const {
     buildIndependentBundle,
     getIndependentOutput,
@@ -1096,6 +1107,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return true
     }
     if (option === false) {
+      return false
+    }
+    if (!hasAutoTouchAppWxssReason()) {
       return false
     }
     if (!autoTouchChecked) {

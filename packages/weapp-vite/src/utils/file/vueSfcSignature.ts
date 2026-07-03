@@ -12,6 +12,11 @@ interface VueSfcSignaturePayload {
   hasTemplate: boolean
 }
 
+interface TailwindContentPayload {
+  template?: unknown
+  scriptLiterals?: unknown
+}
+
 export interface VueSfcHmrSignatures {
   nonJsonSignature?: string
   scriptSignature?: string
@@ -23,6 +28,7 @@ export interface VueSfcHmrSignatures {
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const JS_STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/
 const JS_STRING_LITERALS_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
+const VUE_DYNAMIC_CLASS_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::class)?|:class)(?:\.[\w-]+)*\s*=/
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
@@ -108,6 +114,27 @@ function collectScriptLiteralCandidates(content: string) {
     candidates.push(match[0]!)
   }
   return candidates
+}
+
+function normalizeTailwindContentPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return payload
+  }
+
+  const content = payload as TailwindContentPayload
+  const template = typeof content.template === 'string' ? content.template : ''
+  if (!template || VUE_DYNAMIC_CLASS_BINDING_RE.test(template)) {
+    return payload
+  }
+
+  return {
+    ...content,
+    scriptLiterals: [],
+  }
+}
+
+function hashTailwindContentPayload(payload: unknown) {
+  return hashPayload(normalizeTailwindContentPayload(payload))
 }
 
 function buildTailwindContentPayload(descriptor: SFCDescriptor, filename: string) {
@@ -205,7 +232,7 @@ export function resolveVueSfcStyleIndependentSignature(source: string, filename:
 export function resolveVueSfcTailwindContentSignature(source: string, filename: string) {
   const payload = buildVueSfcSignaturePayload(source, filename)
   if (payload) {
-    return hashPayload(payload.tailwindContent)
+    return hashTailwindContentPayload(payload.tailwindContent)
   }
 
   if (!JS_STRING_LITERAL_RE.test(source)) {
@@ -229,7 +256,7 @@ export function resolveVueSfcHmrSignatures(source: string, filename: string): Vu
     nonJsonSignature: hashPayload(payload.nonJson),
     scriptSignature: hashPayload(payload.script),
     styleIndependentSignature: hashPayload(payload.styleIndependent),
-    tailwindContentSignature: hashPayload(payload.tailwindContent),
+    tailwindContentSignature: hashTailwindContentPayload(payload.tailwindContent),
     hasTemplate: payload.hasTemplate,
   }
 }

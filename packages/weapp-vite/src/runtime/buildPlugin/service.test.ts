@@ -377,12 +377,64 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await buildPromise
 
-    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['tailwind-content:1']
     watcher.emit('START')
     watcher.emit('END')
     await waitForMockCalls(touchMock, 1)
 
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
+    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+  })
+
+  it('does not touch app wxss for script-only hmr updates in auto mode', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
+    expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps explicit touchAppWxss true behavior for script-only hmr updates', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig = {
+      hmr: {
+        touchAppWxss: true,
+      },
+    }
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(touchMock, 1)
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
