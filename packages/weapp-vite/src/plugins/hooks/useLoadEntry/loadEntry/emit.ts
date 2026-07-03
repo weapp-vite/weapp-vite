@@ -149,7 +149,8 @@ function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
     || reason.startsWith('shared-chunk-source:')
     || reason.startsWith('json-sidecar:')
     || reason.startsWith('sidecar-direct:')
-    || reason.startsWith('entry-local-asset:'),
+    || reason.startsWith('entry-local-asset:')
+    || reason.startsWith('tailwind-content:'),
   )
 }
 

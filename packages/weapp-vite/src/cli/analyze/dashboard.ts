@@ -49,6 +49,8 @@ export interface DashboardRuntimeEventProfile {
   buildStartMs?: number
   pluginResolveMs?: number
   transformMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number

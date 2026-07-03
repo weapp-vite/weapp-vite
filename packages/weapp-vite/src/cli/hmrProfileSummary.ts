@@ -49,6 +49,8 @@ interface HmrProfileJsonSample {
   generateSharedMs?: number
   generateRewriteMs?: number
   generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -238,6 +240,14 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'module-graph',
       value: sample.generateModuleGraphMs,
+    },
+    {
+      label: 'snapshot-resolve',
+      value: sample.snapshotResolveMs,
+    },
+    {
+      label: 'snapshot-build',
+      value: sample.snapshotBuildMs,
     },
     {
       label: 'watch->dirty',

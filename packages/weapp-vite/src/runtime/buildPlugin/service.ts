@@ -156,6 +156,8 @@ interface HmrPhaseRegressionCandidate {
     | 'generate-shared'
     | 'generate-rewrite'
     | 'module-graph'
+    | 'snapshot-resolve'
+    | 'snapshot-build'
     | 'watch->dirty'
     | 'emit'
     | 'shared'
@@ -537,6 +539,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         typeof profile.generateSharedMs === 'number' ? `generate-shared ${profile.generateSharedMs.toFixed(2)} ms` : undefined,
         typeof profile.generateRewriteMs === 'number' ? `generate-rewrite ${profile.generateRewriteMs.toFixed(2)} ms` : undefined,
         typeof profile.generateModuleGraphMs === 'number' ? `module-graph ${profile.generateModuleGraphMs.toFixed(2)} ms` : undefined,
+        typeof profile.snapshotResolveMs === 'number' ? `snapshot-resolve ${profile.snapshotResolveMs.toFixed(2)} ms` : undefined,
+        typeof profile.snapshotBuildMs === 'number' ? `snapshot-build ${profile.snapshotBuildMs.toFixed(2)} ms` : undefined,
         typeof profile.coreLoadMs === 'number' ? `core-load ${profile.coreLoadMs.toFixed(2)} ms` : undefined,
         typeof profile.entryLoadMs === 'number' ? `entry-load ${profile.entryLoadMs.toFixed(2)} ms` : undefined,
         typeof profile.entryEmitOutputMs === 'number' ? `entry-emit-output ${profile.entryEmitOutputMs.toFixed(2)} ms` : undefined,
@@ -766,8 +770,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       'generate-shared': 36,
       'generate-rewrite': 37,
       'module-graph': 38,
-      'watch->dirty': 39,
-      'build-core': 40,
+      'snapshot-resolve': 39,
+      'snapshot-build': 40,
+      'watch->dirty': 41,
+      'build-core': 42,
     }
     const phases = [
       {
@@ -917,6 +923,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'generateModuleGraphMs',
         label: 'module-graph',
+      },
+      {
+        key: 'snapshotResolveMs',
+        label: 'snapshot-resolve',
+      },
+      {
+        key: 'snapshotBuildMs',
+        label: 'snapshot-build',
       },
       {
         key: 'watchToDirtyMs',

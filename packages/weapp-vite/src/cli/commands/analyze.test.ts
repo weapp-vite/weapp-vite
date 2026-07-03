@@ -165,6 +165,8 @@ describe('analyze cli command', () => {
         generateSharedMs: { count: 0 },
         generateRewriteMs: { count: 0 },
         generateModuleGraphMs: { count: 0 },
+        snapshotResolveMs: { count: 0 },
+        snapshotBuildMs: { count: 0 },
         writeMs: { count: 0 },
         watchToDirtyMs: { count: 2, averageMs: 3, maxMs: 4 },
         emitMs: { count: 2, averageMs: 11, maxMs: 12 },

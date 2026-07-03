@@ -27,6 +27,7 @@ describe('hmrProfileSummary', () => {
         generateBundleMs: 72,
         coreLoadMs: 76,
         entryLoadMs: 45,
+        snapshotBuildMs: 110,
         requestGlobalsMs: 12,
         generateRewriteMs: 18,
         vueTransformMs: 12,
@@ -55,7 +56,7 @@ describe('hmrProfileSummary', () => {
     expect(result?.profilePath).toBe(profilePath)
     expect(result?.line).toContain('最近一次热更新 120.00 ms')
     expect(result?.line).toContain('src/pages/logs/index.vue')
-    expect(result?.line).toContain('主耗时 vue-compile 90.00 ms')
+    expect(result?.line).toContain('主耗时 snapshot-build 110.00 ms')
     expect(result?.line).toContain('load/resolve/chunk/skip 2/4/3/1')
   })
 

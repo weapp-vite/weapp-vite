@@ -45,6 +45,8 @@ export interface HmrProfileJsonSample {
   generateSharedMs?: number
   generateRewriteMs?: number
   generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
@@ -125,6 +127,8 @@ export interface HmrProfileAnalyzeResult {
     generateSharedMs: HmrProfileMetricSummary
     generateRewriteMs: HmrProfileMetricSummary
     generateModuleGraphMs: HmrProfileMetricSummary
+    snapshotResolveMs: HmrProfileMetricSummary
+    snapshotBuildMs: HmrProfileMetricSummary
     writeMs: HmrProfileMetricSummary
     watchToDirtyMs: HmrProfileMetricSummary
     emitMs: HmrProfileMetricSummary
@@ -263,6 +267,8 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const generateSharedValues: number[] = []
   const generateRewriteValues: number[] = []
   const generateModuleGraphValues: number[] = []
+  const snapshotResolveValues: number[] = []
+  const snapshotBuildValues: number[] = []
   const writeValues: number[] = []
   const watchToDirtyValues: number[] = []
   const emitValues: number[] = []
@@ -388,6 +394,12 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     if (isFiniteNumber(sample.generateModuleGraphMs)) {
       generateModuleGraphValues.push(sample.generateModuleGraphMs)
     }
+    if (isFiniteNumber(sample.snapshotResolveMs)) {
+      snapshotResolveValues.push(sample.snapshotResolveMs)
+    }
+    if (isFiniteNumber(sample.snapshotBuildMs)) {
+      snapshotBuildValues.push(sample.snapshotBuildMs)
+    }
     if (isFiniteNumber(sample.writeMs)) {
       writeValues.push(sample.writeMs)
     }
@@ -476,6 +488,8 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
       generateSharedMs: createMetricSummary(generateSharedValues),
       generateRewriteMs: createMetricSummary(generateRewriteValues),
       generateModuleGraphMs: createMetricSummary(generateModuleGraphValues),
+      snapshotResolveMs: createMetricSummary(snapshotResolveValues),
+      snapshotBuildMs: createMetricSummary(snapshotBuildValues),
       writeMs: createMetricSummary(writeValues),
       watchToDirtyMs: createMetricSummary(watchToDirtyValues),
       emitMs: createMetricSummary(emitValues),

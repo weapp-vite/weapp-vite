@@ -863,6 +863,34 @@ describe('createEntryLoader', () => {
     expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
   })
 
+  it('reuses cached style imports when direct hmr also updates tailwind content', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    magicStringPrependMock.mockClear()
+    readFileMock.mockClear()
+    existsMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1', 'tailwind-content:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
+  })
+
   it('rescans style imports for style sidecar hmr', async () => {
     const { loader, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

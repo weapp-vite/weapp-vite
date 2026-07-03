@@ -52,6 +52,8 @@ describe('analyze hmr profile', () => {
         generateSharedMs: 2,
         generateRewriteMs: 3,
         generateModuleGraphMs: 1,
+        snapshotResolveMs: 0.2,
+        snapshotBuildMs: 12,
         writeMs: 2,
         watchToDirtyMs: 3,
         emitMs: 10,
@@ -106,6 +108,8 @@ describe('analyze hmr profile', () => {
         generateSharedMs: 4,
         generateRewriteMs: 6,
         generateModuleGraphMs: 2,
+        snapshotResolveMs: 0.4,
+        snapshotBuildMs: 18,
         writeMs: 4,
         watchToDirtyMs: 4,
         emitMs: 12,
@@ -170,6 +174,8 @@ describe('analyze hmr profile', () => {
     expect(result.metrics.generateSharedMs.averageMs).toBe(3)
     expect(result.metrics.generateRewriteMs.averageMs).toBe(4.5)
     expect(result.metrics.generateModuleGraphMs.averageMs).toBe(1.5)
+    expect(result.metrics.snapshotResolveMs.averageMs).toBeCloseTo(0.3)
+    expect(result.metrics.snapshotBuildMs.averageMs).toBe(15)
     expect(result.metrics.writeMs.averageMs).toBe(3)
     expect(result.metrics.watchToDirtyMs.averageMs).toBe(3.5)
     expect(result.operations.chunkEmitCount.average).toBe(3)
