@@ -1090,8 +1090,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return reason.startsWith('tailwind-content:')
         || reason.startsWith('style-sidecar:')
         || reason.startsWith('entry-style-only:')
-        || reason.startsWith('css-importer:')
-        || reason.startsWith('css-importer-fallback:')
     })
   }
 

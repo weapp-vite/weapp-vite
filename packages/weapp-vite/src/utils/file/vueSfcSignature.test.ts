@@ -96,6 +96,34 @@ const scriptMarker = 'SFC_SCRIPT_MARKER'
     )
   })
 
+  it('keeps the tailwind content signature when only template text changes', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="sfc-page"><text>SFC_TEMPLATE_MARKER</text>{{ scriptMarker }}</view></template>`
+    const second = first.replace('SFC_TEMPLATE_MARKER', 'SFC_TEMPLATE_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for script literals used by v-bind class objects', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const activeClass = 'text-red-500'
+</script>
+
+<template><view v-bind="{ class: activeClass }">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
   it('changes the signature when runtime script changes', () => {
     const filename = '/project/src/pages/index.vue'
     const first = `<script setup lang="ts">

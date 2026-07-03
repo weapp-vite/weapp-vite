@@ -29,6 +29,8 @@ const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\
 const JS_STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/
 const JS_STRING_LITERALS_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
 const VUE_DYNAMIC_CLASS_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::class)?|:class)(?:\.[\w-]+)*\s*=/
+const VUE_STATIC_CLASS_ATTR_RE = /(?:^|[\s<])class\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s>]+)/g
+const VUE_CLASS_RELEVANT_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::class)?|:class)(?:\.[\w-]+)*\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^\s>]+)/g
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
@@ -116,6 +118,17 @@ function collectScriptLiteralCandidates(content: string) {
   return candidates
 }
 
+function collectTemplateTailwindCandidates(content: string) {
+  const candidates = new Set<string>()
+  for (const match of content.matchAll(VUE_STATIC_CLASS_ATTR_RE)) {
+    candidates.add(match[0]!.trim())
+  }
+  for (const match of content.matchAll(VUE_CLASS_RELEVANT_BINDING_RE)) {
+    candidates.add(match[0]!.trim())
+  }
+  return Array.from(candidates).sort()
+}
+
 function normalizeTailwindContentPayload(payload: unknown) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     return payload
@@ -123,13 +136,12 @@ function normalizeTailwindContentPayload(payload: unknown) {
 
   const content = payload as TailwindContentPayload
   const template = typeof content.template === 'string' ? content.template : ''
-  if (!template || VUE_DYNAMIC_CLASS_BINDING_RE.test(template)) {
-    return payload
-  }
+  const hasDynamicClassBinding = VUE_DYNAMIC_CLASS_BINDING_RE.test(template)
 
   return {
     ...content,
-    scriptLiterals: [],
+    template: collectTemplateTailwindCandidates(template),
+    scriptLiterals: hasDynamicClassBinding ? content.scriptLiterals : [],
   }
 }
 

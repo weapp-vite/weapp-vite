@@ -386,6 +386,30 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
+  it('does not touch app wxss for shared css importer hmr updates in auto mode', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['css-importer:4']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
+    expect(touchMock).not.toHaveBeenCalled()
+  })
+
   it('does not touch app wxss for script-only hmr updates in auto mode', async () => {
     const watcher = createManualWatcher()
     buildMock
