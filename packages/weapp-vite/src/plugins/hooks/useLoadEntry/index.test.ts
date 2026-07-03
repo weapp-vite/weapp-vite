@@ -1,3 +1,4 @@
+import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLoadEntry } from './index'
 
@@ -789,6 +790,43 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+  })
+
+  it('reloads entries when chunk emit reveals new auto-import components', async () => {
+    const ctx = createContext()
+    let autoImportComponents: Record<string, unknown> | undefined
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn(() => autoImportComponents)
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const id = '/project/src/pages/home/home.vue'
+    hook.resolvedEntryMap.set(id, { id } as any)
+    hook.markEntryDirty(id, 'direct')
+    const pathExists = vi.spyOn(fs, 'pathExists').mockResolvedValueOnce(true)
+
+    const pluginCtx = createPluginContext()
+    pluginCtx.emitFile = vi.fn(() => {
+      autoImportComponents = { HotCard: [{ start: 0, end: 0 }] }
+    })
+
+    try {
+      await hook.emitDirtyEntries.call(pluginCtx)
+
+      expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'chunk',
+        id,
+      }))
+      expect(ctx.wxmlService.getAggregatedAutoImportComponents).toHaveBeenCalledWith(
+        '/project/src/pages/home/home',
+      )
+      expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
+    }
+    finally {
+      pathExists.mockRestore()
+    }
   })
 
   it('reloads style sidecar metadata through loadEntry without JS chunk emit', async () => {

@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { changeFileExtension } from '../../../utils'
@@ -624,6 +625,22 @@ export function useLoadEntry(
       metadataEntryIds.clear()
       const pendingMetadataEntryIds = new Set<string>()
       const deferredDirtyEntryIds = new Set<string>()
+      const autoImportReloadedEntryIds = new Set<string>()
+
+      const reloadPendingAutoImportEntry = async (resolvedId: ResolvedId) => {
+        const entryId = normalizeFsResolvedId(resolvedId.id)
+        if (autoImportReloadedEntryIds.has(entryId)) {
+          return
+        }
+        if (!await fs.pathExists(resolvedId.id)) {
+          return
+        }
+        autoImportReloadedEntryIds.add(entryId)
+        const entryType = entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(resolvedId.id)))?.type === 'component'
+          ? 'component'
+          : 'page'
+        await loadEntry.call(this, resolvedId.id, entryType)
+      }
 
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
@@ -649,10 +666,7 @@ export function useLoadEntry(
         if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
           continue
         }
-        const entryType = entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(baseName))?.type === 'component'
-          ? 'component'
-          : 'page'
-        await loadEntry.call(this, resolvedId.id, entryType)
+        await reloadPendingAutoImportEntry(resolvedId)
       }
 
       if (pending.length) {
@@ -667,6 +681,14 @@ export function useLoadEntry(
             performance.now() - entryChunkEmitStartedAt,
           )
         }
+      }
+      for (const resolvedId of pending) {
+        const baseName = removeExtensionDeep(resolvedId.id)
+        const autoImportComponents = ctx.wxmlService.getAggregatedAutoImportComponents?.(baseName)
+        if (!autoImportComponents || Object.keys(autoImportComponents).length === 0) {
+          continue
+        }
+        await reloadPendingAutoImportEntry(resolvedId)
       }
       for (const entryId of deferredDirtyEntryIds) {
         clearDirtyEntry(entryId)
