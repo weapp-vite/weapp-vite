@@ -91,10 +91,14 @@ function isEntryAutoRoutesRefresh(dirtyReasonSummary?: string[]) {
   return dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')) === true
 }
 
-function isSharedChunkSourceOnlyRefresh(dirtyReasonSummary?: string[]) {
+function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[]) {
   return Boolean(
     dirtyReasonSummary?.length
-    && dirtyReasonSummary.every(item => item.startsWith('shared-chunk-source:')),
+    && dirtyReasonSummary.some(item => item.startsWith('shared-chunk-source:'))
+    && dirtyReasonSummary.every(item =>
+      item.startsWith('shared-chunk-source:')
+      || item.startsWith('tailwind-content:'),
+    ),
   )
 }
 
@@ -291,7 +295,7 @@ function resolvePendingEntryIds(options: {
     if (shouldExpandStableSharedChunk(chunkId, importers)) {
       hasStableSharedChunkExpansion = true
     }
-    if (isSharedChunkSourceOnlyRefresh(options.dirtyReasonSummary)) {
+    if (isSharedChunkSourceRepresentativeRefresh(options.dirtyReasonSummary)) {
       const representative = resolveSharedChunkRepresentative(importers, pending, options.resolvedEntryMap)
       if (representative) {
         representativeImporters.add(representative)

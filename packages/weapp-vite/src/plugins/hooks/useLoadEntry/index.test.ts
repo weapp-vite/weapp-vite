@@ -1043,6 +1043,64 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
+  it('keeps tailwind app refresh while using one representative for source shared chunk updates', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['tailwind-content:1', 'shared-chunk-source:4'],
+    }
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const appEntry = '/project/src/app.ts'
+    const ids = [
+      appEntry,
+      '/project/src/pages/a.js',
+      '/project/src/pages/b.js',
+      '/project/src/pages/c.js',
+      '/project/src/pages/d.js',
+    ]
+    const sharedImporters = new Set(ids.slice(1))
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', sharedImporters)
+    for (const id of sharedImporters) {
+      sharedChunksByEntry.set(id, new Set(['common.js']))
+    }
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(appEntry, 'dependency')
+    for (const id of sharedImporters) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: ids[1],
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(5)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
+      'shared-chunk-representative:1/5',
+    ])
+  })
+
   it('emits one representative entry for css importer only updates while keeping all hmr entries', async () => {
     const ctx = createContext()
     const setLastEmittedEntries = vi.fn()
