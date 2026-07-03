@@ -3,7 +3,7 @@ import { resolveStaticLiteralValue } from '../jsonMacros/static'
 
 export interface DefineOptionsStatementLike {
   argPath?: {
-    node?: unknown
+    node?: t.Node | null
   }
 }
 
