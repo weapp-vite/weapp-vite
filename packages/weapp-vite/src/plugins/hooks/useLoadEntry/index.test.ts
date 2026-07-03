@@ -1101,6 +1101,99 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
+  it('keeps tailwind app metadata refresh from expanding stable shared chunk importers', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['entry-direct:1', 'tailwind-content:2'],
+    }
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const appEntry = '/project/src/app.ts'
+    const rootInputIds = new Set([appEntry])
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+        rootInputIds,
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    const ids = [
+      appEntry,
+      '/project/src/pages/a.vue',
+      '/project/src/pages/b.vue',
+      '/project/src/pages/c.vue',
+      '/project/src/pages/d.vue',
+    ]
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(appEntry, new Set(['common.js']))
+    for (const id of ids.slice(1)) {
+      sharedChunksByEntry.set(id, new Set(['common.js']))
+    }
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(appEntry, 'metadata')
+    hook.markEntryDirty(ids[1], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).toHaveBeenCalledWith(appEntry, 'app')
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: ids[1],
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([appEntry, ids[1]]))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(2)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(2)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
+  })
+
+  it('keeps direct page hmr entry during tailwind local-asset metadata refresh', async () => {
+    const ctx = createContext()
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    const appEntry = '/project/src/app.ts'
+    const pageEntry = '/project/src/pages/home/index.vue'
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['entry-local-asset:1', 'tailwind-content:2'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        rootInputIds: new Set([appEntry]),
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+
+    seedResolvedEntries(hook.resolvedEntryMap, [appEntry, pageEntry])
+    hook.markEntryDirty(appEntry, 'metadata')
+    hook.markEntryDirty(pageEntry, 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(loadEntryMock).toHaveBeenCalledWith(appEntry, 'app')
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: pageEntry,
+    }))
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([pageEntry]))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([appEntry, pageEntry]))
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(2)
+  })
+
   it('emits one representative entry for css importer only updates while keeping all hmr entries', async () => {
     const ctx = createContext()
     const setLastEmittedEntries = vi.fn()

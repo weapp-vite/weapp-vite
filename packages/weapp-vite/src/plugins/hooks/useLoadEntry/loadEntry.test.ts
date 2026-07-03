@@ -619,6 +619,40 @@ describe('createEntryLoader', () => {
     }))
   })
 
+  it('reuses cached vue json block config when direct hmr also updates tailwind content', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const config = { navigationBarTitleText: 'Home' }
+    const source = [
+      '<json>{"navigationBarTitleText":"Home"}</json>',
+      '<script setup>const count = 1</script>',
+      '<template><view class="p-2">{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(source.replace('p-2', 'p-4').replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1', 'tailwind-content:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: config,
+    }))
+  })
+
   it('reuses empty vue config result during direct script hmr', async () => {
     const { loader, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

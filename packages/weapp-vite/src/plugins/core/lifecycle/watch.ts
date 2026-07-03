@@ -420,7 +420,7 @@ async function processChangedFile(
     ) {
       markEntryDirtyWithCause(concreteChangedEntryId, 'direct', 'tailwind-content')
     }
-    markEntryDirtyWithCause(appEntryId, 'dependency', 'tailwind-content')
+    markEntryDirtyWithCause(appEntryId, 'metadata', 'tailwind-content')
     invalidateSharedStyleCache()
     return true
   }

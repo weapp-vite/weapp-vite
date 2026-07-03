@@ -627,7 +627,7 @@ describe('core lifecycle watch hook', () => {
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
     expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
-    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
       'entry-direct:1',
@@ -675,7 +675,7 @@ const klass = 'text-red-500'
 
     expect(findCssEntryMock).not.toHaveBeenCalled()
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
-    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
@@ -719,7 +719,7 @@ const count = 1
 
     expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
-    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
       'entry-local-asset:1',
@@ -745,7 +745,7 @@ const count = 1
     await hook(pageEntryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
-    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'dependency')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })

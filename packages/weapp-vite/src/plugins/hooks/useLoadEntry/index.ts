@@ -681,7 +681,12 @@ export function useLoadEntry(
       }
       if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
         if (!isWxmlImportOnlyRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
-          hmrEntryIds = pendingMetadataEntryIds
+          hmrEntryIds = new Set(pendingMetadataEntryIds)
+          for (const entryId of actualChunkEmittedEntryIds) {
+            if (pendingEntryIds.has(entryId) && !metadataEntryIds.has(entryId)) {
+              hmrEntryIds.add(entryId)
+            }
+          }
         }
         const currentStyleOutputFileName = resolveCurrentStyleOutputFileName(ctx)
         if (currentStyleOutputFileName) {
