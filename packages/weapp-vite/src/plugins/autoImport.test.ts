@@ -12,17 +12,29 @@ vi.mock('chokidar', () => ({
 }))
 
 describe('autoImport plugin', () => {
-  function createMockSidecarWatcher() {
-    const listeners = new Map<string, (filePath: string) => void>()
+  function createMockSidecarWatcher(options: { nativeReady?: boolean } = {}) {
+    const listeners = new Map<string, (filePath?: string) => void>()
     const watcher = {
-      on: vi.fn((event: string, handler: (filePath: string) => void) => {
+      on: vi.fn((event: string, handler: (filePath?: string) => void) => {
         listeners.set(event, handler)
         return watcher
       }),
+      once: vi.fn((event: string, handler: (filePath?: string) => void) => {
+        listeners.set(event, (filePath?: string) => {
+          listeners.delete(event)
+          handler(filePath)
+        })
+        return watcher
+      }),
       close: vi.fn(),
-      emit(event: 'add' | 'change' | 'unlink', filePath: string) {
+      emit(event: 'add' | 'change' | 'unlink' | 'ready', filePath?: string) {
         listeners.get(event)?.(filePath)
       },
+      ...(options.nativeReady
+        ? {
+            getWatched: vi.fn(() => ({})),
+          }
+        : {}),
     }
 
     return watcher
@@ -497,6 +509,67 @@ describe('autoImport plugin', () => {
     )
     const watchArgs = chokidarWatchMock.mock.calls[0]?.[0] ?? []
     expect(watchArgs).not.toContain('/project/src')
+  })
+
+  it('waits for sidecar watcher ready before finishing dev buildStart', async () => {
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const sidecarWatcher = createMockSidecarWatcher({ nativeReady: true })
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        runInBatch: vi.fn(async (task: () => Promise<void>) => {
+          await task()
+        }),
+        reset,
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+    let finished = false
+    const buildStart = Promise.resolve(plugin.buildStart?.call({ addWatchFile: vi.fn() } as any))
+      .then(() => {
+        finished = true
+      })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(finished).toBe(false)
+    expect(sidecarWatcher.once).toHaveBeenCalledWith('ready', expect.any(Function))
+
+    sidecarWatcher.emit('ready')
+    await buildStart
+
+    expect(finished).toBe(true)
+    expect(reset).toHaveBeenCalledTimes(1)
   })
 
   it('rescans globs on repeated dev buildStart to include newly created components', async () => {

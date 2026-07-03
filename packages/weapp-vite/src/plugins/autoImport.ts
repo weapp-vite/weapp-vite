@@ -1,3 +1,4 @@
+import type { FSWatcher } from 'chokidar'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { ComponentsMap } from '../types'
 import type { CompilerContext } from '@/context'
@@ -333,7 +334,22 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
   const { configService, autoImportService } = ctx
   let fileWatcherStarted = false
 
-  function startAutoImportFileWatcher(globs: string[] | undefined) {
+  function waitForSidecarWatcherReady(watcher: FSWatcher) {
+    const watchHandle = watcher as FSWatcher & {
+      getWatched?: () => Record<string, string[]>
+    }
+    if (typeof watchHandle.getWatched !== 'function') {
+      return Promise.resolve()
+    }
+
+    return new Promise<void>((resolve) => {
+      watcher.once('ready', () => {
+        resolve()
+      })
+    })
+  }
+
+  async function startAutoImportFileWatcher(globs: string[] | undefined) {
     if (fileWatcherStarted || !configService?.isDev || !globs?.length) {
       return
     }
@@ -397,6 +413,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       close: () => void watcher.close(),
     })
     fileWatcherStarted = true
+    await waitForSidecarWatcherReady(watcher)
   }
 
   return {
@@ -415,7 +432,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       const autoImportConfig = getAutoImportConfig(configService)
       const globs = autoImportConfig?.globs
       registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
-      startAutoImportFileWatcher(globs)
+      const sidecarWatcherReady = startAutoImportFileWatcher(globs)
       const globsKey = createAutoImportGlobsKey(globs)
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false
@@ -433,10 +450,12 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
           })
           state.initialScanDone = true
         }
+        await sidecarWatcherReady
         return
       }
 
       if (state.initialScanDone) {
+        await sidecarWatcherReady
         return
       }
 
@@ -446,6 +465,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
         await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
       })
 
+      await sidecarWatcherReady
       state.initialScanDone = true
     },
 
