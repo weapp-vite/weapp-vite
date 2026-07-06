@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.17.9
+
+### Patch Changes
+
+- 🐛 **新增 Rust 版 Vue SFC signature payload 解析路径，并为 `weapp-vite` 的 HMR signature 增加显式本地 native 模块路径开关；未配置 native 模块路径时继续使用 TypeScript 实现，避免影响 `weapp-vite` 的正常发布。** [`6c4839f`](https://github.com/weapp-vite/weapp-vite/commit/6c4839f68c29219166a6f9fc6b0aa103d4e95878) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.17.9`, `wevu@6.17.9`
+
 ## 6.17.8
 
 ### Patch Changes
