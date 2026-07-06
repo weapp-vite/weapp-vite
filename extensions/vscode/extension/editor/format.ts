@@ -4,21 +4,9 @@ import {
   isStandaloneWxmlEnhancementEnabled,
   isWxmlEnhancementEnabled,
 } from '../shared/config'
-
-interface PositionLike {
-  line: number
-  character: number
-}
-
-interface RangeLike {
-  start: PositionLike
-  end: PositionLike
-}
-
-interface TextEditLike {
-  range: RangeLike
-  newText: string
-}
+import {
+  formatWxmlText,
+} from './wxmlFormatter'
 
 function getLineOffsets(text: string) {
   const lineOffsets = [0]
@@ -30,17 +18,6 @@ function getLineOffsets(text: string) {
   }
 
   return lineOffsets
-}
-
-function getOffsetAt(text: string, position: PositionLike) {
-  const lineOffsets = getLineOffsets(text)
-  const safeLine = Math.max(0, Math.min(position.line, lineOffsets.length - 1))
-  const lineStart = lineOffsets[safeLine]
-  const nextLineStart = lineOffsets[safeLine + 1] ?? text.length
-  const lineLength = nextLineStart - lineStart
-  const safeCharacter = Math.max(0, Math.min(position.character, lineLength))
-
-  return Math.min(lineStart + safeCharacter, text.length)
 }
 
 function getPositionAt(text: string, offset: number) {
@@ -58,45 +35,17 @@ function getPositionAt(text: string, offset: number) {
   }
 }
 
-function applyTextEdits(text: string, edits: readonly TextEditLike[]) {
-  const normalizedEdits = edits
-    .map(edit => ({
-      ...edit,
-      startOffset: getOffsetAt(text, edit.range.start),
-      endOffset: getOffsetAt(text, edit.range.end),
-    }))
-    .sort((left, right) => right.startOffset - left.startOffset || right.endOffset - left.endOffset)
-
-  let nextText = text
-
-  for (const edit of normalizedEdits) {
-    nextText = `${nextText.slice(0, edit.startOffset)}${edit.newText}${nextText.slice(edit.endOffset)}`
-  }
-
-  return nextText
-}
-
 function getFullDocumentRange(text: string) {
   const end = getPositionAt(text, text.length)
   return new vscode.Range(0, 0, end.line, end.character)
 }
 
-async function formatWxmlTextWithHtmlFormatter(text: string, options: vscode.FormattingOptions) {
-  const htmlDocument = await vscode.workspace.openTextDocument({
-    language: 'html',
-    content: text,
-  })
-  const edits = await vscode.commands.executeCommand<readonly TextEditLike[]>(
-    'vscode.executeFormatDocumentProvider',
-    htmlDocument.uri,
-    options,
-  )
-
-  if (!edits || edits.length === 0) {
-    return text
+function getFormatIndent(options: vscode.FormattingOptions) {
+  if (!options.insertSpaces) {
+    return '\t'
   }
 
-  return applyTextEdits(text, edits)
+  return ' '.repeat(Math.max(1, options.tabSize))
 }
 
 export class WeappWxmlDocumentFormattingProvider implements vscode.DocumentFormattingEditProvider {
@@ -106,7 +55,9 @@ export class WeappWxmlDocumentFormattingProvider implements vscode.DocumentForma
     }
 
     const sourceText = document.getText()
-    const formattedText = await formatWxmlTextWithHtmlFormatter(sourceText, options)
+    const formattedText = formatWxmlText(sourceText, {
+      indent: getFormatIndent(options),
+    })
 
     if (formattedText === sourceText) {
       return []
