@@ -18,22 +18,9 @@ function createDocument(text: string) {
   }
 }
 
-it('delegates wxml formatting to the html formatter and returns a full-document replacement edit', async () => {
-  const openTextDocument = vi.fn(async (options: { language: string, content: string }) => ({
-    uri: { scheme: 'untitled', path: '/virtual/demo.html' },
-    getText() {
-      return options.content
-    },
-  }))
-  const executeCommand = vi.fn(async (_command: string, _uri: unknown, _options: unknown) => [
-    {
-      range: {
-        start: { line: 1, character: 0 },
-        end: { line: 1, character: 0 },
-      },
-      newText: '  ',
-    },
-  ])
+it('formats wxml in-process without opening an html formatter document', async () => {
+  const openTextDocument = vi.fn()
+  const executeCommand = vi.fn()
 
   vi.doMock('vscode', () => {
     const mockVscode = {
@@ -67,34 +54,32 @@ it('delegates wxml formatting to the html formatter and returns a full-document 
     WeappWxmlDocumentFormattingProvider,
   } = await import('./format')
   const provider = new WeappWxmlDocumentFormattingProvider()
-  const sourceText = '<view>\n<text>{{ msg }}</text>\n</view>\n'
+  const sourceText = '<view> <text>{{ msg }}</text> </view>\n'
   const edits = await provider.provideDocumentFormattingEdits(createDocument(sourceText) as never, {
     insertSpaces: true,
     tabSize: 2,
   })
 
-  assert.equal(openTextDocument.mock.calls[0]?.[0]?.language, 'html')
-  assert.equal(openTextDocument.mock.calls[0]?.[0]?.content, sourceText)
-  assert.equal(executeCommand.mock.calls[0]?.[0], 'vscode.executeFormatDocumentProvider')
+  assert.equal(openTextDocument.mock.calls.length, 0)
+  assert.equal(executeCommand.mock.calls.length, 0)
   assert.equal(edits.length, 1)
   assert.deepEqual(edits[0]?.range.start, { line: 0, character: 0 })
-  assert.deepEqual(edits[0]?.range.end, { line: 3, character: 0 })
+  assert.deepEqual(edits[0]?.range.end, { line: 1, character: 0 })
+  assert.equal(edits[0]?.newText.includes('undefined'), false)
   assert.equal(edits[0]?.newText, '<view>\n  <text>{{ msg }}</text>\n</view>\n')
 
   vi.doUnmock('vscode')
   vi.resetModules()
 })
 
-it('returns no edits when the delegated html formatter does not change the wxml content', async () => {
+it('returns no edits when the in-process formatter does not change the wxml content', async () => {
+  const openTextDocument = vi.fn()
+  const executeCommand = vi.fn()
+
   vi.doMock('vscode', () => {
     const mockVscode = {
       workspace: {
-        openTextDocument: async (options: { content: string }) => ({
-          uri: { scheme: 'untitled', path: '/virtual/demo.html' },
-          getText() {
-            return options.content
-          },
-        }),
+        openTextDocument,
         getConfiguration: () => ({
           get(_key: string, defaultValue: unknown) {
             return defaultValue
@@ -102,7 +87,7 @@ it('returns no edits when the delegated html formatter does not change the wxml 
         }),
       },
       commands: {
-        executeCommand: async () => [],
+        executeCommand,
       },
       Range: class {
         start: { line: number, character: number }
@@ -123,12 +108,14 @@ it('returns no edits when the delegated html formatter does not change the wxml 
     WeappWxmlDocumentFormattingProvider,
   } = await import('./format')
   const provider = new WeappWxmlDocumentFormattingProvider()
-  const edits = await provider.provideDocumentFormattingEdits(createDocument('<view />') as never, {
+  const edits = await provider.provideDocumentFormattingEdits(createDocument('<view />\n') as never, {
     insertSpaces: true,
     tabSize: 2,
   })
 
   assert.deepEqual(edits, [])
+  assert.equal(openTextDocument.mock.calls.length, 0)
+  assert.equal(executeCommand.mock.calls.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()
