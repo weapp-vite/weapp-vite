@@ -20,7 +20,7 @@ vi.mock('./util', () => ({
 }))
 
 class FakeConnection extends EventEmitter {
-  send = vi.fn<(method: string, params?: Record<string, any>) => Promise<any>>(async () => ({}))
+  send = vi.fn<(method: string, params?: Record<string, any>, options?: Record<string, any>) => Promise<any>>(async () => ({}))
   dispose = vi.fn()
 }
 
@@ -94,6 +94,24 @@ describe('MiniProgram', () => {
     expect(onConsole).toHaveBeenCalledWith({ msg: 'hello' })
     expect(binding).toHaveBeenCalledWith('payload')
     await expect(miniProgram.exposeFunction('bridge', binding)).rejects.toThrow('already exists')
+  })
+
+  it('forwards scoped timeouts when evaluating app-service functions', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    connection.send.mockResolvedValueOnce({ result: 'ok' })
+
+    await expect(miniProgram.evaluateWithOptions(() => 'ok', {
+      timeout: 8_000,
+    })).resolves.toBe('ok')
+
+    expect(connection.send).toHaveBeenCalledWith('App.callFunction', {
+      functionDeclaration: expect.stringContaining('ok'),
+      args: [],
+    }, {
+      timeout: 8_000,
+    })
   })
 
   it('keeps console listeners safe when enabling logs fails', async () => {
@@ -278,7 +296,7 @@ describe('MiniProgram', () => {
     const page = await pending
 
     expect(page.path).toBe('/pages/next')
-    expect(util.isPluginPath).toHaveBeenCalledWith(undefined)
+    expect(util.isPluginPath).toHaveBeenCalledWith('')
     expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
       method: 'reLaunch',
       args: [{ url: '/pages/next' }],
@@ -374,6 +392,48 @@ describe('MiniProgram', () => {
     expect(page.path).toBe('/pages/fallback')
   })
 
+  it('falls back to app-service getCurrentPages when currentPage and pageStack time out', async () => {
+    const currentPageTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const pageStackTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getPageStack within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getPageStack',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(pageStackTimeoutError)
+      .mockResolvedValueOnce({
+        result: [
+          { __wxWebviewId__: 9, options: { ok: 1 }, route: 'pages/app-function-fallback' },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(page.path).toBe('pages/app-function-fallback')
+    expect(page.query).toEqual({ ok: 1 })
+    expect(connection.send).toHaveBeenNthCalledWith(5, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 8_000,
+    })
+  })
+
   it('falls back to pageStack when App.getCurrentPage times out during route changes', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
@@ -412,7 +472,61 @@ describe('MiniProgram', () => {
 
     expect(page.path).toBe('/pages/next')
     expect(connection.send).toHaveBeenCalledWith('App.getPageStack', {}, {
-      timeout: 12_000,
+      timeout: 2_500,
+    })
+  })
+
+  it('falls back to app-service page stack while waiting for route changes', async () => {
+    const currentPageTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const pageStackTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getPageStack within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getPageStack',
+      },
+    )
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        if (currentPageReads === 1) {
+          return { pageId: 1, path: '/pages/index', query: {} }
+        }
+        throw currentPageTimeoutError
+      }
+      if (method === 'App.callWxMethod') {
+        return {}
+      }
+      if (method === 'App.getPageStack') {
+        throw pageStackTimeoutError
+      }
+      if (method === 'App.callFunction') {
+        return {
+          result: [
+            { __wxWebviewId__: 2, options: { from: 'fallback' }, route: '/pages/next' },
+          ],
+        }
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const page = await miniProgram.reLaunch('/pages/next')
+
+    expect(page.path).toBe('/pages/next')
+    expect(page.query).toEqual({ from: 'fallback' })
+    expect(connection.send).toHaveBeenCalledWith('App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 8_000,
     })
   })
 

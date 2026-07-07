@@ -42,6 +42,7 @@ interface EventBindingStats {
 
 type ProbeComponentType = 'nativeComponent' | 'wevuSfcComponent'
 type ProbeBindingMode = 'bind' | 'bindColon' | 'both' | 'bothReverse'
+type ViewBindingMode = 'bindtap' | 'bindColon' | 'both' | 'bothReverse'
 type NamedEventNameType = 'hyphen' | 'underscore'
 type NamedProbeBindingMode = 'bind' | 'bindColon' | 'both'
 
@@ -319,6 +320,20 @@ Page({
     this.setData({
       '__eventBindingStats.view.bothReverseBindColonTap': (this.data.__eventBindingStats?.view?.bothReverseBindColonTap ?? 0) + 1,
     })
+  },
+  triggerViewEventBinding(bindingMode: ViewBindingMode) {
+    const handlers: Record<ViewBindingMode, () => void> = {
+      bindtap: () => this.onViewBindtap(),
+      bindColon: () => this.onViewBindColonTap(),
+      both: () => this.onViewBothBindtap(),
+      bothReverse: () => this.onViewBothReverseBindtap(),
+    }
+    const handler = handlers[bindingMode]
+    if (!handler) {
+      return false
+    }
+    handler()
+    return true
   },
   onNativeComponentBindprobe() {
     this.setData({

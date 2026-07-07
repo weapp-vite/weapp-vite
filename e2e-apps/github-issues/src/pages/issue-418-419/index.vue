@@ -82,6 +82,10 @@ function _runE2E() {
     runtimeError: inspection.errorMessage ?? currentPage?.__issue418419RuntimeError ?? null,
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

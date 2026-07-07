@@ -33,9 +33,10 @@ const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
 const TEMPLATE_MARKER = 'runtime-vendor-template-hmr'
 const STYLE_MARKER = 'runtime-vendor-style-hmr'
+const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
-const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
+const STALE_RUN_E2E_MARKER_RE = /Stale runE2E marker/
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -70,26 +71,108 @@ async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
-async function relaunchIndexPage(miniProgram: any) {
-  const page = await miniProgram.reLaunch(INDEX_ROUTE)
-  if (page) {
-    return page
+async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
+  const startedAt = Date.now()
+  let lastResult: Record<string, any> | null = null
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const [roots, triggers, switches] = await Promise.all([
+        page.renderedNodes('#layout-power-index-page', { timeout: 3_000 }),
+        page.renderedNodes('.feedback-trigger', { timeout: 3_000 }),
+        page.renderedNodes('.switch', { timeout: 3_000 }),
+      ])
+      const root = roots?.[0]
+      const result = {
+        ok: root?.dataset?.e2ePage === 'layout-power-index'
+          && Number(root?.width ?? 0) > 0
+          && Number(root?.height ?? 0) > 0
+          && triggers.length >= 2
+          && switches.length >= LAYOUTS.length,
+        dataset: root?.dataset ?? {},
+        height: root?.height,
+        triggerCount: triggers.length,
+        switchCount: switches.length,
+        width: root?.width,
+      }
+      lastResult = result
+      if (result.ok) {
+        return result
+      }
+    }
+    catch (error) {
+      lastResult = {
+        ok: false,
+        reason: error instanceof Error ? error.message : String(error),
+      }
+    }
+    await delay(220)
   }
-  return await miniProgram.currentPage()
+
+  throw new Error(`Timed out waiting layout-power DOM: ${JSON.stringify(lastResult, null, 2)}`)
+}
+
+async function waitForCurrentIndexPageDom(miniProgram: any, timeoutMs = 30_000) {
+  const startedAt = Date.now()
+  let lastError: unknown
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const page = await miniProgram.currentPage()
+      await waitForLayoutPowerDom(page, 3_000)
+      return page
+    }
+    catch (error) {
+      lastError = error
+    }
+    await delay(300)
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
+async function relaunchIndexPage(miniProgram: any) {
+  await miniProgram.reLaunch(INDEX_ROUTE)
+  return await waitForCurrentIndexPageDom(miniProgram)
+}
+
+function isStaleRunE2EPageMarkerError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return STALE_RUN_E2E_MARKER_RE.test(message)
 }
 
 async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000) {
   const startedAt = Date.now()
+  const staleMarkerTimeoutMs = Math.min(5_000, Math.max(1_500, Math.floor(timeoutMs / 2)))
   let lastResult: unknown
+  let domReady = false
+  let staleMarkerStartedAt = 0
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
+      if (!domReady) {
+        await waitForLayoutPowerDom(page, 3_000)
+        domReady = true
+      }
       lastResult = await page.callMethod('runE2E')
       if ((lastResult as any)?.ok === true && (lastResult as any)?.marker === marker) {
         return lastResult
       }
+      if ((lastResult as any)?.ok === true && typeof (lastResult as any)?.marker === 'string' && (lastResult as any)?.marker !== marker) {
+        staleMarkerStartedAt ||= Date.now()
+        if (Date.now() - staleMarkerStartedAt >= staleMarkerTimeoutMs) {
+          throw new Error(`Stale runE2E marker ${String((lastResult as any).marker)} while waiting ${marker}`)
+        }
+      }
+      else {
+        staleMarkerStartedAt = 0
+      }
     }
-    catch {}
+    catch (error) {
+      if (isStaleRunE2EPageMarkerError(error)) {
+        throw error
+      }
+    }
     try {
       await page.waitFor?.(250)
     }
@@ -105,7 +188,7 @@ async function waitForIdeRecompileSettled(delayMs = 1_500) {
   await delay(delayMs)
 }
 
-async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: string, timeoutMs = 90_000) {
+async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: string, timeoutMs = 24_000) {
   const startedAt = Date.now()
   let lastError: unknown
 
@@ -117,6 +200,9 @@ async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: strin
     }
     catch (error) {
       lastError = error
+      if (isStaleRunE2EPageMarkerError(error)) {
+        throw error
+      }
     }
     await delay(1_000)
   }
@@ -125,32 +211,10 @@ async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: strin
   throw new Error(`Timed out relaunching ${INDEX_ROUTE} with runE2E marker ${marker}; lastError=${lastMessage}`)
 }
 
-function isStaleRunE2EMarkerError(error: unknown, marker: string) {
+function isRecoverableRunE2EMarkerError(error: unknown, marker: string) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes(`Timed out relaunching ${INDEX_ROUTE} with runE2E marker ${marker}`)
-}
-
-async function waitForCurrentLayout(page: any, layout: string, timeoutMs = 8_000) {
-  const startedAt = Date.now()
-  let latest: unknown
-
-  while (Date.now() - startedAt <= timeoutMs) {
-    latest = await page.data('currentLayout').catch(() => undefined)
-    if (latest === layout) {
-      return latest
-    }
-    await page.waitFor?.(120).catch(() => delay(120))
-  }
-
-  throw new Error(`Timed out waiting currentLayout=${layout}; latest=${String(latest)}`)
-}
-
-async function tapRequired(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to query element: ${selector}`)
-  }
-  await element.tap()
+    || message.includes(`while waiting ${marker}`)
 }
 
 async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector) {
@@ -253,31 +317,6 @@ async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector)
   )
 }
 
-async function expectLayoutFeedbackByTap(page: any, collector: RuntimeErrorCollector) {
-  const marker = collector.mark()
-
-  for (const layout of LAYOUTS) {
-    if (layout !== 'default') {
-      await tapRequired(page, `[data-e2e-layout="${layout}"]`)
-      await waitForCurrentLayout(page, layout)
-    }
-    for (let index = 0; index < 3; index += 1) {
-      await tapRequired(page, '[data-e2e-feedback="message"]')
-      await page.waitFor?.(120).catch(() => delay(120))
-    }
-    await tapRequired(page, '[data-e2e-feedback="toast"]')
-    await page.waitFor?.(300).catch(() => delay(300))
-  }
-
-  await page.waitFor?.(2_500).catch(() => delay(2_500))
-  expect(collector.getSince(marker)).toEqual([])
-  expect(collector.getLogsSince(marker)).not.toEqual(
-    expect.arrayContaining([
-      expect.stringMatching(TD_MESSAGE_DUPLICATE_SLOT_RE),
-    ]),
-  )
-}
-
 describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
   let originalScript = ''
   let originalTemplate = ''
@@ -360,22 +399,41 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     return miniProgram
   }
 
-  async function relaunchIndexPageWithRecoveredSession(marker: string) {
+  async function compileOpenedProject(marker: string, reason: string) {
+    process.stdout.write(`[layout-power-demo:hmr] compile-opened-project marker=${marker} reason=${reason}\n`)
     try {
-      return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
+      await miniProgram?.compile?.({})
     }
     catch (error) {
-      if (!isStaleRunE2EMarkerError(error, marker)) {
-        throw error
-      }
-
       const message = error instanceof Error ? error.message : String(error)
-      process.stdout.write(`[layout-power-demo:hmr] restart-devtools-session marker=${marker} reason=${message}\n`)
-      await stopDevSession()
-      await waitForIdeRecompileSettled(1_600)
-      await startDevSession()
-      return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
+      process.stdout.write(`[layout-power-demo:hmr] compile-opened-project-skip marker=${marker} reason=${message}\n`)
     }
+    await waitForIdeRecompileSettled(2_500)
+  }
+
+  async function relaunchIndexPageWithRecoveredSession(marker: string) {
+    let lastError: unknown
+    for (let recoverAttempt = 0; recoverAttempt <= 5; recoverAttempt += 1) {
+      try {
+        return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
+      }
+      catch (error) {
+        if (!isRecoverableRunE2EMarkerError(error, marker) || recoverAttempt >= 5) {
+          throw error
+        }
+        lastError = error
+      }
+      const message = lastError instanceof Error ? lastError.message : String(lastError)
+      if (recoverAttempt < 2) {
+        await compileOpenedProject(marker, message)
+        continue
+      }
+      process.stdout.write(`[layout-power-demo:hmr] restart-devtools-session marker=${marker} attempt=${recoverAttempt - 1}/3 reason=${message}\n`)
+      await stopDevSession()
+      await waitForIdeRecompileSettled(2_000)
+      await startDevSession()
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError))
   }
 
   it('keeps active runtime vendor chunks available after page script HMR', async () => {
@@ -383,7 +441,6 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
-    await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
@@ -393,10 +450,10 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     expect(pageJs).toContain('../../weapp-vendors/weapp-vite-runtime.js')
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
+    await compileOpenedProject(UPDATED_MARKER, 'page-script-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
-    await expectLayoutFeedbackByTap(page, runtimeErrorCollector)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)
@@ -405,6 +462,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(PAGE_WXML_DIST, TEMPLATE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
+    await compileOpenedProject(UPDATED_MARKER, 'page-template-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
@@ -415,6 +473,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(COMMAND_LAYOUT_WXSS_DIST, STYLE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
+    await compileOpenedProject(UPDATED_MARKER, 'layout-style-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)

@@ -1,4 +1,4 @@
-<view id="route">{{route}}</view>
+<view id="route" data-e2e-route="{{route}}">{{route}}</view>
 <view id="prelude-log-count">{{preludeLog.length}}</view>
 <view
   wx:for="{{preludeLog}}"

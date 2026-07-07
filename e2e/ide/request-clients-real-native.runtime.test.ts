@@ -7,6 +7,10 @@ import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
+  waitForRequestClientsRealRouteDom,
+  waitForRequestClientsRealSuccessDom,
+} from '../utils/requestClientsRealDom'
+import {
   REQUEST_CLIENTS_REAL_REQUEST_DEFAULTS,
   REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
 } from '../utils/requestClientsRealHostTraceRuntime'
@@ -22,7 +26,7 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /EACCES/i,
 ]
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
-const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
+const JS_FORMATS: TestJsFormat[] = ['cjs']
 
 let baseUrl = ''
 let serverHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null = null
@@ -123,12 +127,7 @@ afterAll(async () => {
 })
 
 for (const jsFormat of JS_FORMATS) {
-  const describeForJsFormat = jsFormat === 'esm' ? describe.skip : describe.sequential
-
-  // 微信开发者工具 3.15.x 在原生 App 根入口的 ESM appservice 装载阶段，
-  // 会把根目录 request runtime 辅助 chunk 转成未注册的 require 模块。
-  // CI 构建测试继续覆盖 ESM 产物形态，IDE runtime 保留 CJS 真运行链路。
-  describeForJsFormat(`e2e app: request-clients-real-native [${jsFormat}]`, () => {
+  describe.sequential(`e2e app: request-clients-real-native [${jsFormat}]`, () => {
     let miniProgram: any = null
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
@@ -145,6 +144,9 @@ for (const jsFormat of JS_FORMATS) {
           delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
           miniProgram = await launchAutomator({
             projectPath: APP_ROOT,
+            skipRelaunchPageRootCheck: true,
+            warmupRootSelectors: ['#request-clients-real-root'],
+            warmupRoute: '/pages/index/index',
           })
         }
         finally {
@@ -181,6 +183,7 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/index/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/index/index')
 
       const appProbe = await miniProgram.evaluate(() => {
         return getApp<{ globalData?: { requestGlobalsProbe?: Record<string, unknown> } }>()?.globalData?.requestGlobalsProbe ?? null
@@ -204,8 +207,10 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/fetch/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/fetch/index')
 
       const result = await page.callMethod('runE2E')
+      await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
@@ -225,8 +230,10 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/axios/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/axios/index')
 
       const result = await page.callMethod('runE2E')
+      await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
@@ -246,8 +253,10 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/graphql-request/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/graphql-request/index')
 
       const result = await page.callMethod('runE2E')
+      await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
@@ -267,8 +276,10 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/socket-io/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/socket-io/index')
 
       const result = await page.callMethod('runE2E')
+      await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
@@ -297,8 +308,10 @@ for (const jsFormat of JS_FORMATS) {
       if (!page) {
         throw new Error('Failed to launch /pages/websocket/index')
       }
+      await waitForRequestClientsRealRouteDom(page, '/pages/websocket/index')
 
       const result = await page.callMethod('runE2E')
+      await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)

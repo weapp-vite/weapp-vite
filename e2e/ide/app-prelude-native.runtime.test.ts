@@ -32,6 +32,19 @@ function normalizeRoutePath(route: string) {
   return route.replace(/^\/+/, '')
 }
 
+function resolveRouteDomMarker(route: string) {
+  switch (normalizeRoutePath(route)) {
+    case 'pages/index/index':
+      return 'main'
+    case 'subpackages/normal/pages/entry/index':
+      return 'normal-subpackage'
+    case 'subpackages/independent/pages/entry/index':
+      return 'independent-subpackage'
+    default:
+      return normalizeRoutePath(route)
+  }
+}
+
 async function sleep(ms: number) {
   await new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -158,6 +171,8 @@ async function launchFreshMiniProgram(
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       return await launchAutomator({
         projectPath: projectRoot,
+        skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
         timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
       })
     }
@@ -182,7 +197,26 @@ async function closeSharedMiniProgram() {
   await cleanupResidualIdeProcesses()
 }
 
-async function waitForPageRoot(page: any, timeoutMs = PAGE_ROOT_TIMEOUT) {
+async function waitForPageRoot(page: any, route: string, timeoutMs = PAGE_ROOT_TIMEOUT) {
+  if (typeof page?.waitForRendered === 'function') {
+    try {
+      await runAutomatorOp(
+        `wait rendered route ${route}`,
+        () => page.waitForRendered({
+          dataset: {
+            e2eRoute: resolveRouteDomMarker(route),
+          },
+          selector: '#route',
+          timeout: timeoutMs,
+        }),
+        { timeoutMs: timeoutMs + 500 },
+      )
+      return { selector: '#route' }
+    }
+    catch {
+    }
+  }
+
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
@@ -202,17 +236,119 @@ async function waitForPageRoot(page: any, timeoutMs = PAGE_ROOT_TIMEOUT) {
   return null
 }
 
-async function readCurrentRoutePage(miniProgram: any, route: string) {
-  const page = await runAutomatorOp(
-    `currentPage ${route}`,
-    () => miniProgram.currentPage({ retries: 1, timeout: CURRENT_PAGE_TIMEOUT }),
-    { timeoutMs: CURRENT_PAGE_TIMEOUT },
-  )
-  if (normalizeRoutePath(page?.path ?? '') !== normalizeRoutePath(route)) {
-    return null
+async function waitForRouteDomState(miniProgram: any, route: string, timeoutMs = PAGE_ROOT_TIMEOUT) {
+  const startedAt = Date.now()
+  let lastResult: Record<string, any> | null = null
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const result = await runAutomatorOp(
+        `read route dom ${route}`,
+        () => miniProgram.evaluate((expectedRoute: string, expectedMarker: string) => {
+          return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+              resolve({
+                ok: false,
+                reason: 'selector-timeout',
+              })
+            }, 2_000)
+            try {
+              const normalizeRoute = (value: unknown) => String(value || '').replace(/^\/+/, '').replace(/\/+$/g, '')
+              const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+              const page = pages[pages.length - 1] as any
+              const currentRoute = normalizeRoute(page?.route || page?.__route__ || page?.path || '')
+              const query = typeof wx !== 'undefined' && typeof wx.createSelectorQuery === 'function'
+                ? wx.createSelectorQuery().in(page)
+                : page?.createSelectorQuery?.()
+              if (!query) {
+                clearTimeout(timer)
+                resolve({
+                  ok: false,
+                  reason: 'selector-query-unavailable',
+                  route: currentRoute,
+                })
+                return
+              }
+              query
+                .select('#route')
+                .fields({
+                  dataset: true,
+                  id: true,
+                  rect: true,
+                  size: true,
+                })
+                .exec((results: any[]) => {
+                  clearTimeout(timer)
+                  const root = results?.[0] as Record<string, any> | null | undefined
+                  resolve({
+                    ok: currentRoute === normalizeRoute(expectedRoute)
+                      && root?.dataset?.e2eRoute === expectedMarker
+                      && Number(root?.width ?? 0) > 0
+                      && Number(root?.height ?? 0) > 0,
+                    dataset: root?.dataset ?? {},
+                    height: root?.height,
+                    route: currentRoute,
+                    width: root?.width,
+                  })
+                })
+            }
+            catch (error) {
+              clearTimeout(timer)
+              resolve({
+                ok: false,
+                reason: error instanceof Error ? error.message : String(error),
+              })
+            }
+          })
+        }, route, resolveRouteDomMarker(route)),
+        { timeoutMs: Math.min(3_000, Math.max(1, timeoutMs - (Date.now() - startedAt))) },
+      ) as Record<string, any>
+      lastResult = result
+      if (result?.ok === true) {
+        return result
+      }
+    }
+    catch (error) {
+      lastResult = {
+        reason: error instanceof Error ? error.message : String(error),
+      }
+    }
+    await sleep(180)
   }
-  const root = await waitForPageRoot(page)
-  return root ? page : null
+  return lastResult?.ok === true ? lastResult : null
+}
+
+async function readCurrentRoutePage(miniProgram: any, route: string) {
+  let page: any = null
+  try {
+    page = await runAutomatorOp(
+      `currentPage ${route}`,
+      () => miniProgram.currentPage({ retries: 1, timeout: CURRENT_PAGE_TIMEOUT }),
+      { timeoutMs: CURRENT_PAGE_TIMEOUT },
+    )
+  }
+  catch {
+  }
+  if (page && normalizeRoutePath(page?.path ?? '') !== normalizeRoutePath(route)) {
+    page = null
+  }
+
+  const root = page ? await waitForPageRoot(page, route) : null
+  if (root) {
+    return page
+  }
+
+  const domState = await waitForRouteDomState(miniProgram, route)
+  if (domState) {
+    return page ?? {
+      path: route,
+      waitFor: sleep,
+    }
+  }
+
+  if (page) {
+    process.stdout.write(`[app-prelude-native:route] current-page-root-missing route=${route}\n`)
+  }
+  return null
 }
 
 async function waitForRoutePage(miniProgram: any, route: string) {
@@ -234,22 +370,31 @@ async function waitForRoutePage(miniProgram: any, route: string) {
         `reLaunch ${route}`,
         () => miniProgram.reLaunch(route),
         {
-          closeOnTimeout: miniProgram,
           timeoutMs: RELAUNCH_TIMEOUT,
         },
       )
-      const root = await waitForPageRoot(page)
+      const root = await waitForPageRoot(page, route)
       if (root) {
         process.stdout.write(`[app-prelude-native:route] ready route=${route} source=relaunch\n`)
         return page
       }
-      lastError = new Error(`Timed out waiting page root after reLaunch: ${route}`)
+      const currentPage = await readCurrentRoutePage(miniProgram, route).catch(() => null)
+      if (currentPage) {
+        process.stdout.write(`[app-prelude-native:route] ready route=${route} source=relaunch-current-page\n`)
+        return currentPage
+      }
+      lastError = new Error(`Timed out waiting route after reLaunch: ${route}`)
     }
     catch (error) {
       lastError = error
       const message = error instanceof Error ? error.message : String(error)
       process.stdout.write(`[app-prelude-native:route] relaunch-failed route=${route} message=${message}\n`)
-      break
+      const currentPage = await readCurrentRoutePage(miniProgram, route).catch(() => null)
+      if (currentPage) {
+        process.stdout.write(`[app-prelude-native:route] ready route=${route} source=relaunch-timeout-current-page\n`)
+        return currentPage
+      }
+      await sleep(500)
     }
   }
 
@@ -313,17 +458,19 @@ async function collectRequestRuntimeState(
   try {
     await ensureRoutePage(miniProgram, route)
     return await evaluateApp(miniProgram, `request runtime ${route}`, () => {
+      const runtimeGlobal = typeof globalThis === 'object' ? globalThis as any : {}
+      const typeOfGlobal = (key: string) => key in runtimeGlobal ? typeof runtimeGlobal[key] : 'undefined'
       return {
-        fetch: typeof fetch,
-        headers: typeof Headers,
-        request: typeof Request,
-        response: typeof Response,
-        xmlHttpRequest: typeof XMLHttpRequest,
-        webSocket: typeof WebSocket,
-        url: typeof URL,
-        urlSearchParams: typeof URLSearchParams,
-        blob: typeof Blob,
-        formData: typeof FormData,
+        fetch: typeOfGlobal('fetch'),
+        headers: typeOfGlobal('Headers'),
+        request: typeOfGlobal('Request'),
+        response: typeOfGlobal('Response'),
+        xmlHttpRequest: typeOfGlobal('XMLHttpRequest'),
+        webSocket: typeOfGlobal('WebSocket'),
+        url: typeOfGlobal('URL'),
+        urlSearchParams: typeOfGlobal('URLSearchParams'),
+        blob: typeOfGlobal('Blob'),
+        formData: typeOfGlobal('FormData'),
       }
     })
   }

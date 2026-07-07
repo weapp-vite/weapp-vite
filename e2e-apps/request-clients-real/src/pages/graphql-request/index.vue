@@ -73,12 +73,11 @@ void runE2E
 
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
-  void runCase()
 })
 </script>
 
 <template>
-  <view class="page">
+  <view id="graphql-route" class="page" data-e2e-route="graphql-request">
     <view class="hero">
       <text class="hero-title">graphql-request transport</text>
       <text class="hero-desc">真实请求到本地 GraphQL 服务，验证 URL / fetch / body 传递链路。</text>
@@ -86,7 +85,7 @@ onLoad((query) => {
 
     <view class="panel">
       <text id="graphql-page-status" class="line">pageStatus = {{ state.pageStatus }}</text>
-      <text id="graphql-status" class="line">status = {{ state.status }}</text>
+      <text id="graphql-status" :data-e2e-status="state.status" class="line">status = {{ state.status }}</text>
       <text id="graphql-run-count" class="line">runCount = {{ state.runCount }}</text>
       <text id="graphql-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="graphql-request-count" class="line">requestCount = {{ state.requestCount }}</text>
@@ -94,11 +93,6 @@ onLoad((query) => {
       <button class="action" @tap="runCase">
         重新执行 GraphQL 校验
       </button>
-    </view>
-
-    <view class="panel">
-      <text class="panel-title">payload</text>
-      <text id="graphql-payload" class="payload mono">{{ state.payload }}</text>
     </view>
 
     <view v-if="state.errorMessage" class="panel error">

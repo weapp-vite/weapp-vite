@@ -60,12 +60,11 @@ void runE2E
 
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
-  void runCase()
 })
 </script>
 
 <template>
-  <view class="page">
+  <view id="axios-route" class="page" data-e2e-route="axios">
     <view class="hero">
       <text class="hero-title">axios transport</text>
       <text class="hero-desc">真实请求到本地 HTTP 服务，验证 axios 在 request globals 环境中的行为。</text>
@@ -73,7 +72,7 @@ onLoad((query) => {
 
     <view class="panel">
       <text id="axios-page-status" class="line">pageStatus = {{ state.pageStatus }}</text>
-      <text id="axios-status" class="line">status = {{ state.status }}</text>
+      <text id="axios-status" :data-e2e-status="state.status" class="line">status = {{ state.status }}</text>
       <text id="axios-run-count" class="line">runCount = {{ state.runCount }}</text>
       <text id="axios-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="axios-request-count" class="line">requestCount = {{ state.requestCount }}</text>
@@ -81,11 +80,6 @@ onLoad((query) => {
       <button class="action" @tap="runCase">
         重新执行 axios 校验
       </button>
-    </view>
-
-    <view class="panel">
-      <text class="panel-title">payload</text>
-      <text id="axios-payload" class="payload mono">{{ state.payload }}</text>
     </view>
 
     <view v-if="state.errorMessage" class="panel error">

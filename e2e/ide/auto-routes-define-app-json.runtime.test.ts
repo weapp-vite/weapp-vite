@@ -105,8 +105,26 @@ function normalizeRoutePath(routePath: string) {
   return routePath.replace(LEADING_SLASH_RE, '')
 }
 
+function resolveRouteDomExpectation(routePath: string) {
+  switch (normalizeRoutePath(routePath)) {
+    case 'pages/home/index':
+      return {
+        dataset: { e2eRoute: 'home' },
+        selector: '#auto-routes-home',
+      }
+    case 'pages/dashboard/index':
+      return {
+        dataset: { e2eRoute: 'dashboard' },
+        selector: '#auto-routes-dashboard',
+      }
+    default:
+      return null
+  }
+}
+
 async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeoutMs = 15_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
+  const domExpectation = resolveRouteDomExpectation(expectedPath)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
@@ -116,12 +134,105 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
         retryDelayMs: 180,
       })
       if (normalizeRoutePath(String(page?.path ?? '')) === normalizedExpectedPath) {
+        if (domExpectation && typeof page?.waitForRendered === 'function') {
+          await runAutomatorOp(
+            `wait rendered route ${expectedPath}`,
+            () => page.waitForRendered({
+              dataset: domExpectation.dataset,
+              selector: domExpectation.selector,
+              timeout: Math.max(1, timeoutMs - (Date.now() - start)),
+            }),
+            {
+              timeoutMs: Math.max(1, timeoutMs - (Date.now() - start)) + 500,
+              retries: 1,
+            },
+          )
+        }
         return page
       }
     }
     catch {
     }
     await delay(220)
+  }
+  return null
+}
+
+async function readRouteLinksFromRuntime(page: any) {
+  for (const method of ['runE2E', '_runE2E']) {
+    try {
+      const snapshot = await runAutomatorOp(`call ${method}`, () => page.callMethod(method), {
+        timeoutMs: 5_000,
+        retries: 2,
+        retryDelayMs: 180,
+      })
+      if (Array.isArray(snapshot?.routeLinks)) {
+        return snapshot.routeLinks
+      }
+      if (Array.isArray(snapshot?.entries)) {
+        return snapshot.entries.map((route: string) => ({ route }))
+      }
+    }
+    catch {
+    }
+  }
+  return null
+}
+
+async function readRouteLinksFromAppService(miniProgram: any) {
+  try {
+    const snapshot = await runAutomatorOp('read auto routes app-service snapshot', () => miniProgram.evaluate(() => {
+      function normalizeRouteList(value: unknown): string[] {
+        if (!Array.isArray(value)) {
+          return []
+        }
+        return value.filter((item): item is string => typeof item === 'string')
+      }
+
+      const app = getApp()
+      const globalData = app && app.globalData ? app.globalData : {}
+      const runtimeRoutes = app && app.routes ? app.routes : {}
+      const pagesFromGlobalData = normalizeRouteList(globalData.__autoRoutesPages)
+      const entriesFromGlobalData = normalizeRouteList(globalData.__autoRoutesEntries)
+      const pagesFromRoutes = normalizeRouteList(runtimeRoutes.pages)
+      const entriesFromRoutes = normalizeRouteList(runtimeRoutes.entries)
+      const wxConfig = (globalThis as { __wxConfig?: any }).__wxConfig
+      const pagesFromWxConfig = normalizeRouteList(wxConfig?.pages)
+      const packageConfigs = Array.isArray(wxConfig?.subPackages)
+        ? wxConfig.subPackages
+        : Array.isArray(wxConfig?.subpackages)
+          ? wxConfig.subpackages
+          : []
+      const entriesFromWxConfig = [
+        ...pagesFromWxConfig,
+        ...packageConfigs.flatMap((pkg: any) => {
+          const root = typeof pkg?.root === 'string' ? pkg.root.replace(/^\/+|\/+$/g, '') : ''
+          return normalizeRouteList(pkg?.pages).map(page => [root, page.replace(/^\/+/, '')].filter(Boolean).join('/'))
+        }),
+      ]
+
+      return {
+        pages: pagesFromGlobalData.length > 0
+          ? pagesFromGlobalData
+          : pagesFromRoutes.length > 0
+            ? pagesFromRoutes
+            : pagesFromWxConfig,
+        entries: entriesFromGlobalData.length > 0
+          ? entriesFromGlobalData
+          : entriesFromRoutes.length > 0
+            ? entriesFromRoutes
+            : entriesFromWxConfig,
+      }
+    }), {
+      timeoutMs: 5_000,
+      retries: 2,
+      retryDelayMs: 180,
+    })
+    if (Array.isArray(snapshot?.entries)) {
+      return snapshot.entries.map((route: string) => ({ route }))
+    }
+  }
+  catch {
   }
   return null
 }
@@ -133,6 +244,16 @@ async function waitForRouteLinks(miniProgram: any, timeoutMs = 12_000, intervalM
     if (!page) {
       await delay(intervalMs)
       continue
+    }
+
+    const runtimeRouteLinks = await readRouteLinksFromRuntime(page)
+    if (Array.isArray(runtimeRouteLinks) && runtimeRouteLinks.length > 0) {
+      return runtimeRouteLinks
+    }
+
+    const appServiceRouteLinks = await readRouteLinksFromAppService(miniProgram)
+    if (Array.isArray(appServiceRouteLinks) && appServiceRouteLinks.length > 0) {
+      return appServiceRouteLinks
     }
 
     try {
@@ -173,6 +294,8 @@ async function getSharedMiniProgram() {
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       sharedMiniProgram = await launchAutomator({
         projectPath: APP_ROOT,
+        skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
       })
     }
     finally {

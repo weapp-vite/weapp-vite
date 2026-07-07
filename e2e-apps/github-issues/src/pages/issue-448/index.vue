@@ -19,19 +19,31 @@ const customEventType = new CustomEvent('payload', {
     ok: true,
   },
 }).type
-const parsedUrl = URL.parse('/next?b=2&a=1', 'https://issue-448.invalid/base/')
+const parsedUrlHref = URL.parse('/next?b=2&a=1', 'https://issue-448.invalid/base/')?.href
 const canParseUrl = URL.canParse('/next', 'https://issue-448.invalid')
-const searchParams = new URLSearchParams('b=2&a=1&a=0')
-const searchParamsSize = searchParams.size
-searchParams.sort()
-const sortedParams = searchParams.toString()
-const headers = new Headers()
-headers.append('Set-Cookie', 'session=issue-448')
-headers.append('Set-Cookie', 'theme=dark')
-const cookieCount = headers.getSetCookie().length
-const jsonResponse = Response.json({ ok: true })
-const jsonResponseContentType = jsonResponse.headers.get('content-type')
-const errorResponse = Response.error()
+const { searchParamsSize, sortedParams } = (() => {
+  const searchParams = new URLSearchParams('b=2&a=1&a=0')
+  const size = searchParams.size
+  searchParams.sort()
+  return {
+    searchParamsSize: size,
+    sortedParams: searchParams.toString(),
+  }
+})()
+const cookieCount = (() => {
+  const headers = new Headers()
+  headers.append('Set-Cookie', 'session=issue-448')
+  headers.append('Set-Cookie', 'theme=dark')
+  return headers.getSetCookie().length
+})()
+const jsonResponseContentType = Response.json({ ok: true }).headers.get('content-type')
+const { errorResponseStatus, errorResponseType } = (() => {
+  const response = Response.error()
+  return {
+    errorResponseStatus: response.status,
+    errorResponseType: response.type,
+  }
+})()
 const microtaskState = ref('pending')
 const baseUrl = ref('')
 const formDataUploadStatus = ref('idle')
@@ -95,15 +107,17 @@ interface Issue448WxApi {
   }
 }
 
-const wxApi = (globalThis as unknown as { wx: Issue448WxApi }).wx
-
 function resolveBaseUrl(query: Record<string, unknown> | undefined) {
   return typeof query?.baseUrl === 'string' ? decodeURIComponent(query.baseUrl) : ''
 }
 
+function getWxApi() {
+  return (globalThis as unknown as { wx: Issue448WxApi }).wx
+}
+
 function downloadFile(url: string) {
   return new Promise<DownloadFileSuccessResult>((resolve, reject) => {
-    wxApi.downloadFile({
+    getWxApi().downloadFile({
       fail: reject,
       success: resolve,
       url,
@@ -113,7 +127,7 @@ function downloadFile(url: string) {
 
 function readDownloadedFile(filePath: string) {
   return new Promise<ArrayBuffer>((resolve, reject) => {
-    wxApi.getFileSystemManager().readFile({
+    getWxApi().getFileSystemManager().readFile({
       fail: reject,
       filePath,
       success(result) {
@@ -311,6 +325,19 @@ async function _runFormDataUploadE2E() {
   }
 }
 
+let formDataUploadTask: Promise<unknown> | null = null
+
+function _startFormDataUploadE2E() {
+  if (!formDataUploadTask) {
+    formDataUploadTask = _runFormDataUploadE2E()
+    void formDataUploadTask.catch(() => {})
+  }
+  return {
+    ok: true,
+    status: formDataUploadStatus.value,
+  }
+}
+
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
 })
@@ -324,14 +351,14 @@ function _runE2E() {
     randomBytes,
     eventType,
     customEventType,
-    parsedUrl: parsedUrl?.href,
+    parsedUrl: parsedUrlHref,
     canParseUrl,
     searchParamsSize,
     sortedParams,
     cookieCount,
     jsonResponseContentType,
-    errorResponseStatus: errorResponse.status,
-    errorResponseType: errorResponse.type,
+    errorResponseStatus,
+    errorResponseType,
     formDataUploadPayload: formDataUploadPayload.value,
     formDataUploadStatus: formDataUploadStatus.value,
     formDataReadKind: formDataReadKind.value,
@@ -343,7 +370,12 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue448-page">
+  <view
+    id="issue448-page"
+    class="issue448-page"
+    :data-base-url="baseUrl"
+    data-e2e-issue="448"
+  >
     <text class="issue448-title">issue-448 next web runtime globals</text>
     <text class="issue448-line">encoded = {{ encoded }}</text>
     <text class="issue448-line">decoded = {{ decoded }}</text>
@@ -351,7 +383,7 @@ function _runE2E() {
     <text class="issue448-line">random = {{ randomBytes }}</text>
     <text class="issue448-line">event = {{ eventType }}</text>
     <text class="issue448-line">custom = {{ customEventType }}</text>
-    <text class="issue448-line">url = {{ parsedUrl?.href }}</text>
+    <text class="issue448-line">url = {{ parsedUrlHref }}</text>
     <text class="issue448-line">canParse = {{ canParseUrl }}</text>
     <text class="issue448-line">params = {{ sortedParams }}</text>
     <text class="issue448-line">cookies = {{ cookieCount }}</text>
@@ -363,6 +395,12 @@ function _runE2E() {
     <text class="issue448-line">rawFetch = {{ rawFetchUploadStatus }}</text>
     <text class="issue448-line">rawFetchPayload = {{ rawFetchUploadPayload }}</text>
     <text class="issue448-line">microtask = {{ microtaskState }}</text>
+    <view
+      class="issue448-upload-probe"
+      :data-form-data-status="formDataUploadStatus"
+      :data-raw-fetch-status="rawFetchUploadStatus"
+      :data-read-kind="formDataReadKind"
+    />
   </view>
 </template>
 

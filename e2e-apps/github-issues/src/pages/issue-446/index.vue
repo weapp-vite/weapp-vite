@@ -43,6 +43,10 @@ function _runE2E() {
     componentSnapshot: snapshot,
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

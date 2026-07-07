@@ -24,7 +24,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue317-page">
+  <view
+    id="user-page"
+    class="issue317-page"
+    data-e2e-route="subpackages-user"
+  >
     <text class="issue317-title">
       issue-317 subpackage user
     </text>

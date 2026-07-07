@@ -29,6 +29,19 @@ interface CurrentPageOptions {
   retries?: number
   timeout?: number
 }
+interface EvaluateOptions {
+  timeout?: number
+}
+interface ProtocolPagePayload {
+  __route__?: string
+  __webviewId__?: number
+  __wxWebviewId__?: number
+  options?: any
+  pageId?: number
+  path?: string
+  query?: any
+  route?: string
+}
 
 const CLOSE_STEP_TIMEOUT = 2000
 const CURRENT_PAGE_RETRIES = 3
@@ -37,6 +50,8 @@ const CHANGE_ROUTE_CONTEXT_TIMEOUT = 12_000
 const CHANGE_ROUTE_CALL_TIMEOUT = 12_000
 const CHANGE_ROUTE_READY_TIMEOUT = 15_000
 const CHANGE_ROUTE_POLL_DELAY = 500
+const CHANGE_ROUTE_POLL_PROTOCOL_TIMEOUT = 2_500
+const CHANGE_ROUTE_APP_FUNCTION_TIMEOUT = 8_000
 const APP_READY_TIMEOUT = 20_000
 const APP_READY_PROBE_TIMEOUT = 3_000
 const APP_READY_POLL_DELAY = 500
@@ -123,11 +138,26 @@ function isRouteContextProbeError(error: unknown) {
   return isCurrentPageProtocolTimeout(error) || isPageStackProtocolTimeout(error)
 }
 
+function resolveAppFunctionTimeout(timeout: number | undefined) {
+  return Math.max(timeout ?? CHANGE_ROUTE_APP_FUNCTION_TIMEOUT, CHANGE_ROUTE_APP_FUNCTION_TIMEOUT)
+}
+
 function normalizeRoutePath(value: string | undefined) {
   return String(value ?? '')
     .split('?', 1)[0]
     .replace(/^\/+/, '')
     .replace(/\/+$/, '')
+}
+
+function resolvePagePayloadId(page: ProtocolPagePayload, fallbackId: number) {
+  return page.pageId
+    ?? page.__wxWebviewId__
+    ?? page.__webviewId__
+    ?? fallbackId
+}
+
+function resolvePagePayloadPath(page: ProtocolPagePayload) {
+  return page.path ?? page.route ?? page.__route__ ?? ''
 }
 
 function logChangeRouteDebug(message: string) {
@@ -190,8 +220,8 @@ export default class MiniProgram extends EventEmitter {
     const sendOptions = options.timeout ? { timeout: options.timeout } : undefined
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       try {
-        const { pageId, path, query } = await this.send('App.getCurrentPage', {}, sendOptions)
-        return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
+        const page = await this.send('App.getCurrentPage', {}, sendOptions) as ProtocolPagePayload
+        return this.createPageFromPayload(page)
       }
       catch (error) {
         lastError = error
@@ -207,20 +237,24 @@ export default class MiniProgram extends EventEmitter {
 
     if (isCurrentPageProtocolTimeout(lastError)) {
       try {
-        const { pageStack } = await this.send('App.getPageStack', {}, sendOptions)
+        const { pageStack } = await this.send('App.getPageStack', {}, sendOptions) as { pageStack: ProtocolPagePayload[] }
         const page = pageStack[pageStack.length - 1]
         if (page) {
-          return Page.create(this.connection, {
-            id: page.pageId,
-            path: page.path,
-            query: page.query,
-          }, this.pageMap)
+          return this.createPageFromPayload(page, pageStack.length)
         }
       }
       catch (error) {
         if (!isPageStackProtocolTimeout(error)) {
           throw error
         }
+      }
+    }
+
+    if (isCurrentPageProtocolTimeout(lastError)) {
+      const pageStack = await this.readAppFunctionPageStack(resolveAppFunctionTimeout(sendOptions?.timeout))
+      const page = pageStack[pageStack.length - 1]
+      if (page) {
+        return page
       }
     }
 
@@ -277,10 +311,15 @@ export default class MiniProgram extends EventEmitter {
   }
 
   async evaluate(appFunction: AutomatorCallable | string, ...args: any[]) {
+    return await this.evaluateWithOptions(appFunction, {}, ...args)
+  }
+
+  async evaluateWithOptions(appFunction: AutomatorCallable | string, options: EvaluateOptions = {}, ...args: any[]) {
+    const sendOptions = options.timeout ? { timeout: options.timeout } : undefined
     const { result } = await this.send('App.callFunction', {
       functionDeclaration: appFunction.toString(),
       args,
-    })
+    }, sendOptions)
     return result
   }
 
@@ -539,7 +578,10 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private async resolveRouteContextPage() {
-    const currentPageTask = this.currentPage()
+    const currentPageTask = this.currentPage({
+      retries: 1,
+      timeout: CHANGE_ROUTE_POLL_PROTOCOL_TIMEOUT,
+    })
       .catch((error) => {
         if (isRouteContextProbeError(error)) {
           return undefined
@@ -557,27 +599,56 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private async readRoutePollingCurrentPage() {
-    const { pageId, path, query } = await this.send('App.getCurrentPage', {}, {
-      timeout: CHANGE_ROUTE_CONTEXT_TIMEOUT,
-    })
-    return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
+    const page = await this.send('App.getCurrentPage', {}, {
+      timeout: CHANGE_ROUTE_POLL_PROTOCOL_TIMEOUT,
+    }) as ProtocolPagePayload
+    return this.createPageFromPayload(page)
   }
 
   private async readRoutePollingPageStack() {
-    const { pageStack } = await this.send('App.getPageStack', {}, {
-      timeout: CHANGE_ROUTE_CONTEXT_TIMEOUT,
-    })
-    return pageStack.map((page: {
-      pageId: number
-      path: string
-      query: any
-    }) => {
-      return Page.create(this.connection, {
-        id: page.pageId,
-        path: page.path,
-        query: page.query,
-      }, this.pageMap)
-    })
+    try {
+      const { pageStack } = await this.send('App.getPageStack', {}, {
+        timeout: CHANGE_ROUTE_POLL_PROTOCOL_TIMEOUT,
+      }) as { pageStack: ProtocolPagePayload[] }
+      return this.createPagesFromPayloads(pageStack)
+    }
+    catch (error) {
+      if (!isPageStackProtocolTimeout(error)) {
+        throw error
+      }
+      return await this.readAppFunctionPageStack(CHANGE_ROUTE_APP_FUNCTION_TIMEOUT)
+    }
+  }
+
+  private createPageFromPayload(page: ProtocolPagePayload, fallbackId = 1) {
+    return Page.create(this.connection, {
+      id: resolvePagePayloadId(page, fallbackId),
+      path: resolvePagePayloadPath(page),
+      query: page.query ?? page.options ?? {},
+    }, this.pageMap)
+  }
+
+  private createPagesFromPayloads(pageStack: ProtocolPagePayload[]) {
+    return pageStack.map((page, index) => this.createPageFromPayload(page, index + 1))
+  }
+
+  private async readAppFunctionPageStack(timeout = CHANGE_ROUTE_APP_FUNCTION_TIMEOUT) {
+    const { result } = await this.send('App.callFunction', {
+      functionDeclaration: `function () {
+        var pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+        return pages.map(function (page, index) {
+          return {
+            pageId: page.pageId || page.__wxWebviewId__ || page.__webviewId__ || index + 1,
+            path: page.path || page.route || page.__route__ || '',
+            query: page.query || page.options || {}
+          };
+        });
+      }`,
+      args: [],
+    }, {
+      timeout,
+    }) as { result: ProtocolPagePayload[] }
+    return this.createPagesFromPayloads(Array.isArray(result) ? result : [])
   }
 
   private async send(method: string, params: Record<string, any> = {}, options?: { timeout?: number }) {

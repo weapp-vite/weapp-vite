@@ -1,4 +1,4 @@
-<view class="issue-431-page">
+<view id="issue431-page" class="issue-431-page" data-e2e-issue="431">
   <view>{{import.meta.env.VITE_ISSUE_431_LABEL}}</view>
   <image src="{{import.meta.env.VITE_ISSUE_431_ASSET_BASE}}/logo.png" />
   <view

@@ -847,14 +847,26 @@ export function injectRequestGlobalsIntoSfc(
     return source
   }
 
-  const injection = createInjectRequestGlobalsCode(targets, options)
   const { descriptor, errors } = parseSfc(source, {
     filename: 'request-globals.vue',
     ignoreEmpty: false,
   })
+  const injectionOptions = descriptor?.scriptSetup
+    ? {
+        ...options,
+        localBindings: false,
+      }
+    : options
+  const injection = createInjectRequestGlobalsCode(targets, injectionOptions)
 
   if (errors.length > 0) {
-    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
+    const fallbackOptions = source.includes('<script setup')
+      ? {
+          ...options,
+          localBindings: false,
+        }
+      : options
+    return `${createInjectRequestGlobalsSfcCode(targets, fallbackOptions)}${source}`
   }
 
   const inlineScript = descriptor.script && !descriptor.script.src
@@ -868,11 +880,11 @@ export function injectRequestGlobalsIntoSfc(
     ? descriptor.scriptSetup
     : undefined
   if (inlineScriptSetup) {
-    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
+    return `${createInjectRequestGlobalsSfcCode(targets, injectionOptions)}${source}`
   }
 
   if (!descriptor.script) {
-    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
+    return `${createInjectRequestGlobalsSfcCode(targets, injectionOptions)}${source}`
   }
 
   if (!descriptor.scriptSetup) {

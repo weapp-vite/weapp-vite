@@ -1,4 +1,4 @@
-<view class="issue466-native-page">
+<view id="issue466-native-page" class="issue466-native-page" data-e2e-issue="466-native">
   <text class="issue466-native-title">issue-466 native Dialog.confirm runtime</text>
   <text class="issue466-native-line">confirmType = {{confirmType}}</text>
   <text class="issue466-native-line">defaultConfirmType = {{defaultConfirmType}}</text>

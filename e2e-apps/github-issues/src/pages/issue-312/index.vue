@@ -29,7 +29,13 @@ function dec() {
   index.value -= 1
 }
 
-function _runE2E() {
+function _runE2E(action?: 'dec' | 'inc') {
+  if (action === 'inc') {
+    inc()
+  }
+  else if (action === 'dec') {
+    dec()
+  }
   return {
     ok: option.value.label === options[index.value].label,
     index: index.value,
@@ -40,7 +46,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue312-page">
+  <view
+    id="issue312-page"
+    class="issue312-page"
+    data-e2e-issue="312"
+  >
     <text class="issue312-title">
       issue-312 computed object round trip
     </text>

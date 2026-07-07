@@ -15,7 +15,10 @@ function advanceValue() {
     : '111'
 }
 
-function _runE2E() {
+function _runE2E(action?: 'advance') {
+  if (action === 'advance') {
+    advanceValue()
+  }
   return {
     ok: value1.value === '111' || value1.value === '222',
     value1: value1.value,

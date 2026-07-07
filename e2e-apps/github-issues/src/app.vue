@@ -17,11 +17,12 @@ const tabBarList = [
 defineAppJson({
   pages: routes.pages,
   subPackages: routes.subPackages,
-  usingComponents: {
-    'custom-tab-bar': '/custom-tab-bar/index',
-  },
+  subpackages: routes.subPackages,
   ...(tabBarList.length >= 2
     ? {
+        usingComponents: {
+          'custom-tab-bar': '/custom-tab-bar/index',
+        },
         tabBar: {
           custom: true,
           list: tabBarList,
@@ -36,7 +37,11 @@ onLaunch(() => {})
 </script>
 
 <template>
-  <view class="issue-563-app-shell">
+  <view
+    id="github-issues-app-shell"
+    class="issue-563-app-shell"
+    data-e2e-shell="github-issues"
+  >
     <slot />
   </view>
 </template>

@@ -19,7 +19,10 @@ function bump() {
   base.value += 1
 }
 
-function _runE2E() {
+function _runE2E(action?: 'bump') {
+  if (action === 'bump') {
+    bump()
+  }
   return {
     base: base.value,
     provided: readProbe('#issue642-provided'),

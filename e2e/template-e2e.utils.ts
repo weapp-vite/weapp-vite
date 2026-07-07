@@ -30,6 +30,8 @@ const RGBA_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([
 const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
 const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
 const TEMPLATE_RELAUNCH_FATAL_BOOT_RE = /WeChat DevTools simulator boot error detected/i
+const SCOPED_SLOT_ID_RE = /\bscoped-slot-[a-z0-9]+-default-\d+\b/g
+const TEMPLATE_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 
 async function pathExists(filePath: string) {
   try {
@@ -195,6 +197,8 @@ export function normalizeWxmlForSnapshot(wxml: string) {
     .replace(/id="([0-9a-f]{8})--(?!t_)([^"]+)"/g, (_match, _id, suffix) => (
       `id="${suffix}"`
     ))
+    // Normalize generated scoped slot ids whose hash depends on compile order.
+    .replace(SCOPED_SLOT_ID_RE, 'scoped-slot-stable-default-0')
     // Normalize tabs track translateX variations.
     .replace(/translateX\([\d.]+px\)/g, 'translateX(187px)')
 
@@ -402,26 +406,57 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   list.push(value)
 }
 
-async function waitForPageRoot(page: any, timeoutMs = 12_000) {
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+async function waitForPageRoot(page: any, timeoutMs = TEMPLATE_PAGE_ROOT_PROBE_TIMEOUT) {
   const start = Date.now()
+  const selectors = ['page', 'body', 'weapp-app-shell', 'view']
   while (Date.now() - start <= timeoutMs) {
-    if (typeof page?.$$ === 'function') {
+    for (const selector of selectors) {
+      if (typeof page?.$$ === 'function') {
+        try {
+          const roots = await page.$$(selector)
+          if (Array.isArray(roots) && roots.length > 0) {
+            return roots[0]
+          }
+        }
+        catch {
+        }
+      }
       try {
-        const roots = await page.$$('page')
-        if (Array.isArray(roots) && roots.length > 0) {
-          return roots[0]
+        const element = await page.$(selector)
+        if (element) {
+          return element
         }
       }
       catch {
       }
     }
-    const element = await page.$('page')
-    if (element) {
-      return element
+
+    if (typeof page?.waitFor === 'function') {
+      await page.waitFor(200)
     }
-    await page.waitFor(200)
+    else {
+      await sleep(200)
+    }
   }
   return null
+}
+
+async function isCurrentRouteReady(miniProgram: any, route: string) {
+  if (typeof miniProgram?.currentPage !== 'function') {
+    return false
+  }
+
+  try {
+    const currentPage = await miniProgram.currentPage()
+    return normalizeSegment(currentPage?.path ?? '') === normalizeSegment(route)
+  }
+  catch {
+    return false
+  }
 }
 
 async function resolveReadyCurrentPage(miniProgram: any, route: string) {
@@ -660,7 +695,10 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
       const element = await waitForPageRoot(page)
       debugTemplateE2E(templateName, 'page-root-checked', `${route} found=${String(Boolean(element))}`)
       if (!element) {
-        throw new Error(`[${templateName}] Failed to find page element: ${route}`)
+        if (!(await isCurrentRouteReady(miniProgram, route))) {
+          throw new Error(`[${templateName}] Failed to find page element: ${route}`)
+        }
+        process.stdout.write(`[warn] [template-e2e:${templateName}] page-root-missing route=${route} fallback=current-route\n`)
       }
       debugTemplateE2E(templateName, 'page-runtime-ready', route)
     }

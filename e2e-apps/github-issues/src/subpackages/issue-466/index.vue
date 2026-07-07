@@ -353,10 +353,38 @@ async function _selectSecondActionE2E() {
 async function _openDialogE2E() {
   return await _openConfirmE2E()
 }
+
+async function _runAllDialogMethodsE2E() {
+  const reset = _resetE2E()
+  const alertOpened = await _openAlertE2E()
+  const alertConfirmed = await _confirmDialogE2E()
+  const confirmOpened = await _openDialogE2E()
+  const cancelled = await _cancelDialogE2E()
+  const actionOpened = await _openActionE2E()
+  const selected = await _selectSecondActionE2E()
+  const closePrepared = await _prepareCloseHostE2E()
+  const closed = await _closeDialogE2E()
+
+  return {
+    reset,
+    alertOpened,
+    alertConfirmed,
+    confirmOpened,
+    cancelled,
+    actionOpened,
+    selected,
+    closePrepared,
+    closed,
+  }
+}
 </script>
 
 <template>
-  <view class="issue466-page">
+  <view
+    id="issue466-subpackage-page"
+    class="issue466-page"
+    data-e2e-issue="466-subpackage"
+  >
     <text class="issue466-title">issue-466 tdesign Dialog.confirm runtime + all methods</text>
     <text class="issue466-line">alertType = {{ alertType }}</text>
     <text class="issue466-line">confirmType = {{ confirmType }}</text>

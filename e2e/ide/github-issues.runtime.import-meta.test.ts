@@ -1,10 +1,12 @@
+import fs from 'node:fs/promises'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
-  launchFreshMiniProgram,
+  DIST_ROOT,
+  getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
 } from './github-issues.runtime.shared'
 
@@ -18,45 +20,38 @@ describe.sequential('github-issues runtime import.meta bindings', () => {
   })
 
   it('issue #431: renders supported native wxml import.meta bindings at runtime', async (ctx) => {
-    const miniProgram = await launchFreshMiniProgram(ctx)
+    const miniProgram = await getSharedMiniProgram(ctx)
 
-    try {
-      const page = await relaunchPage(
-        miniProgram,
-        '/pages/issue-431/index',
-        'issue-431 native wxml env replacement',
-        20_000,
-      )
-      if (!page) {
-        throw new Error('Failed to launch issue-431 page')
-      }
-
-      const pageWxml = await readPageWxml(page)
-      const doubleProbe = await page.$('[data-case="double"]')
-      const singleProbe = await page.$('[data-case="single"]')
-      if (!doubleProbe || !singleProbe) {
-        throw new Error('Failed to find issue-431 import.meta probe elements')
-      }
-
-      for (const probe of [doubleProbe, singleProbe]) {
-        expect(await probe.attribute('data-template-url')).toBe('/pages/issue-431/index.wxml')
-        expect(await probe.attribute('data-template-dir')).toBe('/pages/issue-431')
-        expect(await probe.attribute('data-env-label')).toBe('issue-431 native wxml env replacement')
-        expect(await probe.attribute('data-env-base')).toBe('https://static.example.com/issue-431')
-      }
-
-      expect(pageWxml).toContain('data-case="double"')
-      expect(pageWxml).toContain('data-case="single"')
-      expect(pageWxml).toContain('data-template-url="/pages/issue-431/index.wxml"')
-      expect(pageWxml).toContain('data-template-dir="/pages/issue-431"')
-      expect(pageWxml).toContain('data-env-label="issue-431 native wxml env replacement"')
-      expect(pageWxml).toContain('data-env-base="https://static.example.com/issue-431"')
-      expect(pageWxml).not.toContain('import.meta.env')
-      expect(pageWxml).not.toContain('import.meta.url')
-      expect(pageWxml).not.toContain('import.meta.dirname')
+    const page = await relaunchPage(
+      miniProgram,
+      '/pages/issue-431/index',
+      undefined,
+      20_000,
+      {
+        readiness: async (page) => {
+          await page.waitForRendered({
+            selector: '#issue431-page',
+            dataset: { e2eIssue: '431' },
+            timeout: 2_500,
+          })
+          return true
+        },
+      },
+    )
+    if (!page) {
+      throw new Error('Failed to launch issue-431 page')
     }
-    finally {
-      await miniProgram.close().catch(() => {})
-    }
+
+    const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-431/index.wxml'), 'utf8')
+
+    expect(pageWxml).toContain('data-case="double"')
+    expect(pageWxml).toContain('data-case=\'single\'')
+    expect(pageWxml).toMatch(/data-template-url=(["'])\{\{['"]\/pages\/issue-431\/index\.wxml['"]\}\}\1/)
+    expect(pageWxml).toMatch(/data-template-dir=(["'])\{\{['"]\/pages\/issue-431['"]\}\}\1/)
+    expect(pageWxml).toMatch(/data-env-label=(["'])\{\{['"]issue-431 native wxml env replacement['"]\}\}\1/)
+    expect(pageWxml).toMatch(/data-env-base=(["'])\{\{['"]https:\/\/static\.example\.com\/issue-431['"]\}\}\1/)
+    expect(pageWxml).not.toContain('import.meta.env')
+    expect(pageWxml).not.toContain('import.meta.url')
+    expect(pageWxml).not.toContain('import.meta.dirname')
   })
 })

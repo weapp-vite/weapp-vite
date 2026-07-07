@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { provide } from 'wevu'
+import { inject, provide } from 'wevu'
 import ProvideInjectScopeMiddle from '../../components/provide-inject-scope-middle/index.vue'
 import ProvideInjectSlotLeaf from '../../components/provide-inject-slot-leaf/index.vue'
 import ProvideInjectSlotProvider from '../../components/provide-inject-slot-provider/index.vue'
 
+const APP_INSTANCE_PROVIDE_SCOPE_KEY = 'wevu-features:app-instance-provide-scope'
+const APP_SETUP_PROVIDE_SCOPE_KEY = 'wevu-features:app-setup-provide-scope'
+const LAYOUT_PROVIDE_SCOPE_KEY = 'wevu-features:layout-provide-scope'
 const PAGE_PROVIDE_SCOPE_KEY = 'wevu-features:page-provide-scope'
 const SHADOW_PROVIDE_SCOPE_KEY = 'wevu-features:shadow-provide-scope'
 
@@ -13,6 +16,32 @@ definePageMeta({
 
 provide(PAGE_PROVIDE_SCOPE_KEY, 'page-provide-value')
 provide(SHADOW_PROVIDE_SCOPE_KEY, 'page-shadow-value')
+
+const appInstanceValue = inject(APP_INSTANCE_PROVIDE_SCOPE_KEY, 'missing-app-instance')
+const appSetupValue = inject(APP_SETUP_PROVIDE_SCOPE_KEY, 'missing-app-setup')
+const layoutValue = inject(LAYOUT_PROVIDE_SCOPE_KEY, 'missing-layout')
+
+async function runE2E() {
+  const checks = {
+    appInstance: appInstanceValue === 'app-instance-provide-value',
+    appSetup: appSetupValue === 'app-setup-provide-value',
+    pageProvide: true,
+  }
+
+  return {
+    ok: Object.values(checks).every(Boolean),
+    checks,
+    state: {
+      appInstanceValue,
+      appSetupValue,
+      layoutValue,
+      pageValue: 'page-provide-value',
+      shadowValue: 'page-shadow-value',
+    },
+  }
+}
+
+const _runE2E = runE2E
 </script>
 
 <template>

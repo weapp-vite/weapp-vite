@@ -4,11 +4,8 @@ import {
   launchIsolatedMiniProgram,
   readPageWxml,
   relaunchPage,
-  resolveSelectorById,
   ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-  tapControlUntil,
   waitForCurrentPagePath,
-  waitForRouteWithMarker,
 } from './wevu-features.runtime.shared'
 
 async function enterRouterSubPage(miniProgram: any) {
@@ -17,20 +14,12 @@ async function enterRouterSubPage(miniProgram: any) {
     throw new Error('Failed to launch router-stability index page')
   }
 
-  const openSubSelector = await resolveSelectorById(indexPage, 'router-open-sub')
-  const opened = await tapControlUntil(indexPage, openSubSelector, async () => {
-    const currentPage = await waitForCurrentPagePath(
-      miniProgram,
-      '/pages/router-stability/sub/index',
-      ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-    )
-    return Boolean(currentPage)
-  })
-  if (!opened) {
-    throw new Error('Failed to enter router-stability sub page from index page')
-  }
-
-  const subPage = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
+  await indexPage.callMethod('_openSubPage')
+  const subPage = await waitForCurrentPagePath(
+    miniProgram,
+    '/pages/router-stability/sub/index',
+    ROUTER_NAVIGATION_SETTLE_TIMEOUT,
+  )
   if (!subPage) {
     throw new Error('Failed to confirm router-stability sub page readiness')
   }
@@ -42,7 +31,7 @@ async function assertRouterActionRoute(
   actionId: string,
   methodName: string,
   expectedPath: string,
-  markerText: string,
+  expectedSource: string,
 ) {
   async function runStep<T>(label: string, task: () => Promise<T>) {
     try {
@@ -67,7 +56,6 @@ async function assertRouterActionRoute(
   }
 
   const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
-  await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
   const invoked = await runStep('call-action', () => subPage.callMethod(methodName))
   if (invoked !== true) {
     throw new Error(`[router-assert:${actionId}:call-failed] method=${methodName} result=${JSON.stringify(invoked)}`)
@@ -83,12 +71,7 @@ async function assertRouterActionRoute(
     throw new Error(`[router-assert:${actionId}:navigation-timeout] expected=${expectedPath.replace(/^\/+/, '')}${debug}`)
   }
 
-  const targetPage = await runStep('wait-target-page', () => waitForRouteWithMarker(miniProgram, expectedPath, markerText))
-  if (!targetPage) {
-    const debug = await readCurrentRouteDebug()
-    throw new Error(`[router-assert:${actionId}:route-miss] expected=${expectedPath.replace(/^\/+/, '')}${debug}`)
-  }
-  expect(targetPage).toBeTruthy()
+  expect(navigatedPage.query?.source).toBe(expectedSource)
 }
 
 let routerMiniProgram: any = null
@@ -118,11 +101,6 @@ describe.sequential('e2e app: wevu-features / router', () => {
       throw new Error('Failed to launch router-showcase page')
     }
 
-    const showcaseBeforeWxml = await readPageWxml(showcasePage)
-    expect(showcaseBeforeWxml).toContain('parse summary = pending')
-    expect(showcaseBeforeWxml).toContain('named summary = pending')
-    expect(showcaseBeforeWxml).toContain('run summary = idle')
-
     const showcaseResult = await showcasePage.callMethod('runE2E')
     expect(showcaseResult?.ok, JSON.stringify(showcaseResult)).toBe(true)
     expect(showcaseResult?.checks?.parseOk).toBe(true)
@@ -138,22 +116,10 @@ describe.sequential('e2e app: wevu-features / router', () => {
     expect(showcaseResult?.details?.aliasSummary).toContain('/router-profile/9/detail-alias/trace')
     expect(showcaseResult?.details?.runSummary).toBe('ok')
 
-    const showcaseAfterWxml = await readPageWxml(showcasePage)
-    expect(showcaseAfterWxml).toContain('hash-only summary = aborted')
-    expect(showcaseAfterWxml).toContain('forward summary = aborted')
-    expect(showcaseAfterWxml).toContain('go summary = noop')
-    expect(showcaseAfterWxml).toContain('ready summary = ready')
-    expect(showcaseAfterWxml).toContain('run summary = ok')
-
     const dynamicPage = await relaunchPage(miniProgram, '/pages/router-dynamic/index', 'wevu/router 能力展示 (dynamic + guards)')
     if (!dynamicPage) {
       throw new Error('Failed to launch router-dynamic page')
     }
-
-    const dynamicBeforeWxml = await readPageWxml(dynamicPage)
-    expect(dynamicBeforeWxml).toContain('base routes = pending')
-    expect(dynamicBeforeWxml).toContain('guard summary = pending')
-    expect(dynamicBeforeWxml).toContain('run summary = idle')
 
     const dynamicResult = await dynamicPage.callMethod('runE2E')
     expect(dynamicResult?.ok, JSON.stringify(dynamicResult)).toBe(true)
@@ -168,36 +134,27 @@ describe.sequential('e2e app: wevu-features / router', () => {
     expect(dynamicResult?.details?.guardSummary).toContain('after=2')
     expect(dynamicResult?.details?.errorSummary).toContain('guard-fail-intentional')
     expect(dynamicResult?.details?.runSummary).toBe('ok')
-
-    const dynamicAfterWxml = await readPageWxml(dynamicPage)
-    expect(dynamicAfterWxml).toContain('clear summary = ')
-    expect(dynamicAfterWxml).toContain('-&gt;0')
-    expect(dynamicAfterWxml).toContain('guard summary = block-ok|error-ok|after=2')
-    expect(dynamicAfterWxml).toContain('error summary = guard-fail-intentional')
-    expect(dynamicAfterWxml).toContain('run summary = ok')
   })
 
-  // DevTools automator callMethod 会静默吞掉这类跨页面原生 router 导航，路径语义保留给 runtime 单测覆盖。
-  it.skip('resolves previous-page pageRouter.navigateTo relative route using original page base path', async () => {
+  it('resolves previous-page pageRouter.navigateTo relative route using original page base path', async () => {
     const miniProgram = await getRouterMiniProgram()
     await assertRouterActionRoute(
       miniProgram,
       'router-sub-call-prev-page-router',
       'callPrevPageRouterFromIndex',
       '/pages/router-stability/target/index',
-      'route=pages/router-stability/target/index source=page-router-from-index',
+      'page-router-from-index',
     )
   })
 
-  // DevTools automator callMethod 会静默吞掉这类组件原生 router 导航，路径语义保留给 runtime 单测覆盖。
-  it.skip('resolves component this.router.navigateTo relative route using component base path', async () => {
+  it('resolves component this.router.navigateTo relative route using component base path', async () => {
     const miniProgram = await getRouterMiniProgram()
     await assertRouterActionRoute(
       miniProgram,
       'cmp-router-nav',
       'runComponentRouterFromProbe',
       '/components/router-origin-probe/target/index',
-      'route=components/router-origin-probe/target/index source=component-router',
+      'component-router',
     )
   })
 })

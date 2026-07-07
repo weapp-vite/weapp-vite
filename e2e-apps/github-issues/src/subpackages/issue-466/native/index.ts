@@ -149,4 +149,16 @@ Page({
     await Promise.resolve()
     return this.readRuntimeState()
   },
+
+  async _runNativeDialogFlowE2E() {
+    const reset = this._resetE2E()
+    const opened = await this._openDialogE2E()
+    const confirmed = await this._confirmDialogE2E()
+
+    return {
+      reset,
+      opened,
+      confirmed,
+    }
+  },
 })

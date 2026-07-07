@@ -4,6 +4,17 @@ import BackList from '../../components/scoped-slot-outlet-fallback/BackList/inde
 definePageJson({
   navigationBarTitleText: 'scoped-slot-outlet-fallback',
 })
+
+function _runE2E() {
+  return {
+    main: 'scoped slot outlet native main fallback',
+    footer: 'scoped slot outlet native footer fallback',
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

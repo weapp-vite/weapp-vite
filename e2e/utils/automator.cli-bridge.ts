@@ -18,8 +18,13 @@ interface AutomatorCliBridgePayload {
 }
 
 interface AutomatorCliBridgeResult {
+  servicePort?: number
   wsEndpoint: string
   cliPid?: number
+}
+
+interface WaitForSocketReadyResult {
+  servicePort?: number
 }
 
 interface WaitForSocketReadyOptions {
@@ -51,6 +56,7 @@ const FATAL_CLI_EARLY_EXIT_PATTERNS = [
   /re-?login/i,
 ]
 const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
+const WECHAT_DEVTOOLS_SERVICE_PORT_RE = /listening\s+on\s+http:\/\/127\.0\.0\.1:(\d{2,5})/i
 
 function summarizeTextOutput(value: string | undefined, maxLength = 400) {
   const normalized = typeof value === 'string' ? value.trim() : ''
@@ -106,6 +112,16 @@ function shouldFailFastOnCliExit(options: {
 
   const combined = `${stderr}\n${stdout}`
   return FATAL_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(combined))
+}
+
+export function extractWechatDevtoolsServicePort(output: string) {
+  const match = output.match(WECHAT_DEVTOOLS_SERVICE_PORT_RE)
+  if (!match) {
+    return undefined
+  }
+
+  const port = Number.parseInt(match[1]!, 10)
+  return Number.isInteger(port) && port > 0 && port <= 65535 ? port : undefined
 }
 
 function sleep(ms: number) {
@@ -268,7 +284,7 @@ async function reserveLoopbackPort() {
   })
 }
 
-export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
+export async function waitForSocketReady(options: WaitForSocketReadyOptions): Promise<WaitForSocketReadyResult> {
   const { child, timeoutMs, port } = options
   const startedAt = Date.now()
   let lastError: unknown
@@ -329,7 +345,9 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
         })
         socket.once('error', reject)
       })
-      return
+      return {
+        servicePort: extractWechatDevtoolsServicePort(`${getStdout()}\n${getStderr()}`),
+      }
     }
     catch (error) {
       lastError = error
@@ -418,8 +436,9 @@ async function main() {
   child.unref()
 
   const wsEndpoint = `ws://127.0.0.1:${autoPort}`
+  let socketReadyResult: WaitForSocketReadyResult
   try {
-    await waitForSocketReady({
+    socketReadyResult = await waitForSocketReady({
       child,
       port: autoPort,
       timeoutMs: payload.timeout ?? 30_000,
@@ -431,6 +450,7 @@ async function main() {
   }
 
   const result: AutomatorCliBridgeResult = {
+    ...(socketReadyResult.servicePort ? { servicePort: socketReadyResult.servicePort } : {}),
     wsEndpoint,
     cliPid: typeof child.pid === 'number' && child.pid > 0 ? child.pid : undefined,
   }

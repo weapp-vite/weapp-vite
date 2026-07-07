@@ -109,10 +109,26 @@ const routeLinks = computed<RouteLink[]>(() => {
     }
   })
 })
+
+function runE2E() {
+  syncRouteSnapshot()
+  return {
+    pages: pages.value,
+    entries: entries.value,
+    routeLinks: routeLinks.value,
+  }
+}
+
+const _runE2E = runE2E
+
+defineExpose({
+  _runE2E,
+  runE2E,
+})
 </script>
 
 <template>
-  <view class="page-home">
+  <view id="auto-routes-home" class="page-home" data-e2e-route="home">
     <view class="hero">
       <text class="title">
         auto-routes 导航中心

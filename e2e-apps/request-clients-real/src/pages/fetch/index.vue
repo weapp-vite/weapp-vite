@@ -56,12 +56,11 @@ void runE2E
 
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
-  void runCase()
 })
 </script>
 
 <template>
-  <view class="page">
+  <view id="fetch-route" class="page" data-e2e-route="fetch">
     <view class="hero">
       <text class="hero-title">fetch transport</text>
       <text class="hero-desc">真实请求到本地 HTTP 服务，验证 fetch + request globals。</text>
@@ -69,7 +68,7 @@ onLoad((query) => {
 
     <view class="panel">
       <text id="fetch-page-status" class="line">pageStatus = {{ state.pageStatus }}</text>
-      <text id="fetch-status" class="line">status = {{ state.status }}</text>
+      <text id="fetch-status" :data-e2e-status="state.status" class="line">status = {{ state.status }}</text>
       <text id="fetch-run-count" class="line">runCount = {{ state.runCount }}</text>
       <text id="fetch-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="fetch-request-count" class="line">requestCount = {{ state.requestCount }}</text>
@@ -77,11 +76,6 @@ onLoad((query) => {
       <button class="action" @tap="runCase">
         重新执行 fetch 校验
       </button>
-    </view>
-
-    <view class="panel">
-      <text class="panel-title">payload</text>
-      <text id="fetch-payload" class="payload mono">{{ state.payload }}</text>
     </view>
 
     <view v-if="state.errorMessage" class="panel error">

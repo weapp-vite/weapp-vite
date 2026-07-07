@@ -15,6 +15,10 @@ function _runE2E() {
     tabBarRuntime,
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

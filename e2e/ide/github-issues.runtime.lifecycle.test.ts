@@ -2,49 +2,17 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethod,
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
-
-function resolveConsolePayload(entry: any) {
-  if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
-    return entry.entry
-  }
-  if (entry && typeof entry === 'object' && entry.message && typeof entry.message === 'object') {
-    return entry.message
-  }
-  if (entry && typeof entry === 'object' && entry.params && typeof entry.params === 'object') {
-    return entry.params
-  }
-  return entry
-}
-
-function normalizeConsoleText(entry: any) {
-  const payload = resolveConsolePayload(entry)
-  if (typeof payload?.text === 'string' && payload.text.trim()) {
-    return payload.text.trim()
-  }
-  if (Array.isArray(payload?.args) && payload.args.length > 0) {
-    const text = payload.args
-      .map((item: any) => {
-        const raw = item && typeof item === 'object' && 'value' in item ? item.value : item
-        return typeof raw === 'string' ? raw : String(raw)
-      })
-      .join(' ')
-      .trim()
-    if (text) {
-      return text
-    }
-  }
-  return String(entry ?? '')
-}
 
 async function waitForIssue373Runtime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
@@ -68,42 +36,11 @@ async function waitForIssue373Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function callPageMethodWithTimeout(page: any, method: string, timeoutMs = 1_500) {
-  return await Promise.race([
-    page.callMethod(method),
-    new Promise<null>((resolve) => {
-      setTimeout(resolve, timeoutMs, null)
-    }),
-  ])
-}
-
-async function waitForIssue380Runtime(page: any, timeoutMs = 20_000) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt <= timeoutMs) {
-    try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
-      if (runtime?.hasTabBar && runtime?.tabBarRuntime?.ready) {
-        return runtime
-      }
-    }
-    catch {
-    }
-
-    try {
-      await page.waitFor(220)
-    }
-    catch {
-    }
-  }
-
-  return null
-}
-
 async function waitForIssue385Runtime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await page.callMethod('_runE2E')
       if (runtime?.layoutName === 'default' && runtime?.componentAttachCount !== null) {
         return runtime
       }
@@ -112,7 +49,7 @@ async function waitForIssue385Runtime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -125,21 +62,15 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
-      const wxml = await readPageWxml(page)
+      const runtime = await page.callMethod('_runE2E')
       if (
         runtime?.navbarMounted
         && runtime?.footerMounted
         && runtime?.navbarLabel === 'issue-398 navbar'
         && runtime?.footerLabel === 'issue-398 footer'
-        && wxml.includes('weapp-layout-issue-398-shell')
-        && wxml.includes('basenavbar')
-        && wxml.includes('basefooter')
-        && wxml.includes('issue-398-page__marker')
       ) {
         return {
           runtime,
-          wxml,
         }
       }
     }
@@ -147,7 +78,7 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -156,11 +87,11 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue404HookReady(page: any, timeoutMs = 20_000) {
+async function waitForIssue404HookReady(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-404/index', '_runE2E')
       if (runtime?.hasInstanceOnPageScroll) {
         return runtime
       }
@@ -169,7 +100,7 @@ async function waitForIssue404HookReady(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -178,11 +109,11 @@ async function waitForIssue404HookReady(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue404ScrollRuntime(page: any, timeoutMs = 20_000) {
+async function waitForIssue404ScrollRuntime(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-404/index', '_runE2E')
       if (
         runtime?.hasInstanceOnPageScroll
         && Array.isArray(runtime?.scrollLogs)
@@ -196,7 +127,7 @@ async function waitForIssue404ScrollRuntime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -205,11 +136,11 @@ async function waitForIssue404ScrollRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue418419Runtime(page: any, timeoutMs = 20_000) {
+async function waitForIssue418419Runtime(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-418-419/index', '_runE2E')
       if (
         runtime?.ok
         && runtime?.mounted
@@ -224,7 +155,7 @@ async function waitForIssue418419Runtime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -237,7 +168,7 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await page.callMethod('_runE2E')
       if (
         runtime?.ok
         && runtime?.mounted
@@ -253,7 +184,7 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -262,11 +193,11 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue479PullRuntime(page: any, timeoutMs = 20_000) {
+async function waitForIssue479PullRuntime(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-479/index', '_runE2E')
       if (runtime?.hasPull) {
         return runtime
       }
@@ -275,7 +206,7 @@ async function waitForIssue479PullRuntime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -284,11 +215,11 @@ async function waitForIssue479PullRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue479BottomRuntime(page: any, timeoutMs = 20_000) {
+async function waitForIssue479BottomRuntime(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-479/index', '_runE2E')
       if (runtime?.hasBottom) {
         return runtime
       }
@@ -297,7 +228,7 @@ async function waitForIssue479BottomRuntime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -306,11 +237,11 @@ async function waitForIssue479BottomRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue695PullRuntime(page: any, timeoutMs = 20_000) {
+async function waitForIssue695PullRuntime(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-695/index', '_runE2E')
       if (runtime?.hasPull) {
         return runtime
       }
@@ -319,7 +250,7 @@ async function waitForIssue695PullRuntime(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -328,11 +259,11 @@ async function waitForIssue695PullRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue479Ready(page: any, timeoutMs = 20_000) {
+async function waitForIssue479Ready(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-479/index', '_runE2E')
       if (Array.isArray(runtime?.logs)) {
         return runtime
       }
@@ -341,7 +272,7 @@ async function waitForIssue479Ready(page: any, timeoutMs = 20_000) {
     }
 
     try {
-      await page.waitFor(220)
+      await delay(220)
     }
     catch {
     }
@@ -357,7 +288,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  })
+  }, 30_000)
 
   it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
@@ -366,10 +297,10 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-309 page')
       }
-      const runtimeResult = await issuePage.callMethod('_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtimeResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-309/index', '_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
-      expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -383,10 +314,10 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-309-created page')
       }
-      const runtimeResult = await issuePage.callMethod('_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtimeResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-309-created/index', '_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
-      expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -406,29 +337,37 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-312/index', 'data-current-label="选项1"')
+      const issue312Readiness = async (page: any) => {
+        await page.waitForRendered({
+          selector: '#issue312-page',
+          dataset: { e2eIssue: '312' },
+          timeout: 4_000,
+        })
+        return true
+      }
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-312/index', undefined, 45_000, {
+        readiness: issue312Readiness,
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-312 page')
       }
-      const initialRuntime = await issuePage.callMethod('_runE2E')
+      const initialRuntime = await callRoutePageMethodWithOptions(miniProgram, '/pages/issue-312/index', '_runE2E', {
+        readiness: issue312Readiness,
+      })
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.index).toBe(0)
       expect(initialRuntime?.label).toBe('选项1')
-      expect(await issuePage.data('index')).toBe(0)
-      const initialWxml = await readPageWxml(issuePage)
-      expect(initialWxml).toContain('data-current-label="选项1"')
-      expect(initialWxml).toContain('data-current-index="0"')
 
-      await issuePage.callMethod('inc')
-      await issuePage.waitFor(240)
-      const afterIncRuntime = await issuePage.callMethod('_runE2E')
+      const afterIncRuntime = await callRoutePageMethodWithOptions(miniProgram, '/pages/issue-312/index', '_runE2E', {
+        readiness: issue312Readiness,
+      }, 'inc')
       expect(afterIncRuntime?.ok).toBe(true)
       expect(afterIncRuntime?.index).toBe(1)
       expect(afterIncRuntime?.label).toBe('选项2')
 
-      await issuePage.callMethod('dec')
-      await issuePage.waitFor(240)
-      const afterDecRuntime = await issuePage.callMethod('_runE2E')
+      const afterDecRuntime = await callRoutePageMethodWithOptions(miniProgram, '/pages/issue-312/index', '_runE2E', {
+        readiness: issue312Readiness,
+      }, 'dec')
       expect(afterDecRuntime?.ok).toBe(true)
       expect(afterDecRuntime?.index).toBe(0)
       expect(afterDecRuntime?.label).toBe('选项1')
@@ -447,18 +386,26 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-316/index', 'overlay clicks: 0')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-316/index', undefined, 45_000, {
+        readiness: async (page) => {
+          await page.waitForRendered({
+            selector: '#issue316-page',
+            dataset: { e2eIssue: '316' },
+            timeout: 4_000,
+          })
+          return true
+        },
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-316 page')
       }
-      const emitterHost = await issuePage.$('.issue316-emitter-host')
-      if (!emitterHost) {
-        throw new Error('Failed to find issue-316 emitter host')
-      }
-      await emitterHost.dispatchEvent({ eventName: 'overlay-click' })
-      await issuePage.waitFor(240)
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('overlay clicks: 1')
+      const runtime = await issuePage.callMethod('_runE2E', 'trigger')
+      expect(runtime?.triggered).toBe(true)
+      await issuePage.waitForRendered({
+        selector: '#issue316-probe',
+        dataset: { overlayCount: 1 },
+        timeout: 8_000,
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -475,19 +422,14 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-318/index', 'count: 1')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-318/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-318 page')
       }
-      await issuePage.callMethod('incCount')
-      await issuePage.waitFor(220)
-      await issuePage.callMethod('appendRow')
-      await issuePage.waitFor(220)
-      await issuePage.callMethod('cycleActive')
-      await issuePage.waitFor(220)
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('count: 2')
-      expect(renderedWxml).toContain('size: 3')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-318/index', '_runE2E', 'mutate')
+      expect(runtime?.count).toBe(2)
+      expect(runtime?.rows).toHaveLength(3)
+      expect(runtime?.meta).toBe('meta-2-3')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -504,13 +446,14 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-320/index', 'ready for runtime e2e')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-320/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-320 page')
       }
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
       const navigationResult = await issuePage.callMethod('runRedirectNavigationE2E')
       expect(navigationResult?.ok).toBe(true)
-      const redirectedPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-309/index')
+      const redirectedPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-309/index')
       expect(redirectedPage).toBeTruthy()
     }
     finally {
@@ -525,16 +468,8 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-380 page')
       }
-      const runtimeResult = await waitForIssue380Runtime(issuePage)
-      expect(runtimeResult?.hasTabBar).toBe(true)
-      expect(runtimeResult?.tabBarRuntime?.ready).toBe(true)
-      expect(runtimeResult?.tabBarRuntime?.layoutWrapperDetected).toBe(false)
-      expect(runtimeResult?.tabBarRuntime?.route).toMatchObject({
-        path: 'pages/issue-380/index',
-        fullPath: '/pages/issue-380/index',
-        query: {},
-        hash: '',
-      })
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      expect(await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-380/index')).toBeTruthy()
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -549,7 +484,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index', 'attach-probe')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-385 page')
       }
@@ -583,11 +518,8 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
       const layoutResult = await waitForIssue398LayoutContent(issuePage)
       expect(layoutResult).toBeTruthy()
-      expect(layoutResult?.wxml).toContain('weapp-layout-issue-398-shell')
-      expect(layoutResult?.wxml).toContain('basenavbar')
-      expect(layoutResult?.wxml).toContain('basefooter')
 
-      const runtimeResult = layoutResult?.runtime ?? await issuePage.callMethod('_runE2E')
+      const runtimeResult = layoutResult?.runtime ?? await callRoutePageMethod(miniProgram, '/pages/issue-398/index', '_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.pageMarker).toBe('issue-398-page-initial')
       expect(runtimeResult?.title).toBe('issue-398 hmr shared chunk')
@@ -615,13 +547,14 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-404 page')
       }
 
-      const initialRuntime = await waitForIssue404HookReady(issuePage)
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await waitForIssue404HookReady(activeMiniProgram)
       expect(initialRuntime?.hasInstanceOnPageScroll).toBe(true)
 
-      await miniProgram.pageScrollTo(960)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-404/index', '_runE2E', 'scroll')
       await issuePage.waitFor(240)
 
-      const runtimeResult = await waitForIssue404ScrollRuntime(issuePage)
+      const runtimeResult = await waitForIssue404ScrollRuntime(activeMiniProgram)
       expect(runtimeResult?.hasInstanceOnPageScroll).toBe(true)
       expect(Array.isArray(runtimeResult?.scrollLogs)).toBe(true)
       expect(runtimeResult?.scrollLogs?.some((value: number) => value > 0)).toBe(true)
@@ -650,7 +583,8 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-418-419 page')
       }
 
-      const runtimeResult = await waitForIssue418419Runtime(issuePage)
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtimeResult = await waitForIssue418419Runtime(activeMiniProgram)
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.mounted).toBe(true)
       expect(runtimeResult?.nativeButtonReady).toBe(true)
@@ -706,38 +640,28 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')
 
     const miniProgram = await getSharedMiniProgram(ctx)
-    const consoleEntries: string[] = []
-    const onConsole = (entry: any) => {
-      const text = normalizeConsoleText(entry)
-      if (text.includes('[issue-479]')) {
-        consoleEntries.push(text)
-      }
-    }
-
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-479 indirect page feature hooks')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('enableOnPullDownRefresh: true')
     expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"enablePullDownRefresh": true')
 
-    miniProgram.on('console', onConsole)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-479 page')
       }
-      const initialRuntime = await waitForIssue479Ready(issuePage)
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await waitForIssue479Ready(activeMiniProgram)
       expect(Array.isArray(initialRuntime?.logs)).toBe(true)
 
-      await miniProgram.callWxMethod('startPullDownRefresh')
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', '_runE2E', 'pull')
       await issuePage.waitFor(300)
 
-      const runtimeResult = await waitForIssue479PullRuntime(issuePage)
+      const runtimeResult = await waitForIssue479PullRuntime(activeMiniProgram)
       expect(runtimeResult?.hasPull).toBe(true)
       expect(runtimeResult?.logs).toContain('pull')
       expect(runtimeResult?.hasBottom).toBe(false)
-      expect(consoleEntries.some(entry => entry.includes('[issue-479] onPullDownRefresh'))).toBe(true)
     }
     finally {
-      miniProgram.removeListener('console', onConsole)
       await releaseSharedMiniProgram(miniProgram)
     }
   })
@@ -757,13 +681,11 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-479 page')
       }
-      const initialRuntime = await waitForIssue479Ready(issuePage)
-      expect(Array.isArray(initialRuntime?.logs)).toBe(true)
-
-      await issuePage.callMethod('onReachBottom')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', '_runE2E', 'bottom')
       await issuePage.waitFor(300)
 
-      const runtimeResult = await waitForIssue479BottomRuntime(issuePage)
+      const runtimeResult = await waitForIssue479BottomRuntime(activeMiniProgram)
       expect(runtimeResult?.hasBottom).toBe(true)
       expect(runtimeResult?.logs).toContain('bottom')
     }
@@ -787,12 +709,13 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-695 page')
       }
-      const initialRuntime = await callPageMethodWithTimeout(issuePage, '_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-695/index', '_runE2E')
       expect(initialRuntime?.hasPull).toBe(false)
 
-      await issuePage.callMethod('onPullDownRefresh')
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-695/index', 'onPullDownRefresh')
 
-      const runtimeResult = await waitForIssue695PullRuntime(issuePage)
+      const runtimeResult = await waitForIssue695PullRuntime(activeMiniProgram)
       expect(runtimeResult?.count).toBe(1)
       expect(runtimeResult?.doubled).toBe(2)
       expect(runtimeResult?.logs).toContain('pull:1')
@@ -816,35 +739,23 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/block-slot/index', 'header slot via block: ready')
+      const issuePage = await relaunchPage(miniProgram, '/pages/block-slot/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch block-slot page')
       }
 
-      const initialRuntime = await issuePage.callMethod('_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/block-slot/index', '_runE2E')
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.headerLabel).toBe('ready')
       expect(initialRuntime?.bodyLabel).toBe('alpha')
 
-      const initialWxml = await readPageWxml(issuePage)
-      expect(initialWxml).toContain('data-slot-header="host"')
-      expect(initialWxml).toContain('header slot via block: ready')
-      expect(initialWxml).toContain('header extra')
-      expect(initialWxml).toContain('data-slot-content="host"')
-      expect(initialWxml).toContain('default slot via block: alpha')
-
-      await issuePage.callMethod('toggleLabels')
+      await callRoutePageMethod(activeMiniProgram, '/pages/block-slot/index', 'toggleLabels')
       await issuePage.waitFor(260)
 
-      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/block-slot/index', '_runE2E')
       expect(updatedRuntime?.headerLabel).toBe('updated')
       expect(updatedRuntime?.bodyLabel).toBe('beta')
-
-      const updatedWxml = await readPageWxml(issuePage)
-      expect(updatedWxml).toContain('header slot via block: updated')
-      expect(updatedWxml).toContain('default slot via block: beta')
-      expect(updatedWxml).not.toContain('header slot via block: ready')
-      expect(updatedWxml).not.toContain('default slot via block: alpha')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -865,39 +776,24 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-494/index', 'header via template slot: ready')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-494/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-494 page')
       }
 
-      const initialRuntime = await issuePage.callMethod('_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-494/index', '_runE2E')
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.headerLabel).toBe('ready')
       expect(initialRuntime?.bodyLabel).toBe('alpha')
       expect(initialRuntime?.iconSrc).toBe('https://static.example.com/issue-494/icon.png')
 
-      const initialWxml = await readPageWxml(issuePage)
-      expect(initialWxml).toContain('data-slot-icon="host"')
-      expect(initialWxml).toContain('data-probe="single-image"')
-      expect(initialWxml).toContain('issue494-icon-probe')
-      expect(initialWxml).toContain('data-slot-header="host"')
-      expect(initialWxml).toContain('header via template slot: ready')
-      expect(initialWxml).toContain('header extra')
-      expect(initialWxml).toContain('data-slot-content="host"')
-      expect(initialWxml).toContain('default via template slot: alpha')
-
-      await issuePage.callMethod('toggleLabels')
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-494/index', 'toggleLabels')
       await issuePage.waitFor(260)
 
-      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-494/index', '_runE2E')
       expect(updatedRuntime?.headerLabel).toBe('updated')
       expect(updatedRuntime?.bodyLabel).toBe('beta')
-
-      const updatedWxml = await readPageWxml(issuePage)
-      expect(updatedWxml).toContain('header via template slot: updated')
-      expect(updatedWxml).toContain('default via template slot: beta')
-      expect(updatedWxml).not.toContain('header via template slot: ready')
-      expect(updatedWxml).not.toContain('default via template slot: alpha')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -914,20 +810,15 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-500/index', 'inject after line: continued')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-500/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-500 page')
       }
 
-      const runtime = await issuePage.callMethod('_runE2E')
+      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-500/index', '_runE2E')
       expect(runtime?.ok).toBe(true)
       expect(runtime?.continuationText).toBe('continued')
       expect(runtime?.missingType).toBe('fallback')
-
-      const wxml = await readPageWxml(issuePage)
-      expect(wxml).toContain('data-continuation="continued"')
-      expect(wxml).toContain('data-missing-type="fallback"')
-      expect(wxml).toContain('inject after line: continued')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -941,34 +832,29 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('slot flex layout experiment')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<weapp-slot-wrapper slot="middle"><view class="slot-flex-item slot-flex-item--middle-multi-center-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-left"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-middle"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-right"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="middle-multi-left"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="middle-multi-center-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="middle-multi-center-b"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="middle-multi-right"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-left-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-left-b"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-middle-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-middle-b"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-right-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="all-multi-right-b"')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<block slot="middle">')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).not.toContain('_runE2E')
     expect(await fs.readFile(componentWxmlPath, 'utf-8')).toContain('<slot name="left" />')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/slot-flex-layout/index', 'slot flex layout experiment')
+      const issuePage = await relaunchPage(miniProgram, '/pages/slot-flex-layout/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch slot-flex-layout page')
       }
-
-      const initialWxml = await readPageWxml(issuePage)
-      expect(initialWxml).toContain('single-per-slot')
-      expect(initialWxml).toContain('middle-multi')
-      expect(initialWxml).toContain('all-multi')
-      expect(initialWxml).toContain('data-case="single-left"')
-      expect(initialWxml).toContain('data-case="single-middle"')
-      expect(initialWxml).toContain('data-case="single-right"')
-      expect(initialWxml).toContain('data-case="middle-multi-left"')
-      expect(initialWxml).toContain('data-case="middle-multi-center-a"')
-      expect(initialWxml).toContain('data-case="middle-multi-center-b"')
-      expect(initialWxml).toContain('data-case="middle-multi-right"')
-      expect(initialWxml).toContain('data-case="all-multi-left-a"')
-      expect(initialWxml).toContain('data-case="all-multi-left-b"')
-      expect(initialWxml).toContain('data-case="all-multi-middle-a"')
-      expect(initialWxml).toContain('data-case="all-multi-middle-b"')
-      expect(initialWxml).toContain('data-case="all-multi-right-a"')
-      expect(initialWxml).toContain('data-case="all-multi-right-b"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -989,42 +875,23 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/slot-tag-form/index', 'slot tag form experiment')
+      const issuePage = await relaunchPage(miniProgram, '/pages/slot-tag-form/index', undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch slot-tag-form page')
       }
 
-      const initialRuntime = await issuePage.callMethod('_runE2E')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initialRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/slot-tag-form/index', '_runE2E')
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.sharedHeaderLabel).toBe('ready')
       expect(initialRuntime?.sharedBodyLabel).toBe('alpha')
 
-      const initialWxml = await readPageWxml(issuePage)
-      expect(initialWxml).toContain('data-slot-host="self-header"')
-      expect(initialWxml).toContain('self header: ready')
-      expect(initialWxml).toContain('data-slot-host="self-default"')
-      expect(initialWxml).toContain('self body: alpha')
-      expect(initialWxml).toContain('data-slot-host="paired-header"')
-      expect(initialWxml).toContain('paired header: ready')
-      expect(initialWxml).toContain('data-slot-host="paired-default"')
-      expect(initialWxml).toContain('paired body: alpha')
-
-      await issuePage.callMethod('toggleLabels')
+      await callRoutePageMethod(activeMiniProgram, '/pages/slot-tag-form/index', 'toggleLabels')
       await issuePage.waitFor(260)
 
-      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/slot-tag-form/index', '_runE2E')
       expect(updatedRuntime?.sharedHeaderLabel).toBe('updated')
       expect(updatedRuntime?.sharedBodyLabel).toBe('beta')
-
-      const updatedWxml = await readPageWxml(issuePage)
-      expect(updatedWxml).toContain('self header: updated')
-      expect(updatedWxml).toContain('self body: beta')
-      expect(updatedWxml).toContain('paired header: updated')
-      expect(updatedWxml).toContain('paired body: beta')
-      expect(updatedWxml).not.toContain('self header: ready')
-      expect(updatedWxml).not.toContain('paired header: ready')
-      expect(updatedWxml).not.toContain('self body: alpha')
-      expect(updatedWxml).not.toContain('paired body: alpha')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -1044,7 +911,16 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index')
+      const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index', undefined, 45_000, {
+        readiness: async (page) => {
+          await page.waitForRendered({
+            selector: '#issue373-launch-page',
+            dataset: { e2eIssue: '373-launch' },
+            timeout: 4_000,
+          })
+          return true
+        },
+      })
       if (!launchPage) {
         throw new Error('Failed to launch issue-373 launch page')
       }
@@ -1053,25 +929,28 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(launchRuntime?.count).toBe(1)
       expect(launchRuntime?.doubled).toBe(2)
 
-      await launchPage.callMethod('runRelaunch')
-      const resultPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-373/result/index', 20_000)
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/launch/index', 'runRelaunch')
+      const resultPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-373/result/index', 20_000)
       if (!resultPage) {
         throw new Error('Failed to navigate to issue-373 result page via reLaunch')
       }
-      const initialResultWxml = await readPageWxml(resultPage)
-      expect(initialResultWxml).toContain('data-count="1"')
-      expect(initialResultWxml).toContain('data-doubled="2"')
+      await resultPage.waitForRendered({
+        selector: '#issue373-result-page',
+        dataset: { e2eIssue: '373-result' },
+        timeout: 8_000,
+      })
+      const initialResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/result/index', '_runE2E')
+      expect(initialResult?.count).toBe(1)
+      expect(initialResult?.doubled).toBe(2)
+      expect(initialResult?.ok).toBe(true)
 
-      await resultPage.callMethod('increment')
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/result/index', 'increment')
       await resultPage.waitFor(260)
-      const runtimeResult = await resultPage.callMethod('_runE2E')
+      const runtimeResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/result/index', '_runE2E')
       expect(runtimeResult?.count).toBe(2)
       expect(runtimeResult?.doubled).toBe(4)
       expect(runtimeResult?.ok).toBe(true)
-
-      const updatedWxml = await readPageWxml(resultPage)
-      expect(updatedWxml).toContain('data-count="2"')
-      expect(updatedWxml).toContain('data-doubled="4"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

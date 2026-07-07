@@ -22,13 +22,14 @@ const INDEX_ROUTE = '/pages/index/index'
 const COUNT_LABEL_SELECTOR = '#count-label'
 const COUNT_BUTTON_SELECTOR = '.count-button-control'
 const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
+const SCREENSHOT_PROTOCOL_TIMEOUT = 90_000
 const SCRIPT_BIN = '/usr/bin/script'
 const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
 const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 // eslint-disable-next-line no-control-regex, regexp/no-obscure-range -- 这里需要去掉终端 ANSI 控制序列，便于断言真实 CLI 输出。
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const LOGIN_REQUIRED_RE = /登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired|DEVTOOLS_LOGIN_REQUIRED/i
-const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools timed out|DevTools did not respond/i
+const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|DEVTOOLS_SCREENSHOT_TIMEOUT|协议调用 .* 超时|截图请求在 \d+ms 内未收到 DevTools 回包|Screenshot request did not receive a DevTools response|DevTools timed out|DevTools did not respond/i
 const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out|Command timed out after \d+ milliseconds/i
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
@@ -115,7 +116,10 @@ async function runNodeCli(args: string[], options: {
   const { execa } = await import('execa')
   return await execa('node', args, {
     all: true,
+    cleanup: true,
     cwd: options.cwd,
+    forceKillAfterDelay: 5_000,
+    killSignal: 'SIGTERM',
     reject: options.reject ?? true,
     timeout: options.timeout ?? 60_000,
     stdin: 'ignore',
@@ -167,6 +171,35 @@ async function waitForCurrentRoute(miniProgram: any, route: string, timeoutMs = 
   throw new Error(`current route mismatch: expected ${route}, actual ${lastPath}`)
 }
 
+async function waitForRenderedSelector(miniProgram: any, selector: string, timeoutMs = 8_000) {
+  const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE, timeoutMs)
+  if (typeof page?.waitForRendered !== 'function') {
+    throw new TypeError('current page does not support waitForRendered')
+  }
+  return await page.waitForRendered({
+    selector,
+    timeout: timeoutMs,
+  })
+}
+
+async function expectRenderedSelectorBox(miniProgram: any, selector: string, timeoutMs = 8_000) {
+  const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE, timeoutMs)
+  if (typeof page?.renderedNodes !== 'function') {
+    throw new TypeError('current page does not support renderedNodes')
+  }
+
+  await waitForRenderedSelector(miniProgram, selector, timeoutMs)
+  const nodes = await page.renderedNodes(selector, {
+    timeout: timeoutMs,
+  })
+  const visibleNode = nodes.find((node: { height?: number, width?: number }) => {
+    return Number(node.width ?? 0) > 0 && Number(node.height ?? 0) > 0
+  })
+
+  expect(visibleNode, `${selector} should be rendered with a real layout box: ${JSON.stringify(nodes).slice(0, 500)}`).toBeTruthy()
+  return visibleNode
+}
+
 function isRecoverableAutomatorConnectionError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Connection closed')
@@ -174,6 +207,7 @@ function isRecoverableAutomatorConnectionError(error: unknown) {
     || message.includes('WebSocket is not open')
     || message.includes('socket hang up')
     || message.includes('Execution context was destroyed')
+    || message.includes('getPageMetaByWebviewId')
     || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
     || message.includes('DevTools did not respond to protocol method')
     || Reflect.get(error as object, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
@@ -360,6 +394,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
   let weappIdeOpenExitCode: number | undefined
   let weappViteOpenExitCode: number | undefined
   let screenshotExitCode: number | undefined
+  let ideInfraStage: 'open' | 'screenshot' | undefined
+  let preScreenshotDomReady = false
 
   async function startMiniProgram() {
     if (miniProgram) {
@@ -369,6 +405,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     miniProgram = await launchAutomator({
       projectPath: TEMPLATE_ROOT,
+      skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
       warmupRoute: INDEX_ROUTE,
     })
   }
@@ -384,6 +422,18 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       await startMiniProgram()
       return await runner()
     }
+  }
+
+  async function ensureCliWorkflowDomReady() {
+    await startMiniProgram()
+    await runWithMiniProgramRecovery(async () => {
+      await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+      await expectRenderedSelectorBox(miniProgram, COUNT_LABEL_SELECTOR)
+      await expectRenderedSelectorBox(miniProgram, COUNT_BUTTON_WRAPPER_SELECTOR)
+      await waitForRenderedSelector(miniProgram, COUNT_BUTTON_SELECTOR)
+      await waitForPageData(miniProgram, 'count', 0)
+    })
+    preScreenshotDomReady = true
   }
 
   beforeAll(async () => {
@@ -414,6 +464,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       }
       if (isIdeInfraOutput(output) || isCliTimeoutResult(wvOpen)) {
         ideInfraOutput = formatCliFailure('wv open', wvOpen)
+        ideInfraStage = 'open'
         return
       }
       throw new Error(formatCliFailure('wv open', wvOpen))
@@ -440,11 +491,14 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       }
       if (isIdeInfraOutput(output) || isCliTimeoutResult(weappOpen)) {
         ideInfraOutput = formatCliFailure('weapp open', weappOpen)
+        ideInfraStage = 'open'
         return
       }
       throw new Error(formatCliFailure('weapp open', weappOpen))
     }
     weappIdeOpenExitCode = weappOpen.exitCode
+
+    await ensureCliWorkflowDomReady()
 
     const screenshot = await runWeappIdeCli([
       'screenshot',
@@ -454,6 +508,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       INDEX_ROUTE,
       '--output',
       SCREENSHOT_OUTPUT,
+      '--timeout',
+      String(SCREENSHOT_PROTOCOL_TIMEOUT),
       '--no-runtime-service',
       '--json',
     ], {
@@ -469,6 +525,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       }
       if (isIdeInfraOutput(output) || isCliTimeoutResult(screenshot)) {
         ideInfraOutput = formatCliFailure('weapp screenshot', screenshot)
+        ideInfraStage = 'screenshot'
         return
       }
       throw new Error(formatCliFailure('weapp screenshot', screenshot))
@@ -476,7 +533,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     screenshotExitCode = screenshot.exitCode
     const screenshotStats = await fs.stat(SCREENSHOT_OUTPUT)
     expect(screenshotStats.size).toBeGreaterThan(0)
-  }, 360_000)
+  }, 480_000)
 
   afterAll(async () => {
     if (miniProgram) {
@@ -495,13 +552,17 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       return
     }
     if (protocolTimeoutOutput) {
+      expect(preScreenshotDomReady).toBe(true)
       const output = normalizeTerminalOutput(protocolTimeoutOutput)
-      expect(output).toMatch(/DEVTOOLS_PROTOCOL_TIMEOUT|协议调用 .* 超时|DevTools did not respond/i)
-      expect(output).toMatch(/自动化会话已卡住|窗口不在目标项目|automation session is stuck|target project/i)
+      expect(output).toMatch(/DEVTOOLS_PROTOCOL_TIMEOUT|DEVTOOLS_SCREENSHOT_TIMEOUT|协议调用 .* 超时|截图请求在 \d+ms 内未收到 DevTools 回包|Screenshot request did not receive a DevTools response|DevTools did not respond/i)
+      expect(output).toMatch(/自动化会话已卡住|窗口不在目标项目|目标项目|automation session is stuck|target project/i)
       expect(output).toMatch(/重试一次|Retrying once|重建会话/i)
       return
     }
     if (ideInfraOutput) {
+      if (ideInfraStage === 'screenshot') {
+        expect(preScreenshotDomReady).toBe(true)
+      }
       const output = normalizeTerminalOutput(ideInfraOutput)
       expect(output).toMatch(/DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|timedOut=true/i)
       return
@@ -525,6 +586,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
 
     await runWithMiniProgramRecovery(async () => {
       await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+      await waitForRenderedSelector(miniProgram, COUNT_BUTTON_SELECTOR)
       await waitForPageData(miniProgram, 'count', 0)
     })
 

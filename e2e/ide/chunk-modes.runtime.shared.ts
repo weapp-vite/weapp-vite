@@ -91,6 +91,9 @@ function stripAutomatorOverlay(wxml: string) {
 }
 
 async function readPageWxml(page: any) {
+  if (typeof page?.wxml === 'function') {
+    return stripAutomatorOverlay(await page.wxml())
+  }
   const element = await page.$('page')
   if (!element) {
     throw new Error('Failed to find page element')
@@ -99,6 +102,19 @@ async function readPageWxml(page: any) {
 }
 
 async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000) {
+  if (typeof page?.waitForRendered === 'function') {
+    try {
+      await page.waitForRendered({
+        ...(readyText ? { text: readyText } : {}),
+        timeout: timeoutMs,
+      })
+      return true
+    }
+    catch {
+      return false
+    }
+  }
+
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {

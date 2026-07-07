@@ -54,6 +54,7 @@ export function registerDevtoolsRuntimeTools(
 
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
         const page = await miniProgram.currentPage().catch(() => null)
+        manager.rememberPage(connection, page)
         const systemInfo = await miniProgram.systemInfo().catch(() => null)
         return {
           connected: true,
@@ -79,6 +80,7 @@ export function registerDevtoolsRuntimeTools(
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
         if (transition === 'navigateBack') {
           const page = await miniProgram.navigateBack()
+          manager.rememberPage(connection, page)
           if (waitMs && page) {
             await page.waitFor(waitMs)
           }
@@ -98,6 +100,7 @@ export function registerDevtoolsRuntimeTools(
           transition,
           url,
         )
+        manager.rememberPage(connection, page)
         if (waitMs && page) {
           await page.waitFor(waitMs)
         }

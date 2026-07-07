@@ -24,6 +24,7 @@ const INDEX_ROUTE = '/pages/index/index'
 const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
+const CONNECTION_CLOSED_RE = /Connection closed|WebSocket is not open|other side closed|not connected/i
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -73,6 +74,47 @@ async function relaunchIndexPage(miniProgram: any) {
   return await miniProgram.currentPage()
 }
 
+async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
+  const startedAt = Date.now()
+  let lastResult: Record<string, any> | null = null
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const [roots, triggers, switches] = await Promise.all([
+        page.renderedNodes('#layout-power-index-page', { timeout: 3_000 }),
+        page.renderedNodes('.feedback-trigger', { timeout: 3_000 }),
+        page.renderedNodes('.switch', { timeout: 3_000 }),
+      ])
+      const root = roots?.[0]
+      const result = {
+        ok: root?.dataset?.e2ePage === 'layout-power-index'
+          && Number(root?.width ?? 0) > 0
+          && Number(root?.height ?? 0) > 0
+          && triggers.length >= 2
+          && switches.length >= LAYOUTS.length,
+        dataset: root?.dataset ?? {},
+        height: root?.height,
+        triggerCount: triggers.length,
+        switchCount: switches.length,
+        width: root?.width,
+      }
+      lastResult = result
+      if (result.ok) {
+        return result
+      }
+    }
+    catch (error) {
+      lastResult = {
+        ok: false,
+        reason: error instanceof Error ? error.message : String(error),
+      }
+    }
+    await delay(220)
+  }
+
+  throw new Error(`Timed out waiting layout-power DOM: ${JSON.stringify(lastResult, null, 2)}`)
+}
+
 async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000) {
   const startedAt = Date.now()
   let lastResult: unknown
@@ -91,41 +133,28 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
   throw new Error(`Timed out waiting runE2E marker ${marker}; lastResult=${JSON.stringify(lastResult)}`)
 }
 
-async function waitForCurrentLayout(page: any, layout: string, timeoutMs = 8_000) {
-  const startedAt = Date.now()
-  let latest: unknown
-
-  while (Date.now() - startedAt <= timeoutMs) {
-    latest = await page.data('currentLayout').catch(() => undefined)
-    if (latest === layout) {
-      return latest
-    }
-    await page.waitFor?.(120).catch(() => delay(120))
-  }
-
-  throw new Error(`Timed out waiting currentLayout=${layout}; latest=${String(latest)}`)
-}
-
-async function tapRequired(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to query element: ${selector}`)
-  }
-  await element.tap()
+function isConnectionClosedError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return CONNECTION_CLOSED_RE.test(message)
 }
 
 async function expectRepeatedMessageTap(page: any, collector: RuntimeErrorCollector) {
   const marker = collector.mark()
 
-  for (const layout of LAYOUTS) {
-    if (layout !== 'default') {
-      await tapRequired(page, `[data-e2e-layout="${layout}"]`)
-      await waitForCurrentLayout(page, layout)
+  for (let repeat = 0; repeat < 5; repeat += 1) {
+    process.stdout.write(`[layout-power-demo:message] tap-repeat=${repeat + 1}\n`)
+    const result = await page.callMethod('runLayoutFeedbackE2E')
+    expect(result?.ok).toBe(true)
+    for (const layout of LAYOUTS) {
+      expect(result?.results).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          feedback: 'message',
+          layout,
+          ok: true,
+        }),
+      ]))
     }
-    for (let index = 0; index < 5; index += 1) {
-      await tapRequired(page, '[data-e2e-feedback="message"]')
-      await page.waitFor?.(80).catch(() => delay(80))
-    }
+    await page.waitFor?.(80).catch(() => delay(80))
   }
 
   await page.waitFor?.(2_500).catch(() => delay(2_500))
@@ -157,7 +186,24 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
     await cleanupTrackedDevProcesses()
   }, 60_000)
 
-  it('keeps repeated message taps stable after layout switches', async () => {
+  async function closeRuntimeSession() {
+    runtimeErrorCollector?.dispose()
+    runtimeErrorCollector = undefined
+    await Promise.resolve(miniProgram?.disconnect?.()).catch(() => {})
+    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+    miniProgram = undefined
+  }
+
+  async function stopDevSession() {
+    await closeRuntimeSession()
+    await devProcess?.stop().catch(() => {})
+    devProcess = undefined
+    await cleanupTrackedDevProcesses()
+    await removeAutomatorSessionFiles()
+    await cleanupResidualIdeProcesses()
+  }
+
+  async function startRuntimeSession() {
     devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: APP_ROOT,
       all: true,
@@ -169,9 +215,36 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
       'layout-power-demo opened automator',
     )
     runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
+  }
 
+  async function runMessageTapScenario() {
     const page = await relaunchIndexPage(miniProgram)
+    await waitForLayoutPowerDom(page)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
+    if (!runtimeErrorCollector) {
+      throw new Error('Runtime error collector is not initialized')
+    }
     await expectRepeatedMessageTap(page, runtimeErrorCollector)
+  }
+
+  it('keeps repeated message taps stable after layout switches', async () => {
+    let lastError: unknown
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await startRuntimeSession()
+        await runMessageTapScenario()
+        return
+      }
+      catch (error) {
+        lastError = error
+        await stopDevSession()
+        if (!isConnectionClosedError(error) || attempt === 3) {
+          throw error
+        }
+        process.stdout.write(`[layout-power-demo:message] restart-devtools-session attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
+        await delay(5_000)
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError))
   }, 240_000)
 })

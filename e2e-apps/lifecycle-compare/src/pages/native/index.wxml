@@ -1,4 +1,4 @@
-<view class="page">
+<view id="lifecycle-native-page" class="page" data-e2e-page="native">
   <view class="title">Native Page</view>
   <view class="state">Last: {{__lifecycleState.lastHook}} ({{__lifecycleState.tick}})</view>
   <view class="panel">
