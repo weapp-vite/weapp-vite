@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
+import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -111,6 +111,14 @@ describe('automator', () => {
         process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = previousPrebuild
       }
     }
+  })
+
+  it('limits launch retries for suites that must not relaunch DevTools repeatedly', () => {
+    expect(resolveLaunchRetryCount(1)).toBe(1)
+    expect(resolveLaunchRetryCount(0)).toBe(1)
+    expect(resolveLaunchRetryCount(2.8)).toBe(2)
+    expect(resolveLaunchRetryCount(Number.POSITIVE_INFINITY)).toBe(resolveLaunchRetryCount(undefined))
+    expect(resolveLaunchRetryCount(99)).toBe(resolveLaunchRetryCount(undefined))
   })
 
   it('creates self-contained bridge wrapper project config', () => {

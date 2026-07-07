@@ -310,6 +310,7 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   disableRelaunchSessionRecovery?: boolean
+  maxLaunchRetries?: number
   skipRelaunchPageRootCheck?: boolean
   skipWarmup?: boolean
   warmupAllowRelaunch?: boolean
@@ -386,6 +387,16 @@ function shouldSkipAutomatorWarmup(skipWarmup?: boolean) {
 
 export function shouldPrebuildAutomatorProject() {
   return process.env[AUTOMATOR_PREBUILD_ENV] === '1'
+}
+
+export function resolveLaunchRetryCount(maxLaunchRetries: number | undefined) {
+  if (maxLaunchRetries == null) {
+    return LAUNCH_RETRIES
+  }
+  if (!Number.isFinite(maxLaunchRetries)) {
+    return LAUNCH_RETRIES
+  }
+  return Math.max(1, Math.min(LAUNCH_RETRIES, Math.trunc(maxLaunchRetries)))
 }
 
 function shouldPrebuildAutomatorBridgeProject() {
@@ -2525,18 +2536,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { disableRelaunchSessionRecovery, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { disableRelaunchSessionRecovery, maxLaunchRetries, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
+  const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
   const launchMode = resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
   if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
     patchMiniProgramOn()
   }
   return (async () => {
-    for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
+    for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
       try {
@@ -2660,7 +2672,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           throw error
         }
 
-        if (attempt < LAUNCH_RETRIES) {
+        if (attempt < launchRetries) {
           const recovered = await recoverDevtoolsCompileCache({
             cliPath: rest.cliPath,
             completedSteps: completedRecoverySteps,
@@ -2675,10 +2687,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           }
         }
 
-        if (attempt < LAUNCH_RETRIES && isLikelyLaunchRetryableError(error)) {
+        if (attempt < launchRetries && isLikelyLaunchRetryableError(error)) {
           const rawMessage = error instanceof Error ? error.message : String(error)
           const compactMessage = rawMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
-          const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`
+          const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${launchRetries} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`
           process.stdout.write(`${retryLine}\n`)
           appendIdeReportEvent({
             source: 'runtime',
@@ -2686,7 +2698,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             project,
             level: 'warn',
             channel: 'launch-retry',
-            text: `attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`,
+            text: `attempt=${attempt}/${launchRetries} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`,
           })
           await cleanupDevtoolsProcessStateAfterLaunchFailure(error, project)
           await sleep(LAUNCH_RETRY_DELAY)
