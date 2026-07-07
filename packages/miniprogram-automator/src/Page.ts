@@ -492,10 +492,16 @@ export default class Page {
     let latestResult: any
     for (let attempt = 1; attempt <= PAGE_CALL_METHOD_FALLBACK_RETRIES; attempt += 1) {
       try {
-        latestResult = (await this.connection.send('App.callFunction', {
+        const fallbackResult = (await this.connection.send('App.callFunction', {
           functionDeclaration: `async function (route, query, method, args) {
             var pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
             var normalizedRoute = String(route || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
+            function methodResult(value) {
+              return {
+                __weappVitePageMethodFound: true,
+                value: value
+              };
+            }
             function matchesQuery(page, expectedQuery) {
               if (!expectedQuery || !Object.keys(expectedQuery).length) {
                 return true;
@@ -519,15 +525,29 @@ export default class Page {
               var page = pages[index];
               var pageRoute = String(page.path || page.route || page.__route__ || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
               if (pageRoute === normalizedRoute && matchesQuery(page, query) && typeof page[method] === 'function') {
-                return await page[method].apply(page, args || []);
+                return methodResult(await page[method].apply(page, args || []));
               }
             }
-            return undefined;
+            for (var fallbackIndex = pages.length - 1; fallbackIndex >= 0; fallbackIndex -= 1) {
+              var fallbackPage = pages[fallbackIndex];
+              if (matchesQuery(fallbackPage, query) && typeof fallbackPage[method] === 'function') {
+                return methodResult(await fallbackPage[method].apply(fallbackPage, args || []));
+              }
+            }
+            return {
+              __weappVitePageMethodFound: false
+            };
           }`,
           args: [this.path, this.query, method, args],
         }, {
           timeout: PAGE_CALL_METHOD_TIMEOUT,
         })).result
+        if (fallbackResult && typeof fallbackResult === 'object' && fallbackResult.__weappVitePageMethodFound === true) {
+          return fallbackResult.value
+        }
+        latestResult = fallbackResult && typeof fallbackResult === 'object' && fallbackResult.__weappVitePageMethodFound === false
+          ? undefined
+          : fallbackResult
         if (latestResult !== undefined || attempt === PAGE_CALL_METHOD_FALLBACK_RETRIES) {
           return latestResult
         }

@@ -206,6 +206,12 @@ Page({
   _runE2E() {
     return this.readRuntimeState()
   },
+  _debugE2E() {
+    return {
+      route: this.route,
+      data: this.readRuntimeState(),
+    }
+  },
   _resetE2E() {
     lastDialogPromise = null
     this.resolveDialogHost()?.setData?.({

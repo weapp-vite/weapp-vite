@@ -401,6 +401,59 @@ describe('Page', () => {
     })
   })
 
+  it('falls back to the current app-service page method when route metadata is stale', async () => {
+    let appFunctionDeclaration = ''
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method === 'Page.callMethod') {
+        return { result: undefined }
+      }
+      if (method === 'App.callFunction') {
+        appFunctionDeclaration = String(params?.functionDeclaration ?? '')
+        return { result: { ok: true, source: 'current-page' } }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/stale/index', query: {} })
+
+    await expect(page.callMethod('runE2E')).resolves.toEqual({ ok: true, source: 'current-page' })
+
+    expect(appFunctionDeclaration).toContain('fallbackPage')
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('fallbackPage'),
+      args: ['/pages/stale/index', {}, 'runE2E', []],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('does not retry app-service page methods that return undefined after side effects', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.callMethod') {
+        return { result: undefined }
+      }
+      if (method === 'App.callFunction') {
+        return {
+          result: {
+            __weappVitePageMethodFound: true,
+            value: undefined,
+          },
+        }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.callMethod('onTap')).resolves.toBeUndefined()
+
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('__weappVitePageMethodFound'),
+      args: ['/pages/a', {}, 'onTap', []],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
   it('retries app-service page method calls when the fallback is temporarily unavailable', async () => {
     const pageMethodTimeout = Object.assign(
       new Error('DevTools did not respond to protocol method Page.callMethod within 12000ms'),
