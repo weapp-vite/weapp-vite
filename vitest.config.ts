@@ -129,6 +129,7 @@ const projects = [
       include: [
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/suiteRunner.test.ts',
+        'e2e/utils/automator.test.ts',
         'e2e/utils/vitestTargetFile.test.ts',
         'e2e/utils/wevu-root-hmr-exports.test.ts',
       ],

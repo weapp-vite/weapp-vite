@@ -55,6 +55,12 @@ describe('automator', () => {
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
   })
 
+  it('treats missing DevTools page metadata as a retryable relaunch error', () => {
+    const error = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
   it('treats WeChat DevTools prebuild port timeout as an infra launch error', () => {
     const error = new Error('Wechat DevTools CLI prebuild failed: - initialize ✖ IDE may already started at port 18085, trying to connect ✖ #initialize-error: wait IDE port timeout')
 

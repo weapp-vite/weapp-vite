@@ -100,6 +100,7 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /WeChat DevTools simulator boot error detected in IDE log/i,
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
+  /getPageMetaByWebviewId/i,
   /subPackages[\s\S]{0,80}undefined/i,
 ]
 const TRAILING_PATH_SEPARATOR_PATTERN = /[\\/]+$/
