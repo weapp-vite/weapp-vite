@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, resolveAutomatorLaunchMode, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
+import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -59,6 +59,20 @@ describe('automator', () => {
     const error = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
 
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it('classifies warmup page root timeouts without forcing full launch retries', () => {
+    const error = new Error('Timed out waiting page root after warmup reLaunch: /pages/index/index')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+    expect(isWarmupPageRootTimeoutError(error)).toBe(true)
+  })
+
+  it('classifies warmup relaunch timeouts without forcing full launch retries', () => {
+    const error = new Error('Timeout in warmup reLaunch /pages/home/home after 30000ms')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+    expect(isWarmupRelaunchTimeoutError(error)).toBe(true)
   })
 
   it('treats WeChat DevTools prebuild port timeout as an infra launch error', () => {

@@ -257,6 +257,7 @@ interface RelaunchRecoveryOptions {
   checkDevtoolsLog?: (label: string) => void
   cliPath?: string
   cwd?: string
+  disableSessionRecovery?: boolean
   project: string
   projectPath?: string
   rootSelectors?: string[]
@@ -308,6 +309,7 @@ interface LaunchAppConfigValidationResult {
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  disableRelaunchSessionRecovery?: boolean
   skipRelaunchPageRootCheck?: boolean
   skipWarmup?: boolean
   warmupAllowRelaunch?: boolean
@@ -946,9 +948,14 @@ function isRawRelaunchTimeoutError(error: unknown) {
   return /Timeout in raw reLaunch/i.test(message)
 }
 
-function isWarmupRelaunchTimeoutError(error: unknown) {
+export function isWarmupRelaunchTimeoutError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return /Timeout in warmup reLaunch/i.test(message)
+}
+
+export function isWarmupPageRootTimeoutError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /Timed out waiting page root after warmup reLaunch/i.test(message)
 }
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
@@ -2226,6 +2233,9 @@ function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryO
       if (!isLikelyRelaunchRetryableError(error)) {
         throw error
       }
+      if (options.disableSessionRecovery) {
+        throw error
+      }
       if (isLikelySimulatorBootErrorMessage(error instanceof Error ? error.message : String(error))) {
         await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error)
         throw error
@@ -2515,7 +2525,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { disableRelaunchSessionRecovery, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -2617,6 +2627,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,
               cliPath: rest.cliPath,
               cwd: rest.cwd,
+              disableSessionRecovery: disableRelaunchSessionRecovery,
               project,
               projectPath: launchProjectPath,
               rootSelectors: warmupRootSelectors,
@@ -2643,6 +2654,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           }
           catch {
           }
+        }
+
+        if (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error)) {
+          throw error
         }
 
         if (attempt < LAUNCH_RETRIES) {
