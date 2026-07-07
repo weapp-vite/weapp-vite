@@ -399,36 +399,20 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     return miniProgram
   }
 
-  async function compileOpenedProject(marker: string, reason: string) {
-    process.stdout.write(`[layout-power-demo:hmr] compile-opened-project marker=${marker} reason=${reason}\n`)
-    try {
-      await miniProgram?.compile?.({})
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      process.stdout.write(`[layout-power-demo:hmr] compile-opened-project-skip marker=${marker} reason=${message}\n`)
-    }
-    await waitForIdeRecompileSettled(2_500)
-  }
-
   async function relaunchIndexPageWithRecoveredSession(marker: string) {
     let lastError: unknown
-    for (let recoverAttempt = 0; recoverAttempt <= 5; recoverAttempt += 1) {
+    for (let restartAttempt = 0; restartAttempt <= 3; restartAttempt += 1) {
       try {
         return await relaunchIndexPageWithRunE2EMarker(miniProgram, marker)
       }
       catch (error) {
-        if (!isRecoverableRunE2EMarkerError(error, marker) || recoverAttempt >= 5) {
+        if (!isRecoverableRunE2EMarkerError(error, marker) || restartAttempt >= 3) {
           throw error
         }
         lastError = error
       }
       const message = lastError instanceof Error ? lastError.message : String(lastError)
-      if (recoverAttempt < 2) {
-        await compileOpenedProject(marker, message)
-        continue
-      }
-      process.stdout.write(`[layout-power-demo:hmr] restart-devtools-session marker=${marker} attempt=${recoverAttempt - 1}/3 reason=${message}\n`)
+      process.stdout.write(`[layout-power-demo:hmr] restart-devtools-session marker=${marker} attempt=${restartAttempt + 1}/3 reason=${message}\n`)
       await stopDevSession()
       await waitForIdeRecompileSettled(2_000)
       await startDevSession()
@@ -450,7 +434,6 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     expect(pageJs).toContain('../../weapp-vendors/weapp-vite-runtime.js')
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
-    await compileOpenedProject(UPDATED_MARKER, 'page-script-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     await expectLayoutFeedback(page, runtimeErrorCollector)
@@ -462,7 +445,6 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(PAGE_WXML_DIST, TEMPLATE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
-    await compileOpenedProject(UPDATED_MARKER, 'page-template-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
@@ -473,7 +455,6 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForFileContains(COMMAND_LAYOUT_WXSS_DIST, STYLE_MARKER, 30_000)
     await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
     await waitForIdeRecompileSettled()
-    await compileOpenedProject(UPDATED_MARKER, 'layout-style-hmr-output-ready')
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
