@@ -73,6 +73,23 @@ interface StyleClassMatch {
   offset: number
 }
 
+const TEMPLATE_STYLE_FILE_EXTENSIONS = [
+  '.wxss',
+  '.acss',
+  '.ttss',
+  '.qss',
+  '.jxss',
+  '.css',
+  '.scss',
+  '.sass',
+  '.less',
+  '.styl',
+  '.stylus',
+  '.pcss',
+  '.postcss',
+  '.sss',
+]
+
 interface ComponentPropEntry {
   insertText: string
   label: string
@@ -429,6 +446,116 @@ async function resolveExistingFile(candidatePaths: string[]) {
   return null
 }
 
+function getLastSelectorClassMatch(selectorText: string, selectorStartOffset: number) {
+  const pattern = /\.([_a-zA-Z][\w-]*)/gu
+  let classMatch: StyleClassMatch | null = null
+
+  for (const match of selectorText.matchAll(pattern)) {
+    if (match.index == null) {
+      continue
+    }
+
+    classMatch = {
+      className: match[1],
+      filePath: '',
+      offset: selectorStartOffset + match.index + 1,
+    }
+  }
+
+  return classMatch
+}
+
+function collectSelectorClassMatches(
+  selectorText: string,
+  selectorStartOffset: number,
+  filePath: string,
+  parentClasses: StyleClassMatch[],
+) {
+  const matches: StyleClassMatch[] = []
+
+  for (const selectorPartMatch of selectorText.matchAll(/[^,]+/gu)) {
+    if (selectorPartMatch.index == null) {
+      continue
+    }
+
+    const selectorPart = selectorPartMatch[0]
+    const selectorPartStart = selectorStartOffset + selectorPartMatch.index
+    const lastClassMatch = getLastSelectorClassMatch(selectorPart, selectorPartStart)
+
+    if (lastClassMatch) {
+      matches.push({
+        ...lastClassMatch,
+        filePath,
+      })
+    }
+
+    const parentClassMatches = lastClassMatch
+      ? {
+          ...lastClassMatch,
+          filePath,
+        }
+      : null
+    const inheritedClasses = parentClassMatches ? [parentClassMatches] : parentClasses
+
+    if (inheritedClasses.length === 0) {
+      continue
+    }
+
+    const ampersandPattern = /&([-_a-zA-Z][\w-]*)/gu
+
+    for (const match of selectorPart.matchAll(ampersandPattern)) {
+      if (match.index == null) {
+        continue
+      }
+
+      for (const inheritedClass of inheritedClasses) {
+        matches.push({
+          className: `${inheritedClass.className}${match[1]}`,
+          filePath,
+          offset: selectorPartStart + match.index,
+        })
+      }
+    }
+  }
+
+  return matches
+}
+
+function collectNestedStyleClassMatches(sourceText: string, filePath: string) {
+  const matches: StyleClassMatch[] = []
+  const stack: StyleClassMatch[][] = []
+  let selectorStartOffset = 0
+  let index = 0
+
+  while (index < sourceText.length) {
+    const char = sourceText[index]
+
+    if (char === '{') {
+      const selectorText = sourceText.slice(selectorStartOffset, index)
+      const parentClasses = stack.at(-1) ?? []
+      const selectorMatches = collectSelectorClassMatches(selectorText, selectorStartOffset, filePath, parentClasses)
+
+      for (const match of selectorMatches) {
+        matches.push(match)
+      }
+
+      stack.push(selectorMatches.length > 0 ? selectorMatches : parentClasses)
+      selectorStartOffset = index + 1
+    }
+    else if (char === '}') {
+      stack.pop()
+      selectorStartOffset = index + 1
+    }
+    else if (char === ';') {
+      selectorStartOffset = index + 1
+    }
+
+    index += 1
+  }
+
+  return matches
+}
+
 function collectStyleClassMatches(sourceText: string, filePath: string) {
   const matches: StyleClassMatch[] = []
   const pattern = /\.([_a-zA-Z][\w-]*)/gu
@@ -445,7 +572,20 @@ function collectStyleClassMatches(sourceText: string, filePath: string) {
     })
   }
 
+  for (const match of collectNestedStyleClassMatches(sourceText, filePath)) {
+    if (!matches.some(item => item.className === match.className && item.offset === match.offset)) {
+      matches.push(match)
+    }
+  }
+
   return matches
+}
+
+function getWxmlCompanionStylePaths(filePath: string) {
+  const companionPaths = resolveWxmlFileCompanionPaths(filePath)
+  const basePath = companionPaths.wxml.replace(/\.wxml$/u, '')
+
+  return TEMPLATE_STYLE_FILE_EXTENSIONS.map(extension => `${basePath}${extension}`)
 }
 
 function readLeadingPropertyName(sourceText: string) {
@@ -1079,27 +1219,19 @@ async function getVueStyleClassMatches(document: vscode.TextDocument) {
 }
 
 async function getWxmlStyleClassMatches(document: vscode.TextDocument) {
-  const companionPaths = resolveWxmlFileCompanionPaths(document.uri.fsPath)
-  const styleFilePath = await resolveExistingFile([
-    companionPaths.wxml.replace(/\.wxml$/u, '.wxss'),
-    companionPaths.wxml.replace(/\.wxml$/u, '.css'),
-    companionPaths.wxml.replace(/\.wxml$/u, '.scss'),
-    companionPaths.wxml.replace(/\.wxml$/u, '.sass'),
-    companionPaths.wxml.replace(/\.wxml$/u, '.less'),
-    companionPaths.wxml.replace(/\.wxml$/u, '.styl'),
-  ])
+  const matches: StyleClassMatch[] = []
 
-  if (!styleFilePath) {
-    return []
+  for (const styleFilePath of getWxmlCompanionStylePaths(document.uri.fsPath)) {
+    const sourceText = await readTextFile(styleFilePath)
+
+    if (!sourceText) {
+      continue
+    }
+
+    matches.push(...collectStyleClassMatches(sourceText, styleFilePath))
   }
 
-  const sourceText = await readTextFile(styleFilePath)
-
-  if (!sourceText) {
-    return []
-  }
-
-  return collectStyleClassMatches(sourceText, styleFilePath)
+  return matches
 }
 
 async function getWorkspaceComponentDirs(document: vscode.TextDocument) {

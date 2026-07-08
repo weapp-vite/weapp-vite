@@ -491,6 +491,163 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(getMarkdownValue(eventHover?.contents).includes('参数: `value: number`'), true)
 })
 
+it('resolves style class definitions from mini program style files and preprocessor nesting', async () => {
+  const pagePath = mockWorkspacePath('/workspace/src/pages/native/index')
+  const files = new Map<string, string>([
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [`${pagePath}.wxss`, '.feature-card { color: red; }'],
+    [`${pagePath}.acss`, '.alipay-card { color: blue; }'],
+    [`${pagePath}.ttss`, '.toutiao-card { color: green; }'],
+    [`${pagePath}.qss`, '.qq-card { color: orange; }'],
+    [`${pagePath}.jxss`, '.jd-card { color: purple; }'],
+    [`${pagePath}.css`, '.swan-card { color: black; }'],
+    [`${pagePath}.scss`, [
+      '.feature-card {',
+      '  &__main { color: #222; }',
+      '  &--active { color: #1677ff; }',
+      '}',
+    ].join('\n')],
+    [`${pagePath}.less`, [
+      '.less-card {',
+      '  &__title { color: #333; }',
+      '}',
+    ].join('\n')],
+    [`${pagePath}.stylus`, '.stylus-card\n  color #444'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: MockUri, range: MockRange) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: MockPosition, end: MockPosition) {
+          this.start = start
+          this.end = end
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+  } = await import('./templateProviders')
+
+  const document = createTextDocument(
+    'wxml',
+    [
+      '<view class="feature-card feature-card__main feature-card--active">',
+      '  <view class="alipay-card toutiao-card qq-card jd-card swan-card less-card__title stylus-card"></view>',
+      '</view>',
+    ].join('\n'),
+    `${pagePath}.wxml`,
+  )
+  const documentText = document.getText()
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const getDefinition = (className: string) => definitionProvider.provideDefinition(
+    document as any,
+    document.positionAt(documentText.indexOf(className) + 2) as any,
+  )
+
+  const featureDefinition = await getDefinition('feature-card ')
+  const nestedScssDefinition = await getDefinition('feature-card__main')
+  const modifierScssDefinition = await getDefinition('feature-card--active')
+  const alipayDefinition = await getDefinition('alipay-card')
+  const toutiaoDefinition = await getDefinition('toutiao-card')
+  const qqDefinition = await getDefinition('qq-card')
+  const jdDefinition = await getDefinition('jd-card')
+  const swanDefinition = await getDefinition('swan-card')
+  const lessDefinition = await getDefinition('less-card__title')
+  const stylusDefinition = await getDefinition('stylus-card')
+
+  assert.equal(featureDefinition?.uri.fsPath, `${pagePath}.wxss`)
+  assert.equal(nestedScssDefinition?.uri.fsPath, `${pagePath}.scss`)
+  assert.equal(getLocationLine(nestedScssDefinition), 1)
+  assert.equal(modifierScssDefinition?.uri.fsPath, `${pagePath}.scss`)
+  assert.equal(alipayDefinition?.uri.fsPath, `${pagePath}.acss`)
+  assert.equal(toutiaoDefinition?.uri.fsPath, `${pagePath}.ttss`)
+  assert.equal(qqDefinition?.uri.fsPath, `${pagePath}.qss`)
+  assert.equal(jdDefinition?.uri.fsPath, `${pagePath}.jxss`)
+  assert.equal(swanDefinition?.uri.fsPath, `${pagePath}.css`)
+  assert.equal(lessDefinition?.uri.fsPath, `${pagePath}.less`)
+  assert.equal(stylusDefinition?.uri.fsPath, `${pagePath}.stylus`)
+})
+
 it('provides route links inside recognized vue template documents', async () => {
   const files = new Map<string, string>([
     [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
