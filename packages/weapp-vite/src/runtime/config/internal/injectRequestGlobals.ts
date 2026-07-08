@@ -450,7 +450,7 @@ export function createRequestGlobalsPassiveBindingsCode(
       return `var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
     }
     if (target === 'WebSocket') {
-      return `var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["wss://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory})`
+      return `var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",typeof ${actualRef}==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:typeof globalThis.WebSocket==="function"&&globalThis.WebSocket?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.WebSocket:${placeholderFactory})`
     }
     if (target === 'AbortController') {
       return `var AbortController = ${REQUEST_GLOBAL_EXPOSE_HELPER}("AbortController",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory})`

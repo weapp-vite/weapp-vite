@@ -6,7 +6,6 @@ import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import {
   createInjectRequestGlobalsCode,
-  injectRequestGlobalsIntoSfc,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
@@ -62,11 +61,7 @@ export function createTransformHook(state: CorePluginState) {
     }
 
     if (sourceId.endsWith('.vue') && code.includes('<')) {
-      return injectRequestGlobalsIntoSfc(code, requestGlobalsTargets as any, {
-        localBindings: !passiveLocalBindings,
-        networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-        passiveLocalBindings,
-      })
+      return null
     }
 
     return `${createInjectRequestGlobalsCode(requestGlobalsTargets as any, {

@@ -1,7 +1,6 @@
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import {
   createInjectRequestGlobalsCode,
-  injectRequestGlobalsIntoSfc,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -55,10 +54,7 @@ export function injectRequestGlobalsIntoLoadResult(
   }
 
   if (sourceId.endsWith('.vue')) {
-    return {
-      ...result,
-      code: injectRequestGlobalsIntoSfc(result.code, targets as any, options),
-    }
+    return result
   }
 
   return {

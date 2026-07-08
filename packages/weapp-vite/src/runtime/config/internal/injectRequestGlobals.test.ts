@@ -363,6 +363,16 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).not.toContain(`${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
+  it('does not probe WebSocket by constructing a real socket URL in passive bindings', () => {
+    const code = createInjectRequestGlobalsCode(['WebSocket'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket"`)
+    expect(code).not.toContain('wss://request-globals.invalid')
+    expect(code).not.toContain(`WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
+  })
+
   it('creates passive bindings for the next web runtime batch', () => {
     const code = createInjectRequestGlobalsCode(['atob', 'btoa', 'queueMicrotask', 'performance', 'crypto', 'Event', 'CustomEvent'], {
       passiveLocalBindings: true,
