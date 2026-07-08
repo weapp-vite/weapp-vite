@@ -38,6 +38,9 @@ export interface WxmlInterpolationContext {
 }
 
 export interface WxmlScopedIdentifierMatch {
+  collectionEnd?: number
+  collectionName?: string
+  collectionStart?: number
   definitionEnd: number | null
   definitionStart: number | null
   identifier: string
@@ -274,6 +277,17 @@ function getWxmlOpenTagStack(sourceText: string, offset: number) {
     const tagEnd = tagStart + tagText.length
 
     if (tagEnd > offset) {
+      if (tagStart <= offset) {
+        const tagNameMatch = parseTagName(tagText)
+
+        if (tagNameMatch?.name && !tagNameMatch.isClosingTag) {
+          stack.push({
+            attributes: parseTagAttributes(tagText, tagStart, tagNameMatch.nameEnd),
+            tagName: tagNameMatch.name,
+          })
+        }
+      }
+
       break
     }
 
@@ -600,11 +614,19 @@ export function getWxmlScopedIdentifierMatch(
     const itemIdentifier = itemAttribute?.value.trim() || 'item'
     const indexIdentifier = indexAttribute?.value.trim() || 'index'
     const implicitNavigationRange = getImplicitWxForLocalNavigationRange(forAttribute)
+    const collection = implicitNavigationRange
+      ? {
+          collectionEnd: implicitNavigationRange.end,
+          collectionName: sourceText.slice(implicitNavigationRange.start, implicitNavigationRange.end),
+          collectionStart: implicitNavigationRange.start,
+        }
+      : {}
 
     if (normalizedIdentifier === itemIdentifier) {
       const navigationRange = itemAttribute ? null : implicitNavigationRange
 
       return {
+        ...collection,
         definitionEnd: itemAttribute?.valueEnd ?? null,
         definitionStart: itemAttribute?.valueStart ?? null,
         identifier: normalizedIdentifier,
@@ -621,6 +643,7 @@ export function getWxmlScopedIdentifierMatch(
       const navigationRange = indexAttribute ? null : implicitNavigationRange
 
       return {
+        ...collection,
         definitionEnd: indexAttribute?.valueEnd ?? null,
         definitionStart: indexAttribute?.valueStart ?? null,
         identifier: normalizedIdentifier,

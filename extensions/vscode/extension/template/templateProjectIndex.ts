@@ -850,6 +850,33 @@ function findTopLevelObjectProperty(sourceText: string, objectStartOffset: numbe
   return null
 }
 
+function findObjectPropertyInRange(sourceText: string, startOffset: number, endOffset: number, propertyName: string) {
+  let index = startOffset
+
+  while (index < endOffset) {
+    const property = readObjectPropertyNameAt(sourceText, index, endOffset)
+
+    if (!property) {
+      index += 1
+      continue
+    }
+
+    let cursor = skipScriptWhitespace(sourceText, property.end, endOffset)
+
+    if (sourceText[cursor] === '?') {
+      cursor = skipScriptWhitespace(sourceText, cursor + 1, endOffset)
+    }
+
+    if (property.name === propertyName && sourceText[cursor] === ':') {
+      return property.nameStart
+    }
+
+    index = property.end
+  }
+
+  return null
+}
+
 function getOptionsObjectSections(sourceText: string) {
   const sections: Array<{ end: number, start: number }> = []
   const callPattern = /\b(?:Page|Component)\s*\(/gu
@@ -901,6 +928,44 @@ function findOptionsDataDefinitionOffset(sourceText: string, symbolName: string)
 
     if (property) {
       return property.nameStart
+    }
+  }
+
+  return null
+}
+
+function findOptionsDataMemberDefinitionOffset(sourceText: string, ownerName: string, memberName: string) {
+  for (const optionsSection of getOptionsObjectSections(sourceText)) {
+    const dataProperty = findTopLevelObjectProperty(sourceText, optionsSection.start, optionsSection.end, 'data')
+
+    if (!dataProperty || sourceText[dataProperty.valueStart] !== ':') {
+      continue
+    }
+
+    const dataObjectStart = skipScriptWhitespace(sourceText, dataProperty.valueStart + 1, optionsSection.end)
+
+    if (sourceText[dataObjectStart] !== '{') {
+      continue
+    }
+
+    const dataSection = findBalancedSection(sourceText, dataObjectStart, '{', '}')
+
+    if (!dataSection) {
+      continue
+    }
+
+    const ownerProperty = findTopLevelObjectProperty(sourceText, dataSection.start, dataSection.end, ownerName)
+
+    if (!ownerProperty || sourceText[ownerProperty.valueStart] !== ':') {
+      continue
+    }
+
+    const ownerValueStart = skipScriptWhitespace(sourceText, ownerProperty.valueStart + 1, dataSection.end)
+    const ownerValueEnd = skipScriptValue(sourceText, ownerValueStart, dataSection.end)
+    const memberOffset = findObjectPropertyInRange(sourceText, ownerValueStart, ownerValueEnd, memberName)
+
+    if (memberOffset != null) {
+      return memberOffset
     }
   }
 
@@ -1135,6 +1200,32 @@ async function resolveWxmlScriptDefinition(document: vscode.TextDocument, symbol
   }
 
   const offset = findScriptDefinitionOffset(sourceText, symbolName, definitionType)
+
+  if (offset == null) {
+    return null
+  }
+
+  return {
+    filePath,
+    offset,
+  } satisfies ScriptDefinitionMatch
+}
+
+async function resolveWxmlScriptMemberDefinition(document: vscode.TextDocument, ownerName: string, memberName: string) {
+  const companionPaths = resolveWxmlFileCompanionPaths(document.uri.fsPath)
+  const filePath = await resolveExistingFile([companionPaths.ts, companionPaths.js])
+
+  if (!filePath) {
+    return null
+  }
+
+  const sourceText = await readTextFile(filePath)
+
+  if (!sourceText) {
+    return null
+  }
+
+  const offset = findOptionsDataMemberDefinitionOffset(sourceText, ownerName, memberName)
 
   if (offset == null) {
     return null
@@ -1944,6 +2035,35 @@ export async function resolveTemplateScriptDefinition(
   const sourceText = match.filePath === document.uri.fsPath
     ? document.getText()
     : await readTextFile(match.filePath)
+
+  if (!sourceText) {
+    return null
+  }
+
+  return new vscode.Location(vscode.Uri.file(match.filePath), getPositionAtOffset(sourceText, match.offset))
+}
+
+export async function resolveTemplateScriptMemberDefinition(
+  document: vscode.TextDocument,
+  ownerName: string,
+  memberName: string,
+) {
+  const normalizedOwnerName = ownerName.trim()
+  const normalizedMemberName = memberName.trim()
+
+  if (!normalizedOwnerName || !normalizedMemberName) {
+    return null
+  }
+
+  const match = document.languageId === 'vue'
+    ? null
+    : await resolveWxmlScriptMemberDefinition(document, normalizedOwnerName, normalizedMemberName)
+
+  if (!match) {
+    return null
+  }
+
+  const sourceText = await readTextFile(match.filePath)
 
   if (!sourceText) {
     return null

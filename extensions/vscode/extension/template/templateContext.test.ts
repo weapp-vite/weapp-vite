@@ -116,11 +116,17 @@ it('detects wx:for scoped identifiers from the nearest active loop', () => {
   const idxMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('{{ idx }}') + 3, 'idx')
 
   assert.deepEqual(productMatch, {
+    collectionStart: source.indexOf('list'),
+    collectionEnd: source.indexOf('list') + 'list'.length,
+    collectionName: 'list',
     definitionStart: source.indexOf('"product"') + 1,
     definitionEnd: source.indexOf('"product"') + 8,
     identifier: 'product',
   })
   assert.deepEqual(idxMatch, {
+    collectionStart: source.indexOf('list'),
+    collectionEnd: source.indexOf('list') + 'list'.length,
+    collectionName: 'list',
     definitionStart: source.indexOf('"idx"') + 1,
     definitionEnd: source.indexOf('"idx"') + 4,
     identifier: 'idx',
@@ -137,10 +143,29 @@ it('maps implicit wx:for item navigation to the list expression', () => {
   const itemMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('item.time') + 7, 'item')
 
   assert.deepEqual(itemMatch, {
+    collectionStart: source.indexOf('timeline'),
+    collectionEnd: source.indexOf('timeline') + 'timeline'.length,
+    collectionName: 'timeline',
     definitionStart: null,
     definitionEnd: null,
     identifier: 'item',
     navigationStart: source.indexOf('timeline'),
     navigationEnd: source.indexOf('timeline') + 'timeline'.length,
+  })
+})
+
+it('detects wx:for scoped identifiers on the current self-closing tag', () => {
+  const source = '<example-row wx:for="{{ steps }}" label="{{ item.label }}" />'
+  const itemMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('item.label') + 2, 'item')
+
+  assert.deepEqual(itemMatch, {
+    collectionStart: source.indexOf('steps'),
+    collectionEnd: source.indexOf('steps') + 'steps'.length,
+    collectionName: 'steps',
+    definitionStart: null,
+    definitionEnd: null,
+    identifier: 'item',
+    navigationStart: source.indexOf('steps'),
+    navigationEnd: source.indexOf('steps') + 'steps'.length,
   })
 })

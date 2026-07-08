@@ -50,6 +50,7 @@ import {
   resolveTemplateComponentAttributeDefinition,
   resolveTemplateLinkTarget,
   resolveTemplateScriptDefinition,
+  resolveTemplateScriptMemberDefinition,
   resolveTemplateStyleDefinition,
   resolveTemplateTagTarget,
 } from './templateProjectIndex'
@@ -67,6 +68,7 @@ interface TemplateIdentifierReference {
   identifier: string
   navigationEnd?: number
   navigationStart?: number
+  ownerIdentifier?: string
   scopeKey: string | null
   start: number
 }
@@ -279,7 +281,7 @@ function collectScopedMemberExpressionReferences(
   for (const match of expression.matchAll(/([$A-Za-z_][\w$]*)(?:\.[$A-Za-z_][\w$]*)+/gu)) {
     const identifier = match[1]
     const start = expressionStart + (match.index ?? 0)
-    const end = start + match[0].length
+    const identifierEnd = start + identifier.length
     const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier)
 
     if (!scopedIdentifierMatch) {
@@ -290,7 +292,7 @@ function collectScopedMemberExpressionReferences(
       definitionEnd: scopedIdentifierMatch.definitionEnd,
       definitionStart: scopedIdentifierMatch.definitionStart,
       definitionType: 'local',
-      end,
+      end: identifierEnd,
       identifier,
       navigationEnd: scopedIdentifierMatch.navigationEnd,
       navigationStart: scopedIdentifierMatch.navigationStart,
@@ -301,6 +303,34 @@ function collectScopedMemberExpressionReferences(
       ),
       start,
     })
+
+    if (!scopedIdentifierMatch.collectionName) {
+      continue
+    }
+
+    const memberPattern = /\.([$A-Za-z_][\w$]*)/gu
+
+    for (const memberMatch of match[0].matchAll(memberPattern)) {
+      if (memberMatch.index == null) {
+        continue
+      }
+
+      const memberName = memberMatch[1]
+      const memberStart = start + memberMatch.index + 1
+
+      references.push({
+        definitionEnd: null,
+        definitionStart: null,
+        definitionType: 'prop',
+        end: memberStart + memberName.length,
+        identifier: memberName,
+        navigationEnd: scopedIdentifierMatch.collectionEnd,
+        navigationStart: scopedIdentifierMatch.collectionStart,
+        ownerIdentifier: scopedIdentifierMatch.collectionName,
+        scopeKey: null,
+        start: memberStart,
+      })
+    }
   }
 
   return references
@@ -451,6 +481,35 @@ function getTemplateDefinitionReferenceAtOffset(
   }
 
   return getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+}
+
+async function resolveTemplateIdentifierReferenceDefinition(
+  document: vscode.TextDocument,
+  reference: TemplateIdentifierReference,
+) {
+  if (reference.definitionType === 'local') {
+    return createScopedIdentifierLocation(document, reference)
+  }
+
+  if (reference.definitionType === 'prop' && reference.ownerIdentifier) {
+    const memberLocation = await resolveTemplateScriptMemberDefinition(
+      document,
+      reference.ownerIdentifier,
+      reference.identifier,
+    )
+
+    if (memberLocation) {
+      return memberLocation
+    }
+
+    const collectionLocation = createScopedIdentifierLocation(document, reference)
+
+    if (collectionLocation) {
+      return collectionLocation
+    }
+  }
+
+  return resolveTemplateScriptDefinition(document, reference.identifier, reference.definitionType)
 }
 
 function getTemplateIdentifierReferencesForTarget(
@@ -983,11 +1042,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
         return null
       }
 
-      if (reference.definitionType === 'local') {
-        return createScopedIdentifierLocation(document, reference)
-      }
-
-      return resolveTemplateScriptDefinition(document, reference.identifier, reference.definitionType)
+      return resolveTemplateIdentifierReferenceDefinition(document, reference)
     }
 
     if (tagContext.attribute && isLinkAttribute(tagContext.attribute.name) && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)) {
@@ -1031,11 +1086,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
         return null
       }
 
-      if (reference.definitionType === 'local') {
-        return createScopedIdentifierLocation(document, reference)
-      }
-
-      return resolveTemplateScriptDefinition(document, reference.identifier, reference.definitionType)
+      return resolveTemplateIdentifierReferenceDefinition(document, reference)
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isEventAttribute(tagContext.attribute.name)) {
@@ -1045,11 +1096,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
         return null
       }
 
-      if (scriptReference.definitionType === 'local') {
-        return createScopedIdentifierLocation(document, scriptReference)
-      }
-
-      return resolveTemplateScriptDefinition(document, scriptReference.identifier, scriptReference.definitionType)
+      return resolveTemplateIdentifierReferenceDefinition(document, scriptReference)
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isClassAttributeName(tagContext.attribute.name)) {

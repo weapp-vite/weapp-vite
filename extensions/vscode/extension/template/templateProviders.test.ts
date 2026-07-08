@@ -1081,6 +1081,148 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   assert.equal(getLocationLine(implicitItemMemberDefinition), 3)
 })
 
+it('resolves wx:for item members to collection item properties', async () => {
+  const files = new Map<string, string>([
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/components/native-host/index.ts'), [
+      'Component({',
+      '  data: {',
+      '    steps: [',
+      '      { label: \'已出库\', tone: \'success\' },',
+      '      { label: \'配送中\', tone: \'warning\' },',
+      '    ],',
+      '  },',
+      '})',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: MockUri, range: MockRange) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: MockPosition, end: MockPosition) {
+          this.start = start
+          this.end = end
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+  } = await import('./templateProviders')
+
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const document = createTextDocument(
+    'wxml',
+    [
+      '<view class="native-host__steps">',
+      '  <example-native-leaf',
+      '    wx:for="{{ steps }}"',
+      '    wx:key="label"',
+      '    label="{{ item.label }}"',
+      '    tone="{{ item.tone }}"',
+      '  />',
+      '</view>',
+    ].join('\n'),
+    mockWorkspacePath('/workspace/src/components/native-host/index.wxml'),
+  )
+  const documentText = document.getText()
+  const itemPosition = document.positionAt(documentText.indexOf('item.label') + 2)
+  const labelPosition = document.positionAt(documentText.indexOf('item.label') + 'item.'.length + 1)
+  const tonePosition = document.positionAt(documentText.indexOf('item.tone') + 'item.'.length + 1)
+
+  const itemDefinition = await definitionProvider.provideDefinition(document as any, itemPosition as any)
+  const labelDefinition = await definitionProvider.provideDefinition(document as any, labelPosition as any)
+  const toneDefinition = await definitionProvider.provideDefinition(document as any, tonePosition as any)
+
+  assert.equal(itemDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/native-host/index.wxml'))
+  assert.equal(getLocationLine(itemDefinition), 2)
+  assert.equal(labelDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/native-host/index.ts'))
+  assert.equal(getLocationLine(labelDefinition), 3)
+  assert.equal((labelDefinition as any)?.range?.character, 8)
+  assert.equal(toneDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/native-host/index.ts'))
+  assert.equal(getLocationLine(toneDefinition), 3)
+  assert.equal((toneDefinition as any)?.range?.character, 22)
+})
+
 it('prefers Page data fields over later local variables for wxml prop definitions', async () => {
   const files = new Map<string, string>([
     [mockWorkspacePath('/workspace/package.json'), JSON.stringify({

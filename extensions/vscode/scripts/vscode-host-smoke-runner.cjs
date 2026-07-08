@@ -22,6 +22,10 @@ function getLocationUri(location) {
   return location?.targetUri ?? location?.uri
 }
 
+function getLocationStart(location) {
+  return location?.targetSelectionRange?.start ?? location?.range?.start ?? location?.range
+}
+
 async function assertClassDefinition(vscode, document, className, expectedFileName) {
   const sourceText = document.getText()
   const classOffset = sourceText.indexOf(className)
@@ -44,6 +48,34 @@ async function assertClassDefinition(vscode, document, className, expectedFileNa
     }),
     true,
     `definition for ${className} should target ${expectedFileName}`,
+  )
+}
+
+async function assertTextDefinition(vscode, document, text, offsetInText, expected) {
+  const sourceText = document.getText()
+  const textOffset = sourceText.indexOf(text)
+
+  assert.notEqual(textOffset, -1, `missing text in fixture: ${text}`)
+
+  const definitions = await vscode.commands.executeCommand(
+    'vscode.executeDefinitionProvider',
+    document.uri,
+    document.positionAt(textOffset + offsetInText),
+  )
+
+  assert.ok(Array.isArray(definitions), `definition result must be an array for ${text}`)
+  assert.equal(definitions.length > 0, true, `missing definition for ${text}`)
+  assert.equal(
+    definitions.some((definition) => {
+      const uri = getLocationUri(definition)
+      const start = getLocationStart(definition)
+
+      return uri?.fsPath?.endsWith(expected.fileName)
+        && (expected.line == null || start?.line === expected.line)
+        && (expected.character == null || start?.character === expected.character)
+    }),
+    true,
+    `definition for ${text} should target ${expected.fileName}`,
   )
 }
 
@@ -77,4 +109,18 @@ exports.run = async function run() {
 
   await assertClassDefinition(vscode, rawBannerDocument, 'feature-card', path.join('raw-banner', 'index.wxss'))
   await assertClassDefinition(vscode, rawBannerDocument, 'feature-card__main', path.join('raw-banner', 'index.scss'))
+  await assertTextDefinition(vscode, rawBannerDocument, 'item.tone', 2, {
+    fileName: path.join('raw-banner', 'index.wxml'),
+    line: 2,
+  })
+  await assertTextDefinition(vscode, rawBannerDocument, 'item.label', 'item.'.length + 1, {
+    fileName: path.join('raw-banner', 'index.js'),
+    line: 3,
+    character: 15,
+  })
+  await assertTextDefinition(vscode, rawBannerDocument, 'item.tone', 'item.'.length + 1, {
+    fileName: path.join('raw-banner', 'index.js'),
+    line: 3,
+    character: 36,
+  })
 }
