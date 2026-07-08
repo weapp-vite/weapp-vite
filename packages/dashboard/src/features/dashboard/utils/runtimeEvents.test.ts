@@ -144,7 +144,7 @@ describe('normalizeRuntimeEvents', () => {
         source: 'cli',
         count: 2,
         errorCount: 1,
-        latestTimestamp: '10:00:00',
+        latestTimestamp: '10:01:00',
         averageDurationMs: 200,
       },
       {
@@ -153,6 +153,46 @@ describe('normalizeRuntimeEvents', () => {
         errorCount: 0,
         latestTimestamp: '10:02:00',
         averageDurationMs: 40,
+      },
+    ])
+  })
+
+  it('reports the latest event timestamp per source, not the first', () => {
+    expect(summarizeRuntimeEventsBySource([
+      {
+        id: 'evt-a',
+        kind: 'command',
+        level: 'success',
+        title: 'first',
+        detail: 'first detail',
+        timestamp: '09:00:00',
+        source: 'cli',
+      },
+      {
+        id: 'evt-b',
+        kind: 'command',
+        level: 'info',
+        title: 'middle',
+        detail: 'middle detail',
+        timestamp: '09:05:00',
+        source: 'cli',
+      },
+      {
+        id: 'evt-c',
+        kind: 'command',
+        level: 'error',
+        title: 'last',
+        detail: 'last detail',
+        timestamp: '09:10:00',
+        source: 'cli',
+      },
+    ])).toEqual([
+      {
+        source: 'cli',
+        count: 3,
+        errorCount: 1,
+        latestTimestamp: '09:10:00',
+        averageDurationMs: undefined,
       },
     ])
   })
