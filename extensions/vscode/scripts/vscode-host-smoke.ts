@@ -33,18 +33,20 @@ async function main() {
     await fs.access(runnerPath)
     await ensureVscodeUserSettings(userDataDir)
     const { runTests } = await resolveVscodeTestElectron()
+    const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH
 
     await runTests({
       extensionDevelopmentPath: extensionRoot,
       extensionTestsPath: runnerPath,
+      ...(vscodeExecutablePath ? { vscodeExecutablePath } : {}),
       launchArgs: [
         fixturePath,
+        `--user-data-dir=${userDataDir}`,
         '--disable-extensions',
         '--disable-workspace-trust',
         '--skip-welcome',
         '--skip-release-notes',
       ],
-      userDataDir,
     })
   }
   finally {
