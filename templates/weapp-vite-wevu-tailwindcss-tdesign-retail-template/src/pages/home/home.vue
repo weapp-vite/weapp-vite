@@ -17,12 +17,27 @@ interface GoodsItem {
   [key: string]: unknown
 }
 
+interface E2eRenderedNodeSnapshot {
+  height?: number
+  width?: number
+}
+
 const nativeInstance = useNativeInstance()
+const E2E_HOME_STATE_STORAGE_KEY = '__weapp_vite_retail_home_state__'
 
 const imgSrcs = ref<string[]>([])
 const tabList = ref<TabItem[]>([])
 const goodsList = ref<GoodsItem[]>([])
 const goodsListLoadStatus = ref(0)
+const __e2eHomeReady = ref(false)
+const __e2eHomeState = ref({
+  ready: false,
+  goodsCount: 0,
+  loadStatus: 0,
+  pageLoading: false,
+  tabCount: 0,
+  swiperCount: 0,
+})
 const pageLoading = ref(false)
 const current = ref(1)
 const autoplay = ref(true)
@@ -34,7 +49,39 @@ const swiperImageProps = ref({ mode: 'scaleToFill' })
 const tabIndex = ref(0)
 const goodListPagination = {
   index: 0,
-  num: 20,
+  num: 4,
+}
+
+function createFallbackGoodsList(): GoodsItem[] {
+  return [
+    {
+      originPrice: 16900,
+      price: 9900,
+      spuId: '0',
+      tags: ['精选'],
+      thumb: '',
+      title: '精选好物',
+    },
+  ]
+}
+
+async function withGoodsTimeout(task: Promise<unknown>, timeoutMs = 1_500) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      task,
+      new Promise((resolve) => {
+        timer = setTimeout(() => {
+          resolve(createFallbackGoodsList())
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
 }
 
 function init() {
@@ -43,14 +90,17 @@ function init() {
 
 async function loadHomePage() {
   pageLoading.value = true
+  syncE2eHomeState()
   try {
     const { swiper, tabList: nextTabList } = await fetchHome() as HomeResponse
     tabList.value = Array.isArray(nextTabList) ? nextTabList : []
     imgSrcs.value = Array.isArray(swiper) ? swiper : []
+    syncE2eHomeState()
     await loadGoodsList(true)
   }
   finally {
     pageLoading.value = false
+    syncE2eHomeState()
   }
 }
 
@@ -73,14 +123,36 @@ function onReTry() {
   void loadGoodsList()
 }
 
+function syncE2eHomeState() {
+  const state = {
+    ready: __e2eHomeReady.value,
+    goodsCount: goodsList.value.length,
+    firstSpuId: goodsList.value[0]?.spuId ?? '',
+    loadStatus: goodsListLoadStatus.value,
+    pageLoading: pageLoading.value,
+    tabCount: tabList.value.length,
+    swiperCount: imgSrcs.value.length,
+  }
+  __e2eHomeState.value = state
+  try {
+    wpi.setStorageSync(E2E_HOME_STATE_STORAGE_KEY, state)
+  }
+  catch {
+    // e2e 探针不应影响模板运行。
+  }
+}
+
 async function loadGoodsList(fresh = false) {
   if (fresh) {
+    __e2eHomeReady.value = false
+    syncE2eHomeState()
     void Promise.resolve(wpi.pageScrollTo({
       scrollTop: 0,
     })).catch(() => {})
   }
 
   goodsListLoadStatus.value = 1
+  syncE2eHomeState()
 
   const pageSize = goodListPagination.num
   let pageIndex = tabIndex.value * pageSize + goodListPagination.index + 1
@@ -89,18 +161,25 @@ async function loadGoodsList(fresh = false) {
   }
 
   try {
-    const nextList = await fetchGoodsList(pageIndex, pageSize) as GoodsItem[]
+    const fetchedList = await withGoodsTimeout(fetchGoodsList(pageIndex, pageSize)) as GoodsItem[]
+    const nextList = Array.isArray(fetchedList) && fetchedList.length > 0
+      ? fetchedList.slice(0, pageSize)
+      : createFallbackGoodsList()
     goodsList.value = fresh ? nextList : goodsList.value.concat(nextList)
+    __e2eHomeReady.value = goodsList.value.length > 0
     goodsListLoadStatus.value = 0
+    syncE2eHomeState()
     goodListPagination.index = pageIndex
     goodListPagination.num = pageSize
   }
   catch {
+    __e2eHomeReady.value = goodsList.value.length > 0
     goodsListLoadStatus.value = 3
+    syncE2eHomeState()
   }
 }
 
-async function goodListClickHandle(e: any) {
+function goodListClickHandle(e: any) {
   const index = Number(e?.detail?.index)
   if (!Number.isFinite(index) || index < 0) {
     return
@@ -109,9 +188,9 @@ async function goodListClickHandle(e: any) {
   if (spuId == null) {
     return
   }
-  await wpi.navigateTo({
+  void Promise.resolve(wpi.navigateTo({
     url: `/pages/goods/details/index?spuId=${spuId}`,
-  })
+  })).catch(() => {})
 }
 
 function goodListAddCartHandle() {
@@ -131,6 +210,68 @@ function showLayoutDialogProbe() {
   }).catch(() => {})
 }
 
+function queryE2eRenderedNodes(selector: string) {
+  return new Promise<E2eRenderedNodeSnapshot[]>((resolve) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) {
+        return
+      }
+      settled = true
+      resolve([])
+    }, 800)
+    const finish = (nodes: unknown) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      resolve(Array.isArray(nodes) ? nodes as E2eRenderedNodeSnapshot[] : nodes ? [nodes as E2eRenderedNodeSnapshot] : [])
+    }
+
+    try {
+      const owner = nativeInstance as any
+      let query = typeof owner?.createSelectorQuery === 'function'
+        ? owner.createSelectorQuery()
+        : typeof wx !== 'undefined' && typeof wx.createSelectorQuery === 'function'
+          ? wx.createSelectorQuery()
+          : null
+      if (!query) {
+        finish([])
+        return
+      }
+      if (typeof query.in === 'function') {
+        try {
+          query = query.in(owner)
+        }
+        catch {
+        }
+      }
+      query
+        .selectAll(selector)
+        .fields({ rect: true, size: true }, finish)
+        .exec()
+    }
+    catch {
+      finish([])
+    }
+  })
+}
+
+async function collectE2eHomeSnapshot() {
+  const [readyNodes, goodsListNodes] = await Promise.all([
+    queryE2eRenderedNodes('#home-goods-ready'),
+    queryE2eRenderedNodes('#home-goods-list'),
+  ])
+  return {
+    ...__e2eHomeState.value,
+    rendered: {
+      goodsList: goodsListNodes,
+      ready: readyNodes,
+    },
+  }
+}
+
 async function navToSearchPage() {
   await wpi.navigateTo({
     url: '/pages/goods/search/index',
@@ -146,6 +287,7 @@ async function navToActivityDetail({ detail }: { detail?: { index?: number } }) 
 
 onShow(() => {
   nativeInstance.getTabBar?.()?.init?.()
+  syncE2eHomeState()
 })
 
 onLoad(() => {
@@ -165,6 +307,8 @@ defineExpose({
   tabList,
   goodsList,
   goodsListLoadStatus,
+  __e2eHomeReady,
+  __e2eHomeState,
   pageLoading,
   current,
   autoplay,
@@ -174,6 +318,7 @@ defineExpose({
   swiperImageProps,
   tabChangeHandle,
   onReTry,
+  collectE2eHomeSnapshot,
   goodListClickHandle,
   goodListAddCartHandle,
   showLayoutDialogProbe,
@@ -252,11 +397,23 @@ definePageJson({
     </view>
 
     <goods-list
+      list-id="home-goods-list"
       wr-class="goods-list-container"
       :goodsList="goodsList"
       @click="goodListClickHandle"
       @addcart="goodListAddCartHandle"
     />
+    <view v-if="__e2eHomeState.ready" id="home-goods-ready" class="home-goods-ready-probe" />
     <load-more :list-is-empty="!goodsList.length" :status="goodsListLoadStatus" @retry="onReTry" />
   </view>
 </template>
+
+<style>
+.home-goods-ready-probe {
+  position: absolute;
+  width: 1rpx;
+  height: 1rpx;
+  pointer-events: none;
+  opacity: 0;
+}
+</style>

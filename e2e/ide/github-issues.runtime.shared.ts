@@ -913,7 +913,9 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   while (Date.now() - start <= timeoutMs) {
     try {
       const page = await runWithTimeout(
-        () => miniProgram.currentPage(),
+        () => miniProgram.currentPage({
+          appFunctionFallback: false,
+        }),
         Math.min(CURRENT_PAGE_PROTOCOL_TIMEOUT, Math.max(1, timeoutMs - (Date.now() - start))),
         'currentPage',
       )
@@ -1118,7 +1120,11 @@ export async function relaunchPage(
             `${routeMethod} ${route}`,
           )
           if (isExpectedRoutePage(relaunchedPage, route)) {
-            return relaunchedPage
+            return await waitForRoutePage(
+              targetMiniProgram,
+              `${phase}:after-${routeMethod}:${attempt}:confirmed`,
+              Math.min(timeoutMs, 8_000),
+            ) ?? relaunchedPage
           }
         }
         catch (error) {

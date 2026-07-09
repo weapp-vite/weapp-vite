@@ -203,14 +203,82 @@ describe('Page', () => {
     })).resolves.toContain('"selector":"#status"')
 
     expect(send).toHaveBeenCalledWith('App.callFunction', {
-      args: ['pages/a', {}, '#status'],
+      args: ['pages/a', {}, '#status', []],
       functionDeclaration: expect.stringContaining('createSelectorQuery'),
     }, {
       timeout: 5_000,
     })
     expect(send).toHaveBeenCalledWith('App.callFunction', {
-      args: ['pages/a', {}, '#status'],
+      args: ['pages/a', {}, '#status', []],
+      functionDeclaration: expect.stringContaining('componentSelectors.push(selector'),
+    }, {
+      timeout: 5_000,
+    })
+    expect(send).toHaveBeenCalledWith('App.callFunction', {
+      args: ['pages/a', {}, '#status', []],
       functionDeclaration: expect.stringContaining('wx.createSelectorQuery'),
+    }, {
+      timeout: 5_000,
+    })
+    expect(send).toHaveBeenCalledWith('App.callFunction', {
+      args: ['pages/a', {}, '#status', []],
+      functionDeclaration: expect.stringContaining('setTimeout(function ()'),
+    }, {
+      timeout: 5_000,
+    })
+  })
+
+  it('queries multiple rendered selectors in one app-service call', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'App.callFunction') {
+        return {
+          result: {
+            '#status': [
+              {
+                dataset: {
+                  status: 'success',
+                },
+                height: 12,
+                id: 'status',
+                width: 80,
+              },
+            ],
+            '.title': [
+              {
+                height: 10,
+                width: 60,
+              },
+            ],
+          },
+        }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.renderedSelectorNodes(['#status', '.title'])).resolves.toEqual({
+      '#status': [
+        {
+          dataset: {
+            status: 'success',
+          },
+          height: 12,
+          id: 'status',
+          width: 80,
+        },
+      ],
+      '.title': [
+        {
+          height: 10,
+          width: 60,
+        },
+      ],
+    })
+
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith('App.callFunction', {
+      args: ['pages/a', {}, ['#status', '.title'], []],
+      functionDeclaration: expect.stringContaining('maxQueries = 40'),
     }, {
       timeout: 5_000,
     })
@@ -251,6 +319,78 @@ describe('Page', () => {
     })
   })
 
+  it('falls back to app-service page data when DevTools page meta is missing', async () => {
+    const pageMetaError = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getData') {
+        throw pageMetaError
+      }
+      if (method === 'App.callFunction') {
+        return { result: 'ready' }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.data('__e2eResult.status')).resolves.toBe('ready')
+
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: ['/pages/a', {}, '__e2eResult.status'],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('falls back to app-service page data when DevTools current frame times out', async () => {
+    const currentFrameError = new Error('[loader] unexpected current frame status timedout')
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getData') {
+        throw currentFrameError
+      }
+      if (method === 'App.callFunction') {
+        return { result: 'ready' }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.data('__e2eResult.status')).resolves.toBe('ready')
+
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: ['/pages/a', {}, '__e2eResult.status'],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('can read page data through route fallback only', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getData') {
+        throw new Error('Page.getData should not be used')
+      }
+      if (method === 'App.callFunction') {
+        return { result: 'ready' }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.data('__e2eResult.status', {
+      routeOnly: true,
+      timeout: 3_000,
+    })).resolves.toBe('ready')
+
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith('App.callFunction', {
+      functionDeclaration: expect.stringContaining('readPath'),
+      args: ['/pages/a', {}, '__e2eResult.status'],
+    }, {
+      timeout: 3_000,
+    })
+  })
+
   it('falls back to app-service page method calls when Page.callMethod times out', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method Page.callMethod within 12000ms'),
@@ -277,13 +417,96 @@ describe('Page', () => {
       method: 'runE2E',
       pageId: 8,
     }, {
-      timeout: 12_000,
+      timeout: 2_500,
     })
     expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
       functionDeclaration: expect.stringContaining('getCurrentPages'),
       args: ['/pages/a', {}, 'runE2E', ['arg']],
     }, {
       timeout: 12_000,
+    })
+  })
+
+  it('falls back to app-service page method calls when DevTools current frame times out', async () => {
+    const currentFrameError = new Error('[loader] unexpected current frame status timedout')
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.callMethod') {
+        throw currentFrameError
+      }
+      if (method === 'App.callFunction') {
+        return { result: { ok: true } }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.callMethod('runE2E', 'arg')).resolves.toEqual({ ok: true })
+
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: ['/pages/a', {}, 'runE2E', ['arg']],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('can disable app-service page method fallback when Page.callMethod times out', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.callMethod within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.callMethod',
+      },
+    )
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.callMethod') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return { result: { ok: true } }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.callMethodWithOptions('runE2E', {
+      fallback: false,
+      timeout: 1_000,
+    })).rejects.toThrow('Page.callMethod')
+
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith('Page.callMethod', {
+      args: [],
+      method: 'runE2E',
+      pageId: 8,
+    }, {
+      timeout: 1_000,
+    })
+  })
+
+  it('can call page method through route fallback only', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.callMethod') {
+        throw new Error('Page.callMethod should not be used')
+      }
+      if (method === 'App.callFunction') {
+        return { result: { ok: true, source: 'route-only' } }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.callMethodWithOptions('runE2E', {
+      routeOnly: true,
+      timeout: 3_000,
+    }, 'arg')).resolves.toEqual({ ok: true, source: 'route-only' })
+
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith('App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: ['/pages/a', {}, 'runE2E', ['arg']],
+    }, {
+      timeout: 3_000,
     })
   })
 
@@ -357,7 +580,7 @@ describe('Page', () => {
     })
   })
 
-  it('falls back to app-service page method calls when Page.callMethod returns undefined', async () => {
+  it('does not fall back when Page.callMethod returns undefined after side effects', async () => {
     const send = vi.fn(async (method: string) => {
       if (method === 'Page.callMethod') {
         return { result: undefined }
@@ -369,14 +592,9 @@ describe('Page', () => {
     })
     const page = new Page(createConnection(send), { id: 8, path: '/pages/a', query: {} })
 
-    await expect(page.callMethod('runE2E')).resolves.toEqual({ ok: true, source: 'app-service' })
+    await expect(page.callMethod('runE2E')).resolves.toBeUndefined()
 
-    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
-      functionDeclaration: expect.stringContaining('getCurrentPages'),
-      args: ['/pages/a', {}, 'runE2E', []],
-    }, {
-      timeout: 12_000,
-    })
+    expect(send).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to app-service page method calls when Page.callMethod uses a stale page stack', async () => {
@@ -405,7 +623,7 @@ describe('Page', () => {
     let appFunctionDeclaration = ''
     const send = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === 'Page.callMethod') {
-        return { result: undefined }
+        throw new Error('page is not on top of page stack')
       }
       if (method === 'App.callFunction') {
         appFunctionDeclaration = String(params?.functionDeclaration ?? '')
@@ -445,13 +663,7 @@ describe('Page', () => {
 
     await expect(page.callMethod('onTap')).resolves.toBeUndefined()
 
-    expect(send).toHaveBeenCalledTimes(2)
-    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
-      functionDeclaration: expect.stringContaining('__weappVitePageMethodFound'),
-      args: ['/pages/a', {}, 'onTap', []],
-    }, {
-      timeout: 12_000,
-    })
+    expect(send).toHaveBeenCalledTimes(1)
   })
 
   it('retries app-service page method calls when the fallback is temporarily unavailable', async () => {

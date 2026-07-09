@@ -8,6 +8,7 @@ const APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/vue-mini-issue151-wevu')
 const CLI_PATH = path.join(REPO_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const ISSUE_151_ROUTE = '/pages/issue-151/index'
 const BUILD_TIMEOUT = 120_000
+const E2E_STATE_STORAGE_KEY = '__weapp_vite_issue151_state__'
 
 let sharedMiniProgram: any = null
 
@@ -21,11 +22,37 @@ async function runBuild() {
   })
 }
 
-async function waitForIssue151Ready(page: any) {
+async function waitForIssue151Ready(miniProgram: any, page: any) {
   let runtimeResult: any
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    runtimeResult = await page.callMethod('_runE2E')
+    runtimeResult = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+      timeout: 2_500,
+    }, E2E_STATE_STORAGE_KEY).catch(() => null)
+    if (!runtimeResult && typeof page?.data === 'function') {
+      const [
+        readyCount,
+        wevuHooksBucketType,
+        tabBarReady,
+        tabBarHooksType,
+      ] = await Promise.all([
+        page.data('readyCount', { fallback: false, timeout: 2_500 }).catch(() => 0),
+        page.data('wevuHooksBucketType', { fallback: false, timeout: 2_500 }).catch(() => 'missing'),
+        page.data('tabBarReady', { fallback: false, timeout: 2_500 }).catch(() => false),
+        page.data('tabBarHooksType', { fallback: false, timeout: 2_500 }).catch(() => 'missing'),
+      ])
+      runtimeResult = {
+        issue: 151,
+        ok: Number(readyCount) > 0
+          && wevuHooksBucketType === 'array'
+          && tabBarReady === true
+          && tabBarHooksType === 'array',
+        readyCount,
+        tabBarHooksType,
+        tabBarReady,
+        wevuHooksBucketType,
+      }
+    }
     if (
       runtimeResult?.readyCount > 0
       && runtimeResult?.wevuHooksBucketType === 'array'
@@ -55,8 +82,11 @@ describe.sequential('e2e app: vue-mini issue #151 / wevu', () => {
   })
 
   it('keeps onReady hooks isolated from PageInstance __onReady__ in base lib 3.16.2', async () => {
+    await sharedMiniProgram.callWxMethodWithOptions('removeStorageSync', {
+      timeout: 2_500,
+    }, E2E_STATE_STORAGE_KEY).catch(() => {})
     const page = await sharedMiniProgram.switchTab(ISSUE_151_ROUTE)
-    const runtimeResult = await waitForIssue151Ready(page)
+    const runtimeResult = await waitForIssue151Ready(sharedMiniProgram, page)
 
     expect(runtimeResult).toMatchObject({
       ok: true,

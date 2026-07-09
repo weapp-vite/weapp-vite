@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+import { inflateSync } from 'node:zlib'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -134,6 +136,19 @@ function resolveLaunchQueryMap(config: Record<string, any>) {
   return map
 }
 
+function resolveTabBarPages(config: Record<string, any>) {
+  const list = config?.tabBar?.list
+  if (!Array.isArray(list)) {
+    return new Set<string>()
+  }
+
+  return new Set(
+    list
+      .map((item: any) => typeof item?.pagePath === 'string' ? normalizeSegment(item.pagePath) : '')
+      .filter(Boolean),
+  )
+}
+
 async function prepareRouteContext(miniProgram: any, pagePath: string) {
   if (pagePath === 'pages/order/order-confirm/index') {
     await miniProgram.callWxMethod('setStorageSync', 'order.goodsRequestList', ORDER_CONFIRM_GOODS_REQUEST_LIST)
@@ -207,19 +222,7 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function waitForPageRoot(page: any, timeoutMs = 10_000) {
-  const start = Date.now()
-  while (Date.now() - start <= timeoutMs) {
-    const element = await page.$('page')
-    if (element) {
-      return element
-    }
-    await page.waitFor(200)
-  }
-  return null
-}
-
-async function resolveRoutePage(miniProgram: any, route: string, pagePath: string, preferCurrentPage: boolean) {
+async function resolveRoutePage(miniProgram: any, route: string, pagePath: string, preferCurrentPage: boolean, isTabBarPage: boolean) {
   if (preferCurrentPage) {
     let lastError: unknown
     for (let attempt = 1; attempt <= 8; attempt += 1) {
@@ -242,6 +245,9 @@ async function resolveRoutePage(miniProgram: any, route: string, pagePath: strin
     }
     throw new Error(`Failed to read current page for initial route: ${pagePath}`)
   }
+  if (isTabBarPage) {
+    return await miniProgram.switchTab(`/${pagePath}`)
+  }
   return await miniProgram.reLaunch(route)
 }
 
@@ -261,6 +267,187 @@ let sharedBuildPrepared = false
 const AUTOMATOR_LAUNCH_RETRIES = 3
 const AUTOMATOR_LAUNCH_RETRY_DELAY = 1_200
 const AUTOMATOR_LAUNCH_TIMEOUT = 45_000
+const PAGE_RENDERED_TIMEOUT = 12_000
+const PAGE_RENDERED_POLL_DELAY = 300
+const RUNTIME_SELECTOR_LIMIT = 8
+const STABLE_SELECTOR_TOKEN_RE = /^-?[_a-z][\w-]*$/i
+const PNG_SIGNATURE = '89504e470d0a1a0a'
+
+function pushStableRuntimeSelector(selectors: string[], seen: Set<string>, selector: string) {
+  if (!selector || seen.has(selector)) {
+    return
+  }
+  seen.add(selector)
+  selectors.push(selector)
+}
+
+function extractRuntimeSelectorsFromWxml(wxml: string) {
+  const selectors: string[] = []
+  const seen = new Set<string>()
+
+  for (const match of wxml.matchAll(/\sid="([^"]+)"/g)) {
+    const id = match[1]?.trim()
+    if (id && STABLE_SELECTOR_TOKEN_RE.test(id)) {
+      pushStableRuntimeSelector(selectors, seen, `#${id}`)
+    }
+  }
+
+  for (const match of wxml.matchAll(/\sclass="([^"]+)"/g)) {
+    const classValue = match[1] ?? ''
+    for (const token of classValue.split(/\s+/)) {
+      const normalized = token.trim()
+      if (STABLE_SELECTOR_TOKEN_RE.test(normalized)) {
+        pushStableRuntimeSelector(selectors, seen, `.${normalized}`)
+      }
+      if (selectors.length >= RUNTIME_SELECTOR_LIMIT) {
+        return selectors
+      }
+    }
+  }
+
+  return selectors
+}
+
+async function resolveRuntimeSelectors(pagePath: string) {
+  const wxmlPath = path.join(DIST_ROOT, `${pagePath}.wxml`)
+  const wxml = await fs.readFile(wxmlPath, 'utf8')
+  return extractRuntimeSelectorsFromWxml(wxml)
+}
+
+async function waitForRuntimeRendered(page: any, route: string, selectors: string[]) {
+  const startedAt = Date.now()
+  const candidates = selectors.length > 0 ? selectors : ['view']
+  let latest: unknown = null
+  let lastError: unknown
+
+  while (Date.now() - startedAt <= PAGE_RENDERED_TIMEOUT) {
+    for (const selector of candidates) {
+      try {
+        if (typeof page.renderedNodes === 'function') {
+          const nodes = await page.renderedNodes(selector, {
+            timeout: Math.min(2_000, Math.max(1, PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
+          })
+          latest = {
+            nodes,
+            selector,
+          }
+          if (Array.isArray(nodes) && nodes.some(node => Number(node?.width ?? 0) > 0 && Number(node?.height ?? 0) > 0)) {
+            return
+          }
+        }
+      }
+      catch (error) {
+        lastError = error
+      }
+    }
+    await sleep(PAGE_RENDERED_POLL_DELAY)
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Failed to find rendered nodes: ${route} selectors=${candidates.join(',')} reason=${reason} latest=${JSON.stringify(latest).slice(0, 500)}`)
+}
+
+function paethPredictor(left: number, up: number, upLeft: number) {
+  const estimate = left + up - upLeft
+  const leftDistance = Math.abs(estimate - left)
+  const upDistance = Math.abs(estimate - up)
+  const upLeftDistance = Math.abs(estimate - upLeft)
+  if (leftDistance <= upDistance && leftDistance <= upLeftDistance) {
+    return left
+  }
+  return upDistance <= upLeftDistance ? up : upLeft
+}
+
+function analyzePngScreenshot(base64: string) {
+  const buffer = Buffer.from(base64, 'base64')
+  if (buffer.subarray(0, 8).toString('hex') !== PNG_SIGNATURE) {
+    throw new Error('Screenshot is not a PNG image')
+  }
+
+  let offset = 8
+  let width = 0
+  let height = 0
+  let colorType = 0
+  const idatChunks: Buffer[] = []
+
+  while (offset + 8 <= buffer.length) {
+    const length = buffer.readUInt32BE(offset)
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii')
+    const dataStart = offset + 8
+    const dataEnd = dataStart + length
+    const data = buffer.subarray(dataStart, dataEnd)
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0)
+      height = data.readUInt32BE(4)
+      colorType = data[9] ?? 0
+    }
+    else if (type === 'IDAT') {
+      idatChunks.push(data)
+    }
+    else if (type === 'IEND') {
+      break
+    }
+    offset = dataEnd + 4
+  }
+
+  const channels = colorType === 6 ? 4 : colorType === 2 ? 3 : colorType === 0 ? 1 : 0
+  if (!width || !height || !channels) {
+    throw new Error(`Unsupported screenshot PNG format: width=${width} height=${height} colorType=${colorType}`)
+  }
+
+  const inflated = inflateSync(Buffer.concat(idatChunks))
+  const rowLength = width * channels
+  const previous = Buffer.alloc(rowLength)
+  const current = Buffer.alloc(rowLength)
+  const colors = new Set<string>()
+  let sourceOffset = 0
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[sourceOffset]
+    sourceOffset += 1
+    inflated.copy(current, 0, sourceOffset, sourceOffset + rowLength)
+    sourceOffset += rowLength
+    for (let index = 0; index < rowLength; index += 1) {
+      const left = index >= channels ? current[index - channels]! : 0
+      const up = previous[index] ?? 0
+      const upLeft = index >= channels ? previous[index - channels]! : 0
+      if (filter === 1) {
+        current[index] = (current[index]! + left) & 0xFF
+      }
+      else if (filter === 2) {
+        current[index] = (current[index]! + up) & 0xFF
+      }
+      else if (filter === 3) {
+        current[index] = (current[index]! + Math.floor((left + up) / 2)) & 0xFF
+      }
+      else if (filter === 4) {
+        current[index] = (current[index]! + paethPredictor(left, up, upLeft)) & 0xFF
+      }
+    }
+    const sampleStep = Math.max(channels, Math.floor(rowLength / 80 / channels) * channels)
+    for (let index = 0; index < rowLength; index += sampleStep) {
+      const red = current[index] ?? 0
+      const green = channels === 1 ? red : current[index + 1] ?? 0
+      const blue = channels === 1 ? red : current[index + 2] ?? 0
+      const alpha = channels === 4 ? current[index + 3] ?? 255 : 255
+      colors.add(`${red},${green},${blue},${alpha}`)
+      if (colors.size >= 8) {
+        return { colorCount: colors.size, height, width }
+      }
+    }
+    current.copy(previous)
+  }
+
+  return { colorCount: colors.size, height, width }
+}
+
+async function assertScreenshotRendered(miniProgram: any, route: string) {
+  const screenshot = await miniProgram.screenshot({ timeout: 12_000 })
+  const analysis = analyzePngScreenshot(screenshot)
+  expect(analysis.width, `invalid screenshot width: ${route}`).toBeGreaterThan(100)
+  expect(analysis.height, `invalid screenshot height: ${route}`).toBeGreaterThan(100)
+  expect(analysis.colorCount, `blank screenshot: ${route}`).toBeGreaterThan(1)
+}
 
 async function getSharedMiniProgram() {
   if (!sharedBuildPrepared) {
@@ -273,6 +460,12 @@ async function getSharedMiniProgram() {
       try {
         sharedMiniProgram = await launchAutomator({
           projectPath: APP_ROOT,
+          projectConfig: {
+            setting: {
+              useIsolateContext: false,
+              useMultiFrameRuntime: false,
+            },
+          },
           skipRelaunchPageRootCheck: true,
           skipWarmup: true,
           timeout: AUTOMATOR_LAUNCH_TIMEOUT,
@@ -310,12 +503,13 @@ async function closeSharedMiniProgram() {
 describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
-  })
+  }, 30_000)
 
   it.skip('loads every page from app config without runtime errors', async () => {
     const appConfig = await fs.readJson(APP_JSON_PATH)
     const projectConfig = await fs.readJson(PROJECT_CONFIG_PATH)
     const pagePaths = filterPagesForDebug(resolvePages(appConfig))
+    const tabBarPages = resolveTabBarPages(appConfig)
     const launchQueryMap = resolveLaunchQueryMap(projectConfig)
     for (const [pagePath, query] of ROUTE_QUERY_OVERRIDES) {
       launchQueryMap.set(pagePath, query)
@@ -362,19 +556,22 @@ describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
             await prepareRouteContext(activeMiniProgram, pagePath)
             const eventCountBeforeRoute = runtimeEvents.length
 
-            const page = await resolveRoutePage(activeMiniProgram, route, pagePath, DEVTOOLS_UNSTABLE_INITIAL_ROUTES.has(pagePath))
+            const page = await resolveRoutePage(activeMiniProgram, route, pagePath, DEVTOOLS_UNSTABLE_INITIAL_ROUTES.has(pagePath), tabBarPages.has(pagePath))
             if (!page) {
               throw new Error(`Failed to launch page: ${route}`)
             }
 
-            const pageRoot = await waitForPageRoot(page)
-            if (!pageRoot) {
-              throw new Error(`Failed to find page root: ${route}`)
-            }
+            const currentPage = await activeMiniProgram.currentPage().catch(() => page)
+            expect(normalizeSegment(currentPage?.path ?? page?.path ?? '')).toBe(pagePath)
 
-            if (pageIndex > 0) {
-              const currentPage = await activeMiniProgram.currentPage().catch(() => page)
-              expect(normalizeSegment(currentPage?.path ?? page?.path ?? '')).toBe(pagePath)
+            try {
+              await waitForRuntimeRendered(page, route, await resolveRuntimeSelectors(pagePath))
+            }
+            catch (error) {
+              if (!String(error instanceof Error ? error.message : error).includes('Failed to find rendered nodes')) {
+                throw error
+              }
+              await assertScreenshotRendered(activeMiniProgram, route)
             }
 
             await page.waitFor(500)

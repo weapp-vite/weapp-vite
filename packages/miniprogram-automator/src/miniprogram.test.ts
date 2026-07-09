@@ -305,6 +305,37 @@ describe('MiniProgram', () => {
     })
   })
 
+  it('continues route polling when DevTools page meta is missing during route calls', async () => {
+    const pageMetaError = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 2
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: '/pages/index', query: {} }
+      }
+      if (method === 'App.callWxMethod') {
+        throw pageMetaError
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(600)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
   it('retries currentPage when App.getCurrentPage times out transiently', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
@@ -430,11 +461,126 @@ describe('MiniProgram', () => {
       functionDeclaration: expect.stringContaining('getCurrentPages'),
       args: [],
     }, {
-      timeout: 8_000,
+      timeout: 15_000,
     })
   })
 
-  it('falls back to pageStack when App.getCurrentPage times out during route changes', async () => {
+  it('falls back to app-service getCurrentPages when DevTools page meta is missing', async () => {
+    const pageMetaError = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(pageMetaError)
+      .mockRejectedValueOnce(pageMetaError)
+      .mockRejectedValueOnce(pageMetaError)
+      .mockRejectedValueOnce(pageMetaError)
+      .mockResolvedValueOnce({
+        result: [
+          { __wxWebviewId__: 11, options: { ok: 1 }, route: 'pages/app-function-page-meta-fallback' },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(page.path).toBe('pages/app-function-page-meta-fallback')
+    expect(page.query).toEqual({ ok: 1 })
+    expect(connection.send).toHaveBeenNthCalledWith(4, 'App.getPageStack', {})
+    expect(connection.send).toHaveBeenNthCalledWith(5, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 15_000,
+    })
+  })
+
+  it('falls back to app-service getCurrentPages when DevTools current frame times out', async () => {
+    const currentFrameError = new Error('[loader] unexpected current frame status timedout')
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(currentFrameError)
+      .mockRejectedValueOnce(currentFrameError)
+      .mockRejectedValueOnce(currentFrameError)
+      .mockRejectedValueOnce(currentFrameError)
+      .mockResolvedValueOnce({
+        result: [
+          { __wxWebviewId__: 13, options: { ok: 1 }, route: 'pages/current-frame-fallback' },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(page.path).toBe('pages/current-frame-fallback')
+    expect(page.query).toEqual({ ok: 1 })
+    expect(connection.send).toHaveBeenNthCalledWith(4, 'App.getPageStack', {})
+    expect(connection.send).toHaveBeenNthCalledWith(5, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 15_000,
+    })
+  })
+
+  it('retries app-service page stack fallback when App.callFunction times out transiently', async () => {
+    const currentPageTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const pageStackTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getPageStack within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getPageStack',
+      },
+    )
+    const callFunctionTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.callFunction within 15000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.callFunction',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(currentPageTimeoutError)
+      .mockRejectedValueOnce(pageStackTimeoutError)
+      .mockRejectedValueOnce(callFunctionTimeoutError)
+      .mockResolvedValueOnce({
+        result: [
+          { __wxWebviewId__: 12, options: { ok: 1 }, route: 'pages/app-function-retry-fallback' },
+        ],
+      })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(2_000)
+    const page = await pending
+
+    expect(page.path).toBe('pages/app-function-retry-fallback')
+    expect(connection.send).toHaveBeenNthCalledWith(5, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 15_000,
+    })
+    expect(connection.send).toHaveBeenNthCalledWith(6, 'App.callFunction', {
+      functionDeclaration: expect.stringContaining('getCurrentPages'),
+      args: [],
+    }, {
+      timeout: 15_000,
+    })
+  })
+
+  it('returns a target page handle without app-service fallback when route polling metadata times out', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
       {
@@ -476,7 +622,7 @@ describe('MiniProgram', () => {
     })
   })
 
-  it('falls back to app-service page stack while waiting for route changes', async () => {
+  it('does not use app-service page stack while waiting for route changes', async () => {
     const currentPageTimeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 2500ms'),
       {
@@ -507,27 +653,90 @@ describe('MiniProgram', () => {
       if (method === 'App.getPageStack') {
         throw pageStackTimeoutError
       }
-      if (method === 'App.callFunction') {
-        return {
-          result: [
-            { __wxWebviewId__: 2, options: { from: 'fallback' }, route: '/pages/next' },
-          ],
-        }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(20_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(page.query).toEqual({})
+    expect(connection.send).not.toHaveBeenCalledWith('App.callFunction', expect.anything(), expect.anything())
+  })
+
+  it('returns a target page handle when current frame stays unavailable during route polling', async () => {
+    const currentFrameError = new Error('[loader] unexpected current frame status timedout')
+    const connection = new FakeConnection()
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        throw currentFrameError
+      }
+      if (method === 'App.callWxMethod') {
+        return {}
+      }
+      if (method === 'App.getPageStack') {
+        throw currentFrameError
       }
       return {}
     })
     const miniProgram = new MiniProgram(connection as any)
 
-    const page = await miniProgram.reLaunch('/pages/next')
+    const pending = miniProgram.reLaunch('/pages/next?tab=goods')
+    await vi.advanceTimersByTimeAsync(20_000)
+    const page = await pending
 
     expect(page.path).toBe('/pages/next')
-    expect(page.query).toEqual({ from: 'fallback' })
-    expect(connection.send).toHaveBeenCalledWith('App.callFunction', {
-      functionDeclaration: expect.stringContaining('getCurrentPages'),
-      args: [],
-    }, {
-      timeout: 8_000,
+    expect(page.query).toEqual({ tab: 'goods' })
+  })
+
+  it('returns a target page handle when route metadata stays unavailable after the route command', async () => {
+    const currentPageTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const pageStackTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getPageStack within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getPageStack',
+      },
+    )
+    const callFunctionTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.callFunction within 5000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.callFunction',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        throw currentPageTimeoutError
+      }
+      if (method === 'App.callWxMethod') {
+        return {}
+      }
+      if (method === 'App.getPageStack') {
+        throw pageStackTimeoutError
+      }
+      if (method === 'App.callFunction') {
+        throw callFunctionTimeoutError
+      }
+      return {}
     })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next?tab=goods')
+    await vi.advanceTimersByTimeAsync(20_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(page.query).toEqual({ tab: 'goods' })
   })
 
   it('continues host route changes when route context probing times out', async () => {
@@ -563,6 +772,58 @@ describe('MiniProgram', () => {
     const page = await pending
 
     expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('does not use app-service fallback before sending host route changes', async () => {
+    const currentPageTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const pageStackTimeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getPageStack within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getPageStack',
+      },
+    )
+    const connection = new FakeConnection()
+    let routeChanged = false
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        if (!routeChanged) {
+          throw currentPageTimeoutError
+        }
+        return { pageId: 2, path: '/pages/next', query: {} }
+      }
+      if (method === 'App.getPageStack') {
+        throw pageStackTimeoutError
+      }
+      if (method === 'App.callWxMethod') {
+        routeChanged = true
+        return {}
+      }
+      if (method === 'App.callFunction') {
+        throw new Error('App.callFunction should not be used before route command')
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).not.toHaveBeenCalledWith('App.callFunction', expect.anything(), expect.anything())
     expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
       method: 'reLaunch',
       args: [{ url: '/pages/next' }],

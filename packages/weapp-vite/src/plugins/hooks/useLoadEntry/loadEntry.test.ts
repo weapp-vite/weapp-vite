@@ -231,6 +231,7 @@ interface CreateLoaderOptions {
     pluginJsonPath: string
   }
   autoImportService?: any
+  autoRoutesService?: any
   buildTarget?: 'app' | 'plugin'
   isDev?: boolean
   pluginOnly?: boolean
@@ -296,6 +297,7 @@ function createLoader(options?: CreateLoaderOptions) {
 
   const compilerCtx = {
     autoImportService: options?.autoImportService,
+    autoRoutesService: options?.autoRoutesService,
     jsonService,
     jsonCache,
     configService,
@@ -1791,7 +1793,7 @@ describe('createEntryLoader', () => {
       predictions: [],
     })
 
-    const { loader, entriesMap, jsonService } = createLoader()
+    const { loader, entriesMap, emitEntriesChunks, jsonService } = createLoader()
     jsonService.read.mockResolvedValue({
       tabBar: {
         custom: true,
@@ -1816,6 +1818,59 @@ describe('createEntryLoader', () => {
     expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
     expect(entriesMap.get('app-bar/index')?.type).toBe('component')
     expect(entriesMap.get('pages/home/index')?.type).toBe('page')
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toEqual(expect.arrayContaining([
+      '/project/src/custom-tab-bar/index',
+      '/project/src/app-bar/index',
+    ]))
+  })
+
+  it('refreshes vue app config after auto-routes are available before collecting app entries', async () => {
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => {}),
+      getSignature: vi.fn(() => 'routes-ready'),
+    }
+    mockExtractConfigFromVue
+      .mockResolvedValueOnce({
+        pages: [],
+        subPackages: [],
+      })
+      .mockResolvedValueOnce({
+        pages: ['pages/home/index'],
+        usingComponents: {
+          'custom-tab-bar': '/custom-tab-bar/index',
+        },
+        tabBar: {
+          custom: true,
+          list: [
+            {
+              pagePath: 'pages/home/index',
+              text: 'home',
+            },
+          ],
+        },
+      })
+
+    const { loader, entriesMap, emitEntriesChunks } = createLoader({
+      autoRoutesService,
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    await loader.call(createPluginContext(), '/project/src/app.vue', 'app')
+
+    expect(autoRoutesService.ensureFresh).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenLastCalledWith('/project/src/app.vue', {
+      source: 'console.log("noop")',
+      force: true,
+    })
+    expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toContain('/project/src/custom-tab-bar/index')
   })
 
   it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {

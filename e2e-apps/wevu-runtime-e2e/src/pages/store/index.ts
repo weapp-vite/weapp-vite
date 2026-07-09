@@ -1,6 +1,15 @@
 import { defineComponent, nextTick, storeToRefs } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
-import { getPluginRecords, useOptionsStore, useSetupStore } from '../../shared/store'
+import { getPluginRecords, setupStoreInitialName, useOptionsStore, useSetupStore } from '../../shared/store'
+
+const STORE_E2E_RESULT_STORAGE_KEY = '__weapp_vite_core_hmr_store_result__'
+
+function writeStoreE2EResult(result: unknown) {
+  if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') {
+    return
+  }
+  wx.setStorageSync(STORE_E2E_RESULT_STORAGE_KEY, result)
+}
 
 export default defineComponent({
   data: () => ({
@@ -40,7 +49,7 @@ export default defineComponent({
       })
       setupStore.$reset()
 
-      const setupResetOk = setupStore.count.value === 0 && setupStore.name.value === 'init'
+      const setupResetOk = setupStore.count.value === 0 && setupStore.name.value === setupStoreInitialName
 
       const beforeCount = optionsStore.count
       optionsStore.inc(3)
@@ -86,9 +95,12 @@ export default defineComponent({
         __e2e: result,
         __e2eText: stringifyResult(result),
       })
+      writeStoreE2EResult(result)
 
       return result
     }
+
+    void nextTick().then(runE2E)
 
     return {
       runE2E,

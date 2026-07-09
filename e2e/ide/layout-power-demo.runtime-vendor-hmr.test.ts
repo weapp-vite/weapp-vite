@@ -5,10 +5,7 @@ import os from 'node:os'
 import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import {
-  connectOpenedAutomator,
-  resolveProjectAutomatorPort,
-} from 'weapp-ide-cli'
+import { resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -16,6 +13,7 @@ import {
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -47,28 +45,6 @@ function resolveAutomatorSessionFile(projectPath: string, port?: number) {
   const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
   const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
   return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
-
-async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
-  const start = Date.now()
-  let lastError: unknown
-  const port = resolveProjectAutomatorPort(projectPath)
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      return await connectOpenedAutomator({
-        projectPath,
-        port,
-        timeout: 30_000,
-      })
-    }
-    catch (error) {
-      lastError = error
-    }
-    await delay(1_000)
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
 async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
@@ -385,16 +361,20 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
   }
 
   async function startDevSession() {
+    process.stdout.write('[layout-power-demo:hmr] start-dev-session\n')
     devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
       cwd: APP_ROOT,
       all: true,
       env: createDevProcessEnv(),
       reject: false,
     })
-    miniProgram = await devProcess.waitFor(
-      waitForOpenedAutomator(APP_ROOT, 180_000),
+    process.stdout.write(`[layout-power-demo:hmr] dev-process-started pid=${devProcess.pid ?? 'unknown'}\n`)
+    const session = await devProcess.waitFor(
+      waitForOpenedAutomator(APP_ROOT, { timeoutMs: 120_000 }),
       'layout-power-demo opened automator',
     )
+    miniProgram = session.miniProgram
+    process.stdout.write(`[layout-power-demo:hmr] automator-connected endpoint=${session.metadata.wsEndpoint}\n`)
     runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
     return miniProgram
   }

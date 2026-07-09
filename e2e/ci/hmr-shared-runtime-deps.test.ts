@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, replaceSharedStoreInitialName, resolvePlatforms } from '../utils/hmr-helpers'
 import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
@@ -13,7 +13,7 @@ const STORE_SHARE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store-share/index.j
 const PLATFORM_LIST = resolvePlatforms()
 
 function replaceSharedStoreMarker(source: string, marker: string) {
-  const updated = source.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+  const updated = replaceSharedStoreInitialName(source, marker)
   if (updated === source) {
     throw new Error('Failed to inject HMR marker into shared store source.')
   }

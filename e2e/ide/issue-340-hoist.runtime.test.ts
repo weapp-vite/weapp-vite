@@ -28,11 +28,15 @@ async function runBuild() {
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 
-async function getSharedMiniProgram() {
+async function ensureBuildPrepared() {
   if (!sharedBuildPrepared) {
     await runBuild()
     sharedBuildPrepared = true
   }
+}
+
+async function getSharedMiniProgram() {
+  await ensureBuildPrepared()
 
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
@@ -257,6 +261,8 @@ describe.sequential('e2e app: issue-340-hoist runtime', () => {
   })
 
   it('reLaunches both subpackage pages with hoisted shared imports intact', async () => {
+    await ensureBuildPrepared()
+
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
 

@@ -10,7 +10,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/plugin-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const PLUGIN_DIST_ROOT = path.join(APP_ROOT, 'dist-plugin')
-const SKIPPED_PLUGIN_PROJECT_PAGE = Symbol('skipped-plugin-project-page')
+const HOST_ROUTE = '/pages/index/index'
 
 function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
@@ -61,29 +61,6 @@ function shouldRetryAutomatorError(error: unknown) {
   return message.includes('Wait timed out after')
     || message.includes('Timeout in ')
     || message.includes('Execution context was destroyed')
-    || message.includes('Target closed')
-}
-
-function isPluginProjectAutomatorPageProtocolUnavailable(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('Plugin project page protocol unavailable')
-    || message.includes('Plugin project host page is not ready')
-    || message.includes('Plugin project current page is not host')
-    || message.includes('Plugin project current page is missing')
-    || message.includes('Plugin project host marker is missing')
-    || message.includes('Operation timed out after 2000ms')
-    || message.includes('Operation timed out after 3000ms')
-    || message.includes('Timeout in read plugin host current page')
-    || message.includes('Timeout in read plugin host wxml')
-    || message.includes('Timeout in query plugin host root')
-    || message.includes('Timeout in read plugin host root wxml')
-    || message.includes('Timeout in relaunch host')
-    || message.includes('Timeout in raw reLaunch')
-    || message.includes('Timed out waiting page root after reLaunch')
-    || message.includes('reLaunch returned empty page')
-    || message.includes('Connection closed, check if wechat web devTools is still running')
-    || message.includes('WebSocket is not open')
-    || message.includes('socket hang up')
     || message.includes('Target closed')
 }
 
@@ -247,10 +224,25 @@ async function resolveHostPage(miniProgram: any) {
   let page: any
   try {
     page = await runWithTimeout(
-      () => miniProgram.currentPage({ retries: 1, timeout: 3_000 }),
-      4_000,
-      'read plugin host current page',
+      () => miniProgram.reLaunch(HOST_ROUTE),
+      15_000,
+      'relaunch plugin host page',
     )
+  }
+  catch (error) {
+    if (!isDevtoolsPageProtocolUnavailable(error)) {
+      throw error
+    }
+  }
+  page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000) ?? page
+  try {
+    if (!page) {
+      page = await runWithTimeout(
+        () => miniProgram.currentPage({ retries: 1, timeout: 3_000 }),
+        4_000,
+        'read plugin host current page',
+      )
+    }
   }
   catch (error) {
     if (isDevtoolsPageProtocolUnavailable(error)) {
@@ -301,7 +293,7 @@ describe.sequential('plugin-demo runtime (ide)', () => {
     await closeSharedMiniProgram()
   })
 
-  it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async (ctx) => {
+  it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async () => {
     const miniProgram = await getSharedMiniProgram()
     const errorCollector = attachRuntimeErrorCollector(miniProgram)
     const marker = errorCollector.mark()
@@ -318,16 +310,6 @@ describe.sequential('plugin-demo runtime (ide)', () => {
       }
 
       const page = await runStep('resolve-host', () => resolveHostPage(miniProgram))
-        .catch((error) => {
-          if (isPluginProjectAutomatorPageProtocolUnavailable(error)) {
-            ctx.skip('当前微信开发者工具在插件项目模式下未返回 automator 页面协议，跳过 plugin-demo IDE runtime。')
-            return SKIPPED_PLUGIN_PROJECT_PAGE
-          }
-          throw error
-        })
-      if (page === SKIPPED_PLUGIN_PROJECT_PAGE) {
-        return
-      }
       if (!page) {
         throw new Error('Failed to launch /pages/index/index')
       }

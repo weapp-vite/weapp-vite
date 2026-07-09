@@ -11,15 +11,22 @@ import {
   createSuccessState,
   installMockRequest,
   restoreMockRequest,
+  syncRequestGlobalsDemoState,
 } from './shared'
 
+const REQUEST_GLOBALS_ROUTE = 'pages/request-globals/axios'
 const state = ref(createInitialState())
+
+function syncState() {
+  syncRequestGlobalsDemoState(REQUEST_GLOBALS_ROUTE, state.value)
+}
 
 function pushRequestLog(entry: string) {
   state.value = {
     ...state.value,
     requestLog: [...state.value.requestLog, entry],
   }
+  syncState()
 }
 
 async function runChecks() {
@@ -31,6 +38,7 @@ async function runChecks() {
     runCount: state.value.runCount + 1,
     status: 'running',
   }
+  syncState()
 
   try {
     const payload = await axios.get('https://request-globals.invalid/axios')
@@ -38,12 +46,14 @@ async function runChecks() {
       ...state.value,
       ...createSuccessState(JSON.stringify(payload.data)),
     }
+    syncState()
   }
   catch (error) {
     state.value = {
       ...state.value,
       ...createErrorState(error),
     }
+    syncState()
   }
 }
 
@@ -58,6 +68,7 @@ onLoad(() => {
     },
     targets: ['fetch', 'Headers', 'Request', 'Response', 'XMLHttpRequest'],
   })
+  syncState()
   void runChecks()
 })
 

@@ -18,6 +18,7 @@ const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\
 interface ExtractConfigFromVueOptions {
   readSource?: () => Promise<string | undefined>
   source?: string
+  force?: boolean
 }
 
 function getMtimeCached(filePath: string) {
@@ -70,7 +71,7 @@ export async function extractConfigFromVue(
   options?: ExtractConfigFromVueOptions,
 ): Promise<Record<string, any> | undefined> {
   try {
-    const cached = vueConfigCache.get(vueFilePath)
+    const cached = options?.force ? undefined : vueConfigCache.get(vueFilePath)
     if (cached && await isVueConfigCacheValid(vueFilePath, cached)) {
       return cached.config
     }

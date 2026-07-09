@@ -6,12 +6,15 @@ describe('github issues runtime shared relaunch helper', () => {
     const targetPage = {
       path: '/pages/index/index',
       waitFor: vi.fn(async () => {}),
+      waitForRendered: vi.fn(async () => '<view id="issue-index-ready" />'),
     }
     const miniProgram = {
-      currentPage: vi.fn(async () => ({
-        path: '/pages/other/index',
-        waitFor: vi.fn(async () => {}),
-      })),
+      currentPage: vi.fn()
+        .mockResolvedValueOnce({
+          path: '/pages/other/index',
+          waitFor: vi.fn(async () => {}),
+        })
+        .mockResolvedValue(targetPage),
       reLaunch: vi.fn(async () => targetPage),
       evaluate: vi.fn(async () => '/pages/index/index'),
     }

@@ -7,7 +7,9 @@ import {
   createHmrMarker,
   PLATFORM_EXT,
   replaceFileByRename,
+  replaceHmrScriptName,
   replaceHmrSfcTitle,
+  replaceSharedStoreInitialName,
   resolvePlatforms,
   waitForFileContains,
 } from '../utils/hmr-helpers'
@@ -49,7 +51,7 @@ function expectUpdatedSource(source: string, updated: string, label: string) {
 }
 
 function replaceSharedStoreName(source: string, marker: string) {
-  const updated = source.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+  const updated = replaceSharedStoreInitialName(source, marker)
   expectUpdatedSource(source, updated, 'shared store')
   return updated
 }
@@ -64,7 +66,7 @@ function createBrokenPageScript(source: string) {
 }
 
 function createPageScriptWithMarker(source: string, marker: string) {
-  const updated = source.replace(`buildResult('hmr',`, `buildResult('${marker}',`)
+  const updated = replaceHmrScriptName(source, marker)
   expectUpdatedSource(source, updated, 'page script')
   return updated
 }

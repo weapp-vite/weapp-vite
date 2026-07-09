@@ -189,6 +189,9 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
+      <e2e-template-probe
+        marker="LAYOUTS-PAGE-TEMPLATE-BASE"
+        storage-key="__weapp_vite_core_hmr_layout_template_probe__" />
       <view class="hero">
         <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
         <view class="hero__title">Layouts HMR Playground</view>
@@ -215,6 +218,9 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
+      <e2e-template-probe
+        marker="LAYOUTS-PAGE-TEMPLATE-BASE"
+        storage-key="__weapp_vite_core_hmr_layout_template_probe__" />
       <view class="hero">
         <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
         <view class="hero__title">Layouts HMR Playground</view>
@@ -237,6 +243,9 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 </block>
 <block wx:else>
   <view class="page">
+    <e2e-template-probe
+      marker="LAYOUTS-PAGE-TEMPLATE-BASE"
+      storage-key="__weapp_vite_core_hmr_layout_template_probe__" />
     <view class="hero">
       <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
       <view class="hero__title">Layouts HMR Playground</view>

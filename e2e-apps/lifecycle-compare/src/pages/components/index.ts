@@ -463,7 +463,10 @@ Page({
       return false
     }
     const component = this.selectComponent(selector) as ProbeEmitterComponent | null
-    component?.emitProbe?.(`${componentType}:${bindingMode}`)
+    if (typeof component?.emitProbe !== 'function') {
+      return false
+    }
+    component.emitProbe(`${componentType}:${bindingMode}`)
     return true
   },
   triggerNamedComponentProbe(componentType: ProbeComponentType, eventNameType: NamedEventNameType, bindingMode: NamedProbeBindingMode) {
@@ -503,7 +506,10 @@ Page({
     }
     const eventName = eventNames[eventNameType]
     const component = this.selectComponent(selector) as ProbeEmitterComponent | null
-    component?.emitNamed?.(eventName, `${componentType}:${eventNameType}:${bindingMode}`)
+    if (typeof component?.emitNamed !== 'function') {
+      return false
+    }
+    component.emitNamed(eventName, `${componentType}:${eventNameType}:${bindingMode}`)
     return true
   },
 })

@@ -650,6 +650,38 @@ describe.sequential('automator launch resilience', () => {
     expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
+  it('accepts warmup reLaunch stale page handle when current page is rendered', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT = '20'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const stalePage = createMockPage('/pages/index/index')
+    stalePage.$ = vi.fn(async () => null)
+    stalePage.$$ = vi.fn(async () => [])
+    const currentPage = createMockPage('/pages/index/index')
+    const miniProgram = createMockMiniProgram()
+    let relaunched = false
+    miniProgram.currentPage = miniProgram.__rawCurrentPage = vi.fn()
+      .mockImplementation(async () => relaunched ? currentPage : createMockPage('/pages/other/index'))
+    miniProgram.reLaunch = miniProgram.__rawReLaunch = vi.fn(async () => {
+      relaunched = true
+      return stalePage
+    })
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })).resolves.toBeTruthy()
+
+    expect(launchMock).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+  })
+
   it('rejects warmup timeout when target page root is unavailable but route is current', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '1'
@@ -1714,6 +1746,34 @@ describe.sequential('automator launch resilience', () => {
     expect(miniProgram.__rawCompile).not.toHaveBeenCalled()
   })
 
+  it('keeps the current runtime session when raw relaunch times out after reaching target page', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
+    process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT = '20'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const currentPage = createMockPage('pages/index/index')
+    const miniProgram = createMockMiniProgram({ currentPage })
+    miniProgram.reLaunch = miniProgram.__rawReLaunch = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 80))
+      return createMockPage()
+    })
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launched = await launchAutomator({ projectPath: sandboxRoot })
+
+    await expect(launched.reLaunch('/pages/index/index')).resolves.toBe(currentPage)
+
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalledTimes(1)
+    expect(currentPage.$$.mock.calls.length + currentPage.$.mock.calls.length).toBeGreaterThan(0)
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+  })
+
   it('closes the current runtime session when relaunch page root never becomes ready', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
@@ -1737,11 +1797,12 @@ describe.sequential('automator launch resilience', () => {
     runWechatIdeEngineBuildByHttpMock.mockClear()
     miniProgram.__rawCompile.mockClear()
 
-    await expect(launched.reLaunch('/pages/index/index')).rejects.toThrow('Timed out waiting page root')
+    await expect(launched.reLaunch('/pages/index/index')).resolves.toBe(page)
 
     expect(miniProgram.__rawReLaunch).toHaveBeenCalledTimes(1)
-    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(page.$).toHaveBeenCalled()
+    expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
     expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
     expect(miniProgram.__rawCompile).not.toHaveBeenCalled()

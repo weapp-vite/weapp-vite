@@ -83,6 +83,23 @@ async function withTimeout<T>(task: Promise<T>, timeoutMs: number, label: string
   }
 }
 
+async function callLifecyclePageMethod<T = unknown>(
+  page: any,
+  methodName: string,
+  args: unknown[] = [],
+  timeoutMs = 20_000,
+) {
+  const label = `${methodName}(${args.map(String).join(',')})`
+  process.stdout.write(`[lifecycle-compare:call] ${label}\n`)
+  const result = await withTimeout(
+    page.callMethod(methodName, ...args),
+    timeoutMs,
+    `call lifecycle page method ${label}`,
+  ) as T
+  process.stdout.write(`[lifecycle-compare:call-ready] ${label}\n`)
+  return result
+}
+
 async function waitForLifecyclePageDom(miniProgram: any, pagePath: string, timeoutMs = 15_000) {
   const marker = PAGE_DOM_MARKERS[pagePath]
   if (!marker) {
@@ -148,14 +165,14 @@ async function waitForLifecyclePageDom(miniProgram: any, pagePath: string, timeo
 async function openLifecyclePage(miniProgram: any, pagePath: string, query = '') {
   const route = query ? `${pagePath}?${query}` : pagePath
   process.stdout.write(`[lifecycle-compare:open] route=${route}\n`)
-  const page = await withTimeout(
+  await withTimeout(
     miniProgram.reLaunch(route),
     20_000,
     `relaunch lifecycle page ${route}`,
   )
   process.stdout.write(`[lifecycle-compare:open-ready] route=${route}\n`)
   await waitForLifecyclePageDom(miniProgram, pagePath)
-  return page ?? await withTimeout(
+  return await withTimeout(
     miniProgram.currentPage(),
     2_500,
     `read lifecycle page after relaunch ${route}`,
@@ -200,6 +217,11 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
     )
     process.stdout.write(`[lifecycle-compare:switch-ready] route=${pagePath}\n`)
     await waitForLifecyclePageDom(miniProgram, pagePath)
+    page = await withTimeout(
+      miniProgram.currentPage(),
+      2_500,
+      `read lifecycle page after switchTab ${pagePath}`,
+    )
     await page?.waitFor(200)
   }
 
@@ -374,18 +396,18 @@ describe.sequential('lifecycle compare (e2e)', () => {
     try {
       await openLifecyclePage(miniProgram, '/pages/native/index', 'from=e2e')
       const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
-      await nativeActive.callMethod('finalizeLifecycleLogs')
+      await callLifecyclePageMethod(nativeActive, 'finalizeLifecycleLogs')
       const nativeLogs = (await nativeActive.data('__lifecycleLogs')) ?? []
       expect(nativeLogs.length).toBeGreaterThan(0)
 
       await openLifecyclePage(miniProgram, '/pages/wevu-ts/index', 'from=e2e')
       const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index')) ?? await miniProgram.currentPage()
-      await wevuTsActive.callMethod('finalizeLifecycleLogs')
+      await callLifecyclePageMethod(wevuTsActive, 'finalizeLifecycleLogs')
       const wevuTsLogs = (await wevuTsActive.data('__lifecycleLogs')) ?? []
 
       await openLifecyclePage(miniProgram, '/pages/wevu-vue/index', 'from=e2e')
       const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index')) ?? await miniProgram.currentPage()
-      await wevuVueActive.callMethod('finalizeLifecycleLogs')
+      await callLifecyclePageMethod(wevuVueActive, 'finalizeLifecycleLogs')
       const wevuVueLogs = (await wevuVueActive.data('__lifecycleLogs')) ?? []
 
       expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
@@ -407,7 +429,7 @@ describe.sequential('lifecycle compare (e2e)', () => {
     try {
       await openLifecyclePage(miniProgram, '/pages/components/index', 'from=e2e')
       const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index')) ?? await miniProgram.currentPage()
-      await componentsActive.callMethod('finalizeLifecycleLogs')
+      await callLifecyclePageMethod(componentsActive, 'finalizeLifecycleLogs')
       const componentLogs = (await componentsActive.data('__componentLogs')) ?? {}
 
       const nativeLogs = componentLogs.native ?? []
@@ -437,7 +459,7 @@ describe.sequential('lifecycle compare (e2e)', () => {
         throw new Error('Failed to launch components page for event binding verify')
       }
       await page.waitFor(500)
-      await page.callMethod('resetEventBindingStats')
+      await callLifecyclePageMethod(page, 'resetEventBindingStats')
       await page.waitFor(120)
 
       const componentsWxml = await fs.readFile(COMPONENTS_WXML_DIST, 'utf8')
@@ -451,20 +473,20 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(componentsWxml).toContain('bindtap="onViewBothReverseBindtap"')
 
       for (const bindingMode of ['bindtap', 'bindColon', 'both', 'bothReverse'] as const) {
-        const triggered = await page.callMethod('triggerViewEventBinding', bindingMode)
+        const triggered = await callLifecyclePageMethod<boolean>(page, 'triggerViewEventBinding', [bindingMode])
         expect(triggered).toBe(true)
       }
 
       for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
         for (const bindingMode of ['bind', 'bindColon', 'both', 'bothReverse'] as const) {
-          const triggered = await page.callMethod('triggerComponentProbe', componentType, bindingMode)
+          const triggered = await callLifecyclePageMethod<boolean>(page, 'triggerComponentProbe', [componentType, bindingMode])
           expect(triggered).toBe(true)
           await page.waitFor(120)
         }
       }
 
       await page.waitFor(180)
-      const stats = await page.callMethod('getEventBindingStats') as EventBindingStats
+      const stats = await callLifecyclePageMethod<EventBindingStats>(page, 'getEventBindingStats')
       expect(stats.view.bindtap).toBe(1)
       expect(stats.view.bindColonTap).toBe(1)
       expect(stats.view.bothBindtap).toBe(1)
@@ -505,13 +527,17 @@ describe.sequential('lifecycle compare (e2e)', () => {
         throw new Error('Failed to launch components page for triggerEvent event name verify')
       }
       await page.waitFor(500)
-      await page.callMethod('resetNamedEventBindingStats')
+      await callLifecyclePageMethod(page, 'resetNamedEventBindingStats')
       await page.waitFor(120)
 
       for (const eventNameType of ['hyphen', 'underscore'] as const) {
         for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
           for (const bindingMode of ['bind', 'bindColon', 'both'] as const) {
-            const triggered = await page.callMethod('triggerNamedComponentProbe', componentType, eventNameType, bindingMode)
+            const triggered = await callLifecyclePageMethod<boolean>(
+              page,
+              'triggerNamedComponentProbe',
+              [componentType, eventNameType, bindingMode],
+            )
             expect(triggered).toBe(true)
             await page.waitFor(120)
           }
@@ -519,7 +545,7 @@ describe.sequential('lifecycle compare (e2e)', () => {
       }
 
       await page.waitFor(180)
-      const stats = await page.callMethod('getNamedEventBindingStats') as NamedEventBindingStats
+      const stats = await callLifecyclePageMethod<NamedEventBindingStats>(page, 'getNamedEventBindingStats')
       expect(stats.hyphen.nativeComponent.bind).toBe(0)
       expect(stats.hyphen.nativeComponent.bindColon).toBe(1)
       expect(stats.hyphen.nativeComponent.bothBind).toBe(0)

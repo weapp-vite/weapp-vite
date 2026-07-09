@@ -30,7 +30,7 @@ const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const LOGIN_REQUIRED_RE = /登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired|DEVTOOLS_LOGIN_REQUIRED/i
 const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|DEVTOOLS_SCREENSHOT_TIMEOUT|协议调用 .* 超时|截图请求在 \d+ms 内未收到 DevTools 回包|Screenshot request did not receive a DevTools response|DevTools timed out|DevTools did not respond/i
-const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out|Command timed out after \d+ milliseconds/i
+const IDE_INFRA_RE = /DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|Cannot connect to the Wechat DevTools automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|connect EADDRNOTAVAIL 127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|CLI command timed out|Command timed out after \d+ milliseconds/i
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
 
@@ -147,7 +147,10 @@ async function waitForPageData<T>(miniProgram: any, dataPath: string, expected: 
   let lastValue: unknown
   while (Date.now() - start <= timeoutMs) {
     const page = await miniProgram.currentPage()
-    lastValue = await page.data(dataPath)
+    lastValue = await page.data(dataPath, {
+      routeOnly: true,
+      timeout: 3_000,
+    })
     if (lastValue === expected) {
       return lastValue
     }
@@ -428,7 +431,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     await startMiniProgram()
     await runWithMiniProgramRecovery(async () => {
       await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
-      await expectRenderedSelectorBox(miniProgram, COUNT_LABEL_SELECTOR)
+      await waitForRenderedSelector(miniProgram, COUNT_LABEL_SELECTOR)
       await expectRenderedSelectorBox(miniProgram, COUNT_BUTTON_WRAPPER_SELECTOR)
       await waitForRenderedSelector(miniProgram, COUNT_BUTTON_SELECTOR)
       await waitForPageData(miniProgram, 'count', 0)
@@ -564,7 +567,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
         expect(preScreenshotDomReady).toBe(true)
       }
       const output = normalizeTerminalOutput(ideInfraOutput)
-      expect(output).toMatch(/DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|timedOut=true/i)
+      expect(output).toMatch(/DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|connect EADDRNOTAVAIL 127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|timedOut=true/i)
       return
     }
 

@@ -452,6 +452,17 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           }
         }
       }
+      if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
+        await ctx.autoRoutesService.ensureFresh()
+        const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
+          source: await readVueSource(),
+          force: true,
+        })
+        if (isObject(refreshedConfigFromVue)) {
+          json = refreshedConfigFromVue
+          hasJsonEntry = true
+        }
+      }
       appResult = await collectAppEntries({
         pluginCtx: this,
         id,
@@ -470,11 +481,16 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         ? ctx.autoRoutesService?.getSignature?.()
         : undefined
       entries.push(...appResult.entries)
+      const registerAppComponentEntry = (entry: string) => {
+        entries.push(entry)
+        explicitEntryTypes.set(normalizeEntry(entry, jsonPath), 'component')
+        explicitEntryTypes.set(normalizeEntry(`/${entry}`, jsonPath), 'component')
+      }
       if (get(json, 'tabBar.custom')) {
-        explicitEntryTypes.set(normalizeEntry('custom-tab-bar/index', jsonPath), 'component')
+        registerAppComponentEntry('custom-tab-bar/index')
       }
       if (get(json, 'appBar')) {
-        explicitEntryTypes.set(normalizeEntry('app-bar/index', jsonPath), 'component')
+        registerAppComponentEntry('app-bar/index')
       }
       pluginResolvedRecords = appResult.pluginResolvedRecords
       if (appResult.pluginEntryTypes?.length) {

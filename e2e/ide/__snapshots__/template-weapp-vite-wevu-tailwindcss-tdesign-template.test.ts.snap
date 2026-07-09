@@ -5,14 +5,6 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
 text,
 ::after,
 ::before {
-  --tw-font-weight:;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-color: initial;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -30,6 +22,14 @@ wx-root-portal-content {
     ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-weight-semibold: 600;
+  --tw-font-weight:;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-leading:;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-color: initial;
 }
 .mt-_b12rpx_B {
   margin-top: 12rpx;

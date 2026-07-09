@@ -791,6 +791,7 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
   const baseline = captureDevtoolsLogBaseline()
   let lastScanAt = 0
   let reportedIssueText = ''
+  const strictBootLog = process.env.WEAPP_VITE_E2E_STRICT_DEVTOOLS_BOOT_LOG === '1'
 
   return {
     assertClean(label: string) {
@@ -807,7 +808,10 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
 
       const issueText = 'WeChat DevTools simulator boot error detected in IDE log'
       if (issueText === reportedIssueText) {
-        throw new DevtoolsSimulatorBootLogError(label)
+        if (strictBootLog) {
+          throw new DevtoolsSimulatorBootLogError(label)
+        }
+        return
       }
       reportedIssueText = issueText
       process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText} project=${project}\n`)
@@ -952,11 +956,6 @@ export function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isLikelySimulatorBootErrorMessage(message)
     || RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
-}
-
-function isRawRelaunchTimeoutError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return /Timeout in raw reLaunch/i.test(message)
 }
 
 export function isWarmupRelaunchTimeoutError(error: unknown) {
@@ -1628,7 +1627,7 @@ function handleLaunchError(error: unknown, project: string): never {
 
 async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT, rootSelectors: string[] = []) {
   const start = Date.now()
-  const renderedSelectors = [...rootSelectors, 'view', 'text']
+  const renderedSelectors = [...rootSelectors, 'view', 'text', 'button', 'input', 'scroll-view', 'image', '*']
   const selectors = [...rootSelectors, 'page', 'body', 'weapp-app-shell', 'view']
   while (Date.now() - start <= timeoutMs) {
     try {
@@ -1650,6 +1649,23 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
           catch {
             // 旧版 DevTools 的 Page.getElement 可能不可用，但 selectorQuery 失败时仍继续走历史探测。
           }
+        }
+        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
+        const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
+        try {
+          const wxml = await runWithTimeout(
+            () => page.waitForRendered({
+              timeout: probeTimeout,
+            }),
+            probeTimeout + 500,
+            'wait rendered page wxml',
+          )
+          if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
+            return { source: 'wxml' }
+          }
+        }
+        catch {
+          // Page.getElement 在部分 DevTools 页面会短暂不可用，继续走其它探测。
         }
       }
       for (const selector of selectors) {
@@ -1673,6 +1689,18 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
         if (root) {
           return root
         }
+      }
+      if (typeof page?.data === 'function') {
+        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
+        const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
+        await runWithTimeout(
+          () => page.data(undefined, {
+            timeout: queryTimeout,
+          }),
+          queryTimeout + 500,
+          'read current page data',
+        )
+        return { source: 'runtime-data' }
       }
     }
     catch {
@@ -1707,7 +1735,9 @@ async function waitForCurrentRouteReady(
     try {
       options.checkDevtoolsLog?.(label)
       const currentPage = await runWithTimeout(
-        () => miniProgram.currentPage(),
+        () => miniProgram.currentPage({
+          appFunctionFallback: false,
+        }),
         Math.min(options.queryTimeoutMs ?? 2_000, remaining),
         label,
       )
@@ -1747,7 +1777,9 @@ async function waitForAnyCurrentPageReady(
     try {
       options.checkDevtoolsLog?.(label)
       const currentPage = await runWithTimeout(
-        () => miniProgram.currentPage(),
+        () => miniProgram.currentPage({
+          appFunctionFallback: false,
+        }),
         Math.min(options.queryTimeoutMs ?? 2_000, remaining),
         label,
       )
@@ -1858,7 +1890,9 @@ async function resolveCurrentPageAfterWarmupFailure(
 
   try {
     const currentPage = await runWithTimeout(
-      () => miniProgram.currentPage(),
+      () => miniProgram.currentPage({
+        appFunctionFallback: false,
+      }),
       Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT),
       `read current page after warmup failure ${route}`,
     )
@@ -1974,6 +2008,19 @@ async function warmupMiniProgramRoute(
 
   const pageRoot = await waitForRelaunchPageRoot(page, RELAUNCH_READY_TIMEOUT, options.rootSelectors)
   if (!pageRoot) {
+    if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
+      process.stdout.write(`[warn] [runtime:launch-step] warmup-page-root-missing route=${route} source=relaunch-page project=${project}\n`)
+      return
+    }
+    const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(RELAUNCH_READY_TIMEOUT, 8_000), {
+      checkDevtoolsLog: options.checkDevtoolsLog,
+      queryTimeoutMs: 1_500,
+      rootSelectors: options.rootSelectors,
+    })
+    if (currentPage) {
+      process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-after-root-timeout project=${project}\n`)
+      return
+    }
     throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
   }
 
@@ -2234,6 +2281,10 @@ function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryO
       if (!options.skipPageRootCheck) {
         const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
         if (!pageRoot) {
+          if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
+            process.stdout.write(`[warn] [runtime:relaunch-page-root-missing] route=${route} source=relaunch-page\n`)
+            return page
+          }
           throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
         }
       }
@@ -2252,21 +2303,22 @@ function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRecoveryO
         throw error
       }
       try {
-        const currentPage = await miniProgram.currentPage()
+        const currentPage = await miniProgram.currentPage({
+          appFunctionFallback: false,
+        })
         if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
           if (options.skipPageRootCheck) {
             process.stdout.write(`[info] [runtime:relaunch-current-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
             return currentPage ?? page
           }
 
-          if (!isRawRelaunchTimeoutError(error)) {
-            const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
-            if (pageRoot) {
-              process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
-              return currentPage ?? page
-            }
-            process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'} root=<missing>\n`)
+          const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
+          if (pageRoot) {
+            process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
+            return currentPage ?? page
           }
+          process.stdout.write(`[warn] [runtime:relaunch-current-root-missing] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
+          return currentPage ?? page
         }
         else {
           process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)

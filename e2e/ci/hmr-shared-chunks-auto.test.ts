@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, replaceHmrScriptName, replaceSharedStoreInitialName, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT } from '../wevu-runtime.utils'
 
@@ -110,7 +110,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
     const originalConfig = await fs.readFile(CONFIG_PATH, 'utf8')
     const originalSource = await fs.readFile(PAGE_HMR_SOURCE_PATH, 'utf8')
     const marker = createHmrMarker('AUTO-DIRECT', 'weapp')
-    const updatedSource = originalSource.replace(`buildResult('hmr',`, `buildResult('${marker}',`)
+    const updatedSource = replaceHmrScriptName(originalSource, marker)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert direct-update marker into hmr page source.')
     }
@@ -166,7 +166,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
     const originalConfig = await fs.readFile(CONFIG_PATH, 'utf8')
     const originalSource = await fs.readFile(SHARED_STORE_SOURCE_PATH, 'utf8')
     const marker = createHmrMarker('AUTO-SHARED', 'weapp')
-    const updatedSource = originalSource.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+    const updatedSource = replaceSharedStoreInitialName(originalSource, marker)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert shared-update marker into shared store source.')
     }

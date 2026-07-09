@@ -12,15 +12,22 @@ import {
   createSuccessState,
   installMockRequest,
   restoreMockRequest,
+  syncRequestGlobalsDemoState,
 } from './shared'
 
+const REQUEST_GLOBALS_ROUTE = 'pages/request-globals/fetch'
 const state = ref(createInitialState())
+
+function syncState() {
+  syncRequestGlobalsDemoState(REQUEST_GLOBALS_ROUTE, state.value)
+}
 
 function pushRequestLog(entry: string) {
   state.value = {
     ...state.value,
     requestLog: [...state.value.requestLog, entry],
   }
+  syncState()
 }
 
 async function runChecks() {
@@ -32,6 +39,7 @@ async function runChecks() {
     runCount: state.value.runCount + 1,
     status: 'running',
   }
+  syncState()
 
   try {
     const response = await wevuFetch('https://request-globals.invalid/fetch', {
@@ -43,12 +51,14 @@ async function runChecks() {
       ...state.value,
       ...createSuccessState(JSON.stringify(payload)),
     }
+    syncState()
   }
   catch (error) {
     state.value = {
       ...state.value,
       ...createErrorState(error),
     }
+    syncState()
   }
 }
 
@@ -63,6 +73,7 @@ onLoad(() => {
       timeout: 3_500,
     },
   })
+  syncState()
   void runChecks()
 })
 

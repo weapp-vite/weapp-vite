@@ -188,6 +188,42 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
   })
 
+  it('rewrites bare wevu internal runtime imports to root shared chunk requires', () => {
+    const runtimeFileNames = new Map<string, string>()
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'import { setWevuDefaults, createApp } from "wevu/internal-runtime";',
+          'setWevuDefaults({});',
+          'createApp({});',
+        ].join('\n'),
+        imports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      onRuntimeModuleFileName(moduleId, fileName) {
+        runtimeFileNames.set(moduleId, fileName)
+      },
+    })
+
+    expect(bundle['app.js'].code).not.toContain('from "wevu/internal-runtime"')
+    expect(bundle['app.js'].code).toContain('const { setWevuDefaults, createApp } = require("./common.js");')
+    expect(bundle['app.js'].imports).toEqual(['common.js'])
+    expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('common.js')
+  })
+
   it('rewrites partial hmr wevu runtime imports with a previously resolved vendor file', () => {
     const bundle = {
       'app.js': {

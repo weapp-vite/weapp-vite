@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'wevu'
+import { onReady, useTemplateRef } from 'wevu'
+import { wpi } from 'wevu/api'
 import RouterOriginProbe from '../../../components/router-origin-probe/index.vue'
 
 interface RouterOriginProbeExposed {
-  navByRouter: () => void
-  navByPageRouter: () => void
+  navByRouter: () => Promise<boolean>
+  navByPageRouter: () => Promise<boolean>
 }
 
 const probeRef = useTemplateRef<RouterOriginProbeExposed>('routerOriginProbe')
+const E2E_ROUTER_SUB_READY_STORAGE_KEY = '__weapp_vite_router_sub_ready__'
 
 function getPreviousPage() {
   const stack = getCurrentPages()
@@ -26,35 +28,53 @@ function callPrevWxFromIndex() {
   return true
 }
 
-function callPrevPageRouterFromIndex() {
+async function callPrevPageRouterFromIndex() {
   const previousPage = getPreviousPage()
   if (typeof previousPage?.triggerPageRouterRelativeFromIndex !== 'function') {
     return false
   }
-  previousPage.triggerPageRouterRelativeFromIndex()
-  return true
+  return await previousPage.triggerPageRouterRelativeFromIndex()
 }
 
-function runComponentRouterFromProbe() {
+async function runComponentRouterFromProbe() {
   if (typeof probeRef.value?.navByRouter !== 'function') {
     return false
   }
-  probeRef.value.navByRouter()
-  return true
+  return await probeRef.value.navByRouter()
 }
 
-function runComponentPageRouterFromProbe() {
+async function runComponentPageRouterFromProbe() {
   if (typeof probeRef.value?.navByPageRouter !== 'function') {
     return false
   }
-  probeRef.value.navByPageRouter()
-  return true
+  return await probeRef.value.navByPageRouter()
 }
 
 const _callPrevWxFromIndex = callPrevWxFromIndex
 const _callPrevPageRouterFromIndex = callPrevPageRouterFromIndex
 const _runComponentRouterFromProbe = runComponentRouterFromProbe
 const _runComponentPageRouterFromProbe = runComponentPageRouterFromProbe
+
+function syncRouterSubReadyState() {
+  try {
+    wpi.setStorageSync(E2E_ROUTER_SUB_READY_STORAGE_KEY, {
+      componentReady: typeof probeRef.value?.navByRouter === 'function',
+      route: 'pages/router-stability/sub/index',
+    })
+  }
+  catch {
+    // e2e 探针不应影响页面运行。
+  }
+}
+
+function scheduleRouterSubReadyStateSync() {
+  syncRouterSubReadyState()
+  setTimeout(syncRouterSubReadyState, 100)
+  setTimeout(syncRouterSubReadyState, 500)
+  setTimeout(syncRouterSubReadyState, 1_000)
+}
+
+onReady(scheduleRouterSubReadyStateSync)
 </script>
 
 <template>

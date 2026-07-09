@@ -449,7 +449,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('export default {}')
   })
 
-  it('prepends a normal script block when only script setup exists', () => {
+  it('prepends a normal installer script block when only script setup exists', () => {
     const code = injectRequestGlobalsIntoSfc(
       [
         '<script setup lang="ts">',
@@ -465,7 +465,8 @@ describe('injectRequestGlobals helpers', () => {
     expect(code.match(/<script\b/g)?.length).toBe(2)
     expect(code).toContain('<script lang="ts">')
     expect(code).toContain('<script setup lang="ts">\nconst value = 1')
-    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).toContain('__weappViteInstallRequestGlobals({ targets: ["fetch"] })')
+    expect(code).not.toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
   it('detects manual installRequestGlobals usage from web-apis imports', () => {

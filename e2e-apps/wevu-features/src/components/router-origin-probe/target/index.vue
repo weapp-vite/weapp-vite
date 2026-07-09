@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import { onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 
 const source = ref('unknown')
+const E2E_ROUTER_TARGET_STORAGE_KEY = '__weapp_vite_router_target__'
 
 onLoad((options) => {
   source.value = options?.source ?? 'unknown'
+  try {
+    wpi.setStorageSync(E2E_ROUTER_TARGET_STORAGE_KEY, {
+      route: 'components/router-origin-probe/target/index',
+      source: source.value,
+    })
+  }
+  catch {
+    // e2e 探针不应影响页面运行。
+  }
 })
 
 function goBack() {

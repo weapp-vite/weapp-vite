@@ -201,6 +201,11 @@ interface WevuRuntimeChunkIndex {
   chunksByModuleId: Map<string, OutputChunk>
   exportNamesByFileName: Map<string, Set<string>>
 }
+
+function isWevuRuntimeSharedChunkCandidate(fileName: string) {
+  return fileName.startsWith('weapp-vendors/')
+    || (!fileName.includes('/') && fileName !== 'app.js' && fileName.endsWith('.js'))
+}
 const WEVU_INTERNAL_MODULE_EXPORT_MARKERS: Record<WevuInternalModuleId, readonly string[]> = {
   'wevu/internal-runtime': WEVU_INTERNAL_RUNTIME_EXPORTS,
   'wevu/internal-reactivity': WEVU_INTERNAL_REACTIVITY_EXPORTS,
@@ -412,7 +417,7 @@ export function createBundleChunkSnapshot(bundle: OutputBundle): BundleChunkSnap
     const chunk = output as OutputChunk
     chunks.push(chunk)
     chunkFileNames.add(chunk.fileName)
-    if (chunk.fileName.startsWith('weapp-vendors/')) {
+    if (isWevuRuntimeSharedChunkCandidate(chunk.fileName)) {
       vendorChunks.push(chunk)
     }
     if (

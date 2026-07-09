@@ -44,8 +44,9 @@ describe('store (setup)', () => {
     const useCounter = defineStore('counter-reset', () => {
       const count = ref(0)
       const info = reactive({ name: 'a', tags: ['x'] })
+      const double = computed(() => count.value * 2)
       const plain = 1
-      return { count, info, plain }
+      return { count, double, info, plain }
     })
     const s = useCounter()
     const calls: string[] = []
@@ -58,6 +59,7 @@ describe('store (setup)', () => {
     s.plain = 3
     s.$reset()
     expect(s.count.value).toBe(0)
+    expect(s.double.value).toBe(0)
     expect(s.info.name).toBe('a')
     expect(s.info.tags).toEqual(['x'])
     expect(s.plain).toBe(1)

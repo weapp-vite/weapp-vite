@@ -9,6 +9,8 @@ export interface RequestGlobalsDemoState {
   status: RequestGlobalsDemoStatus
 }
 
+export const REQUEST_GLOBALS_STATE_STORAGE_KEY = '__weapp_vite_request_globals_state__'
+
 let originalRequest: typeof wx.request | undefined
 
 function formatRequestLog(options: WechatMiniprogram.RequestOption) {
@@ -84,6 +86,18 @@ export function createInitialState(): RequestGlobalsDemoState {
     requestLog: [],
     runCount: 0,
     status: 'idle',
+  }
+}
+
+export function syncRequestGlobalsDemoState(route: string, state: RequestGlobalsDemoState) {
+  try {
+    wx.setStorageSync(REQUEST_GLOBALS_STATE_STORAGE_KEY, {
+      ...state,
+      route,
+    })
+  }
+  catch {
+    // e2e 探针不应影响页面运行。
   }
 }
 

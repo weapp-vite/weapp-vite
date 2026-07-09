@@ -97,7 +97,22 @@ function formatRuntimeEntry(kind: 'console' | 'exception', entry: any, level?: s
   if (kind === 'console') {
     return `[console:${level ?? resolveConsoleLevel(entry)}] ${text}`
   }
-  return `[exception] ${text}`
+  const frames = Array.isArray(entry?.exceptionDetails?.stackTrace?.callFrames)
+    ? entry.exceptionDetails.stackTrace.callFrames
+    : []
+  const frameText = frames
+    .slice(0, 3)
+    .map((frame: any) => {
+      const location = [
+        frame?.url,
+        Number.isFinite(frame?.lineNumber) ? Number(frame.lineNumber) + 1 : undefined,
+        Number.isFinite(frame?.columnNumber) ? Number(frame.columnNumber) + 1 : undefined,
+      ].filter(value => value !== undefined && value !== '').join(':')
+      return [frame?.functionName, location].filter(Boolean).join('@')
+    })
+    .filter(Boolean)
+    .join(' <- ')
+  return frameText ? `[exception] ${text} ${frameText}` : `[exception] ${text}`
 }
 
 export interface RuntimeErrorCollector {

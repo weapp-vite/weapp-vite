@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useNativeInstance } from 'wevu'
+import { useNativePageRouter } from 'wevu'
 
-const nativeInstance = useNativeInstance()
+const nativePageRouter = useNativePageRouter()
 
 function openSubPage() {
   wx.navigateTo({
@@ -15,10 +15,14 @@ function triggerWxRelativeFromIndex() {
   })
 }
 
-function triggerPageRouterRelativeFromIndex() {
-  nativeInstance.pageRouter?.navigateTo({
+async function triggerPageRouterRelativeFromIndex() {
+  if (typeof nativePageRouter?.navigateTo !== 'function') {
+    return false
+  }
+  nativePageRouter.navigateTo({
     url: './target/index?source=page-router-from-index',
   })
+  return true
 }
 
 const _openSubPage = openSubPage

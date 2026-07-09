@@ -88,6 +88,8 @@ export function createHmrMarker(prefix: string, platform: string): string {
 }
 
 const HMR_SFC_TITLE_RE = /(<view\s+class="title">\s*)(HMR-SFC)(\s*<\/view>)/
+const HMR_SCRIPT_NAME_RE = /(const\s+hmrScriptName\s*=\s*)['"][^'"]+['"]/
+const SETUP_STORE_INITIAL_NAME_RE = /(export\s+const\s+setupStoreInitialName\s*=\s*)['"][^'"]+['"]/
 
 /**
  * 替换 Vue SFC 标题节点中的 HMR 文案，兼容多行模板格式。
@@ -125,6 +127,28 @@ export function replaceHmrSfcTitle(source: string, nextTitle: string) {
   const trailingWhitespace = source.slice(contentStart, end).match(/\s*$/)?.[0] ?? ''
 
   return `${source.slice(0, contentStart)}${leadingWhitespace}${nextTitle}${trailingWhitespace}${source.slice(end)}`
+}
+
+/**
+ * 替换 HMR 页面脚本的用例名称常量，避免测试依赖 buildResult 调用点格式。
+ *
+ * @param source - 原始页面脚本源码
+ * @param marker - 新的 HMR 标记
+ * @returns 替换后的源码；若未命中常量则返回原文
+ */
+export function replaceHmrScriptName(source: string, marker: string) {
+  return source.replace(HMR_SCRIPT_NAME_RE, `$1'${marker}'`)
+}
+
+/**
+ * 替换共享 store 的初始名称常量，避免测试依赖 ref 初始化表达式格式。
+ *
+ * @param source - 原始共享 store 源码
+ * @param marker - 新的 HMR 标记
+ * @returns 替换后的源码；若未命中常量则返回原文
+ */
+export function replaceSharedStoreInitialName(source: string, marker: string) {
+  return source.replace(SETUP_STORE_INITIAL_NAME_RE, `$1'${marker}'`)
 }
 
 /**

@@ -11,6 +11,11 @@ const LEADING_SLASH_RE = /^\/+/
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const ROUTE_READY_SELECTORS: Record<string, string> = {
+  'pages/router-dynamic/index': '#router-dynamic-run-e2e',
+  'pages/router-showcase/index': '#router-showcase-run-e2e',
+  'pages/router-stability/index': '#router-open-sub',
+}
 
 function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
@@ -92,6 +97,39 @@ async function waitForWxmlContains(page: any, text: string, timeoutMs = 15_000) 
   return false
 }
 
+export async function waitForRenderedSelector(page: any, selector: string, timeoutMs = 6_000) {
+  const start = Date.now()
+  let lastError: unknown
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      if (typeof page?.renderedSelectorNodes === 'function') {
+        const nodesBySelector = await page.renderedSelectorNodes([selector], {
+          timeout: Math.min(2_000, Math.max(1, timeoutMs - (Date.now() - start))),
+        })
+        const nodes = nodesBySelector?.[selector]
+        if (Array.isArray(nodes) && nodes.some(node => Number(node?.width ?? 0) > 0 && Number(node?.height ?? 0) > 0)) {
+          return true
+        }
+      }
+      if (typeof page?.$$ === 'function') {
+        const elements = await page.$$(selector, {
+          timeout: Math.min(500, Math.max(1, timeoutMs - (Date.now() - start))),
+        })
+        if (Array.isArray(elements) && elements.length > 0) {
+          return true
+        }
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await page.waitFor(220)
+  }
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  process.stdout.write(`[wevu-features:selector-timeout] route=${page?.path ?? '<unknown>'} selector=${selector} error=${reason}\n`)
+  return false
+}
+
 export async function relaunchPage(miniProgram: any, route: string, readyText: string) {
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -113,7 +151,12 @@ export async function relaunchPage(miniProgram: any, route: string, readyText: s
     if (ready) {
       return page
     }
-    process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 route-ready-without-wxml-marker text=${readyText}\n`)
+    const readySelector = ROUTE_READY_SELECTORS[normalizeRoutePath(route)]
+    if (readySelector && await waitForRenderedSelector(page, readySelector)) {
+      process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 selector-ready-without-wxml-marker selector=${readySelector} text=${readyText}\n`)
+      return page
+    }
+    process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 route-not-rendered text=${readyText}\n`)
     await delay(280)
   }
   if (lastError) {
@@ -127,7 +170,9 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage()
+      const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
+      })
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }

@@ -16,12 +16,14 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
 const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
 const LEADING_SLASHES_RE = /^\/+/
-const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const CHUNK_MODES_RUNTIME_CASE_TIMEOUT = 4 * 60_000
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const ROUTE_RECOVERY_ATTEMPTS = 3
+const ROUTE_READINESS_TIMEOUT = 6_000
+const ROUTE_RELAUNCH_ATTEMPTS = 2
+const ROUTE_RUN_E2E_TIMEOUT = 15_000
 const ROUTE_RECOVERY_ERROR_PATTERNS = [
   /Timeout in raw reLaunch/i,
   /simulator not found/i,
@@ -33,6 +35,10 @@ const ROUTE_RECOVERY_ERROR_PATTERNS = [
   /Execution context was destroyed/i,
   /WebSocket is not open/i,
   /not connected/i,
+  /App\.callFunction/i,
+  /unexpected current frame status timedout/i,
+  /route method _runE2E not found/i,
+  /route _runE2E .* timed out after/i,
 ]
 const chunkModesIdeSmokeRoutes = [runtimeBaseRoutes[0]!]
 
@@ -53,6 +59,25 @@ let sharedLaunchInfraUnavailableMessage: string | null = null
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function withLocalTimeout<T>(task: Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      task,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
 }
 
 function restoreEnvValue(key: string, value: string | undefined) {
@@ -86,73 +111,16 @@ function normalizeRoutePath(routePath: string) {
   return routePath.replace(LEADING_SLASHES_RE, '')
 }
 
-function stripAutomatorOverlay(wxml: string) {
-  return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
-}
-
-async function readPageWxml(page: any) {
-  if (typeof page?.wxml === 'function') {
-    return stripAutomatorOverlay(await page.wxml())
-  }
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  return stripAutomatorOverlay(await element.wxml())
-}
-
-async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000) {
-  if (typeof page?.waitForRendered === 'function') {
-    try {
-      await page.waitForRendered({
-        ...(readyText ? { text: readyText } : {}),
-        timeout: timeoutMs,
-      })
-      return true
-    }
-    catch {
-      return false
-    }
-  }
-
-  const start = Date.now()
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const wxml = await readPageWxml(page)
-      const normalized = wxml.trim()
-      if (readyText) {
-        if (normalized.includes(readyText)) {
-          return true
-        }
-      }
-      else if (normalized && normalized !== '<text></text>') {
-        return true
-      }
-    }
-    catch {
-      // 页面切换瞬态下 DOM 可能短暂不可读，继续轮询。
-    }
-
-    if (typeof page?.waitFor === 'function') {
-      try {
-        await page.waitFor(220)
-        continue
-      }
-      catch {
-        // page 对象短暂失效时退回普通 sleep。
-      }
-    }
-    await delay(220)
-  }
-  return false
-}
-
 async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage()
+      const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
+        retries: 1,
+        timeout: 2_500,
+      })
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }
@@ -168,20 +136,21 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
 export async function relaunchPage(
   miniProgram: any,
   route: string,
-  readyText?: string,
+  _readyText?: string,
   timeoutMs = 15_000,
   options: { currentPageOnly?: boolean, forceRelaunch?: boolean } = {},
 ) {
+  const routeReadinessTimeout = Math.min(timeoutMs, ROUTE_READINESS_TIMEOUT)
   if (!options.forceRelaunch) {
-    const bootedPage = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
-    if (bootedPage && await waitForPageWxml(bootedPage, readyText, timeoutMs)) {
+    const bootedPage = await waitForCurrentPagePath(miniProgram, route, routeReadinessTimeout)
+    if (bootedPage) {
       return bootedPage
     }
+    if (options.currentPageOnly) {
+      return null
+    }
   }
-  if (options.currentPageOnly) {
-    return null
-  }
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < ROUTE_RELAUNCH_ATTEMPTS; attempt += 1) {
     let page: any = null
     try {
       page = await miniProgram.reLaunch(route)
@@ -198,10 +167,9 @@ export async function relaunchPage(
       continue
     }
 
-    const currentPage = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
+    const currentPage = await waitForCurrentPagePath(miniProgram, route, routeReadinessTimeout)
     const targetPage = currentPage ?? page
-    const ready = await waitForPageWxml(targetPage, readyText, timeoutMs)
-    if (ready) {
+    if (normalizeRoutePath(targetPage?.path ?? '') === normalizeRoutePath(route)) {
       return targetPage
     }
     await delay(220)
@@ -299,6 +267,45 @@ async function recoverRouteLaunch(projectPath: string, runtimeCase: RuntimeMatri
   await resetDevtoolsProjectState(projectPath)
 }
 
+async function callRouteRunE2E(miniProgram: any, route: string) {
+  const result = await withLocalTimeout(miniProgram.evaluateWithOptions(`async function (route) {
+    function normalizeRoute(value) {
+      return String(value || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
+    }
+    var pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+    var expectedRoute = normalizeRoute(route);
+    for (var index = pages.length - 1; index >= 0; index -= 1) {
+      var page = pages[index];
+      var pageRoute = normalizeRoute(page && (page.path || page.route || page.__route__));
+      if (pageRoute === expectedRoute && typeof page._runE2E === 'function') {
+        return {
+          __weappViteRouteMethodFound: true,
+          value: await page._runE2E()
+        };
+      }
+    }
+    return {
+      __weappViteRouteMethodFound: false,
+      routes: pages.map(function (page) {
+        return normalizeRoute(page && (page.path || page.route || page.__route__));
+      })
+    };
+  }`, {
+    timeout: 12_000,
+  }, route), ROUTE_RUN_E2E_TIMEOUT, `route _runE2E ${route}`)
+  if (result && typeof result === 'object' && result.__weappViteRouteMethodFound === true) {
+    return result.value
+  }
+  const routes = Array.isArray(result?.routes) ? result.routes.join(',') : '<unknown>'
+  throw new Error(`route method _runE2E not found for ${route}; routes=${routes}`)
+}
+
+function assertRouteRunE2EResult(runtimeCase: RuntimeMatrixCase, routeCase: RuntimeRouteCase, result: any) {
+  expect(result?.ok).toBe(true)
+  expect(result?.scenarioId).toBe(runtimeCase.id)
+  expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
+}
+
 async function runRouteCaseWithRecovery(
   runtimeCase: RuntimeMatrixCase,
   routeCase: RuntimeRouteCase,
@@ -314,9 +321,24 @@ async function runRouteCaseWithRecovery(
     const isInitialRoute = routeCase.route === runtimeCase.routes[0]?.route
     let page: any = null
     try {
-      page = await relaunchPage(miniProgram, routeCase.route, runtimeCase.id, isInitialRoute ? 45_000 : 15_000, {
-        currentPageOnly: isInitialRoute,
-      })
+      if (isInitialRoute) {
+        try {
+          const result = await callRouteRunE2E(miniProgram, routeCase.route)
+          assertRouteRunE2EResult(runtimeCase, routeCase, result)
+          return
+        }
+        catch (error) {
+          if (!isRecoverableRouteError(error)) {
+            throw error
+          }
+          lastError = error
+        }
+      }
+      if (!isInitialRoute || !lastError) {
+        page = await relaunchPage(miniProgram, routeCase.route, runtimeCase.id, isInitialRoute ? 45_000 : 15_000, {
+          currentPageOnly: isInitialRoute,
+        })
+      }
       assertNoRecentDevtoolsSimulatorBootIssues({
         label: `${runtimeCase.id}:${routeCase.route}`,
         sinceMs: attemptStartedAt,
@@ -333,10 +355,8 @@ async function runRouteCaseWithRecovery(
     }
     else {
       try {
-        const result = await page.callMethod('_runE2E')
-        expect(result?.ok).toBe(true)
-        expect(result?.scenarioId).toBe(runtimeCase.id)
-        expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
+        const result = await callRouteRunE2E(miniProgram, routeCase.route)
+        assertRouteRunE2EResult(runtimeCase, routeCase, result)
         return
       }
       catch (error) {

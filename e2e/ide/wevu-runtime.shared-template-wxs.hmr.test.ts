@@ -14,14 +14,11 @@ import {
   buildOriginalHmrVueSource,
   buildSharedHmrPageWxml,
   buildSharedHmrVueSource,
-  buildSharedImportTemplate,
-  buildSharedIncludeTemplate,
   buildSharedWxs,
   resolveSharedHmrPaths,
   resolveSharedHmrRelativeImports,
 } from '../utils/shared-hmr-fixture'
-import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
-import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
+import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
 const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
@@ -30,27 +27,94 @@ const TEMPLATE_EXT = 'wxml'
 const SCRIPT_MODULE_EXT = 'wxs'
 const COMMON_JS_OUTPUT_PATH = `${DIST_ROOT}/common.js`
 const WEVU_RUNTIME_READY_MARKER = '__wevu_runtime'
+const SHARED_TEMPLATE_STORAGE_KEY = '__weapp_vite_shared_template_probe__'
+const SHARED_INCLUDE_STORAGE_KEY = '__weapp_vite_shared_include_probe__'
+const SHARED_WXS_STORAGE_KEY = '__weapp_vite_shared_wxs_probe__'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
 let previousBridgePostConnectRefresh: string | undefined
 
-async function readPageWxml(page: any) {
-  return normalizeAutomatorWxml(await readAutomatorPageWxml(page))
+function buildRuntimeSharedImportTemplate(marker: string) {
+  return [
+    '<template name="hmrSharedCard">',
+    `  <e2e-template-probe marker="${marker}" storage-key="${SHARED_TEMPLATE_STORAGE_KEY}" />`,
+    `  <e2e-template-probe marker="{{ label }}" storage-key="${SHARED_WXS_STORAGE_KEY}" />`,
+    `  <view class="shared-template">${marker}: {{ label }}</view>`,
+    '</template>',
+    '',
+  ].join('\n')
 }
 
-async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
+function buildRuntimeSharedIncludeTemplate(marker: string) {
+  return [
+    `<e2e-template-probe marker="${marker}" storage-key="${SHARED_INCLUDE_STORAGE_KEY}" />`,
+    `<view class="shared-include">${marker}</view>`,
+    '',
+  ].join('\n')
+}
+
+async function waitForStorageMarker(miniProgram: any, storageKey: string, expected: string, timeoutMs = 20_000) {
   const start = Date.now()
-  let lastWxml = ''
+  let lastError: unknown
+  let lastState: unknown
   while (Date.now() - start < timeoutMs) {
-    const wxml = await readPageWxml(page)
-    lastWxml = wxml
-    if (wxml && wxml.includes(marker)) {
-      return wxml
+    try {
+      lastState = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+        timeout: 5_000,
+      }, storageKey)
+      lastError = undefined
+      if (lastState && typeof lastState === 'object' && (lastState as Record<string, unknown>).marker === expected) {
+        return lastState
+      }
     }
-    await page.waitFor(200)
+    catch (error) {
+      lastError = error
+    }
+    await new Promise(resolve => setTimeout(resolve, 220))
   }
-  throw new Error(`Timed out waiting page runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Timed out waiting storage marker: key=${storageKey} expected=${expected}; reason=${reason}; lastState=${JSON.stringify(lastState)}`)
+}
+
+async function resetSharedStorageProbes(miniProgram: any) {
+  await Promise.all([
+    SHARED_TEMPLATE_STORAGE_KEY,
+    SHARED_INCLUDE_STORAGE_KEY,
+    SHARED_WXS_STORAGE_KEY,
+  ].map(storageKey => miniProgram.callWxMethodWithOptions('removeStorageSync', {
+    timeout: 2_500,
+  }, storageKey).catch(() => {})))
+}
+
+async function waitForSharedMarkers(
+  miniProgram: any,
+  markers: {
+    include?: string
+    template?: string
+    wxs?: string
+  },
+) {
+  if (markers.template) {
+    await waitForStorageMarker(miniProgram, SHARED_TEMPLATE_STORAGE_KEY, markers.template)
+  }
+  if (markers.include) {
+    await waitForStorageMarker(miniProgram, SHARED_INCLUDE_STORAGE_KEY, markers.include)
+  }
+  if (markers.wxs) {
+    await waitForStorageMarker(miniProgram, SHARED_WXS_STORAGE_KEY, markers.wxs)
+  }
+}
+
+async function waitForHmrPageReady(page: any, timeoutMs = 20_000) {
+  if (typeof page?.waitForRendered !== 'function') {
+    await page.waitFor(timeoutMs)
+    return
+  }
+  await page.waitForRendered({
+    selector: '.page',
+    timeout: timeoutMs,
+  })
 }
 
 async function waitForFileContainsWithRetry(
@@ -93,18 +157,15 @@ async function getSharedMiniProgram() {
 
 async function relaunchIdeSession(
   route: string,
-  readyText?: string,
   options: { allowCurrentSession?: boolean } = {},
 ) {
   const cacheCleanTypes = ['compile', 'all'] as const
   let lastError: unknown
   if (options.allowCurrentSession && sharedMiniProgram) {
     try {
-      const page = await relaunchPage(sharedMiniProgram, route, readyText, 20_000)
+      const page = await sharedMiniProgram.reLaunch(route)
       if (page) {
-        if (readyText) {
-          await waitForPageWxmlContains(page, readyText, 8_000)
-        }
+        await waitForHmrPageReady(page)
         return page
       }
     }
@@ -125,11 +186,9 @@ async function relaunchIdeSession(
 
     try {
       const miniProgram = await getSharedMiniProgram()
-      const page = await relaunchPage(miniProgram, route, readyText, 20_000)
+      const page = await miniProgram.reLaunch(route)
       if (page) {
-        if (readyText) {
-          await waitForPageWxmlContains(page, readyText, 8_000)
-        }
+        await waitForHmrPageReady(page)
         return page
       }
     }
@@ -197,8 +256,8 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
     const sharedWxsOutputPath = `${DIST_ROOT}/shared-hmr/helper.${SCRIPT_MODULE_EXT}`
 
     await fs.ensureDir(SHARED_HMR_PATHS.sharedDir)
-    await fs.writeFile(SHARED_HMR_PATHS.sharedImportTemplate, buildSharedImportTemplate(initialTemplateMarker), 'utf8')
-    await fs.writeFile(SHARED_HMR_PATHS.sharedIncludeTemplate, buildSharedIncludeTemplate(initialIncludeMarker), 'utf8')
+    await fs.writeFile(SHARED_HMR_PATHS.sharedImportTemplate, buildRuntimeSharedImportTemplate(initialTemplateMarker), 'utf8')
+    await fs.writeFile(SHARED_HMR_PATHS.sharedIncludeTemplate, buildRuntimeSharedIncludeTemplate(initialIncludeMarker), 'utf8')
     await fs.writeFile(SHARED_HMR_PATHS.sharedWxs, buildSharedWxs(initialWxsMarker), 'utf8')
     await fs.writeFile(
       SHARED_HMR_PATHS.hmrPageWxml,
@@ -231,16 +290,21 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       await waitForFileContains(sharedWxsOutputPath, initialWxsMarker, 90_000)
       await waitForInitialAppserviceReady()
 
-      let page = await relaunchIdeSession('/pages/hmr/index', initialTemplateMarker)
+      let miniProgram = await getSharedMiniProgram()
+      await resetSharedStorageProbes(miniProgram)
+      let page = await relaunchIdeSession('/pages/hmr/index')
       if (!page) {
         throw new Error('Failed to launch /pages/hmr/index')
       }
+      miniProgram = await getSharedMiniProgram()
 
-      let runtimeWxml = await waitForPageWxmlContains(page, initialTemplateMarker)
-      expect(runtimeWxml).toContain(initialIncludeMarker)
-      expect(runtimeWxml).toContain(initialWxsMarker)
+      await waitForSharedMarkers(miniProgram, {
+        include: initialIncludeMarker,
+        template: initialTemplateMarker,
+        wxs: initialWxsMarker,
+      })
 
-      const pageUpdatedTemplateSource = buildSharedImportTemplate(pageUpdatedTemplateMarker)
+      const pageUpdatedTemplateSource = buildRuntimeSharedImportTemplate(pageUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, pageUpdatedTemplateSource)
       await waitForFileContainsWithRetry(
         sharedImportOutputPath,
@@ -252,11 +316,14 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       await waitForIdeRecompileSettled()
       // DevTools 在 dev 重编译后继续复用旧 automator 会话做 reLaunch 不稳定，
       // 这里重建会话，确保仍然是 IDE 实际运行态验证而不是仅看 dist。
-      page = await relaunchIdeSession('/pages/hmr/index', pageUpdatedTemplateMarker, { allowCurrentSession: true })
-      runtimeWxml = await readPageWxml(page)
-      expect(runtimeWxml).toContain(pageUpdatedTemplateMarker)
+      await resetSharedStorageProbes(miniProgram)
+      page = await relaunchIdeSession('/pages/hmr/index', { allowCurrentSession: true })
+      miniProgram = await getSharedMiniProgram()
+      await waitForSharedMarkers(miniProgram, {
+        template: pageUpdatedTemplateMarker,
+      })
 
-      const updatedIncludeSource = buildSharedIncludeTemplate(updatedIncludeMarker)
+      const updatedIncludeSource = buildRuntimeSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeSource)
       await waitForFileContainsWithRetry(
         sharedIncludeOutputPath,
@@ -266,16 +333,19 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       )
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr/index', updatedIncludeMarker, { allowCurrentSession: true })
-      runtimeWxml = await readPageWxml(page)
-      expect(runtimeWxml).toContain(updatedIncludeMarker)
+      await resetSharedStorageProbes(miniProgram)
+      page = await relaunchIdeSession('/pages/hmr/index', { allowCurrentSession: true })
+      miniProgram = await getSharedMiniProgram()
+      await waitForSharedMarkers(miniProgram, {
+        include: updatedIncludeMarker,
+      })
 
       // 微信 DevTools 对 SFC 页面里外部 import/wxs 的运行态缓存不稳定：
       // dist 已更新时，连续 reLaunch 仍可能继续使用旧的外部模板或脚本模块内容。
       // shared 依赖追踪由 e2e:ci 的 dev-watch 用例覆盖；这里保留前面的
       // 原生 WXML 页面 template/include 运行态验证，后续连续外部依赖更新只看 dist，
       // 避免把 DevTools 缓存缺陷当作产品回归。
-      const runtimeUpdatedTemplateSource = buildSharedImportTemplate(runtimeUpdatedTemplateMarker)
+      const runtimeUpdatedTemplateSource = buildRuntimeSharedImportTemplate(runtimeUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, runtimeUpdatedTemplateSource)
       const runtimeUpdatedTemplateOutput = await waitForFileContainsWithRetry(
         sharedImportOutputPath,

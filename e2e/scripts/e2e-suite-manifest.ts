@@ -73,6 +73,10 @@ const IDE_HMR_PATTERNS = [
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
 ])
+const IDE_MANUAL_DEVTOOLS_TEST_PATTERNS = new Set([
+  // tdesign 官方 retail 示例在当前 DevTools 自动化上下文中会返回空白截图和空 app-service 页面栈。
+  'ide/tdesign-miniprogram-starter-retail.runtime.test.ts',
+])
 const IDE_SMOKE_TESTS = [
   'ide/index.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -200,6 +204,7 @@ export function getIdeTasks() {
   })
     .sort()
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {

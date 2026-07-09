@@ -103,6 +103,28 @@ describe('dev process env isolation', () => {
     expect(env.WEAPP_VITE_AI).toBe('codex')
   })
 
+  it('strips e2e-only env flags from child dev processes by default', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_TARGET_FILE', 'e2e/ci/current.test.ts')
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_DIR', '/tmp/report')
+
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv()
+
+    expect(env.WEAPP_VITE_E2E_TARGET_FILE).toBeUndefined()
+    expect(env.WEAPP_VITE_E2E_REPORT_DIR).toBeUndefined()
+  })
+
+  it('can keep e2e-only env flags for diagnostics that opt in explicitly', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_TARGET_FILE', 'e2e/ci/current.test.ts')
+
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv({ keepE2EEnv: true })
+
+    expect(env.WEAPP_VITE_E2E_TARGET_FILE).toBe('e2e/ci/current.test.ts')
+  })
+
   it('allows opting out of sidecar watch for targeted diagnostics', async () => {
     const { createDevProcessEnv } = await import('../utils/dev-process-env')
 
