@@ -309,4 +309,60 @@ describe('core lifecycle emit edge branches', () => {
     expect(traverseMock).not.toHaveBeenCalled()
     expect(generateMock).not.toHaveBeenCalled()
   })
+
+  it('limits Wevu runtime rewrite to active dev hmr chunks', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const { createGenerateBundleHook } = await import('./emit')
+    const state = createState({
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+        },
+      },
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'import { ref } from "wevu";',
+        imports: ['../../weapp-vendors/runtime.js'],
+        dynamicImports: [],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: '/project/src/pages/other/index.ts',
+        code: 'import { ref } from "wevu";',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/runtime.js',
+        code: 'exports.ref = function ref() {}',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const rewriteCall = rewriteWevuInternalRuntimeImportsMock.mock.calls[rewriteWevuInternalRuntimeImportsMock.mock.calls.length - 1]
+    const rewriteBundle = rewriteCall?.[0]
+    expect(Object.keys(rewriteBundle)).toEqual(['pages/index/index.js'])
+  })
 })

@@ -2,6 +2,7 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../../runtime/chunkStrategy'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { CorePluginState } from '../../helpers'
+import type { BundleChunkSnapshot } from '../../helpers/bundle'
 import type { ChunkScriptAnalysisCache } from './rewrite'
 import process from 'node:process'
 import { resolveAstEngine } from '../../../../ast'
@@ -277,6 +278,25 @@ function resolveDevHmrRewriteBundle(
     }
   }
   return rewriteBundle
+}
+
+function createDevHmrRuntimeRewriteSnapshot(
+  bundle: OutputBundle,
+  rewriteBundle: OutputBundle,
+) {
+  if (bundle === rewriteBundle) {
+    return createBundleChunkSnapshot(bundle)
+  }
+
+  const fullSnapshot = createBundleChunkSnapshot(bundle)
+  const rewriteSnapshot = createBundleChunkSnapshot(rewriteBundle)
+  return {
+    ...rewriteSnapshot,
+    chunkFileNames: fullSnapshot.chunkFileNames,
+    vendorChunks: fullSnapshot.vendorChunks,
+    wevuChunks: fullSnapshot.wevuChunks,
+    wevuChunkFileNames: fullSnapshot.wevuChunkFileNames,
+  } satisfies BundleChunkSnapshot
 }
 
 export function shouldWarmupBundleScriptAnalysis(options: {
@@ -761,8 +781,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
       }
 
-      const finalBundleSnapshot = createBundleChunkSnapshot(rolldownBundle)
-      rewriteWevuInternalRuntimeImports(rolldownBundle, {
+      const runtimeRewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
+      const finalBundleSnapshot = createDevHmrRuntimeRewriteSnapshot(rolldownBundle, runtimeRewriteBundle)
+      rewriteWevuInternalRuntimeImports(runtimeRewriteBundle, {
         runtimeFileName: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
         runtimeFileNames: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
         onRuntimeFileName(fileName) {
@@ -779,8 +800,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
         },
       }, finalBundleSnapshot)
-      stabilizeWevuRuntimeChunkAccess(rolldownBundle, finalBundleSnapshot)
-      syncChunkImportsFromRequireCalls(rolldownBundle, finalBundleSnapshot)
+      stabilizeWevuRuntimeChunkAccess(runtimeRewriteBundle, finalBundleSnapshot)
+      syncChunkImportsFromRequireCalls(runtimeRewriteBundle, finalBundleSnapshot)
       normalizePreprocessorStyleAssets(
         rolldownBundle,
         state.ctx.configService.outputExtensions?.wxss,
