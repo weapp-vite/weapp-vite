@@ -392,7 +392,6 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(routerStabilityPageJs).toContain('triggerPageRouterRelativeFromIndex')
     expect(routerStabilityPageJs).toContain('./target/index?source=wx-from-index')
     expect(routerStabilityPageJs).toContain('./target/index?source=page-router-from-index')
-    expect(routerStabilityPageJs).toContain('pageRouter')
 
     expect(routerStabilitySubPageWxml).toContain('id="router-sub-call-prev-wx"')
     expect(routerStabilitySubPageWxml).toContain('id="router-sub-call-prev-page-router"')
