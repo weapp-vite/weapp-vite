@@ -101,6 +101,113 @@ describe('Page', () => {
     })
   })
 
+  it('falls back to app-service rendered nodes when Page.getElements times out', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElements',
+      },
+    )
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElements') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return {
+          result: [
+            { id: 'root' },
+            { id: 'child' },
+          ],
+        }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+
+    const elements = await page.$$('view')
+
+    expect(elements).toHaveLength(2)
+    expect(elements[0]?.tagName).toBe('view')
+    expect(send).toHaveBeenNthCalledWith(1, 'Page.getElements', {
+      pageId: 7,
+      selector: 'view',
+    }, {
+      timeout: 2_500,
+    })
+    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+      args: ['pages/index', {}, 'view', []],
+      functionDeclaration: expect.stringContaining('createSelectorQuery'),
+    }, {
+      timeout: 2_500,
+    })
+  })
+
+  it('keeps using app-service fallbacks after Page element RPC times out', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElements',
+      },
+    )
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElements') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return { result: [{ id: 'fallback-node' }] }
+      }
+      throw new Error(`${method} should not be called after route fallback is active`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+
+    await expect(page.$$('view')).resolves.toHaveLength(1)
+    await expect(page.$('.hello')).resolves.not.toBeNull()
+
+    expect(send).not.toHaveBeenCalledWith('Page.getElement', expect.anything(), expect.anything())
+    expect(send).toHaveBeenCalledTimes(3)
+    expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
+      args: ['pages/index', {}, '.hello', []],
+      functionDeclaration: expect.stringContaining('createSelectorQuery'),
+    }, {
+      timeout: 2_500,
+    })
+  })
+
+  it('reads data through app-service after Page element RPC times out', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElements',
+      },
+    )
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method === 'Page.getElements') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return params?.args?.[2] === 'probeStatus'
+          ? { result: 'ready' }
+          : { result: [{ id: 'fallback-node' }] }
+      }
+      throw new Error(`${method} should not be called after route fallback is active`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+
+    await expect(page.$$('view')).resolves.toHaveLength(1)
+    await expect(page.data('probeStatus')).resolves.toBe('ready')
+
+    expect(send).not.toHaveBeenCalledWith('Page.getData', expect.anything(), expect.anything())
+    expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
+      args: ['/pages/index', {}, 'probeStatus'],
+      functionDeclaration: expect.stringContaining('readPath'),
+    }, {
+      timeout: 12_000,
+    })
+  })
+
   it('queries data and window properties with page id', async () => {
     const send = vi.fn(async (method: string) => {
       if (method === 'Page.getData') {
@@ -117,7 +224,7 @@ describe('Page', () => {
     await expect(page.size()).resolves.toEqual({ width: 320, height: 640 })
 
     expect(send).toHaveBeenNthCalledWith(1, 'Page.getData', { path: 'foo', pageId: 8 }, {
-      timeout: 12_000,
+      timeout: 2_500,
     })
     expect(send).toHaveBeenNthCalledWith(2, 'Page.getWindowProperties', {
       names: ['document.documentElement.scrollWidth', 'document.documentElement.scrollHeight'],
@@ -309,7 +416,7 @@ describe('Page', () => {
       pageId: 8,
       path: '__e2eResult.status',
     }, {
-      timeout: 12_000,
+      timeout: 2_500,
     })
     expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
       functionDeclaration: expect.stringContaining('getCurrentPages'),
@@ -570,7 +677,7 @@ describe('Page', () => {
       data: { title: 'updated' },
       pageId: 8,
     }, {
-      timeout: 12_000,
+      timeout: 2_500,
     })
     expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
       functionDeclaration: expect.stringContaining('getCurrentPages'),

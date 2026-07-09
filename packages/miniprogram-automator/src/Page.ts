@@ -4,6 +4,7 @@
 import type Connection from './Connection'
 import Element from './Element'
 import { isFn, isNum, isStr, sleep, waitUntil } from './internal/compat'
+import { createRouteFallbackElement } from './pageRouteFallback'
 /** IPageOptions 的类型定义。 */
 export interface IPageOptions {
   id: number
@@ -14,6 +15,8 @@ type PageMap = Map<number, Page>
 type WaitCondition = string | number | (() => unknown | Promise<unknown>)
 interface PageQueryOptions {
   componentSelectors?: string[]
+  fallback?: boolean
+  routeOnly?: boolean
   timeout?: number
 }
 interface PageDataOptions {
@@ -47,7 +50,9 @@ export interface RenderedNodeSnapshot {
 export type RenderedSelectorNodesSnapshot = Record<string, RenderedNodeSnapshot[]>
 const PAGE_QUERY_TIMEOUT = 2_500
 const PAGE_DATA_TIMEOUT = 12_000
+const PAGE_DATA_PROTOCOL_TIMEOUT = 2_500
 const PAGE_SET_DATA_TIMEOUT = 12_000
+const PAGE_SET_DATA_PROTOCOL_TIMEOUT = 2_500
 const PAGE_CALL_METHOD_TIMEOUT = 12_000
 const PAGE_CALL_METHOD_PROTOCOL_TIMEOUT = 2_500
 const PAGE_CALL_METHOD_FALLBACK_RETRIES = 3
@@ -102,6 +107,7 @@ export default class Page {
   query: any = {}
   private id: number
   private elementMap = new Map<string, Element>()
+  private preferRoutePageFallback = false
   constructor(private connection: Connection, options: IPageOptions) {
     this.id = options.id
     this.path = options.path
@@ -128,24 +134,43 @@ export default class Page {
   }
 
   async $(selector: string, options: PageQueryOptions = {}) {
+    if (options.routeOnly || this.preferRoutePageFallback) {
+      return await this.queryRouteElement(selector, options)
+    }
     try {
       const element = await this.send('Page.getElement', { selector }, {
         timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
       })
       return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
     }
-    catch {
+    catch (error) {
+      if (options.fallback !== false && isRecoverablePageProtocolError(error, 'Page.getElement')) {
+        this.preferRoutePageFallback = true
+        return await this.queryRouteElement(selector, options)
+      }
       return null
     }
   }
 
   async $$(selector: string, options: PageQueryOptions = {}) {
-    const { elements } = await this.send('Page.getElements', { selector }, {
-      timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
-    })
-    return elements.map((element: any) => {
-      return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
-    })
+    if (options.routeOnly || this.preferRoutePageFallback) {
+      return await this.queryRouteElements(selector, options)
+    }
+    try {
+      const { elements } = await this.send('Page.getElements', { selector }, {
+        timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
+      })
+      return elements.map((element: any) => {
+        return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
+      })
+    }
+    catch (error) {
+      if (options.fallback === false || !isRecoverablePageProtocolError(error, 'Page.getElements')) {
+        throw error
+      }
+      this.preferRoutePageFallback = true
+      return await this.queryRouteElements(selector, options)
+    }
   }
 
   async getElementByXpath(selector: string, options: PageQueryOptions = {}) {
@@ -661,12 +686,12 @@ export default class Page {
       payload.path = path
     }
     const timeout = options.timeout ?? PAGE_DATA_TIMEOUT
-    if (options.routeOnly) {
+    if (options.routeOnly || this.preferRoutePageFallback) {
       return await this.readRouteData(path, timeout)
     }
     try {
       return (await this.send('Page.getData', payload, {
-        timeout,
+        timeout: Math.min(timeout, PAGE_DATA_PROTOCOL_TIMEOUT),
       })).data
     }
     catch (error) {
@@ -676,6 +701,7 @@ export default class Page {
       if (!isRecoverablePageProtocolError(error, 'Page.getData')) {
         throw error
       }
+      this.preferRoutePageFallback = true
       return await this.readRouteData(path, timeout)
     }
   }
@@ -734,15 +760,20 @@ export default class Page {
   }
 
   async setData(data: any) {
+    if (this.preferRoutePageFallback) {
+      await this.setRouteData(data)
+      return
+    }
     try {
       await this.send('Page.setData', { data }, {
-        timeout: PAGE_SET_DATA_TIMEOUT,
+        timeout: PAGE_SET_DATA_PROTOCOL_TIMEOUT,
       })
     }
     catch (error) {
       if (!isRecoverablePageProtocolError(error, 'Page.setData') && !isPageStackStaleError(error)) {
         throw error
       }
+      this.preferRoutePageFallback = true
       await this.setRouteData(data)
     }
   }
@@ -760,7 +791,7 @@ export default class Page {
   }
 
   async callMethodWithOptions(method: string, options: PageCallMethodOptions = {}, ...args: any[]) {
-    if (options.routeOnly) {
+    if (options.routeOnly || this.preferRoutePageFallback) {
       return await this.callRouteMethod(method, args, options.timeout)
     }
     try {
@@ -775,8 +806,29 @@ export default class Page {
       if (!isRecoverablePageProtocolError(error, 'Page.callMethod') && !isPageStackStaleError(error)) {
         throw error
       }
+      this.preferRoutePageFallback = true
     }
     return await this.callRouteMethod(method, args, options.timeout)
+  }
+
+  private async queryRouteElement(selector: string, options: PageQueryOptions) {
+    const elements = await this.queryRouteElements(selector, options)
+    return elements[0] ?? null
+  }
+
+  private async queryRouteElements(selector: string, options: PageQueryOptions) {
+    const nodes = await this.renderedNodes(selector, {
+      componentSelectors: options.componentSelectors,
+      timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
+    })
+    return nodes.map((node, index) => createRouteFallbackElement(
+      this.connection,
+      this.elementMap,
+      this.id,
+      selector,
+      node,
+      index,
+    ))
   }
 
   private async callRouteMethod(method: string, args: any[], timeout = PAGE_CALL_METHOD_TIMEOUT) {
