@@ -1,5 +1,5 @@
 <template>
-  <view class="page-dashboard">
+  <view id="auto-routes-dashboard" class="page-dashboard" data-e2e-route="dashboard">
     <text class="title">
       dashboard
     </text>

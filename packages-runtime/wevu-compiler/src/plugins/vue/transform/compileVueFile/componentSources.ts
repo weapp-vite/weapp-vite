@@ -1,10 +1,11 @@
 import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
-import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath } from './types'
+import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath, VueSfcStaticComponentMeta } from './types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { loadNativeAstBindingSync, shouldUseNativeAst } from '../../../../ast/native'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
@@ -14,6 +15,7 @@ type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup'>
 
 export interface ComponentSourceInfo {
   autoUsingComponentsMap: Record<string, string>
+  autoImportTagsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
   wevuComponentTags: Set<string>
   miniProgramComponentTags: Set<string>
@@ -25,6 +27,19 @@ interface ScriptSetupImportComponent {
   importSource: string
   importedName?: string
   kind: 'default' | 'named'
+}
+
+interface VueSfcSignaturePayload {
+  script?: {
+    scriptSetup?: {
+      content?: string
+    } | null
+  }
+}
+
+interface TemplateComponentTagInfo {
+  autoImportTags: Set<string>
+  componentNames: Set<string>
 }
 
 function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | undefined) {
@@ -73,56 +88,33 @@ function extractStringPropertyFromObject(node: ObjectExpression, keyName: string
   return undefined
 }
 
-function extractStaticDefineOptionsName(scriptSetupContent: string) {
+function extractStaticComponentMeta(scriptSetupContent: string): VueSfcStaticComponentMeta {
   let ast: BabelFile
   try {
     ast = babelParse(scriptSetupContent, BABEL_TS_MODULE_PARSER_OPTIONS)
   }
   catch {
-    return undefined
+    return {
+      isMiniProgramComponent: false,
+    }
   }
 
   let componentName: string | undefined
+  let isMiniProgramComponent = false
   traverse(ast, {
     CallExpression(path) {
-      if (componentName) {
-        return
-      }
       const callee = path.node.callee
-      if (!t.isIdentifier(callee, { name: 'defineOptions' })) {
-        return
-      }
       const arg = path.node.arguments[0]
       if (!t.isObjectExpression(arg)) {
         return
       }
-      componentName = extractStringPropertyFromObject(arg, 'name')
-    },
-  })
-  return componentName
-}
 
-function extractStaticDefineComponentJsonIsComponent(scriptSetupContent: string) {
-  let ast: BabelFile
-  try {
-    ast = babelParse(scriptSetupContent, BABEL_TS_MODULE_PARSER_OPTIONS)
-  }
-  catch {
-    return false
-  }
-
-  let isComponent = false
-  traverse(ast, {
-    CallExpression(path) {
-      if (isComponent) {
+      if (t.isIdentifier(callee, { name: 'defineOptions' })) {
+        componentName ??= extractStringPropertyFromObject(arg, 'name')
         return
       }
-      const callee = path.node.callee
+
       if (!t.isIdentifier(callee, { name: 'defineComponentJson' })) {
-        return
-      }
-      const arg = path.node.arguments[0]
-      if (!t.isObjectExpression(arg)) {
         return
       }
       for (const property of arg.properties) {
@@ -136,56 +128,83 @@ function extractStaticDefineComponentJsonIsComponent(scriptSetupContent: string)
             ? key.value === 'component'
             : false
         if (matched && t.isBooleanLiteral(property.value) && property.value.value) {
-          isComponent = true
-          path.stop()
+          isMiniProgramComponent = true
           return
         }
       }
     },
   })
-  return isComponent
-}
-
-async function resolveVueSfcComponentName(resolvedId: string | undefined, warn?: (message: string) => void) {
-  if (!resolvedId?.endsWith('.vue')) {
-    return undefined
-  }
-  try {
-    const source = await fs.readFile(resolvedId, 'utf8')
-    const { descriptor, errors } = parseSfc(source, {
-      filename: resolvedId,
-    })
-    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
-      return undefined
-    }
-    return extractStaticDefineOptionsName(descriptor.scriptSetup.content)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    warn?.(`[Vue 编译] 解析 ${resolvedId} 的 defineOptions.name 失败：${message}`)
-    return undefined
+  return {
+    componentName,
+    isMiniProgramComponent,
   }
 }
 
-async function resolveVueSfcIsMiniProgramComponent(resolvedId: string | undefined, warn?: (message: string) => void) {
-  if (!resolvedId?.endsWith('.vue')) {
-    return false
+function readNativeVueSfcScriptSetupContent(source: string) {
+  if (!shouldUseNativeAst()) {
+    return undefined
+  }
+  const payload = loadNativeAstBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
+  if (!payload) {
+    return undefined
   }
   try {
-    const source = await fs.readFile(resolvedId, 'utf8')
-    const { descriptor, errors } = parseSfc(source, {
-      filename: resolvedId,
-    })
-    if (errors.length > 0 || !descriptor.scriptSetup?.content) {
-      return false
+    const parsed = JSON.parse(payload) as VueSfcSignaturePayload
+    return parsed.script?.scriptSetup?.content
+  }
+  catch {
+    return undefined
+  }
+}
+
+function readVueSfcScriptSetupContent(source: string, resolvedId: string) {
+  const nativeContent = readNativeVueSfcScriptSetupContent(source)
+  if (typeof nativeContent === 'string') {
+    return nativeContent
+  }
+
+  const { descriptor, errors } = parseSfc(source, {
+    filename: resolvedId,
+  })
+  if (errors.length > 0 || !descriptor.scriptSetup?.content) {
+    return undefined
+  }
+  return descriptor.scriptSetup.content
+}
+
+async function resolveVueSfcStaticComponentMeta(
+  resolvedId: string | undefined,
+  options?: {
+    cache?: CompileVueFileOptions['componentMetaCache']
+    warn?: (message: string) => void
+  },
+) {
+  if (!resolvedId?.endsWith('.vue')) {
+    return {
+      isMiniProgramComponent: false,
     }
-    return extractStaticDefineComponentJsonIsComponent(descriptor.scriptSetup.content)
   }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    warn?.(`[Vue 编译] 解析 ${resolvedId} 的 defineComponentJson.component 失败：${message}`)
-    return false
+  const cached = options?.cache?.get(resolvedId)
+  if (cached) {
+    return await cached
   }
+
+  const task = (async () => {
+    try {
+      const source = await fs.readFile(resolvedId, 'utf8')
+      const scriptSetupContent = readVueSfcScriptSetupContent(source, resolvedId)
+      return scriptSetupContent
+        ? extractStaticComponentMeta(scriptSetupContent)
+        : { isMiniProgramComponent: false }
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      options?.warn?.(`[Vue 编译] 解析 ${resolvedId} 的静态组件元信息失败：${message}`)
+      return { isMiniProgramComponent: false }
+    }
+  })()
+  options?.cache?.set(resolvedId, task)
+  return await task
 }
 
 function registerComponentName(result: ComponentSourceInfo, tag: string, componentName: string | undefined) {
@@ -204,15 +223,40 @@ function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: strin
   result.miniProgramComponentTags.add(pascalToKebab(tag))
 }
 
-export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
+function createComponentSourceInfo(): ComponentSourceInfo {
+  return {
+    autoUsingComponentsMap: {},
+    autoImportTagsMap: {},
+    autoComponentMeta: {},
+    wevuComponentTags: new Set(),
+    miniProgramComponentTags: new Set(),
+    componentNameMap: {},
+  }
+}
+
+function mergeComponentSourceInfo(target: ComponentSourceInfo, source: ComponentSourceInfo) {
+  Object.assign(target.autoUsingComponentsMap, source.autoUsingComponentsMap)
+  Object.assign(target.autoImportTagsMap, source.autoImportTagsMap)
+  Object.assign(target.autoComponentMeta, source.autoComponentMeta)
+  Object.assign(target.componentNameMap, source.componentNameMap)
+  for (const tag of source.wevuComponentTags) {
+    target.wevuComponentTags.add(tag)
+  }
+  for (const tag of source.miniProgramComponentTags) {
+    target.miniProgramComponentTags.add(tag)
+  }
+}
+
+function collectTemplateComponentTagInfo(template: string, filename: string, warn?: (message: string) => void): TemplateComponentTagInfo {
   const warnHandler = resolveWarnHandler(warn)
   const tags = collectVueTemplateTags(template, {
     filename,
-    warnLabel: '自动 usingComponents',
+    warnLabel: '组件标签',
     warn: (message: string) => warnHandler(message),
     shouldCollect: isAutoImportCandidateTag,
   })
-  for (const tag of [...tags]) {
+  const componentNames = new Set(tags)
+  for (const tag of tags) {
     if (tag.includes('-')) {
       const pascalName = tag
         .split('-')
@@ -220,11 +264,18 @@ export function collectTemplateComponentNames(template: string, filename: string
         .map(segment => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
         .join('')
       if (pascalName) {
-        tags.add(pascalName)
+        componentNames.add(pascalName)
       }
     }
   }
-  return tags
+  return {
+    autoImportTags: tags,
+    componentNames,
+  }
+}
+
+export function collectTemplateComponentNames(template: string, filename: string, warn?: (message: string) => void) {
+  return collectTemplateComponentTagInfo(template, filename, warn).componentNames
 }
 
 async function collectScriptSetupUsingComponents(options: {
@@ -233,6 +284,7 @@ async function collectScriptSetupUsingComponents(options: {
   filename: string
   compileOptions: CompileVueFileOptions | undefined
   autoUsingComponents: AutoUsingComponentsOptions | undefined
+  templateComponentNames: Set<string> | undefined
   result: ComponentSourceInfo
 }) {
   const {
@@ -241,14 +293,14 @@ async function collectScriptSetupUsingComponents(options: {
     filename,
     compileOptions,
     autoUsingComponents,
+    templateComponentNames,
     result,
   } = options
   if (!descriptor.scriptSetup || !descriptor.template) {
     return
   }
 
-  const templateComponentNames = collectTemplateComponentNames(descriptor.template.content, filename, autoUsingComponents?.warn ?? compileOptions?.warn)
-  if (!templateComponentNames.size) {
+  if (!templateComponentNames?.size) {
     return
   }
 
@@ -291,7 +343,7 @@ async function collectScriptSetupUsingComponents(options: {
       },
     })
 
-    for (const { localName, importSource, importedName, kind } of pending) {
+    const resolvedComponents = await Promise.all(pending.map(async ({ localName, importSource, importedName, kind }) => {
       let resolved = autoUsingComponents?.resolveUsingComponentPath
         ? normalizeResolvedUsingComponent(await autoUsingComponents.resolveUsingComponentPath(importSource, filename, {
             localName,
@@ -308,6 +360,19 @@ async function collectScriptSetupUsingComponents(options: {
           resolvedId: path.resolve(path.dirname(filename), importSource),
         }
       }
+      const componentMeta = await resolveVueSfcStaticComponentMeta(resolved?.resolvedId, {
+        cache: compileOptions?.componentMetaCache,
+        warn: autoUsingComponents?.warn ?? compileOptions?.warn,
+      })
+      return {
+        localName,
+        importSource,
+        resolved,
+        componentMeta,
+      }
+    }))
+
+    for (const { localName, importSource, resolved, componentMeta } of resolvedComponents) {
       if (resolved?.from) {
         result.autoUsingComponentsMap[localName] = resolved.from
         result.autoComponentMeta[localName] = resolved.from
@@ -316,12 +381,11 @@ async function collectScriptSetupUsingComponents(options: {
         result.wevuComponentTags.add(localName)
         result.wevuComponentTags.add(pascalToKebab(localName))
       }
-      const componentName = await resolveVueSfcComponentName(resolved?.resolvedId, autoUsingComponents?.warn ?? compileOptions?.warn)
-      registerComponentName(result, localName, componentName)
+      registerComponentName(result, localName, componentMeta.componentName)
       registerMiniProgramComponentTag(
         result,
         localName,
-        await resolveVueSfcIsMiniProgramComponent(resolved?.resolvedId, autoUsingComponents?.warn ?? compileOptions?.warn),
+        componentMeta.isMiniProgramComponent,
       )
     }
   }
@@ -334,14 +398,18 @@ async function collectScriptSetupUsingComponents(options: {
 async function collectAutoImportWevuComponents(options: {
   descriptor: Pick<SFCDescriptor, 'template'>
   filename: string
+  compileOptions: CompileVueFileOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
+  templateAutoImportTags: Set<string> | undefined
   warn?: (message: string) => void
   result: ComponentSourceInfo
 }) {
   const {
     descriptor,
     filename,
+    compileOptions,
     autoImportTags,
+    templateAutoImportTags,
     warn,
     result,
   } = options
@@ -349,14 +417,7 @@ async function collectAutoImportWevuComponents(options: {
     return
   }
 
-  const warnHandler = resolveWarnHandler(autoImportTags.warn ?? warn)
-  const tags = collectVueTemplateTags(descriptor.template.content, {
-    filename,
-    warnLabel: '自动导入标签',
-    warn: (message: string) => warnHandler(message),
-    shouldCollect: isAutoImportCandidateTag,
-  })
-  for (const tag of tags) {
+  const resolvedTags = await Promise.all([...templateAutoImportTags ?? []].map(async (tag) => {
     let resolved: ({ name: string, from: string } & { resolvedId?: string, sourceType?: 'wevu-sfc' | 'native' }) | undefined
     try {
       resolved = await autoImportTags.resolveUsingComponent!(tag, filename)
@@ -364,21 +425,33 @@ async function collectAutoImportWevuComponents(options: {
     catch {
       resolved = undefined
     }
+    const componentMeta = await resolveVueSfcStaticComponentMeta(resolved?.resolvedId, {
+      cache: compileOptions?.componentMetaCache,
+      warn: autoImportTags.warn ?? warn,
+    })
+    return {
+      tag,
+      resolved,
+      componentMeta,
+    }
+  }))
+
+  for (const { tag, resolved, componentMeta } of resolvedTags) {
     if (!resolved?.from) {
       continue
     }
+    result.autoImportTagsMap[resolved.name || tag] = resolved.from
     if (isWevuSfcComponent(resolved)) {
       result.wevuComponentTags.add(tag)
       if (resolved.name) {
         result.wevuComponentTags.add(resolved.name)
       }
     }
-    const componentName = await resolveVueSfcComponentName(resolved.resolvedId, autoImportTags.warn ?? warn)
-    registerComponentName(result, tag, componentName)
-    const isMiniProgramComponent = await resolveVueSfcIsMiniProgramComponent(resolved.resolvedId, autoImportTags.warn ?? warn)
+    registerComponentName(result, tag, componentMeta.componentName)
+    const isMiniProgramComponent = componentMeta.isMiniProgramComponent
     registerMiniProgramComponentTag(result, tag, isMiniProgramComponent)
     if (resolved.name) {
-      registerComponentName(result, resolved.name, componentName)
+      registerComponentName(result, resolved.name, componentMeta.componentName)
       registerMiniProgramComponentTag(result, resolved.name, isMiniProgramComponent)
     }
   }
@@ -392,29 +465,39 @@ export async function collectComponentSourceInfo(options: {
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
 }) {
-  const result: ComponentSourceInfo = {
-    autoUsingComponentsMap: {},
-    autoComponentMeta: {},
-    wevuComponentTags: new Set(),
-    miniProgramComponentTags: new Set(),
-    componentNameMap: {},
-  }
+  const result = createComponentSourceInfo()
+  const templateComponentTagInfo = options.descriptor.template
+    ? collectTemplateComponentTagInfo(
+        options.descriptor.template.content,
+        options.filename,
+        options.autoUsingComponents?.warn ?? options.autoImportTags?.warn ?? options.compileOptions?.warn,
+      )
+    : undefined
 
-  await collectScriptSetupUsingComponents({
-    descriptor: options.descriptor,
-    descriptorForCompile: options.descriptorForCompile,
-    filename: options.filename,
-    compileOptions: options.compileOptions,
-    autoUsingComponents: options.autoUsingComponents,
-    result,
-  })
-  await collectAutoImportWevuComponents({
-    descriptor: options.descriptor,
-    filename: options.filename,
-    autoImportTags: options.autoImportTags,
-    warn: options.compileOptions?.warn,
-    result,
-  })
+  const scriptSetupResult = createComponentSourceInfo()
+  const autoImportResult = createComponentSourceInfo()
+  await Promise.all([
+    collectScriptSetupUsingComponents({
+      descriptor: options.descriptor,
+      descriptorForCompile: options.descriptorForCompile,
+      filename: options.filename,
+      compileOptions: options.compileOptions,
+      autoUsingComponents: options.autoUsingComponents,
+      templateComponentNames: templateComponentTagInfo?.componentNames,
+      result: scriptSetupResult,
+    }),
+    collectAutoImportWevuComponents({
+      descriptor: options.descriptor,
+      filename: options.filename,
+      compileOptions: options.compileOptions,
+      autoImportTags: options.autoImportTags,
+      templateAutoImportTags: templateComponentTagInfo?.autoImportTags,
+      warn: options.compileOptions?.warn,
+      result: autoImportResult,
+    }),
+  ])
+  mergeComponentSourceInfo(result, scriptSetupResult)
+  mergeComponentSourceInfo(result, autoImportResult)
 
   return result
 }

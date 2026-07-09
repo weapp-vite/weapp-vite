@@ -4,7 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
-import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
+import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -73,6 +73,10 @@ const IDE_HMR_PATTERNS = [
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
 ])
+const IDE_MANUAL_DEVTOOLS_TEST_PATTERNS = new Set([
+  // tdesign 官方 retail 示例在当前 DevTools 自动化上下文中会返回空白截图和空 app-service 页面栈。
+  'ide/tdesign-miniprogram-starter-retail.runtime.test.ts',
+])
 const IDE_SMOKE_TESTS = [
   'ide/index.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -86,15 +90,6 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
-const BUILD_ONLY_EXCLUDES = new Set([
-  'ci/hmr-*.test.ts',
-  'ci/auto-routes-hmr.test.ts',
-  'ci/auto-import-vue-sfc.test.ts',
-  'ci/external-linked-vue-component.hmr.test.ts',
-  'ci/issue-340-comment.hmr.test.ts',
-  'ci/style-import-vue.test.ts',
-  'ci/wevu-runtime.hmr.test.ts',
-])
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
 interface SuiteTaskFactoryOptions {
@@ -116,6 +111,12 @@ function toPosixPath(filePath: string) {
 function toRelativeLabel(filePath: string) {
   return toPosixPath(path.relative(ROOT, filePath))
 }
+
+const HMR_GUARD_CI_TESTS = new Set(
+  HMR_GUARD_ALL_TESTS
+    .filter(filePath => toRelativeLabel(filePath).startsWith('ci/'))
+    .map(toPosixPath),
+)
 
 function createVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
   const targetFile = toRelativeLabel(filePath)
@@ -174,8 +175,10 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
     cwd: ROOT,
     absolute: true,
     onlyFiles: true,
-    ignore: Array.from(BUILD_ONLY_EXCLUDES),
-  }).sort()
+  })
+    .map(toPosixPath)
+    .filter(filePath => !HMR_GUARD_CI_TESTS.has(filePath))
+    .sort()
 
   if (process.env[SKIP_CI_HMR_GUARD_ENV] === '1') {
     return buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath))
@@ -201,6 +204,7 @@ export function getIdeTasks() {
   })
     .sort()
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {

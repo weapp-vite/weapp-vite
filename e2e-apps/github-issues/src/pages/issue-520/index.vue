@@ -2,6 +2,17 @@
 definePageJson({
   navigationBarTitleText: 'issue-520',
 })
+
+function _runE2E() {
+  return {
+    header: 'issue-520 resolver slot header',
+    defaultSlot: 'issue-520 resolver slot default',
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

@@ -75,10 +75,12 @@ describe('css shared preprocessor', () => {
     expect(first).toEqual({
       css: 'page { color: red; }',
       dependencies: [],
+      source: 'page { color: red; }',
     })
     expect(second).toEqual({
       css: 'page { color: red; }',
       dependencies: [],
+      source: 'page { color: red; }',
     })
     expect(readFileMock).toHaveBeenCalledTimes(1)
     expect(preprocessCSSMock).not.toHaveBeenCalled()
@@ -107,6 +109,7 @@ describe('css shared preprocessor', () => {
         '/project/src/subpackages/pkg/base.scss',
         '/project/src/shared/tokens.scss',
       ],
+      source: '@import "./base.scss";',
     })
 
     result.dependencies.push('mutated')
@@ -145,10 +148,12 @@ describe('css shared preprocessor', () => {
     expect(await renderSharedStyleEntry(entry, {} as any, {} as any)).toEqual({
       css: 'v1',
       dependencies: [],
+      source: '.a { color: red; }',
     })
     expect(await renderSharedStyleEntry(entry, {} as any, {} as any)).toEqual({
       css: 'v2',
       dependencies: [],
+      source: '.a { color: blue; }',
     })
     expect(preprocessCSSMock).toHaveBeenCalledTimes(2)
   })

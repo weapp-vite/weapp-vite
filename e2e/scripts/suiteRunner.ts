@@ -1,6 +1,7 @@
 import type { SpawnOptions } from 'node:child_process'
 import type { SuiteTaskArtifact } from './suiteReport'
 import { spawn } from 'node:child_process'
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { createSuiteReport } from './suiteReport'
@@ -10,6 +11,8 @@ const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
+const IDE_HMR_COMPANION_SENTINEL_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL'
+const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
 
@@ -49,7 +52,10 @@ const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
 const TASK_HEARTBEAT_INTERVAL_MS = 30_000
 const TASK_STDIO_CLOSE_GRACE_MS = 200
+const DEVTOOLS_TASK_TIMEOUT_MS = 360_000
+const TASK_KILL_GRACE_MS = 5_000
 const PROGRESS_BAR_WIDTH = 24
+const IDE_HMR_COMPANION_SENTINEL_DIR = path.resolve(ROOT_DIR, '.tmp/e2e-ide-hmr-companion')
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
@@ -61,6 +67,23 @@ function isDevtoolsVitestTask(task: SuiteTask) {
   }
 
   return task.args.some(arg => arg.endsWith(DEVTOOLS_CONFIG_BASENAME))
+}
+
+function resolveTaskTimeoutMs(task: SuiteTask) {
+  const configuredTimeout = Number(task.env?.[TASK_TIMEOUT_ENV] ?? process.env[TASK_TIMEOUT_ENV])
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return Math.trunc(configuredTimeout)
+  }
+  return isDevtoolsVitestTask(task) ? DEVTOOLS_TASK_TIMEOUT_MS : 0
+}
+
+function shouldShareIdeHmrCompanion(suiteName: string) {
+  return /^e2e:ide(?:$|[:-])/.test(suiteName)
+}
+
+function resolveIdeHmrCompanionSentinelPath(suiteName: string) {
+  const safeSuiteName = suiteName.replace(/[^\w.-]/g, '_')
+  return path.join(IDE_HMR_COMPANION_SENTINEL_DIR, `${safeSuiteName}.passed`)
 }
 
 function createTaskArtifactCollector() {
@@ -277,6 +300,7 @@ export function formatSuiteArtifactsSummary(suiteName: string, artifacts: SuiteT
 
 async function defaultRunTask(task: SuiteTask) {
   const collector = createTaskArtifactCollector()
+  const taskTimeoutMs = resolveTaskTimeoutMs(task)
 
   return await new Promise<number>((resolve, reject) => {
     const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
@@ -286,12 +310,36 @@ async function defaultRunTask(task: SuiteTask) {
     let stdoutClosed = child.stdout == null
     let stderrClosed = child.stderr == null
     let stdioCloseGraceTimer: NodeJS.Timeout | undefined
+    let taskTimeoutTimer: NodeJS.Timeout | undefined
+    let forceKillTimer: NodeJS.Timeout | undefined
     let settled = false
 
     function clearGraceTimer() {
       if (stdioCloseGraceTimer) {
         clearTimeout(stdioCloseGraceTimer)
         stdioCloseGraceTimer = undefined
+      }
+    }
+
+    function clearTaskTimers() {
+      if (taskTimeoutTimer) {
+        clearTimeout(taskTimeoutTimer)
+        taskTimeoutTimer = undefined
+      }
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer)
+        forceKillTimer = undefined
+      }
+    }
+
+    function killChild(signal: NodeJS.Signals) {
+      if (child.killed) {
+        return
+      }
+      try {
+        child.kill(signal)
+      }
+      catch {
       }
     }
 
@@ -302,6 +350,7 @@ async function defaultRunTask(task: SuiteTask) {
 
       settled = true
       clearGraceTimer()
+      clearTaskTimers()
       stdoutForwarder.flush()
       stderrForwarder.flush()
       task.artifacts = collector.artifacts
@@ -351,6 +400,7 @@ async function defaultRunTask(task: SuiteTask) {
       }
 
       clearGraceTimer()
+      clearTaskTimers()
       reject(error)
     }
 
@@ -371,6 +421,23 @@ async function defaultRunTask(task: SuiteTask) {
     child.stderr?.on('close', onStderrClose)
     child.on('error', onError)
     child.on('exit', onExit)
+
+    if (taskTimeoutMs > 0) {
+      taskTimeoutTimer = setTimeout(() => {
+        if (settled) {
+          return
+        }
+        console.error(`[e2e] task timeout after ${formatDuration(taskTimeoutMs)}: ${task.label}`)
+        exitCode = 1
+        killChild('SIGTERM')
+        forceKillTimer = setTimeout(() => {
+          killChild('SIGKILL')
+          finalize(1)
+        }, TASK_KILL_GRACE_MS)
+        forceKillTimer.unref?.()
+      }, taskTimeoutMs)
+      taskTimeoutTimer.unref?.()
+    }
   })
 }
 
@@ -385,6 +452,14 @@ export async function runTaskSuite(
   const results: SuiteTaskResult[] = []
   let devtoolsLoginPreflightPassed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
+  const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
+    ? resolveIdeHmrCompanionSentinelPath(suiteName)
+    : ''
+
+  if (ideHmrCompanionSentinelPath) {
+    await fs.mkdir(path.dirname(ideHmrCompanionSentinelPath), { recursive: true })
+    await fs.rm(ideHmrCompanionSentinelPath, { force: true })
+  }
 
   for (const [taskIndex, task] of tasks.entries()) {
     console.log(formatSuiteProgress(suiteName, results.length, tasks.length, 'running', task.label, taskIndex))
@@ -398,6 +473,12 @@ export async function runTaskSuite(
         task.env = {
           ...task.env,
           [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
+        }
+      }
+      if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
+        task.env = {
+          ...task.env,
+          [IDE_HMR_COMPANION_SENTINEL_ENV]: ideHmrCompanionSentinelPath,
         }
       }
       await options.beforeEachTask?.(task)

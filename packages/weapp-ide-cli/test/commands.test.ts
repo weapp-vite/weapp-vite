@@ -261,7 +261,7 @@ describe('automator commands', () => {
       mockMiniProgram.currentPage.mockResolvedValue(mockPage)
       mockPage.$.mockResolvedValue(null)
 
-      await expect(tap({ projectPath: mockCwd, selector: '.not-exist' })).rejects.toThrow('未找到元素: .not-exist')
+      await expect(tap({ projectPath: mockCwd, selector: '.not-exist', timeout: 1 })).rejects.toThrow('未找到元素: .not-exist')
 
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })

@@ -13,6 +13,7 @@ import { extractComponentProps } from '../../componentProps'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { getAutoImportConfig, getHtmlCustomDataSettings, getTypedComponentsSettings, getVueComponentsSettings } from '../config'
 import { extractJsonPropMetadata, mergePropMaps } from '../metadata'
+import { extractVueComponentProps } from '../vueProps'
 
 const JSON_LIKE_FILE_RE = /\.(?:json|jsonc|json5)$/i
 
@@ -52,19 +53,9 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
   async function extractComponentPropsFromVue(vuePath: string): Promise<ComponentPropMap> {
     const source = await fs.readFile(vuePath, 'utf8')
     const astEngine = resolveAstEngine(state.ctx.configService?.weappViteConfig)
-    const { compileVueFile } = await import('wevu/compiler')
-    const compiled = await compileVueFile(source, vuePath, {
+    return extractVueComponentProps(source, vuePath, {
       astEngine,
-      json: {
-        kind: 'component',
-      },
     })
-
-    if (!compiled.script) {
-      return new Map()
-    }
-
-    return extractComponentProps(compiled.script, { astEngine })
   }
 
   function removeRegisteredComponent(paths: {

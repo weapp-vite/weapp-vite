@@ -16,8 +16,8 @@ import {
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
-import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
-import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
+import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
+import { relaunchPage } from './github-issues.runtime.shared'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const HMR_PAGE_WXML = path.join(APP_ROOT, 'src/pages/hmr/index.wxml')
@@ -51,65 +51,122 @@ const HMR_SFC_KEEP_IMPORT_OUTPUT = '@import \'../hmr/index.wxss\';'
 const HMR_SFC_KEEP_IMPORT_DIRECTIVE = '@wv-keep-import'
 const LAYOUT_PAGE_TEMPLATE_BASE_MARKER = 'LAYOUTS-PAGE-TEMPLATE-BASE'
 const LAYOUT_PAGE_SCRIPT_BASE_MARKER = 'LAYOUTS-PAGE-SCRIPT-BASE'
+const HMR_TEMPLATE_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_template_probe__'
+const HMR_SCRIPT_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_script_probe__'
+const HMR_SFC_TEMPLATE_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_sfc_template_probe__'
+const HMR_SFC_SCRIPT_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_sfc_script_probe__'
+const LAYOUT_TEMPLATE_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_layout_template_probe__'
+const LAYOUT_SCRIPT_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_layout_script_probe__'
+const STORE_E2E_RESULT_STORAGE_KEY = '__weapp_vite_core_hmr_store_result__'
+const STORE_SHARE_E2E_RESULT_STORAGE_KEY = '__weapp_vite_core_hmr_store_share_result__'
 
 let sharedMiniProgram: any = null
 let previousBridgePostConnectRefresh: string | undefined
 
-async function readPageWxml(page: any) {
-  return normalizeAutomatorWxml(await readAutomatorPageWxml(page))
-}
-
-async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
+async function waitForElementTextContains(page: any, marker: string, timeoutMs = 20_000) {
   const start = Date.now()
-  let lastWxml = ''
+  const selectors = ['.title', '.marker', '.hero__eyebrow', '.hero__desc', '.details']
+  let lastText = ''
+  let lastError: unknown
   while (Date.now() - start < timeoutMs) {
-    const wxml = await readPageWxml(page)
-    lastWxml = wxml
-    if (wxml.includes(marker)) {
-      return wxml
+    for (const selector of selectors) {
+      try {
+        const element = await page.$(selector, { timeout: 1_000 })
+        if (!element) {
+          continue
+        }
+        const text = String(await element.text() ?? '')
+        if (text) {
+          lastText = `${selector}: ${text}`
+        }
+        if (text.includes(marker)) {
+          return text
+        }
+      }
+      catch (error) {
+        lastError = error
+      }
     }
     await page.waitFor(200)
   }
-  throw new Error(`Timed out waiting runtime wxml to contain marker: ${marker}; lastWxml=${lastWxml.slice(0, 800)}`)
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Timed out waiting runtime element text to contain marker: ${marker}; reason=${reason}; lastText=${lastText.slice(0, 800)}`)
 }
 
-async function waitForPageDataEquals<T>(page: any, key: string, expected: T, timeoutMs = 10_000) {
-  const start = Date.now()
-  let lastValue: unknown
-  while (Date.now() - start < timeoutMs) {
-    lastValue = await page.data(key)
-    if (lastValue === expected) {
-      return lastValue
-    }
-    await page.waitFor(200)
+function resolveTemplateProbeStorageKey(route: string) {
+  if (route.includes('/pages/hmr-sfc/')) {
+    return HMR_SFC_TEMPLATE_PROBE_STORAGE_KEY
   }
-  throw new Error(`Timed out waiting runtime data "${key}" to equal ${String(expected)}; lastValue=${String(lastValue)}`)
+  if (route.includes('/pages/layouts/')) {
+    return LAYOUT_TEMPLATE_PROBE_STORAGE_KEY
+  }
+  if (route.includes('/pages/hmr/')) {
+    return HMR_TEMPLATE_PROBE_STORAGE_KEY
+  }
+  return ''
 }
 
-async function waitForRunE2EName(page: any, expected: string, timeoutMs = 10_000) {
+async function waitForStorageField(
+  miniProgram: any,
+  storageKey: string,
+  field: string,
+  expected: string,
+  timeoutMs = 12_000,
+) {
   const start = Date.now()
-  let lastResult: any
+  let lastState: unknown
   while (Date.now() - start < timeoutMs) {
-    lastResult = await page.callMethod('runE2E')
-    if (lastResult?.name === expected) {
-      return lastResult
+    lastState = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+      timeout: 2_500,
+    }, storageKey)
+    if (lastState && typeof lastState === 'object' && (lastState as Record<string, unknown>)[field] === expected) {
+      return lastState
     }
-    await page.waitFor(200)
+    await new Promise(resolve => setTimeout(resolve, 220))
   }
-  throw new Error(`Timed out waiting runE2E name to equal ${expected}; lastResult=${JSON.stringify(lastResult)}`)
+  throw new Error(`Timed out waiting storage field: key=${storageKey} field=${field} expected=${expected}; lastState=${JSON.stringify(lastState)}`)
 }
 
-async function waitForRunE2EOk(page: any, expected: string, timeoutMs = 10_000) {
+async function waitForStorageMarker(miniProgram: any, storageKey: string, expected: string, timeoutMs = 12_000) {
+  return await waitForStorageField(miniProgram, storageKey, 'marker', expected, timeoutMs)
+}
+
+async function waitForStorageResultOk(miniProgram: any, storageKey: string, expectedName: string, timeoutMs = 12_000) {
   const start = Date.now()
-  let lastResult: any
+  let lastState: unknown
   while (Date.now() - start < timeoutMs) {
-    lastResult = await page.callMethod('runE2E')
-    if (lastResult?.name === expected && lastResult?.ok === true) {
-      return lastResult
+    lastState = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+      timeout: 2_500,
+    }, storageKey)
+    if (
+      lastState
+      && typeof lastState === 'object'
+      && (lastState as Record<string, unknown>).name === expectedName
+      && (lastState as Record<string, unknown>).ok === true
+    ) {
+      return lastState
     }
-    await page.waitFor(200)
+    await new Promise(resolve => setTimeout(resolve, 220))
   }
-  throw new Error(`Timed out waiting runE2E "${expected}" to pass; lastResult=${JSON.stringify(lastResult)}`)
+  throw new Error(`Timed out waiting storage result: key=${storageKey} name=${expectedName}; lastState=${JSON.stringify(lastState)}`)
+}
+
+async function resetStorageMarker(miniProgram: any, storageKey: string) {
+  await miniProgram.callWxMethodWithOptions('removeStorageSync', {
+    timeout: 2_500,
+  }, storageKey).catch(() => {})
+}
+
+async function waitForTemplateProbeMarker(miniProgram: any, route: string, marker: string, timeoutMs = 12_000) {
+  const storageKey = resolveTemplateProbeStorageKey(route)
+  if (!storageKey) {
+    return await waitForElementTextContains(await miniProgram.currentPage({
+      appFunctionFallback: false,
+      retries: 1,
+      timeout: 2_500,
+    }), marker, timeoutMs)
+  }
+  return await waitForStorageMarker(miniProgram, storageKey, marker, timeoutMs)
 }
 
 function expectSfcKeepImportResolved(content: string) {
@@ -129,6 +186,66 @@ function ensureSfcKeepImportSource(source: string) {
     styleMarker,
     `${styleMarker}\n/* stylelint-disable-next-line at-rule-no-unknown, scss/at-rule-no-unknown */\n@wv-keep-import '../hmr/index.wxss';`,
   )
+}
+
+function ensureHmrPageTemplateProbeSource(source: string) {
+  if (source.includes(HMR_TEMPLATE_PROBE_STORAGE_KEY)) {
+    return source
+  }
+  const titleMarker = '<view class="title">HMR</view>'
+  if (!source.includes(titleMarker)) {
+    throw new Error('HMR page fixture is missing the template baseline marker.')
+  }
+  return source.replace(
+    titleMarker,
+    `<e2e-template-probe marker="HMR" storage-key="${HMR_TEMPLATE_PROBE_STORAGE_KEY}" />\n  ${titleMarker}`,
+  )
+}
+
+function ensureHmrSfcProbeSource(source: string) {
+  let updated = source
+
+  if (!updated.includes(HMR_SFC_SCRIPT_PROBE_STORAGE_KEY)) {
+    const scriptTarget = `import { defineComponent } from 'wevu'\n\nexport default defineComponent({\n  data: () => ({\n    marker: 'HMR-SFC-SCRIPT',\n  }),\n})`
+    const scriptReplacement = `import { defineComponent } from 'wevu'\n\nconst hmrSfcScriptMarker = 'HMR-SFC-SCRIPT'\nconst HMR_SFC_SCRIPT_PROBE_STORAGE_KEY = '${HMR_SFC_SCRIPT_PROBE_STORAGE_KEY}'\n\nfunction writeHmrSfcScriptProbe(marker: string) {\n  if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') {\n    return\n  }\n  wx.setStorageSync(HMR_SFC_SCRIPT_PROBE_STORAGE_KEY, {\n    marker,\n    updatedAt: Date.now(),\n  })\n}\n\nexport default defineComponent({\n  data: () => ({\n    marker: hmrSfcScriptMarker,\n  }),\n  setup() {\n    writeHmrSfcScriptProbe(hmrSfcScriptMarker)\n  },\n})`
+    if (!updated.includes(scriptTarget)) {
+      throw new Error('HMR SFC fixture is missing the script baseline marker.')
+    }
+    updated = updated.replace(scriptTarget, scriptReplacement)
+  }
+
+  if (!updated.includes(HMR_SFC_TEMPLATE_PROBE_STORAGE_KEY)) {
+    const templateTarget = '<view class="hmr-sfc-page">'
+    if (!updated.includes(templateTarget)) {
+      throw new Error('HMR SFC fixture is missing the template root marker.')
+    }
+    updated = updated.replace(
+      templateTarget,
+      `${templateTarget}\n    <e2e-template-probe marker="HMR-SFC" storage-key="${HMR_SFC_TEMPLATE_PROBE_STORAGE_KEY}" />`,
+    )
+  }
+
+  if (!updated.includes('"e2e-template-probe"')) {
+    const jsonTarget = '"component": false'
+    if (!updated.includes(jsonTarget)) {
+      throw new Error('HMR SFC fixture is missing the json baseline marker.')
+    }
+    updated = updated.replace(
+      jsonTarget,
+      `"component": false,\n  "usingComponents": {\n    "e2e-template-probe": "/components/e2e-template-probe/index"\n  }`,
+    )
+  }
+
+  return updated
+}
+
+function replaceHmrPageTemplateMarker(source: string, marker: string) {
+  const updatedTitle = source.replace('<view class="title">HMR</view>', `<view class="title">${marker}</view>`)
+  const updatedProbe = updatedTitle.replace('marker="HMR"', `marker="${marker}"`)
+  if (updatedProbe === source || !updatedProbe.includes(marker)) {
+    throw new Error('Failed to inject HMR marker into page template source.')
+  }
+  return updatedProbe
 }
 
 async function waitForIdeRecompileSettled(delayMs = 1_200) {
@@ -191,20 +308,42 @@ async function relaunchIdeRoute(
   ctx: { skip: (message?: string) => void },
   options: {
     allowCurrentSession?: boolean
+    storageReady?: { expected: string, field: string, key: string }
     validate?: (page: any) => Promise<void>
   } = {},
 ) {
   // 小程序 IDE 的文件型热更新在 compile 后会频繁残留陈旧的 automator 会话；
   // 这里统一重建连接，验证的是“IDE 已感知并重新运行最新产物”，而不是浏览器式模块常驻 HMR。
   let lastError: unknown = null
+  const createReadiness = (miniProgram: any) => async (page: any) => {
+    if (readyText) {
+      await waitForTemplateProbeMarker(miniProgram, route, readyText, 8_000)
+    }
+    if (options.storageReady) {
+      await waitForStorageField(
+        miniProgram,
+        options.storageReady.key,
+        options.storageReady.field,
+        options.storageReady.expected,
+        8_000,
+      )
+    }
+    await options.validate?.(page)
+    return true
+  }
   if (options.allowCurrentSession && sharedMiniProgram) {
     try {
-      const page = await relaunchPage(sharedMiniProgram, route, readyText, 24_000)
+      const storageKey = readyText ? resolveTemplateProbeStorageKey(route) : ''
+      if (storageKey) {
+        await resetStorageMarker(sharedMiniProgram, storageKey)
+      }
+      if (options.storageReady) {
+        await resetStorageMarker(sharedMiniProgram, options.storageReady.key)
+      }
+      const page = await relaunchPage(sharedMiniProgram, route, readyText, 24_000, {
+        readiness: createReadiness(sharedMiniProgram),
+      })
       if (page) {
-        if (readyText) {
-          await waitForPageWxmlContains(page, readyText, 8_000)
-        }
-        await options.validate?.(page)
         return page
       }
     }
@@ -214,31 +353,30 @@ async function relaunchIdeRoute(
   }
 
   const recoveryPasses = [
-    { cleanType: 'compile', settleDelay: 1_200, readyTimeout: 8_000 },
-    { cleanType: 'all', settleDelay: 1_800, readyTimeout: 10_000 },
-    { cleanType: 'all', settleDelay: 2_400, readyTimeout: 12_000 },
+    { cleanType: 'compile', settleDelay: 1_200 },
+    { cleanType: 'all', settleDelay: 1_800 },
+    { cleanType: 'all', settleDelay: 2_400 },
   ] as const
 
-  for (const { cleanType, readyTimeout, settleDelay } of recoveryPasses) {
+  for (const { cleanType, settleDelay } of recoveryPasses) {
     await closeMiniProgram()
     await cleanupResidualDevtoolsProcesses()
     await cleanDevtoolsCache(cleanType, { cwd: APP_ROOT }).catch(() => {})
     await waitForIdeRecompileSettled(settleDelay)
 
     const miniProgram = await ensureMiniProgram(ctx)
-    const page = await relaunchPage(miniProgram, route, readyText, 24_000)
+    const storageKey = readyText ? resolveTemplateProbeStorageKey(route) : ''
+    if (storageKey) {
+      await resetStorageMarker(miniProgram, storageKey)
+    }
+    if (options.storageReady) {
+      await resetStorageMarker(miniProgram, options.storageReady.key)
+    }
+    const page = await relaunchPage(miniProgram, route, readyText, 24_000, {
+      readiness: createReadiness(miniProgram),
+    })
     if (page) {
-      try {
-        if (readyText) {
-          await waitForPageWxmlContains(page, readyText, readyTimeout)
-        }
-        await options.validate?.(page)
-        return page
-      }
-      catch (error) {
-        lastError = error
-        continue
-      }
+      return page
     }
   }
 
@@ -276,9 +414,17 @@ async function updateSourceAndWait(options: {
 }
 
 function replaceSharedStoreName(source: string, marker: string) {
-  const updated = source.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+  const updated = source.replace(`export const setupStoreInitialName = 'init'`, `export const setupStoreInitialName = '${marker}'`)
   if (updated === source) {
     throw new Error('Failed to inject HMR marker into shared store source.')
+  }
+  return updated
+}
+
+function replaceHmrSfcScriptMarker(source: string, marker: string) {
+  const updated = source.replace(`const hmrSfcScriptMarker = 'HMR-SFC-SCRIPT'`, `const hmrSfcScriptMarker = '${marker}'`)
+  if (updated === source) {
+    throw new Error('Failed to inject HMR marker into SFC script source.')
   }
   return updated
 }
@@ -331,10 +477,15 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
     ]) {
       originalSources.set(filePath, await fs.readFile(filePath, 'utf8'))
     }
-    const originalSfcSource = ensureSfcKeepImportSource(originalSources.get(HMR_SFC_PATH)!)
+    const originalSfcSource = ensureHmrSfcProbeSource(ensureSfcKeepImportSource(originalSources.get(HMR_SFC_PATH)!))
     if (originalSfcSource !== originalSources.get(HMR_SFC_PATH)) {
       await fs.writeFile(HMR_SFC_PATH, originalSfcSource, 'utf8')
       originalSources.set(HMR_SFC_PATH, originalSfcSource)
+    }
+    const originalHmrPageTemplate = ensureHmrPageTemplateProbeSource(originalSources.get(HMR_PAGE_WXML)!)
+    if (originalHmrPageTemplate !== originalSources.get(HMR_PAGE_WXML)) {
+      await fs.writeFile(HMR_PAGE_WXML, originalHmrPageTemplate, 'utf8')
+      originalSources.set(HMR_PAGE_WXML, originalHmrPageTemplate)
     }
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
@@ -345,13 +496,11 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
     try {
       await waitForInitialHmrDistReady(dev)
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
-      let page = await relaunchIdeRoute('/pages/hmr/index', 'HMR', ctx)
-      expect(await waitForPageWxmlContains(page, 'HMR')).toContain('HMR')
+      await relaunchIdeRoute('/pages/hmr/index', 'HMR', ctx)
+      await waitForTemplateProbeMarker(sharedMiniProgram, '/pages/hmr/index', 'HMR')
 
       const pageTemplateMarker = createHmrMarker('IDE-CORE-PAGE-TEMPLATE', 'weapp')
-      const updatedPageWxml = originalSources
-        .get(HMR_PAGE_WXML)!
-        .replace('<view class="title">HMR</view>', `<view class="title">${pageTemplateMarker}</view>`)
+      const updatedPageWxml = replaceHmrPageTemplateMarker(originalSources.get(HMR_PAGE_WXML)!, pageTemplateMarker)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: HMR_PAGE_WXML,
@@ -362,13 +511,13 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'page template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
-      expect(await waitForPageWxmlContains(page, pageTemplateMarker)).toContain(pageTemplateMarker)
+      await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx)
+      await waitForTemplateProbeMarker(sharedMiniProgram, '/pages/hmr/index', pageTemplateMarker)
 
       const pageScriptMarker = createHmrMarker('IDE-CORE-PAGE-SCRIPT', 'weapp')
       const updatedPageScript = originalSources
         .get(HMR_PAGE_SCRIPT)!
-        .replace(`buildResult('hmr',`, `buildResult('${pageScriptMarker}',`)
+        .replace(`const hmrScriptName = 'hmr'`, `const hmrScriptName = '${pageScriptMarker}'`)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: HMR_PAGE_SCRIPT,
@@ -379,15 +528,14 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      let pageScriptResult: any
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, {
-        validate: async (currentPage) => {
-          pageScriptResult = await waitForRunE2EName(currentPage, pageScriptMarker)
+      await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
+        storageReady: {
+          expected: pageScriptMarker,
+          field: 'name',
+          key: HMR_SCRIPT_PROBE_STORAGE_KEY,
         },
       })
-      expect(pageScriptResult?.name).toBe(pageScriptMarker)
-      expect(pageScriptResult?.ok).toBe(true)
-      expect(await page.data('__e2eText')).toContain(pageScriptMarker)
+      expect(await waitForStorageField(sharedMiniProgram, HMR_SCRIPT_PROBE_STORAGE_KEY, 'name', pageScriptMarker)).toBeTruthy()
 
       const pageStyleMarker = createHmrMarker('IDE-CORE-PAGE-STYLE', 'weapp')
       const updatedPageStyle = originalSources
@@ -404,14 +552,20 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       )
       expect(pageStyleOutput).toContain(pageStyleMarker)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx, { allowCurrentSession: true })
-      expect((await page.callMethod('runE2E'))?.ok).toBe(true)
+      await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
+        storageReady: {
+          expected: pageScriptMarker,
+          field: 'name',
+          key: HMR_SCRIPT_PROBE_STORAGE_KEY,
+        },
+      })
+      expect(await waitForStorageField(sharedMiniProgram, HMR_SCRIPT_PROBE_STORAGE_KEY, 'name', pageScriptMarker)).toBeTruthy()
 
       const sfcTemplateMarker = createHmrMarker('IDE-CORE-SFC-TEMPLATE', 'weapp')
       const updatedSfcTemplate = replaceHmrSfcTitle(
         originalSources.get(HMR_SFC_PATH)!,
         sfcTemplateMarker,
-      )
+      ).replace('marker="HMR-SFC"', `marker="${sfcTemplateMarker}"`)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: HMR_SFC_PATH,
@@ -422,13 +576,12 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
-      expect(await waitForPageWxmlContains(page, sfcTemplateMarker)).toContain(sfcTemplateMarker)
+      await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx)
+      await waitForTemplateProbeMarker(sharedMiniProgram, '/pages/hmr-sfc/index', sfcTemplateMarker)
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
       const sfcScriptMarker = createHmrMarker('IDE-CORE-SFC-SCRIPT', 'weapp')
-      const updatedSfcScript = updatedSfcTemplate
-        .replace(`marker: 'HMR-SFC-SCRIPT'`, `marker: '${sfcScriptMarker}'`)
+      const updatedSfcScript = replaceHmrSfcScriptMarker(updatedSfcTemplate, sfcScriptMarker)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: HMR_SFC_PATH,
@@ -439,14 +592,14 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'sfc script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, {
-        validate: async (currentPage) => {
-          await waitForPageDataEquals(currentPage, 'marker', sfcScriptMarker)
-          await waitForPageWxmlContains(currentPage, sfcScriptMarker, 10_000)
+      await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
+        storageReady: {
+          expected: sfcScriptMarker,
+          field: 'marker',
+          key: HMR_SFC_SCRIPT_PROBE_STORAGE_KEY,
         },
       })
-      expect(await waitForPageWxmlContains(page, sfcScriptMarker)).toContain(sfcScriptMarker)
-      expect(await page.data('marker')).toBe(sfcScriptMarker)
+      expect(await waitForStorageField(sharedMiniProgram, HMR_SFC_SCRIPT_PROBE_STORAGE_KEY, 'marker', sfcScriptMarker)).toBeTruthy()
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
       const sfcStyleMarker = createHmrMarker('IDE-CORE-SFC-STYLE', 'weapp')
@@ -464,13 +617,19 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       expect(sfcStyleOutput).toContain(sfcStyleMarker)
       expectSfcKeepImportResolved(sfcStyleOutput)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx, { allowCurrentSession: true })
-      expect(await page.data('marker')).toBe(sfcScriptMarker)
+      await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
+        storageReady: {
+          expected: sfcScriptMarker,
+          field: 'marker',
+          key: HMR_SFC_SCRIPT_PROBE_STORAGE_KEY,
+        },
+      })
+      expect(await waitForStorageField(sharedMiniProgram, HMR_SFC_SCRIPT_PROBE_STORAGE_KEY, 'marker', sfcScriptMarker)).toBeTruthy()
 
       const layoutPageTemplateMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-TEMPLATE', 'weapp')
       const updatedLayoutPageWxml = originalSources
         .get(LAYOUT_PAGE_WXML)!
-        .replace('LAYOUTS-PAGE-TEMPLATE-BASE', layoutPageTemplateMarker)
+        .replaceAll('LAYOUTS-PAGE-TEMPLATE-BASE', layoutPageTemplateMarker)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: LAYOUT_PAGE_WXML,
@@ -481,13 +640,13 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'layout page template hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
-      expect(await waitForPageWxmlContains(page, layoutPageTemplateMarker)).toContain(layoutPageTemplateMarker)
+      await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx)
+      await waitForTemplateProbeMarker(sharedMiniProgram, '/pages/layouts/index', layoutPageTemplateMarker)
 
       const layoutPageScriptMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-SCRIPT', 'weapp')
       const updatedLayoutPageScript = originalSources
         .get(LAYOUT_PAGE_SCRIPT)!
-        .replace(`scriptMarker: 'LAYOUTS-PAGE-SCRIPT-BASE'`, `scriptMarker: '${layoutPageScriptMarker}'`)
+        .replace(`const layoutPageScriptMarker = 'LAYOUTS-PAGE-SCRIPT-BASE'`, `const layoutPageScriptMarker = '${layoutPageScriptMarker}'`)
       await dev.waitFor(
         updateSourceAndWait({
           sourcePath: LAYOUT_PAGE_SCRIPT,
@@ -498,12 +657,14 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
         'layout page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, {
-        validate: async (currentPage) => {
-          await waitForPageWxmlContains(currentPage, layoutPageScriptMarker, 10_000)
+      await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
+        storageReady: {
+          expected: layoutPageScriptMarker,
+          field: 'marker',
+          key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY,
         },
       })
-      expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
+      expect(await waitForStorageField(sharedMiniProgram, LAYOUT_SCRIPT_PROBE_STORAGE_KEY, 'marker', layoutPageScriptMarker)).toBeTruthy()
 
       const layoutPageStyleMarker = createHmrMarker('IDE-CORE-LAYOUT-PAGE-STYLE', 'weapp')
       const updatedLayoutPageStyle = originalSources
@@ -520,8 +681,14 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       )
       expect(layoutPageStyleOutput).toContain(layoutPageStyleMarker)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx, { allowCurrentSession: true })
-      expect(await waitForPageWxmlContains(page, layoutPageScriptMarker)).toContain(layoutPageScriptMarker)
+      await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
+        storageReady: {
+          expected: layoutPageScriptMarker,
+          field: 'marker',
+          key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY,
+        },
+      })
+      expect(await waitForStorageField(sharedMiniProgram, LAYOUT_SCRIPT_PROBE_STORAGE_KEY, 'marker', layoutPageScriptMarker)).toBeTruthy()
 
       const sharedStoreMarker = createHmrMarker('IDE-CORE-SHARED-STORE', 'weapp')
       const updatedSharedStore = replaceSharedStoreName(
@@ -543,18 +710,23 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       expect(storePageOutput).toContain(`require("${toRelativeImport(STORE_PAGE_JS_DIST, sharedRuntime.path)}")`)
       expect(storeSharePageOutput).toContain(`require("${toRelativeImport(STORE_SHARE_PAGE_JS_DIST, sharedRuntime.path)}")`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
-        validate: async (currentPage) => {
-          await waitForRunE2EOk(currentPage, 'store')
+      await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
+        storageReady: {
+          expected: 'store',
+          field: 'name',
+          key: STORE_E2E_RESULT_STORAGE_KEY,
         },
       })
-      expect((await page.callMethod('runE2E'))?.ok).toBe(true)
-      page = await relaunchIdeRoute('/pages/store-share/index', undefined, ctx, {
-        validate: async (currentPage) => {
-          await waitForRunE2EOk(currentPage, 'store-share')
+      expect(await waitForStorageResultOk(sharedMiniProgram, STORE_E2E_RESULT_STORAGE_KEY, 'store')).toBeTruthy()
+      await relaunchIdeRoute('/pages/store-share/index', undefined, ctx, {
+        allowCurrentSession: true,
+        storageReady: {
+          expected: 'store-share',
+          field: 'name',
+          key: STORE_SHARE_E2E_RESULT_STORAGE_KEY,
         },
       })
-      expect((await page.callMethod('runE2E'))?.ok).toBe(true)
+      expect(await waitForStorageResultOk(sharedMiniProgram, STORE_SHARE_E2E_RESULT_STORAGE_KEY, 'store-share')).toBeTruthy()
     }
     finally {
       await closeMiniProgram()

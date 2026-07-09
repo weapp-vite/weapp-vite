@@ -375,7 +375,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain(`<weapp-layout-default ${SLOT_OWNER_ATTR}>`)
-    expect(pageWxml).toContain('<block wx:if="{{true}}"><view class="div issue338-page">')
+    expect(pageWxml).toContain('<block wx:if="{{true}}"><view')
+    expect(pageWxml).toContain('class="div issue338-page"')
+    expect(pageWxml).toContain('id="issue338-page"')
+    expect(pageWxml).toContain('data-e2e-issue="338"')
     expect(pageWxml).toContain('<text class="span issue338-title">{{title}}</text>')
     expect(pageWxml).toContain('<image class="img issue338-cover" src="{{cover}}" mode="aspectFit" />')
     expect(pageWxml).toContain('<view class="section issue338-links">')

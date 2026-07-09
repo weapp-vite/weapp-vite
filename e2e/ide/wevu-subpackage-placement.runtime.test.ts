@@ -8,28 +8,25 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
-function stripAutomatorOverlay(wxml: string) {
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+function normalizeRoute(value: string) {
+  return String(value || '').replace(/^\/+/, '').replace(/\/+$/g, '')
 }
 
-async function readPageWxml(page: any) {
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  return stripAutomatorOverlay(await element.wxml())
-}
-
-async function waitForWxmlContains(page: any, text: string, timeoutMs = 15_000) {
+async function waitForRenderedPage(page: any, route: string, timeoutMs = 15_000) {
   const start = Date.now()
+  let latest: unknown
   while (Date.now() - start <= timeoutMs) {
-    const wxml = await readPageWxml(page)
-    if (wxml.includes(text)) {
-      return wxml
+    if (typeof page?.renderedNodes === 'function') {
+      latest = await page.renderedNodes('.page', {
+        timeout: 5_000,
+      })
+      if (Array.isArray(latest) && latest.length > 0) {
+        return latest
+      }
     }
     await page.waitFor(220)
   }
-  throw new Error(`Timed out waiting for text: ${text}`)
+  throw new Error(`Timed out waiting rendered page for ${route}; latest=${JSON.stringify(latest)}`)
 }
 
 async function buildFixture() {
@@ -43,6 +40,20 @@ async function buildFixture() {
   })
 }
 
+async function openRoute(miniProgram: any, route: string, options: { preferCurrent?: boolean } = {}) {
+  if (options.preferCurrent) {
+    const currentPage = await miniProgram.currentPage({
+      appFunctionFallback: false,
+      retries: 1,
+      timeout: 2_500,
+    }).catch(() => null)
+    if (normalizeRoute(currentPage?.path) === normalizeRoute(route)) {
+      return currentPage
+    }
+  }
+  return await miniProgram.reLaunch(route)
+}
+
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 
@@ -54,6 +65,7 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipWarmup: true,
       timeout: 120_000,
     })
   }
@@ -80,41 +92,36 @@ describe.sequential('e2e app: wevu-subpackage-placement', () => {
     const routeCases = [
       {
         route: '/pages/index/index',
-        ready: '__WSP_MAIN_VUE__',
-        expected: ['main package vue card', 'main package native component'],
+        expected: { count: 1, double: 2 },
       },
       {
         route: '/subpackages/normal-wevu/pages/entry/index',
-        ready: '__WSP_NORMAL_ENTRY__',
-        expected: ['package: normal', 'count: 0', 'double: 0'],
+        expected: { count: 1, double: 2 },
       },
       {
         route: '/subpackages/normal-wevu/pages/detail/index',
-        ready: '__WSP_NORMAL_DETAIL__',
-        expected: ['from: direct'],
+        expected: { count: 1, double: 2, from: 'direct' },
       },
       {
         route: '/subpackages/independent-wevu/pages/entry/index',
-        ready: '__WSP_INDEPENDENT_ENTRY__',
-        expected: ['package: independent', 'count: 10', 'double: 20'],
+        expected: { count: 11, double: 22 },
       },
       {
         route: '/subpackages/independent-wevu/pages/detail/index',
-        ready: '__WSP_INDEPENDENT_DETAIL__',
-        expected: ['from: direct'],
+        expected: { count: 11, double: 22, from: 'direct' },
       },
     ]
 
-    for (const routeCase of routeCases) {
-      const page = await miniProgram.reLaunch(routeCase.route)
+    for (const [index, routeCase] of routeCases.entries()) {
+      const page = await openRoute(miniProgram, routeCase.route, {
+        preferCurrent: index === 0,
+      })
       if (!page) {
         throw new Error(`Failed to launch route: ${routeCase.route}`)
       }
 
-      const wxml = await waitForWxmlContains(page, routeCase.ready)
-      for (const token of routeCase.expected) {
-        expect(wxml).toContain(token)
-      }
+      await waitForRenderedPage(page, routeCase.route)
+      await expect(page.callMethodWithOptions('runE2E', { routeOnly: true })).resolves.toMatchObject(routeCase.expected)
     }
   })
 })

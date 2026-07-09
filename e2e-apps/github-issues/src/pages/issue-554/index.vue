@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getCurrentInstance } from 'wevu'
 import LoopSlotCell from '../../components/issue-554/LoopSlotCell/index.vue'
 
 definePageJson({
@@ -11,11 +12,18 @@ const items = [
     src: '/assets/images/home/goods-1.png',
   },
 ]
+const mpContext = getCurrentInstance()
 
 function _runE2E() {
+  const nativeData = (mpContext as any)?.data ?? {}
+  const slotMetadata = nativeData.__wv_bind_0
+
   return {
+    itemCount: items.length,
     ok: true,
     expected: items[0]?.src,
+    runtimeItems: nativeData.items,
+    slotMetadata,
   }
 }
 </script>

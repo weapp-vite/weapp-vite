@@ -13,11 +13,52 @@ interface HmrProfileJsonSample {
   event?: string
   file?: string
   buildCoreMs?: number
+  buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  vueReadSourceMs?: number
+  vueCompileMs?: number
+  vueFinalizeCompiledMs?: number
+  vueFinalizeCodeMs?: number
+  coreLoadMs?: number
+  entryLoadMs?: number
+  entryCodeReadMs?: number
+  entrySidecarResolveMs?: number
+  entryJsonReadMs?: number
+  entryVueConfigMs?: number
+  entryTemplateScanMs?: number
+  entryScriptSetupMs?: number
+  entryVueSignatureMs?: number
+  entryAutoImportMs?: number
+  entryPrepareMs?: number
+  entryEmitOutputMs?: number
+  entryStyleScanMs?: number
+  entryStyleReadMs?: number
+  entryResolveMs?: number
+  entryChunkEmitMs?: number
+  entryChunkLoadMs?: number
+  entryChunkEmitFileMs?: number
+  entryLayoutMs?: number
+  requestGlobalsMs?: number
+  weapiResolveMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  chunkEmitCount?: number
+  loadCount?: number
+  resolveCount?: number
+  skippedLoadedCount?: number
 }
 
 interface ReadLatestHmrProfileSummaryOptions {
@@ -59,6 +100,154 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'transform',
       value: sample.transformMs,
+    },
+    {
+      label: 'build-start',
+      value: sample.buildStartMs,
+    },
+    {
+      label: 'plugin-resolve',
+      value: sample.pluginResolveMs,
+    },
+    {
+      label: 'core-transform',
+      value: sample.coreTransformMs,
+    },
+    {
+      label: 'wevu-transform',
+      value: sample.wevuTransformMs,
+    },
+    {
+      label: 'vue-transform',
+      value: sample.vueTransformMs,
+    },
+    {
+      label: 'vue-read',
+      value: sample.vueReadSourceMs,
+    },
+    {
+      label: 'vue-compile',
+      value: sample.vueCompileMs,
+    },
+    {
+      label: 'vue-finalize-compiled',
+      value: sample.vueFinalizeCompiledMs,
+    },
+    {
+      label: 'vue-finalize-code',
+      value: sample.vueFinalizeCodeMs,
+    },
+    {
+      label: 'core-load',
+      value: sample.coreLoadMs,
+    },
+    {
+      label: 'entry-load',
+      value: sample.entryLoadMs,
+    },
+    {
+      label: 'entry-emit-output',
+      value: sample.entryEmitOutputMs,
+    },
+    {
+      label: 'entry-template-scan',
+      value: sample.entryTemplateScanMs,
+    },
+    {
+      label: 'entry-auto-import',
+      value: sample.entryAutoImportMs,
+    },
+    {
+      label: 'entry-script-setup',
+      value: sample.entryScriptSetupMs,
+    },
+    {
+      label: 'entry-vue-signature',
+      value: sample.entryVueSignatureMs,
+    },
+    {
+      label: 'entry-sidecar-resolve',
+      value: sample.entrySidecarResolveMs,
+    },
+    {
+      label: 'entry-json-read',
+      value: sample.entryJsonReadMs,
+    },
+    {
+      label: 'entry-vue-config',
+      value: sample.entryVueConfigMs,
+    },
+    {
+      label: 'entry-prepare',
+      value: sample.entryPrepareMs,
+    },
+    {
+      label: 'entry-resolve',
+      value: sample.entryResolveMs,
+    },
+    {
+      label: 'entry-style-scan',
+      value: sample.entryStyleScanMs,
+    },
+    {
+      label: 'entry-style-read',
+      value: sample.entryStyleReadMs,
+    },
+    {
+      label: 'entry-code-read',
+      value: sample.entryCodeReadMs,
+    },
+    {
+      label: 'entry-chunk-emit',
+      value: sample.entryChunkEmitMs,
+    },
+    {
+      label: 'entry-chunk-load',
+      value: sample.entryChunkLoadMs,
+    },
+    {
+      label: 'entry-chunk-emit-file',
+      value: sample.entryChunkEmitFileMs,
+    },
+    {
+      label: 'entry-layout',
+      value: sample.entryLayoutMs,
+    },
+    {
+      label: 'request-globals',
+      value: sample.requestGlobalsMs,
+    },
+    {
+      label: 'weapi-resolve',
+      value: sample.weapiResolveMs,
+    },
+    {
+      label: 'render-start',
+      value: sample.renderStartMs,
+    },
+    {
+      label: 'generate',
+      value: sample.generateBundleMs,
+    },
+    {
+      label: 'generate-shared',
+      value: sample.generateSharedMs,
+    },
+    {
+      label: 'generate-rewrite',
+      value: sample.generateRewriteMs,
+    },
+    {
+      label: 'module-graph',
+      value: sample.generateModuleGraphMs,
+    },
+    {
+      label: 'snapshot-resolve',
+      value: sample.snapshotResolveMs,
+    },
+    {
+      label: 'snapshot-build',
+      value: sample.snapshotBuildMs,
     },
     {
       label: 'watch->dirty',
@@ -124,6 +313,14 @@ export async function readLatestHmrProfileSummary(
   const phaseHint = formatPhaseHint(sample)
   if (phaseHint) {
     segments.push(`主耗时 ${phaseHint}`)
+  }
+  if (
+    isFiniteNumber(sample.loadCount)
+    || isFiniteNumber(sample.resolveCount)
+    || isFiniteNumber(sample.chunkEmitCount)
+    || isFiniteNumber(sample.skippedLoadedCount)
+  ) {
+    segments.push(`load/resolve/chunk/skip ${sample.loadCount ?? 0}/${sample.resolveCount ?? 0}/${sample.chunkEmitCount ?? 0}/${sample.skippedLoadedCount ?? 0}`)
   }
 
   return {

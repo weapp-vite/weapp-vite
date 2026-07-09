@@ -15,6 +15,12 @@ const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 
+interface ExtractConfigFromVueOptions {
+  readSource?: () => Promise<string | undefined>
+  source?: string
+  force?: boolean
+}
+
 function getMtimeCached(filePath: string) {
   const pending = configMtimeInFlight.get(filePath)
   if (pending) {
@@ -60,14 +66,24 @@ async function isVueConfigCacheValid(vueFilePath: string, cache: {
  * @param vueFilePath .vue 文件的路径
  * @returns 提取的配置对象，如果不存在或解析失败则返回 undefined
  */
-export async function extractConfigFromVue(vueFilePath: string): Promise<Record<string, any> | undefined> {
+export async function extractConfigFromVue(
+  vueFilePath: string,
+  options?: ExtractConfigFromVueOptions,
+): Promise<Record<string, any> | undefined> {
   try {
-    const cached = vueConfigCache.get(vueFilePath)
+    const cached = options?.force ? undefined : vueConfigCache.get(vueFilePath)
     if (cached && await isVueConfigCacheValid(vueFilePath, cached)) {
       return cached.config
     }
 
-    const content = await fs.readFile(vueFilePath, 'utf-8')
+    const content = options?.source ?? (
+      options?.readSource
+        ? await options.readSource()
+        : await fs.readFile(vueFilePath, 'utf-8')
+    )
+    if (content === undefined) {
+      return undefined
+    }
     const { descriptor, errors } = parse(content, { filename: vueFilePath })
 
     if (errors.length > 0) {

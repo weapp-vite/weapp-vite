@@ -1,4 +1,5 @@
 <view class="page">
+  <e2e-template-probe marker="LAYOUTS-PAGE-TEMPLATE-BASE" storage-key="__weapp_vite_core_hmr_layout_template_probe__" />
   <view class="hero">
     <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
     <view class="hero__title">Layouts HMR Playground</view>

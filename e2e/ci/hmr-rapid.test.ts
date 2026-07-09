@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrScriptName, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -126,14 +126,14 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       await dev.waitFor(waitForFile(distPath, 30_000), `${platform} initial script output`)
 
       // 第一次修改
-      const firstUpdate = originalSource.replace(`buildResult('hmr',`, `buildResult('${firstMarker}',`)
+      const firstUpdate = replaceHmrScriptName(originalSource, firstMarker)
       if (firstUpdate === originalSource) {
         throw new Error('Failed to insert first marker into .ts script source.')
       }
       await replaceFileByRename(SRC_SCRIPT, firstUpdate)
 
       // 第二次修改（无延迟，连续快速写入）
-      const secondUpdate = originalSource.replace(`buildResult('hmr',`, `buildResult('${secondMarker}',`)
+      const secondUpdate = replaceHmrScriptName(originalSource, secondMarker)
       if (secondUpdate === originalSource) {
         throw new Error('Failed to insert second marker into .ts script source.')
       }

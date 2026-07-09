@@ -7,10 +7,35 @@ import { loadVueSfcSignatureNativeBindingSync, shouldUseNativeVueSfcSignature } 
 interface VueSfcSignaturePayload {
   nonJson: unknown
   script: unknown
+  styleIndependent: unknown
+  tailwindContent: unknown
   hasTemplate: boolean
 }
 
+interface TailwindContentPayload {
+  template?: unknown
+  scriptLiterals?: unknown
+  scriptCallLiterals?: unknown
+  hasScriptTailwindClassHint?: unknown
+}
+
+export interface VueSfcHmrSignatures {
+  nonJsonSignature?: string
+  scriptSignature?: string
+  styleIndependentSignature?: string
+  tailwindContentSignature?: string
+  tailwindTemplateContentSignature?: string
+  tailwindScriptContentSignature?: string
+  hasTemplate?: boolean
+}
+
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+const JS_STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/
+const JS_STRING_LITERALS_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
+const SCRIPT_CALL_EXPRESSION_RE = /\b[$a-z_][\w$]*\s*\((?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^()"'`])*\)/gi
+const CLASS_LIKE_TEMPLATE_ATTR_RE = /(?:^|[\s<])(?:[\w-]*class[\w-]*|v-bind(?::[\w-]*class[\w-]*)?|:[\w-]*class[\w-]*)(?:\.[\w-]+)*\s*=\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^\s>]+)/g
+const VUE_DYNAMIC_CLASS_LIKE_BINDING_RE = /(?:^|[\s<])(?:v-bind(?::[\w-]*class[\w-]*)?|:[\w-]*class[\w-]*)(?:\.[\w-]+)*\s*=/
+const SCRIPT_DYNAMIC_CLASS_HINT_RE = /\b(?:import|export)\b|\b[$a-z_][\w$]*\s*\(/i
 const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
 
 function hashPayload(payload: unknown) {
@@ -39,7 +64,7 @@ function serializeBlock(block: SFCBlock | null | undefined, content?: string) {
   }
 }
 
-function stripScriptSetupJsonMacros(content: string, filename: string) {
+function stripJsonMacrosFromScriptContent(content: string, filename: string) {
   try {
     return stripJsonMacroCallsFromCode(content, filename)
   }
@@ -50,7 +75,7 @@ function stripScriptSetupJsonMacros(content: string, filename: string) {
 
 function buildNonJsonDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
   const scriptSetupContent = descriptor.scriptSetup
-    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
     : undefined
 
   return {
@@ -66,12 +91,131 @@ function buildNonJsonDescriptorPayload(descriptor: SFCDescriptor, filename: stri
 
 function buildScriptDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
   const scriptSetupContent = descriptor.scriptSetup
-    ? stripScriptSetupJsonMacros(descriptor.scriptSetup.content, filename)
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
     : undefined
 
   return {
     script: serializeBlock(descriptor.script),
     scriptSetup: serializeBlock(descriptor.scriptSetup, scriptSetupContent),
+  }
+}
+
+function buildStyleIndependentDescriptorPayload(descriptor: SFCDescriptor, filename: string) {
+  const scriptSetupContent = descriptor.scriptSetup
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
+    : undefined
+
+  return {
+    script: serializeBlock(descriptor.script),
+    scriptSetup: serializeBlock(descriptor.scriptSetup, scriptSetupContent),
+    template: serializeBlock(descriptor.template),
+    customBlocks: descriptor.customBlocks
+      .filter(block => block.type !== 'json')
+      .map(block => serializeBlock(block)),
+  }
+}
+
+function collectScriptLiteralCandidates(content: string) {
+  const candidates: string[] = []
+  for (const match of content.matchAll(JS_STRING_LITERALS_RE)) {
+    candidates.push(match[0]!)
+  }
+  return candidates
+}
+
+function collectScriptCallLiteralCandidates(content: string) {
+  const candidates = new Set<string>()
+  for (const callMatch of content.matchAll(SCRIPT_CALL_EXPRESSION_RE)) {
+    for (const literalMatch of callMatch[0]!.matchAll(JS_STRING_LITERALS_RE)) {
+      candidates.add(literalMatch[0]!)
+    }
+  }
+  return Array.from(candidates).sort()
+}
+
+function collectTemplateTailwindCandidates(content: string) {
+  const candidates = new Set<string>()
+  for (const match of content.matchAll(CLASS_LIKE_TEMPLATE_ATTR_RE)) {
+    candidates.add(match[0]!.trim())
+  }
+  return Array.from(candidates).sort()
+}
+
+function hasScriptDynamicClassHint(content: string) {
+  return SCRIPT_DYNAMIC_CLASS_HINT_RE.test(content)
+}
+
+function normalizeTailwindContentPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return payload
+  }
+
+  const content = payload as TailwindContentPayload
+  const template = typeof content.template === 'string' ? content.template : ''
+  const hasDynamicClassLikeBinding = VUE_DYNAMIC_CLASS_LIKE_BINDING_RE.test(template)
+  const scriptLiterals = hasDynamicClassLikeBinding
+    ? content.scriptLiterals
+    : content.hasScriptTailwindClassHint === true
+      ? content.scriptCallLiterals
+      : []
+
+  return {
+    ...content,
+    template: collectTemplateTailwindCandidates(template),
+    scriptLiterals,
+    scriptCallLiterals: [],
+  }
+}
+
+function hashTailwindContentPayload(payload: unknown) {
+  return hashPayload(normalizeTailwindContentPayload(payload))
+}
+
+function hashTailwindTemplateContentPayload(payload: unknown) {
+  const normalized = normalizeTailwindContentPayload(payload)
+  if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
+    return hashPayload(normalized)
+  }
+
+  const content = normalized as TailwindContentPayload
+  return hashPayload({
+    template: content.template,
+  })
+}
+
+function hashTailwindScriptContentPayload(payload: unknown) {
+  const normalized = normalizeTailwindContentPayload(payload)
+  if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
+    return hashPayload(normalized)
+  }
+
+  const content = normalized as TailwindContentPayload
+  return hashPayload({
+    scriptLiterals: content.scriptLiterals,
+  })
+}
+
+function buildTailwindContentPayload(descriptor: SFCDescriptor, filename: string) {
+  const script = descriptor.script
+    ? stripJsonMacrosFromScriptContent(descriptor.script.content, filename)
+    : ''
+  const scriptSetup = descriptor.scriptSetup
+    ? stripJsonMacrosFromScriptContent(descriptor.scriptSetup.content, filename)
+    : ''
+  const scriptLiterals = [
+    ...collectScriptLiteralCandidates(script),
+    ...collectScriptLiteralCandidates(scriptSetup),
+  ]
+  const scriptCallLiterals = [
+    ...collectScriptCallLiteralCandidates(script),
+    ...collectScriptCallLiteralCandidates(scriptSetup),
+  ]
+
+  return {
+    template: descriptor.template?.content ?? '',
+    scriptLiterals,
+    scriptCallLiterals,
+    hasScriptTailwindClassHint: hasScriptDynamicClassHint(`${script}\n${scriptSetup}`),
   }
 }
 
@@ -84,6 +228,8 @@ function buildVueSfcSignaturePayloadWithTs(source: string, filename: string): Vu
   return {
     nonJson: buildNonJsonDescriptorPayload(descriptor, filename),
     script: buildScriptDescriptorPayload(descriptor, filename),
+    styleIndependent: buildStyleIndependentDescriptorPayload(descriptor, filename),
+    tailwindContent: buildTailwindContentPayload(descriptor, filename),
     hasTemplate: Boolean(descriptor.template?.content.trim()),
   }
 }
@@ -104,7 +250,18 @@ function buildVueSfcSignaturePayloadWithNative(source: string): VueSfcSignatureP
   }
 
   try {
-    return JSON.parse(payload) as VueSfcSignaturePayload
+    const parsed = JSON.parse(payload) as VueSfcSignaturePayload
+    const tailwindContent = parsed.tailwindContent
+    if (
+      !tailwindContent
+      || typeof tailwindContent !== 'object'
+      || Array.isArray(tailwindContent)
+      || !('hasScriptTailwindClassHint' in tailwindContent)
+      || !('scriptCallLiterals' in tailwindContent)
+    ) {
+      return undefined
+    }
+    return parsed
   }
   catch {
     return undefined
@@ -138,6 +295,41 @@ export function resolveVueSfcScriptSignature(source: string, filename: string) {
   return payload ? hashPayload(payload.script) : undefined
 }
 
+export function resolveVueSfcStyleIndependentSignature(source: string, filename: string) {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  return payload ? hashPayload(payload.styleIndependent) : undefined
+}
+
+export function resolveVueSfcTailwindContentSignature(source: string, filename: string) {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  if (payload) {
+    return hashTailwindContentPayload(payload.tailwindContent)
+  }
+
+  if (!JS_STRING_LITERAL_RE.test(source)) {
+    return hashPayload(source)
+  }
+
+  return undefined
+}
+
 export function resolveVueSfcHasTemplate(source: string, filename: string) {
   return buildVueSfcSignaturePayload(source, filename)?.hasTemplate
+}
+
+export function resolveVueSfcHmrSignatures(source: string, filename: string): VueSfcHmrSignatures {
+  const payload = buildVueSfcSignaturePayload(source, filename)
+  if (!payload) {
+    return {}
+  }
+
+  return {
+    nonJsonSignature: hashPayload(payload.nonJson),
+    scriptSignature: hashPayload(payload.script),
+    styleIndependentSignature: hashPayload(payload.styleIndependent),
+    tailwindContentSignature: hashTailwindContentPayload(payload.tailwindContent),
+    tailwindTemplateContentSignature: hashTailwindTemplateContentPayload(payload.tailwindContent),
+    tailwindScriptContentSignature: hashTailwindScriptContentPayload(payload.tailwindContent),
+    hasTemplate: payload.hasTemplate,
+  }
 }

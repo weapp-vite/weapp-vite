@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callCurrentPageMethod,
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
@@ -49,11 +50,16 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('style: {')
 
     const miniProgram = await ensureMiniProgram(ctx)
-    const issuePage = await relaunchPage(miniProgram, '/pages/issue-627-native/index', 'issue-627 native reserved props')
+    const issuePage = await relaunchPage(miniProgram, '/pages/issue-627-native/index', undefined, 20_000, {
+      readiness: async () => {
+        const snapshot = await callCurrentPageMethod(miniProgram, '_runE2E')
+        return Boolean(snapshot?.native && snapshot?.sfcLiteral && snapshot?.sfcDynamic)
+      },
+    })
     if (!issuePage) {
       throw new Error('Failed to launch issue-627-native page')
     }
-    const snapshot = await issuePage.callMethod('_runE2E')
+    const snapshot = await callCurrentPageMethod(miniProgram, '_runE2E')
 
     expect(snapshot).toMatchObject({
       native: {

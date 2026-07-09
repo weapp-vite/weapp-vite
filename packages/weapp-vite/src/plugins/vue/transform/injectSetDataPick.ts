@@ -387,6 +387,9 @@ function injectScopedSlotHostPropertiesIntoOptionsObject(optionsObject: t.Object
 function transformTargetWevuOptionsInJs(
   source: string,
   transformOptions: (optionsObject: t.ObjectExpression) => boolean,
+  options?: {
+    sourceMap?: boolean
+  },
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   if (!mayNeedInjectSetDataPickInJs(source)) {
     return { code: source, transformed: false }
@@ -421,12 +424,13 @@ function transformTargetWevuOptionsInJs(
     return { code: source, transformed: false }
   }
 
+  const sourceMap = options?.sourceMap !== false
   const generated = generate(ast, {
     retainLines: true,
-    sourceMaps: true,
+    sourceMaps: sourceMap,
     sourceFileName: 'inline.js',
   }, source)
-  return { code: generated.code, transformed: true, map: generated.map as EncodedSourceMapLike }
+  return { code: generated.code, transformed: true, map: sourceMap ? generated.map as EncodedSourceMapLike : null }
 }
 
 /**
@@ -473,6 +477,9 @@ export function pruneScopedSlotOwnerAutoSetDataPickKeys(pickKeys: string[]): str
 export function injectSetDataPickInJs(
   source: string,
   pickKeys: string[],
+  options?: {
+    sourceMap?: boolean
+  },
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   const mergedPickKeys = mergeStableKeys(pickKeys, [
     WEVU_SLOT_NAMES_PROP,
@@ -486,6 +493,7 @@ export function injectSetDataPickInJs(
   return transformTargetWevuOptionsInJs(
     source,
     optionsObject => injectPickIntoOptionsObject(optionsObject, mergedPickKeys),
+    options,
   )
 }
 
@@ -495,6 +503,9 @@ export function injectSetDataPickInJs(
 export function injectScopedSlotOwnerSetDataPickInJs(
   source: string,
   pickKeys: string[] = [],
+  options?: {
+    sourceMap?: boolean
+  },
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   const mergedPickKeys = mergeStableKeys(pickKeys, [
     WEVU_SLOT_OWNER_ID_KEY,
@@ -505,6 +516,7 @@ export function injectScopedSlotOwnerSetDataPickInJs(
   return transformTargetWevuOptionsInJs(
     source,
     optionsObject => injectPickIntoOptionsObject(optionsObject, mergedPickKeys),
+    options,
   )
 }
 
@@ -513,9 +525,13 @@ export function injectScopedSlotOwnerSetDataPickInJs(
  */
 export function injectScopedSlotHostPropertiesInJs(
   source: string,
+  options?: {
+    sourceMap?: boolean
+  },
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   return transformTargetWevuOptionsInJs(
     source,
     injectScopedSlotHostPropertiesIntoOptionsObject,
+    options,
   )
 }

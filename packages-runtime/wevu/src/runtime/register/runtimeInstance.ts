@@ -431,8 +431,16 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
     return
   }
   for (const [key, value] of Object.entries(nativeData)) {
+    if (!key || key === 'undefined') {
+      continue
+    }
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
-      runtimeState[key] = value
+      try {
+        runtimeState[key] = value
+      }
+      catch {
+        // DevTools 热更新期间可能带入响应式 state 拒绝写入的临时 data key，跳过即可。
+      }
     }
   }
 }

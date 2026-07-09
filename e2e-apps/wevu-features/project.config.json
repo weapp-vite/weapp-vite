@@ -24,7 +24,8 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "skylineRenderEnable": false
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},

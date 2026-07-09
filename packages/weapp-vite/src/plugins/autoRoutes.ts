@@ -10,6 +10,7 @@ import {
   resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
+import { recordHmrProfileDuration, recordHmrProfileOperation } from '../utils/hmrProfile'
 import {
   addAutoRoutesWatchTargets,
   collectAutoRoutesWatchDirs,
@@ -72,8 +73,9 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
    * 重编译都会触发，提前销毁会导致后续文件变更无法感知）。
    */
   function invalidateAutoRoutesVirtualModule() {
-    const virtualModule = devServer?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
-    if (!virtualModule || !devServer) {
+    const server = devServer
+    const virtualModule = server?.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
+    if (!virtualModule || !server) {
       return
     }
 
@@ -83,7 +85,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         return
       }
       seen.add(module)
-      devServer.moduleGraph.invalidateModule(module)
+      server.moduleGraph.invalidateModule(module)
       for (const importer of module.importers) {
         invalidateModuleWithImporters(importer)
       }
@@ -200,7 +202,15 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     resolveId(id) {
-      return resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
+      const startedAt = performance.now()
+      try {
+        return resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
+      }
+      finally {
+        const profile = ctx.runtimeState?.build?.hmr?.profile
+        recordHmrProfileDuration(profile, 'pluginResolveMs', performance.now() - startedAt)
+        recordHmrProfileOperation(profile, 'resolveCount')
+      }
     },
 
     async load(id) {

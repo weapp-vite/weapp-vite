@@ -4,13 +4,14 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
 
 const ROUTE = '/pages/vue-query/index'
+const VUE_QUERY_STATE_STORAGE_KEY = '__weapp_vite_vue_query_state__'
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function waitForDataMatch(
-  page: any,
+  miniProgram: any,
   predicate: (snapshot: Record<string, any>) => boolean,
   timeoutMs = 15_000,
 ) {
@@ -19,29 +20,15 @@ async function waitForDataMatch(
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const snapshot = {
-        selectedTab: await page.data('selectedTab'),
-        refreshSeed: await page.data('refreshSeed'),
-        statusText: await page.data('statusText'),
-        generatedAtText: await page.data('generatedAtText'),
-        queryKey: await page.data('queryKey'),
-        query: await page.data('query'),
-      }
+      const snapshot = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+        timeout: 2_500,
+      }, VUE_QUERY_STATE_STORAGE_KEY)
       lastSnapshot = snapshot
-      if (predicate(snapshot)) {
+      if (snapshot && typeof snapshot === 'object' && predicate(snapshot)) {
         return snapshot
       }
     }
     catch {
-    }
-
-    if (typeof page?.waitFor === 'function') {
-      try {
-        await page.waitFor(180)
-        continue
-      }
-      catch {
-      }
     }
 
     await sleep(180)
@@ -133,12 +120,15 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
       throw new Error('Runtime error collector is not attached.')
     }
     const initialMarker = runtimeErrors.mark()
+    await miniProgram.callWxMethodWithOptions('removeStorageSync', {
+      timeout: 2_500,
+    }, VUE_QUERY_STATE_STORAGE_KEY).catch(() => {})
     const page = await miniProgram.reLaunch(ROUTE)
     if (!page) {
       throw new Error(`Failed to launch route ${ROUTE}`)
     }
 
-    const initialState = await waitForDataMatch(page, snapshot => (
+    const initialState = await waitForDataMatch(miniProgram, snapshot => (
       snapshot.selectedTab === 'overview'
       && snapshot.statusText === '数据就绪'
       && snapshot.generatedAtText
@@ -155,7 +145,7 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
 
     const switchMarker = runtimeErrors.mark()
     await invokeOrTap(page, 'switchTab', 1, 'detail')
-    const switchedState = await waitForDataMatch(page, snapshot => (
+    const switchedState = await waitForDataMatch(miniProgram, snapshot => (
       snapshot.selectedTab === 'detail'
       && snapshot.statusText === '数据就绪'
       && Array.isArray(snapshot.queryKey)
@@ -169,7 +159,7 @@ describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
 
     const refreshMarker = runtimeErrors.mark()
     await invokeOrTap(page, 'resetCacheAndReload', 4)
-    const refreshedState = await waitForDataMatch(page, snapshot => (
+    const refreshedState = await waitForDataMatch(miniProgram, snapshot => (
       snapshot.refreshSeed === 1
       && snapshot.statusText === '数据就绪'
       && Array.isArray(snapshot.queryKey)

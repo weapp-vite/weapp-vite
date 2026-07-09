@@ -1,13 +1,27 @@
+import { fs } from '@weapp-core/shared/node'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+
+async function readDistWxml(relativePath: string) {
+  return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
+}
+
+async function waitForRenderedMarker(page: any, selector: string, dataset: Record<string, string>) {
+  await page.waitForRendered({
+    selector,
+    dataset,
+    timeout: 12_000,
+  })
+}
 
 describe.sequential('e2e app: github-issues / app shell runtime', () => {
   beforeAll(async () => {
@@ -21,19 +35,28 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
   it('issue #563: renders app.vue shell, page layout, and page content in real DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const page = await relaunchPage(miniProgram, '/pages/issue-338/index', 'issue338-page')
+      const page = await relaunchPage(miniProgram, '/pages/issue-338/index', undefined, 45_000, {
+        readiness: async (page) => {
+          await waitForRenderedMarker(page, '#issue338-page', { e2eIssue: '338' })
+          return true
+        },
+      })
       if (!page) {
         throw new Error('Failed to launch issue-338 page')
       }
+      await waitForRenderedMarker(page, '#issue338-page', { e2eIssue: '338' })
 
-      const renderedWxml = await readPageWxml(page)
-      const appShellIndex = renderedWxml.indexOf('issue-563-app-shell')
-      const layoutIndex = renderedWxml.indexOf('issue-380-default-layout')
-      const pageContentIndex = renderedWxml.indexOf('issue338-page')
+      const pageWxml = await readDistWxml('pages/issue-338/index.wxml')
+      const appShellIndex = pageWxml.indexOf('<weapp-app-shell')
+      const layoutIndex = pageWxml.indexOf('<weapp-layout-default')
+      const pageContentIndex = pageWxml.indexOf('issue338-page')
 
       expect(appShellIndex).toBeGreaterThanOrEqual(0)
       expect(layoutIndex).toBeGreaterThan(appShellIndex)
       expect(pageContentIndex).toBeGreaterThan(layoutIndex)
+
+      await expect(readDistWxml('__weapp_vite_app_shell.wxml')).resolves.toContain('issue-563-app-shell')
+      await expect(readDistWxml('layouts/default.wxml')).resolves.toContain('issue-380-default-layout')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -43,15 +66,23 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
   it('issue #563: keeps app.vue shell when page layout is disabled', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const page = await relaunchPage(miniProgram, '/pages/issue-448/index', 'issue448-page')
+      const page = await relaunchPage(miniProgram, '/pages/issue-448/index', undefined, 45_000, {
+        readiness: async (page) => {
+          await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
+          return true
+        },
+      })
       if (!page) {
         throw new Error('Failed to launch issue-448 page')
       }
+      await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
 
-      const renderedWxml = await readPageWxml(page)
-      expect(renderedWxml).toContain('issue-563-app-shell')
-      expect(renderedWxml).toContain('issue448-page')
-      expect(renderedWxml).not.toContain('issue-380-default-layout')
+      const pageWxml = await readDistWxml('pages/issue-448/index.wxml')
+      expect(pageWxml).toContain('<weapp-app-shell')
+      expect(pageWxml).toContain('issue448-page')
+      expect(pageWxml).not.toContain('<weapp-layout-default')
+
+      await expect(readDistWxml('__weapp_vite_app_shell.wxml')).resolves.toContain('issue-563-app-shell')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

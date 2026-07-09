@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { parseScriptSetupAst } from './parse'
+import { mayContainJsonMacro, parseScriptSetupAst } from './parse'
 import {
   stripJsonMacroCallsFromCode,
   stripScriptSetupMacroStatements,
 } from './rewrite'
 
 describe('jsonMacros rewrite', () => {
+  it('detects json macro call hints without parsing', () => {
+    expect(mayContainJsonMacro('definePageJson({})')).toBe(true)
+    expect(mayContainJsonMacro('const definePageJsonValue = {}')).toBe(false)
+  })
+
   it('strips top-level macro statements from script setup', () => {
     const content = `
 const title = 'home'

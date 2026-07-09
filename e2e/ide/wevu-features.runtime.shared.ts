@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { launchAutomator } from '../utils/automator'
@@ -10,6 +11,11 @@ const LEADING_SLASH_RE = /^\/+/
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const ROUTE_READY_SELECTORS: Record<string, string> = {
+  'pages/router-dynamic/index': '#router-dynamic-run-e2e',
+  'pages/router-showcase/index': '#router-showcase-run-e2e',
+  'pages/router-stability/index': '#router-open-sub',
+}
 
 function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
@@ -32,37 +38,108 @@ export function delay(ms: number) {
 }
 
 export async function readPageWxml(page: any) {
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
+  if (typeof page?.wxml === 'function') {
+    return stripAutomatorOverlay(await page.wxml())
   }
-  return stripAutomatorOverlay(await element.wxml())
+  let lastError: unknown
+  for (const selector of ['page', 'body', 'weapp-app-shell', 'view']) {
+    try {
+      const element = await page.$(selector)
+      if (!element) {
+        continue
+      }
+      return stripAutomatorOverlay(await element.wxml())
+    }
+    catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Failed to find page element')
 }
 
 async function waitForWxmlContains(page: any, text: string, timeoutMs = 15_000) {
+  if (typeof page?.waitForRendered === 'function') {
+    try {
+      await page.waitForRendered({
+        text,
+        timeout: timeoutMs,
+      })
+      return true
+    }
+    catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      process.stdout.write(`[wevu-features:wxml-timeout] route=${page?.path ?? '<unknown>'} text=${text} error=${reason} wxml=<from-page-waitForRendered>\n`)
+      return false
+    }
+  }
+
   const start = Date.now()
+  let lastError: unknown
+  let lastWxml = ''
   while (Date.now() - start <= timeoutMs) {
     try {
       const wxml = await readPageWxml(page)
+      lastWxml = wxml
+      lastError = undefined
       if (wxml.includes(text)) {
         return true
       }
     }
-    catch {
+    catch (error) {
+      lastError = error
       // 页面还未就绪时继续轮询，避免偶发 reLaunch 后瞬时空白导致失败。
     }
     await page.waitFor(220)
   }
+  const reason = lastError instanceof Error ? lastError.message : lastError == null ? '<none>' : String(lastError)
+  const snippet = lastWxml.replace(WHITESPACE_RE, ' ').trim().slice(0, 300)
+  process.stdout.write(`[wevu-features:wxml-timeout] route=${page?.path ?? '<unknown>'} text=${text} error=${reason} wxml=${snippet || '<empty>'}\n`)
+  return false
+}
+
+export async function waitForRenderedSelector(page: any, selector: string, timeoutMs = 6_000) {
+  const start = Date.now()
+  let lastError: unknown
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      if (typeof page?.renderedSelectorNodes === 'function') {
+        const nodesBySelector = await page.renderedSelectorNodes([selector], {
+          timeout: Math.min(2_000, Math.max(1, timeoutMs - (Date.now() - start))),
+        })
+        const nodes = nodesBySelector?.[selector]
+        if (Array.isArray(nodes) && nodes.some(node => Number(node?.width ?? 0) > 0 && Number(node?.height ?? 0) > 0)) {
+          return true
+        }
+      }
+      if (typeof page?.$$ === 'function') {
+        const elements = await page.$$(selector, {
+          timeout: Math.min(500, Math.max(1, timeoutMs - (Date.now() - start))),
+        })
+        if (Array.isArray(elements) && elements.length > 0) {
+          return true
+        }
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await page.waitFor(220)
+  }
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  process.stdout.write(`[wevu-features:selector-timeout] route=${page?.path ?? '<unknown>'} selector=${selector} error=${reason}\n`)
   return false
 }
 
 export async function relaunchPage(miniProgram: any, route: string, readyText: string) {
+  let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     let page: any = null
     try {
       page = await miniProgram.reLaunch(route)
     }
-    catch {
+    catch (error) {
+      lastError = error
+      process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 error=${error instanceof Error ? error.message : String(error)}\n`)
       await delay(280)
       continue
     }
@@ -74,7 +151,16 @@ export async function relaunchPage(miniProgram: any, route: string, readyText: s
     if (ready) {
       return page
     }
-    await delay(220)
+    const readySelector = ROUTE_READY_SELECTORS[normalizeRoutePath(route)]
+    if (readySelector && await waitForRenderedSelector(page, readySelector)) {
+      process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 selector-ready-without-wxml-marker selector=${readySelector} text=${readyText}\n`)
+      return page
+    }
+    process.stdout.write(`[wevu-features:relaunch] route=${route} attempt=${attempt + 1}/3 route-not-rendered text=${readyText}\n`)
+    await delay(280)
+  }
+  if (lastError) {
+    process.stdout.write(`[wevu-features:relaunch] route=${route} failed reason=${lastError instanceof Error ? lastError.message : String(lastError)}\n`)
   }
   return null
 }
@@ -84,7 +170,9 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage()
+      const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
+      })
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }
@@ -237,7 +325,10 @@ export async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipRelaunchPageRootCheck: true,
       timeout: 120_000,
+      warmupAnyPage: true,
+      warmupAllowRelaunch: false,
     })
   }
   return sharedMiniProgram
@@ -269,6 +360,9 @@ export async function launchIsolatedMiniProgram() {
   }
   return await launchAutomator({
     projectPath: APP_ROOT,
+    skipRelaunchPageRootCheck: true,
     timeout: 120_000,
+    warmupAnyPage: true,
+    warmupAllowRelaunch: false,
   })
 }

@@ -8,16 +8,18 @@ const props = defineProps<{
 const nativeRouter = useNativeRouter()
 const nativePageRouter = useNativePageRouter()
 
-function navByRouter() {
+async function navByRouter() {
   nativeRouter.navigateTo({
     url: './target/index?source=component-router',
   })
+  return true
 }
 
-function navByPageRouter() {
+async function navByPageRouter() {
   nativePageRouter.navigateTo({
     url: './target/index?source=component-page-router',
   })
+  return true
 }
 
 defineExpose({

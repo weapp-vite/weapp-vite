@@ -178,7 +178,7 @@ function resolveImportSpecifiers(
   return specifiers
 }
 
-function prependImports(css: string, statements: string[]) {
+export function prependSharedStyleImports(css: string, statements: string[]) {
   if (!statements.length) {
     return css
   }
@@ -194,8 +194,7 @@ function prependImports(css: string, statements: string[]) {
   return `${importBlock}\n${css}`
 }
 
-export function injectSharedStyleImports(
-  css: string,
+export function resolveSharedStyleImportStatements(
   modulePath: string,
   fileName: string,
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
@@ -203,23 +202,23 @@ export function injectSharedStyleImports(
 ) {
   const relativeModulePath = configService.relativeAbsoluteSrcRoot(modulePath)
   if (!relativeModulePath) {
-    return css
+    return []
   }
 
   const normalizedModule = toPosixPath(relativeModulePath)
   if (normalizedModule.startsWith('..')) {
-    return css
+    return []
   }
 
   const normalizedFileName = toPosixPath(fileName)
   const entries = findSharedStylesForModule(normalizedModule, normalizedFileName, sharedStyles)
   if (!entries?.length) {
-    return css
+    return []
   }
 
   const specifiers = resolveImportSpecifiers(fileName, entries)
   if (!specifiers.length) {
-    return css
+    return []
   }
 
   const statements: string[] = []
@@ -229,16 +228,30 @@ export function injectSharedStyleImports(
     if (emitted.has(statement)) {
       continue
     }
-    if (css.includes(statement)) {
-      continue
-    }
     emitted.add(statement)
     statements.push(statement)
   }
+  return statements
+}
+
+export function injectSharedStyleImports(
+  css: string,
+  modulePath: string,
+  fileName: string,
+  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  configService: CompilerContext['configService'],
+) {
+  const statements = resolveSharedStyleImportStatements(modulePath, fileName, sharedStyles, configService)
+    .filter((statement) => {
+      if (css.includes(statement)) {
+        return false
+      }
+      return true
+    })
 
   if (!statements.length) {
     return css
   }
 
-  return prependImports(css, statements)
+  return prependSharedStyleImports(css, statements)
 }

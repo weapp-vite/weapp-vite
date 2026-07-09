@@ -12,6 +12,10 @@ function _runE2E() {
     expected: 'scoped slot virtual host keeps flex children as siblings',
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

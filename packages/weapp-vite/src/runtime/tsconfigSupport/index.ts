@@ -61,21 +61,10 @@ function createManagedRootTsconfig() {
   })
 }
 
-async function hasManagedTsconfigChanges(ctx: MutableCompilerContext) {
-  const files = await createManagedTsconfigFiles(ctx)
-
-  for (const file of files) {
-    const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
-    if (existing !== file.content) {
-      return true
-    }
-  }
-
-  return false
-}
-
-async function outputFileIfChanged(file: ManagedTsconfigFile) {
-  const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
+async function outputFileIfChanged(file: ManagedTsconfigFile, existingContents?: Map<string, string | undefined>) {
+  const existing = existingContents?.has(file.path)
+    ? existingContents.get(file.path)
+    : await fs.readFile(file.path, 'utf8').catch(() => undefined)
   if (existing === file.content) {
     return false
   }
@@ -84,12 +73,14 @@ async function outputFileIfChanged(file: ManagedTsconfigFile) {
   return true
 }
 
-export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext) {
-  const changed = await hasManagedTsconfigChanges(ctx)
-  for (const file of await createManagedTsconfigFiles(ctx)) {
-    await outputFileIfChanged(file)
-  }
-  return changed
+export async function syncManagedTsconfigFiles(
+  ctx: MutableCompilerContext,
+  files?: ManagedTsconfigFile[],
+  existingContents?: Map<string, string | undefined>,
+) {
+  const targetFiles = files ?? await createManagedTsconfigFiles(ctx)
+  const changed = await Promise.all(targetFiles.map(file => outputFileIfChanged(file, existingContents)))
+  return changed.some(Boolean)
 }
 
 interface TsconfigReference {
@@ -105,6 +96,15 @@ const MANAGED_TSCONFIG_MARKERS = [
   '.weapp-vite/tsconfig.app.json',
   '.weapp-vite/tsconfig.shared.json',
 ]
+const bootstrappedManagedTsconfigRoots = new Set<string>()
+
+export function markManagedTsconfigBootstrapComplete(cwd: string) {
+  bootstrappedManagedTsconfigRoots.add(path.resolve(cwd))
+}
+
+export function hasManagedTsconfigBootstrapCompleted(cwd: string | undefined) {
+  return Boolean(cwd && bootstrappedManagedTsconfigRoots.has(path.resolve(cwd)))
+}
 
 async function readTsconfigData(filePath: string): Promise<TsconfigBootstrapData | undefined> {
   const content = await fs.readFile(filePath, 'utf8').catch(() => undefined)
@@ -195,20 +195,25 @@ async function syncSingleProjectManagedTsconfigBootstrapFiles(cwd: string) {
   let changed = false
   const rootTsconfigPath = path.resolve(cwd, 'tsconfig.json')
   const rootJsconfigPath = path.resolve(cwd, 'jsconfig.json')
-  const hasRootConfig = await fs.pathExists(rootTsconfigPath) || await fs.pathExists(rootJsconfigPath)
+  const [hasRootTsconfig, hasRootJsconfig] = await Promise.all([
+    fs.pathExists(rootTsconfigPath),
+    fs.pathExists(rootJsconfigPath),
+  ])
+  const hasRootConfig = hasRootTsconfig || hasRootJsconfig
   if (!hasRootConfig) {
     await fs.outputFile(rootTsconfigPath, createManagedRootTsconfig(), 'utf8')
     changed = true
   }
 
-  for (const file of await createManagedTsconfigFiles(bootstrapCtx)) {
+  const managedFileWrites = await Promise.all((await createManagedTsconfigFiles(bootstrapCtx)).map(async (file) => {
     const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
     if (existing != null) {
-      continue
+      return false
     }
     await fs.outputFile(file.path, file.content, 'utf8')
-    changed = true
-  }
+    return true
+  }))
+  changed = managedFileWrites.some(Boolean) || changed
 
   return changed
 }
@@ -217,6 +222,7 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
   let changed = await syncSingleProjectManagedTsconfigBootstrapFiles(cwd)
   const workspace = await findReferencingWorkspaceTsconfig(cwd)
   if (!workspace) {
+    markManagedTsconfigBootstrapComplete(cwd)
     return changed
   }
 
@@ -229,5 +235,6 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
     changed = await syncSingleProjectManagedTsconfigBootstrapFiles(projectRoot) || changed
   }
 
+  markManagedTsconfigBootstrapComplete(cwd)
   return changed
 }

@@ -2,11 +2,12 @@ import type { Plugin } from 'vite'
 import type { AstParserLike } from '../../../../ast'
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import { resolveAstEngine } from '../../../../ast'
+import { mayContainPlatformApiIdentifierByText, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
+  mayContainRequestGlobalsUsageByText,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
@@ -17,6 +18,14 @@ import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
 import { replacePlatformApiAccess } from './platform'
 import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
+
+function mayContainManualRequestGlobalsInstall(code: string) {
+  return code.includes('installRequestGlobals')
+    && (
+      code.includes('@wevu/web-apis')
+      || code.includes('weapp-vite/web-apis')
+    )
+}
 
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
@@ -76,12 +85,28 @@ export function createTransformHook(state: CorePluginState) {
     })}${code}`
   }
 
+  function mayNeedTransformWork(code: string) {
+    const mayNeedRequestGlobals = injectRequestGlobalsOptions
+      ? injectRequestGlobalsOptions.mode === 'auto'
+        ? mayContainRequestGlobalsUsageByText(code, injectRequestGlobalsOptions.targets as any)
+        : true
+      : false
+
+    return code.includes('import.meta')
+      || mayNeedRequestGlobals
+      || mayContainManualRequestGlobalsInstall(code)
+      || Boolean(injectOptions && mayContainPlatformApiIdentifierByText(code))
+  }
+
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true
         || state.resolvedEntryMap?.has(sourceId) === true,
     })) {
+      return null
+    }
+    if (!mayNeedTransformWork(code)) {
       return null
     }
     const startedAt = performance.now()
@@ -133,7 +158,9 @@ export function createTransformHook(state: CorePluginState) {
       }
     }
     finally {
-      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+      const durationMs = performance.now() - startedAt
+      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'transformMs', durationMs)
+      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'coreTransformMs', durationMs)
     }
   }
 

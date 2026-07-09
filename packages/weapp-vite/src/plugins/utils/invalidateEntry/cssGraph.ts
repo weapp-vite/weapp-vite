@@ -6,10 +6,14 @@ import { findJsEntry } from '../../../utils/file'
 import { normalizePath } from '../../../utils/path'
 
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
-const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
+const cssImportRE = /@(?:import|wv-keep-import|use|forward)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
 
 function ensureCssGraph(ctx: CompilerContext) {
-  return ctx.runtimeState?.css
+  const graph = ctx.runtimeState?.css
+  if (!graph?.importerToDependencies || !graph.dependencyToImporters) {
+    return undefined
+  }
+  return graph
 }
 
 function cleanupImporterGraph(
@@ -56,7 +60,21 @@ function registerCssImports(
     normalizedDeps.add(normalizePath(dependency))
   }
 
-  const previousDeps = graph.importerToDependencies.get(normalizedImporter) ?? new Set<string>()
+  const existingDeps = graph.importerToDependencies.get(normalizedImporter)
+  const previousDeps = existingDeps ?? new Set<string>()
+  if (existingDeps && previousDeps.size === normalizedDeps.size) {
+    let unchanged = true
+    for (const dependency of normalizedDeps) {
+      if (!previousDeps.has(dependency) || !graph.dependencyToImporters.get(dependency)?.has(normalizedImporter)) {
+        unchanged = false
+        break
+      }
+    }
+    if (unchanged) {
+      return
+    }
+  }
+
   if (previousDeps.size) {
     for (const previous of previousDeps) {
       if (normalizedDeps.has(previous)) {
@@ -182,6 +200,26 @@ export async function extractCssImportDependencies(
   registerCssImports(ctx, importer, dependencies)
 }
 
+export function syncCssImportDependencies(
+  ctx: CompilerContext,
+  importer: string,
+  cssContent: string,
+  extraDependencies: Iterable<string | undefined> = [],
+) {
+  const dependencies = collectCssDependenciesFromContent(ctx, importer, cssContent)
+  for (const dependency of extraDependencies) {
+    if (dependency) {
+      dependencies.add(dependency)
+      const ext = path.extname(dependency)
+      if (ext) {
+        dependencies.add(dependency.slice(0, -ext.length))
+      }
+    }
+  }
+  registerCssImports(ctx, importer, dependencies)
+  return dependencies
+}
+
 export function syncVueSfcStyleDependencies(
   ctx: CompilerContext,
   filename: string,
@@ -238,14 +276,18 @@ async function resolveScriptForCss(
   cache: Map<string, string | undefined>,
   basePath: string,
 ) {
-  const cached = cache.get(basePath)
-  if (cached !== undefined) {
-    return cached
+  if (cache.has(basePath)) {
+    return cache.get(basePath)
   }
   const result = await findJsEntry(basePath)
   const scriptPath = result.path
   cache.set(basePath, scriptPath)
   return scriptPath
+}
+
+interface CssTraversalItem {
+  current: string
+  scriptBase?: string
 }
 
 export async function collectAffectedScriptsAndImporters(
@@ -259,27 +301,50 @@ export async function collectAffectedScriptsAndImporters(
   const scriptCache = new Map<string, string | undefined>()
 
   while (queue.length) {
-    const current = queue.shift()!
-    if (visitedCss.has(current)) {
-      continue
-    }
-    visitedCss.add(current)
+    const layer = queue.splice(0)
+    const pendingItems: CssTraversalItem[] = []
+    const pendingScripts = new Map<string, Promise<string | undefined>>()
 
-    const ext = path.extname(current)
-    if (ext) {
-      const base = current.slice(0, -ext.length)
-      const script = await resolveScriptForCss(scriptCache, base)
-      if (script) {
-        affectedScripts.add(script)
+    for (const current of layer) {
+      if (visitedCss.has(current)) {
+        continue
       }
+      visitedCss.add(current)
+
+      const ext = path.extname(current)
+      const item: CssTraversalItem = {
+        current,
+      }
+      if (ext) {
+        const base = current.slice(0, -ext.length)
+        item.scriptBase = base
+        if (!pendingScripts.has(base)) {
+          pendingScripts.set(base, resolveScriptForCss(scriptCache, base))
+        }
+      }
+      pendingItems.push(item)
     }
 
-    const importers = collectCssImporters(ctx, current)
-    for (const importer of importers) {
-      if (!visitedCss.has(importer)) {
-        queue.push(importer)
+    const resolvedScripts = new Map<string, string | undefined>()
+    await Promise.all([...pendingScripts].map(async ([base, script]) => {
+      resolvedScripts.set(base, await script)
+    }))
+
+    for (const item of pendingItems) {
+      if (item.scriptBase) {
+        const script = resolvedScripts.get(item.scriptBase)
+        if (script) {
+          affectedScripts.add(script)
+        }
       }
-      affectedImporters.add(importer)
+
+      const importers = collectCssImporters(ctx, item.current)
+      for (const importer of importers) {
+        if (!visitedCss.has(importer)) {
+          queue.push(importer)
+        }
+        affectedImporters.add(importer)
+      }
     }
   }
 

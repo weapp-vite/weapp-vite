@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createGenerateBundleHook } from './emit'
+import { collectActiveHmrImportedChunkIds } from './emit/generate'
 
 describe('core lifecycle emit hook injectWeapi', () => {
   it('rewrites bundle chunk wx/my access to global wpi', async () => {
@@ -670,5 +671,223 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/dayjs/index')
     expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/tdesign-miniprogram/toast/index")')
     expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/button"')
+  })
+
+  it('limits platform rewrite to active chunks during dev hmr', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'wx.showToast({ title: "active" })',
+        imports: [],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'wx.showToast({ title: "stale" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['pages/index/index.js'].code).not.toContain('wx.showToast')
+    expect(bundle['common.js']).toBeUndefined()
+  })
+
+  it('rewrites shared chunks imported by active dev hmr entries', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map([['common.js', new Set([activeEntry])]]),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'wx.showToast({ title: "active" })',
+        imports: ['../../common.js'],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'jd.showToast({ title: "shared" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/index/index.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['pages/index/index.js'].code).not.toContain('wx.showToast')
+    expect(bundle['common.js'].code).toContain('__weappViteInjectedApi__')
+    expect(bundle['common.js'].code).not.toContain('jd.showToast')
+  })
+
+  it('retains runtime vendor chunks imported after the shared chunk candidate is visited', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const lastEmittedChunkFileNames = new Set<string>()
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {},
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames,
+              profile: {},
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map([['weapp-vendors/runtime.js', new Set([activeEntry, '/project/src/pages/other/index.ts'])]]),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'weapp-vendors/runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/runtime.js',
+        code: 'const runtime = {}',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'const page = {}',
+        imports: ['../../weapp-vendors/runtime.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['weapp-vendors/runtime.js']).toBeDefined()
+    expect(lastEmittedChunkFileNames.has('weapp-vendors/runtime.js')).toBe(true)
+  })
+})
+
+describe('core lifecycle emit HMR import graph', () => {
+  it('collects normalized direct and dynamic imports for active HMR entries once', () => {
+    const activeEntry = '/src/pages/index/index.ts'
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        imports: ['../../common.js'],
+        dynamicImports: ['../async/chunk.js'],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: '/src/pages/other/index.ts',
+        imports: ['../../unused.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    const importedChunkIds = collectActiveHmrImportedChunkIds(bundle, new Set([activeEntry]))
+
+    expect([...importedChunkIds].sort()).toEqual([
+      'common.js',
+      'pages/async/chunk.js',
+    ])
   })
 })

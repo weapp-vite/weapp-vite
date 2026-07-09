@@ -2,10 +2,8 @@ import type { MutationType, SubscriptionCallback } from '../types'
 import { isReactive, isRef, toRaw } from '../../reactivity'
 import { cloneDeep } from '../utils'
 
-const hasOwn = Object.prototype.hasOwnProperty
-
 export function isTrackableRef(value: unknown) {
-  return isRef(value) && hasOwn.call(value, 'dep')
+  return isRef(value)
 }
 
 export function snapshotValue(value: unknown) {

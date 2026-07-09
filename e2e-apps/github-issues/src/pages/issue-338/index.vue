@@ -11,7 +11,9 @@ const links = ['issue-289', 'issue-300']
 <template>
   <div
     v-if="true"
+    id="issue338-page"
     class="issue338-page"
+    data-e2e-issue="338"
   >
     <span class="issue338-title">{{ title }}</span>
     <img

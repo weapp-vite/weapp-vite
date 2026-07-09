@@ -3,8 +3,8 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
-import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
+import { createHmrMarker, replaceFileByRename, replaceSharedStoreInitialName, resolvePlatforms } from '../utils/hmr-helpers'
+import { findWevuRuntimeChunk, toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
@@ -13,11 +13,36 @@ const STORE_SHARE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store-share/index.j
 const PLATFORM_LIST = resolvePlatforms()
 
 function replaceSharedStoreMarker(source: string, marker: string) {
-  const updated = source.replace(`const name = ref('init')`, `const name = ref('${marker}')`)
+  const updated = replaceSharedStoreInitialName(source, marker)
   if (updated === source) {
     throw new Error('Failed to inject HMR marker into shared store source.')
   }
   return updated
+}
+
+async function waitForSharedStoreRuntimeChunk(marker: string, timeoutMs: number) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await findWevuRuntimeChunk(
+        DIST_ROOT,
+        (code, filePath) => {
+          const normalizedPath = filePath.replaceAll('\\', '/')
+          return !normalizedPath.includes('/pages/')
+            && code.includes(marker)
+            && code.includes('useSetupStore')
+            && code.includes('useOptionsStore')
+            && code.includes('getPluginRecords')
+        },
+        `shared store runtime ${marker}`,
+      )
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  throw new Error(`Timed out waiting for shared store runtime chunk under ${DIST_ROOT} to contain marker: ${marker}`)
 }
 
 async function waitForCommonMarkerWithRetry(
@@ -25,11 +50,11 @@ async function waitForCommonMarkerWithRetry(
   retrySourceContent: string,
 ) {
   try {
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForSharedStoreRuntimeChunk(marker, 20_000)
   }
   catch {
     await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${retrySourceContent}\n`)
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForSharedStoreRuntimeChunk(marker, 20_000)
   }
 }
 

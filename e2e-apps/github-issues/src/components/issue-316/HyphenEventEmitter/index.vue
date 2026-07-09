@@ -6,11 +6,16 @@ const emit = defineEmits<{
 function emitOverlayClick() {
   emit('overlay-click')
 }
+
+defineExpose({
+  emitOverlayClick,
+})
 </script>
 
 <template>
   <view class="issue316-emitter">
     <button
+      id="issue316-emitter-btn"
       class="issue316-emitter-btn"
       @tap="emitOverlayClick"
     >

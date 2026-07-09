@@ -16,7 +16,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue547-page">
+  <view
+    id="issue547-page"
+    class="issue547-page"
+    data-e2e-issue="547"
+  >
     <view class="issue547-title">
       issue-547 nested augmented slot
     </view>

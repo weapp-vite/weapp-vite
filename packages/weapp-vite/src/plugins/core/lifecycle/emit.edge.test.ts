@@ -8,6 +8,9 @@ const mayContainStaticRequireLiteralMock = vi.hoisted(() => vi.fn(() => true))
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
+const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<string, any>) => ({
+  chunksByFileName: new Map(Object.entries(bundle).filter(([, output]) => (output as any).type === 'chunk')),
+})))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const rewriteWevuInternalRuntimeImportsMock = vi.hoisted(() => vi.fn())
@@ -21,8 +24,14 @@ vi.mock('../../../runtime/chunkStrategy', () => ({
 }))
 
 vi.mock('../../../ast', () => ({
+  analyzeScript: () => ({
+    featureFlags: new Set(),
+    hasPlatformApiAccess: mayContainPlatformApiAccessMock(),
+    hasStaticRequireLiteral: mayContainStaticRequireLiteralMock(),
+  }),
   mayContainPlatformApiAccess: mayContainPlatformApiAccessMock,
   mayContainStaticRequireLiteral: mayContainStaticRequireLiteralMock,
+  platformApiIdentifiers: ['wx', 'my'],
   resolveAstEngine: resolveAstEngineMock,
 }))
 
@@ -37,6 +46,7 @@ vi.mock('../../utils/wxmlEmit', () => ({
 }))
 
 vi.mock('../helpers', () => ({
+  createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: vi.fn(),
   filterPluginBundleOutputs: vi.fn(),
   flushIndependentBuilds: flushIndependentBuildsMock,
@@ -298,5 +308,61 @@ describe('core lifecycle emit edge branches', () => {
     expect(parseJsLikeMock).not.toHaveBeenCalled()
     expect(traverseMock).not.toHaveBeenCalled()
     expect(generateMock).not.toHaveBeenCalled()
+  })
+
+  it('limits Wevu runtime rewrite to active dev hmr chunks', async () => {
+    const activeEntry = '/project/src/pages/index/index.ts'
+    const { createGenerateBundleHook } = await import('./emit')
+    const state = createState({
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+        },
+      },
+      resolvedEntryMap: new Map([[activeEntry, {}]]),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([activeEntry]),
+      },
+      hmrSharedChunksMode: 'off',
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: activeEntry,
+        code: 'import { ref } from "wevu";',
+        imports: ['../../weapp-vendors/runtime.js'],
+        dynamicImports: [],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: '/project/src/pages/other/index.ts',
+        code: 'import { ref } from "wevu";',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/runtime.js',
+        code: 'exports.ref = function ref() {}',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const rewriteCall = rewriteWevuInternalRuntimeImportsMock.mock.calls[rewriteWevuInternalRuntimeImportsMock.mock.calls.length - 1]
+    const rewriteBundle = rewriteCall?.[0]
+    expect(Object.keys(rewriteBundle)).toEqual(['pages/index/index.js'])
   })
 })

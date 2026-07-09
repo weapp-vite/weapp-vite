@@ -1,4 +1,5 @@
 export {
+  createBundleChunkSnapshot,
   emitJsonAssets,
   filterPluginBundleOutputs,
   removeImplicitPagePreloads,
@@ -17,6 +18,7 @@ export { formatBytes } from './bytes'
 export {
   collectAffectedEntries,
   collectAffectedEntriesFromSharedChunks,
+  collectAffectedSharedChunkEntriesAndChunks,
   collectAffectedSharedChunks,
   refreshModuleGraph,
   refreshPartialSharedChunkImporters,

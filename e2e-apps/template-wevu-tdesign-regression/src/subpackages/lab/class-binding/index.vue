@@ -135,6 +135,99 @@ function runE2EState() {
     styleString: styleString.value,
   }
 }
+
+const bindingProbeKeys = [
+  'class-object',
+  'class-static-object',
+  'class-reactive',
+  'class-array',
+  'class-cond-array',
+  'class-array-key',
+  'style-object',
+  'style-array',
+  'style-string',
+  'style-var',
+  'state-line',
+]
+
+function collectClassBindingSnapshot() {
+  return new Promise((resolve) => {
+    const pages = getCurrentPages()
+    const currentPage = pages[pages.length - 1]
+    const currentData = currentPage?.data || {}
+    const collectBindings = () => ({
+      classArray: currentData.__wv_cls_3,
+      classStaticObject: currentData.__wv_cls_1,
+      styleArray: currentData.__wv_style_1,
+      styleObject: currentData.__wv_style_0,
+      styleString: currentData.__wv_style_2,
+    })
+    const query = wx.createSelectorQuery()
+    if (currentPage && typeof query.in === 'function') {
+      query.in(currentPage)
+    }
+    const nodes: Record<string, unknown> = {}
+    let settled = false
+    const timeout = setTimeout(() => {
+      if (settled) {
+        return
+      }
+      settled = true
+      resolve({
+        missing: [...bindingProbeKeys],
+        bindings: collectBindings(),
+        nodes,
+        state: runE2EState(),
+        timeout: true,
+      })
+    }, 3_000)
+
+    for (const key of bindingProbeKeys) {
+      query.select(`#class-binding-probe-${key}`).fields({
+        computedStyle: [
+          'background-color',
+          'border-color',
+          'border-radius',
+          'border-style',
+          'color',
+          'font-size',
+          'letter-spacing',
+          'opacity',
+        ],
+        dataset: true,
+        properties: ['class', 'style'],
+        rect: true,
+        size: true,
+      }, (node) => {
+        nodes[key] = node ?? null
+      })
+    }
+
+    query.exec((results) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timeout)
+      const missing = bindingProbeKeys.filter((_key, index) => !results?.[index])
+      resolve({
+        bindings: collectBindings(),
+        missing,
+        nodes,
+        state: runE2EState(),
+      })
+    })
+  })
+}
+
+defineExpose({
+  applyScenarioAllOn,
+  applyScenarioBase,
+  applyScenarioErrorGhost,
+  applyScenarioMixed,
+  collectClassBindingSnapshot,
+  runE2EState,
+})
 </script>
 
 <template>
@@ -198,7 +291,7 @@ function runE2EState() {
     <view class="mt-[18rpx] space-y-[14rpx]">
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="对象语法" subtitle="状态驱动 class" />
-        <view class="mt-[12rpx] demo-block" data-e2e="class-object" :class="{ 'demo-active': isActive }">
+        <view id="class-binding-probe-class-object" class="mt-[12rpx] demo-block" data-e2e="class-object" :class="{ 'demo-active': isActive }">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Object Syntax
@@ -216,6 +309,7 @@ function runE2EState() {
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="静态 + 对象" subtitle="静态 class + 动态对象" />
         <view
+          id="class-binding-probe-class-static-object"
           class="mt-[12rpx] demo-block demo-ghost"
           data-e2e="class-static-object"
           :class="{ 'demo-active': isActive, 'text-danger': hasError }"
@@ -236,7 +330,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="响应式对象" subtitle="reactive classObject" />
-        <view class="mt-[12rpx] demo-block" data-e2e="class-reactive" :class="classObject">
+        <view id="class-binding-probe-class-reactive" class="mt-[12rpx] demo-block" data-e2e="class-reactive" :class="classObject">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Reactive Object
@@ -253,7 +347,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="数组语法" subtitle="数组传入多个 class" />
-        <view class="mt-[12rpx] demo-block" data-e2e="class-array" :class="[activeClassIf, errorClassIf, roundClassIf]">
+        <view id="class-binding-probe-class-array" class="mt-[12rpx] demo-block" data-e2e="class-array" :class="[activeClassIf, errorClassIf, roundClassIf]">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Array Syntax
@@ -270,7 +364,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="数组条件" subtitle="条件判断决定 class" />
-        <view class="mt-[12rpx] demo-block" data-e2e="class-cond-array" :class="[isActive ? activeClass : '', errorClassIf]">
+        <view id="class-binding-probe-class-cond-array" class="mt-[12rpx] demo-block" data-e2e="class-cond-array" :class="[isActive ? activeClass : '', errorClassIf]">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Conditional Array
@@ -287,7 +381,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="数组 + 动态 key" subtitle="对象 + 字符串混合" />
-        <view class="mt-[12rpx] demo-block" data-e2e="class-array-key" :class="[dynamicKeyClass, errorClassIf, ghostClassIf]">
+        <view id="class-binding-probe-class-array-key" class="mt-[12rpx] demo-block" data-e2e="class-array-key" :class="[dynamicKeyClass, errorClassIf, ghostClassIf]">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Array + Key
@@ -304,7 +398,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="Style 对象语法" subtitle="对象绑定动态 style" />
-        <view class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-object" :style="styleObject">
+        <view id="class-binding-probe-style-object" class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-object" :style="styleObject">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Style Object
@@ -321,7 +415,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="Style 数组语法" subtitle="按状态合并样式片段" />
-        <view class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-array" :style="styleArray">
+        <view id="class-binding-probe-style-array" class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-array" :style="styleArray">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Style Array
@@ -338,7 +432,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="Style 字符串语法" subtitle="拼接结果直出字符串" />
-        <view class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-string" :style="styleString">
+        <view id="class-binding-probe-style-string" class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-string" :style="styleString">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Style String
@@ -355,7 +449,7 @@ function runE2EState() {
 
       <view class="rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
         <SectionTitle title="Style 变量语法" subtitle="CSS 变量与对象混合" />
-        <view class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-var" :style="styleWithVar">
+        <view id="class-binding-probe-style-var" class="mt-[12rpx] demo-block demo-style-anchor" data-e2e="style-var" :style="styleWithVar">
           <view>
             <text class="block text-[24rpx] font-semibold">
               Style Variable
@@ -374,7 +468,7 @@ function runE2EState() {
         <text class="text-[20rpx] text-slate-300">
           E2E 状态快照
         </text>
-        <text class="mt-[8rpx] block text-[20rpx]" data-e2e="state-line">
+        <text id="class-binding-probe-state-line" class="mt-[8rpx] block text-[20rpx]" data-e2e="state-line">
           {{ runE2EState() }}
         </text>
       </view>

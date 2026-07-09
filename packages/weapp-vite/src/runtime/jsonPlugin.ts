@@ -37,7 +37,10 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
         typeof autoRoutesSignature === 'string' ? { signature: autoRoutesSignature } : undefined,
       )
       if (!invalid) {
-        return cache.get(filepath)
+        const cached = cache.get(filepath)
+        if (cached !== undefined) {
+          return cached
+        }
       }
       let resultJson: any
       if (SCRIPT_JSON_CONFIG_RE.test(filepath)) {

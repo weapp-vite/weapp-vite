@@ -350,13 +350,13 @@ export async function launchAutomator(options: AutomatorOptions) {
  * @description 连接当前项目已打开的开发者工具自动化会话，不触发新的 IDE 拉起。
  */
 export async function connectOpenedAutomator(options: AutomatorOptions) {
-  const { port, projectPath, sessionId } = options
+  const { port, projectPath, sessionId, timeout } = options
   const launcher = new Launcher()
   const persistedSession = await readPersistedAutomatorSession(projectPath, sessionId, port)
   const wsEndpoint = persistedSession?.wsEndpoint ?? (port ? `ws://127.0.0.1:${port}` : `ws://127.0.0.1:${DEFAULT_WECHAT_DEVTOOLS_WS_PORT}`)
 
   try {
-    return await launcher.connect({ wsEndpoint })
+    return await launcher.connect({ timeout, wsEndpoint })
   }
   catch (error) {
     if (persistedSession) {

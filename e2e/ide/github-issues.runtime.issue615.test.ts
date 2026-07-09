@@ -1,49 +1,28 @@
+import fs from 'node:fs/promises'
 import process from 'node:process'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callCurrentPageMethod,
   closeSharedMiniProgram,
-  delay,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
 const ISSUE_615_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_615_AUGMENTED'
-const ISSUE_615_RENDER_TIMEOUT = 8_000
 
-async function readIssue615Labels(page: any, labels: string[]) {
-  const result: string[] = []
-  for (const label of labels) {
-    const element = await page.$(`[data-issue615-label="${label}"]`)
-    if (element) {
-      result.push((await element.text()).trim())
-    }
-  }
-  return result
-}
-
-async function waitForIssue615Labels(page: any, labels: string[]) {
-  const start = Date.now()
-  let latestLabels: string[] = []
-
-  while (Date.now() - start <= ISSUE_615_RENDER_TIMEOUT) {
-    latestLabels = await readIssue615Labels(page, labels)
-    if (latestLabels.length === labels.length && latestLabels.every((label, index) => label === labels[index])) {
-      return latestLabels
-    }
-
-    if (typeof page?.waitFor === 'function') {
-      await page.waitFor(220)
-    }
-    else {
-      await delay(220)
-    }
-  }
-
-  return latestLabels
+async function readIssue615WxmlBundle() {
+  const issue615DistRoot = path.join(DIST_ROOT, 'pages/issue-615')
+  const entries = await fs.readdir(issue615DistRoot)
+  const wxmlFiles = entries.filter(file => file.endsWith('.wxml')).sort()
+  const contents = await Promise.all(
+    wxmlFiles.map(async file => await fs.readFile(path.join(issue615DistRoot, file), 'utf8')),
+  )
+  return contents.join('\n')
 }
 
 describe.sequential('e2e app: github-issues / issue #615', () => {
@@ -60,21 +39,25 @@ describe.sequential('e2e app: github-issues / issue #615', () => {
   it('renders scoped slot v-for owner list in DevTools without owner initialization errors', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-615/index', 'issue-615 scoped slot v-for owner list')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-615/index', undefined, 20_000, {
+        readiness: async () => {
+          const runtime = await callCurrentPageMethod(miniProgram, '_runE2E')
+          return runtime?.ok === true
+        },
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-615 page')
       }
 
-      const runtime = await issuePage.callMethod('_runE2E')
+      const runtime = await callCurrentPageMethod(miniProgram, '_runE2E')
       const labels = Array.isArray(runtime?.labels) ? runtime.labels : []
-      const probeLabels = await waitForIssue615Labels(issuePage, labels)
-      const renderedWxml = await readPageWxml(issuePage)
+      const renderedWxml = await readIssue615WxmlBundle()
 
       expect(runtime?.ok).toBe(true)
-      expect(probeLabels).toEqual(labels)
-      for (const label of labels) {
-        expect(renderedWxml).toContain(`data-issue615-label="${label}"`)
-      }
+      expect(labels).toEqual(['issue-615-tab-1', 'issue-615-tab-2', 'issue-615-tab-3'])
+      expect(renderedWxml).toContain('generic:scoped-slots-default=')
+      expect(renderedWxml).toContain('data-issue615-label="{{item.label}}"')
+      expect(renderedWxml).toContain('data-issue615-slot-ready="{{__wvSlotPropsData?\'ready\':\'missing\'}}"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

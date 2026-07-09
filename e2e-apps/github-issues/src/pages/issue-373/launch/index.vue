@@ -27,7 +27,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue373-launch-page">
+  <view
+    id="issue373-launch-page"
+    class="issue373-launch-page"
+    data-e2e-issue="373-launch"
+  >
     <text class="issue373-launch-title">
       issue-373 store computed survives reLaunch
     </text>

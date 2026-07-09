@@ -1,21 +1,64 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
+import { readFile } from '../../../../utils/fs'
 import { collectComponentSourceInfo } from './componentSources'
-import { compileScriptPhase } from './script'
+import { compileVueFile } from './index'
+import { compileScriptPhase, resolveEffectivePropsDerivedKeys } from './script'
 
-vi.mock('../../../../utils/fs', () => ({
-  readFile: vi.fn(async (filename: string) => {
-    if (filename.endsWith('/my-card.vue')) {
-      return `<script setup lang="ts">
+const readFileMock = vi.hoisted(() => vi.fn(async (filename: string) => {
+  if (filename.endsWith('/my-card.vue')) {
+    return `<script setup lang="ts">
 defineComponentJson({ component: true })
 </script>
 <template><slot /></template>`
-    }
-    throw new Error(`unexpected readFile: ${filename}`)
-  }),
+  }
+  if (filename.endsWith('/named-card.vue')) {
+    return `<script setup lang="ts">
+defineOptions({ name: 'NativeCard' })
+defineComponentJson({ component: true })
+</script>
+<template><slot /></template>`
+  }
+  throw new Error(`unexpected readFile: ${filename}`)
+}))
+
+vi.mock('../../../../utils/fs', () => ({
+  readFile: readFileMock,
 }))
 
 describe('compileScriptPhase', () => {
+  it('skips props-derived analysis when compiled script has no props', () => {
+    expect(resolveEffectivePropsDerivedKeys(
+      {
+        count: 'setup-ref',
+        title: 'setup-const',
+      },
+      `
+const count = ref(0)
+const title = 'home'
+const __returned__ = { count, title }
+      `.trim(),
+    )).toBeUndefined()
+  })
+
+  it('keeps toRefs props destructure as props-derived setup bindings', () => {
+    expect(resolveEffectivePropsDerivedKeys(
+      {
+        props: 'setup-reactive-const',
+        goodsList: 'setup-maybe-ref',
+        thresholds: 'setup-maybe-ref',
+      },
+      `
+const props = __props
+const { goodsList, thresholds } = toRefs(props)
+const __returned__ = { props, goodsList, thresholds }
+      `.trim(),
+    )).toEqual(['goodsList', 'thresholds'])
+  })
+
   it('returns fallback script when both script and script setup are absent', async () => {
     const descriptor = parse(`<template><view /></template>`, { filename: '/project/src/pages/index/index.vue' }).descriptor
 
@@ -111,6 +154,54 @@ const props = defineProps({
       false,
     )
 
+    expect(result.script).toContain('export default __wevuOptions')
+    expect(result.script).toContain('createWevuComponent')
+  })
+
+  it('uses the compiled script setup fast path through compileVueFile when sourcemap is disabled', async () => {
+    const result = await compileVueFile(`
+<template><view /></template>
+<script setup lang="ts">
+import { createSharedLabel } from '../../shared/tokens'
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+const shared = createSharedLabel('sfc-page')
+</script>
+    `.trim(), '/project/src/pages/sfc/index.vue', {
+      isPage: true,
+      sourceMap: false,
+    })
+
+    expect(result.scriptMap).toBeNull()
+    expect(result.script).toContain('const __wevuOptions =')
+    expect(result.script).toContain('__wevu_isPage: true')
+    expect(result.script).toContain('export default __wevuOptions')
+    expect(result.script).toContain('createWevuComponent(__wevuOptions)')
+    expect(result.script).not.toContain('from \'vue\'')
+    expect(result.script).not.toContain('__isScriptSetup')
+    expect(result.script).not.toContain('__expose')
+  })
+
+  it('adds fallback default export for normal script without default export', async () => {
+    const sfc = parse(`
+<template>
+  <view>{{ count }}</view>
+</template>
+<script lang="ts">
+export const count = 1
+</script>
+    `.trim(), { filename: '/project/src/components/NormalScriptCard/index.vue' })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/NormalScriptCard/index.vue',
+      undefined,
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(result.script).toContain('export const count = 1')
     expect(result.script).toContain('export default __wevuOptions')
     expect(result.script).toContain('createWevuComponent')
   })
@@ -400,6 +491,259 @@ import MyCard from './my-card.vue'
     expect(result.wevuComponentTags.has('my-card')).toBe(true)
     expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
     expect(result.miniProgramComponentTags.has('my-card')).toBe(true)
+  })
+
+  it('resolves script setup imported components concurrently while preserving component maps', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <second-card />
+</template>
+<script setup lang="ts">
+import FirstCard from './first-card.vue'
+import SecondCard from './second-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async (importSource: string) => {
+          started.push(importSource)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            from: `/components/${importSource.slice(2, -4)}`,
+            resolvedId: `/project/src/components/${importSource.slice(2)}`,
+          }
+        },
+      },
+      autoImportTags: undefined,
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['./first-card.vue', './second-card.vue'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoUsingComponentsMap).toEqual({
+      FirstCard: '/components/first-card',
+      SecondCard: '/components/second-card',
+    })
+    expect([...result.wevuComponentTags]).toEqual([
+      'FirstCard',
+      'first-card',
+      'SecondCard',
+      'second-card',
+    ])
+  })
+
+  it('uses optional native SFC signature payload for imported component metadata', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'wevu-compiler-ast-native-'))
+    const modulePath = join(tempDir, 'native.cjs')
+    await writeFile(modulePath, `
+exports.getVueSfcSignaturePayloadNative = () => JSON.stringify({
+  script: {
+    scriptSetup: {
+      content: "defineOptions({ name: 'NativeCard' })\\ndefineComponentJson({ component: true })",
+    },
+  },
+})
+`)
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+
+      const sfc = parse(`
+<template>
+  <my-card />
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+
+      const result = await collectComponentSourceInfo({
+        descriptor: sfc.descriptor as any,
+        descriptorForCompile: sfc.descriptor as any,
+        filename: '/project/src/pages/index/index.vue',
+        compileOptions: undefined,
+        autoUsingComponents: {
+          resolveUsingComponentPath: async () => ({
+            from: '/components/my-card',
+            resolvedId: '/project/src/components/my-card.vue',
+          }),
+        },
+        autoImportTags: undefined,
+      })
+
+      expect(result.componentNameMap.MyCard).toBe('NativeCard')
+      expect(result.componentNameMap['my-card']).toBe('NativeCard')
+      expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
+    }
+    finally {
+      vi.unstubAllEnvs()
+      await rm(tempDir, { force: true, recursive: true })
+    }
+  })
+
+  it('reuses cached imported component metadata across script setup and auto import tags', async () => {
+    const sfc = parse(`
+<template>
+  <named-card />
+</template>
+<script setup lang="ts">
+import NamedCard from './named-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const componentMetaCache = new Map()
+    const resolvedId = '/project/src/components/named-card.vue'
+    const mockedReadFile = vi.mocked(readFile)
+    mockedReadFile.mockClear()
+
+    const result = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: { componentMetaCache },
+      autoUsingComponents: {
+        resolveUsingComponentPath: async () => ({
+          from: '/components/named-card',
+          resolvedId,
+        }),
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async () => ({
+          name: 'NamedCard',
+          from: '/components/named-card',
+          resolvedId,
+          sourceType: 'wevu-sfc',
+        }),
+      },
+    })
+
+    expect(mockedReadFile).toHaveBeenCalledTimes(1)
+    expect(mockedReadFile).toHaveBeenCalledWith(resolvedId, 'utf8')
+    expect(result.autoImportTagsMap).toEqual({
+      NamedCard: '/components/named-card',
+    })
+    expect(result.componentNameMap.NamedCard).toBe('NativeCard')
+    expect(result.componentNameMap['named-card']).toBe('NativeCard')
+    expect(result.miniProgramComponentTags.has('NamedCard')).toBe(true)
+    expect(result.miniProgramComponentTags.has('named-card')).toBe(true)
+  })
+
+  it('resolves auto import component tags concurrently while preserving result order', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <second-card />
+</template>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: undefined,
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async (tag: string) => {
+          started.push(tag)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            name: tag,
+            from: `/components/${tag}`,
+          }
+        },
+      },
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['first-card', 'second-card'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoImportTagsMap).toEqual({
+      'first-card': '/components/first-card',
+      'second-card': '/components/second-card',
+    })
+  })
+
+  it('collects script setup imports and auto import tags concurrently', async () => {
+    const sfc = parse(`
+<template>
+  <first-card />
+  <auto-card />
+</template>
+<script setup lang="ts">
+import FirstCard from './first-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+    const started: string[] = []
+    const resume: Array<() => void> = []
+
+    const resultPromise = collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async (importSource: string) => {
+          started.push(`script:${importSource}`)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            from: '/components/first-card',
+            resolvedId: '/project/src/components/first-card.vue',
+          }
+        },
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async (tag: string) => {
+          if (tag !== 'auto-card') {
+            return undefined
+          }
+          started.push(`auto:${tag}`)
+          await new Promise<void>(resolve => resume.push(resolve))
+          return {
+            name: tag,
+            from: '/components/auto-card',
+          }
+        },
+      },
+    })
+
+    await Promise.resolve()
+    expect(started).toEqual(['script:./first-card.vue', 'auto:auto-card'])
+    for (const resolve of resume) {
+      resolve()
+    }
+
+    const result = await resultPromise
+    expect(result.autoUsingComponentsMap).toEqual({
+      FirstCard: '/components/first-card',
+    })
+    expect(result.autoImportTagsMap).toEqual({
+      'auto-card': '/components/auto-card',
+    })
+    expect([...result.wevuComponentTags]).toEqual([
+      'FirstCard',
+      'first-card',
+    ])
   })
 
   it('marks direct .vue imports without auto using component resolver', async () => {

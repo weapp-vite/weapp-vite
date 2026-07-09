@@ -1,5 +1,4 @@
 <script lang="ts">
-/* eslint-disable vue/no-reserved-keys */
 import type { LifecycleData, LifecycleEntry, LifecycleInstance } from '../../shared/lifecycle'
 import {
   defineComponent,
@@ -137,7 +136,7 @@ export default defineComponent({
 </script>
 
 <template>
-  <view class="page">
+  <view id="lifecycle-wevu-vue-page" class="page" data-e2e-page="wevu-vue">
     <view class="title">
       WeVu Vue Page
     </view>

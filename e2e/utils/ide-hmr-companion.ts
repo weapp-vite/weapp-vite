@@ -21,6 +21,7 @@ const DIST_INDEX_WXML = 'dist/pages/index/index.wxml'
 const DIST_INDEX_JS = 'dist/pages/index/index.js'
 const DIST_INDEX_WXSS = 'dist/pages/index/index.wxss'
 const HMR_COMPANION_ENABLED_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION'
+const HMR_COMPANION_SENTINEL_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL'
 const TARGET_FILE_ENV = 'WEAPP_VITE_E2E_TARGET_FILE'
 const HMR_COMPANION_ATTEMPTS = 2
 const HMR_COMPANION_TIMEOUT_MS = 90_000
@@ -106,6 +107,28 @@ function shouldRegisterIdeHmrCompanion(targetLabel: string) {
     return false
   }
   return targetLabel.startsWith('ide/')
+}
+
+function resolveHmrCompanionSentinelPath() {
+  const sentinelPath = process.env[HMR_COMPANION_SENTINEL_ENV]?.trim()
+  return sentinelPath ? path.resolve(sentinelPath) : ''
+}
+
+async function hasPassedHmrCompanionSentinel(sentinelPath: string) {
+  if (!sentinelPath) {
+    return false
+  }
+  return await fs.access(sentinelPath)
+    .then(() => true)
+    .catch(() => false)
+}
+
+async function writePassedHmrCompanionSentinel(sentinelPath: string, targetLabel: string) {
+  if (!sentinelPath) {
+    return
+  }
+  await fs.mkdir(path.dirname(sentinelPath), { recursive: true })
+  await fs.writeFile(sentinelPath, `${targetLabel}\n`, 'utf8')
 }
 
 async function runIdeHmrCompanionAttempt(targetLabel: string, attempt: number) {
@@ -219,6 +242,12 @@ export function registerIdeHmrCompanion(shouldSkip: () => boolean = () => false)
     if (shouldSkip()) {
       return
     }
+    const sentinelPath = resolveHmrCompanionSentinelPath()
+    if (await hasPassedHmrCompanionSentinel(sentinelPath)) {
+      process.stdout.write(`[ide-hmr-companion] skip target=${targetLabel} reason=sentinel\n`)
+      return
+    }
     await runIdeHmrCompanion(targetLabel)
+    await writePassedHmrCompanionSentinel(sentinelPath, targetLabel)
   }, 420_000)
 }

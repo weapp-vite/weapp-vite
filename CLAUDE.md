@@ -214,6 +214,8 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 - 变量/文件：camelCase（如 `myVariable`）
 - 类/类型：PascalCase（如 `MyClass`）
 - 优先使用命名导出，除非文件明确只导出一个默认导出
+- Rust/native 加速路径默认把 JS ↔ Rust 通信次数视为首要性能约束之一；同一份源码上的多个小 AST 检查应优先合并为 batch analysis，一次传入源码、一次 parse、一次返回结构化结果。只有 profile 证明细粒度 native API 有净收益时，才把它放进热路径。
+- native AST 快速路径必须保持可选依赖和显式启用；加载、解析或运行失败时回退现有 Babel/Oxc/Vue compiler 路径。新增 native 覆盖必须补 correctness 对齐测试和真实 profile。
 - 保持 eslint/stylelint 干净，避免引入 TypeScript 错误
 - 始终修复独立样式文件和 `.vue` 文件中 `<style>` 块的 stylelint 问题
 - 如果源文件超过 300 行，评估是否拆分，并在 PR 说明中记录决策

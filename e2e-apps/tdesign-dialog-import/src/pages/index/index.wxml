@@ -1,4 +1,4 @@
-<view class="page">
+<view id="tdesign-dialog-import-home" class="page">
   <view class="hero">
     <text class="title">tdesign Dialog dedicated app</text>
     <text class="desc">专门验证 bare import 与 /index import 的 Dialog / Toast 默认导入互操作。</text>

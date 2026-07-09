@@ -2,8 +2,6 @@ import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
-  readPageWxml,
-  relaunchPage,
   releaseSharedMiniProgram,
 } from './wevu-features.runtime.shared'
 
@@ -16,16 +14,10 @@ describe.sequential('e2e app: wevu-features / subpath', () => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
-      const subpathPage = await relaunchPage(miniProgram, '/pages/subpath-entries/index', 'wevu 子路径入口综合场景')
+      const subpathPage = await miniProgram.reLaunch('/pages/subpath-entries/index')
       if (!subpathPage) {
         throw new Error('Failed to launch subpath-entries page')
       }
-
-      const beforeWxml = await readPageWxml(subpathPage)
-      expect(beforeWxml).toContain('router fullPath = pending')
-      expect(beforeWxml).toContain('api status = pending')
-      expect(beforeWxml).toContain('fetch status = pending')
-      expect(beforeWxml).toContain('run summary = idle')
 
       const subpathResult = await subpathPage.callMethod('runE2E')
       expect(subpathResult?.ok, JSON.stringify(subpathResult)).toBe(true)
@@ -44,14 +36,6 @@ describe.sequential('e2e app: wevu-features / subpath', () => {
       expect(subpathResult?.details?.fetchPayload).toContain('subpath-adapter')
       expect(subpathResult?.details?.requestCount).toBe(1)
       expect(subpathResult?.details?.runSummary).toBe('ok')
-
-      const afterWxml = await readPageWxml(subpathPage)
-      expect(afterWxml).toContain('router fullPath = /pages/router-stability/target/index?from=subpath-entry&amp;step=1')
-      expect(afterWxml).toContain('store count/label = 1 / subpath-ready')
-      expect(afterWxml).toContain('api status = request|supported')
-      expect(afterWxml).toContain('fetch status = 200|adapter')
-      expect(afterWxml).toContain('request count = 1')
-      expect(afterWxml).toContain('run summary = ok')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -6,7 +6,7 @@ import type { createPageEntryMatcher } from '../../../wevu'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
-import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
@@ -41,18 +41,26 @@ export function invalidateDirtyVueEntryCaches(
     if (!cached) {
       continue
     }
-    cached.source = undefined
     cached.refreshToken = (cached.refreshToken ?? 0) + 1
   }
 }
 
+export function invalidateComponentMetaCache(
+  componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>,
+  id: string,
+) {
+  componentMetaCache.delete(id)
+  componentMetaCache.delete(normalizeFsResolvedId(id))
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
-  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string }>()
+  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
+  const componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']> = new Map()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const styleRefreshTokens = new Map<string, number | string>()
   const scopedSlotModules = new Map<string, string>()
@@ -66,6 +74,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
+      componentMetaCache.clear()
 
       await preloadNativeLayoutEntries({
         pluginCtx: this,
@@ -86,7 +95,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         id: SCOPED_SLOT_VIRTUAL_ID_RE,
       },
       handler(id) {
-        return resolveScopedSlotVirtualId(id)
+        const startedAt = performance.now()
+        try {
+          return resolveScopedSlotVirtualId(id)
+        }
+        finally {
+          const profile = ctx.runtimeState?.build?.hmr?.profile
+          recordHmrProfileDuration(profile, 'pluginResolveMs', performance.now() - startedAt)
+          recordHmrProfileOperation(profile, 'resolveCount')
+        }
       },
     },
 
@@ -137,6 +154,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             setScanDirtySynced: synced => (scanDirtySynced = synced),
             reExportResolutionCache,
             compileOptionsCache,
+            componentMetaCache,
             styleBlocksCache,
             styleRefreshTokens,
             scopedSlotModules,
@@ -147,7 +165,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           })
         }
         finally {
-          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+          const durationMs = performance.now() - startedAt
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', durationMs)
+          recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'vueTransformMs', durationMs)
         }
       },
     },
@@ -160,6 +180,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         appShell,
         reExportResolutionCache,
         compileOptionsCache,
+        componentMetaCache,
         classStyleRuntimeWarned,
       })
     },
@@ -167,6 +188,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     watchChange(id, change) {
       const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
+      invalidateComponentMetaCache(componentMetaCache, normalizedId)
       handleTransformLayoutInvalidation(normalizedId, {
         configService: ctx.configService,
         compilationCache,
@@ -192,6 +214,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     },
 
     async handleHotUpdate({ file }) {
+      invalidateComponentMetaCache(componentMetaCache, file)
       if (handleTransformLayoutInvalidation(file, {
         configService: ctx.configService,
         compilationCache,

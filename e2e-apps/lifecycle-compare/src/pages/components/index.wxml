@@ -1,4 +1,4 @@
-<view class="page">
+<view id="lifecycle-components-page" class="page" data-e2e-page="components">
   <view class="title">Components Page</view>
   <view class="panel">
     <view class="panel-title">E2E Result</view>

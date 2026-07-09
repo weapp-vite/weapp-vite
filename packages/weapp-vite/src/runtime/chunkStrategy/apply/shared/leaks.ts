@@ -1,7 +1,8 @@
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
+import type { ChunkImporterIndex } from '../../bundle'
 import type { SharedChunkDuplicateDetail, SharedChunkDuplicatePayload } from './types'
 import { posix as path } from 'pathe'
-import { findChunkImporters, updateImporters } from '../../bundle'
+import { createChunkImporterIndex, findChunkImporters, updateImporters } from '../../bundle'
 import { resolveSubPackagePrefix } from '../../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../../constants'
 import { cloneSourceLike, collectSourceMapKeys, findSourceMapAsset, resolveSourceMapSource } from '../../sourcemap'
@@ -19,6 +20,7 @@ export function localizeCrossSubPackageChunkLeaks(
     subPackageRoots: string[]
     reservedFileNames: Set<string>
     localizedDuplicateFileMap: Map<string, string>
+    importerIndex?: ChunkImporterIndex
     onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
   },
 ) {
@@ -28,6 +30,7 @@ export function localizeCrossSubPackageChunkLeaks(
   }
 
   const entries = Object.entries(bundle)
+  const importerIndex = options.importerIndex ?? createChunkImporterIndex(bundle, entries)
   for (const [fileName, output] of entries) {
     if (output?.type !== 'chunk') {
       continue
@@ -44,7 +47,7 @@ export function localizeCrossSubPackageChunkLeaks(
       continue
     }
 
-    const importers = findChunkImporters(bundle, fileName)
+    const importers = findChunkImporters(bundle, fileName, importerIndex)
     if (importers.length === 0) {
       continue
     }
@@ -118,7 +121,7 @@ export function localizeCrossSubPackageChunkLeaks(
       })
     }
 
-    updateImporters(bundle, importerToChunk, fileName)
+    updateImporters(bundle, importerToChunk, fileName, importerIndex)
     const diagnostics = buildDuplicateDiagnostics({
       chunk,
       duplicates,

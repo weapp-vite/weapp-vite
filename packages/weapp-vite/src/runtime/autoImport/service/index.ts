@@ -41,6 +41,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     vueComponentsWriteRequested: false,
     lastWrittenVueComponentsDefinition: undefined,
     lastVueComponentsOutputPath: undefined,
+    lastWrittenLayoutTypesDefinition: undefined,
+    lastLayoutTypesOutputPath: undefined,
     lastHtmlCustomDataEnabled: false,
     lastHtmlCustomDataOutput: undefined,
     lastTypedComponentsEnabled: false,

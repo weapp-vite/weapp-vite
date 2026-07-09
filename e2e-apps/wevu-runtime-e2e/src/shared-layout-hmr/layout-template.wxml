@@ -1,3 +1,5 @@
 <template name="hmrLayoutCard">
-  <view class="layout-shared-template">LAYOUT-SHARED-TEMPLATE-BASE: {{ label }}</view>
+  <e2e-template-probe marker="LAYOUT-SHARED-TEMPLATE-BASE" storage-key="__weapp_vite_layout_shared_template_probe__" />
+  <e2e-template-probe marker="{{ label }}" storage-key="__weapp_vite_layout_shared_wxs_probe__" />
+  <view class="layout-shared-template" data-layout-shared-template="LAYOUT-SHARED-TEMPLATE-BASE" data-layout-shared-wxs="{{ label }}">LAYOUT-SHARED-TEMPLATE-BASE: {{ label }}</view>
 </template>

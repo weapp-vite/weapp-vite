@@ -8,11 +8,20 @@ const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () =
   importers: new Set<string>(),
   scripts: new Set<string>(),
 })))
+const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
+const findCssEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
+const findVueEntryMock = vi.hoisted(() => vi.fn(async () => undefined))
+const invalidateSharedStyleCacheMock = vi.hoisted(() => vi.fn())
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
+const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
+const collectAffectedSharedChunkEntriesAndChunksMock = vi.hoisted(() => vi.fn(() => ({
+  affectedChunks: new Set<string>(),
+  affectedEntries: new Set<string>(),
+})))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../utils/cache', () => ({
@@ -26,11 +35,22 @@ vi.mock('../../utils/invalidateEntry', () => ({
 
 vi.mock('../../utils/invalidateEntry/cssGraph', () => ({
   collectAffectedScriptsAndImporters: collectAffectedScriptsAndImportersMock,
+  extractCssImportDependencies: extractCssImportDependenciesMock,
+}))
+
+vi.mock('../../css/shared/preprocessor', () => ({
+  invalidateSharedStyleCache: invalidateSharedStyleCacheMock,
 }))
 
 vi.mock('../../../utils/file', () => ({
+  findCssEntry: findCssEntryMock,
   findJsEntry: findJsEntryMock,
+  findVueEntry: findVueEntryMock,
   isTemplate: isTemplateMock,
+}))
+
+vi.mock('../../../runtime/buildPlugin/touchAppWxss', () => ({
+  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
 }))
 
 vi.mock('../helpers', async () => {
@@ -39,6 +59,7 @@ vi.mock('../helpers', async () => {
     ...actual,
     collectAffectedEntries: collectAffectedEntriesMock,
     collectAffectedEntriesFromSharedChunks: collectAffectedEntriesFromSharedChunksMock,
+    collectAffectedSharedChunkEntriesAndChunks: collectAffectedSharedChunkEntriesAndChunksMock,
     collectAffectedSharedChunks: collectAffectedSharedChunksMock,
   }
 })
@@ -75,12 +96,14 @@ function createState(overrides: Record<string, any> = {}) {
         relativeCwd: (id: string) => id.replace('/project/', ''),
         weappViteConfig: {},
         cwd: '/project',
+        packageJson: {},
         isDev: true,
         configFileDependencies: [],
       },
       wxmlService: {
         scan: vi.fn(async () => null),
         getImporters: vi.fn(() => new Set<string>()),
+        getImporterDependencyKind: vi.fn(() => undefined),
       },
       autoRoutesService: {
         isRouteFile: vi.fn(() => false),
@@ -93,6 +116,10 @@ function createState(overrides: Record<string, any> = {}) {
             vueEntryHasTemplate: new Map(),
             vueEntryNonJsonSignatures: new Map(),
             vueEntryScriptSignatures: new Map(),
+            vueEntryStyleIndependentSignatures: new Map(),
+            vueEntryTailwindContentSignatures: new Map(),
+            vueEntryTailwindTemplateContentSignatures: new Map(),
+            vueEntryTailwindScriptContentSignatures: new Map(),
             dirtyVueEntryIds: new Set(),
           },
         },
@@ -131,7 +158,10 @@ describe('core lifecycle watch hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    findCssEntryMock.mockResolvedValue({ path: null })
     findJsEntryMock.mockResolvedValue({ path: null })
+    findVueEntryMock.mockResolvedValue(undefined)
+    resolveTouchAppWxssEnabledMock.mockReturnValue(false)
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
       importers: new Set<string>(),
       scripts: new Set<string>(),
@@ -140,6 +170,10 @@ describe('core lifecycle watch hook', () => {
     collectAffectedEntriesMock.mockReturnValue(new Set())
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
     collectAffectedSharedChunksMock.mockReturnValue(new Set())
+    collectAffectedSharedChunkEntriesAndChunksMock.mockImplementation(() => ({
+      affectedChunks: collectAffectedSharedChunksMock(),
+      affectedEntries: collectAffectedEntriesFromSharedChunksMock(),
+    }))
   })
 
   it('adds loaded config dependencies to dev build watch files', async () => {
@@ -155,6 +189,7 @@ describe('core lifecycle watch hook', () => {
 
     expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
     expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
+    expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
   })
 
   afterEach(() => {
@@ -192,6 +227,33 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'metadata')
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
+
+  it('does not expand style sidecar updates through stale importer graph records', async () => {
+    const styleId = '/project/src/pages/hmr/index.scss'
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const staleImporterId = '/project/src/pages/other/index.ts'
+    findJsEntryMock.mockResolvedValue({
+      path: entryId,
+    })
+    collectAffectedEntriesMock.mockReturnValue(new Set([
+      entryId,
+      staleImporterId,
+    ]))
+    const state = createState({
+      moduleImporters: new Map([
+        [styleId, new Set([entryId, staleImporterId])],
+      ]),
+      entryModuleIds: new Set([entryId, staleImporterId]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(styleId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
@@ -277,7 +339,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
   })
 
-  it('marks css importers direct dirty when imported style dependencies change', async () => {
+  it('marks css importer vue entries dirty so style-only transform cache can refresh', async () => {
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
@@ -298,6 +360,9 @@ describe('core lifecycle watch hook', () => {
     await hook(dependencyId, { event: 'update' })
 
     expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
+      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
@@ -305,8 +370,34 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
   })
 
-  it('treats created existing style files as update-like css importers after atomic saves', async () => {
-    vi.mocked(fs.pathExists).mockResolvedValue(true)
+  it('does not force vue recompilation for dependency-only shared chunk updates', async () => {
+    const sharedModuleId = '/project/src/shared/tokens.ts'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([vueEntry]))
+    collectAffectedSharedChunksMock.mockReturnValue(new Set(['common.js']))
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+      hmrSharedChunksByModule: new Map([
+        [sharedModuleId, new Set(['common.js'])],
+      ]),
+      hmrSharedChunkImporters: new Map([
+        ['common.js', new Set([vueEntry])],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedModuleId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set())
+    expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['common.js']))
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:1'])
+  })
+
+  it('treats created style files as update-like css importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
@@ -323,10 +414,182 @@ describe('core lifecycle watch hook', () => {
 
     await hook(dependencyId, { event: 'create' })
 
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
     expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
+      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('create')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+  })
+
+  it('marks same-name vue entry dirty for external style sidecars', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
+    const styleId = '/project/src/pages/index/index.css'
+    const vueEntry = '/project/src/pages/index/index.vue'
+    findVueEntryMock.mockResolvedValue(vueEntry)
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [vueEntry, { id: vueEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(styleId, { event: 'create' })
+
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(findVueEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(collectAffectedScriptsAndImportersMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
+
+  it('falls back to resolved entries when created style dependency graph has no importers yet', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(false)
+    const dependencyId = '/project/src/shared/styles/shared.scss'
+    const pageEntry = '/project/src/pages/native/index.ts'
+    const componentEntry = '/project/src/components/probe-card/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [pageEntry, { id: pageEntry }],
+        [componentEntry, { id: componentEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'create' })
+
+    expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(componentEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer-fallback:2'])
+  })
+
+  it('treats created existing shared templates as update-like wxml importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared/templates/card.wxml'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      return value === sharedTemplate ? new Set([importerTemplate]) : new Set()
+    })
+    state.ctx.wxmlService.getImporterDependencyKind.mockImplementation((dep: string, importer: string) => {
+      return dep === sharedTemplate && importer === importerTemplate ? 'template-import' : undefined
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'create' })
+
+    expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer-import:1'])
+  })
+
+  it('walks recursively queued wxml importers without missing later entries', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared/templates/root.wxml'
+    const intermediateTemplate = '/project/src/shared/templates/intermediate.wxml'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      if (value === sharedTemplate) {
+        return new Set([intermediateTemplate])
+      }
+      if (value === intermediateTemplate) {
+        return new Set([importerTemplate])
+      }
+      return new Set()
+    })
+    state.ctx.wxmlService.getImporterDependencyKind.mockImplementation((dep: string, importer: string) => {
+      if (dep === sharedTemplate && importer === intermediateTemplate) {
+        return 'template-import'
+      }
+      if (dep === intermediateTemplate && importer === importerTemplate) {
+        return 'template-import'
+      }
+      return undefined
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'create' })
+
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(intermediateTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer-import:1'])
+  })
+
+  it('keeps include-driven wxml importer updates on the conservative path', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    const sharedTemplate = '/project/src/shared/templates/partial.wxml'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      return value === sharedTemplate ? new Set([importerTemplate]) : new Set()
+    })
+    state.ctx.wxmlService.getImporterDependencyKind.mockImplementation((dep: string, importer: string) => {
+      return dep === sharedTemplate && importer === importerTemplate ? 'template-include' : undefined
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedTemplate, { event: 'create' })
+
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+  })
+
+  it('treats created existing shared wxs files as update-like wxml importers after atomic saves', async () => {
+    vi.mocked(fs.pathExists).mockResolvedValue(true)
+    const sharedWxs = '/project/src/shared/wxs/format.wxs'
+    const importerTemplate = '/project/src/pages/native/index.wxml'
+    const importerEntry = '/project/src/pages/native/index.ts'
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (basePath === '/project/src/pages/native/index') {
+        return { path: importerEntry }
+      }
+      return { path: null }
+    })
+    const state = createState()
+    state.ctx.wxmlService.getImporters.mockImplementation((value: string) => {
+      return value === sharedWxs ? new Set([importerTemplate]) : new Set()
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(sharedWxs, { event: 'create' })
+
+    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedWxs)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
   })
 
   it('marks html template updates as metadata entry dirties', async () => {
@@ -370,6 +633,219 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('marks app entry dirty for Tailwind content hmr when app style exists', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])
+  })
+
+  it('skips Tailwind content hmr when app style is not a Tailwind source', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.scss' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('.app { color: red; }')
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('skips Tailwind content hmr for vue script updates without content signature changes', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+const count = 1
+const klass = 'text-red-500'
+</script>
+
+<template><view :class="klass">{{ count }}</view></template>`
+    const nextSource = previousSource.replace('const count = 1', 'const count = 2')
+    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
+      pageEntryId,
+      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindTemplateContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindScriptContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      pageEntryId,
+      resolveVueSfcScriptSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      pageEntryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
+    )
+    vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
+      return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(findCssEntryMock).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('keeps Tailwind content hmr for vue template class changes', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    const previousSource = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view class="text-red-500">{{ count }}</view></template>`
+    const nextSource = previousSource.replace('text-red-500', 'text-blue-500')
+    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
+      pageEntryId,
+      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindTemplateContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
+      pageEntryId,
+      signatures.tailwindScriptContentSignature,
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
+      pageEntryId,
+      resolveVueSfcScriptSignature(previousSource, pageEntryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      pageEntryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
+    )
+    vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
+      return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-local-asset:1',
+      'tailwind-content:2',
+    ])
+  })
+
+  it('does not mark app entry dirty for Tailwind content hmr without app style', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: null })
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('skips emitted json path collection for update events', async () => {
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+      jsonEmitFilesMap: new Map([
+        ['app.json', {
+          entry: {
+            get jsonPath() {
+              throw new Error('should not read emitted json paths on update')
+            },
+          },
+        }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await expect(hook(entryId, { event: 'update' })).resolves.toBeUndefined()
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
   })
 
   it('treats config dependency updates as full dev rebuild triggers', async () => {
@@ -504,7 +980,7 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('<view>{{ count }}</view>', '<view class="next">{{ count }}</view>')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
@@ -515,6 +991,10 @@ const count = 1
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       entryId,
       resolveVueSfcScriptSignature(previousSource, entryId),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      entryId,
+      resolveVueSfcStyleIndependentSignature(previousSource, entryId),
     )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
@@ -687,7 +1167,7 @@ const count = 1
 defineAppJson({ window: { navigationBarTitleText: '首页' } })
 </script>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -702,6 +1182,10 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
       appEntry,
       resolveVueSfcScriptSignature(previousSource, appEntry),
+    )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      appEntry,
+      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
     )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
@@ -815,7 +1299,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 page { color: red; }
 </style>`
     const nextSource = previousSource.replace('color: red;', 'color: blue;')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
+    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -831,6 +1315,10 @@ page { color: red; }
       appEntry,
       resolveVueSfcScriptSignature(previousSource, appEntry),
     )
+    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
+      appEntry,
+      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
+    )
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -839,7 +1327,7 @@ page { color: red; }
     expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(pageEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-style-only:1'])
   })
 
   it('invalidates app shell dependents when app.vue gains a template', async () => {

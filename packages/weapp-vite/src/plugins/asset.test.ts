@@ -1,7 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import type { OutputBundle } from 'rolldown'
 import { describe, expect, it, vi } from 'vitest'
-import { collectAssetModuleSourcePaths, collectBundledAssetSourcePaths, patchScopedSlotHostAssetsInBundle } from './asset'
+import { collectAssetModuleSourcePaths, collectBundledAssetSourcePaths, patchScopedSlotHostAssetsInBundle, resolvePendingAssetFiles } from './asset'
 
 describe('asset plugin bundled source collection', () => {
   it('collects normalized original asset source paths from emitted bundle assets', () => {
@@ -60,6 +60,46 @@ describe('asset plugin bundled source collection', () => {
       '/project/src/assets/images/home/goods-1.png',
       'C:/project/src/assets/images/home/banner-1.jpg',
     ]))
+  })
+
+  it('skips module graph collection when there are no pending asset files', () => {
+    const getModuleIds = vi.fn(() => [])
+    expect(resolvePendingAssetFiles([], {} as OutputBundle, getModuleIds)).toEqual([])
+    expect(resolvePendingAssetFiles(undefined, {} as OutputBundle, getModuleIds)).toEqual([])
+    expect(getModuleIds).not.toHaveBeenCalled()
+  })
+
+  it('skips module graph collection when bundle assets already cover all pending files', () => {
+    const getModuleIds = vi.fn(() => [])
+    const bundle = {
+      'goods-1-abc123.png': {
+        type: 'asset',
+        fileName: 'goods-1-abc123.png',
+        names: ['goods-1.png'],
+        needsCodeReference: false,
+        originalFileNames: ['/project/src/assets/images/home/goods-1.png'],
+        source: new Uint8Array(),
+      },
+    } as unknown as OutputBundle
+
+    expect(resolvePendingAssetFiles([
+      '/project/src/assets/images/home/goods-1.png',
+    ], bundle, getModuleIds)).toEqual([])
+    expect(getModuleIds).not.toHaveBeenCalled()
+  })
+
+  it('filters remaining pending files by module graph sources only when needed', () => {
+    const getModuleIds = vi.fn(() => [
+      '/project/src/assets/images/home/banner-1.jpg?import',
+    ])
+
+    expect(resolvePendingAssetFiles([
+      '/project/src/assets/images/home/goods-1.png',
+      '/project/src/assets/images/home/banner-1.jpg',
+    ], {} as OutputBundle, getModuleIds)).toEqual([
+      '/project/src/assets/images/home/goods-1.png',
+    ])
+    expect(getModuleIds).toHaveBeenCalledTimes(1)
   })
 
   it('patches native host assets used by scoped slot generics', () => {

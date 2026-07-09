@@ -6,6 +6,7 @@ import {
 } from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
+import { compileScript, parse as parseSfc } from 'vue/compiler-sfc'
 import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
 
@@ -245,6 +246,47 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from "weapp-vite/web-apis"')
     expect(code).toContain('"atob","btoa","queueMicrotask","performance","crypto","Event","CustomEvent"')
     expect(code).toContain('const encoded = btoa("AB")')
+    expect(code).not.toContain('var atob =')
+    expect(code).not.toContain('var btoa =')
+  })
+
+  it('keeps request globals out of script setup returned bindings', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock({
+          weappViteConfig: {
+            injectWebRuntimeGlobals: {
+              enabled: true,
+            },
+          },
+        }),
+      },
+      loadedEntrySet: new Set(['/project/src/pages/request-globals/index.vue']),
+      entriesMap: new Map(),
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const responsePromise = fetch("/api")',
+        '</script>',
+        '<template><view>{{ responsePromise }}</view></template>',
+      ].join('\n'),
+      '/project/src/pages/request-globals/index.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+    const { descriptor } = parseSfc(code, {
+      filename: 'request-globals.vue',
+    })
+    const compiled = compileScript(descriptor, {
+      id: 'request-globals',
+    }).content
+
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(compiled).toContain('const responsePromise = fetch("/api")')
+    expect(compiled).not.toContain('get fetch()')
+    expect(compiled).not.toContain('get Headers()')
+    expect(compiled).not.toContain('get XMLHttpRequest()')
   })
 
   it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
@@ -329,6 +371,61 @@ describe('core lifecycle transform hook injectWeapi', () => {
 
     const result = await transform('export const a = wx.showToast({ title: "ok" })', '/project/node_modules/pkg/index.js')
     expect(result).toBeNull()
+  })
+
+  it('fast rejects source files without import.meta, request globals or platform api hints', async () => {
+    const profile = {}
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock(),
+        runtimeState: {
+          build: {
+            hmr: {
+              profile,
+            },
+          },
+        },
+      },
+    } as any)
+
+    const result = await transform('export const value = foo.bar({ title: "ok" })', '/project/src/pages/index/index.ts')
+
+    expect(result).toBeNull()
+    expect(profile).toEqual({})
+  })
+
+  it('fast rejects auto request globals projects when source has no usage hints', async () => {
+    const profile = {}
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock({
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+        }),
+        runtimeState: {
+          build: {
+            hmr: {
+              profile,
+            },
+          },
+        },
+      },
+      loadedEntrySet: new Set(['/project/src/pages/request-globals/plain.ts']),
+      entriesMap: new Map([
+        ['pages/request-globals/plain', { type: 'page', path: 'pages/request-globals/plain' }],
+      ]),
+    } as any)
+
+    const result = await transform(
+      'export const value = createClient({ baseURL: "/api" })',
+      '/project/src/pages/request-globals/plain.ts',
+    )
+
+    expect(result).toBeNull()
+    expect(profile).toEqual({})
   })
 
   it('rewrites resolved entry files outside src root', async () => {

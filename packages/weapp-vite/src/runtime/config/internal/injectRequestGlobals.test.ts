@@ -10,6 +10,7 @@ import {
   createInjectRequestGlobalsCode,
   createInjectRequestGlobalsSfcCode,
   injectRequestGlobalsIntoSfc,
+  mayContainRequestGlobalsUsageByText,
   resolveAutoRequestGlobalsTargets,
   resolveInjectRequestGlobalsOptions,
   resolveManualRequestGlobalsTargets,
@@ -448,7 +449,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('export default {}')
   })
 
-  it('prepends a normal script block when only script setup exists', () => {
+  it('prepends a normal installer script block when only script setup exists', () => {
     const code = injectRequestGlobalsIntoSfc(
       [
         '<script setup lang="ts">',
@@ -464,7 +465,8 @@ describe('injectRequestGlobals helpers', () => {
     expect(code.match(/<script\b/g)?.length).toBe(2)
     expect(code).toContain('<script lang="ts">')
     expect(code).toContain('<script setup lang="ts">\nconst value = 1')
-    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).toContain('__weappViteInstallRequestGlobals({ targets: ["fetch"] })')
+    expect(code).not.toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
   it('detects manual installRequestGlobals usage from web-apis imports', () => {
@@ -506,6 +508,50 @@ describe('injectRequestGlobals helpers', () => {
       'AbortSignal',
       'XMLHttpRequest',
     ])
+  })
+
+  it('fast rejects auto request globals analysis when source has no usage hints', () => {
+    const allowedTargets = [
+      'fetch',
+      'Headers',
+      'Request',
+      'Response',
+      'AbortController',
+      'AbortSignal',
+      'XMLHttpRequest',
+      'WebSocket',
+    ] as const
+
+    expect(mayContainRequestGlobalsUsageByText(
+      'export const value = createClient({ baseURL: "/api" })',
+      allowedTargets,
+    )).toBe(false)
+    expect(resolveAutoRequestGlobalsTargets(
+      'export const value = createClient({ baseURL: "/api" })',
+      allowedTargets,
+    )).toEqual([])
+  })
+
+  it('keeps request globals text hints for direct globals and known dependencies', () => {
+    const allowedTargets = [
+      'fetch',
+      'AbortController',
+      'AbortSignal',
+      'WebSocket',
+    ] as const
+
+    expect(mayContainRequestGlobalsUsageByText(
+      'export const value = fetch("/api")',
+      allowedTargets,
+    )).toBe(true)
+    expect(mayContainRequestGlobalsUsageByText(
+      'import { io } from "socket.io-client"',
+      allowedTargets,
+    )).toBe(true)
+    expect(mayContainRequestGlobalsUsageByText(
+      'export const event = "websocket:open"',
+      allowedTargets,
+    )).toBe(true)
   })
 
   it('resolves websocket target on demand without request runtime group', () => {

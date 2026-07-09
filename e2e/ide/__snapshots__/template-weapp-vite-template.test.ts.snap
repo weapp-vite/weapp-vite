@@ -7,7 +7,7 @@ exports[`template e2e: weapp-vite-template > renders all pages from app config i
 
 exports[`template e2e: weapp-vite-template > renders all pages from app config in cjs > weapp-vite-template::pages/index/index 1`] = `
 "<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
-  <view>
+  <view class="page">
     <view style="display: flex; align-items: center; justify-content: center">
       <view>
         <image style="width: 200px; height: 190px" src="/logo.png" />
@@ -171,7 +171,7 @@ exports[`template e2e: weapp-vite-template > renders all pages from app config i
 
 exports[`template e2e: weapp-vite-template > renders all pages from app config in esm > weapp-vite-template::pages/index/index 1`] = `
 "<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
-  <view>
+  <view class="page">
     <view style="display: flex; align-items: center; justify-content: center">
       <view>
         <image style="width: 200px; height: 190px" src="/logo.png" />

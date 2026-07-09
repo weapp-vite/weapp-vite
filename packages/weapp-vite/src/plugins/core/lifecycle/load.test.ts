@@ -6,17 +6,25 @@ import {
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
 } from '@weapp-core/constants'
-import { fs } from '@weapp-core/shared/fs'
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createLoadHook, createOptionsHook } from './load'
 
 const resolveWeappLibEntriesMock = vi.hoisted(() => vi.fn())
 const findJsEntryMock = vi.hoisted(() => vi.fn())
 const findVueEntryMock = vi.hoisted(() => vi.fn())
+const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => true))
 const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
+
+vi.mock('../../utils/cache', async () => {
+  const actual = await vi.importActual<typeof import('../../utils/cache')>('../../utils/cache')
+  return {
+    ...actual,
+    pathExists: pathExistsCachedMock,
+  }
+})
 
 vi.mock('../../../runtime/lib', () => ({
   resolveWeappLibEntries: resolveWeappLibEntriesMock,
@@ -32,6 +40,11 @@ vi.mock('../../../utils', async () => {
 })
 
 describe('core lifecycle load hook injectWeapi', () => {
+  beforeEach(() => {
+    pathExistsCachedMock.mockReset()
+    pathExistsCachedMock.mockResolvedValue(true)
+  })
+
   it('injects abort globals for tanstack query projects during app load', async () => {
     const loadEntry = vi.fn(async () => ({
       code: 'const controller = new AbortController(); App({ controller })',
@@ -112,37 +125,83 @@ describe('core lifecycle load hook injectWeapi', () => {
     const loadEntry = vi.fn(async () => {
       throw new Error('should not load deleted entry')
     })
-    const pathExistsSpy = vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    pathExistsCachedMock.mockResolvedValueOnce(false)
 
-    try {
-      const load = createLoadHook({
-        ctx: {
-          configService: {
-            isDev: true,
-            platform: 'weapp',
-            packageJson: { dependencies: {} },
-            weappViteConfig: {},
-            weappLibConfig: undefined,
-            relativeAbsoluteSrcRoot: () => 'pages/logs/hmr-added',
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: 'weapp',
+          packageJson: { dependencies: {} },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'pages/logs/hmr-added',
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'delete',
+              },
+            },
           },
         },
-        subPackageMeta: undefined,
-        loadEntry,
-        loadedEntrySet: new Set<string>(),
-        entriesMap: new Map([
-          ['pages/logs/hmr-added', { type: 'page' }],
-        ]),
-      } as any)
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+      entriesMap: new Map([
+        ['pages/logs/hmr-added', { type: 'page' }],
+      ]),
+    } as any)
 
-      await expect(load.call({}, sourceId)).resolves.toEqual({
-        code: '<template />',
-        map: { mappings: '' },
-      })
-      expect(loadEntry).not.toHaveBeenCalled()
-    }
-    finally {
-      pathExistsSpy.mockRestore()
-    }
+    await expect(load.call({}, sourceId)).resolves.toEqual({
+      code: '<template />',
+      map: { mappings: '' },
+    })
+    expect(pathExistsCachedMock).toHaveBeenCalledWith(sourceId, { ttlMs: 250 })
+    expect(loadEntry).not.toHaveBeenCalled()
+  })
+
+  it('skips path existence checks for existing declared entries during dev hmr updates', async () => {
+    const sourceId = '/project/src/pages/logs/index.ts'
+    const loadEntry = vi.fn(async () => ({
+      code: 'Page({})',
+    }))
+    pathExistsCachedMock.mockResolvedValueOnce(false)
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          isDev: true,
+          platform: 'weapp',
+          packageJson: { dependencies: {} },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'pages/logs/index',
+        },
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'update',
+              },
+            },
+          },
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+      entriesMap: new Map([
+        ['pages/logs/index', { type: 'page' }],
+      ]),
+    } as any)
+
+    await expect(load.call({}, sourceId)).resolves.toEqual({ code: 'Page({})' })
+
+    expect(pathExistsCachedMock).not.toHaveBeenCalled()
+    expect(loadEntry).toHaveBeenCalledWith(sourceId, 'page')
   })
 
   it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {

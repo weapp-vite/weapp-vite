@@ -33,6 +33,11 @@ export interface IEventOptions {
   detail?: Record<string, any>
 }
 type ElementMap = Map<string, Element>
+interface ElementQueryOptions {
+  timeout?: number
+}
+const ELEMENT_QUERY_TIMEOUT = 2_500
+const ELEMENT_WXML_TIMEOUT = 2_500
 /** Element 的实现。 */
 export default class Element {
   tagName = ''
@@ -49,9 +54,11 @@ export default class Element {
     this.tagName = options.tagName
   }
 
-  async $(selector: string) {
+  async $(selector: string, options: ElementQueryOptions = {}) {
     try {
-      const element = await this.send('Element.getElement', { selector })
+      const element = await this.send('Element.getElement', { selector }, {
+        timeout: options.timeout ?? ELEMENT_QUERY_TIMEOUT,
+      })
       return Element.create(this.connection, { ...element, pageId: this.pageId }, this.elementMap)
     }
     catch {
@@ -59,8 +66,10 @@ export default class Element {
     }
   }
 
-  async $$(selector: string) {
-    const { elements } = await this.send('Element.getElements', { selector })
+  async $$(selector: string, options: ElementQueryOptions = {}) {
+    const { elements } = await this.send('Element.getElements', { selector }, {
+      timeout: options.timeout ?? ELEMENT_QUERY_TIMEOUT,
+    })
     return elements.map((element: IElementOptions) => {
       return Element.create(this.connection, { ...element, pageId: this.pageId }, this.elementMap)
     })
@@ -106,11 +115,15 @@ export default class Element {
   }
 
   async wxml() {
-    return (await this.send('Element.getWXML', { type: 'inner' })).wxml
+    return (await this.send('Element.getWXML', { type: 'inner' }, {
+      timeout: ELEMENT_WXML_TIMEOUT,
+    })).wxml
   }
 
   async outerWxml() {
-    return (await this.send('Element.getWXML', { type: 'outer' })).wxml
+    return (await this.send('Element.getWXML', { type: 'outer' }, {
+      timeout: ELEMENT_WXML_TIMEOUT,
+    })).wxml
   }
 
   async style(name: string) {
@@ -158,7 +171,7 @@ export default class Element {
     return await this.getter(name, 'getProperties', 'properties')
   }
 
-  protected async send(method: string, params: Record<string, any> = {}) {
+  protected async send(method: string, params: Record<string, any> = {}, options?: { timeout?: number }) {
     params.elementId = this.id
     params.pageId = this.pageId
     if (this.nodeId) {
@@ -167,7 +180,9 @@ export default class Element {
     if (this.videoId) {
       params.videoId = this.videoId
     }
-    return await this.connection.send(method, params)
+    return options
+      ? await this.connection.send(method, params, options)
+      : await this.connection.send(method, params)
   }
 
   protected async callFunction(functionName: string, ...args: any[]) {

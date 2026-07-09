@@ -21,7 +21,7 @@
     ],
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
-    "skylineRenderEnable": true,
+    "skylineRenderEnable": false,
     "packNpmManually": true,
     "es6": true,
     "minifyWXML": true

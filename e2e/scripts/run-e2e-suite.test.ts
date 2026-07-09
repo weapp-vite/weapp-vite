@@ -1,7 +1,42 @@
 import { describe, expect, it } from 'vitest'
-import { shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
+import { orderSuiteTasks, shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
 
 describe('run-e2e-suite ide cleanup hooks', () => {
+  it('orders tasks from a rolling start point and then wraps to the beginning', () => {
+    const tasks = [
+      { label: 'ide/first.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/second.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/third.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/fourth.test.ts', command: 'pnpm', args: [] },
+    ]
+
+    expect(orderSuiteTasks(tasks, { filter: '', from: '', rollFrom: '3' }).map(task => task.label)).toEqual([
+      'ide/third.test.ts',
+      'ide/fourth.test.ts',
+      'ide/first.test.ts',
+      'ide/second.test.ts',
+    ])
+    expect(orderSuiteTasks(tasks, { filter: '', from: '', rollFrom: 'second' }).map(task => task.label)).toEqual([
+      'ide/second.test.ts',
+      'ide/third.test.ts',
+      'ide/fourth.test.ts',
+      'ide/first.test.ts',
+    ])
+  })
+
+  it('keeps from as a non-wrapping suffix selection', () => {
+    const tasks = [
+      { label: 'ide/first.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/second.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/third.test.ts', command: 'pnpm', args: [] },
+    ]
+
+    expect(orderSuiteTasks(tasks, { filter: '', from: '2', rollFrom: '' }).map(task => task.label)).toEqual([
+      'ide/second.test.ts',
+      'ide/third.test.ts',
+    ])
+  })
+
   it('enables cleanup hooks for devtools-backed ide suites', () => {
     expect(shouldCleanupIdeBeforeEachTask('ide')).toBe(true)
     expect(shouldCleanupIdeBeforeEachTask('ide-smoke')).toBe(true)

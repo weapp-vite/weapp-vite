@@ -45,7 +45,11 @@ defineExpose({
 </script>
 
 <template>
-  <view class="issue642-bug8-page">
+  <view
+    id="issue642-bug8-page"
+    class="issue642-bug8-page"
+    data-e2e-issue="642-bug8"
+  >
     <Issue642Bug8Cell id="issue642-bug8-direct-cell">
       <template #default="{ io }">
         <text

@@ -31,15 +31,23 @@ async function waitForFileContainsWithRetry(
     content: string
   }>,
 ) {
-  try {
-    return await waitForFileContains(filePath, marker, 20_000)
-  }
-  catch {
+  const maxAttempts = 3
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await waitForFileContains(filePath, marker, 30_000)
+    }
+    catch (error) {
+      lastError = error
+    }
+
     for (const touchFile of touchFiles) {
       await replaceFileByRename(touchFile.filePath, `${touchFile.content}\n`)
     }
-    return await waitForFileContains(filePath, marker, 20_000)
   }
+
+  throw lastError
 }
 
 beforeEach(async () => {
@@ -139,6 +147,10 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
           {
             filePath: SHARED_HMR_PATHS.hmrPageWxml,
             content: sharedHmrPageWxml,
+          },
+          {
+            filePath: SHARED_HMR_PATHS.hmrSfcVue,
+            content: sharedHmrVueSource,
           },
         ]),
         `${platform} updated shared include output`,

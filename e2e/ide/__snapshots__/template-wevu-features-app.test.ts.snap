@@ -464,7 +464,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     </view>
     <ProvideInjectScopeMiddle />
     <ProvideInjectSlotProvider
-      generic:scoped-slots-default="scoped-slot-9whpiq-default-0"
+      generic:scoped-slots-default="scoped-slot-stable-default-0"
       vue-slots="{{ {default:true} }}"
       __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" />
   </view>

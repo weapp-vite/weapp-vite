@@ -76,6 +76,7 @@ interface AttachedSession {
   miniProgram: MiniProgramLike
   onConsole: (payload: unknown) => void
   onException: (payload: unknown) => void
+  currentPage?: MiniProgramPage
 }
 
 export const connectionSchema = z.object({
@@ -150,11 +151,6 @@ export class RuntimeSessionManager {
     try {
       return await runner(miniProgram)
     }
-    catch (error) {
-      this.detach(sessionKey)
-      await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
-      throw error
-    }
     finally {
       releaseSharedMiniProgram(projectPath, input.sessionId || input.port)
     }
@@ -164,13 +160,24 @@ export class RuntimeSessionManager {
     input: RuntimeConnectionInput,
     runner: (page: MiniProgramPage, miniProgram: MiniProgramLike) => Promise<T>,
   ): Promise<T> {
+    const projectPath = this.resolveProjectPath(input.projectPath)
+    const sessionKey = this.resolveSessionKey(projectPath, input)
     return await this.withMiniProgram(input, async (miniProgram) => {
-      const page = await miniProgram.currentPage()
+      const page = await this.resolveCurrentPage(sessionKey, miniProgram)
       if (!page) {
         throw new Error('当前没有活动页面，请先调用 weapp_devtools_connect 确认 DevTools 会话。')
       }
       return await runner(page, miniProgram)
     })
+  }
+
+  rememberPage(input: RuntimeConnectionInput, page: MiniProgramPage | null | undefined) {
+    if (!page) {
+      return
+    }
+    const projectPath = this.resolveProjectPath(input.projectPath)
+    const sessionKey = this.resolveSessionKey(projectPath, input)
+    this.attachedSessions.get(sessionKey)!.currentPage = page
   }
 
   private resolveSessionKey(projectPath: string, input: Pick<RuntimeConnectionInput, 'port' | 'sessionId'>) {
@@ -203,6 +210,21 @@ export class RuntimeSessionManager {
       onConsole,
       onException,
     })
+  }
+
+  private async resolveCurrentPage(sessionKey: string, miniProgram: MiniProgramLike) {
+    try {
+      const page = await miniProgram.currentPage()
+      this.attachedSessions.get(sessionKey)!.currentPage = page
+      return page
+    }
+    catch (error) {
+      const cachedPage = this.attachedSessions.get(sessionKey)?.currentPage
+      if (cachedPage && isCurrentPageRecoverableError(error)) {
+        return cachedPage
+      }
+      throw error
+    }
   }
 
   private detach(projectPath: string) {
@@ -251,6 +273,18 @@ function isCaptureScreenshotProtocolTimeout(error: unknown) {
     && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
     && 'method' in error
     && error.method === 'App.captureScreenshot'
+}
+
+function isCurrentPageRecoverableError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  if ('code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT' && 'method' in error) {
+    return error.method === 'App.getCurrentPage'
+      || error.method === 'App.getPageStack'
+      || error.method === 'App.callFunction'
+  }
+  return error.message.includes('page is not on top of page stack')
 }
 
 export async function captureMiniProgramScreenshot(

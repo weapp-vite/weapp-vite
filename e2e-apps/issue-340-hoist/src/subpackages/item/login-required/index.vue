@@ -17,7 +17,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue340-page">
+  <view
+    class="issue340-page"
+    data-e2e-message="item-login-required:issue-340-hoist:shared"
+    data-e2e-page="item-login-required"
+  >
     <text class="issue340-title">
       issue-340 hoist item login required
     </text>

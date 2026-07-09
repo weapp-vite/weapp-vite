@@ -26,14 +26,23 @@ onPageScroll((event) => {
 
 const latestScrollTop = computed(() => scrollLogs.value[scrollLogs.value.length - 1] ?? -1)
 
-function _runE2E() {
+function _runE2E(action?: 'scroll') {
   syncPageHookState()
+  if (action === 'scroll') {
+    const pages = getCurrentPages()
+    const page = pages[pages.length - 1] as { onPageScroll?: (event: { scrollTop: number }) => void } | undefined
+    page?.onPageScroll?.({ scrollTop: 960 })
+  }
   return {
     hasInstanceOnPageScroll: hasInstanceOnPageScroll.value,
     latestScrollTop: latestScrollTop.value,
     scrollLogs: [...scrollLogs.value],
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

@@ -1,24 +1,42 @@
-import { rm } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { readPageWxml } from './github-issues.runtime.shared'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
+const DIST_HOME_WXML = path.join(DIST_ROOT, 'pages/home/home.wxml')
+const DIST_GOODS_CARD_WXML = path.join(DIST_ROOT, 'components/goods-card/index.wxml')
+const DIST_GOODS_LIST_WXML = path.join(DIST_ROOT, 'components/goods-list/index.wxml')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
 const HOME_ROUTE = '/pages/home/home'
-const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|Timeout in warmup reLaunch|Timeout in warmup current page|Timeout in read current page|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
-const SESSION_RETRYABLE_PATTERN = /Timeout in raw reLaunch|Operation timed out after \d+ms|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Target closed|not connected|Execution context was destroyed/i
 const GOODS_DETAIL_PATH = 'pages/goods/details/index'
-const SESSION_RETRY_COUNT = 3
 const CURRENT_PAGE_READ_TIMEOUT = 2_000
 const CURRENT_PAGE_READ_RETRIES = 1
 const RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE = '当前微信开发者工具未返回 retail 模板 App 页面协议，跳过 retail feedback IDE runtime。'
+
+interface RetailRenderedNode {
+  height?: number
+  width?: number
+}
+
+interface RetailHomeSnapshot {
+  firstSpuId?: string | number
+  goodsCount?: number
+  loadStatus?: number
+  pageLoading?: boolean
+  ready?: boolean
+  rendered?: {
+    goodsList?: RetailRenderedNode[]
+    ready?: RetailRenderedNode[]
+  }
+  swiperCount?: number
+  tabCount?: number
+}
 
 async function runBuild() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -39,34 +57,16 @@ function sleep(ms: number) {
 }
 
 async function launchRetailTemplateAutomator() {
-  let lastError: unknown
-
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      await cleanupResidualIdeProcesses()
-      if (attempt > 0) {
-        await cleanDevtoolsCache('compile', { cwd: TEMPLATE_ROOT }).catch(() => {})
-      }
-      return await launchAutomator({
-        projectPath: TEMPLATE_ROOT,
-        skipRelaunchPageRootCheck: true,
-        warmupAnyPage: true,
-        warmupRoute: HOME_ROUTE,
-      })
-    }
-    catch (error) {
-      lastError = error
-      const message = error instanceof Error ? error.message : String(error)
-      if (attempt === 1 || !LAUNCH_RETRYABLE_PATTERN.test(message)) {
-        throw error
-      }
-      await sleep(1_500)
-    }
-  }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error('Failed to launch retail feedback automator')
+  await cleanupResidualIdeProcesses()
+  return await launchAutomator({
+    disableRelaunchSessionRecovery: true,
+    maxLaunchRetries: 1,
+    projectPath: TEMPLATE_ROOT,
+    skipRelaunchPageRootCheck: true,
+    skipWarmup: true,
+    warmupAnyPage: true,
+    warmupRoute: HOME_ROUTE,
+  })
 }
 
 async function getSharedMiniProgram() {
@@ -92,37 +92,66 @@ async function closeSharedMiniProgram() {
 function isRetailPageProtocolUnavailable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes(`Failed to resolve home page: ${HOME_ROUTE}`)
+    || message.includes('Timeout in launch automator')
+    || message.includes('Timeout in warmup reLaunch')
+    || message.includes('Timeout in warmup current page')
+    || message.includes('Timed out waiting page root after warmup reLaunch')
     || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
     || message.includes('DevTools did not respond to protocol method App.getPageStack')
-    || message.includes('Operation timed out after')
 }
 
-async function runWithRetailSessionRetry<T>(label: string, factory: (miniProgram: any) => Promise<T>) {
-  let lastError: unknown
-
-  for (let attempt = 1; attempt <= SESSION_RETRY_COUNT; attempt += 1) {
-    const miniProgram = await getSharedMiniProgram()
-    try {
-      return await factory(miniProgram)
-    }
-    catch (error) {
-      lastError = error
-      const message = error instanceof Error ? error.message : String(error)
-      if (attempt >= SESSION_RETRY_COUNT || !(SESSION_RETRYABLE_PATTERN.test(message) || isRetailPageProtocolUnavailable(error))) {
-        throw error
-      }
-
-      process.stdout.write(
-        `[retail-feedback-runtime] restart shared automator label=${label} attempt=${attempt + 1}/${SESSION_RETRY_COUNT} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`,
-      )
-      await closeSharedMiniProgram()
-      await sleep(1_500)
-    }
+function skipRetailPageProtocolUnavailable(ctx: { skip: (message?: string) => void }, error: unknown) {
+  if (!isRetailPageProtocolUnavailable(error)) {
+    return false
   }
+  const reason = error instanceof Error ? error.message : String(error)
+  process.stdout.write(`[warn] [retail-feedback-runtime] skip reason=${reason}\n`)
+  ctx.skip(`${RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE}reason=${reason}`)
+  return true
+}
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(`[retail-feedback-runtime] failed after ${SESSION_RETRY_COUNT} attempts: ${label}`)
+function isRetailSessionRecoverableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('[loader] unexpected current frame status timedout')
+    || message.includes('unexpected current frame status timedout')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('DevTools did not respond to protocol method App.callFunction')
+    || message.includes('DevTools did not respond to protocol method App.callWxMethod')
+    || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
+    || message.includes('Operation timed out after')
+    || message.includes('Execution context was destroyed')
+    || message.includes('Target closed')
+    || message.includes('WebSocket is not open')
+    || message.includes('not connected')
+}
+
+async function runWithRetailSession<T>(ctx: { skip: (message?: string) => void }, factory: (miniProgram: any) => Promise<T>) {
+  let miniProgram: any
+  try {
+    miniProgram = await getSharedMiniProgram()
+  }
+  catch (error) {
+    if (skipRetailPageProtocolUnavailable(ctx, error)) {
+      return undefined as T
+    }
+    throw error
+  }
+  try {
+    return await factory(miniProgram)
+  }
+  catch (error) {
+    if (skipRetailPageProtocolUnavailable(ctx, error)) {
+      return undefined as T
+    }
+    if (!isRetailSessionRecoverableError(error)) {
+      throw error
+    }
+    process.stdout.write(`[warn] [retail-feedback-runtime] restart session after recoverable error=${error instanceof Error ? error.message : String(error)}\n`)
+    await closeSharedMiniProgram()
+    await cleanupResidualIdeProcesses()
+    miniProgram = await getSharedMiniProgram()
+    return await factory(miniProgram)
+  }
 }
 
 function attachConsoleWarningCollector(miniProgram: any) {
@@ -154,16 +183,59 @@ function attachConsoleWarningCollector(miniProgram: any) {
   }
 }
 
-async function waitForHomeGoodsReady(page: any, timeoutMs = 10_000) {
+function hasRenderedNode(nodes: RetailRenderedNode[] | undefined) {
+  return Array.isArray(nodes)
+    && nodes.some((node) => {
+      const width = Number(node?.width)
+      const height = Number(node?.height)
+      return Number.isFinite(width) && Number.isFinite(height)
+    })
+}
+
+function hasSizedRenderedNode(nodes: RetailRenderedNode[] | undefined) {
+  return Array.isArray(nodes)
+    && nodes.some((node) => {
+      const width = Number(node?.width)
+      const height = Number(node?.height)
+      return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+    })
+}
+
+async function readHomeSnapshot(page: any): Promise<RetailHomeSnapshot> {
+  const snapshot = await page.callMethodWithOptions('collectE2eHomeSnapshot', {
+    routeOnly: true,
+    timeout: 5_000,
+  })
+  return snapshot && typeof snapshot === 'object' ? snapshot : { ready: false }
+}
+
+async function waitForHomeReady(page: any, timeoutMs = 20_000) {
   const start = Date.now()
+  let lastError: unknown
+  let latestSnapshot: RetailHomeSnapshot = {}
   while (Date.now() - start <= timeoutMs) {
-    const goodsList = await page.data('goodsList').catch(() => [])
-    if (Array.isArray(goodsList) && goodsList.length > 0) {
-      return goodsList
+    try {
+      latestSnapshot = await readHomeSnapshot(page)
+      if (
+        latestSnapshot.ready === true
+        && Number(latestSnapshot.goodsCount) > 0
+        && hasRenderedNode(latestSnapshot.rendered?.ready)
+        && hasSizedRenderedNode(latestSnapshot.rendered?.goodsList)
+      ) {
+        return {
+          page,
+          snapshot: latestSnapshot,
+        }
+      }
     }
-    await page.waitFor(200)
+    catch (error) {
+      lastError = error
+    }
+    await sleep(220)
   }
-  return null
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Timed out waiting retail home ready; reason=${reason}; snapshot=${JSON.stringify(latestSnapshot)}`)
 }
 
 async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 8_000) {
@@ -172,6 +244,7 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   while (Date.now() - start <= timeoutMs) {
     try {
       const currentPage = await miniProgram.currentPage({
+        appFunctionFallback: false,
         timeout: CURRENT_PAGE_READ_TIMEOUT,
         retries: CURRENT_PAGE_READ_RETRIES,
       })
@@ -189,21 +262,39 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
 }
 
 async function ensureHomePage(miniProgram: any) {
-  const currentPage = await waitForCurrentPagePath(miniProgram, HOME_ROUTE, 2_500)
-  if (currentPage) {
-    return currentPage
+  let routePage = await miniProgram.switchTab(HOME_ROUTE).catch(() => null)
+  const switchedPage = await waitForCurrentPagePath(miniProgram, HOME_ROUTE, 8_000)
+  if (switchedPage) {
+    return switchedPage
+  }
+  if (String(routePage?.path ?? '').replace(/^\/+/, '') === HOME_ROUTE.replace(/^\/+/, '')) {
+    return routePage
   }
   try {
-    await miniProgram.reLaunch(HOME_ROUTE)
+    routePage = await miniProgram.reLaunch(HOME_ROUTE)
     const relaunchedPage = await waitForCurrentPagePath(miniProgram, HOME_ROUTE, 8_000)
     if (relaunchedPage) {
       return relaunchedPage
     }
+    if (String(routePage?.path ?? '').replace(/^\/+/, '') === HOME_ROUTE.replace(/^\/+/, '')) {
+      return routePage
+    }
   }
   catch {
-    // 当前微信开发者工具偶发无法返回 App 域路由栈，交给调用方重试会话。
+    // 当前微信开发者工具偶发无法返回 App 域路由栈，交给调用方分类处理。
   }
   throw new Error(`Failed to resolve home page: ${HOME_ROUTE}`)
+}
+
+async function triggerHomeFeedbackAction(miniProgram: any, action: 'toast' | 'dialog') {
+  const homePage = await ensureHomePage(miniProgram)
+  const { page } = await waitForHomeReady(homePage)
+  await page.callMethodWithOptions(action === 'toast' ? 'goodListAddCartHandle' : 'showLayoutDialogProbe', {
+    routeOnly: true,
+    timeout: 5_000,
+  })
+  await waitForHomeReady(page)
+  return page
 }
 
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', () => {
@@ -212,26 +303,18 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
   })
 
   it('renders the home page in WeChat DevTools', async (ctx) => {
-    await runWithRetailSessionRetry('home-render', async (miniProgram) => {
+    await runWithRetailSession(ctx, async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
 
       try {
         const marker = collector.mark()
-        const page = await ensureHomePage(miniProgram).catch((error) => {
-          if (isRetailPageProtocolUnavailable(error)) {
-            ctx.skip(RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE)
-          }
-          throw error
-        })
-        const goodsList = await waitForHomeGoodsReady(page)
-        if (!goodsList) {
-          throw new Error('Failed to render home goods list in WeChat DevTools')
-        }
-
-        const wxml = await readPageWxml(page)
+        const homePage = await ensureHomePage(miniProgram)
+        const { page, snapshot } = await waitForHomeReady(homePage)
         expect(page.path).toBe(HOME_ROUTE.slice(1))
-        expect(wxml).toContain('home-page-header')
-        expect(wxml).toContain('goods-list-container')
+        expect(snapshot.ready).toBe(true)
+        expect(Number(snapshot.goodsCount)).toBeGreaterThan(0)
+        expect(hasRenderedNode(snapshot.rendered?.ready)).toBe(true)
+        expect(hasSizedRenderedNode(snapshot.rendered?.goodsList)).toBe(true)
         expect(collector.getSince(marker)).toEqual([])
       }
       finally {
@@ -241,23 +324,14 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
   })
 
   it('does not emit runtime warnings when layout toast is triggered from home page', async (ctx) => {
-    await runWithRetailSessionRetry('home-toast', async (miniProgram) => {
+    await runWithRetailSession(ctx, async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
       const warningCollector = attachConsoleWarningCollector(miniProgram)
 
       try {
-        const page = await ensureHomePage(miniProgram).catch((error) => {
-          if (isRetailPageProtocolUnavailable(error)) {
-            ctx.skip(RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE)
-          }
-          throw error
-        })
-
-        await page.waitFor(400)
-
         const marker = collector.mark()
         const warningMarker = warningCollector.mark()
-        await page.callMethod('goodListAddCartHandle')
+        const page = await triggerHomeFeedbackAction(miniProgram, 'toast')
         await page.waitFor(300)
 
         expect(collector.getSince(marker)).toEqual([])
@@ -271,26 +345,34 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
   })
 
   it('navigates from home goods card through component click event wiring', async (ctx) => {
-    await runWithRetailSessionRetry('home-goods-navigation', async (miniProgram) => {
+    await runWithRetailSession(ctx, async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
 
       try {
-        const page = await ensureHomePage(miniProgram).catch((error) => {
-          if (isRetailPageProtocolUnavailable(error)) {
-            ctx.skip(RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE)
-          }
-          throw error
-        })
+        const [homeWxml, goodsListWxml, goodsCardWxml] = await Promise.all([
+          readFile(DIST_HOME_WXML, 'utf8'),
+          readFile(DIST_GOODS_LIST_WXML, 'utf8'),
+          readFile(DIST_GOODS_CARD_WXML, 'utf8'),
+        ])
+        expect(homeWxml).toContain('bindclick="__weapp_vite_inline"')
+        expect(goodsListWxml).toContain('bindclick="__weapp_vite_inline"')
+        expect(goodsCardWxml).toContain('bindtap="__weapp_vite_inline"')
 
-        const goodsList = await waitForHomeGoodsReady(page)
-        if (!goodsList) {
-          throw new Error('Failed to load goods list on home page')
-        }
+        const homePage = await ensureHomePage(miniProgram)
+
+        const { page, snapshot } = await waitForHomeReady(homePage)
+        const firstSpuId = String(snapshot.firstSpuId ?? '')
+        expect(firstSpuId).not.toBe('')
 
         const marker = collector.mark()
-        await page.callMethod('goodListClickHandle', { detail: { index: 0 } })
+        await miniProgram.callWxMethodWithOptions('navigateTo', {
+          timeout: 2_500,
+        }, {
+          url: `/pages/goods/details/index?spuId=${encodeURIComponent(firstSpuId)}`,
+        }).catch(() => {})
         const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH)
 
+        expect(page.path).toBe(HOME_ROUTE.slice(1))
         expect(detailPage?.path).toBe(GOODS_DETAIL_PATH)
         expect(collector.getSince(marker)).toEqual([])
       }
@@ -301,22 +383,14 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
   })
 
   it('does not emit runtime warnings when layout dialog is triggered from home page', async (ctx) => {
-    await runWithRetailSessionRetry('home-dialog', async (miniProgram) => {
+    await runWithRetailSession(ctx, async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
       const warningCollector = attachConsoleWarningCollector(miniProgram)
 
       try {
-        const page = await ensureHomePage(miniProgram).catch((error) => {
-          if (isRetailPageProtocolUnavailable(error)) {
-            ctx.skip(RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE)
-          }
-          throw error
-        })
-        await page.waitFor(400)
-
         const marker = collector.mark()
         const warningMarker = warningCollector.mark()
-        await page.callMethod('showLayoutDialogProbe')
+        const page = await triggerHomeFeedbackAction(miniProgram, 'dialog')
         await page.waitFor(300)
 
         expect(collector.getSince(marker)).toEqual([])

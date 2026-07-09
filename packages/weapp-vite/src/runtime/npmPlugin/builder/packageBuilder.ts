@@ -4,7 +4,6 @@ import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
 import { existsSync } from 'node:fs'
-import { copyFile } from 'node:fs/promises'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
 import { defu, isObject } from '@weapp-core/shared'
@@ -88,24 +87,6 @@ function resolveDefaultNpmBuildTsconfig(cwd: string) {
   }
 
   return false
-}
-
-async function copyDirectory(sourceDir: string, targetDir: string) {
-  await fs.ensureDir(targetDir)
-  const entries = await fs.readdir(sourceDir, { withFileTypes: true })
-
-  for (const entry of entries) {
-    const sourcePath = path.resolve(sourceDir, entry.name)
-    const targetPath = path.resolve(targetDir, entry.name)
-
-    if (entry.isDirectory()) {
-      await copyDirectory(sourcePath, targetPath)
-      continue
-    }
-
-    await fs.ensureDir(path.dirname(targetPath))
-    await copyFile(sourcePath, targetPath)
-  }
 }
 
 export function createPackageBuilder(
@@ -225,7 +206,9 @@ export function createPackageBuilder(
 
   async function copyBuild({ from, to }: { from: string, to: string, name: string }) {
     await fs.remove(to)
-    await copyDirectory(from, to)
+    await fs.copy(from, to, {
+      overwrite: true,
+    })
   }
 
   let buildPackage: PackageBuilder['buildPackage']

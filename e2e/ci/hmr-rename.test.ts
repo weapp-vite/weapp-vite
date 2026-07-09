@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrScriptName, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const HMR_SRC_DIR = path.join(APP_ROOT, 'src/pages/hmr')
@@ -135,7 +135,7 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const originalSource = await fs.readFile(SRC_SCRIPT, 'utf8')
     const distPath = path.join(DIST_ROOT, 'pages/hmr/index.js')
     const marker = createHmrMarker('RENAME-SCRIPT', platform)
-    const updatedSource = originalSource.replace(`buildResult('hmr',`, `buildResult('${marker}',`)
+    const updatedSource = replaceHmrScriptName(originalSource, marker)
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {

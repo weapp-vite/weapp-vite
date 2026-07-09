@@ -110,6 +110,7 @@ function handleClick() {
 - 需要做小程序截图对比验收时，优先使用 `weapp-vite compare` / `wv compare`
 - 不要把小程序运行时截图退化成通用浏览器截图
 - 需要看 DevTools 终端日志时，优先使用 `weapp-vite ide logs --open` 或 `wv ide logs --open`
+- 评估 Rust/native 加速时，优先减少 JS 与 Rust 的往返次数；同一份源码上的多个 AST 分析应尽量批量传入、一次 parse、一次返回结构化结果，并保留 Babel/Oxc/Vue compiler fallback
 
 推荐把下面这组意图映射写进项目根 `AGENTS.md`，让常见 AI 更稳定命中：
 

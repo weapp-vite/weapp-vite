@@ -206,12 +206,11 @@ void runE2E
 
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
-  void runCase()
 })
 </script>
 
 <template>
-  <view class="page">
+  <view id="socket-route" class="page" data-e2e-route="socket-io">
     <view class="hero">
       <text class="hero-title">socket.io-client transport</text>
       <text class="hero-desc">连接测试启动时拉起的真实 Socket.IO 服务端，验证 WebSocket 链路。</text>
@@ -219,7 +218,7 @@ onLoad((query) => {
 
     <view class="panel">
       <text id="socket-page-status" class="line">pageStatus = {{ state.pageStatus }}</text>
-      <text id="socket-status" class="line">status = {{ state.status }}</text>
+      <text id="socket-status" :data-e2e-status="state.status" class="line">status = {{ state.status }}</text>
       <text id="socket-run-count" class="line">runCount = {{ state.runCount }}</text>
       <text id="socket-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="socket-request-count" class="line">requestCount = {{ state.requestCount }}</text>
@@ -227,16 +226,11 @@ onLoad((query) => {
       <text id="socket-default-transport" class="line">defaultTransport = {{ defaultTransportName }}</text>
       <text id="socket-websocket-transport" class="line">websocketOnlyTransport = {{ websocketOnlyTransportName }}</text>
       <text class="line">randomPushCount = {{ randomPushCount }}</text>
-      <text class="line">latestRandomMessage = {{ latestRandomMessage }}</text>
+      <text class="line">latestRandomMessageReady = {{ latestRandomMessage ? 'yes' : 'no' }}</text>
       <text class="line">latestRandomSentAt = {{ latestRandomSentAt }}</text>
       <button class="action" @tap="runCase">
         重新执行 socket.io 校验
       </button>
-    </view>
-
-    <view class="panel">
-      <text class="panel-title">payload</text>
-      <text id="socket-payload" class="payload mono">{{ state.payload }}</text>
     </view>
 
     <view v-if="state.errorMessage" class="panel error">

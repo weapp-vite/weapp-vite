@@ -62,7 +62,12 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
-6. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
+6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：
+   - 默认把 JS ↔ Rust 往返、序列化/反序列化和 AST 数据搬运视为热路径成本。
+   - 优先 batch analysis，一次传源码、一次 parse、一次返回多个分析结果。
+   - 避免把同一份源码上的多个小 AST 查询拆成多个 N-API 调用；如果必须细粒度调用，先证明真实 HMR/build 热路径有净收益。
+   - native fast path 必须显式启用、可选依赖、失败回退 Babel/Oxc/Vue compiler，并配 correctness 对齐测试与 profile。
+7. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
 
 ## 约束
 
@@ -71,6 +76,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 不要忽略 `AGENTS.md` 和 `dist/docs`，它们是当前 AI 合约的一部分。
 - 不要让 `weapp-vite` 和 `weapp-ide-cli` 命令名单分裂。
 - 不要让 `screenshot` / `compare` / `ide logs` 的文件和 JSON 合约漂移。
+- 不要用大量细粒度 JS ↔ Rust 调用替代原本一次 JS AST 遍历；native 加速要先合并通信边界，再用真实 profile 扩大覆盖。
 
 ## 输出
 
@@ -80,6 +86,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 最小改动列表。
 - 推荐验证命令。
 - 分包 / chunk / AI 工作流的取舍说明。
+- 若涉及 Rust/native 加速，说明是否减少跨边界调用次数，以及真实 profile 是否支持继续扩大迁移。
 
 ## 完成标记
 

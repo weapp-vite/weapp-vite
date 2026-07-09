@@ -5,29 +5,6 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
 text,
 ::after,
 ::before {
-  --tw-duration: initial;
-  --tw-ease: initial;
-  --tw-font-weight:;
-  --tw-gradient-from: #0000;
-  --tw-gradient-from-position: 0%;
-  --tw-gradient-position: initial;
-  --tw-gradient-stops: initial;
-  --tw-gradient-to: #0000;
-  --tw-gradient-to-position: 100%;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-outline-style: solid;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-  --tw-scale-z: 1;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-color: initial;
-  --tw-space-x-reverse: 0;
-  --tw-space-y-reverse: 0;
-  --tw-tracking:;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -79,6 +56,29 @@ wx-root-portal-content {
   --text-xl--line-height: 1.4;
   --text-xs: 24rpx;
   --text-xs--line-height: 1.33333;
+  --tw-duration: initial;
+  --tw-ease: initial;
+  --tw-font-weight:;
+  --tw-gradient-from: #0000;
+  --tw-gradient-from-position: 0%;
+  --tw-gradient-position: initial;
+  --tw-gradient-stops: initial;
+  --tw-gradient-to: #0000;
+  --tw-gradient-to-position: 100%;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-leading:;
+  --tw-outline-style: solid;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-scale-z: 1;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-color: initial;
+  --tw-space-x-reverse: 0;
+  --tw-space-y-reverse: 0;
+  --tw-tracking:;
 }
 .mx-auto {
   margin-left: auto;
@@ -376,5 +376,57 @@ wx-root-portal-content {
   --tw-scale-z: 95%;
   scale: var(--tw-scale-x) var(--tw-scale-y);
 }
+"
+`;
+
+exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/index/index 1`] = `
+"<view
+  class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+  <view class="flex flex-col items-center pt-20 space-y-10">
+    <HelloWorld
+      title="{{hello.title}}"
+      description="{{hello.description}}"
+      docs="{{hello.docs}}"
+      links="{{hello.links}}" />
+    <view class="flex items-center">
+      当前模式 {{mode}} 切换模式
+      <view
+        class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-2xl"></view>
+    </view>
+    <view class="underline" mark:url="https://vite.icebreaker.top">
+      https://vite.icebreaker.top
+    </view>
+    <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
+    <view>
+      <t-button theme="primary" ghost>TDesign Button</t-button>
+    </view>
+    <view>
+      <t-button theme="success" variant="outline">打开布局演示页</t-button>
+    </view>
+  </view>
+  <t-action-sheet id="t-action-sheet" bind:selected="handleSelected" />
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/layouts/index 1`] = `
+"<view class="min-h-screen bg-slate-100 px-4 py-5">
+  <view class="rounded-2xl bg-white p-5 shadow-sm">
+    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
+      Native Layouts
+    </view>
+    <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+  </view>
+
+  <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+    <t-button block theme="primary">使用 default 布局</t-button>
+    <t-button class="mt-3" block theme="success" variant="outline">切到 admin 布局</t-button>
+    <t-button class="mt-3" block theme="warning" variant="outline">关闭布局</t-button>
+    <t-button class="mt-3" block theme="default" variant="outline">返回首页</t-button>
+  </view>
+
+  <t-toast id="t-toast" />
+</view>
 "
 `;

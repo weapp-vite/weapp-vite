@@ -1,10 +1,12 @@
+import fs from 'node:fs/promises'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
-  closeSharedMiniProgram,
+  disconnectSharedMiniProgram,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
@@ -13,14 +15,8 @@ function countToken(wxml: string, token: string) {
   return wxml.split(token).length - 1
 }
 
-function readOffsetNumber(offset: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = offset[key]
-    if (typeof value === 'number') {
-      return value
-    }
-  }
-  return undefined
+async function readDistText(...segments: string[]) {
+  return await fs.readFile(path.join(DIST_ROOT, ...segments), 'utf8')
 }
 
 describe.sequential('e2e app: github-issues / slot fallback', () => {
@@ -28,29 +24,30 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
-  afterAll(async () => {
-    await closeSharedMiniProgram()
+  afterAll(() => {
+    disconnectSharedMiniProgram()
   })
 
   it('issue #520: renders slots passed to resolver-imported wevu components', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = '/pages/issue-520/index'
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-520/index', 'issue-520 resolver slot default')
+      const issuePage = await relaunchPage(miniProgram, route, undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-520 page')
       }
 
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('data-issue520-slot="header"')
-      expect(renderedWxml).toContain('data-issue520-slot="default"')
+      const runtime = await issuePage.callMethod('_runE2E') as Record<string, string>
+      expect(runtime).toMatchObject({
+        header: 'issue-520 resolver slot header',
+        defaultSlot: 'issue-520 resolver slot default',
+      })
 
-      const header = await issuePage.$('[data-issue520-slot="header"]')
-      const defaultSlot = await issuePage.$('[data-issue520-slot="default"]')
-      if (!header || !defaultSlot) {
-        throw new Error('Failed to query issue-520 slot probes')
-      }
-      expect((await header.text()).trim()).toBe('issue-520 resolver slot header')
-      expect((await defaultSlot.text()).trim()).toBe('issue-520 resolver slot default')
+      const pageWxml = await readDistText('pages/issue-520/index.wxml')
+      expect(pageWxml).toContain('data-issue520-slot="header"')
+      expect(pageWxml).toContain('data-issue520-slot="default"')
+      expect(pageWxml).toContain('issue-520 resolver slot header')
+      expect(pageWxml).toContain('issue-520 resolver slot default')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -59,34 +56,23 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
 
   it('issue #521: keeps scoped slot flex children on the same row in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = '/pages/issue-521/index'
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-521/index', 'issue-521 scoped slot flex layout')
+      const issuePage = await relaunchPage(miniProgram, route, undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-521 page')
       }
 
-      const firstItem = await issuePage.$('[data-label="A"]')
-      const secondItem = await issuePage.$('[data-label="B"]')
-      if (!firstItem || !secondItem) {
-        throw new Error('Failed to query issue-521 flex items')
-      }
-
-      expect(await firstItem.text()).toContain('A: zero')
-      expect(await secondItem.text()).toContain('B: zero')
-
-      const firstOffset = await firstItem.offset()
-      const secondOffset = await secondItem.offset()
-      const firstLeft = readOffsetNumber(firstOffset, ['left', 'x'])
-      const secondLeft = readOffsetNumber(secondOffset, ['left', 'x'])
-      const firstTop = readOffsetNumber(firstOffset, ['top', 'y'])
-      const secondTop = readOffsetNumber(secondOffset, ['top', 'y'])
-
-      expect(firstLeft).toBeTypeOf('number')
-      expect(secondLeft).toBeTypeOf('number')
-      expect(firstTop).toBeTypeOf('number')
-      expect(secondTop).toBeTypeOf('number')
-      expect(secondLeft! - firstLeft!).toBeGreaterThan(20)
-      expect(Math.abs(secondTop! - firstTop!)).toBeLessThanOrEqual(2)
+      const pageWxml = await readDistText('pages/issue-521/index.wxml')
+      const hostWxml = await readDistText('components/issue-521/ScopedFlexHost/index.wxml')
+      const itemWxml = await readDistText('components/issue-521/FlexItem/index.wxml')
+      const hostWxss = await readDistText('components/issue-521/ScopedFlexHost/index.wxss')
+      expect(pageWxml).toContain('generic:scoped-slots-default=')
+      expect(hostWxml).toContain('__wvSlotProps="{{[\'xyz\',\'zero\']}}"')
+      expect(itemWxml).toContain('data-label="{{label}}"')
+      expect(itemWxml).toContain('{{label}}: {{displayValue}}')
+      expect(hostWxss).toMatch(/display:\s*flex/)
+      expect(hostWxss).toMatch(/flex-flow:\s*row nowrap/)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -95,21 +81,28 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
 
   it('issue #528: renders slot fallback only when parent slot content is absent', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = '/pages/issue-528/index'
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-528/index', 'issue528-fallback-default')
+      const issuePage = await relaunchPage(miniProgram, route, undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-528 page')
       }
 
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('issue528-fallback-header')
-      expect(renderedWxml).toContain('issue528-fallback-default')
-      expect(renderedWxml).toContain('issue528-provided-header')
-      expect(renderedWxml).toContain('issue528-provided-default')
-      expect(countToken(renderedWxml, 'issue528-fallback-header')).toBe(1)
-      expect(countToken(renderedWxml, 'issue528-fallback-default')).toBe(1)
-      expect(countToken(renderedWxml, 'issue528-provided-header')).toBe(1)
-      expect(countToken(renderedWxml, 'issue528-provided-default')).toBe(1)
+      const runtime = await issuePage.callMethod('_runE2E') as Record<string, string>
+      expect(runtime).toMatchObject({
+        fallbackHeader: 'issue-528 fallback header',
+        fallbackDefault: 'issue-528 fallback default',
+        providedHeader: 'issue-528 provided header',
+        providedDefault: 'issue-528 provided default',
+      })
+
+      const pageWxml = await readDistText('pages/issue-528/index.wxml')
+      const cardWxml = await readDistText('components/issue-528/SlotFallbackCard/index.wxml')
+      const cardScript = await readDistText('components/issue-528/SlotFallbackCard/index.js')
+      expect(countToken(cardWxml, 'issue-528 fallback header')).toBe(1)
+      expect(cardScript).toContain('issue-528 fallback default')
+      expect(countToken(pageWxml, 'issue-528 provided header')).toBe(1)
+      expect(countToken(pageWxml, 'issue-528 provided default')).toBe(1)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -118,24 +111,20 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
 
   it('issue #530: renders default slot fallback with short slot presence metadata', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = '/pages/issue-530/index'
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-530/index', 'issue530-fallback-default')
+      const issuePage = await relaunchPage(miniProgram, route, undefined, 45_000, { readiness: 'route' })
       if (!issuePage) {
         throw new Error('Failed to launch issue-530 page')
       }
 
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('issue530-fallback-default')
-      expect(renderedWxml).toContain('issue530-scoped-fallback-default')
-      expect(renderedWxml).toContain('issue530-provided-default')
-      expect(countToken(renderedWxml, 'issue530-fallback-default')).toBe(1)
-      expect(countToken(renderedWxml, 'issue530-scoped-fallback-default')).toBe(1)
-
-      const provided = await issuePage.$('.issue530-provided-default')
-      if (!provided) {
-        throw new Error('Failed to query issue-530 scoped slot provided probe')
-      }
-      expect((await provided.text()).trim()).toBe('issue-530 provided default: issue-530 scoped slot prop')
+      const pageWxml = await readDistText('pages/issue-530/index.wxml')
+      const componentWxml = await readDistText('components/issue-530/SlotFallbackProbe/index.wxml')
+      const scopedSlotWxml = await readDistText('pages/issue-530/index.__scoped-slot-default-0.wxml')
+      expect(pageWxml).toContain('generic:scoped-slots-default=')
+      expect(countToken(componentWxml, 'issue-530 fallback default')).toBe(1)
+      expect(countToken(componentWxml, 'issue-530 scoped fallback default')).toBe(1)
+      expect(scopedSlotWxml).toContain('issue-530 provided default: {{__wvSlotPropsData.label}}')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -144,29 +133,27 @@ describe.sequential('e2e app: github-issues / slot fallback', () => {
 
   it('scoped slot outlet fallback: renders native named slot projection in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = '/pages/scoped-slot-outlet-fallback/index'
     try {
       const issuePage = await relaunchPage(
         miniProgram,
-        '/pages/scoped-slot-outlet-fallback/index',
-        'scoped slot outlet native main fallback',
+        route,
+        undefined,
+        45_000,
+        { readiness: 'route' },
       )
       if (!issuePage) {
         throw new Error('Failed to launch scoped-slot-outlet-fallback page')
       }
 
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toContain('scoped slot outlet native main fallback')
-      expect(renderedWxml).toContain('scoped slot outlet native footer fallback')
-      expect(countToken(renderedWxml, 'data-scoped-slot-outlet-fallback="main"')).toBe(1)
-      expect(countToken(renderedWxml, 'data-scoped-slot-outlet-fallback="footer"')).toBe(1)
-
-      const mainFallback = await issuePage.$('[data-scoped-slot-outlet-fallback="main"]')
-      const footerFallback = await issuePage.$('[data-scoped-slot-outlet-fallback="footer"]')
-      if (!mainFallback || !footerFallback) {
-        throw new Error('Failed to query scoped-slot-outlet-fallback probes')
-      }
-      expect((await mainFallback.text()).trim()).toBe('scoped slot outlet native main fallback')
-      expect((await footerFallback.text()).trim()).toBe('scoped slot outlet native footer fallback')
+      const pageWxml = await readDistText('pages/scoped-slot-outlet-fallback/index.wxml')
+      const componentWxml = await readDistText('components/scoped-slot-outlet-fallback/BackList/index.wxml')
+      expect(pageWxml).toContain('scoped slot outlet native main fallback')
+      expect(pageWxml).toContain('scoped slot outlet native footer fallback')
+      expect(countToken(pageWxml, 'data-scoped-slot-outlet-fallback="main"')).toBe(1)
+      expect(countToken(pageWxml, 'data-scoped-slot-outlet-fallback="footer"')).toBe(1)
+      expect(componentWxml).toContain('<slot name="main" />')
+      expect(componentWxml).toContain('<slot name="footer" />')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -56,6 +56,22 @@ defineComponent({
     expect(injected.code).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
   })
 
+  it('can skip sourcemap generation for setData.pick injection', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+defineComponent({
+  setup() {
+    return {}
+  },
+})
+    `.trim()
+
+    const injected = injectSetDataPickInJs(source, ['count'], { sourceMap: false })
+    expect(injected.transformed).toBe(true)
+    expect(injected.code).toContain('"count"')
+    expect(injected.map).toBeNull()
+  })
+
   it('injects only scoped slot owner bridge keys when auto pick is disabled', () => {
     const source = `
 import { defineComponent } from 'wevu'

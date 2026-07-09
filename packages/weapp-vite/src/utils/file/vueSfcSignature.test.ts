@@ -1,5 +1,7 @@
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } from './vueSfcSignature'
+import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from './vueSfcSignature'
 
 describe('vueSfcSignature', () => {
   afterEach(() => {
@@ -19,6 +21,186 @@ const count = 1
 
     expect(resolveVueSfcNonJsonSignature(second, filename)).toBe(
       resolveVueSfcNonJsonSignature(first, filename),
+    )
+  })
+
+  it('keeps the tailwind content signature when only definePageJson content changes', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const titleClass = 'text-red-500'
+</script>
+
+<template><view :class="titleClass">title</view></template>`
+    const second = first.replace('首页', '新标题')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature when runtime class literals change', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const titleClass = 'text-red-500'
+</script>
+
+<template><view :class="titleClass">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('keeps the tailwind content signature when script literals change without dynamic class binding', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="sfc-page">{{ scriptMarker }}</view></template>`
+    const second = first.replace('SFC_SCRIPT_MARKER', 'SFC_SCRIPT_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('keeps the tailwind content signature when non-call script literals change next to imported helpers', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+import { createSharedLabel } from '../../shared/tokens'
+
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+const shared = createSharedLabel('sfc-page')
+</script>
+
+<template><view class="sfc-page">{{ scriptMarker }}{{ shared }}</view></template>`
+    const second = first.replace('SFC_SCRIPT_MARKER', 'SFC_SCRIPT_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for script literals used by dynamic class binding', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptClass = 'text-red-500'
+</script>
+
+<template><view :class="scriptClass">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature when static template classes change', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="text-red-500">{{ scriptMarker }}</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('keeps the tailwind content signature when only template text changes', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+</script>
+
+<template><view class="sfc-page"><text>SFC_TEMPLATE_MARKER</text>{{ scriptMarker }}</view></template>`
+    const second = first.replace('SFC_TEMPLATE_MARKER', 'SFC_TEMPLATE_MARKER_NEXT')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for script literals used by v-bind class objects', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const activeClass = 'text-red-500'
+</script>
+
+<template><view v-bind="{ class: activeClass }">title</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for cva script literals without template class binding', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { cva } from 'class-variance-authority'
+const button = cva('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for aliased class utility imports', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { cva as createVariants } from 'class-variance-authority'
+const button = createVariants('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for locally re-exported class utilities', () => {
+    const filename = '/project/src/components/button.vue'
+    const first = `<script setup lang="ts">
+import { buttonClass } from '../class-utils'
+const button = buttonClass('rounded text-red-500')
+</script>
+
+<template><view>button</view></template>`
+    const second = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(second, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+  })
+
+  it('changes the tailwind content signature for class-like component props', () => {
+    const filename = '/project/src/pages/index.vue'
+    const first = `<script setup lang="ts">
+const rootClass = 'text-red-500'
+</script>
+
+<template><van-button custom-class="px-2" :hover-class="rootClass">button</van-button></template>`
+    const secondStatic = first.replace('px-2', 'px-4')
+    const secondDynamic = first.replace('text-red-500', 'text-blue-500')
+
+    expect(resolveVueSfcTailwindContentSignature(secondStatic, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
+    )
+    expect(resolveVueSfcTailwindContentSignature(secondDynamic, filename)).not.toBe(
+      resolveVueSfcTailwindContentSignature(first, filename),
     )
   })
 
@@ -88,6 +270,29 @@ const count = 1
     )
   })
 
+  it('resolves hmr signatures from one payload', () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>
+
+<style scoped>
+.count { color: red; }
+</style>`
+
+    expect(resolveVueSfcHmrSignatures(source, filename)).toEqual({
+      nonJsonSignature: resolveVueSfcNonJsonSignature(source, filename),
+      scriptSignature: resolveVueSfcScriptSignature(source, filename),
+      styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
+      tailwindContentSignature: resolveVueSfcTailwindContentSignature(source, filename),
+      tailwindTemplateContentSignature: expect.any(String),
+      tailwindScriptContentSignature: expect.any(String),
+      hasTemplate: resolveVueSfcHasTemplate(source, filename),
+    })
+  })
+
   it('falls back to the TypeScript backend when native module path is not configured', async () => {
     const filename = '/project/src/pages/index.vue'
     const source = `<script setup lang="ts">
@@ -103,6 +308,25 @@ const count = 1
     const tsScript = resolveVueSfcScriptSignature(source, filename)
 
     vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.resetModules()
+    const nativeModule = await import('./vueSfcSignature')
+
+    expect(nativeModule.resolveVueSfcNonJsonSignature(source, filename)).toBe(tsNonJson)
+    expect(nativeModule.resolveVueSfcScriptSignature(source, filename)).toBe(tsScript)
+  })
+
+  it('falls back to the TypeScript backend when native binding cannot be loaded', async () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const tsNonJson = resolveVueSfcNonJsonSignature(source, filename)
+    const tsScript = resolveVueSfcScriptSignature(source, filename)
+
+    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', join(tmpdir(), 'missing-weapp-vite-ast-native.cjs'))
     vi.resetModules()
     const nativeModule = await import('./vueSfcSignature')
 

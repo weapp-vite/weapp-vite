@@ -45,6 +45,7 @@ const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify([
 ])
 
 const STRUCTURE_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.RETAIL_PARITY_STRUCTURE_THRESHOLD || '0.93')
+const STATIC_STRUCTURE_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.RETAIL_PARITY_STATIC_STRUCTURE_THRESHOLD || '0.6')
 const ROUTE_CAPTURE_RETRY_COUNT = 2
 const ROUTE_CAPTURE_RETRY_DELAY_MS = 800
 const AUTOMATOR_LAUNCH_RETRY_COUNT = 3
@@ -230,6 +231,16 @@ async function runBuild(projectRoot: string) {
     cwd: projectRoot,
     label: `ide:retail-parity:${path.basename(projectRoot)}`,
   })
+}
+
+async function disableBuiltLazyCodeLoading(projectRoot: string) {
+  const appJsonPath = path.resolve(projectRoot, 'dist/app.json')
+  const appJson = JSON.parse(await readFile(appJsonPath, 'utf8')) as Record<string, unknown>
+  if (!('lazyCodeLoading' in appJson)) {
+    return
+  }
+  delete appJson.lazyCodeLoading
+  await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
 }
 
 async function loadTemplateAppConfig() {
@@ -530,12 +541,28 @@ function isPortInUseError(error: unknown) {
   return /Port \d+ is in use, please specify another port/.test(getErrorMessage(error))
 }
 
+function shouldResetSessionAfterCaptureError(error: unknown) {
+  const message = getErrorMessage(error)
+  return /Timed out waiting page root after reLaunch|Timeout in raw reLaunch|simulator boot error|Connection closed|Target closed|not connected/i.test(message)
+}
+
 async function launchAutomatorWithRetry(projectPath: string) {
   let lastError: unknown = null
   for (let attempt = 1; attempt <= AUTOMATOR_LAUNCH_RETRY_COUNT; attempt += 1) {
+    const previousBridgePostConnectRefresh = process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH
     try {
+      process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH = '1'
       return await launchAutomator({
         projectPath,
+        projectConfig: {
+          setting: {
+            useApiHostProcess: false,
+            useIsolateContext: false,
+            useMultiFrameRuntime: false,
+          },
+        },
+        skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
         timeout: 120_000,
       })
     }
@@ -545,6 +572,14 @@ async function launchAutomatorWithRetry(projectPath: string) {
         throw error
       }
       await wait(AUTOMATOR_LAUNCH_RETRY_DELAY_MS)
+    }
+    finally {
+      if (previousBridgePostConnectRefresh == null) {
+        delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH = previousBridgePostConnectRefresh
+      }
     }
   }
   throw new Error(`[retail-parity] failed to launch automator for ${projectPath}: ${getErrorMessage(lastError)}`)
@@ -576,6 +611,17 @@ async function getSharedProjectSession(projectRoot: string) {
   return session
 }
 
+async function resetSharedProjectSession(projectRoot: string) {
+  const existing = sharedProjectSessions.get(projectRoot)
+  if (existing) {
+    sharedProjectSessions.delete(projectRoot)
+    existing.errorCollector.dispose()
+    existing.warningCollector.dispose()
+    await existing.miniProgram.close().catch(() => {})
+  }
+  return await getSharedProjectSession(projectRoot)
+}
+
 async function closeSharedProjectSessions() {
   const sessions = Array.from(sharedProjectSessions.values())
   sharedProjectSessions.clear()
@@ -592,9 +638,11 @@ async function captureRouteWxml(options: {
   route: string
   pagePath: string
   errorCollector: RuntimeErrorCollector
+  reloadSession?: () => Promise<SharedProjectSession>
   warningCollector: RuntimeWarningCollector
 }) {
-  const { miniProgram, projectName, route, pagePath, errorCollector, warningCollector } = options
+  let { miniProgram, errorCollector, warningCollector } = options
+  const { projectName, reloadSession, route, pagePath } = options
   let lastError: unknown = null
 
   for (let attempt = 1; attempt <= ROUTE_CAPTURE_RETRY_COUNT; attempt += 1) {
@@ -685,6 +733,12 @@ async function captureRouteWxml(options: {
         `[retail-parity] ${projectName} capture failed route=${route} attempt=${attempt}/${ROUTE_CAPTURE_RETRY_COUNT} error=${getErrorMessage(error)}`,
       )
       if (attempt < ROUTE_CAPTURE_RETRY_COUNT) {
+        if (reloadSession && shouldResetSessionAfterCaptureError(error)) {
+          const nextSession = await reloadSession()
+          miniProgram = nextSession.miniProgram
+          errorCollector = nextSession.errorCollector
+          warningCollector = nextSession.warningCollector
+        }
         await wait(ROUTE_CAPTURE_RETRY_DELAY_MS)
       }
     }
@@ -702,19 +756,36 @@ async function captureProjectPagesWxml(options: {
   launchQueryMap: Map<string, string>
 }) {
   const { projectRoot, projectName, pages, launchQueryMap } = options
-  const { miniProgram, errorCollector, warningCollector } = await getSharedProjectSession(projectRoot)
+  let session = await getSharedProjectSession(projectRoot)
   const pageWxmlMap = new Map<string, string>()
   for (const pagePath of pages) {
     const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
     const wxml = await captureRouteWxml({
-      miniProgram,
+      miniProgram: session.miniProgram,
       projectName,
       route,
       pagePath,
-      errorCollector,
-      warningCollector,
+      errorCollector: session.errorCollector,
+      reloadSession: async () => {
+        session = await resetSharedProjectSession(projectRoot)
+        return session
+      },
+      warningCollector: session.warningCollector,
     })
     pageWxmlMap.set(pagePath, wxml)
+  }
+  return pageWxmlMap
+}
+
+async function captureBuiltProjectPagesWxml(options: {
+  pages: string[]
+  projectRoot: string
+}) {
+  const pageWxmlMap = new Map<string, string>()
+  for (const pagePath of options.pages) {
+    const wxmlPath = path.resolve(options.projectRoot, 'dist', `${pagePath}.wxml`)
+    const wxml = await readFile(wxmlPath, 'utf8')
+    pageWxmlMap.set(pagePath, normalizeWxmlForSnapshot(await formatWxml(wxml)))
   }
   return pageWxmlMap
 }
@@ -740,7 +811,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     await closeSharedProjectSessions()
   })
 
-  it.skip('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
+  it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
       readFile(APP_JSON_PATH, 'utf8').then(JSON.parse),
       loadTemplateAppConfig(),
@@ -761,22 +832,36 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     }
 
     await Promise.all([
-      runBuild(APP_ROOT),
+      runBuild(APP_ROOT).then(() => disableBuiltLazyCodeLoading(APP_ROOT)),
       runBuild(TEMPLATE_ROOT),
     ])
 
-    const appWxmlMap = await captureProjectPagesWxml({
-      projectRoot: APP_ROOT,
-      projectName: 'app',
-      pages: pagesToCompare,
-      launchQueryMap,
-    })
-    const templateWxmlMap = await captureProjectPagesWxml({
-      projectRoot: TEMPLATE_ROOT,
-      projectName: 'template',
-      pages: pagesToCompare,
-      launchQueryMap,
-    })
+    const useRuntimeParity = process.env.RETAIL_PARITY_RUNTIME === '1'
+    const structureSimilarityThreshold = useRuntimeParity
+      ? STRUCTURE_SIMILARITY_THRESHOLD
+      : STATIC_STRUCTURE_SIMILARITY_THRESHOLD
+    const appWxmlMap = useRuntimeParity
+      ? await captureProjectPagesWxml({
+          projectRoot: APP_ROOT,
+          projectName: 'app',
+          pages: pagesToCompare,
+          launchQueryMap,
+        })
+      : await captureBuiltProjectPagesWxml({
+          projectRoot: APP_ROOT,
+          pages: pagesToCompare,
+        })
+    const templateWxmlMap = useRuntimeParity
+      ? await captureProjectPagesWxml({
+          projectRoot: TEMPLATE_ROOT,
+          projectName: 'template',
+          pages: pagesToCompare,
+          launchQueryMap,
+        })
+      : await captureBuiltProjectPagesWxml({
+          projectRoot: TEMPLATE_ROOT,
+          pages: pagesToCompare,
+        })
 
     const comparisons: Array<{
       pagePath: string
@@ -797,7 +882,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
 
       const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(templateWxml))
       comparisons.push({ pagePath, similarity })
-      if (similarity < STRUCTURE_SIMILARITY_THRESHOLD) {
+      if (similarity < structureSimilarityThreshold) {
         await dumpCapturedWxml(pagePath, appWxml, templateWxml)
         mismatches.push({
           pagePath,

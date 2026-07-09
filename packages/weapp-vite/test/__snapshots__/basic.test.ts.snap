@@ -27,7 +27,7 @@ exports[`build basic > dist > app.json 1`] = `
 exports[`build basic > dist > app.wxss 1`] = `
 ".app {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `
@@ -53,7 +53,7 @@ exports[`build basic > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`build basic > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build basic > dist > pages/index/index.js 1`] = `
@@ -88,7 +88,7 @@ exports[`build basic > dist > pages/index/index.wxml 1`] = `
 exports[`build basic > dist > pages/index/index.wxss 1`] = `
 ".page {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build basic > dist > sitemap.json 1`] = `

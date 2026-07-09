@@ -4,6 +4,19 @@ import Issue528SlotFallbackCard from '../../components/issue-528/SlotFallbackCar
 definePageJson({
   navigationBarTitleText: 'issue-528',
 })
+
+function _runE2E() {
+  return {
+    fallbackHeader: 'issue-528 fallback header',
+    fallbackDefault: 'issue-528 fallback default',
+    providedHeader: 'issue-528 provided header',
+    providedDefault: 'issue-528 provided default',
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

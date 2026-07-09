@@ -7,6 +7,8 @@ import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/co
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
+import { resolveVueSfcHmrSignatures } from '../../../../../utils/file/vueSfcSignature'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
@@ -42,8 +44,9 @@ export async function finalizeTransformEntryScript(options: {
   isPage: boolean
   isApp: boolean
   forcePageFeatureInjection?: boolean
+  sourceMap?: boolean
 }) {
-  const { result, filename, pluginCtx, configService, isPage, isApp, forcePageFeatureInjection = false } = options
+  const { result, filename, pluginCtx, configService, isPage, isApp, forcePageFeatureInjection = false, sourceMap = true } = options
 
   if (isPage && result.script) {
     if (mayNeedTransformPageScrollDiagnostics(result.script)) {
@@ -58,6 +61,7 @@ export async function finalizeTransformEntryScript(options: {
       const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
         checkMtime: configService.isDev,
         minify: isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev),
+        sourceMap,
       })
       if (injected.transformed) {
         result.script = injected.code
@@ -87,8 +91,8 @@ export async function finalizeTransformEntryScript(options: {
       ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
       : keys
     const injectedPick = shouldInjectScopedSlotOwnerPick
-      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys)
-      : injectSetDataPickInJs(result.script!, keys)
+      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys, { sourceMap })
+      : injectSetDataPickInJs(result.script!, keys, { sourceMap })
     if (injectedPick.transformed) {
       result.script = injectedPick.code
       result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
@@ -101,6 +105,7 @@ export async function finalizeTransformEntryScript(options: {
     const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
       result.script!,
       pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
+      { sourceMap },
     )
     if (injectedPick.transformed) {
       result.script = injectedPick.code
@@ -111,7 +116,7 @@ export async function finalizeTransformEntryScript(options: {
   const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
   const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
   if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
-    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script)
+    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script, { sourceMap })
     if (injectedProps.transformed) {
       result.script = injectedProps.code
       result.scriptMap = composeSourceMaps(injectedProps.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
@@ -128,9 +133,10 @@ export function finalizeTransformEntryCode(options: {
   isPage: boolean
   isApp: boolean
   isDev: boolean
+  sourceMap?: boolean
   hmrStyleToken?: number | string
 }) {
-  const { result, filename, styleBlocks, isPage, isApp, isDev, hmrStyleToken } = options
+  const { result, filename, styleBlocks, isPage, isApp, isDev, sourceMap = true, hmrStyleToken } = options
   const script = result.script ?? ''
   const returned = new MagicString(script)
   let hasMutation = false
@@ -160,7 +166,7 @@ export function finalizeTransformEntryCode(options: {
     hasMutation = true
   }
 
-  const generatedMap = hasMutation
+  const generatedMap = hasMutation && sourceMap
     ? returned.generateMap({
       hires: true,
       includeContent: true,
@@ -171,7 +177,9 @@ export function finalizeTransformEntryCode(options: {
 
   return {
     code: returned.toString(),
-    map: composeSourceMaps(generatedMap as EncodedSourceMapLike | null, result.scriptMap),
+    map: sourceMap
+      ? composeSourceMaps(generatedMap as EncodedSourceMapLike | null, result.scriptMap)
+      : null,
   }
 }
 
@@ -195,11 +203,13 @@ export async function finalizeTransformCompiledResult(options: {
   source: string
   autoRoutesSignature?: string
   result: VueTransformResult
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string }>
+  styleIndependentSignature?: string
   setAppShell?: (shell: ResolvedAppShell | undefined) => void
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
   isApp: boolean
+  sourceMap?: boolean
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
   addWatchFile: (pluginCtx: any, file: string) => void
@@ -220,10 +230,12 @@ export async function finalizeTransformCompiledResult(options: {
     autoRoutesSignature,
     result,
     compilationCache,
+    styleIndependentSignature,
     setAppShell,
     configService,
     isPage,
     isApp,
+    sourceMap,
     scopedSlotModules,
     emittedScopedSlotChunks,
     addWatchFile,
@@ -266,6 +278,7 @@ export async function finalizeTransformCompiledResult(options: {
     configService,
     isPage,
     isApp,
+    sourceMap,
   })
 
   compilationCache.set(filename, {
@@ -274,7 +287,36 @@ export async function finalizeTransformCompiledResult(options: {
     isPage,
     autoRoutesSignature,
     refreshToken: 0,
+    styleIndependentSignature,
   })
+  if (configService.isDev && filename.endsWith('.vue')) {
+    const normalizedFilename = normalizeFsResolvedId(filename)
+    const hmr = ctx.runtimeState?.build?.hmr
+    const signatures = resolveVueSfcHmrSignatures(source, filename)
+    if (signatures.nonJsonSignature && hmr?.vueEntryNonJsonSignatures) {
+      hmr.vueEntryNonJsonSignatures.set(normalizedFilename, signatures.nonJsonSignature)
+    }
+    if (signatures.scriptSignature && hmr?.vueEntryScriptSignatures) {
+      hmr.vueEntryScriptSignatures.set(normalizedFilename, signatures.scriptSignature)
+    }
+    if (signatures.tailwindContentSignature && hmr?.vueEntryTailwindContentSignatures) {
+      hmr.vueEntryTailwindContentSignatures.set(normalizedFilename, signatures.tailwindContentSignature)
+    }
+    if (signatures.tailwindTemplateContentSignature && hmr?.vueEntryTailwindTemplateContentSignatures) {
+      hmr.vueEntryTailwindTemplateContentSignatures.set(normalizedFilename, signatures.tailwindTemplateContentSignature)
+    }
+    if (signatures.tailwindScriptContentSignature && hmr?.vueEntryTailwindScriptContentSignatures) {
+      hmr.vueEntryTailwindScriptContentSignatures.set(normalizedFilename, signatures.tailwindScriptContentSignature)
+    }
+    const nextStyleIndependentSignature = styleIndependentSignature
+      ?? signatures.styleIndependentSignature
+    if (nextStyleIndependentSignature && hmr?.vueEntryStyleIndependentSignatures) {
+      hmr.vueEntryStyleIndependentSignatures.set(normalizedFilename, nextStyleIndependentSignature)
+    }
+    if (signatures.hasTemplate !== undefined && hmr?.vueEntryHasTemplate) {
+      hmr.vueEntryHasTemplate.set(normalizedFilename, signatures.hasTemplate)
+    }
+  }
 
   const relativeBase = resolveVueOutputBase(configService, filename)
   if (relativeBase) {

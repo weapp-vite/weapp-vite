@@ -35,14 +35,16 @@ const CASES = [
     title: 'axios',
   },
 ] as const
-const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
+const JS_FORMATS: TestJsFormat[] = ['cjs']
+const REQUEST_GLOBALS_STATE_STORAGE_KEY = '__weapp_vite_request_globals_state__'
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function waitForTransportState(
-  page: any,
+  miniProgram: any,
+  route: string,
   predicate: (snapshot: Record<string, any>) => boolean,
   timeoutMs = 15_000,
 ) {
@@ -51,28 +53,20 @@ async function waitForTransportState(
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const snapshot = {
-        pageStatus: await page.data('state.pageStatus'),
-        payload: await page.data('state.payload'),
-        requestLog: await page.data('state.requestLog'),
-        runCount: await page.data('state.runCount'),
-        status: await page.data('state.status'),
+      const snapshot = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+        timeout: 2_500,
+      }, REQUEST_GLOBALS_STATE_STORAGE_KEY)
+      if (snapshot?.route !== route.replace(/^\/+/, '')) {
+        lastSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : {}
       }
-      lastSnapshot = snapshot
-      if (predicate(snapshot)) {
+      else {
+        lastSnapshot = snapshot
+      }
+      if (snapshot?.route === route.replace(/^\/+/, '') && predicate(snapshot)) {
         return snapshot
       }
     }
     catch {
-    }
-
-    if (typeof page?.waitFor === 'function') {
-      try {
-        await page.waitFor(180)
-        continue
-      }
-      catch {
-      }
     }
 
     await sleep(180)
@@ -103,12 +97,7 @@ async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...a
 }
 
 for (const jsFormat of JS_FORMATS) {
-  const describeForJsFormat = jsFormat === 'esm' ? describe.skip : describe.sequential
-
-  // 微信开发者工具 3.15.x 在 Vue App 根入口的 ESM appservice 装载阶段，
-  // 会出现 `module 'app.js' is not defined`，导致 app 入口无法完成初始化。
-  // CI 构建测试继续覆盖 ESM 产物形态，IDE runtime 保留 CJS 真运行链路。
-  describeForJsFormat(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
+  describe.sequential(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
     let miniProgram: any
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
@@ -191,12 +180,15 @@ for (const jsFormat of JS_FORMATS) {
       const miniProgram = await getMiniProgram(ctx)
 
       for (const testCase of CASES) {
+        await miniProgram.callWxMethodWithOptions('removeStorageSync', {
+          timeout: 2_500,
+        }, REQUEST_GLOBALS_STATE_STORAGE_KEY).catch(() => {})
         const page = await miniProgram.reLaunch(testCase.route)
         if (!page) {
           throw new Error(`Failed to launch route ${testCase.route}`)
         }
 
-        const initialState = await waitForTransportState(page, snapshot => (
+        const initialState = await waitForTransportState(miniProgram, testCase.route, snapshot => (
           snapshot.pageStatus === '全部通过'
           && snapshot.runCount === 1
           && snapshot.status === 'success'
@@ -212,7 +204,7 @@ for (const jsFormat of JS_FORMATS) {
 
         await invokeOrTap(page, 'runChecks', 0)
 
-        const rerunState = await waitForTransportState(page, snapshot => (
+        const rerunState = await waitForTransportState(miniProgram, testCase.route, snapshot => (
           snapshot.pageStatus === '全部通过'
           && snapshot.runCount === 2
           && snapshot.status === 'success'

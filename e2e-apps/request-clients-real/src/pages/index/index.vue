@@ -34,7 +34,7 @@ const pages = [
 </script>
 
 <template>
-  <view class="page">
+  <view id="request-clients-real-root" class="page" data-e2e-route="index">
     <view class="hero">
       <text class="hero-title">Request Clients Real E2E</text>
       <text class="hero-desc">本 app 用于验证 fetch / axios / graphql-request / vue-query / socket.io-client / WebSocket 的真实请求链路。</text>

@@ -446,6 +446,45 @@ describe('autoImport resolver helpers', () => {
     expect(helpers.resolveNavigationImport('missing-ui/button')).toBeUndefined()
   })
 
+  it('caches resolved navigation imports during support-file generation', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(process.cwd(), '.tmp-resolver-'))
+    tempDirs.push(tmpDir)
+
+    await createPackage(
+      tmpDir,
+      'cached-ui',
+      {
+        name: 'cached-ui',
+        version: '1.0.0',
+        miniprogram: 'miniprogram_dist',
+      },
+      {
+        'miniprogram_dist/button/index.d.ts': 'export interface ButtonProps {}\n',
+      },
+    )
+
+    const state = createState({
+      cwd: tmpDir,
+      autoImportComponents: {
+        resolvers: [],
+      },
+    })
+    const helpers = createResolverHelpers(state)
+    const pathExistsSpy = vi.spyOn(fs, 'pathExistsSync')
+
+    try {
+      expect(helpers.resolveNavigationImport('cached-ui/button/index')).toBe('cached-ui/miniprogram_dist/button/index')
+      const firstChecks = pathExistsSpy.mock.calls.length
+
+      expect(helpers.resolveNavigationImport('cached-ui/button/index')).toBe('cached-ui/miniprogram_dist/button/index')
+
+      expect(pathExistsSpy.mock.calls.length).toBe(firstChecks)
+    }
+    finally {
+      pathExistsSpy.mockRestore()
+    }
+  })
+
   it('keeps support-file resolver state stable when entries are unchanged', () => {
     const state = createState()
     const helpers = createResolverHelpers(state)

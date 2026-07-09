@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 import {
+  callRoutePageMethod,
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
@@ -50,7 +52,7 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
     if (serverHandle) {
       await serverHandle.stop()
     }
-  })
+  }, 30_000)
 
   it('uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools', async (ctx) => {
     if (sharedInfraUnavailableMessage) {
@@ -58,23 +60,47 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
     }
 
     const miniProgram = await getSharedMiniProgram(ctx)
+    const route = withBaseUrl('/pages/issue-448/index')
     try {
       const page = await relaunchPage(
         miniProgram,
-        withBaseUrl('/pages/issue-448/index'),
-        'issue448-page',
+        route,
+        undefined,
         30_000,
+        {
+          readiness: async page => Boolean(await page.waitForRendered({
+            dataset: {
+              baseUrl,
+              e2eIssue: '448',
+            },
+            selector: '#issue448-page',
+            timeout: 15_000,
+          })),
+        },
       )
       if (!page) {
         throw new Error('Failed to launch issue-448 page')
       }
 
-      const result = await page.callMethod('_runFormDataUploadE2E')
-      const runtime = await page.callMethod('_runE2E')
-      const rawFetch = result?.payload?.rawFetch ?? []
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const started = await callRoutePageMethodWithOptions(activeMiniProgram, route, '_startFormDataUploadE2E', {
+        protocolTimeoutMs: 12_000,
+        retries: 1,
+      })
+      expect(started?.ok).toBe(true)
+      await expect(page.waitForRendered({
+        dataset: {
+          formDataStatus: 'passed',
+          rawFetchStatus: 'passed',
+          readKind: 'arraybuffer',
+        },
+        selector: '.issue448-upload-probe',
+        timeout: 90_000,
+      })).resolves.toBeTruthy()
+      const runtime = await callRoutePageMethod(activeMiniProgram, route, '_runE2E')
+      const payload = JSON.parse(runtime.formDataUploadPayload)
+      const rawFetch = JSON.parse(runtime.rawFetchUploadPayload)
 
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.status).toBe('passed')
       expect(rawFetch.map((item: { caseName: string }) => item.caseName)).toEqual([
         'arraybuffer-init',
         'uint8array-init',
@@ -86,31 +112,31 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
         'blob-request',
         'blob-like-request',
       ])
-      expect(result?.payload?.blob).toMatchObject({
+      expect(payload?.blob).toMatchObject({
         contentType: 'application/octet-stream',
         filename: 'downloaded-blob.bin',
         name: 'blob-file',
       })
-      expect(result?.payload?.file).toMatchObject({
+      expect(payload?.file).toMatchObject({
         contentType: 'application/octet-stream',
         filename: 'downloaded-file.bin',
         name: 'file-file',
       })
-      expect(result?.payload?.request).toMatchObject({
+      expect(payload?.request).toMatchObject({
         contentType: 'application/octet-stream',
         filename: 'downloaded-request.bin',
         name: 'request-file',
       })
-      expect(result?.payload?.blob?.sha256).toBe(result?.payload?.expectedSha256)
-      expect(result?.payload?.file?.sha256).toBe(result?.payload?.expectedSha256)
-      expect(result?.payload?.request?.sha256).toBe(result?.payload?.expectedSha256)
-      expect(result?.payload?.blob?.size).toBeGreaterThan(0)
-      expect(result?.payload?.file?.size).toBe(result?.payload?.blob?.size)
-      expect(result?.payload?.request?.size).toBe(result?.payload?.blob?.size)
-      expect(result?.payload?.readKind).toBe('arraybuffer')
+      expect(payload?.blob?.sha256).toBe(payload?.expectedSha256)
+      expect(payload?.file?.sha256).toBe(payload?.expectedSha256)
+      expect(payload?.request?.sha256).toBe(payload?.expectedSha256)
+      expect(payload?.blob?.size).toBeGreaterThan(0)
+      expect(payload?.file?.size).toBe(payload?.blob?.size)
+      expect(payload?.request?.size).toBe(payload?.blob?.size)
+      expect(payload?.readKind).toBe('arraybuffer')
       for (const item of rawFetch) {
         expect(item.sha256).toBe(item.expectedSha256)
-        expect(item.size).toBe(result?.payload?.blob?.size)
+        expect(item.size).toBe(payload?.blob?.size)
       }
       expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'blob-init')?.contentType).toBe('application/octet-stream')
       expect(rawFetch.find((item: { caseName: string }) => item.caseName === 'file-init')?.contentType).toBe('application/octet-stream')

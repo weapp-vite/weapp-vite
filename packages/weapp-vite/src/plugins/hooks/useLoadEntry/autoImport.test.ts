@@ -1,3 +1,5 @@
+import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createAutoImportAugmenter } from './autoImport'
 
@@ -272,6 +274,78 @@ describe('createAutoImportAugmenter', () => {
     expect(componentEntryMap.get('components/HotCard/index')).toBe(
       '/project/src/components/HotCard/index.vue',
     )
+  })
+
+  it('registers existing local SFC candidates for unresolved template tags before retrying', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../../../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-augmenter-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const hotCardPath = path.join(srcRoot, 'components/HotCard/index.vue')
+    await fs.ensureDir(path.dirname(hotCardPath))
+    await fs.writeFile(hotCardPath, '<template><view>hot</view></template>', 'utf8')
+
+    let registered = false
+    const resolve = vi.fn((name: string) => {
+      if (registered && name === 'HotCard') {
+        return {
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+            resolvedId: hotCardPath,
+          },
+        }
+      }
+      return undefined
+    })
+    const registerPotentialComponent = vi.fn(async (filePath: string) => {
+      expect(filePath).toBe(hotCardPath)
+      registered = true
+    })
+    const componentEntryMap = new Map<string, string>()
+
+    try {
+      const applyAutoImports = createAutoImportAugmenter(
+        {
+          resolve,
+          getVersion: vi.fn(() => registered ? 1 : 0),
+          registerPotentialComponent,
+        } as any,
+        {
+          getAggregatedAutoImportComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+          getAggregatedComponents: vi.fn(() => ({ HotCard: [{ start: 0, end: 0 }] })),
+        } as any,
+        componentEntryMap,
+        {
+          absoluteSrcRoot: srcRoot,
+          weappViteConfig: {
+            autoImportComponents: {
+              globs: ['components/**/*.vue'],
+            },
+          },
+        } as any,
+      )
+
+      const json: Record<string, any> = {}
+      const injectedEntries = await applyAutoImports(path.join(srcRoot, 'pages/index/index'), json)
+
+      expect(registerPotentialComponent).toHaveBeenCalledTimes(1)
+      expect(resolve).toHaveBeenCalledWith('HotCard', path.join(srcRoot, 'pages/index/index'))
+      expect(json.usingComponents).toEqual({
+        HotCard: '/components/HotCard/index',
+      })
+      expect(injectedEntries).toEqual(['/components/HotCard/index'])
+      expect(componentEntryMap.get('components/HotCard/index')).toBe(hotCardPath)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
   })
 
   it('reuses resolved auto imports when aggregated template graph and version are unchanged', () => {

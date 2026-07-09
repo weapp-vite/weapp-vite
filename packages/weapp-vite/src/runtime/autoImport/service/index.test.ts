@@ -103,6 +103,7 @@ describe('autoImport service index', () => {
     ctx.runtimeState.autoImport.resolvedResolverComponents.set('van-button', '@vant/weapp/button')
     ctx.runtimeState.autoImport.matcher = () => true
     ctx.runtimeState.autoImport.matcherKey = 'dirty'
+    ctx.runtimeState.autoImport.preparedGlobsKey = 'components/**/*'
     const service = createAutoImportService(ctx)
 
     service.reset()
@@ -111,6 +112,7 @@ describe('autoImport service index', () => {
     expect(ctx.runtimeState.autoImport.resolvedResolverComponents.size).toBe(0)
     expect(ctx.runtimeState.autoImport.matcher).toBeUndefined()
     expect(ctx.runtimeState.autoImport.matcherKey).toBe('')
+    expect(ctx.runtimeState.autoImport.preparedGlobsKey).toBeUndefined()
     expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
@@ -166,6 +168,50 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledTimes(1)
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledTimes(1)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+  })
+
+  it('syncs full resolver support outputs without resetting runtime resolver state', async () => {
+    const resolverHelpers = createResolverHelpers({
+      collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({
+        'van-cell': '@vant/weapp/cell',
+      })),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    ctx.runtimeState.autoImport.resolvedResolverComponents.set('UsedButton', '@vant/weapp/button')
+    const service = createAutoImportService(ctx)
+
+    await service.syncSupportFileResolverComponents()
+
+    expect(ctx.runtimeState.autoImport.resolvedResolverComponents.get('UsedButton')).toBe('@vant/weapp/button')
+    expect(resolverHelpers.setSupportFileResolverComponents).toHaveBeenCalledWith({
+      'van-cell': '@vant/weapp/cell',
+    })
+    expect(resolverHelpers.clearSupportFileResolverComponents).toHaveBeenCalledTimes(1)
+    expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
   })
 
@@ -315,18 +361,26 @@ describe('autoImport service index', () => {
     capturedOutputsState.pendingWrite = new Promise<void>((resolve) => {
       pending.manifestResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingWrite = undefined
     })
     capturedOutputsState.pendingTypedWrite = new Promise<void>((resolve) => {
       pending.typedResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingTypedWrite = undefined
     })
     capturedOutputsState.pendingHtmlCustomDataWrite = new Promise<void>((resolve) => {
       pending.htmlResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingHtmlCustomDataWrite = undefined
     })
     capturedOutputsState.pendingVueComponentsWrite = new Promise<void>((resolve) => {
       pending.vueResolved = true
       resolve()
+    }).finally(() => {
+      capturedOutputsState.pendingVueComponentsWrite = undefined
     })
 
     await service.awaitManifestWrites()
@@ -572,7 +626,9 @@ describe('autoImport service index', () => {
     })
 
     const service = createAutoImportService(createContext())
+    expect(service.hasPendingRegistrations?.()).toBe(false)
     const registerPromise = service.registerPotentialComponent('/project/src/components/hot-card/index.vue')
+    expect(service.hasPendingRegistrations?.()).toBe(true)
     const pendingPromise = service.awaitPendingRegistrations?.()
     await Promise.resolve()
 
@@ -589,6 +645,7 @@ describe('autoImport service index', () => {
     await registerPromise
     await pendingPromise
     expect(settled).toBe(true)
+    expect(service.hasPendingRegistrations?.()).toBe(false)
   })
 
   it('does not reschedule unchanged resolver outputs repeatedly', () => {
@@ -676,5 +733,53 @@ describe('autoImport service index', () => {
     expect(getTypedComponentsSettingsMock).toHaveBeenCalledTimes(1)
     expect(getHtmlCustomDataSettingsMock).toHaveBeenCalledTimes(1)
     expect(getVueComponentsSettingsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for output writes scheduled after pending registrations resolve', async () => {
+    const resolverHelpers = createResolverHelpers()
+    let capturedOutputsState: any
+    let resolveTypedWrite: (() => void) | undefined
+    const typedWriteDone = vi.fn()
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockImplementation((args: any) => {
+      capturedOutputsState = args.outputsState
+      return {
+        scheduleManifestWrite: vi.fn(),
+        scheduleTypedComponentsWrite: vi.fn(),
+        scheduleHtmlCustomDataWrite: vi.fn(),
+        scheduleVueComponentsWrite: vi.fn(),
+      }
+    })
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(async () => {
+        capturedOutputsState.pendingTypedWrite = new Promise<void>((resolve) => {
+          resolveTypedWrite = resolve
+        }).then(() => {
+          typedWriteDone()
+        }).finally(() => {
+          capturedOutputsState.pendingTypedWrite = undefined
+        })
+      }),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    })
+
+    const service = createAutoImportService(createContext())
+    const registration = service.registerPotentialComponent('/project/src/components/card.vue')
+    await vi.waitFor(() => {
+      expect(resolveTypedWrite).toBeTypeOf('function')
+    })
+
+    const awaitingWrites = service.awaitManifestWrites()
+    expect(typedWriteDone).not.toHaveBeenCalled()
+    resolveTypedWrite?.()
+    await awaitingWrites
+    await registration
+
+    expect(typedWriteDone).toHaveBeenCalledTimes(1)
   })
 })

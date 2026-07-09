@@ -1,6 +1,7 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
+import type { ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
-import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral } from '../../../../../ast'
+import { analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   hasNpmDependencyPrefix,
@@ -15,14 +16,122 @@ import {
 } from '../constants'
 import { getRequireImportLiteral, setRequireImportLiteral } from './literals'
 
+function mayNeedChunkScriptAnalysis(code: string) {
+  if (code.includes('require')) {
+    return true
+  }
+
+  for (const identifier of platformApiIdentifiers) {
+    if (code.includes(identifier)) {
+      return true
+    }
+  }
+  return false
+}
+
+export type ChunkScriptAnalysis = Pick<ScriptAnalysisResult, 'hasPlatformApiAccess' | 'hasStaticRequireLiteral'>
+export type ChunkScriptAnalysisCache = WeakMap<OutputChunk, {
+  analysis: ChunkScriptAnalysis
+  code: string
+}>
+
+export function rememberChunkScriptAnalysis(
+  chunk: OutputChunk,
+  analysis: ChunkScriptAnalysis,
+  options?: {
+    cache?: ChunkScriptAnalysisCache
+  },
+) {
+  options?.cache?.set(chunk, {
+    analysis,
+    code: chunk.code,
+  })
+}
+
+export function getChunkScriptAnalysis(
+  chunk: OutputChunk,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+    cache?: ChunkScriptAnalysisCache
+  },
+): ChunkScriptAnalysis {
+  const cached = options?.cache?.get(chunk)
+  if (cached?.code === chunk.code) {
+    return cached.analysis
+  }
+
+  const analysis = mayNeedChunkScriptAnalysis(chunk.code)
+    ? analyzeScript(chunk.code, { engine: options?.astEngine })
+    : {
+        hasPlatformApiAccess: false,
+        hasStaticRequireLiteral: false,
+      }
+  rememberChunkScriptAnalysis(chunk, analysis, options)
+  return analysis
+}
+
+export function warmupBundleScriptAnalysis(
+  bundle: OutputBundle,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+    cache?: ChunkScriptAnalysisCache
+  },
+) {
+  const cache = options?.cache
+  if (!cache) {
+    return
+  }
+
+  const chunks: OutputChunk[] = []
+  const inputs: Array<{ code: string, filename?: string }> = []
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const cached = cache.get(chunk)
+    if (cached?.code === chunk.code) {
+      continue
+    }
+    if (!mayNeedChunkScriptAnalysis(chunk.code)) {
+      rememberChunkScriptAnalysis(chunk, {
+        hasPlatformApiAccess: false,
+        hasStaticRequireLiteral: false,
+      }, options)
+      continue
+    }
+
+    chunks.push(chunk)
+    inputs.push({
+      code: chunk.code,
+      filename: chunk.fileName,
+    })
+  }
+
+  if (inputs.length === 0) {
+    return
+  }
+
+  const analyses = analyzeScripts(inputs, { engine: options.astEngine })
+  for (const [index, analysis] of analyses.entries()) {
+    const chunk = chunks[index]
+    if (!chunk) {
+      continue
+    }
+    rememberChunkScriptAnalysis(chunk, analysis, options)
+  }
+}
+
 export function replacePlatformApiAccess(
   code: string,
   globalName: string,
   options?: {
+    analysis?: Pick<ChunkScriptAnalysis, 'hasPlatformApiAccess'>
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  if (!mayContainPlatformApiAccess(code, { engine: options?.astEngine })) {
+  if (!(options?.analysis?.hasPlatformApiAccess ?? mayContainPlatformApiAccess(code, { engine: options?.astEngine }))) {
     return code
   }
   return rewriteMiniProgramPlatformApiAccess(code, globalName, {
@@ -49,10 +158,11 @@ export function rewriteChunkNpmImportsByPlatform(
   dependencies: Record<string, string> | undefined,
   mode?: string,
   options?: {
+    analysis?: Pick<ChunkScriptAnalysis, 'hasStaticRequireLiteral'>
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  if (!mayContainStaticRequireLiteral(code, { engine: options?.astEngine })) {
+  if (!(options?.analysis?.hasStaticRequireLiteral ?? mayContainStaticRequireLiteral(code, { engine: options?.astEngine }))) {
     return code
   }
 
@@ -108,20 +218,36 @@ export function rewriteBundleNpmImportsByPlatform(
   dependencies: Record<string, string> | undefined,
   mode?: string,
   options?: {
+    analysisCache?: ChunkScriptAnalysisCache
     astEngine?: 'babel' | 'oxc'
   },
 ) {
+  warmupBundleScriptAnalysis(bundle, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const nextCode = rewriteChunkNpmImportsByPlatform(platform, chunk.code, dependencies, mode, options)
+    const analysis = getChunkScriptAnalysis(chunk, {
+      astEngine: options?.astEngine,
+      cache: options?.analysisCache,
+    })
+    const nextCode = rewriteChunkNpmImportsByPlatform(platform, chunk.code, dependencies, mode, {
+      ...options,
+      analysis,
+    })
     if (nextCode === chunk.code) {
       continue
     }
     chunk.code = nextCode
+    rememberChunkScriptAnalysis(chunk, analysis, {
+      cache: options?.analysisCache,
+    })
   }
 }
 
@@ -129,16 +255,29 @@ export function rewriteBundlePlatformApi(
   bundle: OutputBundle,
   globalName: string,
   options?: {
+    analysisCache?: ChunkScriptAnalysisCache
     astEngine?: 'babel' | 'oxc'
   },
 ) {
+  warmupBundleScriptAnalysis(bundle, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const nextCode = replacePlatformApiAccess(chunk.code, globalName, options)
+    const analysis = getChunkScriptAnalysis(chunk, {
+      astEngine: options?.astEngine,
+      cache: options?.analysisCache,
+    })
+    const nextCode = replacePlatformApiAccess(chunk.code, globalName, {
+      ...options,
+      analysis,
+    })
     if (nextCode === chunk.code) {
       continue
     }
@@ -153,6 +292,13 @@ export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
     }
 
     const chunk = output as OutputChunk
+    if (
+      !(chunk.code.includes('Function(') && chunk.code.includes('return this'))
+      && !chunk.code.includes('typeof self<')
+    ) {
+      continue
+    }
+
     const hasDynamicGlobalResolution = DYNAMIC_GLOBAL_RESOLUTION_RE.test(chunk.code)
     DYNAMIC_GLOBAL_RESOLUTION_RE.lastIndex = 0
     const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)

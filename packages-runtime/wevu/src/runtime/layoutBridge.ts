@@ -4,7 +4,6 @@ import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
 } from '@weapp-core/constants'
-import { createMiniProgramLayoutHostRegistry, normalizeMiniProgramLayoutHostKeys, resolveMiniProgramPageKeys } from '@weapp-core/shared'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 import { getCurrentMiniProgramPages } from './platform'
@@ -29,7 +28,142 @@ interface LayoutHostResolveOptions<T = any> {
   retries?: number
 }
 
-const pageLayoutBridgeRegistry = createMiniProgramLayoutHostRegistry<LayoutBridgeContext>()
+/**
+ * @description 对 layout host key 去重并过滤空字符串。
+ */
+function normalizeLayoutHostKeys(keys: string | string[]) {
+  return Array.from(new Set(Array.isArray(keys) ? keys : [keys]))
+    .filter((key): key is string => typeof key === 'string' && key.length > 0)
+}
+
+/**
+ * @description 解析小程序页面实例的稳定身份 key。
+ */
+function resolvePageIdentityKeys(page?: Record<string, any>): string[] {
+  if (!page || typeof page !== 'object') {
+    return []
+  }
+
+  const keys: string[] = []
+  const route = typeof page.route === 'string' ? page.route.replace(/^\/+/, '') : ''
+  if (route) {
+    keys.push(`route:${route}`)
+  }
+  for (const [prefix, field] of [
+    ['webview', '__wxWebviewId__'],
+    ['exparser', '__wxExparserNodeId__'],
+  ] as const) {
+    const value = page[field]
+    if (typeof value === 'number' || typeof value === 'string') {
+      keys.push(`${prefix}:${String(value)}`)
+    }
+  }
+
+  return Array.from(new Set(keys))
+}
+
+/**
+ * @description 创建小程序 layout host 注册表。
+ */
+function createLayoutHostRegistry<TBridge>() {
+  const registries = new Map<string, Map<string, TBridge>>()
+
+  function register(keys: string | string[], bridge: TBridge, pageKeys: string[]) {
+    const normalizedKeys = normalizeLayoutHostKeys(keys)
+    if (normalizedKeys.length === 0 || pageKeys.length === 0) {
+      return null
+    }
+
+    for (const pageKey of pageKeys) {
+      const registry = registries.get(pageKey) ?? new Map<string, TBridge>()
+      for (const key of normalizedKeys) {
+        registry.set(key, bridge)
+      }
+      registries.set(pageKey, registry)
+    }
+
+    return normalizedKeys
+  }
+
+  function unregister(keys: string | string[], bridge: TBridge, pageKeys: string[]) {
+    const normalizedKeys = normalizeLayoutHostKeys(keys)
+    if (normalizedKeys.length === 0 || pageKeys.length === 0) {
+      return false
+    }
+
+    let removed = false
+    for (const pageKey of pageKeys) {
+      const registry = registries.get(pageKey)
+      if (!registry) {
+        continue
+      }
+
+      for (const key of normalizedKeys) {
+        if (registry.get(key) === bridge) {
+          registry.delete(key)
+          removed = true
+        }
+      }
+
+      if (registry.size === 0) {
+        registries.delete(pageKey)
+      }
+    }
+
+    return removed
+  }
+
+  function resolveBridge(key: string, pageKeys: string[]) {
+    return pageKeys
+      .map(pageKey => registries.get(pageKey)?.get(key))
+      .find(Boolean)
+  }
+
+  function resolveHost<THost>(
+    key: string,
+    pageKeys: string[],
+    resolver: (bridge: TBridge, key: string) => THost | null | undefined,
+  ) {
+    const bridge = resolveBridge(key, pageKeys)
+    if (!bridge) {
+      return null
+    }
+    return resolver(bridge, key) ?? null
+  }
+
+  function waitForHost<THost>(
+    key: string,
+    resolvePageKeys: () => string[],
+    resolver: (bridge: TBridge, key: string) => THost | null | undefined,
+    options: { interval?: number, retries?: number } = {},
+  ): Promise<THost | null> {
+    const retries = options.retries ?? 20
+    const interval = options.interval ?? 16
+    const host = resolveHost(key, resolvePageKeys(), resolver)
+    if (host || retries <= 0) {
+      return Promise.resolve(host)
+    }
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(waitForHost(key, resolvePageKeys, resolver, {
+          ...options,
+          retries: retries - 1,
+        }))
+      }, interval)
+    })
+  }
+
+  return {
+    register,
+    resolveBridge,
+    resolveHost,
+    unregister,
+    waitForHost,
+  }
+}
+
+const pageLayoutBridgeRegistry = createLayoutHostRegistry<LayoutBridgeContext>()
 
 function resolveCurrentPageInstance() {
   const pages = getCurrentMiniProgramPages()
@@ -37,7 +171,7 @@ function resolveCurrentPageInstance() {
 }
 
 function resolvePageKeys(page?: LayoutBridgeContext) {
-  return resolveMiniProgramPageKeys(page as Record<string, any> | undefined)
+  return resolvePageIdentityKeys(page as Record<string, any> | undefined)
 }
 
 function resolvePageFromContext(context?: LayoutBridgeContext) {
@@ -241,7 +375,7 @@ export function useLayoutBridge(
   }
 
   const context = getCurrentInstance<LayoutBridgeContext>()
-  const normalizedSelectors = normalizeMiniProgramLayoutHostKeys(selectors)
+  const normalizedSelectors = normalizeLayoutHostKeys(selectors)
   const resolveComponent = options.resolveComponent
   const nativeContext = resolveNativeLayoutContext(context)
   const bridgeBase = nativeContext && typeof nativeContext === 'object'

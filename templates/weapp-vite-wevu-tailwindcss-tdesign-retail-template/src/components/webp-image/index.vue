@@ -42,12 +42,12 @@ function px2rpx(px: number) {
   return 750 / ((systemInfo.value?.screenWidth) || 375) * px
 }
 
-function onLoad(e: any) {
-  emit('load', e.detail)
+function onLoad(e: any = {}) {
+  emit('load', e?.detail ?? e)
 }
 
-function onError(e: any) {
-  emit('error', e.detail)
+function onError(e: any = {}) {
+  emit('error', e?.detail ?? e)
 }
 
 onMounted(() => {
@@ -90,6 +90,7 @@ defineComponentJson({
 
 <template>
   <t-image
+    v-if="src"
     class="J-image"
     :src="getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode }) || ''"
     t-class="t-class"
@@ -102,4 +103,5 @@ defineComponentJson({
     @error="onError"
     @load="onLoad"
   />
+  <view v-else class="J-image t-class t-class-load" />
 </template>

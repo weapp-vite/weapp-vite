@@ -4,9 +4,8 @@ import { runTemplateE2E } from '../template-e2e.utils'
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-tailwindcss-template')
 
 describe.sequential('template e2e: weapp-vite-tailwindcss-template', () => {
-  it('renders all pages from app config', async (ctx) => {
+  it('renders all pages from app config', async () => {
     await runTemplateE2E({
-      skip: ctx.skip,
       templateRoot: TEMPLATE_ROOT,
       templateName: 'weapp-vite-tailwindcss-template',
     })

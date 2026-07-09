@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { copyFile } from 'node:fs/promises'
 import os from 'node:os'
 import vm from 'node:vm'
 
@@ -11,6 +12,7 @@ import { createPackageBuilder } from './builder'
 const getPackageInfoMock = vi.hoisted(() => vi.fn())
 const resolveModuleMock = vi.hoisted(() => vi.fn())
 const viteBuildMock = vi.hoisted(() => vi.fn(async () => {}))
+const copyFileMock = vi.mocked(copyFile)
 
 vi.mock('local-pkg', () => ({
   getPackageInfo: getPackageInfoMock,
@@ -20,6 +22,14 @@ vi.mock('local-pkg', () => ({
 vi.mock('vite', () => ({
   build: viteBuildMock,
 }))
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    copyFile: vi.fn(actual.copyFile),
+  }
+})
 
 const tempDirs: string[] = []
 const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../../')
@@ -107,6 +117,9 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
 describe('runtime npm package builder core', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    copyFileMock.mockImplementation(async (src, dest) => {
+      await fs.copy(src, dest)
+    })
   })
 
   afterEach(async () => {
@@ -474,6 +487,40 @@ describe('runtime npm package builder core', () => {
     expect(buildOptions).toHaveBeenCalledTimes(1)
     expect(await fs.pathExists(path.resolve(customOutRoot, 'mini-pkg/button/index.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(defaultOutRoot, 'mini-pkg/button/index.js'))).toBe(false)
+  })
+
+  it('copies sibling files in miniprogram packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+    const sourceRoot = path.resolve(pkgRoot, 'miniprogram')
+    await fs.ensureDir(sourceRoot)
+    await fs.writeFile(path.resolve(sourceRoot, 'alpha.js'), 'module.exports = "alpha"', 'utf8')
+    await fs.writeFile(path.resolve(sourceRoot, 'beta.js'), 'module.exports = "beta"', 'utf8')
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    const buildPromise = builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+    await expect(buildPromise).resolves.toBeUndefined()
+
+    expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/alpha.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/beta.js'))).toBe(true)
   })
 
   it('normalizes esm js files inside copied miniprogram packages for weapp interop', async () => {

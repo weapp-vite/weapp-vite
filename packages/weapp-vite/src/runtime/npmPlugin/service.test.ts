@@ -15,10 +15,15 @@ import {
 
 const buildPackageMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => true))
+const copyFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const writeDependenciesCacheMock = vi.hoisted(() => vi.fn(async () => {}))
 const getPackNpmRelationListMock = vi.hoisted(() => vi.fn())
 const getPackageInfoMock = vi.hoisted(() => vi.fn(async () => null))
 const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => null))
+
+vi.mock('node:fs/promises', () => ({
+  copyFile: copyFileMock,
+}))
 
 vi.mock('./builder', () => ({
   createPackageBuilder: () => ({
@@ -67,6 +72,9 @@ describe('runtime npm service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     buildPackageMock.mockImplementation(async () => {})
+    copyFileMock.mockImplementation(async (src, dest) => {
+      await fs.copy(src, dest)
+    })
     getPackageInfoMock.mockImplementation(async (dep: string) => {
       if (dep === 'tdesign-miniprogram' || dep === '@vant/weapp') {
         return {
@@ -587,7 +595,96 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
 
-  it('serializes local subpackage copies from the shared npm source cache', async () => {
+  it('starts shared source and main npm builds concurrently before refreshing local subpackages', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+        'lodash': '^4.17.21',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    checkDependenciesCacheOutdateMock.mockResolvedValue(false)
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: ['dayjs'],
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['dayjs'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const startedBuildTargets = new Set<string>()
+    let releaseSourceBuild: (() => void) | undefined
+    let resolveSourceBuildStarted: (() => void) | undefined
+    let resolveMainBuildStarted: (() => void) | undefined
+    const sourceBuildStarted = new Promise<void>((resolve) => {
+      resolveSourceBuildStarted = resolve
+    })
+    const mainBuildStarted = new Promise<void>((resolve) => {
+      resolveMainBuildStarted = resolve
+    })
+
+    buildPackageMock.mockImplementation(async ({ outDir }) => {
+      const relOutDir = path.relative(cwd, outDir).replace(/\\/g, '/')
+      if (relOutDir === '.weapp-vite/npm-source/miniprogram_npm') {
+        startedBuildTargets.add(relOutDir)
+        resolveSourceBuildStarted?.()
+        if (!releaseSourceBuild) {
+          await new Promise<void>((resolve) => {
+            releaseSourceBuild = resolve
+          })
+        }
+        return
+      }
+      if (relOutDir === 'dist/miniprogram_npm') {
+        startedBuildTargets.add(relOutDir)
+        resolveMainBuildStarted?.()
+      }
+    })
+
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    await Promise.all([sourceBuildStarted, mainBuildStarted])
+    expect(startedBuildTargets).toEqual(new Set([
+      '.weapp-vite/npm-source/miniprogram_npm',
+      'dist/miniprogram_npm',
+    ]))
+
+    releaseSourceBuild?.()
+    await expect(buildPromise).rejects.toThrow(/ENOENT/)
+  })
+
+  it('processes local subpackage npm copies concurrently from the shared source cache', async () => {
     const cwd = await createTempDir()
     const packageJson = {
       dependencies: {
@@ -654,31 +751,34 @@ describe('runtime npm service', () => {
       },
     } as any
 
-    const originalCopy = fs.copy.bind(fs)
-    let activeSharedCopy = 0
-    const copySpy = vi.spyOn(fs, 'copy').mockImplementation(async (src, dest, options) => {
-      const normalizedSrc = path.resolve(String(src))
-      if (normalizedSrc === cachedSourceOutDir) {
-        activeSharedCopy += 1
-        expect(activeSharedCopy).toBe(1)
-        await new Promise(resolve => setTimeout(resolve, 5))
-        try {
-          return await originalCopy(src, dest, options as any)
-        }
-        finally {
-          activeSharedCopy -= 1
-        }
+    let releasePackageA: (() => void) | undefined
+    const startedCacheChecks: string[] = []
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => {
+      if (key === '__all__') {
+        return false
       }
-      return originalCopy(src, dest, options as any)
+      if (key === 'packageA') {
+        startedCacheChecks.push('packageA')
+        await new Promise<void>((resolve) => {
+          releasePackageA = resolve
+        })
+        return true
+      }
+      if (key === 'packageB') {
+        startedCacheChecks.push('packageB')
+        return true
+      }
+      return true
     })
 
-    try {
-      const service = createNpmService(ctx)
-      await expect(service.build()).resolves.toBeUndefined()
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    while (startedCacheChecks.length < 2) {
+      await new Promise(resolve => setTimeout(resolve, 0))
     }
-    finally {
-      copySpy.mockRestore()
-    }
+    expect(startedCacheChecks).toEqual(['packageA', 'packageB'])
+    releasePackageA?.()
+    await expect(buildPromise).resolves.toBeUndefined()
 
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
@@ -688,6 +788,251 @@ describe('runtime npm service', () => {
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/transition/type.d.ts'))).toBe(true)
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
+  })
+
+  it('copies sibling files in a local subpackage npm directory concurrently', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/alpha.js'), 'module.exports = "alpha"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/beta.js'), 'module.exports = "beta"')
+
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => key !== '__all__')
+
+    const startedSiblingCopies = new Set<string>()
+    let releaseFirstSiblingCopy: (() => void) | undefined
+    let resolveFirstSiblingCopyStarted: (() => void) | undefined
+    let resolveBothSiblingCopiesStarted: (() => void) | undefined
+    const firstSiblingCopyStarted = new Promise<void>((resolve) => {
+      resolveFirstSiblingCopyStarted = resolve
+    })
+    const bothSiblingCopiesStarted = new Promise<void>((resolve) => {
+      resolveBothSiblingCopiesStarted = resolve
+    })
+
+    copyFileMock.mockImplementation(async (src, dest) => {
+      const relPath = path.relative(cachedSourceOutDir, String(src)).replace(/\\/g, '/')
+      if (relPath === 'tdesign-miniprogram/transition/alpha.js' || relPath === 'tdesign-miniprogram/transition/beta.js') {
+        startedSiblingCopies.add(relPath)
+        resolveFirstSiblingCopyStarted?.()
+        if (startedSiblingCopies.size === 2) {
+          resolveBothSiblingCopiesStarted?.()
+        }
+        if (!releaseFirstSiblingCopy) {
+          await new Promise<void>((resolve) => {
+            releaseFirstSiblingCopy = resolve
+          })
+        }
+      }
+      await fs.copy(src, dest)
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    const buildPromise = service.build()
+    await firstSiblingCopyStarted
+    const startResult = await Promise.race([
+      bothSiblingCopiesStarted.then(() => 'both-started'),
+      new Promise(resolve => setTimeout(resolve, 50, 'timeout')),
+    ])
+    releaseFirstSiblingCopy?.()
+    await expect(buildPromise).resolves.toBeUndefined()
+
+    expect(startResult).toBe('both-started')
+    expect(startedSiblingCopies).toEqual(new Set([
+      'tdesign-miniprogram/transition/alpha.js',
+      'tdesign-miniprogram/transition/beta.js',
+    ]))
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/alpha.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/beta.js'))).toBe(true)
+  })
+
+  it('reuses package info lookups across local subpackage dependency closure analysis', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/common/style/theme/index.wxss'), 'page{}')
+
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => key !== '__all__')
+    getPackageInfoMock.mockImplementation(async (dep: string) => {
+      if (dep === 'tdesign-miniprogram') {
+        return {
+          packageJson: {
+            miniprogram: 'miniprogram_dist',
+            dependencies: {},
+          },
+        }
+      }
+      return null
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+              packageB: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+          ['packageB', {
+            subPackage: {
+              root: 'packageB',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(getPackageInfoMock.mock.calls.filter(([dep]) => dep === 'tdesign-miniprogram')).toHaveLength(1)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/common/style/theme/index.wxss'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/common/style/theme/index.wxss'))).toBe(true)
+  })
+
+  it('skips local subpackage dependency closure analysis when cache and output are fresh', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
+    await fs.outputFile(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "existing"')
+
+    checkDependenciesCacheOutdateMock.mockResolvedValue(false)
+    getPackageInfoMock.mockImplementation(async () => {
+      throw new Error('package info should not be queried for fresh local subpackage npm output')
+    })
+    copyFileMock.mockImplementation(async () => {
+      throw new Error('fresh local subpackage npm output should not be copied')
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['tdesign-miniprogram'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['tdesign-miniprogram'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(getPackageInfoMock).not.toHaveBeenCalled()
+    expect(copyFileMock).not.toHaveBeenCalled()
+    expect(await fs.readFile(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'), 'utf8')).toBe('module.exports = "existing"')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
   })
 
   it('uses pluginPackage dependency scope in pluginOnly mode', async () => {
@@ -744,7 +1089,8 @@ describe('runtime npm service', () => {
       outDir: path.relative(cwd, args.outDir).replace(/\\/g, '/'),
     }))
 
-    expect(buildCalls).toEqual([
+    expect(buildCalls).toHaveLength(3)
+    expect(buildCalls).toEqual(expect.arrayContaining([
       {
         dep: 'dayjs',
         outDir: '.weapp-vite/npm-source/miniprogram_npm',
@@ -757,7 +1103,7 @@ describe('runtime npm service', () => {
         dep: 'dayjs',
         outDir: 'dist-plugin/miniprogram_npm',
       },
-    ])
+    ]))
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__plugin__')
   })

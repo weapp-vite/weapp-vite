@@ -4,7 +4,9 @@ const WARMUP_ROUTE = '/pages/index/index'
 export function createTemplateWevuTdesignRegressionLaunchOptions(projectPath: string) {
   return {
     projectPath,
+    skipRelaunchPageRootCheck: true,
     warmupAnyPage: true,
+    warmupAllowRelaunch: false,
     warmupRoute: WARMUP_ROUTE,
   }
 }

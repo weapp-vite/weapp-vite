@@ -1,4 +1,4 @@
-<view class="page">{{message}}</view>
+<view id="app-lifecycle-route" class="page" data-e2e-route="index">{{message}}</view>
 <view class="panel">
   <view class="panel-title">E2E Result</view>
   <view class="panel-row">Hooks: {{__e2eSummary.seen}}/{{__e2eSummary.total}}</view>

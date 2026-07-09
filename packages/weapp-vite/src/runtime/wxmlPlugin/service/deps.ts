@@ -1,17 +1,24 @@
 import type { ScanWxmlResult } from '../../../wxml'
-import type { WxmlServiceState } from './shared'
+import type { WxmlDependencyKind, WxmlImporterDependencyKind, WxmlServiceState } from './shared'
 import path from 'pathe'
 import { isTemplate } from '../../../utils'
 import { isScriptModuleTagName } from '../../../utils/wxmlScriptModule'
 import { isTemplateImportTag } from '../../../wxml'
 import { requireConfigService } from '../../utils/requireConfigService'
-import { invalidateAggregatedComponents, linkImporter, unlinkImporter } from './shared'
+import { getImporterDependencyKind, invalidateAggregatedComponents, linkImporter, unlinkImporter } from './shared'
+
+interface ResolvedWxmlDependency {
+  path: string
+  kind: WxmlDependencyKind
+}
 
 export interface WxmlDependencyService {
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
   setDeps: (filepath: string, deps?: string[]) => Promise<void>
+  setTokenDeps: (filepath: string, deps?: ScanWxmlResult['deps']) => Promise<void>
   collectDepsFromToken: (filepath: string, deps?: ScanWxmlResult['deps']) => string[]
   getImporters: (filepath: string) => Set<string>
+  getImporterDependencyKind: (dep: string, importer: string) => WxmlImporterDependencyKind | undefined
   getAllDeps: () => Set<string>
   unlinkImporter: (dep: string, importer: string) => void
 }
@@ -20,20 +27,18 @@ export function createWxmlDependencyService(
   state: WxmlServiceState,
   scanTemplateDep: (filepath: string) => Promise<unknown>,
 ): WxmlDependencyService {
-  async function setDeps(filepath: string, deps: string[] = []) {
-    const nextDeps = new Set<string>(deps)
+  async function setDepRecords(filepath: string, deps: ResolvedWxmlDependency[] = []) {
+    const nextDeps = new Set<string>(deps.map(dep => dep.path))
     const previousDeps = state.depsMap.get(filepath) ?? new Set<string>()
     const nextDepsKey = Array.from(nextDeps).sort().join('\0')
     const previousDepsKey = Array.from(previousDeps).sort().join('\0')
 
     for (const previousDep of previousDeps) {
-      if (!nextDeps.has(previousDep)) {
-        unlinkImporter(state, previousDep, filepath)
-      }
+      unlinkImporter(state, previousDep, filepath)
     }
 
-    for (const dep of nextDeps) {
-      linkImporter(state, dep, filepath)
+    for (const dep of deps) {
+      linkImporter(state, dep.path, filepath, dep.kind)
     }
 
     state.depsMap.set(filepath, nextDeps)
@@ -50,6 +55,10 @@ export function createWxmlDependencyService(
     )
   }
 
+  async function setDeps(filepath: string, deps: string[] = []) {
+    await setDepRecords(filepath, deps.map(dep => ({ path: dep, kind: 'unknown' as const })))
+  }
+
   async function addDeps(filepath: string, deps: string[] = []) {
     const currentDeps = state.depsMap.get(filepath) ?? new Set<string>()
     await setDeps(filepath, [...currentDeps, ...deps])
@@ -64,8 +73,8 @@ export function createWxmlDependencyService(
     return path.resolve(dirname, value)
   }
 
-  function collectDepsFromToken(filepath: string, deps: ScanWxmlResult['deps'] = []) {
-    return deps.reduce<string[]>((resolvedDeps, dep) => {
+  function collectDepRecordsFromToken(filepath: string, deps: ScanWxmlResult['deps'] = []) {
+    return deps.reduce<ResolvedWxmlDependency[]>((resolvedDeps, dep) => {
       if (!dep.value) {
         return resolvedDeps
       }
@@ -75,9 +84,25 @@ export function createWxmlDependencyService(
       if (!isTemplateImportTag(dep.tagName) && !isScriptModuleTagName(dep.tagName)) {
         return resolvedDeps
       }
-      resolvedDeps.push(resolveDepPath(filepath, dep.value))
+      const kind: WxmlDependencyKind = dep.tagName === 'import'
+        ? 'template-import'
+        : dep.tagName === 'include'
+          ? 'template-include'
+          : 'script-module'
+      resolvedDeps.push({
+        path: resolveDepPath(filepath, dep.value),
+        kind,
+      })
       return resolvedDeps
     }, [])
+  }
+
+  function collectDepsFromToken(filepath: string, deps: ScanWxmlResult['deps'] = []) {
+    return collectDepRecordsFromToken(filepath, deps).map(dep => dep.path)
+  }
+
+  async function setTokenDeps(filepath: string, deps: ScanWxmlResult['deps'] = []) {
+    await setDepRecords(filepath, collectDepRecordsFromToken(filepath, deps))
   }
 
   function getImporters(filepath: string) {
@@ -98,8 +123,12 @@ export function createWxmlDependencyService(
   return {
     addDeps,
     setDeps,
+    setTokenDeps,
     collectDepsFromToken,
     getImporters,
+    getImporterDependencyKind(dep: string, importer: string) {
+      return getImporterDependencyKind(state, dep, importer)
+    },
     getAllDeps,
     unlinkImporter(dep: string, importer: string) {
       unlinkImporter(state, dep, importer)

@@ -53,6 +53,8 @@ export function createAgentsGuidelines(templateName: TemplateName) {
     '- Prefer minimal scoped verification: targeted `pnpm build`, targeted tests, then broader checks only when required.',
     '- If editing package source in a monorepo dependency, rebuild the touched package before validating downstream apps to avoid stale `dist`.',
     '- Keep CLI ownership explicit: native `weapp-vite` commands first, IDE passthrough second.',
+    '- For Rust/native acceleration, treat JS ↔ Rust boundary crossings as a primary performance cost. Prefer batch analysis that sends source once, parses once, and returns structured results; only put fine-grained native APIs on hot paths when profiling proves a net win.',
+    '- Keep native AST fast paths optional and explicitly enabled. They must fall back to Babel/Oxc/Vue compiler behavior on load, parse, or runtime failure, and new native coverage needs correctness tests plus real profiling.',
     '',
     '## WeChat DevTools',
     '',

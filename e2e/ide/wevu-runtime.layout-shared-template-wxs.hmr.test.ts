@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -10,8 +10,7 @@ import {
   cleanupResidualDevtoolsProcesses,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
-import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
-import { relaunchPage } from './github-issues.runtime.shared'
+import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
 const ADMIN_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/admin/index.wxml')
@@ -22,6 +21,9 @@ const SHARED_WXS = path.join(SHARED_DIR, 'layout-helper.wxs')
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const COMMON_JS_OUTPUT_PATH = path.join(DIST_ROOT, 'common.js')
 const WEVU_RUNTIME_READY_MARKER = '__wevu_runtime'
+const LAYOUT_SHARED_TEMPLATE_STORAGE_KEY = '__weapp_vite_layout_shared_template_probe__'
+const LAYOUT_SHARED_INCLUDE_STORAGE_KEY = '__weapp_vite_layout_shared_include_probe__'
+const LAYOUT_SHARED_WXS_STORAGE_KEY = '__weapp_vite_layout_shared_wxs_probe__'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
@@ -31,14 +33,20 @@ let previousBridgePostConnectRefresh: string | undefined
 function buildSharedImportTemplate(marker: string) {
   return [
     '<template name="hmrLayoutCard">',
-    `  <view class="layout-shared-template">${marker}: {{ label }}</view>`,
+    `  <e2e-template-probe marker="${marker}" storage-key="${LAYOUT_SHARED_TEMPLATE_STORAGE_KEY}" />`,
+    `  <e2e-template-probe marker="{{ label }}" storage-key="${LAYOUT_SHARED_WXS_STORAGE_KEY}" />`,
+    `  <view class="layout-shared-template" data-layout-shared-template="${marker}" data-layout-shared-wxs="{{ label }}">${marker}: {{ label }}</view>`,
     '</template>',
     '',
   ].join('\n')
 }
 
 function buildSharedIncludeTemplate(marker: string) {
-  return `<view class="layout-shared-include">${marker}</view>\n`
+  return [
+    `<e2e-template-probe marker="${marker}" storage-key="${LAYOUT_SHARED_INCLUDE_STORAGE_KEY}" />`,
+    `<view class="layout-shared-include" data-layout-shared-include="${marker}">${marker}</view>`,
+    '',
+  ].join('\n')
 }
 
 function buildSharedWxs(marker: string) {
@@ -104,24 +112,68 @@ async function restoreOriginalSharedFiles() {
   await fs.writeFile(SHARED_WXS, buildOriginalSharedWxs(), 'utf8')
 }
 
-async function readPageWxml(page: any) {
-  const root = await page.$('page')
-  if (!root) {
-    return null
+async function waitForLayoutPageReady(page: any, timeoutMs = 20_000) {
+  if (typeof page?.waitForRendered !== 'function') {
+    await page.waitFor(timeoutMs)
+    return
   }
-  return normalizeAutomatorWxml(await root.wxml())
+  await page.waitForRendered({
+    componentSelectors: ['weapp-layout-default', 'weapp-layout-admin'],
+    selector: '.page',
+    timeout: timeoutMs,
+  })
 }
 
-async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
+async function waitForStorageMarker(miniProgram: any, storageKey: string, expected: string, timeoutMs = 20_000) {
   const start = Date.now()
+  let lastError: unknown
+  let lastState: unknown
   while (Date.now() - start < timeoutMs) {
-    const wxml = await readPageWxml(page)
-    if (wxml && wxml.includes(marker)) {
-      return wxml
+    try {
+      lastState = await miniProgram.callWxMethodWithOptions('getStorageSync', {
+        timeout: 5_000,
+      }, storageKey)
+      lastError = undefined
+      if (lastState && typeof lastState === 'object' && (lastState as Record<string, unknown>).marker === expected) {
+        return lastState
+      }
     }
-    await page.waitFor(200)
+    catch (error) {
+      lastError = error
+    }
+    await new Promise(resolve => setTimeout(resolve, 220))
   }
-  throw new Error(`Timed out waiting page runtime wxml to contain marker: ${marker}`)
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Timed out waiting storage marker: key=${storageKey} expected=${expected}; reason=${reason}; lastState=${JSON.stringify(lastState)}`)
+}
+
+async function resetLayoutStorageProbes(miniProgram: any) {
+  await Promise.all([
+    LAYOUT_SHARED_TEMPLATE_STORAGE_KEY,
+    LAYOUT_SHARED_INCLUDE_STORAGE_KEY,
+    LAYOUT_SHARED_WXS_STORAGE_KEY,
+  ].map(storageKey => miniProgram.callWxMethodWithOptions('removeStorageSync', {
+    timeout: 2_500,
+  }, storageKey).catch(() => {})))
+}
+
+async function waitForLayoutSharedMarkers(
+  miniProgram: any,
+  markers: {
+    include?: string
+    template?: string
+    wxs?: string
+  },
+) {
+  if (markers.template) {
+    await waitForStorageMarker(miniProgram, LAYOUT_SHARED_TEMPLATE_STORAGE_KEY, markers.template)
+  }
+  if (markers.include) {
+    await waitForStorageMarker(miniProgram, LAYOUT_SHARED_INCLUDE_STORAGE_KEY, markers.include)
+  }
+  if (markers.wxs) {
+    await waitForStorageMarker(miniProgram, LAYOUT_SHARED_WXS_STORAGE_KEY, markers.wxs)
+  }
 }
 
 async function waitForFileContainsWithRetry(
@@ -160,8 +212,9 @@ async function getSharedMiniProgram() {
 async function relaunchIdeSession(route: string) {
   if (!hasLaunchedIdeSession) {
     const miniProgram = await getSharedMiniProgram()
-    const page = await relaunchPage(miniProgram, route, undefined, 20_000)
+    const page = await miniProgram.reLaunch(route)
     if (page) {
+      await waitForLayoutPageReady(page)
       hasLaunchedIdeSession = true
       return page
     }
@@ -182,8 +235,9 @@ async function relaunchIdeSession(route: string) {
 
     try {
       const miniProgram = await getSharedMiniProgram()
-      const page = await relaunchPage(miniProgram, route, undefined, 20_000)
+      const page = await miniProgram.reLaunch(route)
       if (page) {
+        await waitForLayoutPageReady(page)
         hasLaunchedIdeSession = true
         return page
       }
@@ -277,45 +331,61 @@ describe.sequential('wevu runtime layout shared template/wxs hmr (ide)', () => {
       await waitForFileContains(sharedWxsOutput, initialWxsMarker, 90_000)
       await waitForInitialAppserviceReady()
 
+      let miniProgram = await getSharedMiniProgram()
+      await resetLayoutStorageProbes(miniProgram)
       let page = await relaunchIdeSession('/pages/layouts/index')
       if (!page) {
         throw new Error('Failed to launch /pages/layouts/index')
       }
+      miniProgram = await getSharedMiniProgram()
 
-      let runtimeWxml = await waitForPageWxmlContains(page, initialTemplateMarker)
-      expect(runtimeWxml).toContain(initialIncludeMarker)
-      expect(runtimeWxml).toContain(initialWxsMarker)
+      await waitForLayoutSharedMarkers(miniProgram, {
+        include: initialIncludeMarker,
+        template: initialTemplateMarker,
+        wxs: initialWxsMarker,
+      })
 
       const updatedTemplate = buildSharedImportTemplate(updatedTemplateMarker)
       await replaceFileByRename(SHARED_IMPORT_TEMPLATE, updatedTemplate)
       await waitForFileContainsWithRetry(sharedImportOutput, updatedTemplateMarker, SHARED_IMPORT_TEMPLATE, updatedTemplate)
       await waitForIdeRecompileSettled()
+      await resetLayoutStorageProbes(miniProgram)
       page = await relaunchIdeSession('/pages/layouts/index')
-      runtimeWxml = await waitForPageWxmlContains(page, updatedTemplateMarker)
-      expect(runtimeWxml).toContain(updatedTemplateMarker)
+      miniProgram = await getSharedMiniProgram()
+      await waitForLayoutSharedMarkers(miniProgram, {
+        template: updatedTemplateMarker,
+      })
 
       const updatedInclude = buildSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_INCLUDE_TEMPLATE, updatedInclude)
       await waitForFileContainsWithRetry(sharedIncludeOutput, updatedIncludeMarker, SHARED_INCLUDE_TEMPLATE, updatedInclude)
       await waitForIdeRecompileSettled()
+      await resetLayoutStorageProbes(miniProgram)
       page = await relaunchIdeSession('/pages/layouts/index')
-      runtimeWxml = await waitForPageWxmlContains(page, updatedIncludeMarker)
-      expect(runtimeWxml).toContain(updatedIncludeMarker)
+      miniProgram = await getSharedMiniProgram()
+      await waitForLayoutSharedMarkers(miniProgram, {
+        include: updatedIncludeMarker,
+      })
 
-      await page.callMethod('applyAdminLayout')
+      await resetLayoutStorageProbes(miniProgram)
+      await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
       await page.waitFor(200)
-      runtimeWxml = await waitForPageWxmlContains(page, updatedTemplateMarker)
-      expect(runtimeWxml).toContain(updatedTemplateMarker)
+      await waitForLayoutSharedMarkers(miniProgram, {
+        template: updatedTemplateMarker,
+      })
 
       const updatedWxs = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_WXS, updatedWxs)
       await waitForFileContainsWithRetry(sharedWxsOutput, updatedWxsMarker, SHARED_WXS, updatedWxs)
       await waitForIdeRecompileSettled()
+      await resetLayoutStorageProbes(miniProgram)
       page = await relaunchIdeSession('/pages/layouts/index')
-      await page.callMethod('applyAdminLayout')
+      miniProgram = await getSharedMiniProgram()
+      await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
       await page.waitFor(200)
-      runtimeWxml = await waitForPageWxmlContains(page, updatedWxsMarker)
-      expect(runtimeWxml).toContain(updatedWxsMarker)
+      await waitForLayoutSharedMarkers(miniProgram, {
+        wxs: updatedWxsMarker,
+      })
     }
     finally {
       if (sharedMiniProgram) {

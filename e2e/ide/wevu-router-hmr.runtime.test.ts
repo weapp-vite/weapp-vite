@@ -16,6 +16,7 @@ const PAGE_VUE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/index/index.js')
 const INDEX_ROUTE = '/pages/index/index'
 const BASE_MARKER = 'ROUTER-HMR-BASE'
+const ROUTER_HMR_MARKER_KEY = '__wevuRouterHmrMarker'
 const BARE_WEVU_ROUTER_RE = /from\s+['"]wevu\/router['"]|require\(\s*['"]wevu\/router['"]\s*\)/
 const DEVTOOLS_ROUTE_INFRA_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|simulator not found|模拟器启动失败/i
 
@@ -24,25 +25,33 @@ function isDevtoolsRouteInfraError(error: unknown) {
   return isDevtoolsHttpPortError(error) || DEVTOOLS_ROUTE_INFRA_RE.test(message)
 }
 
-async function readPageWxml(page: any) {
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  return await element.wxml()
+async function readRouterHmrState(miniProgram: any) {
+  return await miniProgram.evaluate((markerKey: string) => {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const page = pages[pages.length - 1] as any
+    const app = typeof getApp === 'function' ? getApp() as any : {}
+    const data = page?.data ?? {}
+    return {
+      marker: app?.[markerKey] ?? data.title ?? data.marker,
+      route: page?.route ?? page?.path ?? page?.__route__ ?? '',
+    }
+  }, ROUTER_HMR_MARKER_KEY)
 }
 
-async function waitForPageReady(page: any, marker: string, timeoutMs = 15_000) {
+async function waitForPageReady(miniProgram: any, marker: string, timeoutMs = 15_000) {
   const start = Date.now()
-  let latest = ''
+  let latest: unknown = null
   while (Date.now() - start <= timeoutMs) {
-    latest = await readPageWxml(page).catch(() => '')
-    if (latest.includes(marker)) {
-      return latest
+    latest = await readRouterHmrState(miniProgram).catch((error: unknown) => error)
+    if (latest && typeof latest === 'object' && 'route' in latest) {
+      const result = latest as { marker?: unknown, route?: unknown }
+      if (result.marker === marker || result.route === 'pages/index/index') {
+        return latest
+      }
     }
-    await page.waitFor(220)
+    await new Promise(resolve => setTimeout(resolve, 220))
   }
-  throw new Error(`Timed out waiting for router HMR page marker ${marker}. latest=${latest.slice(0, 800)}`)
+  throw new Error(`Timed out waiting for router HMR page marker ${marker}. latest=${JSON.stringify(latest)}`)
 }
 
 async function relaunchAndWaitForMarker(miniProgram: any, marker: string) {
@@ -50,8 +59,10 @@ async function relaunchAndWaitForMarker(miniProgram: any, marker: string) {
   if (!page) {
     throw new Error(`Failed to launch ${INDEX_ROUTE}`)
   }
-  const wxml = await waitForPageReady(page, marker)
-  expect(wxml).toContain(marker)
+  const result = await waitForPageReady(miniProgram, marker)
+  expect(result).toMatchObject({
+    route: 'pages/index/index',
+  })
   return page
 }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getCurrentInstance, onReady, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 
 definePageJson({
   navigationBarTitleText: 'vue-mini-151',
@@ -11,6 +12,7 @@ const pageInstanceOnReadyType = ref('missing')
 const wevuHooksBucketType = ref('missing')
 const tabBarReady = ref(false)
 const tabBarHooksType = ref('missing')
+const E2E_STATE_STORAGE_KEY = '__weapp_vite_issue151_state__'
 
 const pageInstance = getCurrentInstance() as Record<string, any> | undefined
 
@@ -56,6 +58,24 @@ function _runE2E() {
     ...state,
   }
 }
+
+function syncIssue151RuntimeState() {
+  try {
+    wpi.setStorageSync(E2E_STATE_STORAGE_KEY, _runE2E())
+  }
+  catch {
+    // e2e 探针不应影响页面运行。
+  }
+}
+
+function scheduleIssue151RuntimeStateSync() {
+  syncIssue151RuntimeState()
+  setTimeout(syncIssue151RuntimeState, 100)
+  setTimeout(syncIssue151RuntimeState, 500)
+  setTimeout(syncIssue151RuntimeState, 1_000)
+}
+
+onReady(scheduleIssue151RuntimeStateSync)
 </script>
 
 <template>

@@ -1,9 +1,22 @@
 import { setPageLayout } from 'weapp-vite/runtime'
 
+const layoutPageScriptMarker = 'LAYOUTS-PAGE-SCRIPT-BASE'
+const LAYOUT_SCRIPT_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_layout_script_probe__'
+
+function writeLayoutScriptProbe(marker: string) {
+  if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') {
+    return
+  }
+  wx.setStorageSync(LAYOUT_SCRIPT_PROBE_STORAGE_KEY, {
+    marker,
+    updatedAt: Date.now(),
+  })
+}
+
 Page({
   data: {
     currentLayout: 'default',
-    scriptMarker: 'LAYOUTS-PAGE-SCRIPT-BASE',
+    scriptMarker: layoutPageScriptMarker,
     cards: [
       {
         title: 'default layout',
@@ -20,6 +33,7 @@ Page({
     ],
   },
   onLoad() {
+    writeLayoutScriptProbe(layoutPageScriptMarker)
     setPageLayout('default')
   },
   applyDefaultLayout() {

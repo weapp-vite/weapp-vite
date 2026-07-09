@@ -43,12 +43,10 @@ function syncTogglePropsInPlace() {
   toggleStr()
 }
 
-function _resetE2E() {
-  resetAllState()
-  return _runE2E()
-}
-
-function _runE2E() {
+function _runE2E(action?: 'toggleBool') {
+  if (action === 'toggleBool') {
+    toggleBool()
+  }
   return {
     str: strValue.value,
     bool: boolValue.value,
@@ -65,6 +63,11 @@ function _runE2E() {
       && typeof refObjectState.value.bool === 'boolean'
       && typeof reactiveObjectState.bool === 'boolean',
   }
+}
+
+function _resetE2E() {
+  resetAllState()
+  return _runE2E()
 }
 </script>
 

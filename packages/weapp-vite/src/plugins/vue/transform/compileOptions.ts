@@ -18,6 +18,7 @@ interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }
 
 type AutoImportComponentSourceType = 'wevu-sfc' | 'native'
@@ -28,6 +29,10 @@ function hasVueExtension(id: string | undefined) {
 
 export function getCompileVueFileOptionsCacheKey(vuePath: string, isPage: boolean, isApp: boolean) {
   return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}`
+}
+
+export function isVueTransformSourceMapEnabled(configService: NonNullable<CompilerContext['configService']>) {
+  return Boolean(configService.inlineConfig?.build?.sourcemap)
 }
 
 export function resolveVueTemplatePlatformOptions(options: {
@@ -111,6 +116,7 @@ function buildCompileVueFileOptions(
   const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
   const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
+  const sourceMap = isVueTransformSourceMapEnabled(configService)
 
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {
     const trimmed = candidate?.trim()
@@ -276,6 +282,8 @@ function buildCompileVueFileOptions(
     sfcSrc: createSfcResolveSrcOptions(pluginCtx, configService),
     wevuDefaults,
     minify: wevuMinify,
+    sourceMap,
+    componentMetaCache: state.componentMetaCache,
   } as const
 }
 

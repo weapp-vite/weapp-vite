@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
-import { registerBuildCommand } from './build'
+import {
+  registerBuildCommand,
+  scheduleCompletedProductionBuildExit,
+  shouldScheduleCompletedProductionBuildExit,
+} from './build'
 
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
@@ -22,6 +26,9 @@ const logBuildPackageSizeReportMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+
+const ORIGINAL_NODE_ENV = process.env.NODE_ENV
+const ORIGINAL_VITEST = process.env.VITEST
 
 vi.mock('../../logger', () => ({
   default: {
@@ -93,6 +100,19 @@ function createBuildActionHandler() {
 describe('build cli command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    if (ORIGINAL_NODE_ENV === undefined) {
+      delete process.env.NODE_ENV
+    }
+    else {
+      process.env.NODE_ENV = ORIGINAL_NODE_ENV
+    }
+    if (ORIGINAL_VITEST === undefined) {
+      delete process.env.VITEST
+    }
+    else {
+      process.env.VITEST = ORIGINAL_VITEST
+    }
+    delete process.env.WEAPP_VITE_DISABLE_COMPLETED_BUILD_EXIT
     resolveConfigFileMock.mockReturnValue(undefined)
     const emitRuntimeEvents = vi.fn()
     createCompilerContextMock.mockResolvedValue({
@@ -183,5 +203,89 @@ describe('build cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       trustProject: false,
     })
+  })
+
+  it('closes compiler watchers when build fails', async () => {
+    const closeAll = vi.fn()
+    const buildError = new Error('build failed')
+    createCompilerContextMock.mockResolvedValueOnce({
+      buildService: {
+        build: vi.fn().mockRejectedValue(buildError),
+      },
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'production',
+        outDir: '/project/dist',
+        mpDistRoot: '/project/dist',
+        packageManager: { agent: 'pnpm' },
+        weappViteConfig: {
+          analyze: {
+            history: false,
+          },
+          packageSizeWarningBytes: 0,
+        },
+        weappWebConfig: undefined,
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      },
+      webService: undefined,
+      watcherService: {
+        closeAll,
+      },
+    })
+    const action = createBuildActionHandler()
+
+    await expect(action('/project', {
+      platform: 'weapp',
+    })).rejects.toThrow(buildError)
+
+    expect(closeAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('schedules process exit only for completed one-shot production cli builds', () => {
+    process.env.VITEST = 'false'
+    delete process.env.NODE_ENV
+
+    expect(shouldScheduleCompletedProductionBuildExit({}, undefined)).toBe(true)
+    expect(shouldScheduleCompletedProductionBuildExit({ watch: true }, undefined)).toBe(false)
+    expect(shouldScheduleCompletedProductionBuildExit({ open: true }, undefined)).toBe(false)
+    expect(shouldScheduleCompletedProductionBuildExit({}, {
+      emitRuntimeEvents: vi.fn(),
+      update: vi.fn(),
+      waitForExit: vi.fn(),
+      close: vi.fn(),
+      urls: [],
+    })).toBe(false)
+
+    process.env.WEAPP_VITE_DISABLE_COMPLETED_BUILD_EXIT = '1'
+    expect(shouldScheduleCompletedProductionBuildExit({}, undefined)).toBe(false)
+  })
+
+  it('exits with zero after completed production build when no error exit code is set', () => {
+    process.env.VITEST = 'false'
+    delete process.env.NODE_ENV
+    const originalExitCode = process.exitCode
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never)
+    vi.useFakeTimers()
+
+    try {
+      process.exitCode = undefined
+      scheduleCompletedProductionBuildExit({}, undefined)
+      vi.runOnlyPendingTimers()
+      expect(exitSpy).toHaveBeenCalledWith(0)
+
+      exitSpy.mockClear()
+      process.exitCode = 1
+      scheduleCompletedProductionBuildExit({}, undefined)
+      vi.runOnlyPendingTimers()
+      expect(exitSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+      exitSpy.mockRestore()
+      process.exitCode = originalExitCode
+    }
   })
 })

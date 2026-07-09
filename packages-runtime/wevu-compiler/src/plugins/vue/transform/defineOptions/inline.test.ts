@@ -1,10 +1,23 @@
 import { rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
 import { inlineScriptSetupDefineOptionsArgs } from './inline'
+
+const bundleRequireMock = vi.hoisted(() => vi.fn(async (...args: any[]) => {
+  const actual = await vi.importActual<typeof import('rolldown-require')>('rolldown-require')
+  return await actual.bundleRequire(...args as Parameters<typeof actual.bundleRequire>)
+}))
+
+vi.mock('rolldown-require', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('rolldown-require')>()
+  return {
+    ...actual,
+    bundleRequire: bundleRequireMock,
+  }
+})
 
 async function withTempProject<T>(run: (projectDir: string) => Promise<T>) {
   const projectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wevu-define-options-'))
@@ -17,6 +30,10 @@ async function withTempProject<T>(run: (projectDir: string) => Promise<T>) {
 }
 
 describe('inlineScriptSetupDefineOptionsArgs', { timeout: 180_000 }, () => {
+  beforeEach(() => {
+    bundleRequireMock.mockClear()
+  })
+
   it('returns original content when defineOptions does not exist', async () => {
     await withTempProject(async (projectDir) => {
       const filename = path.join(projectDir, 'index.ts')
@@ -25,6 +42,29 @@ describe('inlineScriptSetupDefineOptionsArgs', { timeout: 180_000 }, () => {
       const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
       expect(result.code).toBe(source)
       expect(result.dependencies).toEqual([])
+    })
+  })
+
+  it('inlines static object defineOptions without bundle evaluation', async () => {
+    await withTempProject(async (projectDir) => {
+      const filename = path.join(projectDir, 'static.ts')
+      const source = `
+defineOptions({
+  name: 'StaticCard',
+  options: {
+    virtualHost: true,
+  },
+  values: ['a', -1, null],
+})
+      `.trim()
+
+      const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+      expect(result.code).toContain('name: "StaticCard"')
+      expect(result.code).toContain('virtualHost: true')
+      expect(result.code).toContain('values: ["a", -1, null]')
+      expect(result.dependencies).toEqual([])
+      expect(bundleRequireMock).not.toHaveBeenCalled()
     })
   })
 
@@ -51,6 +91,7 @@ defineOptions(() => ({
       expect(result.code).toContain('name: "demo-card"')
       expect(result.code).toContain('virtualHost: true')
       expect(result.dependencies.some(dep => dep.includes('shared'))).toBe(true)
+      expect(bundleRequireMock).toHaveBeenCalled()
     })
   })
 

@@ -4,6 +4,7 @@ import { computed, createStore, defineStore, reactive, ref } from 'wevu'
 const pluginRecords: string[] = []
 let manager: StoreManager | undefined
 let hotVersion = 1
+export const setupStoreInitialName = 'init'
 
 export function initStoreManager() {
   if (manager) {
@@ -40,7 +41,7 @@ export function hotUpdateSetupStore(store: ReturnType<typeof useSetupStore>) {
 
 export const useSetupStore = defineStore('setupCounter', () => {
   const count = ref(0)
-  const name = ref('init')
+  const name = ref(setupStoreInitialName)
   const meta = reactive({ visits: 0 })
   const doubled = computed(() => count.value * 2)
 

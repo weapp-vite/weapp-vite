@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
+import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -28,6 +29,13 @@ const applySharedChunkStrategyMock = vi.hoisted(() => vi.fn())
 const applyRuntimeChunkLocalizationMock = vi.hoisted(() => vi.fn())
 const emitWxmlAssetsWithCacheMock = vi.hoisted(() => vi.fn())
 const emitJsonAssetsMock = vi.hoisted(() => vi.fn())
+const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<string, any>) => ({
+  chunks: new Map(
+    Object.entries(bundle)
+      .filter(([, output]) => output?.type === 'chunk')
+      .map(([key, output]) => [key, output]),
+  ),
+})))
 const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
@@ -65,6 +73,7 @@ vi.mock('../../css', () => ({
 }))
 
 vi.mock('../helpers', () => ({
+  createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: emitJsonAssetsMock,
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
   flushIndependentBuilds: flushIndependentBuildsMock,
@@ -169,6 +178,69 @@ describe('core lifecycle emit hook extra branches', () => {
     flushIndependentBuildsMock.mockResolvedValue(undefined)
   })
 
+  it('matches subpackage roots with stable order and cached misses', () => {
+    const matchSubPackage = createSubPackageMatcher(['pkg', 'pkg-a'])
+
+    expect(matchSubPackage('pkg')).toBe('pkg')
+    expect(matchSubPackage('pkg-a/pages/a.js')).toBe('pkg-a')
+    expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
+    expect(matchSubPackage('pkg-extra/pages/a.js')).toBeUndefined()
+  })
+
+  it('collects active hmr imports without including inactive entry imports', () => {
+    const importedChunkIds = collectActiveHmrImportedChunkIds({
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: 'pages/index/index.ts',
+        imports: ['../../common.js'],
+        dynamicImports: ['../../weapp-vendors/runtime.js'],
+      },
+      'pages/other/index.js': {
+        type: 'chunk',
+        fileName: 'pages/other/index.js',
+        facadeModuleId: 'pages/other/index.ts',
+        imports: ['../../inactive.js'],
+        dynamicImports: [],
+      },
+    } as any, new Set(['pages/index/index.ts']))
+
+    expect(importedChunkIds).toEqual(new Set([
+      'common.js',
+      'weapp-vendors/runtime.js',
+    ]))
+  })
+
+  it('warms bundle script analysis only when a follow-up rewrite consumes it', () => {
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: false,
+      hasPlatformApiRewrite: false,
+    })).toBe(false)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: true,
+      hasPlatformApiRewrite: false,
+    })).toBe(true)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: false,
+      hasNpmBuildCandidateDependencies: false,
+      hasLocalRootNpmRewriteTargets: false,
+      hasPlatformApiRewrite: true,
+    })).toBe(true)
+
+    expect(shouldWarmupBundleScriptAnalysis({
+      rewritesBundleNpmImports: true,
+      hasNpmBuildCandidateDependencies: true,
+      hasLocalRootNpmRewriteTargets: true,
+      hasPlatformApiRewrite: true,
+    })).toBe(false)
+  })
+
   it('creates renderStart runtime and stores watch files snapshot', async () => {
     emitWxmlAssetsWithCacheMock.mockImplementationOnce(({ runtime }) => {
       runtime.addWatchFile?.('foo\\\\bar//main.wxml')
@@ -194,6 +266,34 @@ describe('core lifecycle emit hook extra branches', () => {
       source: '<view />',
     })
     expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
+  })
+
+  it('skips app prelude scanning when no prelude source or request globals prelude is enabled', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(bundle['app.js'].code).toBe('App({})')
   })
 
   it('narrows wxml emit targets during incremental hmr renderStart', async () => {
@@ -305,6 +405,14 @@ describe('core lifecycle emit hook extra branches', () => {
       ctx: {
         configService: {
           isDev: true,
+          packageJson: {
+            dependencies: {},
+          },
+          platform: 'weapp',
+          weappViteConfig: {},
+        },
+        scanService: {
+          subPackageMap: new Map(),
         },
         runtimeState: {
           build: {
@@ -325,19 +433,19 @@ describe('core lifecycle emit hook extra branches', () => {
         didEmitAllEntries: false,
       },
     })
-    const hook = createRenderStartHook(state)
+    const hook = createGenerateBundleHook(state, false)
     const emitFile = vi.fn()
+    const bundle = {}
 
-    await hook.call({ emitFile })
+    await hook.call({ emitFile }, {}, bundle)
 
     expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
       state.ctx,
       expect.objectContaining({ emitFile }),
-      {},
+      bundle,
       '/project/src/pages/hmr/index.wxss',
       undefined,
     )
-    expect(emitJsonAssetsMock).not.toHaveBeenCalled()
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
@@ -1535,6 +1643,12 @@ describe('core lifecycle emit hook extra branches', () => {
         sharedFileName: 'shared/missing-b.js',
         finalFileName: 'pkg-a/scanned-common.js',
       })
+      options.onFallback?.({
+        reason: 'main-package',
+        importers: ['pkg-a/pages/index.js'],
+        sharedFileName: 'shared/missing-c.js',
+        finalFileName: 'pkg-a/multi-common.js',
+      })
     })
 
     const state = createState({
@@ -1551,7 +1665,7 @@ describe('core lifecycle emit hook extra branches', () => {
               logOptimization: true,
             },
           },
-          relativeAbsoluteSrcRoot: (id: string) => id,
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         },
       },
     })
@@ -1571,7 +1685,24 @@ describe('core lifecycle emit hook extra branches', () => {
         code: 'module.exports = 2',
         imports: [],
         dynamicImports: [],
-        modules: {},
+        modules: {
+          '/project/node_modules/.pnpm/pkg-b@1.0.0/node_modules/pkg-b/index.js': {},
+        },
+      },
+      'multi-key.js': {
+        type: 'chunk',
+        fileName: 'pkg-a/multi-common.js',
+        code: 'module.exports = 3',
+        imports: [],
+        dynamicImports: [],
+        modules: {
+          '/project/src/shared/a.ts': {},
+          '/project/src/shared/b.ts': {},
+          '/project/src/shared/c.ts': {},
+          '/project/src/shared/d.ts': {},
+          '/project/src/shared/a.ts?duplicate': {},
+          '\0virtual:skip': {},
+        },
       },
     } as any
 
@@ -1581,7 +1712,10 @@ describe('core lifecycle emit hook extra branches', () => {
       loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/ghost-common.js')),
     ).toBe(true)
     expect(
-      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/scanned-common.js')),
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-b/index.js')),
+    ).toBe(true)
+    expect(
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('shared/a.ts、shared/b.ts、shared/c.ts 等 5 个模块')),
     ).toBe(true)
   })
 

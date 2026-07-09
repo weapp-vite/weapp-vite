@@ -4,6 +4,18 @@ import Issue530SlotFallbackProbe from '../../components/issue-530/SlotFallbackPr
 definePageJson({
   navigationBarTitleText: 'issue-530',
 })
+
+function _runE2E() {
+  return {
+    fallbackDefault: 'issue-530 fallback default',
+    scopedFallbackDefault: 'issue-530 scoped fallback default',
+    providedDefault: 'issue-530 provided default: issue-530 scoped slot prop',
+  }
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

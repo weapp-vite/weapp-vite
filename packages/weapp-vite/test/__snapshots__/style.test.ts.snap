@@ -31,7 +31,7 @@ exports[`build style > dist > app.wxss 1`] = `
 
 .app {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build style > dist > components/Navbar/Navbar.js 1`] = `
@@ -57,13 +57,7 @@ exports[`build style > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}.navbar-css {
-  color: aliceblue;
-}
-.navbar-wxss {
-  color: antiquewhite;
-}
-/*$vite$:1*/"
+}"
 `;
 
 exports[`build style > dist > pages/index/index.js 1`] = `
@@ -101,7 +95,7 @@ exports[`build style > dist > pages/index/index.wxss 1`] = `
   color: red;
   -webkit-background-clip: text;
           background-clip: text;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build style > dist > sitemap.json 1`] = `

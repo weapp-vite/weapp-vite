@@ -28,8 +28,13 @@ const SECOND_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)s(?=($|[\s),]))/g
 const MS_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)ms(?=($|[\s),]))/g
 const RGBA_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([+-]?(\d+\.\d+|\d+|\.\d+)))?\s*\)/gi
 const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
-const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
+const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in warmup reLaunch|Timeout in read current page|Timed out waiting page root after (?:warmup )?reLaunch|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
 const TEMPLATE_RELAUNCH_FATAL_BOOT_RE = /WeChat DevTools simulator boot error detected/i
+const SCOPED_SLOT_ID_RE = /\bscoped-slot-[a-z0-9]+-default-\d+\b/g
+const TEMPLATE_PAGE_RENDERED_TIMEOUT = 12_000
+const TEMPLATE_PAGE_RENDERED_POLL_DELAY = 300
+const TEMPLATE_RUNTIME_SELECTOR_LIMIT = 8
+const STABLE_SELECTOR_TOKEN_RE = /^-?[_a-z][\w-]*$/i
 
 async function pathExists(filePath: string) {
   try {
@@ -195,6 +200,8 @@ export function normalizeWxmlForSnapshot(wxml: string) {
     .replace(/id="([0-9a-f]{8})--(?!t_)([^"]+)"/g, (_match, _id, suffix) => (
       `id="${suffix}"`
     ))
+    // Normalize generated scoped slot ids whose hash depends on compile order.
+    .replace(SCOPED_SLOT_ID_RE, 'scoped-slot-stable-default-0')
     // Normalize tabs track translateX variations.
     .replace(/translateX\([\d.]+px\)/g, 'translateX(187px)')
 
@@ -402,26 +409,122 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   list.push(value)
 }
 
-async function waitForPageRoot(page: any, timeoutMs = 12_000) {
-  const start = Date.now()
-  while (Date.now() - start <= timeoutMs) {
-    if (typeof page?.$$ === 'function') {
-      try {
-        const roots = await page.$$('page')
-        if (Array.isArray(roots) && roots.length > 0) {
-          return roots[0]
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function pushStableRuntimeSelector(selectors: string[], seen: Set<string>, selector: string) {
+  if (!selector || seen.has(selector)) {
+    return
+  }
+  seen.add(selector)
+  selectors.push(selector)
+}
+
+function extractRuntimeSelectorsFromWxml(wxml: string) {
+  const selectors: string[] = []
+  const seen = new Set<string>()
+
+  for (const match of wxml.matchAll(/\sid="([^"]+)"/g)) {
+    const id = match[1]?.trim()
+    if (id && STABLE_SELECTOR_TOKEN_RE.test(id)) {
+      pushStableRuntimeSelector(selectors, seen, `#${id}`)
+    }
+  }
+
+  for (const match of wxml.matchAll(/\sclass="([^"]+)"/g)) {
+    const classValue = match[1] ?? ''
+    for (const token of classValue.split(/\s+/)) {
+      const normalized = token.trim()
+      if (STABLE_SELECTOR_TOKEN_RE.test(normalized)) {
+        pushStableRuntimeSelector(selectors, seen, `.${normalized}`)
+      }
+      if (selectors.length >= TEMPLATE_RUNTIME_SELECTOR_LIMIT) {
+        return selectors
+      }
+    }
+  }
+
+  return selectors
+}
+
+async function waitForRuntimeRendered(page: any, selectors: string[], templateName: string, route: string) {
+  const startedAt = Date.now()
+  const candidates = selectors.length > 0 ? selectors : ['view']
+  let latest: unknown = null
+  let lastError: unknown
+
+  while (Date.now() - startedAt <= TEMPLATE_PAGE_RENDERED_TIMEOUT) {
+    try {
+      if (typeof page.renderedSelectorNodes === 'function') {
+        const nodesBySelector = await page.renderedSelectorNodes(candidates, {
+          timeout: Math.min(2_500, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
+        })
+        latest = {
+          nodesBySelector,
+          source: 'App.callFunction.batch',
+        }
+        for (const selector of candidates) {
+          const nodes = nodesBySelector?.[selector]
+          if (Array.isArray(nodes) && nodes.some(node => Number(node?.width ?? 0) > 0 && Number(node?.height ?? 0) > 0)) {
+            return
+          }
         }
       }
-      catch {
+
+      if (typeof page?.$$ === 'function') {
+        for (const selector of candidates.slice(0, 3)) {
+          try {
+            const elements = await page.$$(selector, {
+              timeout: Math.min(300, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
+            })
+            latest = {
+              count: Array.isArray(elements) ? elements.length : 0,
+              selector,
+              source: 'Page.getElements',
+            }
+            if (Array.isArray(elements) && elements.length > 0) {
+              return
+            }
+          }
+          catch (error) {
+            lastError = error
+          }
+        }
+      }
+
+      if (typeof page.renderedSelectorNodes !== 'function' && typeof page.waitForRendered === 'function') {
+        await page.waitForRendered({
+          selector: candidates[0],
+          timeout: Math.min(2_000, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
+        })
+        return
       }
     }
-    const element = await page.$('page')
-    if (element) {
-      return element
+    catch (error) {
+      lastError = error
     }
-    await page.waitFor(200)
+    await sleep(TEMPLATE_PAGE_RENDERED_POLL_DELAY)
   }
-  return null
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`[${templateName}] Timed out waiting runtime rendered nodes: route=${route} selectors=${candidates.join(',')} reason=${reason} latest=${JSON.stringify(latest).slice(0, 500)}`)
+}
+
+async function isCurrentRouteReady(miniProgram: any, route: string) {
+  if (typeof miniProgram?.currentPage !== 'function') {
+    return false
+  }
+
+  try {
+    const currentPage = await miniProgram.currentPage({
+      appFunctionFallback: false,
+    })
+    return normalizeSegment(currentPage?.path ?? '') === normalizeSegment(route)
+  }
+  catch {
+    return false
+  }
 }
 
 async function resolveReadyCurrentPage(miniProgram: any, route: string) {
@@ -430,13 +533,13 @@ async function resolveReadyCurrentPage(miniProgram: any, route: string) {
   }
 
   try {
-    const page = await miniProgram.currentPage()
+    const page = await miniProgram.currentPage({
+      appFunctionFallback: false,
+    })
     if (normalizeSegment(page?.path ?? '') !== normalizeSegment(route)) {
       return null
     }
-    if (await waitForPageRoot(page)) {
-      return page
-    }
+    return page
   }
   catch {
   }
@@ -452,6 +555,14 @@ function isTemplateRelaunchRetryableError(error: unknown) {
 function isTemplateRelaunchFatalBootError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return TEMPLATE_RELAUNCH_FATAL_BOOT_RE.test(message)
+}
+
+function skipOrThrow(skip: TemplateE2EOptions['skip'], message: string, error: unknown): never | void {
+  if (skip) {
+    skip(`${message}reason=${error instanceof Error ? error.message : String(error)}`)
+    return
+  }
+  throw error instanceof Error ? error : new Error(`${message}reason=${String(error)}`)
 }
 
 async function loadAppConfig(templateRoot: string) {
@@ -576,12 +687,14 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
   debugTemplateE2E(templateName, 'app-wxss-snapshot-done')
 
+  const runtimeSelectorMap = new Map<string, string[]>()
   for (const pagePath of pages) {
     const pageWxmlPath = path.join(templateRoot, 'dist', `${pagePath}.wxml`)
     if (!(await pathExists(pageWxmlPath))) {
       throw new Error(`[${templateName}] Missing page WXML in dist output: ${pagePath}`)
     }
     const pageWxml = normalizeWxmlForSnapshot(await readFile(pageWxmlPath, 'utf-8'))
+    runtimeSelectorMap.set(pagePath, extractRuntimeSelectorsFromWxml(pageWxml))
     expect(pageWxml).not.toMatch(UNSUPPORTED_VUE_EVENT_SHORTHAND_RE)
     expect(await formatWxml(pageWxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
     debugTemplateE2E(templateName, 'dist-page-snapshot-done', pagePath)
@@ -591,7 +704,14 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
     debugTemplateE2E(templateName, 'automator-launching')
     return await launchAutomator({
       projectPath: templateRoot,
+      projectConfig: {
+        setting: {
+          skylineRenderEnable: false,
+        },
+      },
+      skipRelaunchPageRootCheck: true,
       warmupAnyPage: true,
+      warmupAllowRelaunch: false,
       warmupRoute: launchWarmupRoute,
     })
   }
@@ -604,7 +724,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
     if (!isTemplateRelaunchRetryableError(error)) {
       throw error
     }
-    skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 运行时页面校验。reason=${error instanceof Error ? error.message : String(error)}`)
+    skipOrThrow(skip, `WeChat DevTools 页面协议不可用，无法完成 ${templateName} 运行时页面校验。`, error)
     return
   }
 
@@ -635,7 +755,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
               throw error
             }
             if (attempt >= 2 || isTemplateRelaunchFatalBootError(error)) {
-              skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 页面快照。reason=${error instanceof Error ? error.message : String(error)}`)
+              skipOrThrow(skip, `WeChat DevTools 页面协议不可用，无法完成 ${templateName} 页面快照。`, error)
               return
             }
             debugTemplateE2E(templateName, 'page-relaunch-retry', `${route} reason=${error instanceof Error ? error.message : String(error)}`)
@@ -647,7 +767,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
               if (!isTemplateRelaunchRetryableError(launchError)) {
                 throw launchError
               }
-              skip?.(`WeChat DevTools 页面协议不可用，跳过 ${templateName} 页面快照。reason=${launchError instanceof Error ? launchError.message : String(launchError)}`)
+              skipOrThrow(skip, `WeChat DevTools 页面协议不可用，无法完成 ${templateName} 页面快照。`, launchError)
               return
             }
           }
@@ -657,11 +777,12 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
         throw new Error(`[${templateName}] Failed to launch page: ${route}`)
       }
 
-      const element = await waitForPageRoot(page)
-      debugTemplateE2E(templateName, 'page-root-checked', `${route} found=${String(Boolean(element))}`)
-      if (!element) {
-        throw new Error(`[${templateName}] Failed to find page element: ${route}`)
+      if (normalizeSegment(page.path ?? '') !== normalizeSegment(route)) {
+        if (!(await isCurrentRouteReady(miniProgram, route))) {
+          throw new Error(`[${templateName}] Failed to launch expected route: ${route}`)
+        }
       }
+      await waitForRuntimeRendered(page, runtimeSelectorMap.get(pagePath) ?? [], templateName, route)
       debugTemplateE2E(templateName, 'page-runtime-ready', route)
     }
   }

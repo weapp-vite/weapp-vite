@@ -178,13 +178,24 @@ function printStructuredResult(result: unknown, json: boolean | undefined, title
   console.log(JSON.stringify(result, null, 2))
 }
 
-async function requireElement(page: MiniProgramPage, selector: string): Promise<MiniProgramElement> {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(i18nText(`未找到元素: ${selector}`, `Element not found: ${selector}`))
+async function requireElement(page: MiniProgramPage, selector: string, timeoutMs = 5_000): Promise<MiniProgramElement> {
+  const startedAt = Date.now()
+  let lastError: unknown
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const element = await page.$(selector)
+      if (element) {
+        return element as MiniProgramElement
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await sleep(160)
   }
 
-  return element as MiniProgramElement
+  const reason = lastError instanceof Error ? ` ${lastError.message}` : ''
+  throw new Error(i18nText(`未找到元素: ${selector}${reason}`, `Element not found: ${selector}${reason}`))
 }
 
 /**
@@ -316,8 +327,9 @@ export async function tap(options: TapOptions) {
       `正在点击元素 ${colors.cyan(options.selector)}...`,
       `Tapping element ${colors.cyan(options.selector)}...`,
     ))
+    const commandTimeout = options.timeout ?? 30_000
     const page = await miniProgram.currentPage()
-    const element = await requireElement(page, options.selector)
+    const element = await requireElement(page, options.selector, commandTimeout)
     await element.tap()
     logger.success(i18nText(
       `已点击元素 ${colors.cyan(options.selector)}`,
@@ -335,8 +347,9 @@ export async function input(options: InputOptions) {
       `正在向 ${colors.cyan(options.selector)} 输入 "${colors.cyan(options.value)}"...`,
       `Inputting "${colors.cyan(options.value)}" into ${colors.cyan(options.selector)}...`,
     ))
+    const commandTimeout = options.timeout ?? 30_000
     const page = await miniProgram.currentPage()
-    const element = await requireElement(page, options.selector)
+    const element = await requireElement(page, options.selector, commandTimeout)
 
     if (typeof element.input !== 'function') {
       throw new TypeError(i18nText(

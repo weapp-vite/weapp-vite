@@ -28,6 +28,8 @@ export type { ComponentPropMap } from './operations/componentProps'
 export {
   collectFeatureFlagsFromCode,
   collectFeatureFlagsWithBabel,
+  collectFeatureFlagsWithNative,
+  collectFeatureFlagsWithNativeBatch,
   collectFeatureFlagsWithOxc,
   consumeNamedFeatureFlag,
   consumeNamespaceFeatureFlag,
@@ -65,6 +67,7 @@ export type {
 export {
   collectOnPageScrollPerformanceWarnings,
   collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithNative,
   collectOnPageScrollWarningsWithOxc,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
@@ -101,6 +104,8 @@ export {
   mayContainStaticRequireLiteral,
 } from './operations/require'
 export type { RequireToken } from './operations/require'
+export { analyzeScript, analyzeScripts } from './operations/scriptAnalysis'
+export type { ScriptAnalysisBatchInput, ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,

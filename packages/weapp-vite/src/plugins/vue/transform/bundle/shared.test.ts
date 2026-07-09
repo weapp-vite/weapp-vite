@@ -46,6 +46,7 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
 const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
+const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -132,6 +133,14 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   }
 })
 
+vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../utils/file/vueSfcSignature')>()
+  return {
+    ...actual,
+    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
+  }
+})
+
 describe('emitSharedVueEntryAssets', () => {
   beforeEach(() => {
     emitPlatformTemplateAssetMock.mockReset()
@@ -195,6 +204,8 @@ describe('emitSharedVueEntryAssets', () => {
     applyPageLayoutPlanMock.mockImplementation((result: any) => result)
     addResolvedPageLayoutWatchFilesMock.mockReset()
     addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
+    resolveVueSfcStyleIndependentSignatureMock.mockReset()
+    resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -431,7 +442,7 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
-  it('emits page SFC style assets during asset-only HMR refresh', async () => {
+  it('emits page SFC style assets during style-only HMR refresh', async () => {
     await emitCompiledEntryBundleAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
@@ -441,7 +452,7 @@ describe('emitSharedVueEntryAssets', () => {
             hmr: {
               lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
               profile: {
-                dirtyReasonSummary: ['entry-local-asset:1'],
+                dirtyReasonSummary: ['entry-style-only:1'],
               },
             },
           },
@@ -483,6 +494,50 @@ describe('emitSharedVueEntryAssets', () => {
     expect(processCssWithCacheMock).toHaveBeenCalledWith('.marker { color: red; }', expect.objectContaining({
       isDev: true,
     }))
+  })
+
+  it('does not emit page SFC style assets during template-only HMR refresh', async () => {
+    await emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              lastHmrEntryIds: new Set(['/project/src/pages/hmr-sfc/index.vue']),
+              profile: {
+                dirtyReasonSummary: ['entry-local-asset:1'],
+              },
+            },
+          },
+        },
+      } as any,
+      filename: '/project/src/pages/hmr-sfc/index.vue',
+      relativeBase: 'pages/hmr-sfc/index',
+      result: {
+        template: '<view class="next" />',
+        style: '.marker { color: red; }',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: true,
+      configService: {
+        isDev: true,
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'wxs',
+      outputExtensions: {
+        wxss: 'wxss',
+      },
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
+    expect(processCssWithCacheMock).not.toHaveBeenCalled()
   })
 
   it('does not overwrite Vite-processed page SFC style assets during css importer HMR', async () => {
@@ -677,7 +732,7 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'], { sourceMap: false })
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
   })
 
@@ -709,7 +764,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['title'])
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -742,7 +797,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -771,7 +826,7 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />')
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [], { sourceMap: false })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -799,7 +854,7 @@ describe('emitSharedVueEntryAssets', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
     expect(result.script).toContain('__wvSlotOwnerId')
   })
 
@@ -824,7 +879,7 @@ describe('emitSharedVueEntryAssets', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -851,7 +906,7 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'), { sourceMap: false })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -1139,7 +1194,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result).toBe(cached.result)
   })
 
-  it('refreshes dirty compiled entries even when source is unchanged in dev', async () => {
+  it('reuses dirty compiled entries when transformed source is unchanged in dev', async () => {
     const cached = {
       result: { script: 'Page({ cached: true })' },
       source: '<view />',
@@ -1161,6 +1216,62 @@ describe('emitSharedVueEntryAssets', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              profile: {
+                dirtyReasonSummary: ['entry-style-only:1'],
+              },
+            },
+          },
+        },
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(cached.refreshToken).toBe(0)
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(result).toBe(cached.result)
+    expect((result as any).script).toBe('Page({ cached: true })')
+    expect(resolveVueSfcStyleIndependentSignatureMock).not.toHaveBeenCalled()
+  })
+
+  it('refreshes dirty compiled entries when source changes in dev', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+      refreshToken: 1,
+    } as any
+    readFileMock.mockResolvedValue('<view>{{ title }}</view>')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ refreshed: true })',
+    })
+
+    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                dirtyReasonSummary: ['entry-style-only:1'],
+              },
             },
           },
         },
@@ -1186,6 +1297,60 @@ describe('emitSharedVueEntryAssets', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(result).toBe(cached.result)
     expect((result as any).script).toBe('Page({ refreshed: true })')
+  })
+
+  it('reuses cached compiled entries for style-only dirty updates in dev', async () => {
+    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
+    const previousSource = '<template><view /></template><style>.page{color:red}</style>'
+    const nextSource = '<template><view /></template><style>.page{color:blue}</style>'
+    const cached = {
+      result: { script: 'Page({ cached: true })', style: '.page{color:red}' },
+      source: previousSource,
+      isPage: true,
+      refreshToken: 1,
+      styleIndependentSignature: resolveVueSfcStyleIndependentSignature(previousSource, '/project/src/pages/index/index.vue'),
+    } as any
+    readFileMock.mockResolvedValue(nextSource)
+
+    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const hmrProfile = {
+      dirtyReasonSummary: ['entry-style-only:1'],
+    }
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: hmrProfile,
+            },
+          },
+        },
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(cached.source).toBe(nextSource)
+    expect(cached.result.style).toContain('color:blue')
+    expect(cached.refreshToken).toBe(0)
+    expect(dirtyVueEntryIds.size).toBe(0)
+    expect(result).toBe(cached.result)
   })
 
   it('refreshes dirty compiled app entries when dirty ids use windows separators', async () => {

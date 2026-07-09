@@ -1,4 +1,7 @@
 {
   "component": true,
-  "hmrMarker": "DEFAULT-LAYOUT-JSON-BASE"
+  "hmrMarker": "DEFAULT-LAYOUT-JSON-BASE",
+  "usingComponents": {
+    "e2e-template-probe": "../../components/e2e-template-probe/index"
+  }
 }

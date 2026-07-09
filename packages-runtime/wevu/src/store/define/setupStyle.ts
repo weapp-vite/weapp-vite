@@ -24,7 +24,12 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
     initialSnapshot.forEach((snapValue, key) => {
       const current = (instance as any)[key]
       if (isTrackableRef(current)) {
-        current.value = cloneDeep(snapValue)
+        try {
+          current.value = cloneDeep(snapValue)
+        }
+        catch {
+          // computed / readonly ref 不能写入，reset 时跳过这类派生状态。
+        }
         return
       }
       if (isReactive(current)) {

@@ -234,6 +234,13 @@ function formatMetricSummary(label: string, metric: HmrProfileAnalyzeResult['met
   return `${label} avg ${metric.averageMs.toFixed(2)} ms，max ${metric.maxMs.toFixed(2)} ms`
 }
 
+function formatOperationSummary(label: string, operation: HmrProfileAnalyzeResult['operations'][keyof HmrProfileAnalyzeResult['operations']]) {
+  if (!operation.count || operation.average === undefined || operation.max === undefined) {
+    return undefined
+  }
+  return `${label} avg ${operation.average.toFixed(1)}，max ${operation.max.toFixed(0)}`
+}
+
 function formatCountItems(items: HmrProfileAnalyzeResult['events'], limit: number = 5) {
   const entries = items.slice(0, limit).map(item => `${item.name} x${item.count}`)
   return entries.join('，')
@@ -248,11 +255,50 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   }
 
   const totalSummary = formatMetricSummary('total', result.metrics.totalMs)
+  const buildStartSummary = formatMetricSummary('build-start', result.metrics.buildStartMs)
+  const pluginResolveSummary = formatMetricSummary('plugin-resolve', result.metrics.pluginResolveMs)
+  const coreLoadSummary = formatMetricSummary('core-load', result.metrics.coreLoadMs)
+  const entryLoadSummary = formatMetricSummary('entry-load', result.metrics.entryLoadMs)
+  const vueReadSourceSummary = formatMetricSummary('vue-read', result.metrics.vueReadSourceMs)
+  const vueCompileSummary = formatMetricSummary('vue-compile', result.metrics.vueCompileMs)
+  const vueFinalizeCompiledSummary = formatMetricSummary('vue-finalize-compiled', result.metrics.vueFinalizeCompiledMs)
+  const vueFinalizeCodeSummary = formatMetricSummary('vue-finalize-code', result.metrics.vueFinalizeCodeMs)
+  const entryEmitOutputSummary = formatMetricSummary('entry-emit-output', result.metrics.entryEmitOutputMs)
+  const entryTemplateScanSummary = formatMetricSummary('entry-template-scan', result.metrics.entryTemplateScanMs)
+  const entryAutoImportSummary = formatMetricSummary('entry-auto-import', result.metrics.entryAutoImportMs)
+  const entryScriptSetupSummary = formatMetricSummary('entry-script-setup', result.metrics.entryScriptSetupMs)
+  const entryVueSignatureSummary = formatMetricSummary('entry-vue-signature', result.metrics.entryVueSignatureMs)
+  const entrySidecarResolveSummary = formatMetricSummary('entry-sidecar-resolve', result.metrics.entrySidecarResolveMs)
+  const entryJsonReadSummary = formatMetricSummary('entry-json-read', result.metrics.entryJsonReadMs)
+  const entryVueConfigSummary = formatMetricSummary('entry-vue-config', result.metrics.entryVueConfigMs)
+  const entryPrepareSummary = formatMetricSummary('entry-prepare', result.metrics.entryPrepareMs)
+  const entryResolveSummary = formatMetricSummary('entry-resolve', result.metrics.entryResolveMs)
+  const entryStyleScanSummary = formatMetricSummary('entry-style-scan', result.metrics.entryStyleScanMs)
+  const entryStyleReadSummary = formatMetricSummary('entry-style-read', result.metrics.entryStyleReadMs)
+  const entryCodeReadSummary = formatMetricSummary('entry-code-read', result.metrics.entryCodeReadMs)
+  const entryChunkEmitSummary = formatMetricSummary('entry-chunk-emit', result.metrics.entryChunkEmitMs)
+  const entryChunkLoadSummary = formatMetricSummary('entry-chunk-load', result.metrics.entryChunkLoadMs)
+  const entryChunkEmitFileSummary = formatMetricSummary('entry-chunk-emit-file', result.metrics.entryChunkEmitFileMs)
+  const entryLayoutSummary = formatMetricSummary('entry-layout', result.metrics.entryLayoutMs)
+  const requestGlobalsSummary = formatMetricSummary('request-globals', result.metrics.requestGlobalsMs)
+  const weapiResolveSummary = formatMetricSummary('weapi-resolve', result.metrics.weapiResolveMs)
+  const snapshotResolveSummary = formatMetricSummary('snapshot-resolve', result.metrics.snapshotResolveMs)
+  const snapshotBuildSummary = formatMetricSummary('snapshot-build', result.metrics.snapshotBuildMs)
+  const writeSummary = formatMetricSummary('write', result.metrics.writeMs)
   const watchSummary = formatMetricSummary('watch->dirty', result.metrics.watchToDirtyMs)
   const emitSummary = formatMetricSummary('emit', result.metrics.emitMs)
   const sharedSummary = formatMetricSummary('shared', result.metrics.sharedChunkResolveMs)
+  const chunkEmitSummary = formatOperationSummary('chunk emit', result.operations.chunkEmitCount)
+  const loadSummary = formatOperationSummary('load calls', result.operations.loadCount)
+  const resolveSummary = formatOperationSummary('resolve calls', result.operations.resolveCount)
+  const skippedLoadedSummary = formatOperationSummary('loaded skips', result.operations.skippedLoadedCount)
 
-  for (const summary of [totalSummary, watchSummary, emitSummary, sharedSummary]) {
+  for (const summary of [totalSummary, buildStartSummary, pluginResolveSummary, coreLoadSummary, entryLoadSummary, vueReadSourceSummary, vueCompileSummary, vueFinalizeCompiledSummary, vueFinalizeCodeSummary, entryEmitOutputSummary, entryTemplateScanSummary, entryAutoImportSummary, entryScriptSetupSummary, entryVueSignatureSummary, entrySidecarResolveSummary, entryJsonReadSummary, entryVueConfigSummary, entryPrepareSummary, entryResolveSummary, entryStyleScanSummary, entryStyleReadSummary, entryCodeReadSummary, entryChunkEmitSummary, entryChunkLoadSummary, entryChunkEmitFileSummary, entryLayoutSummary, requestGlobalsSummary, weapiResolveSummary, snapshotResolveSummary, snapshotBuildSummary, writeSummary, watchSummary, emitSummary, sharedSummary]) {
+    if (summary) {
+      logger.info(`- ${summary}`)
+    }
+  }
+  for (const summary of [loadSummary, resolveSummary, chunkEmitSummary, skippedLoadedSummary]) {
     if (summary) {
       logger.info(`- ${summary}`)
     }

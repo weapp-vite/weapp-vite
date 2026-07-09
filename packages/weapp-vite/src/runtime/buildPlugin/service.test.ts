@@ -253,12 +253,18 @@ async function flushAsyncTasks() {
   }
 }
 
+async function waitForTimers(ms = 12) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+  await flushAsyncTasks()
+}
+
 async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: number) {
   for (let index = 0; index < 20; index += 1) {
     if (mock.mock.calls.length >= count) {
       return
     }
     await flushAsyncTasks()
+    await waitForTimers()
   }
 }
 
@@ -356,7 +362,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
-  it('does not touch app wxss for non-style hmr updates', async () => {
+  it('touches app wxss for Tailwind content hmr updates', async () => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
@@ -367,13 +373,93 @@ describe('runtime buildPlugin service', () => {
 
     const buildPromise = service.build({ skipNpm: true })
     await watcher.subscribed
-    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
     watcher.emit('START')
     watcher.emit('END')
     await buildPromise
 
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['tailwind-content:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(touchMock, 1)
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
+    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+  })
+
+  it('does not touch app wxss for shared css importer hmr updates in auto mode', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['css-importer:4']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+
     expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not touch app wxss for script-only hmr updates in auto mode', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
+    expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps explicit touchAppWxss true behavior for script-only hmr updates', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig = {
+      hmr: {
+        touchAppWxss: true,
+      },
+    }
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(touchMock, 1)
+
+    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
+    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
   it('forces dev watch builds to keep writing files to outDir', async () => {
@@ -483,6 +569,44 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
     expect(loggerSuccessMock).toHaveBeenCalled()
     expect(forceFullValues).toEqual([undefined])
+  })
+
+  it('batches consecutive sidecar snapshot events into one build', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const dirtySummaries: Array<string[] | undefined> = []
+    const forceFullValues: Array<string | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const ctx = createMockContext()
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/about/index.ts', {
+      id: '/project/src/pages/about/index.ts',
+    })
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
+        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        return { output: [] }
+      })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.wxml')
+    sidecarWatcher.emit('change', '/project/src/pages/about/index.wxss')
+    await waitForMockCalls(buildMock, 2)
+
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(dirtySummaries).toEqual([['snapshot-full:2']])
+    expect(forceFullValues).toEqual(['1'])
+    expect(loggerSuccessMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps full snapshot fallback for sidecar topology changes', async () => {
@@ -782,11 +906,22 @@ describe('runtime buildPlugin service', () => {
       eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      buildStartMs: 4,
+      pluginResolveMs: 2,
       transformMs: 9.5,
+      coreTransformMs: 2.5,
+      wevuTransformMs: 3,
+      vueTransformMs: 4,
       writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      entryChunkLoadMs: 6.5,
+      entryChunkEmitFileMs: 0.75,
+      chunkEmitCount: 3,
+      loadCount: 2,
+      resolveCount: 5,
+      skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
       emittedCount: 2,
@@ -870,6 +1005,8 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile = {
       buildCoreMs: 120.5,
       transformMs: 40.25,
+      vueCompileMs: 12.5,
+      vueFinalizeCodeMs: 2.25,
       writeMs: 6.5,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
@@ -881,6 +1018,8 @@ describe('runtime buildPlugin service', () => {
       expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 40.25 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-compile 12.50 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-finalize-code 2.25 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 6.50 ms'))
     expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('watch->dirty'))
     expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('d/p/e'))
@@ -923,6 +1062,7 @@ describe('runtime buildPlugin service', () => {
       {
         buildCoreMs: 40,
         transformMs: 10,
+        vueCompileMs: 4,
         writeMs: 3,
         watchToDirtyMs: 2,
         emitMs: 8,
@@ -936,6 +1076,7 @@ describe('runtime buildPlugin service', () => {
       {
         buildCoreMs: 42,
         transformMs: 11,
+        vueCompileMs: 5,
         writeMs: 4,
         watchToDirtyMs: 3,
         emitMs: 9,
@@ -956,6 +1097,7 @@ describe('runtime buildPlugin service', () => {
       expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 11.00 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('vue-compile 5.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 4.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.00 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('d/p/e 1/2/2'))
@@ -965,6 +1107,12 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(1)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(100)
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
@@ -992,11 +1140,35 @@ describe('runtime buildPlugin service', () => {
       eventId: 'hmr-event-1',
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      buildStartMs: 4,
+      pluginResolveMs: 2,
       transformMs: 9.5,
+      coreTransformMs: 2.5,
+      wevuTransformMs: 3,
+      vueTransformMs: 4,
+      vueReadSourceMs: 0.5,
+      vueCompileMs: 2,
+      vueFinalizeCompiledMs: 0.75,
+      vueFinalizeCodeMs: 0.75,
+      coreLoadMs: 4,
+      entryLoadMs: 2.5,
+      requestGlobalsMs: 1,
+      weapiResolveMs: 0.5,
+      renderStartMs: 6,
+      generateBundleMs: 11,
+      generateSharedMs: 3,
+      generateRewriteMs: 7,
+      generateModuleGraphMs: 1,
       writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
+      entryChunkLoadMs: 6.5,
+      entryChunkEmitFileMs: 0.75,
+      chunkEmitCount: 3,
+      loadCount: 2,
+      resolveCount: 5,
+      skippedLoadedCount: 1,
       dirtyCount: 2,
       pendingCount: 2,
       emittedCount: 2,
@@ -1022,11 +1194,37 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"eventId":"hmr-event-1"')
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
+    expect(payload).toContain('"buildStartMs":4')
+    expect(payload).toContain('"pluginResolveMs":2')
     expect(payload).toContain('"transformMs":9.5')
+    expect(payload).toContain('"coreTransformMs":2.5')
+    expect(payload).toContain('"wevuTransformMs":3')
+    expect(payload).toContain('"vueTransformMs":4')
+    expect(payload).toContain('"vueReadSourceMs":0.5')
+    expect(payload).toContain('"vueCompileMs":2')
+    expect(payload).toContain('"vueFinalizeCompiledMs":0.75')
+    expect(payload).toContain('"vueFinalizeCodeMs":0.75')
+    expect(payload).toContain('"coreLoadMs":4')
+    expect(payload).toContain('"entryLoadMs":2.5')
+    expect(payload).toContain('"requestGlobalsMs":1')
+    expect(payload).toContain('"weapiResolveMs":0.5')
+    expect(payload).toContain('"renderStartMs":6')
+    expect(payload).toContain('"generateBundleMs":11')
+    expect(payload).toContain('"generateSharedMs":3')
+    expect(payload).toContain('"generateRewriteMs":7')
+    expect(payload).toContain('"generateModuleGraphMs":1')
+    expect(payload).toContain('"bundlerMs":')
     expect(payload).toContain('"writeMs":5.25')
-    expect(payload).toContain('"buildCoreMs":')
+    expect(payload).toContain('"buildCoreMs":30.5')
+    expect(payload).toContain('"entryChunkLoadMs":6.5')
+    expect(payload).toContain('"entryChunkEmitFileMs":0.75')
+    expect(payload).toContain('"chunkEmitCount":3')
+    expect(payload).toContain('"loadCount":2')
+    expect(payload).toContain('"resolveCount":5')
+    expect(payload).toContain('"skippedLoadedCount":1')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
+    nowSpy.mockRestore()
   })
 
   it('writes hmr profile jsonl to custom relative path', async () => {
@@ -1353,6 +1551,50 @@ describe('runtime buildPlugin service', () => {
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
   })
 
+  it('runs project config sync concurrently with the dev bundler build', async () => {
+    const watcher = createManualWatcher()
+    let releaseProjectConfigSync: (() => void) | undefined
+    syncProjectConfigToOutputMock.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        releaseProjectConfigSync = resolve
+      })
+    })
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        multiPlatform: {
+          ...baseCtx.configService.multiPlatform,
+          enabled: true,
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+
+    expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
+    expect(buildMock).toHaveBeenCalledTimes(1)
+
+    watcher.emit('START')
+    watcher.emit('END')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(releaseProjectConfigSync).toBeDefined()
+
+    let resolved = false
+    buildPromise.then(() => {
+      resolved = true
+    }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(resolved).toBe(false)
+
+    releaseProjectConfigSync?.()
+    await buildPromise
+    expect(resolved).toBe(true)
+  })
+
   it('cleans output in dev when cleanOutputsInDev is true', async () => {
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
@@ -1470,9 +1712,10 @@ describe('runtime buildPlugin service', () => {
     })
   })
 
-  it('preloads app entry before concurrent prod npm build when local subpackage npm config exists', async () => {
+  it('runs prod bundler without waiting for local subpackage npm preload', async () => {
     process.env.NODE_ENV = 'production'
     buildMock.mockResolvedValueOnce({ output: [] })
+    let releaseNpmBuild: (() => void) | undefined
 
     const baseCtx = createMockContext()
     const ctx = createMockContext({
@@ -1491,13 +1734,33 @@ describe('runtime buildPlugin service', () => {
         },
       },
     })
+    ctx.npmService.build.mockImplementationOnce(async () => {
+      await ctx.scanService.loadAppEntry()
+      ctx.scanService.loadSubPackages()
+      await new Promise<void>((resolve) => {
+        releaseNpmBuild = resolve
+      })
+    })
     const service = createBuildService(ctx)
 
-    await service.build()
+    const buildPromise = service.build()
+    await waitForMockCalls(buildMock, 1)
 
+    expect(buildMock).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
+
+    let resolved = false
+    buildPromise.then(() => {
+      resolved = true
+    }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(resolved).toBe(false)
+
+    releaseNpmBuild?.()
+    await buildPromise
+    expect(resolved).toBe(true)
   })
 
   it('preloads app entry before prod build when worker entry config needs workersDir', async () => {

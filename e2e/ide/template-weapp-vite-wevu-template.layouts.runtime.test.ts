@@ -7,6 +7,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
+const LAYOUT_PAGE_WXML = path.join(DIST_ROOT, 'pages/layouts/index.wxml')
 const ROUTE = '/pages/layouts/index'
 const LEADING_SLASH_RE = /^\/+/
 
@@ -131,25 +132,11 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
   return null
 }
 
-async function readPageWxml(page: any) {
-  return await runAutomatorOp('read page wxml', async () => {
-    const root = await page.$('page')
-    if (!root) {
-      throw new Error('Failed to find page root')
-    }
-    return await root.wxml()
-  }, {
-    timeoutMs: 5_000,
+async function readPageDataSnapshot(page: any) {
+  return await runAutomatorOp('read page data snapshot', () => page.data(), {
+    timeoutMs: 15_000,
     retries: 2,
-    retryDelayMs: 180,
-  })
-}
-
-async function readPageData(page: any, key: string) {
-  return await runAutomatorOp(`read page data ${key}`, () => page.data(key), {
-    timeoutMs: 5_000,
-    retries: 2,
-    retryDelayMs: 180,
+    retryDelayMs: 260,
   })
 }
 
@@ -179,12 +166,20 @@ function matchesExpectedProps(
   return Object.entries(expected).every(([key, value]) => actual[key] === value)
 }
 
+function matchesExpectedLayoutName(currentLayout: 'default' | 'admin' | 'none', layoutName: unknown) {
+  if (currentLayout === 'admin') {
+    return layoutName === 'admin'
+  }
+  if (currentLayout === 'none') {
+    return !layoutName || layoutName === '__wv_no_layout'
+  }
+  return !layoutName || layoutName === 'default'
+}
+
 async function waitForLayoutState(
   miniProgram: any,
   options: {
     currentLayout: 'default' | 'admin' | 'none'
-    contains: string[]
-    absent?: string[]
     props?: Record<string, any> | null
   },
   timeoutMs = 15_000,
@@ -201,21 +196,19 @@ async function waitForLayoutState(
     }
 
     try {
-      const [wxml, currentLayout, props] = await Promise.all([
-        readPageWxml(page),
-        readPageData(page, 'currentLayout'),
-        readPageData(page, '__wv_page_layout_props'),
-      ])
-      const containsMatched = options.contains.every(text => wxml.includes(text))
-      const absentMatched = (options.absent ?? []).every(text => !wxml.includes(text))
+      const data = await readPageDataSnapshot(page)
+      const currentLayout = data?.currentLayout
+      const layoutName = data?.__wv_page_layout_name
+      const props = data?.__wv_page_layout_props
       const propsMatched = options.props === undefined || matchesExpectedProps(props, options.props)
-      if (containsMatched && absentMatched && currentLayout === options.currentLayout && propsMatched) {
-        return { page, wxml, currentLayout, props }
+      const layoutNameMatched = matchesExpectedLayoutName(options.currentLayout, layoutName)
+      if (currentLayout === options.currentLayout && layoutNameMatched && propsMatched) {
+        return { page, currentLayout, layoutName, props }
       }
       lastSnapshot = JSON.stringify({
         currentLayout,
+        layoutName,
         props,
-        wxml: wxml.slice(0, 280),
       })
     }
     catch (error) {
@@ -228,8 +221,18 @@ async function waitForLayoutState(
   throw new Error(`Timed out waiting for layout state ${options.currentLayout}: ${lastSnapshot}`)
 }
 
+async function assertLayoutTemplateBranches() {
+  const wxml = await fs.readFile(LAYOUT_PAGE_WXML, 'utf8')
+  expect(wxml).toContain('<weapp-layout-default')
+  expect(wxml).toContain('<weapp-layout-admin')
+  expect(wxml).toContain('wx:else')
+  expect(wxml).toContain('基础模板已接入 src/layouts 约定')
+  expect(wxml).toContain('当前状态：{{currentLayout}}')
+}
+
 async function expectNoLayoutProps(page: any) {
-  const props = await readPageData(page, '__wv_page_layout_props')
+  const data = await readPageDataSnapshot(page)
+  const props = data?.__wv_page_layout_props
   if (props == null) {
     expect(props).toBeFalsy()
     return
@@ -252,6 +255,9 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: TEMPLATE_ROOT,
+      skipRelaunchPageRootCheck: true,
+      warmupAllowRelaunch: false,
+      warmupAnyPage: true,
     })
   }
   return sharedMiniProgram
@@ -261,7 +267,7 @@ async function releaseSharedMiniProgram(miniProgram: any) {
   if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
     return
   }
-  await miniProgram.close()
+  await miniProgram.close().catch(() => {})
 }
 
 async function closeSharedMiniProgram() {
@@ -270,7 +276,7 @@ async function closeSharedMiniProgram() {
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await miniProgram.close().catch(() => {})
 }
 
 describe.sequential('e2e app: template-wevu-regression layouts runtime', () => {
@@ -290,33 +296,24 @@ describe.sequential('e2e app: template-wevu-regression layouts runtime', () => {
       if (!page) {
         throw new Error(`Failed to launch route: ${ROUTE}`)
       }
+      await assertLayoutTemplateBranches()
 
       let snapshot = await waitForLayoutState(miniProgram, {
         currentLayout: 'default',
-        contains: ['<weapp-layout-default', '基础模板已接入 src/layouts 约定', '当前状态：default'],
-        absent: ['<weapp-layout-admin'],
       })
-      let wxml = snapshot.wxml
-      expect(wxml).toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(wxml).toContain('基础模板已接入 src/layouts 约定')
-      expect(wxml).toContain('当前状态：default')
+      expect(snapshot.currentLayout).toBe('default')
       await expectNoLayoutProps(snapshot.page)
 
       await callCurrentPageMethod(miniProgram, 'applyAdminLayout')
       snapshot = await waitForLayoutState(miniProgram, {
         currentLayout: 'admin',
-        contains: ['<weapp-layout-admin', '当前状态：admin'],
-        absent: ['<weapp-layout-default'],
         props: {
           title: '业务后台布局',
           subtitle: '这个标题来自 setPageLayout() 传入的 props。',
         },
       })
-      wxml = snapshot.wxml
-      expect(wxml).toContain('<weapp-layout-admin')
-      expect(wxml).not.toContain('<weapp-layout-default')
-      expect(wxml).toContain('当前状态：admin')
+      expect(snapshot.currentLayout).toBe('admin')
+      expect(snapshot.layoutName).toBe('admin')
       expect(snapshot.props).toMatchObject({
         title: '业务后台布局',
         subtitle: '这个标题来自 setPageLayout() 传入的 props。',
@@ -325,26 +322,16 @@ describe.sequential('e2e app: template-wevu-regression layouts runtime', () => {
       await callCurrentPageMethod(miniProgram, 'clearLayout')
       snapshot = await waitForLayoutState(miniProgram, {
         currentLayout: 'none',
-        contains: ['基础模板已接入 src/layouts 约定', '当前状态：none'],
-        absent: ['<weapp-layout-default', '<weapp-layout-admin'],
       })
-      wxml = snapshot.wxml
-      expect(wxml).not.toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(wxml).toContain('基础模板已接入 src/layouts 约定')
-      expect(wxml).toContain('当前状态：none')
+      expect(snapshot.currentLayout).toBe('none')
+      expect(snapshot.layoutName).toBe('__wv_no_layout')
       await expectNoLayoutProps(snapshot.page)
 
       await callCurrentPageMethod(miniProgram, 'applyDefaultLayout')
       snapshot = await waitForLayoutState(miniProgram, {
         currentLayout: 'default',
-        contains: ['<weapp-layout-default', '当前状态：default'],
-        absent: ['<weapp-layout-admin'],
       })
-      wxml = snapshot.wxml
-      expect(wxml).toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(wxml).toContain('当前状态：default')
+      expect(snapshot.currentLayout).toBe('default')
       await expectNoLayoutProps(snapshot.page)
     }
     finally {

@@ -1,16 +1,22 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
+import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
+import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
+import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
 import fs from 'node:fs/promises'
+import { performance } from 'node:perf_hooks'
 import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
 import {
   emitNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,
@@ -24,6 +30,17 @@ import { collectStyleImports } from './watch'
 
 const NON_VUE_PAGE_RE = /\.vue$|\.jsx$|\.tsx$/
 const nativeLayoutAssetSourceCache = new Map<string, string>()
+
+type PrefetchedResult<T>
+  = | { ok: true, value: T }
+    | { ok: false, error: unknown }
+
+function prefetch<T>(task: Promise<T>): Promise<PrefetchedResult<T>> {
+  return task.then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error }),
+  )
+}
 
 interface NormalizedEntryOptions {
   entries: string[]
@@ -59,7 +76,7 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
     : entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
   const normalizedEntries = skipOwnEntries
     ? []
-    : filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
+    : Array.from(new Set(filteredEntries.map(entry => normalizeEntry(entry, jsonPath))))
   if (!skipOwnEntries) {
     for (const normalizedEntry of normalizedEntries) {
       const resolvedEntryType = explicitEntryTypes?.get(normalizedEntry) ?? entryType ?? (json.component ? 'component' : 'page')
@@ -94,6 +111,7 @@ interface EmitEntryOutputOptions {
   }) => Promise<ResolvedEntryRecord[]>
   resolveMappedEntry?: (entry: string) => string | undefined
   configService: CompilerContext['configService']
+  runtimeState: CompilerContext['runtimeState']
   wxmlService?: CompilerContext['wxmlService']
   resolvedEntryMap: Map<string, ResolvedId>
   loadedEntrySet: Set<string>
@@ -101,7 +119,7 @@ interface EmitEntryOutputOptions {
   forceEmitEntrySet?: Set<string>
   forceReloadEntrySet?: Set<string>
   replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
-  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
+  emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   existsCache: Map<string, boolean>
   pathExistsTtlMs: number
@@ -111,6 +129,29 @@ interface EmitEntryOutputOptions {
   skipEntries?: boolean
   entryResolveRoot: string
   emittedWxmlCodeCache?: Map<string, string>
+  styleImportsCache?: Map<string, string[]>
+  resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
+  entryCodeSource?: string
+}
+
+function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
+  const profile = runtimeState?.build?.hmr?.profile
+  if (profile?.event === undefined) {
+    return false
+  }
+  const dirtyReasonSummary = profile.dirtyReasonSummary
+  if (!dirtyReasonSummary?.length) {
+    return false
+  }
+  return dirtyReasonSummary.every(reason =>
+    reason.startsWith('entry-direct:')
+    || reason.startsWith('importer-graph:')
+    || reason.startsWith('shared-chunk-source:')
+    || reason.startsWith('json-sidecar:')
+    || reason.startsWith('sidecar-direct:')
+    || reason.startsWith('entry-local-asset:')
+    || reason.startsWith('tailwind-content:'),
+  )
 }
 
 export async function emitEntryOutput(options: EmitEntryOutputOptions) {
@@ -130,6 +171,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     resolveMappedEntry,
     entryResolveRoot,
     configService,
+    runtimeState,
     wxmlService,
     resolvedEntryMap,
     loadedEntrySet,
@@ -145,8 +187,71 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     relativeCwdId,
     getTime,
     emittedWxmlCodeCache,
+    styleImportsCache,
+    resolvedPageLayoutPlan,
+    entryCodeSource,
   } = options
   let json = initialJson
+  function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
+    recordHmrProfileDuration(runtimeState?.build?.hmr?.profile, key, performance.now() - startedAt)
+  }
+
+  const entryCodeTask = entryCodeSource === undefined
+    ? prefetch((async () => {
+        const startedAt = performance.now()
+        try {
+          return await readFileCached(id, { checkMtime: configService.isDev })
+        }
+        finally {
+          recordEntryDuration('entryCodeReadMs', startedAt)
+        }
+      })())
+    : prefetch(Promise.resolve(entryCodeSource))
+  const cachedStyleImports = configService.isDev && isEntryStyleStableHmr(runtimeState)
+    ? styleImportsCache?.get(id)
+    : undefined
+  const styleImportsTask = prefetch((async () => {
+    if (cachedStyleImports) {
+      return cachedStyleImports
+    }
+    const startedAt = performance.now()
+    try {
+      const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+      for (const styleImport of styleImports) {
+        runtimeState?.css?.sidecarImports.add(styleImport)
+      }
+      styleImportsCache?.set(id, styleImports)
+      return styleImports
+    }
+    finally {
+      recordEntryDuration('entryStyleScanMs', startedAt)
+    }
+  })())
+  const styleImportSourcesTask = prefetch((async () => {
+    const styleImportsResult = await styleImportsTask
+    if (!styleImportsResult.ok) {
+      throw styleImportsResult.error
+    }
+    const styleReadStartedAt = performance.now()
+    let styleSources: Array<{ styleImport: string, source: string }>
+    try {
+      styleSources = cachedStyleImports
+        ? []
+        : await Promise.all(styleImportsResult.value.map(async (styleImport) => {
+            return {
+              styleImport,
+              source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
+            }
+          }))
+    }
+    finally {
+      recordEntryDuration('entryStyleReadMs', styleReadStartedAt)
+    }
+    return {
+      styleImports: styleImportsResult.value,
+      styleSources,
+    }
+  })())
 
   async function emitNativeLayoutAssets(layoutBasePath: string) {
     if (typeof pluginCtx.emitFile !== 'function') {
@@ -198,8 +303,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       if (asset.kind === 'template' && assets.template && wxmlService && wxmlEmitContext) {
         const token = wxmlService.analyze(asset.source)
         wxmlService.tokenMap.set(assets.template, token)
-        const deps = wxmlService.collectDepsFromToken(assets.template, token.deps)
-        await wxmlService.setDeps(assets.template, deps)
+        await wxmlService.setTokenDeps(assets.template, token.deps)
         wxmlService.setWxmlComponentsMap(assets.template, token.components)
         emitWxmlAssetFile({
           runtime: {
@@ -245,15 +349,23 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   const resolvedIds = shouldSkipEntries
     ? []
     : normalizedEntries.length
-      ? await resolveEntriesWithCache(
-          pluginCtx,
-          normalizedEntries,
-          entryResolveRoot,
-          {
-            fallbackRoots: [configService.cwd],
-            resolveMappedEntry,
-          },
-        )
+      ? await (async () => {
+          const startedAt = performance.now()
+          try {
+            return await resolveEntriesWithCache(
+              pluginCtx,
+              normalizedEntries,
+              entryResolveRoot,
+              {
+                fallbackRoots: [configService.cwd],
+                resolveMappedEntry,
+              },
+            )
+          }
+          finally {
+            recordEntryDuration('entryResolveMs', startedAt)
+          }
+        })()
       : []
 
   debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
@@ -317,16 +429,24 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   }
 
   if (pendingResolvedIds.length) {
-    await Promise.all(emitEntriesChunks.call(pluginCtx, pendingResolvedIds))
+    const startedAt = performance.now()
+    try {
+      await Promise.all(emitEntriesChunks.call(pluginCtx, pendingResolvedIds))
+    }
+    finally {
+      recordEntryDuration('entryChunkEmitMs', startedAt)
+    }
   }
 
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
   let code: string
-  try {
-    code = await readFileCached(id, { checkMtime: configService.isDev })
+  const entryCodeResult = await entryCodeTask
+  if (entryCodeResult.ok) {
+    code = entryCodeResult.value
   }
-  catch (error) {
+  else {
+    const { error } = entryCodeResult
     const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
     if (missingEntry && configService.isDev && !await sharedFs.pathExists(id)) {
       return
@@ -339,51 +459,59 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     && templatePath
     && !NON_VUE_PAGE_RE.test(id)
   ) {
-    replaceLayoutDependencies(id, [])
-    const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
-    if (layoutPlan) {
-      const layoutDependencies = new Set<string>()
-      for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
-        addNormalizedWatchFile(pluginCtx, file)
-        layoutDependencies.add(normalizeFsResolvedId(file))
-      }
-      replaceLayoutDependencies(id, layoutDependencies)
+    const layoutStartedAt = performance.now()
+    try {
+      replaceLayoutDependencies(id, [])
+      const layoutPlan = resolvedPageLayoutPlan === undefined
+        ? await resolvePageLayoutPlan(code, id, configService as any)
+        : resolvedPageLayoutPlan ?? undefined
+      if (layoutPlan) {
+        const layoutDependencies = new Set<string>()
+        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+          addNormalizedWatchFile(pluginCtx, file)
+          layoutDependencies.add(normalizeFsResolvedId(file))
+        }
+        replaceLayoutDependencies(id, layoutDependencies)
 
-      const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
-      const transformed = applyPageLayoutPlanToNativePage(
-        {
-          script: code,
-          template: nativeTemplate,
-          config: JSON.stringify(json),
-        },
-        id,
-        layoutPlan,
-        {
-          platform: configService.platform,
-        },
-      )
+        const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
+        const transformed = applyPageLayoutPlanToNativePage(
+          {
+            script: code,
+            template: nativeTemplate,
+            config: JSON.stringify(json),
+          },
+          id,
+          layoutPlan,
+          {
+            platform: configService.platform,
+          },
+        )
 
-      code = transformed.script ?? code
+        code = transformed.script ?? code
 
-      if (transformed.config) {
-        json = JSON.parse(transformed.config)
-      }
+        if (transformed.config) {
+          json = JSON.parse(transformed.config)
+        }
 
-      if (transformed.template && wxmlService) {
-        const token = wxmlService.analyze(transformed.template)
-        wxmlService.tokenMap.set(templatePath, token)
-        void wxmlService.setDeps(templatePath, wxmlService.collectDepsFromToken(templatePath, token.deps))
-        wxmlService.setWxmlComponentsMap(templatePath, token.components)
-      }
+        if (transformed.template && wxmlService) {
+          const token = wxmlService.analyze(transformed.template)
+          wxmlService.tokenMap.set(templatePath, token)
+          void wxmlService.setTokenDeps(templatePath, token.deps)
+          wxmlService.setWxmlComponentsMap(templatePath, token.components)
+        }
 
-      for (const layout of layoutPlan.layouts) {
-        if (layout.kind === 'native') {
-          await emitNativeLayoutAssets(layout.file)
+        for (const layout of layoutPlan.layouts) {
+          if (layout.kind === 'native') {
+            await emitNativeLayoutAssets(layout.file)
+          }
         }
       }
-    }
 
-    code = injectNativePageLayoutRuntime(code, id, layoutPlan) ?? code
+      code = injectNativePageLayoutRuntime(code, id, layoutPlan) ?? code
+    }
+    finally {
+      recordEntryDuration('entryLayoutMs', layoutStartedAt)
+    }
   }
 
   if (!isPluginBuild || type !== 'app') {
@@ -401,7 +529,14 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     })
   }
 
-  const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
+  const styleImportSourcesResult = await styleImportSourcesTask
+  if (!styleImportSourcesResult.ok) {
+    throw styleImportSourcesResult.error
+  }
+  const { styleImports, styleSources } = styleImportSourcesResult.value
+  for (const { styleImport, source } of styleSources) {
+    syncCssImportDependencies({ configService, runtimeState } as CompilerContext, styleImport, source)
+  }
 
   debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
 

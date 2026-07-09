@@ -241,6 +241,64 @@ describe('runtime MCP tools', () => {
     })
   })
 
+  it('reuses the cached page when currentPage hits a recoverable protocol timeout', async () => {
+    const fixture = createMiniProgram()
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.callFunction within 8000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.callFunction',
+      },
+    )
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    await getTool(tools, 'weapp_devtools_active_page')({
+      projectPath: 'apps/demo',
+    })
+    fixture.miniProgram.currentPage.mockRejectedValueOnce(timeoutError)
+    const result = await getTool(tools, 'weapp_runtime_wait')({
+      projectPath: 'apps/demo',
+      milliseconds: 20,
+    })
+
+    expect(readStructuredResult(result)).toMatchObject({
+      waitedMs: 20,
+    })
+    expect(fixture.page.waitFor).toHaveBeenCalledWith(20)
+    expect(fixture.miniProgram.currentPage).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the shared session alive after an expected runtime tool error', async () => {
+    const fixture = createMiniProgram()
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.callFunction within 8000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.callFunction',
+      },
+    )
+    fixture.page.$.mockResolvedValueOnce(null)
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    const missingNode = await getTool(tools, 'weapp_runtime_find_node')({
+      projectPath: 'apps/demo',
+      selector: '#missing',
+    })
+    fixture.miniProgram.currentPage.mockRejectedValueOnce(timeoutError)
+    const waitResult = await getTool(tools, 'weapp_runtime_wait')({
+      projectPath: 'apps/demo',
+      milliseconds: 20,
+    })
+
+    expect((missingNode as { isError?: boolean }).isError).toBe(true)
+    expect(readStructuredResult(waitResult)).toMatchObject({
+      waitedMs: 20,
+    })
+    expect(fixture.page.waitFor).toHaveBeenCalledWith(20)
+  })
+
   it('retries DevTools capture after a screenshot protocol timeout', async () => {
     const fixture = createMiniProgram()
     const timeoutError = Object.assign(

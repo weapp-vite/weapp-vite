@@ -7,11 +7,25 @@ export interface HmrProfileSample {
   relativeFile?: string
   sourceRootFile?: string
   buildCoreMs?: number
+  buildStartMs?: number
+  pluginResolveMs?: number
   transformMs?: number
+  coreTransformMs?: number
+  wevuTransformMs?: number
+  vueTransformMs?: number
+  bundlerMs?: number
+  renderStartMs?: number
+  generateBundleMs?: number
+  generateSharedMs?: number
+  generateRewriteMs?: number
+  generateModuleGraphMs?: number
+  snapshotResolveMs?: number
+  snapshotBuildMs?: number
   writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
+  resolveCount?: number
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number

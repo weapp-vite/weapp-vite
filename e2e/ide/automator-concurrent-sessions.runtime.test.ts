@@ -86,12 +86,17 @@ async function resolveRoutePage(miniProgram: any, expectedPath: string) {
   return await waitForCurrentPage(miniProgram, expectedPath)
 }
 
-async function readPageWxml(page: any) {
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  return await element.wxml()
+async function readRuntimeSnapshot(miniProgram: any) {
+  return await miniProgram.evaluate(() => {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const currentPage = pages[pages.length - 1]
+    const app = getApp()
+    return {
+      route: currentPage?.route || currentPage?.path || currentPage?.__route__ || '',
+      pageData: currentPage?.data ?? {},
+      appData: app?.globalData ?? {},
+    }
+  })
 }
 
 async function runBuild(projectRoot: string, label: string) {
@@ -246,14 +251,16 @@ describe.sequential('automator concurrent sessions', () => {
       throw new Error('Failed to resolve concurrent session pages')
     }
 
-    const [baseWxml, nativeWxml] = await Promise.all([
-      readPageWxml(basePage),
-      readPageWxml(nativePage),
+    const [baseSnapshot, nativeSnapshot] = await Promise.all([
+      readRuntimeSnapshot(baseMiniProgram),
+      readRuntimeSnapshot(nativeMiniProgram),
     ])
 
-    expect(baseWxml).toContain('Status: ready')
-    expect(baseWxml).toContain('Target: index snapshot')
-    expect(nativeWxml).toContain('App lifecycle native')
-    expect(nativeWxml).toContain('E2E Result')
+    expect(normalizeRoutePath(String(baseSnapshot?.route ?? ''))).toBe(normalizeRoutePath(INDEX_ROUTE))
+    expect(normalizeRoutePath(String(nativeSnapshot?.route ?? ''))).toBe(normalizeRoutePath(INDEX_ROUTE))
+    expect(baseSnapshot?.pageData?.__e2eResult?.status).toBe('ready')
+    expect(baseSnapshot?.pageData?.__e2eData?.target).toBe('index snapshot')
+    expect(nativeSnapshot?.pageData?.message).toBe('App lifecycle native')
+    expect(Array.isArray(nativeSnapshot?.appData?.__lifecycleLogs)).toBe(true)
   })
 })
