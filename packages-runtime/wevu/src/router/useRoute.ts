@@ -3,15 +3,21 @@ import type { SetupContextRouter } from '../runtime/types/props'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
 import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute } from '../routerInternal/shared'
-import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow } from '../runtime/hooks'
+import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow, onUnload } from '../runtime/hooks'
 import {
   useNativePageRouter as useNativePageRouterInternal,
   useNativeRouter as useNativeRouterInternal,
 } from '../runtime/vueCompat'
 import { getActiveRouter } from './instance'
+import { resolveRouteLocation } from './resolve'
+import { registerRouteStateSyncHandler } from './routeSync'
 
 export interface UseRouteOptions {
   resolveRoute?: (route: RouteLocationNormalizedLoaded) => RouteLocationNormalizedLoaded
+}
+
+export interface RouteStateController {
+  route: Readonly<RouteLocationNormalizedLoaded>
 }
 
 function applyRouteState(
@@ -55,7 +61,7 @@ function applyRouteState(
   }
 }
 
-export function useRoute(options: UseRouteOptions = {}): Readonly<RouteLocationNormalizedLoaded> {
+export function createRouteStateController(options: UseRouteOptions = {}): RouteStateController {
   const setupContext = getCurrentSetupContext()
   if (!setupContext) {
     throw new Error('useRoute() 必须在 setup() 的同步阶段调用')
@@ -74,8 +80,10 @@ export function useRoute(options: UseRouteOptions = {}): Readonly<RouteLocationN
   })
   applyRouteState(routeState, currentRoute)
 
-  function syncRoute(queryOverride?: LocationQueryRaw) {
-    const nextRoute = resolveRoute(resolveCurrentRoute(queryOverride, fallbackPage))
+  function syncRoute(queryOverride?: LocationQueryRaw, routeOverride?: RouteLocationNormalizedLoaded) {
+    const nextRoute = routeOverride
+      ? resolveRoute(routeOverride)
+      : resolveRoute(resolveCurrentRoute(queryOverride, fallbackPage))
     applyRouteState(routeState, nextRoute)
   }
 
@@ -91,8 +99,28 @@ export function useRoute(options: UseRouteOptions = {}): Readonly<RouteLocationN
   onRouteDone(() => {
     syncRoute()
   })
+  const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
+    if (payload?.route) {
+      syncRoute(undefined, payload.route)
+      return
+    }
+    if (payload?.url) {
+      syncRoute(undefined, resolveRouteLocation(payload.url, routeState.path))
+      return
+    }
+    syncRoute()
+  })
+  onUnload(() => {
+    unregisterRouteStateSync()
+  })
 
-  return readonly(routeState) as Readonly<RouteLocationNormalizedLoaded>
+  return {
+    route: readonly(routeState) as Readonly<RouteLocationNormalizedLoaded>,
+  }
+}
+
+export function useRoute(options: UseRouteOptions = {}): Readonly<RouteLocationNormalizedLoaded> {
+  return createRouteStateController(options).route
 }
 
 /**

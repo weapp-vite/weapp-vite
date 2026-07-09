@@ -23,18 +23,21 @@ import {
   stringifyQuery,
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
+import { getMiniProgramGlobalObject } from '../runtime/platform'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
 import { createNavigationResultController } from './navigationResult'
 import { resolveRouteLocation } from './resolve'
 import { createRouteRegistry } from './routeRegistry'
-import { useNativeRouter, useRoute } from './useRoute'
+import { installRouteStateSyncOnNativeRouter } from './routeSync'
+import { createRouteStateController, useNativeRouter } from './useRoute'
 
 /**
  * @description 创建高阶路由导航器（对齐 Vue Router 的 createRouter 心智）
  */
 export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const nativeRouter = useNativeRouter()
+  installRouteStateSyncOnNativeRouter(getMiniProgramGlobalObject())
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()
@@ -100,9 +103,10 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     return enrichRouteRecordState(resolveRouteLocation(rawTo, currentPath, routeResolveCodec))
   }
 
-  const route = useRoute({
+  const routeController = createRouteStateController({
     resolveRoute: enrichRouteRecordState,
   })
+  const route = routeController.route
 
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
     return resolveWithCodec(to, route.path)

@@ -4,6 +4,11 @@ import { createWevuComponent, defineComponent, mergeModels, useAttrs, useBindMod
 
 const registeredComponents: Record<string, any>[] = []
 
+function expectRouteOption(call: unknown[], url: string): void {
+  expect(call[0]).toMatchObject({ url })
+  expect(call[0]).toMatchObject({ success: expect.any(Function) })
+}
+
 beforeEach(() => {
   registeredComponents.length = 0
   delete (globalThis as any).wx
@@ -374,8 +379,8 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(componentRouter.navigateTo).toHaveBeenCalledWith({ url: '/components/demo-card/from-component' })
-    expect(pageRouter.navigateTo).toHaveBeenCalledWith({ url: '/pages/demo/from-page' })
+    expectRouteOption(componentRouter.navigateTo.mock.calls[0], '/components/demo-card/from-component')
+    expectRouteOption(pageRouter.navigateTo.mock.calls[0], '/pages/demo/from-page')
   })
 
   it('useNativeRouter/useNativePageRouter fallback to global route methods when instance router is unavailable', () => {
@@ -410,8 +415,8 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(wxNavigateTo).toHaveBeenCalledWith({ url: '/pages/a/index' })
-    expect(wxRedirectTo).toHaveBeenCalledWith({ url: '/pages/b/index' })
+    expectRouteOption(wxNavigateTo.mock.calls[0], '/pages/a/index')
+    expectRouteOption(wxRedirectTo.mock.calls[0], '/pages/b/index')
   })
 
   it('useNativeRouter/useNativePageRouter fallback to complementary instance accessor before global fallback', () => {
@@ -473,11 +478,11 @@ describe('runtime: vue compat helpers', () => {
     componentRouterOnlyOptions.lifetimes.attached.call(componentRouterOnlyInstance)
 
     expect(pageRouterOnly.navigateTo).toHaveBeenCalledTimes(2)
-    expect(pageRouterOnly.navigateTo).toHaveBeenNthCalledWith(1, { url: '/components/fallback-card/from-component-fallback' })
-    expect(pageRouterOnly.navigateTo).toHaveBeenNthCalledWith(2, { url: '/pages/fallback/from-page-fallback' })
+    expectRouteOption(pageRouterOnly.navigateTo.mock.calls[0], '/components/fallback-card/from-component-fallback')
+    expectRouteOption(pageRouterOnly.navigateTo.mock.calls[1], '/pages/fallback/from-page-fallback')
     expect(componentRouterOnly.navigateTo).toHaveBeenCalledTimes(2)
-    expect(componentRouterOnly.navigateTo).toHaveBeenNthCalledWith(1, { url: '/components/router-only/from-component-only' })
-    expect(componentRouterOnly.navigateTo).toHaveBeenNthCalledWith(2, { url: '/pages/router-only/from-page-only' })
+    expectRouteOption(componentRouterOnly.navigateTo.mock.calls[0], '/components/router-only/from-component-only')
+    expectRouteOption(componentRouterOnly.navigateTo.mock.calls[1], '/pages/router-only/from-page-only')
   })
 
   it('useNativeRouter/useNativePageRouter fallback to my route methods when wx is unavailable', () => {
@@ -524,7 +529,7 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(myGlobal.navigateTo).toHaveBeenCalledWith({ url: '/pages/fallback-my/index' })
+    expectRouteOption(myGlobal.navigateTo.mock.calls[0], '/pages/fallback-my/index')
     expect(myGlobal.navigateBack).toHaveBeenCalledWith({ delta: 1 })
     expect(myContexts).toHaveLength(2)
     expect(myContexts.every(context => context === myGlobal)).toBe(true)
@@ -574,8 +579,8 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(ttGlobal.reLaunch).toHaveBeenCalledWith({ url: '/pages/fallback-tt/index' })
-    expect(ttGlobal.redirectTo).toHaveBeenCalledWith({ url: '/pages/fallback-tt/detail' })
+    expectRouteOption(ttGlobal.reLaunch.mock.calls[0], '/pages/fallback-tt/index')
+    expectRouteOption(ttGlobal.redirectTo.mock.calls[0], '/pages/fallback-tt/detail')
     expect(ttContexts).toHaveLength(2)
     expect(ttContexts.every(context => context === ttGlobal)).toBe(true)
   })
