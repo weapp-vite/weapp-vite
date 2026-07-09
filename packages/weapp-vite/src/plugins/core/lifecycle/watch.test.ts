@@ -640,6 +640,7 @@ describe('core lifecycle watch hook', () => {
     const pageEntryId = '/project/src/pages/hmr/index.vue'
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
     const state = createState({
       loadedEntrySet: new Set([pageEntryId]),
       resolvedEntryMap: new Map([
@@ -661,6 +662,32 @@ describe('core lifecycle watch hook', () => {
       'entry-direct:1',
       'tailwind-content:2',
     ])
+  })
+
+  it('skips Tailwind content hmr when app style is not a Tailwind source', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.vue'
+    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.scss' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('.app { color: red; }')
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
   it('skips Tailwind content hmr for vue script updates without content signature changes', async () => {
@@ -705,7 +732,9 @@ const klass = 'text-red-500'
       pageEntryId,
       resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
     )
-    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
+      return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
+    })
     const hook = createWatchChangeHook(state)
 
     await hook(pageEntryId, { event: 'update' })
@@ -758,7 +787,9 @@ const count = 1
       pageEntryId,
       resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
     )
-    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
+      return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
+    })
     const hook = createWatchChangeHook(state)
 
     await hook(pageEntryId, { event: 'update' })

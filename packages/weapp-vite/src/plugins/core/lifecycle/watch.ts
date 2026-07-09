@@ -28,6 +28,7 @@ import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 const tailwindContentExtensions = new Set(['.vue', '.wxml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
+const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@source\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
   configSuffix?: string
@@ -118,6 +119,16 @@ function shouldRefreshAppStyleForTailwindContent(state: CorePluginState) {
     packageJson: configService.packageJson ?? {},
     cwd: configService.cwd,
   })
+}
+
+async function isTailwindAppStyleSource(stylePath: string) {
+  try {
+    const source = await fs.readFile(stylePath, 'utf8')
+    return TAILWIND_APP_STYLE_RE.test(source)
+  }
+  catch {
+    return false
+  }
 }
 
 function collectEmittedJsonPaths(state: CorePluginState) {
@@ -412,6 +423,9 @@ async function processChangedFile(
     }
     const styleEntry = await findCssEntry(appEntryId)
     if (!styleEntry.path) {
+      return false
+    }
+    if (!await isTailwindAppStyleSource(styleEntry.path)) {
       return false
     }
     if (

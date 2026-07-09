@@ -4,7 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, replaceSharedStoreInitialName, resolvePlatforms } from '../utils/hmr-helpers'
-import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
+import { findWevuRuntimeChunk, toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
@@ -20,16 +20,41 @@ function replaceSharedStoreMarker(source: string, marker: string) {
   return updated
 }
 
+async function waitForSharedStoreRuntimeChunk(marker: string, timeoutMs: number) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await findWevuRuntimeChunk(
+        DIST_ROOT,
+        (code, filePath) => {
+          const normalizedPath = filePath.replaceAll('\\', '/')
+          return !normalizedPath.includes('/pages/')
+            && code.includes(marker)
+            && code.includes('useSetupStore')
+            && code.includes('useOptionsStore')
+            && code.includes('getPluginRecords')
+        },
+        `shared store runtime ${marker}`,
+      )
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  throw new Error(`Timed out waiting for shared store runtime chunk under ${DIST_ROOT} to contain marker: ${marker}`)
+}
+
 async function waitForCommonMarkerWithRetry(
   marker: string,
   retrySourceContent: string,
 ) {
   try {
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForSharedStoreRuntimeChunk(marker, 20_000)
   }
   catch {
     await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${retrySourceContent}\n`)
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 20_000)
+    return await waitForSharedStoreRuntimeChunk(marker, 20_000)
   }
 }
 
