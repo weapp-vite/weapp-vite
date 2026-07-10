@@ -22,6 +22,15 @@
 2. `node_modules/weapp-vite/dist/docs/*.md`
 3. 当前仓库实际代码与 `vite.config.ts`
 
+## Rust / Native 加速约束
+
+当任务涉及 `@weapp-vite/ast-native`、Rust 插件或 native AST 加速时，先把 JS 与 Rust 的通信次数当作主要性能约束之一。
+
+- 优先设计 batch analysis：一次传入源码、配置和所需分析项，一次 parse 后返回结构化结果。
+- 不要把 parse、traverse、query、patch、generate 拆成多次跨语言请求，除非真实 profile 证明有净收益。
+- native fast path 必须显式启用，并在加载、解析或运行失败时回退 Babel/Oxc/Vue compiler。
+- 扩大 native 覆盖前要同时有 correctness 对齐测试和 HMR/build profile，不能只依赖 micro benchmark。
+
 ## 常用 AI 命令
 
 CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。

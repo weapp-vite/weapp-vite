@@ -25,6 +25,7 @@ export async function compileConfigPhase(params: {
   descriptor: Pick<SFCDescriptor, 'template' | 'customBlocks'>
   filename: string
   autoUsingComponentsMap: Record<string, string>
+  autoImportTagsMap?: Record<string, string>
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
   jsonDefaults: Record<string, any> | undefined
@@ -37,6 +38,7 @@ export async function compileConfigPhase(params: {
     descriptor,
     filename,
     autoUsingComponentsMap,
+    autoImportTagsMap: precomputedAutoImportTagsMap,
     autoUsingComponents,
     autoImportTags,
     jsonDefaults,
@@ -61,8 +63,10 @@ export async function compileConfigPhase(params: {
     }
   }
 
-  const autoImportTagsMap: Record<string, string> = {}
-  if (autoImportTags && descriptor.template) {
+  const autoImportTagsMap: Record<string, string> = precomputedAutoImportTagsMap
+    ? { ...precomputedAutoImportTagsMap }
+    : {}
+  if (!precomputedAutoImportTagsMap && autoImportTags && descriptor.template) {
     const tags = collectTemplateAutoImportTags(descriptor.template.content, filename, autoImportTags.warn ?? warn)
     for (const tag of tags) {
       let resolved: { name: string, from: string } | undefined

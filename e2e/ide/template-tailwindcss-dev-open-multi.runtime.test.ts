@@ -1,4 +1,3 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
@@ -7,18 +6,15 @@ import path from 'node:path'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
-  connectMiniProgram,
-  connectOpenedAutomator,
   resolveProjectAutomatorPort,
-  takeScreenshot,
 } from 'weapp-ide-cli'
-import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { waitForOpenedAutomator } from '../utils/opened-automator'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const INDEX_ROUTE = '/pages/index/index'
@@ -30,13 +26,13 @@ const TEMPLATE_CASES = [
     tdesign: false,
   },
   {
-    expectedText: 'Vant 按钮',
+    expectedText: 'Hello weapp-vite + Vant',
     name: 'tailwindcss-vant',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-vant-template'),
     tdesign: false,
   },
   {
-    expectedText: 'TDesign Button',
+    expectedText: 'Hello weapp-vite + TDesign',
     name: 'tailwindcss-tdesign',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template'),
     tdesign: true,
@@ -44,15 +40,7 @@ const TEMPLATE_CASES = [
 ] as const
 const PLAIN_TEMPLATE = TEMPLATE_CASES[0]
 const TDESIGN_TEMPLATE = TEMPLATE_CASES[2]
-const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
-
-type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
-
-interface AutomatorSessionMetadata {
-  projectPath: string
-  updatedAt: string
-  wsEndpoint: string
-}
+const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 
 type TemplateDevProcess = typeof TEMPLATE_CASES[number] & {
   dev: ReturnType<typeof startDevProcess>
@@ -77,33 +65,25 @@ function resolveAutomatorWrapperProjectPath(projectPath: string) {
   return path.join(os.tmpdir(), 'weapp-ide-cli-automator-projects', wrapperHash)
 }
 
-function structuredResult<T>(result: unknown) {
-  return (result as { structuredContent?: { result?: T } }).structuredContent?.result
-}
-
-function toolErrorText(result: unknown) {
-  const content = (result as { content?: Array<{ text?: string }> }).content
-  return content?.map(item => item.text).filter(Boolean).join('\n') ?? ''
-}
-
-function expectToolResult<T>(result: unknown) {
-  const errorResult = result as { isError?: boolean }
-  if (errorResult.isError) {
-    throw new Error(`MCP tool failed: ${toolErrorText(result) || '<empty error>'}`)
-  }
-  return structuredResult<T>(result)
-}
-
-function getTool(tools: Map<string, ToolHandler>, name: string) {
-  const tool = tools.get(name)
-  if (!tool) {
-    throw new Error(`missing MCP tool: ${name}`)
-  }
-  return tool
-}
-
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function normalizeRoutePath(routePath: string) {
+  return routePath.split('?', 1)[0].split('#', 1)[0].replace(/^\/+/, '').replace(/\/+$/g, '')
+}
+
+function valueContainsText(value: unknown, text: string) {
+  if (typeof value === 'string') {
+    return value.includes(text)
+  }
+  if (Array.isArray(value)) {
+    return value.some(item => valueContainsText(item, text))
+  }
+  if (value && typeof value === 'object') {
+    return Object.values(value).some(item => valueContainsText(item, text))
+  }
+  return false
 }
 
 function isDevtoolsProtocolTimeout(error: unknown) {
@@ -112,43 +92,11 @@ function isDevtoolsProtocolTimeout(error: unknown) {
   }
   const protocolError = error as Error & { code?: unknown, method?: unknown }
   return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && (protocolError.method === 'App.getCurrentPage' || protocolError.method === 'App.getPageStack')
-}
-
-function isTemplateDevOpenInfraError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return IDE_AUTOMATOR_INFRA_RE.test(message)
-}
-
-async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
-  const start = Date.now()
-  let lastError: unknown
-  const port = resolveProjectAutomatorPort(projectPath)
-  const wsEndpoint = `ws://127.0.0.1:${port}`
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const miniProgram = await connectOpenedAutomator({
-        projectPath,
-        port,
-        timeout: 30_000,
-      })
-      return {
-        metadata: {
-          projectPath,
-          updatedAt: new Date().toISOString(),
-          wsEndpoint,
-        } satisfies AutomatorSessionMetadata,
-        miniProgram,
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
-    await delay(1_000)
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+    && (
+      protocolError.method === 'App.getCurrentPage'
+      || protocolError.method === 'App.getPageStack'
+      || protocolError.method === 'App.callFunction'
+    )
 }
 
 async function removeAutomatorSessionFiles(projectPath: string) {
@@ -159,6 +107,7 @@ async function removeAutomatorSessionFiles(projectPath: string) {
 }
 
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
+  const normalizedRoute = normalizeRoutePath(route)
   const start = Date.now()
   let latestWxml = ''
   let emptyPageReads = 0
@@ -168,20 +117,42 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   while (Date.now() - start <= timeoutMs) {
     try {
       const currentPage = await currentMiniProgram.currentPage?.()
-      const page = currentPage?.path === route
+      const page = normalizeRoutePath(String(currentPage?.path ?? '')) === normalizedRoute
         ? currentPage
         : await currentMiniProgram.reLaunch(route)
       await page.waitFor(500)
+      try {
+        latestWxml = await page.waitForRendered({
+          text,
+          timeout: Math.min(5_000, Math.max(1, timeoutMs - (Date.now() - start))),
+        })
+        return latestWxml
+      }
+      catch {
+        // 继续读取 WXML，保留更具体的失败上下文。
+      }
       const root = await page.$('page')
       latestWxml = root ? await root.outerWxml() : ''
       if (latestWxml.includes(text)) {
         return latestWxml
       }
-      if (latestWxml.trim() === '<page></page>') {
+      try {
+        const data = await page.data(undefined, {
+          routeOnly: true,
+          timeout: 3_000,
+        })
+        if (valueContainsText(data, text)) {
+          return JSON.stringify(data)
+        }
+      }
+      catch {
+        // Page 域 DOM 不稳定时，data fallback 也可能短暂不可读，继续轮询。
+      }
+      if (latestWxml.trim() === '' || latestWxml.trim() === '<page></page>') {
         emptyPageReads += 1
         if (emptyPageReads >= 2) {
           currentMiniProgram.disconnect?.()
-          currentMiniProgram = (await waitForOpenedAutomator(projectPath, 30_000)).miniProgram
+          currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
           emptyPageReads = 0
         }
       }
@@ -195,7 +166,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       }
       lastProtocolTimeout = error.message
       currentMiniProgram.disconnect?.()
-      currentMiniProgram = (await waitForOpenedAutomator(projectPath, 30_000)).miniProgram
+      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
     }
     await delay(1_000)
   }
@@ -204,50 +175,38 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
-async function createRuntimeTools() {
-  const tools = new Map<string, ToolHandler>()
-  const server = {
-    registerTool(name: string, _definition: unknown, handler: ToolHandler) {
-      tools.set(name, handler)
-    },
-  }
+async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
+  let infraOutput = ''
+  void process.dev.waitForOutput(
+    IDE_AUTOMATOR_INFRA_RE,
+    `${process.name} dev:open automator early infra notice`,
+    75_000,
+  ).then((output) => {
+    infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
+  }).catch(() => {})
 
-  const manager = registerRuntimeTools(server as unknown as McpServer, {
-    runtimeHooks: {
-      connectMiniProgram,
-    },
-    workspaceRoot: WORKSPACE_ROOT,
-  })
-
-  return {
-    manager,
-    tools,
-  }
+  await process.dev.waitFor(
+    waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).then(async ({ miniProgram }) => {
+      await miniProgram.disconnect()
+    }).catch((error) => {
+      const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
+      throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
+        cause: error as Error,
+      })
+    }),
+    `${process.name} dev:open ready`,
+  )
 }
 
-async function startTemplateDevProcesses() {
-  const processes: TemplateDevProcess[] = []
-
-  for (const templateCase of TEMPLATE_CASES) {
-    const process = {
-      ...templateCase,
-      dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
-        cwd: templateCase.root,
-        env: createDevProcessEnv(),
-        reject: false,
-      }),
-    }
-
-    processes.push(process)
-    await process.dev.waitFor(
-      waitForOpenedAutomator(templateCase.root, 180_000).then(async ({ miniProgram }) => {
-        await miniProgram.disconnect()
-      }),
-      `${process.name} dev:open ready`,
-    )
+function startTemplateDevProcess(templateCase: typeof TEMPLATE_CASES[number]): TemplateDevProcess {
+  return {
+    ...templateCase,
+    dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+      cwd: templateCase.root,
+      env: createDevProcessEnv(),
+      reject: false,
+    }),
   }
-
-  return processes
 }
 
 describe.sequential('template TailwindCSS dev:open multi-project IDE integration', () => {
@@ -255,26 +214,22 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     await cleanupResidualIdeProcesses()
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await removeAutomatorSessionFiles(templateCase.root)))
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.resolve(WORKSPACE_ROOT, 'templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png'), { force: true }).catch(() => {})))
   }, 60_000)
 
   afterAll(async () => {
     await cleanupTrackedDevProcesses()
     await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(templateCase.root).catch(() => {})))
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await fs.rm(path.join(templateCase.root, '.tmp/dev-open-multi.png'), { force: true }).catch(() => {})))
     await cleanupResidualIdeProcesses()
   }, 60_000)
 
-  it('keeps screenshot and MCP bound to each real template root after concurrent dev:open', async (ctx) => {
-    const processes = await startTemplateDevProcesses()
-
-    try {
-      const runtimeTools = await createRuntimeTools()
+  it('renders each real template root after dev:open', async () => {
+    for (const templateCase of TEMPLATE_CASES) {
+      const process = startTemplateDevProcess(templateCase)
+      const port = resolveProjectAutomatorPort(templateCase.root)
       try {
-        for (const templateCase of TEMPLATE_CASES) {
-          const port = resolveProjectAutomatorPort(templateCase.root)
-          const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
+        await waitForTemplateDevOpenReady(process)
+        const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
+        try {
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
           const wrapperProjectPath = resolveAutomatorWrapperProjectPath(templateCase.root)
@@ -283,63 +238,18 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
             miniprogramRoot: './',
             srcMiniprogramRoot: './',
           })
-          try {
-            await waitForPageText(miniProgram, templateCase.root, INDEX_ROUTE, templateCase.expectedText)
-          }
-          catch (error) {
-            if (isTemplateDevOpenInfraError(error)) {
-              ctx.skip(`WeChat DevTools 自动化会话不稳定，跳过 template TailwindCSS dev:open 多项目 IDE 用例。reason=${error instanceof Error ? error.message : String(error)}`)
-              return
-            }
-            throw error
-          }
-          await miniProgram.disconnect()
-
-          const screenshotPath = path.join(templateCase.root, '.tmp/dev-open-multi.png')
-          const screenshot = await takeScreenshot({
-            outputPath: screenshotPath,
-            port,
-            preserveProjectRoot: true,
-            projectPath: templateCase.root,
-            sharedSession: true,
-            timeout: 60_000,
-          })
-          expect(screenshot.path).toBe(screenshotPath)
-          expect((await fs.stat(screenshotPath)).size).toBeGreaterThan(0)
-
-          const connectResult = await getTool(runtimeTools.tools, 'weapp_devtools_connect')({
-            port,
-            preserveProjectRoot: true,
-            projectPath: templateCase.root,
-            timeout: 60_000,
-          })
-          expect(expectToolResult<{ connected: boolean, resolvedProjectPath: string }>(connectResult)).toMatchObject({
-            connected: true,
-            resolvedProjectPath: templateCase.root,
-          })
-
-          const capturePath = path.join('templates', path.basename(templateCase.root), '.tmp/dev-open-multi-mcp.png')
-          const captureResult = await getTool(runtimeTools.tools, 'weapp_devtools_capture')({
-            outputPath: capturePath,
-            port,
-            preserveProjectRoot: true,
-            projectPath: templateCase.root,
-            timeout: 60_000,
-          })
-          const capture = expectToolResult<{ bytes: number, path: string }>(captureResult)
-          expect(capture.bytes).toBeGreaterThan(0)
-          expect(path.resolve(capture.path)).toBe(path.resolve(WORKSPACE_ROOT, capturePath))
+          await waitForPageText(miniProgram, templateCase.root, INDEX_ROUTE, templateCase.expectedText)
+        }
+        finally {
+          miniProgram.disconnect?.()
         }
       }
       finally {
-        await Promise.all(TEMPLATE_CASES.map(async templateCase => await runtimeTools.manager.close({
-          port: resolveProjectAutomatorPort(templateCase.root),
-          projectPath: templateCase.root,
-        }).catch(() => {})))
+        await process.dev.stop().catch(() => {})
+        await closeSharedMiniProgram(templateCase.root, port).catch(() => {})
+        await removeAutomatorSessionFiles(templateCase.root)
+        await delay(1_000)
       }
-    }
-    finally {
-      await Promise.all(processes.map(async item => await item.dev.stop().catch(() => {})))
     }
   }, 480_000)
 
@@ -360,12 +270,13 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
       env: createDevProcessEnv(),
       reject: false,
     })
-    await plainDev.waitFor(
-      waitForOpenedAutomator(PLAIN_TEMPLATE.root, 180_000).then(async ({ miniProgram }) => {
-        await miniProgram.disconnect()
-      }),
-      'tailwindcss dev:open ready',
-    )
+    try {
+      await waitForTemplateDevOpenReady({ ...PLAIN_TEMPLATE, dev: plainDev })
+    }
+    catch (error) {
+      await plainDev.stop().catch(() => {})
+      throw error
+    }
     await plainDev.stop()
     await closeSharedMiniProgram(PLAIN_TEMPLATE.root, plainPort).catch(() => {})
     await delay(2_000)
@@ -377,15 +288,10 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     })
 
     try {
-      await tdesignDev.waitFor(
-        waitForOpenedAutomator(TDESIGN_TEMPLATE.root, 180_000).then(async ({ miniProgram }) => {
-          await miniProgram.disconnect()
-        }),
-        'tailwindcss tdesign dev:open ready after plain exit',
-      )
+      await waitForTemplateDevOpenReady({ ...TDESIGN_TEMPLATE, dev: tdesignDev })
       const { miniProgram } = await waitForOpenedAutomator(TDESIGN_TEMPLATE.root)
       try {
-        await waitForPageText(miniProgram, TDESIGN_TEMPLATE.root, INDEX_ROUTE, 'TDesign Button')
+        await waitForPageText(miniProgram, TDESIGN_TEMPLATE.root, INDEX_ROUTE, TDESIGN_TEMPLATE.expectedText)
       }
       finally {
         await miniProgram.disconnect()

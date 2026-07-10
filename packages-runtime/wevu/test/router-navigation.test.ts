@@ -15,6 +15,7 @@ describe('router navigation helpers', () => {
     setCurrentSetupContext(undefined)
     clearActiveRouter()
     delete (globalThis as any).getCurrentPages
+    delete (globalThis as any).wx
   })
 
   it('creates and detects navigation failure', () => {
@@ -3237,6 +3238,178 @@ describe('router navigation helpers', () => {
       failure: undefined,
       context: { mode: 'push' },
     })
+  })
+
+  it('uses the last successful router navigation as from in following hooks', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter()
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
+
+    await router.push('/pages/detail/index')
+    await router.push('/pages/profile/index')
+
+    expect(router.currentRoute.path).toBe('pages/profile/index')
+    expect(guardCalls).toMatchObject([
+      {
+        from: { path: 'pages/home/index' },
+        to: { path: 'pages/detail/index' },
+      },
+      {
+        from: { path: 'pages/detail/index' },
+        to: { path: 'pages/profile/index' },
+      },
+    ])
+    expect(afterCalls).toMatchObject([
+      {
+        from: { path: 'pages/home/index' },
+        to: { path: 'pages/detail/index' },
+      },
+      {
+        from: { path: 'pages/detail/index' },
+        to: { path: 'pages/profile/index' },
+      },
+    ])
+  })
+
+  it('syncs currentRoute after native switchTab succeeds', async () => {
+    const switchTab = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const success = vi.fn()
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+        {
+          name: 'profile',
+          path: '/pages/profile/index',
+        },
+      ],
+    })
+
+    router.nativeRouter.switchTab({
+      url: '/pages/profile/index',
+      success,
+    })
+
+    expect(success).toHaveBeenCalledTimes(1)
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/profile/index',
+    }))
+    expect(router.currentRoute.path).toBe('pages/profile/index')
+    expect(router.currentRoute.name).toBe('profile')
+  })
+
+  it('syncs currentRoute after wx.switchTab succeeds', async () => {
+    const switchTab = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    ;(globalThis as any).wx = {
+      switchTab,
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+        {
+          name: 'profile',
+          path: '/pages/profile/index',
+        },
+      ],
+    })
+
+    ;(globalThis as any).wx.switchTab({
+      url: '/pages/profile/index',
+    })
+
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/profile/index',
+    }))
+    expect(router.currentRoute.path).toBe('pages/profile/index')
+    expect(router.currentRoute.name).toBe('profile')
   })
 
   it('onError receives thrown guard errors and supports unregister', async () => {

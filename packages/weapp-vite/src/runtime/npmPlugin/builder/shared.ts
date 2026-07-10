@@ -15,23 +15,34 @@ export type PackageExportEntry = string | {
 
 export async function collectFiles(root: string) {
   const files: string[] = []
-  const stack = [root]
+  let pendingDirs = [root]
 
-  while (stack.length > 0) {
-    const current = stack.pop()
-    if (!current) {
-      continue
-    }
+  while (pendingDirs.length > 0) {
+    const currentDirs = pendingDirs
+    pendingDirs = []
 
-    const entries = await fs.readdir(current, { withFileTypes: true })
-    for (const entry of entries) {
-      const filePath = path.resolve(current, entry.name)
-      if (entry.isDirectory()) {
-        stack.push(filePath)
+    const batches = await Promise.all(currentDirs.map(async (current) => {
+      const dirs: string[] = []
+      const currentFiles: string[] = []
+      const entries = await fs.readdir(current, { withFileTypes: true })
+      for (const entry of entries) {
+        const filePath = path.resolve(current, entry.name)
+        if (entry.isDirectory()) {
+          dirs.push(filePath)
+        }
+        else if (entry.isFile()) {
+          currentFiles.push(filePath)
+        }
       }
-      else if (entry.isFile()) {
-        files.push(filePath)
+      return {
+        dirs,
+        files: currentFiles,
       }
+    }))
+
+    for (const batch of batches) {
+      files.push(...batch.files)
+      pendingDirs.push(...batch.dirs)
     }
   }
 

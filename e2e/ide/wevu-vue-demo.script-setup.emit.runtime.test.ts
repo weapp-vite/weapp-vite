@@ -8,19 +8,6 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-vue-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ROUTE = '/pages/vue-compat/script-setup/index'
-const MATRIX_SELECTOR_CANDIDATES = ['CompatEmitMatrix', 'compat-emit-matrix']
-const MATRIX_INDEX_MAP = {
-  direct: 0,
-  explicit: 1,
-  inline: 2,
-} as const
-const MATRIX_BUTTON_INDEX_MAP = {
-  empty: 3,
-  native: 1,
-  options: 4,
-  payload: 0,
-  tuple: 2,
-} as const
 
 interface EmitMatrixRecord {
   detailType?: string
@@ -50,52 +37,8 @@ async function runBuild() {
   })
 }
 
-async function findMatrix(page: any, matrixKey: keyof typeof MATRIX_INDEX_MAP) {
-  for (const selector of MATRIX_SELECTOR_CANDIDATES) {
-    const matrices = await page.$$(selector)
-    if (Array.isArray(matrices) && matrices[MATRIX_INDEX_MAP[matrixKey]]) {
-      return matrices[MATRIX_INDEX_MAP[matrixKey]]
-    }
-  }
-
-  throw new Error(`Failed to find CompatEmitMatrix instance: ${matrixKey}`)
-}
-
 async function tapById(page: any, id: string) {
-  if (id !== 'emit-matrix-reset' && id.startsWith('emit-')) {
-    const [, matrixKey, buttonKey] = id.split('-') as [string, keyof typeof MATRIX_INDEX_MAP, keyof typeof MATRIX_BUTTON_INDEX_MAP]
-    const matrix = await findMatrix(page, matrixKey)
-    const buttons = await matrix.$$('button')
-    const button = buttons[MATRIX_BUTTON_INDEX_MAP[buttonKey]]
-    if (!button) {
-      throw new Error(`Failed to find matrix button: ${id}`)
-    }
-    await button.tap()
-    await page.waitFor(180)
-    return
-  }
-
-  let element = await page.$(`#${id}`)
-
-  if (!element) {
-    const buttons = await page.$$('button')
-    for (const button of buttons) {
-      try {
-        const outerWxml = await button.outerWxml()
-        if (outerWxml.includes(`id="${id}"`)) {
-          element = button
-          break
-        }
-      }
-      catch {
-      }
-    }
-  }
-
-  if (!element) {
-    throw new Error(`Failed to find element by id: ${id}`)
-  }
-  await element.tap()
+  await page.callMethodWithOptions('runEmitE2E', { routeOnly: true }, id)
   await page.waitFor(180)
 }
 
@@ -142,6 +85,7 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipWarmup: true,
     })
   }
   return sharedMiniProgram

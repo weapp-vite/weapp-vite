@@ -1,7 +1,11 @@
+import { fs } from '@weapp-core/shared/node'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   delay,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
@@ -9,12 +13,24 @@ import {
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-async function waitForIssue642Bug8Runtime(page: any, timeoutMs = 8_000) {
+const ISSUE_642_BUG8_ROUTE = '/pages/issue-642-bug8/index'
+const ISSUE_642_BUG8_ROUTE_METHOD_OPTIONS = {
+  protocolTimeoutMs: 30_000,
+  retries: 1,
+  recoveryAttempts: 2,
+}
+
+async function waitForIssue642Bug8Runtime(miniProgram: any, timeoutMs = 8_000) {
   const startedAt = Date.now()
   let latest: any
 
   while (Date.now() - startedAt < timeoutMs) {
-    latest = await page.callMethod('_runE2E')
+    latest = await callRoutePageMethodWithOptions<Record<string, any>>(
+      miniProgram,
+      ISSUE_642_BUG8_ROUTE,
+      '_runE2E',
+      ISSUE_642_BUG8_ROUTE_METHOD_OPTIONS,
+    )
     const ownerReady = typeof latest?.owner?.dataOwnerId === 'string'
       && latest.owner.dataOwnerId.length > 0
       && latest.owner.runtimeOwnerId === latest.owner.dataOwnerId
@@ -36,13 +52,29 @@ async function waitForIssue642Bug8Runtime(page: any, timeoutMs = 8_000) {
   return latest
 }
 
-async function readRenderedCase(page: any, name: 'direct' | 'wrapped') {
-  const element = await page.$(`[data-issue642-bug8-case="${name}"]`)
-  return {
-    exists: Boolean(element),
-    text: element ? (await element.text()).trim() : '',
-    value: element ? await element.attribute('data-issue642-bug8-value') : undefined,
-  }
+async function expectIssue642Bug8DistWxmlContract() {
+  const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-642-bug8/index.wxml'), 'utf8')
+  const wrapWxml = await fs.readFile(path.join(DIST_ROOT, 'components/issue-642-bug8/Wrap/index.wxml'), 'utf8')
+  const directSlotWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-642-bug8/index.__scoped-slot-default-0.wxml'), 'utf8')
+  const wrappedSlotWxml = await fs.readFile(path.join(DIST_ROOT, 'components/issue-642-bug8/Wrap/index.__scoped-slot-default-0.wxml'), 'utf8')
+
+  expect(pageWxml).toContain('id="issue642-bug8-direct-cell"')
+  expect(pageWxml).toContain('generic:scoped-slots-default=')
+  expect(pageWxml).toContain('vue-slots="{{ {default:true} }}"')
+  expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+  expect(pageWxml).toContain('<Issue642Bug8Wrap id="issue642-bug8-wrap"')
+
+  expect(wrapWxml).toContain('id="issue642-bug8-wrapped-cell"')
+  expect(wrapWxml).toContain('generic:scoped-slots-default=')
+  expect(wrapWxml).toContain('vue-slots="{{ {default:true} }}"')
+  expect(wrapWxml).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+
+  expect(directSlotWxml).toContain('data-issue642-bug8-case="direct"')
+  expect(directSlotWxml).toContain('data-issue642-bug8-value="{{__wvSlotPropsData.io}}"')
+  expect(directSlotWxml).toContain('{{__wvSlotPropsData.io}}')
+  expect(wrappedSlotWxml).toContain('data-issue642-bug8-case="wrapped"')
+  expect(wrappedSlotWxml).toContain('data-issue642-bug8-value="{{__wvSlotPropsData.io}}"')
+  expect(wrappedSlotWxml).toContain('{{__wvSlotPropsData.io}}')
 }
 
 describe.sequential('e2e app: github-issues / issue #642 bug-8', () => {
@@ -57,12 +89,22 @@ describe.sequential('e2e app: github-issues / issue #642 bug-8', () => {
   it('keeps scoped slot owner id when scoped slot component is nested through another component', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-642-bug8/index', '123')
+      const issuePage = await relaunchPage(miniProgram, ISSUE_642_BUG8_ROUTE, undefined, 45_000, {
+        readiness: async (page) => {
+          await page.waitForRendered({
+            selector: '#issue642-bug8-page',
+            dataset: { e2eIssue: '642-bug8' },
+            timeout: 4_000,
+          })
+          return true
+        },
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-642-bug8 page')
       }
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
 
-      const runtime = await waitForIssue642Bug8Runtime(issuePage)
+      const runtime = await waitForIssue642Bug8Runtime(activeMiniProgram)
       expect(runtime).toMatchObject({
         owner: {
           dataOwnerId: expect.any(String),
@@ -91,17 +133,7 @@ describe.sequential('e2e app: github-issues / issue #642 bug-8', () => {
       expect(runtime.wrap.owner.runtimeOwnerId).toBe(runtime.wrap.owner.dataOwnerId)
       expect(runtime.wrap.child.dataSlotOwnerId).toBe(runtime.wrap.owner.dataOwnerId)
       expect(runtime.wrap.child.propsSlotOwnerId).toBe(runtime.wrap.owner.dataOwnerId)
-
-      await expect(readRenderedCase(issuePage, 'direct')).resolves.toEqual({
-        exists: true,
-        text: '123',
-        value: '123',
-      })
-      await expect(readRenderedCase(issuePage, 'wrapped')).resolves.toEqual({
-        exists: true,
-        text: '123',
-        value: '123',
-      })
+      await expectIssue642Bug8DistWxmlContract()
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

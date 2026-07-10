@@ -61,6 +61,15 @@ async function hasSamePersistentCachePayload(filePath: string, payload: AutoRout
   }
 }
 
+async function collectWatchFileMtims(watchFiles: Iterable<string>) {
+  const entries = await Promise.all([...watchFiles].map(async (filePath) => {
+    const stat = await fs.stat(filePath)
+    return [filePath, stat.mtimeMs] as const
+  }))
+
+  return Object.fromEntries(entries) as Record<string, number>
+}
+
 export async function restorePersistentCache(ctx: MutableCompilerContext, state: RuntimeState['autoRoutes']) {
   if (!getResolvedConfig(ctx).persistentCache) {
     return false
@@ -80,19 +89,18 @@ export async function restorePersistentCache(ctx: MutableCompilerContext, state:
       return false
     }
 
+    const cachedMtims = cache.fileMtims
+    if (!cachedMtims) {
+      return false
+    }
+    const fileMtims = await collectWatchFileMtims(watchFiles)
     for (const filePath of watchFiles) {
-      const expectedMtime = cache.fileMtims?.[filePath]
-      if (typeof expectedMtime !== 'number' || !Number.isFinite(expectedMtime)) {
-        return false
-      }
-
-      try {
-        const stat = await fs.stat(filePath)
-        if (stat.mtimeMs !== expectedMtime) {
-          return false
-        }
-      }
-      catch {
+      const expectedMtime = cachedMtims[filePath]
+      if (
+        typeof expectedMtime !== 'number'
+        || !Number.isFinite(expectedMtime)
+        || fileMtims[filePath] !== expectedMtime
+      ) {
         return false
       }
     }
@@ -111,15 +119,12 @@ export async function writePersistentCache(ctx: MutableCompilerContext, state: R
     return
   }
 
-  const fileMtims: Record<string, number> = {}
-  for (const filePath of state.watchFiles) {
-    try {
-      const stat = await fs.stat(filePath)
-      fileMtims[filePath] = stat.mtimeMs
-    }
-    catch {
-      return
-    }
+  let fileMtims: Record<string, number>
+  try {
+    fileMtims = await collectWatchFileMtims(state.watchFiles)
+  }
+  catch {
+    return
   }
 
   try {

@@ -18,6 +18,23 @@ async function writeJson(file: string, value: unknown) {
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
+async function writeFixtureTsconfig(root: string) {
+  await writeJson(path.join(root, 'tsconfig.json'), {
+    compilerOptions: {
+      target: 'ES2020',
+      module: 'ESNext',
+      moduleResolution: 'Bundler',
+      strict: true,
+      skipLibCheck: true,
+    },
+    include: [
+      'vite.config.ts',
+      'src/**/*.ts',
+      'src/**/*.vue',
+    ],
+  })
+}
+
 async function linkWorkspaceWeappVitePackage(root: string) {
   const nodeModulesRoot = path.join(root, 'node_modules')
   await fs.mkdir(nodeModulesRoot, { recursive: true })
@@ -39,6 +56,7 @@ async function writeProjectFiles(root: string) {
     private: true,
     version: '0.0.0',
   })
+  await writeFixtureTsconfig(root)
 
   await linkWorkspaceWeappVitePackage(root)
 
@@ -120,6 +138,7 @@ async function writeScriptlessLayoutProjectFiles(root: string) {
     private: true,
     version: '0.0.0',
   })
+  await writeFixtureTsconfig(root)
 
   await linkWorkspaceWeappVitePackage(root)
 

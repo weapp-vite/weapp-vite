@@ -1,7 +1,7 @@
 import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
-import { createOutputFinalizerPlugin, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -34,6 +34,30 @@ describe('weapp-vite output finalizer', () => {
       type: 'asset',
       fileName: 'app.wxss',
       source: '.app{color:red}',
+    })
+  })
+
+  it('updates existing final style asset from a newer preprocessor asset', () => {
+    const bundle = {
+      'pages/index/index.scss': {
+        type: 'asset',
+        fileName: 'pages/index/index.scss',
+        source: '.page{color:green}',
+      },
+      'pages/index/index.acss': {
+        type: 'asset',
+        fileName: 'pages/index/index.acss',
+        source: '.page{color:red}',
+      },
+    } as unknown as OutputBundle
+
+    normalizePreprocessorStyleAssets(bundle, 'acss', createBundleAssetEmitter(bundle))
+
+    expect(bundle['pages/index/index.scss']).toBeUndefined()
+    expect(bundle['pages/index/index.acss']).toMatchObject({
+      type: 'asset',
+      fileName: 'pages/index/index.acss',
+      source: '.page{color:green}',
     })
   })
 
@@ -126,6 +150,17 @@ describe('weapp-vite output finalizer', () => {
     } as any, bundle)
 
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="handleTap"')
+  })
+
+  it('skips template parser for assets without normalization markers', () => {
+    expect(mayNeedTemplateNormalization('<view class="page"><text>Hello</text></view>', 'weapp')).toBe(false)
+    expect(mayNeedTemplateNormalization('<view @tap="handleTap" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view><!-- comment --></view>', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view a:if="{{ready}}" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<IMPORT src="./SHARED.WXML" />', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<import src="./shared.wxml" />', 'alipay')).toBe(true)
+    expect(mayNeedTemplateNormalization('<button bind:tap="handleTap" />', 'alipay')).toBe(true)
+    expect(mayNeedTemplateNormalization('<HelloWorld />', 'alipay')).toBe(true)
   })
 
   it('runs as a post generateBundle plugin', () => {
@@ -257,6 +292,55 @@ describe('weapp-vite output finalizer', () => {
 
     expect((hmrBundle['app.js'] as any).source).toContain('require("./weapp-vendors/wevu-watch.js")')
     expect((hmrBundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
+  })
+
+  it('prunes unchanged dev hmr outputs after the plugin runtime rewrite pass only once', () => {
+    const emittedSource = new Map<string, string>()
+    const plugin = createOutputFinalizerPlugin({
+      configService: {
+        isDev: true,
+        outputExtensions: {
+          wxss: 'wxss',
+        },
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any)
+    const bundle = {
+      'app.js': {
+        type: 'asset',
+        fileName: 'app.js',
+        source: 'import { setWevuDefaults, createApp } from "wevu/internal-runtime";setWevuDefaults({});createApp({ hmr: true });',
+      },
+      'weapp-vendors/wevu-watch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-watch.js',
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() { return setWevuDefaults; } });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as unknown as OutputBundle
+
+    plugin.generateBundle?.call({
+      emitFile: createBundleAssetEmitter(bundle),
+    } as any, {} as any, bundle, false)
+
+    const finalSource = (bundle['app.js'] as any).source
+    expect(finalSource).toContain('require("./weapp-vendors/wevu-watch.js")')
+    expect(finalSource).not.toContain('wevu/internal-runtime')
+    expect(emittedSource.get('app.js')).toBe(finalSource)
   })
 
   it('drops unchanged outputs during dev hmr writes', () => {
@@ -403,6 +487,46 @@ describe('weapp-vite output finalizer', () => {
     expect(bundle['pages/index/index.js']).toBeDefined()
     expect(bundle['common.js']).toBeUndefined()
     expect(bundle['pages/index/index.wxml']).toBeDefined()
+    expect(emittedSource.has('common.js')).toBe(false)
+  })
+
+  it('skips source snapshotting for chunk outputs outside the current hmr event', () => {
+    const emittedSource = new Map<string, string>()
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: 'Page({})',
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'exports.shared = true',
+      },
+    } as unknown as OutputBundle
+
+    pruneUnchangedDevHmrOutputs({
+      configService: {
+        isDev: true,
+      },
+      runtimeState: {
+        build: {
+          output: {
+            emittedSource,
+          },
+          hmr: {
+            lastEmittedChunkFileNames: new Set(['pages/index/index.js']),
+            profile: {
+              event: 'update',
+            },
+          },
+        },
+      },
+    } as any, bundle)
+
+    expect(bundle['pages/index/index.js']).toBeDefined()
+    expect(bundle['common.js']).toBeUndefined()
+    expect(emittedSource.get('pages/index/index.js')).toBe('Page({})')
     expect(emittedSource.has('common.js')).toBe(false)
   })
 })

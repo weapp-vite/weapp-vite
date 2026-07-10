@@ -25,9 +25,11 @@ export interface AutoImportService {
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
   setSupportFileResolverComponents: (components: Record<string, string>) => void
   clearSupportFileResolverComponents: () => void
+  syncSupportFileResolverComponents: () => Promise<void>
   collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
+  hasPendingRegistrations?: () => boolean
   awaitPendingRegistrations?: () => Promise<void>
   awaitManifestWrites: () => Promise<void>
 }

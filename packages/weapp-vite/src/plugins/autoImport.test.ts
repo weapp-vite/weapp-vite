@@ -12,17 +12,29 @@ vi.mock('chokidar', () => ({
 }))
 
 describe('autoImport plugin', () => {
-  function createMockSidecarWatcher() {
-    const listeners = new Map<string, (filePath: string) => void>()
+  function createMockSidecarWatcher(options: { nativeReady?: boolean } = {}) {
+    const listeners = new Map<string, (filePath?: string) => void>()
     const watcher = {
-      on: vi.fn((event: string, handler: (filePath: string) => void) => {
+      on: vi.fn((event: string, handler: (filePath?: string) => void) => {
         listeners.set(event, handler)
         return watcher
       }),
+      once: vi.fn((event: string, handler: (filePath?: string) => void) => {
+        listeners.set(event, (filePath?: string) => {
+          listeners.delete(event)
+          handler(filePath)
+        })
+        return watcher
+      }),
       close: vi.fn(),
-      emit(event: 'add' | 'change' | 'unlink', filePath: string) {
+      emit(event: 'add' | 'change' | 'unlink' | 'ready', filePath?: string) {
         listeners.get(event)?.(filePath)
       },
+      ...(options.nativeReady
+        ? {
+            getWatched: vi.fn(() => ({})),
+          }
+        : {}),
     }
 
     return watcher
@@ -158,6 +170,9 @@ describe('autoImport plugin', () => {
     const reset = vi.fn()
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+    const runInBatch = vi.fn(async (task: () => Promise<void>) => {
+      await task()
+    })
 
     const ctx = {
       configService: {
@@ -172,6 +187,7 @@ describe('autoImport plugin', () => {
         },
       },
       autoImportService: {
+        runInBatch,
         reset,
         awaitManifestWrites,
         filter: () => true,
@@ -189,6 +205,7 @@ describe('autoImport plugin', () => {
       await plugin.buildStart?.()
 
       expect(reset).toHaveBeenCalledTimes(1)
+      expect(runInBatch).toHaveBeenCalledTimes(1)
       expect(registerPotentialComponent).toHaveBeenCalledWith(vueFile)
     }
     finally {
@@ -251,6 +268,147 @@ describe('autoImport plugin', () => {
 
       expect(registerPotentialComponent).toHaveBeenCalledTimes(1)
       expect(registerPotentialComponent).toHaveBeenCalledWith(expectedFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
+  it('reuses auto import scan prepared by support files during build start', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-prepared-scan-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const componentFile = path.join(srcRoot, 'components/PreparedCard/index.vue')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(componentFile, '<template><view>prepared</view></template>', 'utf8')
+
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const addWatchFile = vi.fn()
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: 'components/**/*.vue',
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+      await plugin.buildStart?.call({ addWatchFile } as any)
+
+      expect(reset).not.toHaveBeenCalled()
+      expect(registerPotentialComponent).not.toHaveBeenCalled()
+      expect(addWatchFile).toHaveBeenCalledWith(srcRoot)
+      expect(addWatchFile).toHaveBeenCalledWith(path.join(srcRoot, 'components'))
+
+      ctx.runtimeState.autoImport.preparedGlobsKey = 'other/**/*.vue'
+      const nextPlugin = autoImport(ctx)[0]
+      nextPlugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      await nextPlugin.buildStart?.call({ addWatchFile } as any)
+
+      expect(reset).toHaveBeenCalledTimes(1)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(componentFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
+  it('rescans prepared auto import globs during production build', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-prod-prepared-scan-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const componentFile = path.join(srcRoot, 'components/PreparedCard/index.vue')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(componentFile, '<template><view>prepared</view></template>', 'utf8')
+
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          preparedGlobsKey: 'components/**/*.vue',
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: false,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+      await plugin.buildStart?.()
+
+      expect(reset).toHaveBeenCalledTimes(1)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(componentFile)
     }
     finally {
       await fs.remove(tempDir)
@@ -351,6 +509,67 @@ describe('autoImport plugin', () => {
     )
     const watchArgs = chokidarWatchMock.mock.calls[0]?.[0] ?? []
     expect(watchArgs).not.toContain('/project/src')
+  })
+
+  it('waits for sidecar watcher ready before finishing dev buildStart', async () => {
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const sidecarWatcher = createMockSidecarWatcher({ nativeReady: true })
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+
+    const ctx = {
+      runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        runInBatch: vi.fn(async (task: () => Promise<void>) => {
+          await task()
+        }),
+        reset,
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+    let finished = false
+    const buildStart = Promise.resolve(plugin.buildStart?.call({ addWatchFile: vi.fn() } as any))
+      .then(() => {
+        finished = true
+      })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(finished).toBe(false)
+    expect(sidecarWatcher.once).toHaveBeenCalledWith('ready', expect.any(Function))
+
+    sidecarWatcher.emit('ready')
+    await buildStart
+
+    expect(finished).toBe(true)
+    expect(reset).toHaveBeenCalledTimes(1)
   })
 
   it('rescans globs on repeated dev buildStart to include newly created components', async () => {

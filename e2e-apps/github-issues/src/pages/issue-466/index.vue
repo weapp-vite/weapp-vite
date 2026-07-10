@@ -203,10 +203,30 @@ async function _cancelDialogE2E() {
   await Promise.resolve()
   return readRuntimeState()
 }
+
+async function _runMainDialogFlowE2E() {
+  const reset = _resetE2E()
+  const opened = await openConfirmDialog('user-tap')
+  const cancelled = await _cancelDialogE2E()
+  const reopened = await _openDialogE2E()
+  const confirmed = await _confirmDialogE2E()
+
+  return {
+    reset,
+    opened,
+    cancelled,
+    reopened,
+    confirmed,
+  }
+}
 </script>
 
 <template>
-  <view class="issue466-main-page">
+  <view
+    id="issue466-page"
+    class="issue466-main-page"
+    data-e2e-issue="466-main"
+  >
     <text class="issue466-main-title">
       issue-466 main-package tdesign Dialog.confirm
     </text>

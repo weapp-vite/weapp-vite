@@ -1,9 +1,11 @@
 import type { ComponentsMap } from '../../types'
 import type { ScanWxmlResult } from '../../wxml'
+import type { WxmlDependencyKind, WxmlImporterDependencyKind } from './service/shared'
 
 export interface WxmlService {
   depsMap: Map<string, Set<string>>
   importerMap: Map<string, Set<string>>
+  depKindMap: Map<string, Map<string, Set<WxmlDependencyKind>>>
   tokenMap: Map<string, ScanWxmlResult>
   /**
    * @description 常规组件索引缓存。
@@ -17,8 +19,10 @@ export interface WxmlService {
   aggregatedComponentsMap: Map<string, ComponentsMap>
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
   setDeps: (filepath: string, deps?: string[]) => Promise<void>
+  setTokenDeps: (filepath: string, deps?: ScanWxmlResult['deps']) => Promise<void>
   collectDepsFromToken: (filepath: string, deps?: ScanWxmlResult['deps']) => string[]
   getImporters: (filepath: string) => Set<string>
+  getImporterDependencyKind: (dep: string, importer: string) => WxmlImporterDependencyKind | undefined
   getAllDeps: () => Set<string>
   getAggregatedComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
   getAggregatedAutoImportComponents: (filepathOrBaseName: string) => ComponentsMap | undefined

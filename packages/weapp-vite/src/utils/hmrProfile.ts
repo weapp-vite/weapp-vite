@@ -3,7 +3,56 @@ import path from 'pathe'
 
 export const DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH = '.weapp-vite/hmr-profile.jsonl'
 export const HMR_PROFILE_JSON_ENV = 'WEAPP_VITE_HMR_PROFILE_JSON'
-export type HmrProfileDurationKey = 'transformMs' | 'writeMs'
+export type HmrProfileDurationKey
+  = | 'transformMs'
+    | 'writeMs'
+    | 'buildStartMs'
+    | 'pluginResolveMs'
+    | 'coreTransformMs'
+    | 'wevuTransformMs'
+    | 'vueTransformMs'
+    | 'vueReadSourceMs'
+    | 'vueCompileMs'
+    | 'vueFinalizeCompiledMs'
+    | 'vueFinalizeCodeMs'
+    | 'coreLoadMs'
+    | 'entryLoadMs'
+    | 'entryCodeReadMs'
+    | 'entrySidecarResolveMs'
+    | 'entryJsonReadMs'
+    | 'entryVueConfigMs'
+    | 'entryTemplateScanMs'
+    | 'entryScriptSetupMs'
+    | 'entryVueSignatureMs'
+    | 'entryAutoImportMs'
+    | 'entryPrepareMs'
+    | 'entryEmitOutputMs'
+    | 'entryStyleScanMs'
+    | 'entryStyleReadMs'
+    | 'entryResolveMs'
+    | 'entryChunkEmitMs'
+    | 'entryChunkLoadMs'
+    | 'entryChunkEmitFileMs'
+    | 'entryLayoutMs'
+    | 'requestGlobalsMs'
+    | 'weapiResolveMs'
+    | 'bundlerMs'
+    | 'renderStartMs'
+    | 'generateBundleMs'
+    | 'generateSharedMs'
+    | 'generateRewriteMs'
+    | 'generateModuleGraphMs'
+    | 'snapshotResolveMs'
+    | 'snapshotBuildMs'
+
+export type HmrProfileOperationKey
+  = | 'chunkEmitCount'
+    | 'loadCount'
+    | 'resolveCount'
+    | 'skippedLoadedCount'
+    | 'dirtyCount'
+    | 'pendingCount'
+    | 'emittedCount'
 
 interface ResolveHmrProfileJsonPathOptions {
   cwd: string
@@ -72,4 +121,18 @@ export function recordHmrProfileDuration(
     return
   }
   profile[key] = (profile[key] ?? 0) + durationMs
+}
+
+/**
+ * @description 为 HMR profile 累加操作次数。
+ */
+export function recordHmrProfileOperation(
+  profile: Partial<Record<HmrProfileOperationKey, number | undefined>> | undefined,
+  key: HmrProfileOperationKey,
+  count = 1,
+) {
+  if (!profile || !Number.isFinite(count) || count <= 0) {
+    return
+  }
+  profile[key] = (profile[key] ?? 0) + count
 }

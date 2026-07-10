@@ -120,6 +120,35 @@ describe('utils/file', () => {
       }
     })
 
+    it('extracts config from provided SFC source without reading the file', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'page.vue')
+      const readSpy = vi.spyOn(fs, 'readFile')
+      try {
+        await fs.writeFile(
+          file,
+          '<template><view /></template>',
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file, {
+          source: [
+            '<template><view /></template>',
+            '<json>{ "navigationBarTitleText": "provided source" }</json>',
+          ].join('\n'),
+        })
+
+        expect(config).toMatchObject({
+          navigationBarTitleText: 'provided source',
+        })
+        expect(readSpy).not.toHaveBeenCalledWith(file, 'utf-8')
+      }
+      finally {
+        readSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
+
     it('extracts defineAppJson from <script setup> when <json> is absent', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'app.vue')
@@ -312,10 +341,14 @@ defineThemeJson({
         )
 
         const first = await extractConfigFromVue(file)
-        const second = await extractConfigFromVue(file)
+        const readSource = vi.fn(async () => {
+          throw new Error('cached config should not read source')
+        })
+        const second = await extractConfigFromVue(file, { readSource })
 
         expect(first).toMatchObject({ navigationBarTitleText: 'cached' })
         expect(second).toMatchObject({ navigationBarTitleText: 'cached' })
+        expect(readSource).not.toHaveBeenCalled()
         const readCalls = readSpy.mock.calls.filter(call => String(call[0]) === file)
         expect(readCalls.length).toBe(1)
       }
@@ -534,6 +567,92 @@ defineAppJson(nonExistentMacroValue)
 
       expect(spy.mock.calls.length).toBe(jsExtensions.length)
       spy.mockRestore()
+    })
+
+    it('checks candidate extensions concurrently but keeps extension priority', async () => {
+      const base = path.join(os.tmpdir(), `weapp-vite-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`, 'entry')
+      const tsEntry = `${base}.ts`
+      const jsEntry = `${base}.js`
+      const startedBeforeRelease: string[] = []
+      let releaseTs: (() => void) | undefined
+      let tsReleased = false
+      const spy = vi.spyOn(fs, 'pathExists').mockImplementation(async (target: string) => {
+        if (!tsReleased) {
+          startedBeforeRelease.push(target)
+        }
+        if (target === tsEntry) {
+          await new Promise<void>((resolve) => {
+            releaseTs = () => {
+              tsReleased = true
+              resolve()
+            }
+          })
+          return true
+        }
+        return target === jsEntry
+      })
+
+      try {
+        const pending = findJsEntry(base)
+        await vi.waitFor(() => {
+          expect(releaseTs).toBeDefined()
+          expect(startedBeforeRelease.map(normalizePath)).toEqual([
+            normalizePath(tsEntry),
+            normalizePath(jsEntry),
+          ])
+        })
+        releaseTs?.()
+
+        const result = await pending
+
+        expect(normalizePath(result.path || '')).toBe(normalizePath(tsEntry))
+        expect(result.predictions.map(normalizePath)).toEqual([
+          normalizePath(tsEntry),
+          normalizePath(jsEntry),
+        ])
+      }
+      finally {
+        spy.mockRestore()
+      }
+    })
+
+    it('appends script extensions for basename segments that contain dots', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-entry-dot-'))
+      try {
+        const appEntry = path.join(root, 'app.ts')
+        const appPreludeBase = path.join(root, 'app.prelude')
+        await fs.writeFile(appEntry, 'App({})', 'utf8')
+
+        const result = await findJsEntry(appPreludeBase)
+
+        expect(result.path).toBeUndefined()
+        expect(result.predictions.map(normalizePath)).toEqual([
+          normalizePath(`${appPreludeBase}.ts`),
+          normalizePath(`${appPreludeBase}.js`),
+        ])
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('still replaces known entry extensions when probing adjacent sidecar files', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-entry-known-ext-'))
+      try {
+        const scriptEntry = path.join(root, 'pages/native/index.ts')
+        const jsonEntry = path.join(root, 'pages/native/index.json')
+        await fs.ensureDir(path.dirname(scriptEntry))
+        await fs.writeFile(scriptEntry, 'Page({})', 'utf8')
+        await fs.writeFile(jsonEntry, '{}', 'utf8')
+
+        const result = await findJsonEntry(scriptEntry)
+
+        expect(normalizePath(result.path || '')).toBe(normalizePath(jsonEntry))
+        expect(result.predictions.map(normalizePath)).toContain(normalizePath(jsonEntry))
+      }
+      finally {
+        await fs.remove(root)
+      }
     })
   })
 

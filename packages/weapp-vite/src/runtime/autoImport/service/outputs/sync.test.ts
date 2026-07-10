@@ -351,6 +351,8 @@ describe('autoImport outputs sync helpers', () => {
         ]),
       }),
     )
+    expect(fsReaddirMock).toHaveBeenCalledTimes(2)
+    expect(fsStatMock).toHaveBeenCalledTimes(3)
     expect(fsOutputFileMock).toHaveBeenCalledWith(
       expect.stringMatching(/wevu-layouts\.d\.ts$/),
       'layout-types-next',

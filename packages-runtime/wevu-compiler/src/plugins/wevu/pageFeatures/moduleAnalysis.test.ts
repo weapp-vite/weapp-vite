@@ -114,6 +114,33 @@ function localOnly() {
     expect(result.exports.size).toBe(0)
   })
 
+  it('parses TypeScript generic arrow expressions without treating them as JSX', () => {
+    const source = `
+import type { ModelBinding } from './types'
+
+export function useChangeModel() {
+  const rawBindModel = {} as <T = any>(
+    path: string,
+    options?: Record<string, unknown>,
+  ) => ModelBinding<T>
+  const bindModel = (<T = any>(path: string, options?: Record<string, unknown>) => {
+    return rawBindModel(path, options)
+  }) as <T = any>(path: string, options?: Record<string, unknown>) => ModelBinding<T>
+  return bindModel
+}
+    `.trim()
+
+    const result = createModuleAnalysisFromCode('/project/node_modules/wevu/src/model.ts', source, {
+      astEngine: 'babel',
+    })
+
+    expect(result.localFunctions.has('useChangeModel')).toBe(true)
+    expect(result.exports.get('useChangeModel')).toMatchObject({
+      type: 'local',
+      localName: 'useChangeModel',
+    })
+  })
+
   it('reuses createModuleAnalysisFromCode cache for identical source and engine', () => {
     const source = `
 import { onPageScroll } from 'wevu'

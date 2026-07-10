@@ -7,6 +7,7 @@ import {
   cleanupCssImporterGraph,
   collectAffectedScriptsAndImporters,
   extractCssImportDependencies,
+  syncCssImportDependencies,
   syncVueSfcStyleDependencies,
 } from './cssGraph'
 
@@ -45,6 +46,8 @@ describe('invalidateEntry cssGraph', () => {
     await fs.ensureDir(stylesDir)
     await fs.writeFile(importer, [
       '@import "./theme.wxss";',
+      '@use "./tokens.scss" as tokens;',
+      '@forward "./mixins.scss";',
       '@import "~./legacy.less?inline=1";',
       '@wv-keep-import "@/global/base.wxss";',
       '@import "@";',
@@ -59,6 +62,8 @@ describe('invalidateEntry cssGraph', () => {
       expect(deps).toBeDefined()
 
       const theme = path.normalize(path.join(stylesDir, 'theme.wxss'))
+      const tokens = path.normalize(path.join(stylesDir, 'tokens.scss'))
+      const mixins = path.normalize(path.join(stylesDir, 'mixins.scss'))
       const legacy = path.normalize(path.join(stylesDir, 'legacy.less'))
       const base = path.normalize(path.join(srcRoot, 'global/base.wxss'))
       const rootAbsolute = path.normalize(path.join(srcRoot, 'absolute/root.wxss'))
@@ -66,6 +71,10 @@ describe('invalidateEntry cssGraph', () => {
       expect(deps).toEqual(new Set([
         theme,
         theme.slice(0, -path.extname(theme).length),
+        tokens,
+        tokens.slice(0, -path.extname(tokens).length),
+        mixins,
+        mixins.slice(0, -path.extname(mixins).length),
         legacy,
         legacy.slice(0, -path.extname(legacy).length),
         base,
@@ -164,6 +173,65 @@ describe('invalidateEntry cssGraph', () => {
     expect(result.scripts).toEqual(new Set(['/project/src/styles/reset.ts', '/project/src/app.ts']))
   })
 
+  it('resolves scripts in the same css graph layer concurrently and caches misses', async () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const theme = '/project/src/styles/theme.wxss'
+    const slowWxss = '/project/src/styles/slow.wxss'
+    const fastWxss = '/project/src/styles/fast.wxss'
+    const repeatedWxss = '/project/src/styles/repeated.wxss'
+    const repeatedScss = '/project/src/styles/repeated.scss'
+    const appWxss = '/project/src/app.wxss'
+    let releaseSlow: (() => void) | undefined
+    let startedBeforeRelease = 0
+    let slowReleased = false
+
+    ctx.runtimeState.css.dependencyToImporters.set(theme, new Set([slowWxss, fastWxss, repeatedWxss]))
+    ctx.runtimeState.css.dependencyToImporters.set(repeatedWxss, new Set([repeatedScss]))
+    ctx.runtimeState.css.dependencyToImporters.set('/project/src/styles/repeated', new Set([appWxss]))
+
+    findJsEntryMock.mockImplementation(async (basePath: string) => {
+      if (!slowReleased) {
+        startedBeforeRelease += 1
+      }
+      if (basePath === '/project/src/styles/slow') {
+        await new Promise<void>((resolve) => {
+          releaseSlow = () => {
+            slowReleased = true
+            resolve()
+          }
+        })
+      }
+      if (basePath === '/project/src/styles/fast') {
+        return {
+          path: '/project/src/styles/fast.ts',
+          predictions: [],
+        }
+      }
+      return {
+        predictions: [],
+      }
+    })
+
+    const pending = collectAffectedScriptsAndImporters(ctx, theme)
+    await vi.waitFor(() => {
+      expect(releaseSlow).toBeDefined()
+      expect(startedBeforeRelease).toBe(4)
+    })
+    releaseSlow?.()
+
+    const result = await pending
+
+    expect(findJsEntryMock).toHaveBeenCalledTimes(5)
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/theme')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/slow')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/fast')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/styles/repeated')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/app')
+    expect(result.importers).toEqual(new Set([slowWxss, fastWxss, repeatedWxss, repeatedScss, appWxss]))
+    expect(result.scripts).toEqual(new Set(['/project/src/styles/fast.ts']))
+  })
+
   it('tracks vue sfc style imports and src blocks as css importers', async () => {
     const srcRoot = '/project/src'
     const ctx = createCtx(srcRoot)
@@ -174,7 +242,7 @@ describe('invalidateEntry cssGraph', () => {
 
     const dependencies = syncVueSfcStyleDependencies(ctx, vueFile, [
       {
-        content: '@import "./hello.css";\n@import "@/styles/global.scss";',
+        content: '@import "./hello.css";\n@use "@/styles/global.scss" as global;',
       },
       {
         content: '',
@@ -200,6 +268,55 @@ describe('invalidateEntry cssGraph', () => {
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toBeUndefined()
     expect(ctx.runtimeState.css.dependencyToImporters.get(external)).toBeUndefined()
     expect(ctx.runtimeState.css.dependencyToImporters.get(global)).toBeUndefined()
+  })
+
+  it('syncs css imports from in-memory style content and preprocess dependencies', () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const importer = '/project/src/components/card/index.scss'
+    const shared = '/project/src/shared/styles/shared.scss'
+    const viteDep = '/project/src/shared/styles/mixins.scss'
+
+    const dependencies = syncCssImportDependencies(
+      ctx,
+      importer,
+      '@import "../../shared/styles/shared.scss";',
+      [viteDep],
+    )
+
+    expect(dependencies).toEqual(new Set([
+      shared,
+      shared.slice(0, -'.scss'.length),
+      viteDep,
+      viteDep.slice(0, -'.scss'.length),
+    ]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(shared)).toEqual(new Set([importer]))
+    expect(ctx.runtimeState.css.dependencyToImporters.get(viteDep)).toEqual(new Set([importer]))
+  })
+
+  it('keeps css graph sets stable when dependencies are unchanged', () => {
+    const srcRoot = '/project/src'
+    const ctx = createCtx(srcRoot)
+    const importer = '/project/src/components/card/index.scss'
+    const shared = '/project/src/shared/styles/shared.scss'
+
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    const normalizedImporter = path.normalize(importer)
+    const normalizedShared = path.normalize(shared)
+    const previousDeps = ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)
+    const previousImporters = ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)
+
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    expect(ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)).toBe(previousDeps)
+    expect(ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)).toBe(previousImporters)
+
+    previousImporters?.delete(normalizedImporter)
+    syncCssImportDependencies(ctx, importer, '@import "../../shared/styles/shared.scss";')
+
+    expect(ctx.runtimeState.css.importerToDependencies.get(normalizedImporter)).not.toBe(previousDeps)
+    expect(ctx.runtimeState.css.dependencyToImporters.get(normalizedShared)).toEqual(new Set([normalizedImporter]))
   })
 
   it('skips css graph updates when runtime css state is unavailable', async () => {

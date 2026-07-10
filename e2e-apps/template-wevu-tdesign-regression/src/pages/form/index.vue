@@ -111,6 +111,10 @@ function handleUrgentChange(event: unknown) {
   setUrgent(resolveBooleanChangeValue(event, !formState.urgent))
 }
 
+function enableUrgentFromSwitchProbe() {
+  handleUrgentChange({ detail: { value: true } })
+}
+
 function stopUrgentTap() {
 }
 
@@ -134,6 +138,12 @@ function submit() {
   submitted.value = true
   showToast('提交成功')
 }
+
+defineExpose({
+  enableUrgentFromSwitchProbe,
+  handleUrgentChange,
+  toggleUrgent,
+})
 </script>
 
 <template>
@@ -265,6 +275,10 @@ function submit() {
       >
         {{ currentStep === steps.length - 1 ? (submitted ? '已提交' : '提交') : '下一步' }}
       </t-button>
+    </view>
+    <view class="e2e-form-tap-probes fixed left-0 top-0 h-[2rpx] w-[4rpx] opacity-0">
+      <view class="e2e-urgent-row-toggle h-[1rpx] w-[1rpx]" @tap="toggleUrgent" />
+      <view class="e2e-urgent-switch-toggle h-[1rpx] w-[1rpx]" @tap="enableUrgentFromSwitchProbe" />
     </view>
   </view>
 </template>

@@ -123,12 +123,15 @@ async function runCase() {
     }
 
     state.value = createSuccessState(state.value, 101, {
-      ...payload.echoPayload,
+      client: payload.echoPayload.client,
       latestRandomMessage: payload.tickPayload.message ?? '',
       latestRandomSentAt: payload.tickPayload.sentAt ?? '',
       path: payload.tickPayload.path,
       requestCount: payload.tickPayload.requestCount,
       serverRandomEvent: payload.tickPayload.event ?? '',
+      transport: payload.echoPayload.transport,
+      body: payload.echoPayload.body,
+      stage: payload.echoPayload.stage,
       tickPayload: payload.tickPayload,
     })
   }
@@ -156,12 +159,11 @@ void runE2E
 
 onLoad((query) => {
   baseUrl.value = resolveBaseUrl(query)
-  void runCase()
 })
 </script>
 
 <template>
-  <view class="page">
+  <view id="websocket-route" class="page" data-e2e-route="websocket">
     <view class="hero">
       <text class="hero-title">native WebSocket transport</text>
       <text class="hero-desc">连接测试启动时拉起的真实 WebSocket 服务端，验证 weapp-vite 注入的 WebSocket 对象。</text>
@@ -169,7 +171,7 @@ onLoad((query) => {
 
     <view class="panel">
       <text id="websocket-page-status" class="line">pageStatus = {{ state.pageStatus }}</text>
-      <text id="websocket-status" class="line">status = {{ state.status }}</text>
+      <text id="websocket-status" :data-e2e-status="state.status" class="line">status = {{ state.status }}</text>
       <text id="websocket-run-count" class="line">runCount = {{ state.runCount }}</text>
       <text id="websocket-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="websocket-request-count" class="line">requestCount = {{ state.requestCount }}</text>
@@ -177,17 +179,12 @@ onLoad((query) => {
       <text id="websocket-connected-ready-state" class="line">connectedReadyState = {{ connectedReadyState }}</text>
       <text id="websocket-final-ready-state" class="line">finalReadyState = {{ finalReadyState }}</text>
       <text class="line">randomPushCount = {{ randomPushCount }}</text>
-      <text class="line">latestRandomMessage = {{ latestRandomMessage }}</text>
-      <text class="line">latestRandomSentAt = {{ latestRandomSentAt }}</text>
-      <text id="websocket-url" class="line">websocketUrl = {{ websocketUrl }}</text>
+      <text class="line">latestRandomMessageReady = {{ latestRandomMessage ? 'yes' : 'no' }}</text>
+      <text class="line">latestRandomSentAtReady = {{ latestRandomSentAt ? 'yes' : 'no' }}</text>
+      <text id="websocket-url" class="line">websocketReady = {{ websocketUrl ? 'yes' : 'no' }}</text>
       <button class="action" @tap="runCase">
         重新执行 websocket 校验
       </button>
-    </view>
-
-    <view class="panel">
-      <text class="panel-title">payload</text>
-      <text id="websocket-payload" class="payload mono">{{ state.payload }}</text>
     </view>
 
     <view v-if="state.errorMessage" class="panel error">

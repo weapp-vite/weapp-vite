@@ -18,7 +18,7 @@
   "dependencies": {
     "axios": "^1.18.1",
     "express": "^5.2.1",
-    "graphql": "^17.0.1",
+    "graphql": "^17.0.2",
     "graphql-request": "^7.3.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
@@ -31,7 +31,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "tailwindcss": "catalog:tailwind4",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",

@@ -1,22 +1,18 @@
 import type { AstParserLike } from '../../../ast'
 import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
-import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast'
+import { platformApiIdentifiers } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 
 export function rewriteMiniProgramPlatformApiAccess(
   code: string,
   globalName: string,
-  options?: {
+  _options?: {
     engine?: 'babel' | 'oxc'
     parserLike?: AstParserLike
   },
 ) {
   const injectedApiIdentifier = WEAPP_VITE_INJECTED_API_IDENTIFIER
-
-  if (!mayContainPlatformApiAccess(code, options)) {
-    return code
-  }
 
   try {
     const ast = parseJsLike(code)

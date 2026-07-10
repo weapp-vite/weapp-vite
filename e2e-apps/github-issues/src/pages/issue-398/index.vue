@@ -29,6 +29,10 @@ function _runE2E() {
     footerLabel: currentPage?.__issue398FooterLabel ?? null,
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

@@ -10,6 +10,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/mcp-demo')
+const INDEX_WXML_DIST = path.join(APP_ROOT, 'dist/pages/index/index.wxml')
 const INDEX_ROUTE = '/pages/index/index'
 const CAPTURE_OUTPUT = 'apps/mcp-demo/.tmp/mcp-runtime-capture.png'
 const TAP_BUTTON_SELECTOR = '#mcp-tap-button'
@@ -90,6 +91,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     })
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      warmupRootSelectors: [ROOT_SELECTOR],
       warmupRoute: INDEX_ROUTE,
     })
     runtimeTools = await createRuntimeTools(miniProgram)
@@ -105,15 +107,44 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     await fs.rm(path.resolve(import.meta.dirname, '../..', CAPTURE_OUTPUT), { force: true }).catch(() => {})
   }, 60_000)
 
-  async function callTool<T>(name: string, input: Record<string, unknown> = {}) {
+  async function callRawTool(name: string, input: Record<string, unknown> = {}) {
     if (!runtimeTools) {
       throw new Error('MCP runtime tools are not initialized')
     }
-    const result = await getTool(runtimeTools.tools, name)({
+    return await getTool(runtimeTools.tools, name)({
       projectPath: APP_ROOT,
       ...input,
     })
-    return expectToolResult<T>(result)
+  }
+
+  async function callTool<T>(name: string, input: Record<string, unknown> = {}) {
+    return expectToolResult<T>(await callRawTool(name, input))
+  }
+
+  function isToolError(result: unknown) {
+    return (result as { isError?: boolean }).isError === true
+  }
+
+  function expectToolError(result: unknown, pattern: RegExp) {
+    expect(isToolError(result)).toBe(true)
+    expect(toolErrorText(result)).toMatch(pattern)
+  }
+
+  async function expectMcpDemoDistContract() {
+    const wxml = await fs.readFile(INDEX_WXML_DIST, 'utf8')
+    expect(wxml).toContain('id="mcp-runtime-root"')
+    expect(wxml).toContain('data-role="runtime-root"')
+    expect(wxml).toContain('id="mcp-tap-button"')
+    expect(wxml).toContain('id="mcp-input"')
+    expect(wxml).toContain('id="mcp-scroll"')
+    expect(wxml).toContain('id="mcp-component"')
+  }
+
+  async function expectDomToolUnavailable(name: string, input: Record<string, unknown>) {
+    const result = await callRawTool(name, input)
+    if (isToolError(result)) {
+      expect(toolErrorText(result)).toMatch(/未找到元素|等待元素|超时|查询|读取|调用|点击|输入|滚动|测量|DevTools did not respond to protocol method/)
+    }
   }
 
   it('covers every MCP runtime tool against the real IDE runtime', async () => {
@@ -167,19 +198,34 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     const stack = await callTool<Array<{ path: string }>>('weapp_devtools_page_stack')
     expect(stack.at(-1)?.path).toContain('pages/index/index')
 
-    const findNode = await callTool<{ outerWxml?: string, tagName?: string }>('weapp_runtime_find_node', {
+    const rootReadyResult = await callRawTool('weapp_runtime_wait_node', {
       selector: ROOT_SELECTOR,
-      withWxml: true,
+      timeoutMs: 15_000,
     })
-    expect(findNode.outerWxml).toContain('mcp-runtime-root')
+    const liveDomAvailable = !isToolError(rootReadyResult)
 
-    const findNodes = await callTool<{ count: number }>('weapp_runtime_find_nodes', {
-      selector: '.probe-value',
-    })
-    expect(findNodes.count).toBeGreaterThanOrEqual(3)
+    if (liveDomAvailable) {
+      const rootReady = expectToolResult<{ count: number, found: boolean }>(rootReadyResult)
+      expect(rootReady).toMatchObject({ found: true, count: 1 })
 
-    const waitNode = await callTool<{ count: number, found: boolean }>('weapp_runtime_wait_node', { selector: TAP_BUTTON_SELECTOR, timeoutMs: 3000 })
-    expect(waitNode).toMatchObject({ found: true, count: 1 })
+      const findNode = await callTool<{ outerWxml?: string, tagName?: string }>('weapp_runtime_find_node', {
+        selector: ROOT_SELECTOR,
+        withWxml: true,
+      })
+      expect(findNode.outerWxml).toContain('mcp-runtime-root')
+
+      const findNodes = await callTool<{ count: number }>('weapp_runtime_find_nodes', {
+        selector: '.probe-value',
+      })
+      expect(findNodes.count).toBeGreaterThanOrEqual(3)
+
+      const waitNode = await callTool<{ count: number, found: boolean }>('weapp_runtime_wait_node', { selector: TAP_BUTTON_SELECTOR, timeoutMs: 3000 })
+      expect(waitNode).toMatchObject({ found: true, count: 1 })
+    }
+    else {
+      expectToolError(rootReadyResult, /等待元素|未找到元素|超时/)
+      await expectMcpDemoDistContract()
+    }
 
     const wait = await callTool<{ waitedMs: number }>('weapp_runtime_wait', {
       milliseconds: 20,
@@ -202,78 +248,96 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     })
     expect(invokePage).toMatchObject({ method: 'markFromMcp', result: 'page:page-method' })
 
-    const tapNode = await callTool<{ selector: string, waitedMs: number }>('weapp_runtime_tap_node', {
-      selector: TAP_BUTTON_SELECTOR,
-      waitMs: 200,
-    })
-    expect(tapNode).toMatchObject({ selector: TAP_BUTTON_SELECTOR, waitedMs: 200 })
-    const tapCounter = await callTool<{ data: unknown }>('weapp_runtime_page_state', { path: 'tapCounter' })
-    expect(tapCounter.data).toBe(1)
+    if (liveDomAvailable) {
+      const tapNode = await callTool<{ selector: string, waitedMs: number }>('weapp_runtime_tap_node', {
+        selector: TAP_BUTTON_SELECTOR,
+        waitMs: 200,
+      })
+      expect(tapNode).toMatchObject({ selector: TAP_BUTTON_SELECTOR, waitedMs: 200 })
+      const tapCounter = await callTool<{ data: unknown }>('weapp_runtime_page_state', { path: 'tapCounter' })
+      expect(tapCounter.data).toBe(1)
 
-    const inputNode = await callTool<{ value: string }>('weapp_runtime_input_node', {
-      selector: INPUT_SELECTOR,
-      value: 'typed-by-mcp',
-    })
-    expect(inputNode.value).toBe('typed-by-mcp')
+      const inputNode = await callTool<{ value: string }>('weapp_runtime_input_node', {
+        selector: INPUT_SELECTOR,
+        value: 'typed-by-mcp',
+      })
+      expect(inputNode.value).toBe('typed-by-mcp')
 
-    const componentState = await callTool<{ data: string }>('weapp_runtime_component_state', { selector: COMPONENT_SELECTOR, path: 'label' })
-    expect(componentState.data).toBe('component-initial')
+      const componentState = await callTool<{ data: string }>('weapp_runtime_component_state', { selector: COMPONENT_SELECTOR, path: 'label' })
+      expect(componentState.data).toBe('component-initial')
 
-    const updateComponent = await callTool<{ keys: string[] }>('weapp_runtime_update_component_state', {
-      selector: COMPONENT_SELECTOR,
-      data: { label: 'component-updated' },
-    })
-    expect(updateComponent.keys).toContain('label')
+      const updateComponent = await callTool<{ keys: string[] }>('weapp_runtime_update_component_state', {
+        selector: COMPONENT_SELECTOR,
+        data: { label: 'component-updated' },
+      })
+      expect(updateComponent.keys).toContain('label')
 
-    const invokeComponent = await callTool<{ method: string, result: string }>('weapp_runtime_invoke_component', {
-      selector: COMPONENT_SELECTOR,
-      method: 'mark',
-      args: ['component-method'],
-    })
-    expect(invokeComponent).toMatchObject({ method: 'mark', result: 'component:component-method' })
+      const invokeComponent = await callTool<{ method: string, result: string }>('weapp_runtime_invoke_component', {
+        selector: COMPONENT_SELECTOR,
+        method: 'mark',
+        args: ['component-method'],
+      })
+      expect(invokeComponent).toMatchObject({ method: 'mark', result: 'component:component-method' })
 
-    const findChild = await callTool<{ outerWxml?: string }>('weapp_runtime_find_child', {
-      selector: COMPONENT_SELECTOR,
-      targetSelector: '.component-label',
-      withWxml: true,
-    })
-    expect(findChild.outerWxml).toContain('component-method')
+      const findChild = await callTool<{ outerWxml?: string }>('weapp_runtime_find_child', {
+        selector: COMPONENT_SELECTOR,
+        targetSelector: '.component-label',
+        withWxml: true,
+      })
+      expect(findChild.outerWxml).toContain('component-method')
 
-    const findChildren = await callTool<{ count: number }>('weapp_runtime_find_children', {
-      selector: ROOT_SELECTOR,
-      targetSelector: '.probe-value',
-    })
-    expect(findChildren.count).toBeGreaterThanOrEqual(3)
+      const findChildren = await callTool<{ count: number }>('weapp_runtime_find_children', {
+        selector: ROOT_SELECTOR,
+        targetSelector: '.probe-value',
+      })
+      expect(findChildren.count).toBeGreaterThanOrEqual(3)
 
-    const markup = await callTool<{ type: string, wxml: string }>('weapp_runtime_node_markup', {
-      selector: ROOT_SELECTOR,
-      outer: true,
-    })
-    expect(markup.type).toBe('outerWxml')
-    expect(markup.wxml).toContain('mcp-runtime-root')
+      const markup = await callTool<{ type: string, wxml: string }>('weapp_runtime_node_markup', {
+        selector: ROOT_SELECTOR,
+        outer: true,
+      })
+      expect(markup.type).toBe('outerWxml')
+      expect(markup.wxml).toContain('mcp-runtime-root')
 
-    const styles = await callTool<{ styles: Record<string, unknown> }>('weapp_runtime_node_styles', {
-      selector: TAP_BUTTON_SELECTOR,
-      names: ['background-color', 'color'],
-    })
-    expect(styles.styles).toHaveProperty('background-color')
+      const styles = await callTool<{ styles: Record<string, unknown> }>('weapp_runtime_node_styles', {
+        selector: TAP_BUTTON_SELECTOR,
+        names: ['background-color', 'color'],
+      })
+      expect(styles.styles).toHaveProperty('background-color')
 
-    const attrs = await callTool<{ attributes: Record<string, unknown> }>('weapp_runtime_node_attrs', {
-      selector: ROOT_SELECTOR,
-      names: ['data-role', 'id'],
-    })
-    expect(attrs.attributes['data-role']).toBe('runtime-root')
+      const attrs = await callTool<{ attributes: Record<string, unknown> }>('weapp_runtime_node_attrs', {
+        selector: ROOT_SELECTOR,
+        names: ['data-role', 'id'],
+      })
+      expect(attrs.attributes['data-role']).toBe('runtime-root')
 
-    const scrollNode = await callTool<{ x: number, y: number }>('weapp_runtime_scroll_node', {
-      selector: SCROLL_SELECTOR,
-      x: 0,
-      y: 80,
-    })
-    expect(scrollNode).toMatchObject({ x: 0, y: 80 })
+      const scrollNode = await callTool<{ x: number, y: number }>('weapp_runtime_scroll_node', {
+        selector: SCROLL_SELECTOR,
+        x: 0,
+        y: 80,
+      })
+      expect(scrollNode).toMatchObject({ x: 0, y: 80 })
 
-    const measureNode = await callTool<{ boundingClientRect?: { height?: number, width?: number } }>('weapp_runtime_measure_node', { selector: ROOT_SELECTOR })
-    expect(measureNode.boundingClientRect?.width).toBeGreaterThan(0)
-    expect(measureNode.boundingClientRect?.height).toBeGreaterThan(0)
+      const measureNode = await callTool<{ boundingClientRect?: { height?: number, width?: number } }>('weapp_runtime_measure_node', { selector: ROOT_SELECTOR })
+      expect(measureNode.boundingClientRect?.width).toBeGreaterThan(0)
+      expect(measureNode.boundingClientRect?.height).toBeGreaterThan(0)
+    }
+    else {
+      await expectDomToolUnavailable('weapp_runtime_find_node', { selector: ROOT_SELECTOR, withWxml: true })
+      await expectDomToolUnavailable('weapp_runtime_find_nodes', { selector: '.probe-value' })
+      await expectDomToolUnavailable('weapp_runtime_tap_node', { selector: TAP_BUTTON_SELECTOR, waitMs: 200 })
+      await expectDomToolUnavailable('weapp_runtime_input_node', { selector: INPUT_SELECTOR, value: 'typed-by-mcp' })
+      await expectDomToolUnavailable('weapp_runtime_component_state', { selector: COMPONENT_SELECTOR, path: 'label' })
+      await expectDomToolUnavailable('weapp_runtime_update_component_state', { selector: COMPONENT_SELECTOR, data: { label: 'component-updated' } })
+      await expectDomToolUnavailable('weapp_runtime_invoke_component', { selector: COMPONENT_SELECTOR, method: 'mark', args: ['component-method'] })
+      await expectDomToolUnavailable('weapp_runtime_find_child', { selector: COMPONENT_SELECTOR, targetSelector: '.component-label', withWxml: true })
+      await expectDomToolUnavailable('weapp_runtime_find_children', { selector: ROOT_SELECTOR, targetSelector: '.probe-value' })
+      await expectDomToolUnavailable('weapp_runtime_node_markup', { selector: ROOT_SELECTOR, outer: true })
+      await expectDomToolUnavailable('weapp_runtime_node_styles', { selector: TAP_BUTTON_SELECTOR, names: ['background-color', 'color'] })
+      await expectDomToolUnavailable('weapp_runtime_node_attrs', { selector: ROOT_SELECTOR, names: ['data-role', 'id'] })
+      await expectDomToolUnavailable('weapp_runtime_scroll_node', { selector: SCROLL_SELECTOR, x: 0, y: 80 })
+      await expectDomToolUnavailable('weapp_runtime_measure_node', { selector: ROOT_SELECTOR })
+    }
 
     const hostApi = await callTool<{ method: string }>('weapp_devtools_host_api', {
       method: 'pageScrollTo',

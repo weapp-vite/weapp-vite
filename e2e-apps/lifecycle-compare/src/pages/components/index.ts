@@ -42,6 +42,7 @@ interface EventBindingStats {
 
 type ProbeComponentType = 'nativeComponent' | 'wevuSfcComponent'
 type ProbeBindingMode = 'bind' | 'bindColon' | 'both' | 'bothReverse'
+type ViewBindingMode = 'bindtap' | 'bindColon' | 'both' | 'bothReverse'
 type NamedEventNameType = 'hyphen' | 'underscore'
 type NamedProbeBindingMode = 'bind' | 'bindColon' | 'both'
 
@@ -320,6 +321,20 @@ Page({
       '__eventBindingStats.view.bothReverseBindColonTap': (this.data.__eventBindingStats?.view?.bothReverseBindColonTap ?? 0) + 1,
     })
   },
+  triggerViewEventBinding(bindingMode: ViewBindingMode) {
+    const handlers: Record<ViewBindingMode, () => void> = {
+      bindtap: () => this.onViewBindtap(),
+      bindColon: () => this.onViewBindColonTap(),
+      both: () => this.onViewBothBindtap(),
+      bothReverse: () => this.onViewBothReverseBindtap(),
+    }
+    const handler = handlers[bindingMode]
+    if (!handler) {
+      return false
+    }
+    handler()
+    return true
+  },
   onNativeComponentBindprobe() {
     this.setData({
       '__eventBindingStats.nativeComponent.bindprobe': (this.data.__eventBindingStats?.nativeComponent?.bindprobe ?? 0) + 1,
@@ -448,7 +463,10 @@ Page({
       return false
     }
     const component = this.selectComponent(selector) as ProbeEmitterComponent | null
-    component?.emitProbe?.(`${componentType}:${bindingMode}`)
+    if (typeof component?.emitProbe !== 'function') {
+      return false
+    }
+    component.emitProbe(`${componentType}:${bindingMode}`)
     return true
   },
   triggerNamedComponentProbe(componentType: ProbeComponentType, eventNameType: NamedEventNameType, bindingMode: NamedProbeBindingMode) {
@@ -488,7 +506,10 @@ Page({
     }
     const eventName = eventNames[eventNameType]
     const component = this.selectComponent(selector) as ProbeEmitterComponent | null
-    component?.emitNamed?.(eventName, `${componentType}:${eventNameType}:${bindingMode}`)
+    if (typeof component?.emitNamed !== 'function') {
+      return false
+    }
+    component.emitNamed(eventName, `${componentType}:${eventNameType}:${bindingMode}`)
     return true
   },
 })

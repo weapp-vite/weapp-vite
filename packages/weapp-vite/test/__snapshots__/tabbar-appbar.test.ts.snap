@@ -22,7 +22,7 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 }"
 `;
 
-exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
+exports[`tabbar-appbar > dist > app.wxss 1`] = `""`;
 
 exports[`tabbar-appbar > dist > app-bar/index.json 1`] = `
 "{
@@ -37,7 +37,7 @@ exports[`tabbar-appbar > dist > app-bar/index.wxml 1`] = `"<view>hello weapp-vit
 exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 ".ss {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.json 1`] = `
@@ -53,7 +53,7 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 "
 `;
 
-exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
+exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `""`;
 
 exports[`tabbar-appbar > dist > components/Test/index.json 1`] = `
 "{
@@ -68,7 +68,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxml 1`] = `"<view>Navbar<
 exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 ".test {
   clear: both;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.json 1`] = `
@@ -84,7 +84,7 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxml 1`] = `"<view class="p
 exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 ".a {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.json 1`] = `
@@ -104,7 +104,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 "
 `;
 
-exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
+exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `""`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"`;
 
@@ -112,7 +112,7 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 ".a {
   color: red;
 }
-/*$vite$:1*/"
+"
 `;
 
 exports[`tabbar-appbar > dist > pages/index/vue-setup.wxml 1`] = `"<view> 222 </view>"`;
@@ -121,7 +121,7 @@ exports[`tabbar-appbar > dist > pages/index/vue-setup.wxss 1`] = `
 ".b {
   color: red;
 }
-/*$vite$:1*/"
+"
 `;
 
 exports[`tabbar-appbar > dist > sitemap.json 1`] = `

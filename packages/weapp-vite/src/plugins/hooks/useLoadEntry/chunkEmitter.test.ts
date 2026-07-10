@@ -29,10 +29,17 @@ describe('createChunkEmitter', () => {
       }),
     }
 
-    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [
+    const stats = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [
       { id: '/project/src/pages/index/index.ts' } as any,
     ]))
 
+    expect(stats).toEqual([{
+      chunkEmitCount: 1,
+      emitFileMs: expect.any(Number),
+      loadCount: 1,
+      loadMs: expect.any(Number),
+      skippedLoadedCount: 0,
+    }])
     expect(trackedEntryIds).toEqual([
       '/project/src/components/HotCard/index.vue',
       '/project/src/pages/index/index.ts',
@@ -60,11 +67,27 @@ describe('createChunkEmitter', () => {
       load: vi.fn(async () => null),
     }
 
-    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [
+    const stats = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [
       { id: '/project/src/app.vue' } as any,
       { id: '/project/src/pages/index/index.vue' } as any,
     ]))
 
+    expect(stats).toEqual([
+      {
+        chunkEmitCount: 0,
+        emitFileMs: 0,
+        loadCount: 1,
+        loadMs: expect.any(Number),
+        skippedLoadedCount: 0,
+      },
+      {
+        chunkEmitCount: 1,
+        emitFileMs: expect.any(Number),
+        loadCount: 1,
+        loadMs: expect.any(Number),
+        skippedLoadedCount: 0,
+      },
+    ])
     expect(pluginCtx.load).toHaveBeenCalledWith({ id: '/project/src/app.vue' })
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
     expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
@@ -81,6 +104,7 @@ describe('createChunkEmitter', () => {
     const loadedEntrySet = new Set<string>()
     const trackedEntryIds: string[] = []
     const preloadAssetOnlyEntry = vi.fn(async () => {})
+    const shouldEmitEntryChunk = vi.fn(entryId => entryId !== '/project/src/pages/hmr/index.ts')
     const emitEntriesChunks = createChunkEmitter(
       {
         relativeOutputPath(id: string) {
@@ -91,7 +115,7 @@ describe('createChunkEmitter', () => {
       undefined,
       entryId => trackedEntryIds.push(entryId),
       undefined,
-      entryId => entryId !== '/project/src/pages/hmr/index.ts',
+      shouldEmitEntryChunk,
       preloadAssetOnlyEntry,
     )
 
@@ -101,11 +125,48 @@ describe('createChunkEmitter', () => {
     }
     const resolvedId = { id: '/project/src/pages/hmr/index.ts' } as any
 
-    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [resolvedId]))
+    const stats = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [resolvedId]))
 
+    expect(stats).toEqual([{
+      chunkEmitCount: 0,
+      emitFileMs: 0,
+      loadCount: 1,
+      loadMs: expect.any(Number),
+      skippedLoadedCount: 0,
+    }])
     expect(preloadAssetOnlyEntry).toHaveBeenCalledWith(resolvedId, '/project/src/pages/hmr/index.ts')
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(trackedEntryIds).toEqual(['/project/src/pages/hmr/index.ts'])
+    expect(shouldEmitEntryChunk).toHaveBeenCalledTimes(1)
+  })
+
+  it('tracks skipped preloads for entries already loaded', async () => {
+    const id = '/project/src/pages/index/index.ts'
+    const loadedEntrySet = new Set<string>([id])
+    const emitEntriesChunks = createChunkEmitter(
+      {
+        relativeOutputPath(input: string) {
+          return input.replace('/project/src/', '')
+        },
+      } as any,
+      loadedEntrySet,
+    )
+    const pluginCtx = {
+      emitFile: vi.fn(),
+      load: vi.fn(async () => null),
+    }
+
+    const stats = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [{ id } as any]))
+
+    expect(stats).toEqual([{
+      chunkEmitCount: 1,
+      emitFileMs: expect.any(Number),
+      loadCount: 0,
+      loadMs: 0,
+      skippedLoadedCount: 1,
+    }])
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
 })

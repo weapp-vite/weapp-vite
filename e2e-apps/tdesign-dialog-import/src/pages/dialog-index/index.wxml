@@ -1,4 +1,4 @@
-<view class="page">
+<view id="dialog-index-root" class="page">
   <text class="title">tdesign Dialog /index import</text>
   <text class="line">confirmType = {{confirmType}}</text>
   <text class="line">defaultType = {{defaultType}}</text>

@@ -8,6 +8,7 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/tdesign-dialog-import')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const RENDER_TIMEOUT = 20_000
 
 let buildPrepared = false
 let miniProgram: any = null
@@ -44,6 +45,9 @@ async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
   try {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipRelaunchPageRootCheck: true,
+      warmupRootSelectors: ['#tdesign-dialog-import-home'],
+      warmupRoute: '/pages/index/index',
     })
     return miniProgram
   }
@@ -56,28 +60,75 @@ async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
   }
 }
 
-async function tapElement(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to find tap element: ${selector}`)
+async function resetMiniProgram() {
+  if (!miniProgram) {
+    return
   }
-  await element.tap()
+  const current = miniProgram
+  miniProgram = null
+  await current.close().catch(() => {})
+}
+
+async function waitForRenderedSelector(page: any, selector: string) {
+  if (typeof page?.waitForRendered === 'function') {
+    await page.waitForRendered({
+      selector,
+      timeout: RENDER_TIMEOUT,
+    })
+    return
+  }
+
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= RENDER_TIMEOUT) {
+    const element = await page.$(selector)
+    if (element) {
+      return
+    }
+    await page.waitFor(220)
+  }
+
+  throw new Error(`Timed out waiting rendered selector: ${selector}`)
+}
+
+async function triggerRenderedHandler(page: any, selector: string, method: string) {
+  await waitForRenderedSelector(page, selector)
+  await page.callMethod(method)
   await page.waitFor(240)
 }
 
-async function waitForDialogRuntime(page: any, timeoutMs = 20_000) {
+async function readPageDebugSnapshot(page: any) {
+  try {
+    return await page.callMethod('_debugE2E')
+  }
+  catch (error) {
+    return {
+      callMethodError: error instanceof Error ? error.message : String(error),
+      path: page?.path,
+      query: page?.query,
+    }
+  }
+}
+
+async function waitForRuntimeState(
+  page: any,
+  predicate: (runtime: Record<string, any>) => boolean,
+  label: string,
+  timeoutMs = 20_000,
+) {
   const startedAt = Date.now()
   let lastRuntime: Record<string, any> | null = null
+  let lastError: unknown
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const runtime = await page.callMethod('_runE2E')
       lastRuntime = runtime
-      if (runtime?.confirmType === 'function') {
+      if (runtime && predicate(runtime)) {
         return runtime
       }
     }
-    catch {
+    catch (error) {
+      lastError = error
     }
 
     try {
@@ -87,7 +138,50 @@ async function waitForDialogRuntime(page: any, timeoutMs = 20_000) {
     }
   }
 
-  throw new Error(`Timed out waiting for dialog runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
+  const errorMessage = lastError instanceof Error ? lastError.message : String(lastError ?? '')
+  throw new Error(`Timed out waiting for dialog runtime ${label}: runtime=${JSON.stringify(lastRuntime, null, 2)} error=${errorMessage} page=${JSON.stringify(await readPageDebugSnapshot(page))}`)
+}
+
+async function waitForDialogRuntime(page: any, timeoutMs = 20_000) {
+  return await waitForRuntimeState(
+    page,
+    runtime => runtime?.confirmType === 'function',
+    'ready',
+    timeoutMs,
+  )
+}
+
+async function openRenderedDialogPage(
+  ctx: { skip: (message?: string) => void },
+  route: string,
+  rootSelector: string,
+) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const mini = await getMiniProgram(ctx)
+    try {
+      const page = await mini.reLaunch(route)
+      if (!page) {
+        throw new Error(`Failed to launch ${route}`)
+      }
+
+      await page.waitFor(600)
+      await waitForRenderedSelector(page, rootSelector)
+      await waitForDialogRuntime(page)
+      return {
+        miniProgram: mini,
+        page,
+      }
+    }
+    catch (error) {
+      lastError = error
+      if (attempt === 2) {
+        break
+      }
+      await resetMiniProgram()
+    }
+  }
+  throw lastError
 }
 
 async function verifyDialogPageFlow(
@@ -98,7 +192,13 @@ async function verifyDialogPageFlow(
     title: string
   },
 ) {
-  expect(await page.callMethod('_resetE2E')).toMatchObject({
+  await page.callMethod('_resetE2E')
+  const reset = await waitForRuntimeState(
+    page,
+    runtime => runtime.openCount === 0 && runtime.settleCount === 0 && runtime.lastAction === 'idle',
+    'reset',
+  )
+  expect(reset).toMatchObject({
     confirmType: 'function',
     openCount: 0,
     settleCount: 0,
@@ -111,8 +211,12 @@ async function verifyDialogPageFlow(
   })
 
   const openMarker = collector.mark()
-  await tapElement(page, options.openSelector)
-  const opened = await page.callMethod('_runE2E')
+  await triggerRenderedHandler(page, options.openSelector, 'onOpenDialog')
+  const opened = await waitForRuntimeState(
+    page,
+    runtime => runtime.openCount === 1 && runtime.dialogVisible === true && runtime.lastAction === 'opening',
+    'open',
+  )
   expect(opened).toMatchObject({
     confirmType: 'function',
     openCount: 1,
@@ -128,7 +232,12 @@ async function verifyDialogPageFlow(
   expect(collector.getSince(openMarker)).toEqual([])
 
   const cancelMarker = collector.mark()
-  const cancelled = await page.callMethod('_cancelDialogE2E')
+  await page.callMethod('_cancelDialogE2E')
+  const cancelled = await waitForRuntimeState(
+    page,
+    runtime => runtime.openCount === 1 && runtime.settleCount === 1 && runtime.dialogVisible === false && runtime.lastAction === 'cancelled',
+    'cancel',
+  )
   expect(cancelled).toMatchObject({
     confirmType: 'function',
     openCount: 1,
@@ -144,7 +253,12 @@ async function verifyDialogPageFlow(
   expect(collector.getSince(cancelMarker)).toEqual([])
 
   const reopenMarker = collector.mark()
-  const reopened = await page.callMethod('_openDialogE2E')
+  await page.callMethod('_openDialogE2E')
+  const reopened = await waitForRuntimeState(
+    page,
+    runtime => runtime.openCount === 2 && runtime.settleCount === 1 && runtime.dialogVisible === true && runtime.lastAction === 'opening',
+    'reopen',
+  )
   expect(reopened).toMatchObject({
     confirmType: 'function',
     openCount: 2,
@@ -160,7 +274,12 @@ async function verifyDialogPageFlow(
   expect(collector.getSince(reopenMarker)).toEqual([])
 
   const confirmMarker = collector.mark()
-  const confirmed = await page.callMethod('_confirmDialogE2E')
+  await page.callMethod('_confirmDialogE2E')
+  const confirmed = await waitForRuntimeState(
+    page,
+    runtime => runtime.openCount === 2 && runtime.settleCount === 2 && runtime.dialogVisible === false && runtime.lastAction === 'confirmed',
+    'confirm',
+  )
   expect(confirmed).toMatchObject({
     confirmType: 'function',
     openCount: 2,
@@ -184,8 +303,12 @@ async function verifyToastPageFlow(
   },
 ) {
   const toastMarker = collector.mark()
-  await tapElement(page, options.toastSelector)
-  const shown = await page.callMethod('_runE2E')
+  await triggerRenderedHandler(page, options.toastSelector, 'onOpenToast')
+  const shown = await waitForRuntimeState(
+    page,
+    runtime => runtime.toastCount === 1 && runtime.lastToastAction === 'shown',
+    'toast',
+  )
   expect(shown).toMatchObject({
     toastType: 'function',
     toastCount: 1,
@@ -198,29 +321,20 @@ async function verifyToastPageFlow(
 }
 
 afterAll(async () => {
-  if (miniProgram) {
-    await miniProgram.close()
-  }
+  await resetMiniProgram()
 })
 
 describe.sequential('e2e app: tdesign-dialog-import (runtime)', () => {
   it('keeps bare dialog import callable in DevTools runtime', async (ctx) => {
-    const mini = await getMiniProgram(ctx)
-    const collector = attachRuntimeErrorCollector(mini)
+    const opened = await openRenderedDialogPage(ctx, '/pages/dialog-bare/index', '#dialog-bare-root')
+    const collector = attachRuntimeErrorCollector(opened.miniProgram)
 
     try {
-      const page = await mini.reLaunch('/pages/dialog-bare/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/dialog-bare/index')
-      }
-
-      await page.waitFor(600)
-      await waitForDialogRuntime(page)
-      await verifyDialogPageFlow(page, collector, {
+      await verifyDialogPageFlow(opened.page, collector, {
         openSelector: '#dialog-bare-open',
         title: 'issue-dialog-bare confirm title',
       })
-      await verifyToastPageFlow(page, collector, {
+      await verifyToastPageFlow(opened.page, collector, {
         toastSelector: '#dialog-bare-toast',
         message: 'issue-dialog-bare toast user-tap',
       })
@@ -231,22 +345,15 @@ describe.sequential('e2e app: tdesign-dialog-import (runtime)', () => {
   })
 
   it('keeps explicit /index dialog import callable in DevTools runtime', async (ctx) => {
-    const mini = await getMiniProgram(ctx)
-    const collector = attachRuntimeErrorCollector(mini)
+    const opened = await openRenderedDialogPage(ctx, '/pages/dialog-index/index', '#dialog-index-root')
+    const collector = attachRuntimeErrorCollector(opened.miniProgram)
 
     try {
-      const page = await mini.reLaunch('/pages/dialog-index/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/dialog-index/index')
-      }
-
-      await page.waitFor(600)
-      await waitForDialogRuntime(page)
-      await verifyDialogPageFlow(page, collector, {
+      await verifyDialogPageFlow(opened.page, collector, {
         openSelector: '#dialog-index-open',
         title: 'issue-dialog-index confirm title',
       })
-      await verifyToastPageFlow(page, collector, {
+      await verifyToastPageFlow(opened.page, collector, {
         toastSelector: '#dialog-index-toast',
         message: 'issue-dialog-index toast user-tap',
       })

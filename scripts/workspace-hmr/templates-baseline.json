@@ -19,6 +19,56 @@
     "maxEmittedDelta": 2
   },
   "projects": {
+    "apps/wevu-runtime-demo": {
+      "startupMs": 6477,
+      "thresholds": {
+        "maxScenarioMs": 1500
+      },
+      "scenarios": {
+        "native-template": {
+          "totalMs": 128,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-script": {
+          "totalMs": 739,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 2
+        },
+        "native-style": {
+          "totalMs": 134,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-template": {
+          "totalMs": 1160,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 2
+        },
+        "vue-script": {
+          "totalMs": 1140,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-style": {
+          "totalMs": 1090,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
     "e2e-apps/github-issues": {
       "startupMs": 3014,
       "scenarios": {

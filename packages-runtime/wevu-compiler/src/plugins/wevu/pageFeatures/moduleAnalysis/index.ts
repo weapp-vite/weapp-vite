@@ -1,6 +1,6 @@
 import type { AstEngineName } from '../../../../ast/types'
 import type { ModuleAnalysis } from './types'
-import { parseJsLike } from '../../../../utils/babel'
+import { BABEL_TS_MODULE_PLUGINS, parse } from '../../../../utils/babel'
 import { createModuleAnalysis } from './babel'
 import { createModuleAnalysisWithOxc } from './oxc'
 import { createEmptyModuleAnalysis, createExternalModuleAnalysisCacheKey, createModuleAnalysisCacheKey, externalModuleAnalysisCache, moduleAnalysisCache } from './shared'
@@ -8,6 +8,19 @@ import { createEmptyModuleAnalysis, createExternalModuleAnalysisCacheKey, create
 export { createModuleAnalysis } from './babel'
 export { createEmptyModuleAnalysis } from './shared'
 export type { ExportTarget, FunctionLike, ImportBinding, ModuleAnalysis } from './types'
+
+const TS_WITHOUT_JSX_RE = /\.[cm]?ts(?:[?#].*)?$/i
+
+function parseModuleAnalysisAst(id: string, code: string) {
+  const plugins = TS_WITHOUT_JSX_RE.test(id)
+    ? BABEL_TS_MODULE_PLUGINS.filter(plugin => plugin !== 'jsx')
+    : BABEL_TS_MODULE_PLUGINS
+
+  return parse(code, {
+    sourceType: 'module',
+    plugins,
+  })
+}
 
 export function createModuleAnalysisFromCode(
   id: string,
@@ -33,7 +46,7 @@ export function createModuleAnalysisFromCode(
     }
   }
   else {
-    const ast = parseJsLike(code)
+    const ast = parseModuleAnalysisAst(id, code)
     analysis = createModuleAnalysis(id, ast)
   }
 

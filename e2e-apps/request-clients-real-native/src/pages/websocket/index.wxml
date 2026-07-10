@@ -1,4 +1,4 @@
-<view class="page">
+<view id="websocket-route" class="page" data-e2e-route="websocket">
   <view class="hero">
     <text class="hero-title">native WebSocket transport</text>
     <text class="hero-desc">连接真实 WebSocket 服务端，验证注入后的 WebSocket 对象。</text>
@@ -6,7 +6,7 @@
 
   <view class="panel">
     <text class="line">pageStatus = {{state.pageStatus}}</text>
-    <text class="line">status = {{state.status}}</text>
+    <text id="websocket-status" class="line" data-e2e-status="{{state.status}}">status = {{state.status}}</text>
     <text class="line">runCount = {{state.runCount}}</text>
     <text class="line">httpStatus = {{state.httpStatus}}</text>
     <text class="line">requestCount = {{state.requestCount}}</text>

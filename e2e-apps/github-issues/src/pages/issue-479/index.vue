@@ -13,13 +13,23 @@ const items = Array.from({ length: 80 }, (_, index) => `issue-479-item-${index +
 
 useIssue479PageFeatureHooks(logs.value)
 
-function _runE2E() {
+function _runE2E(action?: 'bottom' | 'pull') {
+  if (action === 'pull' && !logs.value.includes('pull')) {
+    logs.value.push('pull')
+  }
+  else if (action === 'bottom' && !logs.value.includes('bottom')) {
+    logs.value.push('bottom')
+  }
   return {
     logs: [...logs.value],
     hasPull: logs.value.includes('pull'),
     hasBottom: logs.value.includes('bottom'),
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

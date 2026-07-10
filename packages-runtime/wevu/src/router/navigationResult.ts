@@ -7,6 +7,7 @@ import type {
   RouteLocationNormalizedLoaded,
 } from './types'
 import { runAfterEachHooks, runNavigationErrorHooks, shouldEmitNavigationError } from './navigationCore'
+import { notifyRouteStateSync } from './routeSync'
 
 export interface NavigationRunResult {
   mode: NavigationMode
@@ -71,6 +72,9 @@ export function createNavigationResultController(options: {
   }
 
   async function settleNavigationResult(result: NavigationRunResult): Promise<void | NavigationFailure> {
+    if (!result.failure && result.to) {
+      notifyRouteStateSync({ route: result.to })
+    }
     await emitNavigationAfterEach(result)
     if (result.failure && shouldRejectNavigationFailure(result.failure)) {
       throw result.failure

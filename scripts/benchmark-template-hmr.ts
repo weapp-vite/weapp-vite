@@ -17,6 +17,8 @@ interface HmrProfileJsonSample {
   watchToDirtyMs?: number
   emitMs?: number
   buildCoreMs?: number
+  buildStartMs?: number
+  pluginResolveMs?: number
 }
 
 interface ScenarioCase {

@@ -13,51 +13,95 @@ const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/subpackages/lab/class-binding/index'
 
-function parseClassList(classValue: string | undefined) {
-  if (!classValue) {
-    return []
+interface BindingProbeNode {
+  'class'?: string
+  'background-color'?: string
+  'border-color'?: string
+  'border-radius'?: string
+  'border-style'?: string
+  'color'?: string
+  'font-size'?: string
+  'height'?: number
+  'letter-spacing'?: string
+  'opacity'?: string
+  'style'?: string
+  'width'?: number
+}
+
+interface BindingSnapshot {
+  bindings?: Record<string, string>
+  missing: string[]
+  nodes: Record<string, BindingProbeNode | null>
+  state: Record<string, any>
+}
+
+const BLUE_RE = /(?:rgb\(37,\s*99,\s*235\)|#2563eb)/i
+const RED_RE = /(?:rgb\(185,\s*28,\s*28\)|#b91c1c)/i
+const WHITE_RE = /(?:rgb\(255,\s*255,\s*255\)|#fff(?:fff)?)/i
+
+function readStyle(snapshot: BindingSnapshot, key: string, styleName: keyof BindingProbeNode) {
+  return String(snapshot.nodes[key]?.[styleName] ?? '').trim()
+}
+
+function readNodeProperty(snapshot: BindingSnapshot, key: string, propertyName: 'class' | 'style') {
+  return String(snapshot.nodes[key]?.[propertyName] ?? '').trim()
+}
+
+function readBinding(snapshot: BindingSnapshot, key: string) {
+  return String(snapshot.bindings?.[key] ?? '').trim()
+}
+
+function normalizeInlineStyle(value: string) {
+  return value.replace(/\s+/g, '').toLowerCase()
+}
+
+function expectClassTokens(snapshot: BindingSnapshot, key: string, tokens: string[]) {
+  const className = readBinding(snapshot, key) || readNodeProperty(snapshot, key, 'class')
+  for (const token of tokens) {
+    expect(className.split(/\s+/), `${key} class="${className}"`).toContain(token)
   }
-  return classValue.split(/\s+/).map(token => token.trim()).filter(Boolean)
 }
 
-function getOpenTagByDataE2E(wxml: string, dataE2E: string) {
-  const matched = wxml.match(new RegExp(`<view[^>]*data-e2e="${dataE2E}"[^>]*>`, 'm'))
-  return matched?.[0] ?? ''
+function expectInlineStyleContains(snapshot: BindingSnapshot, key: string, fragment: string) {
+  const style = normalizeInlineStyle(readBinding(snapshot, key) || readNodeProperty(snapshot, key, 'style'))
+  expect(style, `${key} style`).toContain(normalizeInlineStyle(fragment))
 }
 
-function getAttrFromOpenTag(tag: string, attrName: string) {
-  const matched = tag.match(new RegExp(`${attrName}="([^"]*)"`, 'm'))
-  return matched?.[1] ?? ''
+function readInlineStyleValue(snapshot: BindingSnapshot, key: string, propertyName: string) {
+  const style = normalizeInlineStyle(readBinding(snapshot, key) || readNodeProperty(snapshot, key, 'style'))
+  const match = style.match(new RegExp(`${propertyName}:([^;]+)`))
+  expect(match, `${key} ${propertyName} in style="${style}"`).toBeTruthy()
+  return match![1]
 }
 
-function readClassAndStyleByDataE2E(wxml: string, dataE2E: string) {
-  const tag = getOpenTagByDataE2E(wxml, dataE2E)
-  return {
-    classValue: getAttrFromOpenTag(tag, 'class'),
-    styleValue: getAttrFromOpenTag(tag, 'style'),
+function readInlineCssSizePx(snapshot: BindingSnapshot, key: string, propertyName: string) {
+  const value = readInlineStyleValue(snapshot, key, propertyName)
+  const match = value.match(/^(-?\d+(?:\.\d+)?)(px|rpx)$/)
+  expect(match, `invalid ${propertyName} for ${key}: ${value}`).toBeTruthy()
+  const size = Number(match![1])
+  return match![2] === 'rpx' ? size / 2 : size
+}
+
+function expectApproxCssSizePx(actual: number, expected: number) {
+  expect(actual).toBeGreaterThanOrEqual(expected - 1)
+  expect(actual).toBeLessThanOrEqual(expected + 1)
+}
+
+function expectRenderedNode(snapshot: BindingSnapshot, key: string) {
+  const node = snapshot.nodes[key]
+  expect(node, `missing rendered node: ${key}`).toBeTruthy()
+  expect(Number(node?.width ?? 0), `invalid rendered width: ${key}`).toBeGreaterThan(0)
+  expect(Number(node?.height ?? 0), `invalid rendered height: ${key}`).toBeGreaterThan(0)
+  return node!
+}
+
+async function collectSnapshot(page: any) {
+  const snapshot = await page.callMethod('collectClassBindingSnapshot') as BindingSnapshot
+  expect(snapshot.missing).toEqual([])
+  for (const key of Object.keys(snapshot.nodes)) {
+    expectRenderedNode(snapshot, key)
   }
-}
-
-function expectClassIncludes(classValue: string, classNames: string[]) {
-  const list = parseClassList(classValue)
-  for (const className of classNames) {
-    expect(list).toContain(className)
-  }
-}
-
-function expectClassExcludes(classValue: string, classNames: string[]) {
-  const list = parseClassList(classValue)
-  for (const className of classNames) {
-    expect(list).not.toContain(className)
-  }
-}
-
-async function readPageWxml(page: any) {
-  const root = await page.$('page')
-  if (!root) {
-    throw new Error('Failed to find page root')
-  }
-  return await root.wxml()
+  return snapshot
 }
 
 async function runBuild() {
@@ -115,92 +159,82 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
 
       await page.callMethod('applyScenarioBase')
       await page.waitFor(120)
-      let wxml = await readPageWxml(page)
-
-      const baseObjectDemo = readClassAndStyleByDataE2E(wxml, 'class-object')
-      expectClassExcludes(baseObjectDemo.classValue, ['demo-active', 'text-danger', 'demo-round', 'demo-ghost'])
-
-      const baseArrayDemo = readClassAndStyleByDataE2E(wxml, 'class-array')
-      expectClassExcludes(baseArrayDemo.classValue, ['demo-active', 'text-danger', 'demo-round', 'demo-ghost'])
-
-      const baseStyleObject = readClassAndStyleByDataE2E(wxml, 'style-object')
-      expect(baseStyleObject.styleValue).toMatch(/border-style:\s*solid/)
-      expect(baseStyleObject.styleValue).toMatch(/border-radius:\s*(18rpx|9px)/)
-      expect(baseStyleObject.styleValue).not.toMatch(/#ef4444/)
-
-      const baseStyleArray = readClassAndStyleByDataE2E(wxml, 'style-array')
-      expect(baseStyleArray.styleValue).toMatch(/transform:\s*translateY\(0(?:rpx|px)\)/)
-      expect(baseStyleArray.styleValue).toMatch(/opacity:\s*1/)
-
-      const baseStyleString = readClassAndStyleByDataE2E(wxml, 'style-string')
-      expect(baseStyleString.styleValue).toMatch(/font-size:\s*(24rpx|12px)/)
-      expect(baseStyleString.styleValue).toMatch(/letter-spacing:\s*(0\.5rpx|0\.25px|1(?:\.0)?px)/)
-
-      const baseStyleVar = readClassAndStyleByDataE2E(wxml, 'style-var')
-      expect(baseStyleVar.styleValue).toContain('--lab-accent:#2563eb')
-      expect(baseStyleVar.styleValue).toContain('var(--lab-accent)')
+      let snapshot = await collectSnapshot(page)
+      expect(snapshot.state).toMatchObject({
+        classObject: {
+          'demo-active': false,
+          'demo-ghost': false,
+          'demo-round': false,
+          'text-danger': false,
+        },
+        hasError: false,
+        isActive: false,
+        isGhost: false,
+        isRound: false,
+      })
+      expect(readStyle(snapshot, 'class-object', 'color')).not.toMatch(RED_RE)
+      expect(readStyle(snapshot, 'class-array', 'color')).not.toMatch(RED_RE)
+      expect(readStyle(snapshot, 'style-object', 'border-style')).toBe('solid')
+      expect(readStyle(snapshot, 'style-object', 'border-radius')).toMatch(/^(?:18rpx|9px)$/)
+      expectInlineStyleContains(snapshot, 'styleArray', 'opacity:1')
+      const baseFontSizePx = readInlineCssSizePx(snapshot, 'styleString', 'font-size')
+      expectApproxCssSizePx(baseFontSizePx, 12)
+      expect(readStyle(snapshot, 'style-var', 'color')).toMatch(BLUE_RE)
 
       await page.callMethod('applyScenarioAllOn')
       await page.waitFor(120)
-      wxml = await readPageWxml(page)
-
-      const allOnStaticObjectDemo = readClassAndStyleByDataE2E(wxml, 'class-static-object')
-      expectClassIncludes(allOnStaticObjectDemo.classValue, ['demo-active', 'text-danger'])
-
-      const allOnReactiveDemo = readClassAndStyleByDataE2E(wxml, 'class-reactive')
-      expectClassIncludes(allOnReactiveDemo.classValue, ['demo-active', 'text-danger', 'demo-round', 'demo-ghost'])
-
-      const allOnArrayDemo = readClassAndStyleByDataE2E(wxml, 'class-array')
-      expectClassIncludes(allOnArrayDemo.classValue, ['demo-active', 'text-danger', 'demo-round'])
-
-      const allOnArrayKeyDemo = readClassAndStyleByDataE2E(wxml, 'class-array-key')
-      expectClassIncludes(allOnArrayKeyDemo.classValue, ['demo-active', 'text-danger', 'demo-ghost'])
-
-      const allOnStyleObject = readClassAndStyleByDataE2E(wxml, 'style-object')
-      expect(allOnStyleObject.styleValue).toMatch(/border-style:\s*dashed/)
-      expect(allOnStyleObject.styleValue).toMatch(/border-radius:\s*(999rpx|\d{3,4}(?:\.\d+)?px)/)
-      expect(allOnStyleObject.styleValue).toMatch(/#ef4444/)
-
-      const allOnStyleArray = readClassAndStyleByDataE2E(wxml, 'style-array')
-      expect(allOnStyleArray.styleValue).toMatch(/transform:\s*translateY\(-(4rpx|2px|4px)\)/)
-      expect(allOnStyleArray.styleValue).toMatch(/opacity:\s*0\.78/)
-
-      const allOnStyleString = readClassAndStyleByDataE2E(wxml, 'style-string')
-      expect(allOnStyleString.styleValue).toMatch(/font-size:\s*(26rpx|13px)/)
-      expect(allOnStyleString.styleValue).toMatch(/color:\s*#b91c1c/)
-      expect(allOnStyleString.styleValue).toMatch(/letter-spacing:\s*(1\.2rpx|0\.6px|1(?:\.0)?px|2(?:\.4)?px)/)
+      snapshot = await collectSnapshot(page)
+      expect(snapshot.state).toMatchObject({
+        classObject: {
+          'demo-active': true,
+          'demo-ghost': true,
+          'demo-round': true,
+          'text-danger': true,
+        },
+        hasError: true,
+        isActive: true,
+        isGhost: true,
+        isRound: true,
+      })
+      expectClassTokens(snapshot, 'classStaticObject', ['demo-active', 'text-danger'])
+      expect(readStyle(snapshot, 'class-reactive', 'border-style')).toBe('dashed')
+      expectClassTokens(snapshot, 'classArray', ['demo-active', 'text-danger', 'demo-round'])
+      expect(readStyle(snapshot, 'class-array-key', 'border-style')).toBe('dashed')
+      expect(readStyle(snapshot, 'style-object', 'border-style')).toBe('dashed')
+      expectInlineStyleContains(snapshot, 'styleObject', 'color:#b91c1c')
+      expectInlineStyleContains(snapshot, 'styleArray', 'opacity:0.78')
+      const activeFontSizePx = readInlineCssSizePx(snapshot, 'styleString', 'font-size')
+      expectApproxCssSizePx(activeFontSizePx, 13)
+      expect(activeFontSizePx).toBeGreaterThan(baseFontSizePx)
+      expectInlineStyleContains(snapshot, 'styleString', 'color:#b91c1c')
 
       await page.callMethod('applyScenarioMixed')
       await page.waitFor(120)
-      wxml = await readPageWxml(page)
-
-      const mixedCondArrayDemo = readClassAndStyleByDataE2E(wxml, 'class-cond-array')
-      expectClassIncludes(mixedCondArrayDemo.classValue, ['demo-active'])
-      expectClassExcludes(mixedCondArrayDemo.classValue, ['text-danger'])
-
-      const mixedStyleVar = readClassAndStyleByDataE2E(wxml, 'style-var')
-      expect(mixedStyleVar.styleValue).toContain('--lab-accent:#2563eb')
+      snapshot = await collectSnapshot(page)
+      expect(snapshot.state).toMatchObject({
+        hasError: false,
+        isActive: true,
+        isGhost: false,
+        isRound: true,
+      })
+      expect(readStyle(snapshot, 'class-cond-array', 'color')).toMatch(WHITE_RE)
+      expect(readStyle(snapshot, 'class-cond-array', 'color')).not.toMatch(RED_RE)
+      expect(readStyle(snapshot, 'style-var', 'color')).toMatch(BLUE_RE)
 
       await page.callMethod('applyScenarioErrorGhost')
       await page.waitFor(120)
-      wxml = await readPageWxml(page)
-
-      const errorGhostArrayKeyDemo = readClassAndStyleByDataE2E(wxml, 'class-array-key')
-      expectClassIncludes(errorGhostArrayKeyDemo.classValue, ['text-danger', 'demo-ghost'])
-      expectClassExcludes(errorGhostArrayKeyDemo.classValue, ['demo-active'])
-
-      const errorGhostStyleVar = readClassAndStyleByDataE2E(wxml, 'style-var')
-      expect(errorGhostStyleVar.styleValue).toContain('--lab-accent:#ef4444')
-
-      const state = await page.callMethod('runE2EState')
-      expect(state).toMatchObject({
+      snapshot = await collectSnapshot(page)
+      expect(snapshot.state).toMatchObject({
         isActive: false,
         hasError: true,
         isRound: false,
         isGhost: true,
       })
-      expect(state.errorClassIf).toBe('text-danger')
-      expect(state.ghostClassIf).toBe('demo-ghost')
+      expect(readStyle(snapshot, 'class-array-key', 'color')).toMatch(RED_RE)
+      expect(readStyle(snapshot, 'class-array-key', 'border-style')).toBe('dashed')
+      expect(readStyle(snapshot, 'style-var', 'color')).toMatch(/(?:rgb\(239,\s*68,\s*68\)|#ef4444)/i)
+      expect(snapshot.state.errorClassIf).toBe('text-danger')
+      expect(snapshot.state.ghostClassIf).toBe('demo-ghost')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

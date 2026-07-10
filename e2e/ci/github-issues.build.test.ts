@@ -375,7 +375,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain(`<weapp-layout-default ${SLOT_OWNER_ATTR}>`)
-    expect(pageWxml).toContain('<block wx:if="{{true}}"><view class="div issue338-page">')
+    expect(pageWxml).toContain('<block wx:if="{{true}}"><view')
+    expect(pageWxml).toContain('class="div issue338-page"')
+    expect(pageWxml).toContain('id="issue338-page"')
+    expect(pageWxml).toContain('data-e2e-issue="338"')
     expect(pageWxml).toContain('<text class="span issue338-title">{{title}}</text>')
     expect(pageWxml).toContain('<image class="img issue338-cover" src="{{cover}}" mode="aspectFit" />')
     expect(pageWxml).toContain('<view class="section issue338-links">')
@@ -603,6 +606,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('data-matched-name="{{routeMatchedName}}"')
     expect(pageJs).toContain('pages/issue-550/index')
     expect(pageJs).toContain('route.name')
+  })
+
+  it('issue #705: compiles router route sync runtime probe', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-705/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-705/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('data-route-path="{{routePath}}"')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('pages/issue-550/index')
   })
 
   it('issue #553: maps component v-model arguments to the matching prop and update event', async () => {

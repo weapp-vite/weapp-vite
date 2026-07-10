@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computed, reactive } from '@/reactivity'
+import { computed, effect, reactive, toRaw } from '@/reactivity'
+import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
 import {
   applySnapshotUpdate,
   cloneSnapshotValue,
@@ -147,5 +148,75 @@ describe('runtime: setData snapshot helpers', () => {
       plain: 'data',
       setupOnly: 'value',
     })
+  })
+
+  it('diffs setup computed refs that feed template computed values', () => {
+    const state = reactive({}) as Record<string, any>
+    const setupState = reactive({
+      hasError: { value: false },
+      isActive: { value: false },
+    }) as Record<string, any>
+    const styleObject = computed(() => ({
+      color: setupState.hasError.value ? '#b91c1c' : setupState.isActive.value ? '#ffffff' : '#1f1a3f',
+    }))
+    setupState.styleObject = styleObject
+    const computedRefs = {
+      __wv_style_0: computed(() => styleObject.value),
+    }
+    const payloads: Record<string, any>[] = []
+    let mounted = true
+    let tracker: ReturnType<typeof effect> | undefined
+    const scheduler = createSetDataScheduler({
+      state,
+      setupState,
+      computedRefs,
+      dirtyComputedKeys: new Set<string>(),
+      includeComputed: true,
+      setDataStrategy: 'diff',
+      computedCompare: 'reference',
+      computedCompareMaxDepth: 3,
+      computedCompareMaxKeys: 20,
+      currentAdapter: {
+        setData(payload) {
+          payloads.push(payload)
+        },
+      },
+      shouldIncludeKey: () => true,
+      maxPatchKeys: 10,
+      maxPayloadBytes: 100_000,
+      mergeSiblingThreshold: 0,
+      mergeSiblingMaxInflationRatio: 1.5,
+      mergeSiblingMaxParentBytes: 20_000,
+      mergeSiblingSkipArray: true,
+      elevateTopKeyThreshold: 0,
+      toPlainMaxDepth: 5,
+      toPlainMaxKeys: 50,
+      functionPaths: [],
+      debug: undefined,
+      debugWhen: 'fallback',
+      debugSampleRate: 1,
+      loopWarning: false,
+      runTracker: () => tracker?.(),
+      isMounted: () => mounted,
+    })
+
+    tracker = effect(() => {
+      void setupState.hasError.value
+      void setupState.isActive.value
+      void setupState.styleObject.value
+    }, {
+      lazy: true,
+      scheduler: () => scheduler.job(toRaw(state) as object),
+    })
+
+    scheduler.job(toRaw(state) as object)
+    payloads.length = 0
+    setupState.hasError.value = true
+
+    expect(payloads.at(-1)).toMatchObject({
+      '__wv_style_0.color': '#b91c1c',
+      'styleObject.color': '#b91c1c',
+    })
+    mounted = false
   })
 })

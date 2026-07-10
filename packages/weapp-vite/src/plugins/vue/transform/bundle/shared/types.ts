@@ -30,6 +30,7 @@ export interface CompilationCacheEntry {
   isPage: boolean
   autoRoutesSignature?: string
   refreshToken?: number
+  styleIndependentSignature?: string
 }
 
 export interface VueBundleState {
@@ -40,6 +41,7 @@ export interface VueBundleState {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }
 
 export interface ClassStyleWxsAsset {
@@ -51,4 +53,5 @@ export interface VueBundleCompileOptionsState {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+  componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
 }

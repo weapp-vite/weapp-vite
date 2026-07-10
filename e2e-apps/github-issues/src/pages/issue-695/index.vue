@@ -26,6 +26,10 @@ function _runE2E() {
     hasPull: logs.value.some(log => log.startsWith('pull:')),
   }
 }
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

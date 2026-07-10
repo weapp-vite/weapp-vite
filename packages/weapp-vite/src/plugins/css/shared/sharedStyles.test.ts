@@ -1,6 +1,11 @@
 import type { SubPackageStyleEntry } from '../../../types'
 import { describe, expect, it } from 'vitest'
-import { collectSharedStyleEntries, injectSharedStyleImports } from './sharedStyles'
+import {
+  collectSharedStyleEntries,
+  injectSharedStyleImports,
+  prependSharedStyleImports,
+  resolveSharedStyleImportStatements,
+} from './sharedStyles'
 
 function createStyleEntry(overrides: Partial<SubPackageStyleEntry> = {}): SubPackageStyleEntry {
   return {
@@ -97,6 +102,33 @@ describe('sharedStyles helpers', () => {
     )
 
     expect(result).toBe('@import \'../styles/common.wxss\';\n.page{color:red;}')
+  })
+
+  it('resolves reusable shared import statements before injecting css', () => {
+    const sharedStyles = new Map<string, SubPackageStyleEntry[]>([
+      ['pkgA', [
+        createStyleEntry(),
+        createStyleEntry({
+          outputRelativePath: 'pkgA/styles/extra.wxss',
+        }),
+      ]],
+    ])
+    const configService = createConfigService(() => 'pkgA/pages/foo.ts')
+
+    const statements = resolveSharedStyleImportStatements(
+      '/abs/pkgA/pages/foo.ts',
+      'pkgA/pages/foo.wxss',
+      sharedStyles,
+      configService,
+    )
+
+    expect(statements).toEqual([
+      '@import \'../styles/common.wxss\';',
+      '@import \'../styles/extra.wxss\';',
+    ])
+    expect(prependSharedStyleImports('@charset "utf-8";\n.page{}', statements)).toBe(
+      '@import \'../styles/common.wxss\';\n@import \'../styles/extra.wxss\';\n@charset "utf-8";\n.page{}',
+    )
   })
 
   it('keeps charset prefix and only injects missing unique imports', () => {

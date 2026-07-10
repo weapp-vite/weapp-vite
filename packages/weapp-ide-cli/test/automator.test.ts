@@ -382,6 +382,7 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
+        timeout: 3_000,
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
       expect(rmMock).not.toHaveBeenCalled()
@@ -394,6 +395,7 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
+        timeout: undefined,
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
     })
@@ -414,6 +416,7 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
+        timeout: undefined,
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
     })
@@ -439,9 +442,11 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenNthCalledWith(1, {
+        timeout: undefined,
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
       expect(connectMock).toHaveBeenNthCalledWith(2, {
+        timeout: undefined,
         wsEndpoint: 'ws://127.0.0.1:19511',
       })
     })

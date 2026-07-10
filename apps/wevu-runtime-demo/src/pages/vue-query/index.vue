@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref } from 'wevu'
+import { computed, ref, watchEffect } from 'wevu'
+import { wpi } from 'wevu/api'
 
 interface DemoPayload {
   generatedAt: string
@@ -12,6 +13,7 @@ interface DemoPayload {
 const queryClient = useQueryClient()
 const selectedTab = ref<'overview' | 'detail'>('overview')
 const refreshSeed = ref(0)
+const VUE_QUERY_STATE_STORAGE_KEY = '__weapp_vite_vue_query_state__'
 
 function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -71,6 +73,27 @@ function switchTab(tab: 'overview' | 'detail') {
 function resetCacheAndReload() {
   refreshSeed.value += 1
 }
+
+function syncVueQueryState() {
+  try {
+    wpi.setStorageSync(VUE_QUERY_STATE_STORAGE_KEY, {
+      generatedAtText: generatedAtText.value,
+      query: {
+        data: query.data.value ?? null,
+        status: query.status.value,
+      },
+      queryKey: [...queryKey.value],
+      refreshSeed: refreshSeed.value,
+      selectedTab: selectedTab.value,
+      statusText: statusText.value,
+    })
+  }
+  catch {
+    // e2e 探针不应影响页面运行。
+  }
+}
+
+watchEffect(syncVueQueryState)
 </script>
 
 <template>

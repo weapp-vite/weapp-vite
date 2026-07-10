@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { ref, useNativeInstance } from 'wevu'
 import HyphenEventEmitter from '../../components/issue-316/HyphenEventEmitter/index.vue'
 
 definePageJson({
@@ -8,21 +8,47 @@ definePageJson({
 })
 
 const overlayClickCount = ref(0)
+const nativeInstance = useNativeInstance()
 
 function handleOverlayClick() {
   overlayClickCount.value += 1
 }
 
-function _runE2E() {
+function triggerEmitterE2E() {
+  const component = (nativeInstance as any).selectComponent?.('.issue316-emitter-host') as Record<string, any> | undefined
+  if (typeof component?.emitOverlayClick !== 'function') {
+    return false
+  }
+  component.emitOverlayClick()
+  return true
+}
+
+function _runE2E(action?: 'trigger') {
+  const triggered = action === 'trigger'
+    ? (() => {
+        overlayClickCount.value = 0
+        return triggerEmitterE2E()
+      })()
+    : undefined
   return {
     ok: overlayClickCount.value >= 0,
+    triggered,
     overlayClickCount: overlayClickCount.value,
   }
 }
+
+defineExpose({
+  triggerEmitterE2E,
+  _runE2E,
+})
 </script>
 
 <template>
-  <view class="issue316-page">
+  <view
+    id="issue316-page"
+    class="issue316-page"
+    data-e2e-issue="316"
+  >
     <text class="issue316-title">
       issue-316 hyphen event binding
     </text>
@@ -36,6 +62,7 @@ function _runE2E() {
     />
 
     <view
+      id="issue316-probe"
       class="issue316-probe"
       :data-overlay-count="overlayClickCount"
     >

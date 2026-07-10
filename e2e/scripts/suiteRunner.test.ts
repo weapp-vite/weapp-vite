@@ -207,6 +207,36 @@ describe('suiteRunner', () => {
     }
   })
 
+  it('fails a task that exceeds the configured task timeout', async () => {
+    const previousExitCode = process.exitCode
+    const previousTimeout = process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
+    process.exitCode = undefined
+    process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = '200'
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [
+        {
+          label: 'timeout-task',
+          command: process.execPath,
+          args: ['-e', 'setTimeout(() => {}, 5000)'],
+        },
+      ], {
+        writeReport: false,
+      })
+
+      expect(exitCode).toBe(1)
+    }
+    finally {
+      if (previousTimeout == null) {
+        delete process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = previousTimeout
+      }
+      process.exitCode = previousExitCode
+    }
+  })
+
   it('keeps ide gate smaller than ide full and includes core runtime coverage', async () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
     const ideGateTasks = await getSuiteTasks('ide-gate')
@@ -262,10 +292,11 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-default.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-performance.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue706.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(15)
+    expect(ideGithubIssuesTasks.length).toBe(16)
     expect(ideGithubIssuesTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
   })
 
@@ -462,11 +493,15 @@ describe('suiteRunner', () => {
 
     const [firstTask] = observedEnv.mock.calls[0] ?? []
     const [secondTask] = observedEnv.mock.calls[1] ?? []
+    const firstSentinel = firstTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL
+    const secondSentinel = secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL
 
     expect(firstTask?.label).toBe('ide/first.test.ts')
-    expect(firstTask?.env).toBeUndefined()
+    expect(firstSentinel?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(secondSentinel).toBe(firstSentinel)
     expect(secondTask).toMatchObject({
       env: {
+        WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL: firstSentinel,
         WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK: '1',
       },
       label: 'ide/second.test.ts',
@@ -505,6 +540,7 @@ describe('suiteRunner', () => {
 
     expect(tasks[0]?.devtoolsLaunchSkipped).toBe(true)
     expect(secondTask?.label).toBe('ide/second.test.ts')
-    expect(secondTask?.env).toBeUndefined()
+    expect(secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(secondTask?.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
   })
 })

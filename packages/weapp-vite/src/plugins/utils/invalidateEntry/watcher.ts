@@ -4,11 +4,11 @@ import fs from 'node:fs'
 import process from 'node:process'
 import chokidar from 'chokidar'
 import path from 'pathe'
-import { configExtensions, supportedCssLangs, templateExtensions } from '../../../constants'
+import { configExtensions } from '../../../constants'
 import logger from '../../../logger'
 import { createSidecarWatchOptions } from '../../../runtime/watch/options'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
-import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from './shared'
+import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedCssSuffixes, watchedScriptModuleSuffixes, watchedTemplateExts, watchedTemplateSuffixes } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
 
 export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
@@ -47,7 +47,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const ext = path.extname(filePath)
     const isCssFile = Boolean(ext && watchedCssExts.has(ext))
     const isTemplateFile = Boolean(ext && watchedTemplateExts.has(ext))
-    const isScriptModuleFile = Array.from(watchedScriptModuleExts).some(suffix => filePath.endsWith(suffix))
+    const isScriptModuleFile = watchedScriptModuleSuffixes.some(suffix => filePath.endsWith(suffix))
     const hasReverseImporters = Boolean(isTemplateFile || isScriptModuleFile)
       && (ctx.wxmlService?.getImporters(filePath).size ?? 0) > 0
 
@@ -79,9 +79,9 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   const patterns = [
     ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
-    ...supportedCssLangs.map(ext => path.join(absRoot, `**/*.${ext}`)),
-    ...templateExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
-    ...Array.from(watchedScriptModuleExts).map(ext => path.join(absRoot, `**/*${ext}`)),
+    ...watchedCssSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
+    ...watchedTemplateSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
+    ...watchedScriptModuleSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
   ]
 
   // eslint-disable-next-line ts/no-use-before-define -- 同文件内 helper，保持对外导出顺序稳定

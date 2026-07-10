@@ -213,7 +213,8 @@ describe('vue transform plugin shared helpers', () => {
         existsSync: vi.fn(() => true),
       },
     )
-    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBe('<template />')
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.refreshToken).toBe(1)
     expect(styleBlocksCache.has('/project/src/pages/home/index.vue')).toBe(false)
 
     invalidateVueFileCaches(
@@ -276,7 +277,8 @@ describe('vue transform plugin shared helpers', () => {
       styleBlocksCache,
       existsSync,
     })).toBe(true)
-    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBe('<template />')
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.refreshToken).toBe(1)
 
     expect(handleTransformVueFileInvalidation('/project/src/pages/home/index.ts', {
       compilationCache,
@@ -616,7 +618,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{ count }}</view>', {
       astEngine: 'oxc',
     })
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ enhanced: true })', ['count'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ enhanced: true })', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ enhanced: true, __setDataPick: ["count"] })')
   })
 
@@ -654,7 +656,7 @@ describe('vue transform plugin shared helpers', () => {
       astEngine: 'oxc',
     })
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {} })', ['count'])
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {} })', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ onReachBottom() {}, __setDataPick: ["count"] })')
   })
 
@@ -690,7 +692,7 @@ describe('vue transform plugin shared helpers', () => {
     })
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['count'])
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -727,7 +729,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
     expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -760,7 +762,7 @@ describe('vue transform plugin shared helpers', () => {
       astEngine: 'oxc',
     })
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [])
+    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [], { sourceMap: true })
     expect(result.script).toBe('Page({ __slotOwnerPick: true })')
   })
 
@@ -810,7 +812,7 @@ describe('vue transform plugin shared helpers', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -836,7 +838,7 @@ describe('vue transform plugin shared helpers', () => {
       isApp: false,
     })
 
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })')
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -864,7 +866,7 @@ describe('vue transform plugin shared helpers', () => {
     })
 
     expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
+    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'), { sourceMap: true })
     expect(result.script).toContain('vueSlots')
   })
 
@@ -894,6 +896,30 @@ describe('vue transform plugin shared helpers', () => {
     expect(output.code).toContain('"define-options-hash"')
     expect(output.map).toBeTruthy()
     expect(output.map?.sources).toEqual(['index.vue'])
+  })
+
+  it('skips transform entry sourcemap generation when disabled', () => {
+    const output = finalizeTransformEntryCode({
+      result: {
+        script: 'Page({})',
+        scriptMap: {
+          version: 3,
+          names: [],
+          sources: ['/project/src/pages/home/index.vue'],
+          sourcesContent: ['Page({})'],
+          mappings: 'AAAA',
+        },
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      styleBlocks: [{ content: '.page{}' }] as any,
+      isPage: true,
+      isApp: false,
+      isDev: true,
+      sourceMap: false,
+    })
+
+    expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=0";')
+    expect(output.map).toBeNull()
   })
 
   it('passes hmr style token into transform entry style requests', () => {
@@ -1109,6 +1135,48 @@ console.log(pages, routeSubPackages)
     expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 
+  it('preloads native layout entries concurrently', async () => {
+    const collectFallbackPageEntryIds = vi.fn(async () => ['pages/slow/index', 'pages/fast/index'])
+    const findFirstResolvedVueLikeEntry = vi.fn(async (entryId: string) => `/project/src/${entryId}.vue`)
+    const pathExists = vi.fn(async () => true)
+    let releaseSlowRead!: () => void
+    const slowReadStarted = new Promise<void>((resolve) => {
+      releaseSlowRead = resolve
+    })
+    const readFile = vi.fn(async (file: string) => {
+      if (file.includes('/slow/')) {
+        await slowReadStarted
+      }
+      return '<template />'
+    })
+    resolvePageLayoutPlanMock.mockResolvedValue(undefined)
+
+    const preloadTask = preloadNativeLayoutEntries({
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        configService: {
+          outputExtensions: { js: 'js' },
+        },
+      } as any,
+      configService: {
+        outputExtensions: { js: 'js' },
+      } as any,
+      scanService: {} as any,
+      collectFallbackPageEntryIds,
+      findFirstResolvedVueLikeEntry,
+      pathExists,
+      readFile,
+    })
+
+    await vi.waitFor(() => {
+      expect(readFile).toHaveBeenCalledWith('/project/src/pages/fast/index.vue', 'utf8')
+    })
+
+    releaseSlowRead()
+    await preloadTask
+    expect(readFile).toHaveBeenCalledTimes(2)
+  })
+
   it('loads transform style blocks from scoped slot, parsed style requests, and fallback null branches', async () => {
     const styleBlocksCache = new Map<string, any>()
     const loadScopedSlotModule = vi.fn((id: string) => id === 'virtual:scoped-slot' ? 'scoped slot module' : null)
@@ -1150,6 +1218,30 @@ console.log(pages, routeSubPackages)
       code: '.card{}',
       map: null,
     })
+
+    styleBlocksCache.clear()
+    fsReadFileMock.mockResolvedValueOnce('.external{}')
+    readAndParseSfc.mockResolvedValueOnce({
+      descriptor: {
+        styles: [{ content: '', src: './external.css' }],
+      },
+    })
+    await expect(loadTransformStyleBlock({
+      id: 'virtual:style',
+      pluginCtx: {},
+      ctx: {} as any,
+      configService: {} as any,
+      styleBlocksCache,
+      loadScopedSlotModule,
+      scopedSlotModules: new Map(),
+      parseWeappVueStyleRequest,
+      readAndParseSfc,
+      createReadAndParseSfcOptions,
+    })).resolves.toEqual({
+      code: '.external{}',
+      map: null,
+    })
+    expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/external.css', 'utf8')
 
     await expect(loadTransformStyleBlock({
       id: 'virtual:none',
@@ -1198,6 +1290,16 @@ console.log(pages, routeSubPackages)
           isDev: true,
           weappViteConfig: {},
         },
+        runtimeState: {
+          build: {
+            hmr: {
+              vueEntryHasTemplate: new Map(),
+              vueEntryNonJsonSignatures: new Map(),
+              vueEntryScriptSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+            },
+          },
+        },
       } as any,
       pluginCtx,
       filename: '/project/src/pages/home/index.vue',
@@ -1227,6 +1329,7 @@ console.log(pages, routeSubPackages)
       isPage: true,
       autoRoutesSignature: undefined,
       refreshToken: 0,
+      styleIndependentSignature: undefined,
     })
     expect(scopedSlotEmitter).toHaveBeenCalledWith(
       pluginCtx,
@@ -1236,6 +1339,53 @@ console.log(pages, routeSubPackages)
       expect.any(Set),
       { js: 'js' },
     )
+  })
+
+  it('syncs vue sfc signatures after transform compilation', async () => {
+    const result = {
+      script: 'Component({})',
+      template: '<view />',
+      meta: {},
+    } as any
+    const hmr = {
+      vueEntryHasTemplate: new Map<string, boolean>(),
+      vueEntryNonJsonSignatures: new Map<string, string>(),
+      vueEntryScriptSignatures: new Map<string, string>(),
+      vueEntryTailwindContentSignatures: new Map<string, string>(),
+    }
+    const source = '<template><view /></template><script setup>const count = 1</script>'
+
+    await finalizeTransformCompiledResult({
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr,
+          },
+        },
+      } as any,
+      pluginCtx: {},
+      filename: '/project/src/components/card.vue',
+      source,
+      result,
+      compilationCache: new Map(),
+      configService: {
+        outputExtensions: { js: 'js' },
+        relativeOutputPath: vi.fn(() => 'components/card/index'),
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: false,
+      scopedSlotModules: new Map(),
+      emittedScopedSlotChunks: new Set(),
+      addWatchFile: vi.fn(),
+      emitScopedSlotChunks: vi.fn(),
+    })
+
+    expect(hmr.vueEntryHasTemplate.get('/project/src/components/card.vue')).toBe(true)
+    expect(hmr.vueEntryNonJsonSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntryScriptSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntryTailwindContentSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {

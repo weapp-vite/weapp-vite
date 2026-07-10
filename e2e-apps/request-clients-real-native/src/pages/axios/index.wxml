@@ -1,4 +1,4 @@
-<view class="page">
+<view id="axios-route" class="page" data-e2e-route="axios">
   <view class="hero">
     <text class="hero-title">axios transport</text>
     <text class="hero-desc">真实请求到本地 HTTP 服务，验证 axios 在纯原生页面中的行为。</text>
@@ -6,7 +6,7 @@
 
   <view class="panel">
     <text class="line">pageStatus = {{state.pageStatus}}</text>
-    <text class="line">status = {{state.status}}</text>
+    <text id="axios-status" class="line" data-e2e-status="{{state.status}}">status = {{state.status}}</text>
     <text class="line">runCount = {{state.runCount}}</text>
     <text class="line">httpStatus = {{state.httpStatus}}</text>
     <text class="line">requestCount = {{state.requestCount}}</text>

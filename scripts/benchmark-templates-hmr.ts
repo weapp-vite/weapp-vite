@@ -36,6 +36,8 @@ interface HmrProfileJsonSample {
   pendingReasonSummary?: string[]
   relativeFile?: string
   sourceRootFile?: string
+  snapshotBuildMs?: number
+  snapshotResolveMs?: number
   totalMs?: number
   transformMs?: number
   watchToDirtyMs?: number

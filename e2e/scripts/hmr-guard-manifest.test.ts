@@ -121,6 +121,7 @@ describe('hmr-guard manifest', () => {
       const labels = ciTasks.map(task => task.label)
 
       expect(labels.some(label => label.startsWith('hmr-guard:'))).toBe(false)
+      expect(labels).not.toEqual(expect.arrayContaining(HMR_GUARD_ALL_TESTS.map(toRelativeLabel)))
       expect(labels.length).toBeGreaterThan(0)
     }
     finally {

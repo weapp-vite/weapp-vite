@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
+import type { ChunkScriptAnalysisCache } from './platform'
 import path from 'pathe'
-import { mayContainStaticRequireLiteral } from '../../../../../ast'
 import { toPosixPath } from '../../../../../utils'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
@@ -8,7 +8,18 @@ import {
   normalizeWeappLocalNpmImport,
   setRequireImportLiteral,
 } from './literals'
-import { matchesSubPackageDependency } from './platform'
+import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
+
+export interface LocalRootNpmRewriteSubPackageMeta {
+  root: string
+  dependencies: (string | RegExp)[] | undefined
+}
+
+export interface LocalRootNpmRewriteOptions {
+  analysisCache?: ChunkScriptAnalysisCache
+  astEngine?: 'babel' | 'oxc'
+  basedir?: string
+}
 
 function isRelativeMiniprogramNpmImport(importee: string) {
   return importee === 'miniprogram_npm'
@@ -73,11 +84,16 @@ export function rewriteChunkNpmImportsToLocalRoot(
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   options?: {
+    analysisCache?: ChunkScriptAnalysisCache
     basedir?: string
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  if (!mayContainStaticRequireLiteral(chunk.code, { engine: options?.astEngine })) {
+  const analysis = getChunkScriptAnalysis(chunk, {
+    astEngine: options?.astEngine,
+    cache: options?.analysisCache,
+  })
+  if (!analysis.hasStaticRequireLiteral) {
     return
   }
 
@@ -181,6 +197,9 @@ export function rewriteChunkNpmImportsToLocalRoot(
 
     if (mutated) {
       chunk.code = generate(ast as any).code
+      rememberChunkScriptAnalysis(chunk, analysis, {
+        cache: options?.analysisCache,
+      })
     }
   }
   catch {
@@ -235,4 +254,111 @@ export function rewriteJsonNpmImportsToLocalRoot(
     catch {
     }
   }
+}
+
+function rewriteJsonAssetNpmImportsToLocalRoot(
+  output: OutputBundle[string],
+  root: string,
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+  basedir?: string,
+) {
+  if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+    return
+  }
+
+  const source = typeof output.source === 'string' ? output.source : output.source?.toString()
+  if (!source) {
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(source)
+    if (!parsed || typeof parsed !== 'object' || !parsed.usingComponents || typeof parsed.usingComponents !== 'object' || Array.isArray(parsed.usingComponents)) {
+      return
+    }
+
+    let mutated = false
+    for (const [componentName, importee] of Object.entries(parsed.usingComponents as Record<string, string>)) {
+      if (typeof importee !== 'string' || !matchesSubPackageDependency(dependencyPatterns, importee, dependencies)) {
+        continue
+      }
+      parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, root, importee, basedir)
+      mutated = true
+    }
+
+    if (mutated) {
+      output.source = `${JSON.stringify(parsed, null, 2)}\n`
+    }
+  }
+  catch {
+  }
+}
+
+function matchesRootFile(fileName: string, root: string) {
+  return fileName.startsWith(`${root}/`)
+}
+
+function createLocalRootRewriteTargetResolver(
+  localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+) {
+  const orderedLocalSubPackages = localSubPackages.length > 1
+    ? [...localSubPackages].sort((a, b) => b.root.length - a.root.length)
+    : localSubPackages
+  const cache = new Map<string, LocalRootNpmRewriteSubPackageMeta | undefined>()
+
+  return (fileName: string) => {
+    if (cache.has(fileName)) {
+      return cache.get(fileName)
+    }
+    const matched = orderedLocalSubPackages.find(meta => meta.root && matchesRootFile(fileName, meta.root))
+    cache.set(fileName, matched)
+    return matched
+  }
+}
+
+function rewriteJsonNpmImportsToLocalRoots(
+  bundle: OutputBundle,
+  dependencies: Record<string, string> | undefined,
+  resolveLocalRootRewriteTarget: (fileName: string) => LocalRootNpmRewriteSubPackageMeta | undefined,
+  basedir?: string,
+) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+      continue
+    }
+
+    const subPackageTarget = resolveLocalRootRewriteTarget(output.fileName)
+    if (subPackageTarget) {
+      rewriteJsonAssetNpmImportsToLocalRoot(output, subPackageTarget.root, subPackageTarget.dependencies, dependencies, basedir)
+      continue
+    }
+
+    rewriteJsonAssetNpmImportsToLocalRoot(output, '', undefined, dependencies, basedir)
+  }
+}
+
+export function rewriteBundleNpmImportsToLocalRoots(
+  bundle: OutputBundle,
+  dependencies: Record<string, string> | undefined,
+  localSubPackages: LocalRootNpmRewriteSubPackageMeta[],
+  options?: LocalRootNpmRewriteOptions,
+) {
+  const resolveLocalRootRewriteTarget = createLocalRootRewriteTargetResolver(localSubPackages)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const subPackageTarget = resolveLocalRootRewriteTarget(chunk.fileName)
+    if (subPackageTarget) {
+      rewriteChunkNpmImportsToLocalRoot(chunk, subPackageTarget.root, subPackageTarget.dependencies, dependencies, options)
+      continue
+    }
+
+    rewriteChunkNpmImportsToLocalRoot(chunk, '', undefined, dependencies, options)
+  }
+
+  rewriteJsonNpmImportsToLocalRoots(bundle, dependencies, resolveLocalRootRewriteTarget, options?.basedir)
 }

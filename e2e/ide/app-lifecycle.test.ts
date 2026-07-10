@@ -5,13 +5,15 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { relaunchPage, waitForCurrentPagePath } from './github-issues.runtime.shared'
+import { waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
 const APP_WEVU_TS_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-ts')
 const APP_WEVU_VUE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-vue')
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+const INDEX_ROUTE = '/pages/index/index'
+const INDEX_ROUTE_MARKER_SELECTOR = '#app-lifecycle-route'
 const APP_HOOKS = [
   'onLaunch',
   'onShow',
@@ -51,6 +53,10 @@ async function launchFreshMiniProgram(root: string) {
     delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     return await launchAutomator({
       projectPath: root,
+      skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
+      warmupAllowRelaunch: true,
+      warmupAnyPage: true,
     })
   }
   finally {
@@ -67,13 +73,27 @@ async function closeSharedMiniPrograms() {
   await cleanupResidualIdeProcesses()
 }
 
+async function waitForIndexPageRendered(miniProgram: any, timeoutMs = 30_000) {
+  const page = await waitForCurrentPagePath(miniProgram, INDEX_ROUTE, timeoutMs)
+    ?? await miniProgram.reLaunch(INDEX_ROUTE).catch(() => null)
+  if (!page) {
+    return null
+  }
+
+  await page.waitForRendered({
+    selector: INDEX_ROUTE_MARKER_SELECTOR,
+    dataset: { e2eRoute: 'index' },
+    timeout: timeoutMs,
+  })
+  return page
+}
+
 async function collectAppLogs(root: string) {
   const miniProgram = await launchFreshMiniProgram(root)
   try {
-    const page = await waitForCurrentPagePath(miniProgram, '/pages/index/index', 30_000)
-      ?? await relaunchPage(miniProgram, '/pages/index/index', undefined, 30_000)
+    const page = await waitForIndexPageRendered(miniProgram)
     if (!page) {
-      throw new Error('Failed to launch /pages/index/index')
+      throw new Error(`Failed to render ${INDEX_ROUTE}`)
     }
     await page.waitFor(300)
     const logs = await miniProgram.evaluate(() => {

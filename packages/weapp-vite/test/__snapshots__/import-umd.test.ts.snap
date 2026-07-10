@@ -27,7 +27,7 @@ exports[`build import-umd > dist > app.json 1`] = `
 exports[`build import-umd > dist > app.wxss 1`] = `
 ".app {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build import-umd > dist > components/Navbar/Navbar.js 1`] = `
@@ -53,7 +53,7 @@ exports[`build import-umd > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`build import-umd > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build import-umd > dist > components/chart/index.json 1`] = `
@@ -116,7 +116,7 @@ exports[`build import-umd > dist > components/chart/index.wxss 1`] = `
   height: 100%;
   pointer-events: none;
 }
-/*$vite$:1*/"
+"
 `;
 
 exports[`build import-umd > dist > pages/index/index.js 1`] = `
@@ -283,7 +283,7 @@ exports[`build import-umd > dist > pages/index/index.wxml 1`] = `
 exports[`build import-umd > dist > pages/index/index.wxss 1`] = `
 ".page {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`build import-umd > dist > sitemap.json 1`] = `

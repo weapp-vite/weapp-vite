@@ -3,7 +3,7 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
-import { getFixture, scanFiles } from './utils'
+import { getFixture, normalizeBuildOutputContent, scanFiles } from './utils'
 
 const jsExpectations: Record<string, Array<RegExp | string>> = {
   'app.js': [/require\(["']\.\/rolldown-runtime\.js["']\)/, /\bApp\(/],
@@ -144,7 +144,7 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
         assertJsContent(file, content)
         continue
       }
-      expect(content).toMatchSnapshot(file)
+      expect(normalizeBuildOutputContent(content)).toMatchSnapshot(file)
     }
     expect(logger.success).toHaveBeenCalled()
   })

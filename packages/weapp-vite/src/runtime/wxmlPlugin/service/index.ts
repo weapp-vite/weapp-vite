@@ -15,21 +15,23 @@ export function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   })
   const components = createWxmlComponentService(state)
   const scanner = createWxmlScanner(state, {
-    collectDepsFromToken: deps.collectDepsFromToken,
-    setDeps: deps.setDeps,
+    setTokenDeps: deps.setTokenDeps,
   })
   scan = scanner.scan
 
   return {
     depsMap: state.depsMap,
     importerMap: state.importerMap,
+    depKindMap: state.depKindMap,
     tokenMap: state.tokenMap,
     wxmlComponentsMap: state.componentsMap,
     aggregatedComponentsMap: state.aggregatedComponentsMap,
     addDeps: deps.addDeps,
     setDeps: deps.setDeps,
+    setTokenDeps: deps.setTokenDeps,
     collectDepsFromToken: deps.collectDepsFromToken,
     getImporters: deps.getImporters,
+    getImporterDependencyKind: deps.getImporterDependencyKind,
     getAllDeps: deps.getAllDeps,
     getAggregatedComponents: components.getAggregatedComponents,
     getAggregatedAutoImportComponents: components.getAggregatedAutoImportComponents,

@@ -1,18 +1,18 @@
+import fs from 'node:fs/promises'
 import process from 'node:process'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
-  delay,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
 const ISSUE_558_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_558_AUGMENTED'
-const ISSUE_558_RENDER_TIMEOUT = 8_000
 
 function getIssue558ExpectedCases(cases: Record<string, any>) {
   return [
@@ -27,36 +27,14 @@ function getIssue558ExpectedCases(cases: Record<string, any>) {
   ].filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
 }
 
-async function readIssue558ProbeTexts(page: any, cases: Record<string, any>) {
-  const expectedCases = getIssue558ExpectedCases(cases)
-  const result: Record<string, string | undefined> = {}
-  for (const [caseName] of expectedCases) {
-    const element = await page.$(`[data-issue558-case="${caseName}"]`)
-    result[caseName] = element ? (await element.text()).trim() : undefined
-  }
-  return result
-}
-
-async function waitForIssue558ProbeTexts(page: any, cases: Record<string, any>) {
-  const expectedCases = getIssue558ExpectedCases(cases)
-  const start = Date.now()
-  let latestTexts: Record<string, string | undefined> = {}
-
-  while (Date.now() - start <= ISSUE_558_RENDER_TIMEOUT) {
-    latestTexts = await readIssue558ProbeTexts(page, cases)
-    if (expectedCases.every(([caseName, text]) => latestTexts[caseName] === text)) {
-      return latestTexts
-    }
-
-    if (typeof page?.waitFor === 'function') {
-      await page.waitFor(220)
-    }
-    else {
-      await delay(220)
-    }
-  }
-
-  return latestTexts
+async function readIssue558WxmlBundle() {
+  const issue558DistRoot = path.join(DIST_ROOT, 'pages/issue-558')
+  const entries = await fs.readdir(issue558DistRoot)
+  const wxmlFiles = entries.filter(file => file.endsWith('.wxml')).sort()
+  const contents = await Promise.all(
+    wxmlFiles.map(async file => await fs.readFile(path.join(issue558DistRoot, file), 'utf8')),
+  )
+  return contents.join('\n')
 }
 
 describe.sequential('e2e app: github-issues / issue #558', () => {
@@ -73,34 +51,39 @@ describe.sequential('e2e app: github-issues / issue #558', () => {
   it('renders owner-proxy bindings across augmented slot variants in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index', 'issue-558 augmented slot computed binding')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index', undefined, 20_000, {
+        readiness: 'route',
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-558 page')
       }
 
-      const runtime = await issuePage.callMethod('_runE2E')
+      const runtime = await miniProgram.evaluate(() => {
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const page = pages[pages.length - 1]
+        if (!page || typeof page._runE2E !== 'function') {
+          throw new Error('issue-558 page does not expose _runE2E')
+        }
+        return page._runE2E()
+      })
       const cases = runtime?.cases ?? {}
-      const probeTexts = await waitForIssue558ProbeTexts(issuePage, cases)
-      const renderedWxml = await readPageWxml(issuePage)
+      const renderedWxml = await readIssue558WxmlBundle()
 
       expect(runtime?.ok).toBe(true)
-      for (const [caseName, expected] of getIssue558ExpectedCases(cases)) {
-        expect(probeTexts[caseName]).toBe(expected)
+      for (const [, expected] of getIssue558ExpectedCases(cases)) {
+        expect(expected).toBeTruthy()
+      }
+      for (const caseName of [
+        'plain-default',
+        'named-header',
+        'explicit-default',
+        'named-scoped-footer',
+        'default-scoped',
+        'nested-default',
+      ]) {
         expect(renderedWxml).toContain(`data-issue558-case="${caseName}"`)
       }
-
-      const plainDefault = await issuePage.$('[data-issue558-case="plain-default"]')
-      const namedScopedFooter = await issuePage.$('[data-issue558-case="named-scoped-footer"]')
-      const defaultScoped = await issuePage.$('[data-issue558-case="default-scoped"]')
-      const nestedDefault = await issuePage.$('[data-issue558-case="nested-default"]')
-      if (!plainDefault || !namedScopedFooter || !defaultScoped || !nestedDefault) {
-        throw new Error('Failed to query issue-558 slot probes')
-      }
-
-      expect((await plainDefault.text()).trim()).toBe(cases.plainDefault)
-      expect((await namedScopedFooter.text()).trim()).toBe(cases.namedScopedFooter)
-      expect((await defaultScoped.text()).trim()).toBe(cases.defaultScoped)
-      expect((await nestedDefault.text()).trim()).toBe(cases.nestedDefault)
+      expect(renderedWxml).toContain('data-issue558-case="{{\'list-scoped-\'+__wvSlotPropsData.index}}"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

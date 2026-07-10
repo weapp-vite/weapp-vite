@@ -16,7 +16,10 @@ function readQty() {
   return items.value[0]?.quantity ?? 0
 }
 
-function runE2E() {
+function runE2E(actions?: Array<'minus' | 'plus'>) {
+  for (const action of actions ?? []) {
+    updateQuantity(items.value[0], action === 'plus' ? 1 : -1)
+  }
   return {
     qty: readQty(),
   }

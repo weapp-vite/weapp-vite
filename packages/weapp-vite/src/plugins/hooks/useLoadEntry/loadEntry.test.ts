@@ -66,7 +66,13 @@ const {
 
   const innerFindVueEntry = vi.fn(async () => undefined) as unknown as Mock<(filepath: string) => Promise<string | undefined>>
   const innerFindJsEntry = vi.fn(async () => ({ path: undefined, predictions: [] as string[] })) as unknown as Mock<(filepath: string) => Promise<{ path?: string, predictions: string[] }>>
-  const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(vueFilePath: string) => Promise<Record<string, any> | undefined>>
+  const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(
+    vueFilePath: string,
+    options?: {
+      readSource?: () => Promise<string | undefined>
+      source?: string
+    },
+  ) => Promise<Record<string, any> | undefined>>
   const innerResolvePageLayoutPlan = vi.fn(async () => undefined)
   const innerApplyPageLayoutPlanToNativePage = vi.fn((result: any) => result)
   const innerInjectNativePageLayoutRuntime = vi.fn((script: string | undefined) => script)
@@ -195,8 +201,8 @@ vi.mock('wevu/compiler', async (importOriginal) => {
     getSfcCheckMtime: vi.fn(() => false),
     invalidateFileCache: compilerInvalidateFileCacheMock,
     pathExists: existsMock,
-    readAndParseSfc: vi.fn(async (filename: string) => {
-      const source = await readFileMock(filename, 'utf-8')
+    readAndParseSfc: vi.fn(async (filename: string, options?: { source?: string }) => {
+      const source = options?.source ?? await readFileMock(filename, 'utf-8')
       const parsed = parse(source, { filename })
       return {
         descriptor: parsed.descriptor,
@@ -224,21 +230,30 @@ interface CreateLoaderOptions {
     absoluteRoot: string
     pluginJsonPath: string
   }
+  autoImportService?: any
+  autoRoutesService?: any
   buildTarget?: 'app' | 'plugin'
+  isDev?: boolean
   pluginOnly?: boolean
   normalizeEntry?: (entry: string, jsonPath: string) => string
   withWxmlService?: boolean
 }
 
 function createLoader(options?: CreateLoaderOptions) {
+  const jsonCache = new Map<string, any>()
   const jsonService = {
     read: vi.fn(),
+    cache: {
+      get: vi.fn((filepath: string) => jsonCache.get(filepath)),
+      set: vi.fn((filepath: string, value: any) => jsonCache.set(filepath, value)),
+    },
   }
   const configService: any = {
     relativeCwd: vi.fn((id: string) => id),
     absoluteSrcRoot: '/project/src',
     options: { cwd: '/project' },
     weappViteConfig: {},
+    isDev: options?.isDev,
     pluginOnly: options?.pluginOnly === true,
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
     relativeOutputPath: vi.fn((id: string) => id.replace('/project/src/', '')),
@@ -281,7 +296,10 @@ function createLoader(options?: CreateLoaderOptions) {
   }
 
   const compilerCtx = {
+    autoImportService: options?.autoImportService,
+    autoRoutesService: options?.autoRoutesService,
     jsonService,
+    jsonCache,
     configService,
     scanService,
     runtimeState,
@@ -310,6 +328,7 @@ function createLoader(options?: CreateLoaderOptions) {
   return {
     loader,
     jsonService,
+    jsonCache,
     configService,
     entriesMap,
     loadedEntrySet,
@@ -449,6 +468,535 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('reuses cached entry json during direct script hmr', async () => {
+    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const cachedJson = { usingComponents: { card: '../../components/card/index' } }
+    const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone')
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonCache.set(jsonPath, cachedJson)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.cache.get).toHaveBeenCalledWith(jsonPath)
+    expect(jsonService.read).not.toHaveBeenCalled()
+    expect(structuredCloneSpy).not.toHaveBeenCalled()
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(jsonPath)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: cachedJson,
+    }))
+    structuredCloneSpy.mockRestore()
+  })
+
+  it('reuses entry json cached by loadEntry when json service cache misses during direct script hmr', async () => {
+    const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const freshJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonService.read.mockResolvedValue(freshJson)
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.read).toHaveBeenCalledTimes(1)
+    jsonService.read.mockClear()
+    registerJsonAsset.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.read).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: freshJson,
+    }))
+  })
+
+  it('reads entry json again for json sidecar hmr', async () => {
+    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const jsonPath = '/project/src/pages/home/index.json'
+    const cachedJson = { usingComponents: { old: '../../components/old/index' } }
+    const freshJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+    jsonCache.set(jsonPath, cachedJson)
+    jsonService.read.mockResolvedValue(freshJson)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['json-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(jsonService.cache.get).not.toHaveBeenCalled()
+    expect(jsonService.read).toHaveBeenCalledWith(jsonPath)
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith(jsonPath)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath,
+      json: freshJson,
+    }))
+  })
+
+  it('reuses cached json and vue sidecar resolution during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const jsonPath = '/project/src/pages/home/index.json'
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: jsonPath,
+      predictions: [jsonPath],
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).toHaveBeenCalledTimes(1)
+    expect(mockFindVueEntry).toHaveBeenCalledTimes(1)
+    mockFindJsonEntry.mockClear()
+    mockFindVueEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).not.toHaveBeenCalled()
+    expect(mockFindVueEntry).not.toHaveBeenCalled()
+  })
+
+  it('reuses cached vue json block config during direct script hmr', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const config = { navigationBarTitleText: 'Home' }
+    const source = [
+      '<json>{"navigationBarTitleText":"Home"}</json>',
+      '<script setup>const count = 1</script>',
+      '<template><view>{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source })
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: config,
+    }))
+  })
+
+  it('reuses cached vue json block config when direct hmr also updates tailwind content', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const config = { navigationBarTitleText: 'Home' }
+    const source = [
+      '<json>{"navigationBarTitleText":"Home"}</json>',
+      '<script setup>const count = 1</script>',
+      '<template><view class="p-2">{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(source.replace('p-2', 'p-4').replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1', 'tailwind-content:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: config,
+    }))
+  })
+
+  it('reuses empty vue config result during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = [
+      '<script setup>const count = 1</script>',
+      '<template><view>{{ count }}</view></template>',
+    ].join('\n')
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValue(undefined)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    mockExtractConfigFromVue.mockClear()
+    readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+  })
+
+  it('extracts vue json block config again when the json block changes during hmr', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const firstSource = '<json>{"navigationBarTitleText":"Home"}</json><script setup>const count = 1</script>'
+    const nextSource = '<json>{"navigationBarTitleText":"Next"}</json><script setup>const count = 2</script>'
+    const firstConfig = { navigationBarTitleText: 'Home' }
+    const nextConfig = { navigationBarTitleText: 'Next' }
+
+    readFileMock.mockResolvedValue(firstSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(firstConfig)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(nextSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(nextConfig)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: nextConfig,
+    }))
+  })
+
+  it('does not reuse entry-level vue config cache for json macros', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const firstSource = '<script setup>definePageJson({ navigationBarTitleText: "Home" })</script>'
+    const nextSource = '<script setup>definePageJson({ navigationBarTitleText: "Next" })</script>'
+    const firstConfig = { navigationBarTitleText: 'Home' }
+    const nextConfig = { navigationBarTitleText: 'Next' }
+
+    readFileMock.mockResolvedValue(firstSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(firstConfig)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(nextSource)
+    mockExtractConfigFromVue.mockResolvedValueOnce(nextConfig)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: nextConfig,
+    }))
+  })
+
+  it('resolves json sidecar again for json sidecar hmr', async () => {
+    const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const oldJsonPath = '/project/src/pages/home/index.json'
+    const newJsonPath = '/project/src/pages/home/index.json.ts'
+    const oldJson = { usingComponents: { old: '../../components/old/index' } }
+    const newJson = { usingComponents: { card: '../../components/card/index' } }
+
+    mockFindJsonEntry.mockResolvedValueOnce({
+      path: oldJsonPath,
+      predictions: [oldJsonPath],
+    }).mockResolvedValueOnce({
+      path: newJsonPath,
+      predictions: [newJsonPath],
+    })
+    jsonService.read.mockResolvedValueOnce(oldJson).mockResolvedValueOnce(newJson)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockFindJsonEntry.mockClear()
+    registerJsonAsset.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['json-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockFindJsonEntry).toHaveBeenCalledTimes(1)
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: newJsonPath,
+      json: newJson,
+    }))
+  })
+
+  it('reuses cached template path during direct script hmr', async () => {
+    const { loader, runtimeState, scanTemplateEntry } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const templatePath = '/project/src/pages/home/index.wxml'
+
+    mockFindTemplateEntry.mockResolvedValue({
+      path: templatePath,
+      predictions: [templatePath],
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).toHaveBeenCalledTimes(1)
+    expect(scanTemplateEntry).toHaveBeenCalledWith(templatePath)
+    mockFindTemplateEntry.mockClear()
+    scanTemplateEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).not.toHaveBeenCalled()
+    expect(scanTemplateEntry).not.toHaveBeenCalled()
+  })
+
+  it('rescans template path for template sidecar hmr', async () => {
+    const { loader, runtimeState, scanTemplateEntry } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const templatePath = '/project/src/pages/home/index.wxml'
+
+    mockFindTemplateEntry.mockResolvedValue({
+      path: templatePath,
+      predictions: [templatePath],
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    mockFindTemplateEntry.mockClear()
+    scanTemplateEntry.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['sidecar-direct:1'],
+    }
+
+    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    expect(mockFindTemplateEntry).toHaveBeenCalledTimes(1)
+    expect(scanTemplateEntry).toHaveBeenCalledWith(templatePath)
+  })
+
+  it('reuses cached style imports during direct script hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, { checkMtime: true })
+    magicStringPrependMock.mockClear()
+    readFileMock.mockClear()
+    existsMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
+  })
+
+  it('reuses cached style imports when direct hmr also updates tailwind content', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    magicStringPrependMock.mockClear()
+    readFileMock.mockClear()
+    existsMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1', 'tailwind-content:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
+  })
+
+  it('rescans style imports for style sidecar hmr', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.ts'
+    const stylePath = '/project/src/pages/home/index.wxss'
+
+    existsMock.mockImplementation(async (filepath: string) => filepath === stylePath)
+    readFileMock.mockImplementation(async (filepath: string) => {
+      return filepath === stylePath ? '.home{}' : 'console.log("noop")'
+    })
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    existsMock.mockClear()
+    readFileMock.mockClear()
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['style-sidecar:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(existsMock).toHaveBeenCalledWith(stylePath, expect.anything())
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, { checkMtime: true })
+  })
+
+  it('resolves app side sitemap and theme json concurrently', async () => {
+    const { loader, jsonService, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseSitemap: (() => void) | undefined
+    let sitemapReleased = false
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (!sitemapReleased) {
+        startedBeforeRelease.push(filepath)
+      }
+      if (filepath === '/project/src/sitemap.json') {
+        await new Promise<void>((resolve) => {
+          releaseSitemap = () => {
+            sitemapReleased = true
+            resolve()
+          }
+        })
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: [],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return { rules: [{ action: 'allow', page: '*' }] }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return { light: {}, dark: {} }
+      }
+      return {}
+    })
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseSitemap).toBeDefined()
+      expect(startedBeforeRelease.filter(filepath => filepath.endsWith('sitemap.json') || filepath.endsWith('theme.json'))).toEqual([
+        '/project/src/sitemap.json',
+        '/project/src/theme.json',
+      ])
+    })
+    releaseSitemap?.()
+    await pending
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/sitemap.json',
+      type: 'page',
+      json: {
+        rules: [{ action: 'allow', page: '*' }],
+      },
+    })
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/theme.json',
+      type: 'page',
+      json: {
+        light: {},
+        dark: {},
+      },
+    })
+  })
+
   it('prefers source app.miniapp.json over project.miniapp.json for runtime sidecar config', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader()
     const pluginCtx = createPluginContext()
@@ -497,6 +1045,145 @@ describe('createEntryLoader', () => {
     )
   })
 
+  it('checks runtime and project miniapp configs concurrently while keeping source priority', async () => {
+    const { loader, jsonService, registerJsonAsset, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseRuntimeConfig: (() => void) | undefined
+    let runtimeConfigReleased = false
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(target)
+      }
+      if (target === '/project/src/app.miniapp.json') {
+        await new Promise<void>((resolve) => {
+          releaseRuntimeConfig = () => {
+            runtimeConfigReleased = true
+            resolve()
+          }
+        })
+        return true
+      }
+      return target === '/project/project.miniapp.json'
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.miniapp.json') {
+        return {
+          identityServiceConfig: {
+            authorizeMiniprogramType: 1,
+          },
+        }
+      }
+      if (filepath === '/project/project.miniapp.json') {
+        return {
+          miniVersion: 'v2',
+        }
+      }
+      return {}
+    })
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseRuntimeConfig).toBeDefined()
+      expect(startedBeforeRelease).toEqual(expect.arrayContaining([
+        '/project/src/app.miniapp.json',
+        '/project/project.miniapp.json',
+      ]))
+    })
+    releaseRuntimeConfig?.()
+    await pending
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      fileName: 'app.miniapp.json',
+      jsonPath: '/project/src/app.miniapp.json',
+      type: 'page',
+      json: {
+        identityServiceConfig: {
+          authorizeMiniprogramType: 1,
+        },
+      },
+    })
+    expect(registerJsonAsset).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        jsonPath: '/project/project.miniapp.json',
+      }),
+    )
+  })
+
+  it('collects app side json and miniapp config concurrently', async () => {
+    const { loader, jsonService, configService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const startedBeforeRelease: string[] = []
+    let releaseRuntimeConfig: (() => void) | undefined
+    let runtimeConfigReleased = false
+
+    configService.platform = 'weapp'
+    configService.cwd = '/project'
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(filepath)
+      }
+      if (filepath === '/project/src/sitemap.json') {
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: [],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!runtimeConfigReleased) {
+        startedBeforeRelease.push(target)
+      }
+      if (target === '/project/src/app.miniapp.json') {
+        await new Promise<void>((resolve) => {
+          releaseRuntimeConfig = () => {
+            runtimeConfigReleased = true
+            resolve()
+          }
+        })
+        return true
+      }
+      return false
+    })
+    jsonService.read.mockResolvedValue({})
+
+    const pending = loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    await vi.waitFor(() => {
+      expect(releaseRuntimeConfig).toBeDefined()
+      expect(startedBeforeRelease).toEqual(expect.arrayContaining([
+        '/project/src/sitemap.json',
+        '/project/src/theme.json',
+        '/project/src/app.miniapp.json',
+        '/project/project.miniapp.json',
+      ]))
+    })
+    releaseRuntimeConfig?.()
+    await pending
+  })
+
   it('falls back to project.miniapp.json when source runtime sidecar is missing', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader()
     const pluginCtx = createPluginContext()
@@ -539,16 +1226,86 @@ describe('createEntryLoader', () => {
       }
       return false
     })
-    readFileMock.mockResolvedValue('console.log("with styles")')
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/app.wxss') {
+        return '@import "./shared/styles/shared.scss";\n.app{}'
+      }
+      return 'console.log("with styles")'
+    })
 
-    const { loader } = createLoader()
+    const { loader, runtimeState } = createLoader()
     const pluginCtx = createPluginContext()
 
     const result = await loader.call(pluginCtx, '/project/src/app.js', 'app')
 
     expect(MagicStringMock).toHaveBeenCalledTimes(1)
     expect(magicStringPrependMock).toHaveBeenCalledWith('import \'/project/src/app.wxss\';\n')
+    expect(runtimeState.css.dependencyToImporters.get('/project/src/shared/styles/shared.scss')).toEqual(new Set(['/project/src/app.wxss']))
     expect(result.code).toBe('transformed')
+  })
+
+  it('prefetches entry source and style sidecars while child chunks are emitting', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const eventsBeforeRelease: string[] = []
+    let releaseChildChunks: (() => void) | undefined
+    let childChunksReleased = false
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: '/project/src/pages/home.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (!childChunksReleased) {
+        eventsBeforeRelease.push(`read:${target}`)
+      }
+      if (target === '/project/src/pages/home.wxss') {
+        return '.page{}'
+      }
+      return 'console.log("page")'
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      if (!childChunksReleased) {
+        eventsBeforeRelease.push(`exists:${target}`)
+      }
+      return target === '/project/src/pages/home.wxss'
+    })
+
+    const { loader, jsonService, emitEntriesChunks } = createLoader()
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        card: '/components/card/index',
+      },
+    })
+    emitEntriesChunks.mockImplementation(() => {
+      return [
+        new Promise<void>((resolve) => {
+          releaseChildChunks = () => {
+            childChunksReleased = true
+            resolve()
+          }
+        }),
+      ]
+    })
+
+    const loading = loader.call(createPluginContext(), pageScript, 'page')
+
+    await vi.waitFor(() => {
+      expect(releaseChildChunks).toBeDefined()
+      expect(eventsBeforeRelease).toContain(`read:${pageScript}`)
+      expect(eventsBeforeRelease.some(event => event.startsWith('exists:/project/src/pages/home.'))).toBe(true)
+      expect(eventsBeforeRelease).toContain('read:/project/src/pages/home.wxss')
+    })
+
+    releaseChildChunks?.()
+    await loading
   })
 
   it('memoises filesystem lookups for repeated watch targets', async () => {
@@ -579,12 +1336,216 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, '/project/src/app.js', 'app')
 
-    expect(existsCalls.get('/project/src/app.json')).toBe(1)
+    expect(existsCalls.get('/project/src/app.json')).toBeUndefined()
     const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
     const watchedJson = addWatchMock.mock.calls.filter(call => normalizeWatchCall(call[0]) === '/project/src/app.json')
-    expect(watchedJson).toHaveLength(2)
+    expect(watchedJson).toHaveLength(1)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()
+  })
+
+  it('skips duplicate exists checks for resolved app side json predictions', async () => {
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+
+    mockExtractConfigFromVue.mockResolvedValue({
+      pages: ['pages/home/home'],
+      sitemapLocation: 'sitemap.json',
+      themeLocation: 'theme.json',
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/sitemap.json') {
+        return {
+          path: '/project/src/sitemap.json',
+          predictions: ['/project/src/sitemap.json', '/project/src/sitemap.json.ts'],
+        }
+      }
+      if (filepath === '/project/src/theme.json') {
+        return {
+          path: '/project/src/theme.json',
+          predictions: ['/project/src/theme.json'],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockResolvedValue({})
+
+    await loader.call(createPluginContext(), '/project/src/app.vue', 'app')
+
+    expect(existsCalls.get('/project/src/sitemap.json')).toBeUndefined()
+    expect(existsCalls.get('/project/src/theme.json')).toBeUndefined()
+    expect(existsCalls.get('/project/src/sitemap.json.ts')).toBe(1)
+  })
+
+  it('reuses the resolved app vue entry instead of probing twice', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    mockFindVueEntry.mockResolvedValue('/project/src/app.vue')
+    jsonService.read.mockResolvedValue({
+      pages: ['pages/home/home'],
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(mockFindVueEntry).toHaveBeenCalledTimes(1)
+    expect(mockFindVueEntry).toHaveBeenCalledWith('/project/src/app')
+  })
+
+  it('starts json and vue entry discovery concurrently while keeping json config priority', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const started: string[] = []
+    let releaseJsonEntry!: () => void
+    const jsonEntryBlocked = new Promise<void>((resolve) => {
+      releaseJsonEntry = resolve
+    })
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      started.push(`json:${filepath}`)
+      if (filepath === '/project/src/pages/home/index.ts') {
+        await jsonEntryBlocked
+        return {
+          path: '/project/src/pages/home/index.json',
+          predictions: ['/project/src/pages/home/index.json'],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    mockFindVueEntry.mockImplementation(async (filepath: string) => {
+      started.push(`vue:${filepath}`)
+      return '/project/src/pages/home/index.vue'
+    })
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        card: '/components/card/index',
+      },
+    })
+
+    const loading = loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+    await vi.waitFor(() => {
+      expect(started).toEqual([
+        'json:/project/src/pages/home/index.ts',
+        'vue:/project/src/pages/home/index',
+      ])
+    })
+
+    releaseJsonEntry()
+    await loading
+
+    expect(jsonService.read).toHaveBeenCalledWith('/project/src/pages/home/index.json')
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue')
+  })
+
+  it('reads resolved json while predicted watch targets are still being checked', async () => {
+    const { loader, jsonService } = createLoader()
+    const pluginCtx = createPluginContext()
+    const events: string[] = []
+    let releaseWatchCheck!: () => void
+    const watchCheckBlocked = new Promise<void>((resolve) => {
+      releaseWatchCheck = resolve
+    })
+
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home/index.json',
+      predictions: [
+        '/project/src/pages/home/index.json',
+        '/project/src/pages/home/index.json.ts',
+      ],
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      events.push(`exists:${target}`)
+      if (target === '/project/src/pages/home/index.json.ts') {
+        await watchCheckBlocked
+      }
+      return false
+    })
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      events.push(`read:${filepath}`)
+      return {}
+    })
+
+    const loading = loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
+
+    await vi.waitFor(() => {
+      expect(events).toEqual([
+        'exists:/project/src/pages/home/index.json.ts',
+        'read:/project/src/pages/home/index.json',
+      ])
+    })
+
+    releaseWatchCheck()
+    await loading
+  })
+
+  it('reuses filesystem lookup cache across entries during build', async () => {
+    const sharedPrediction = '/project/src/shared/index.json'
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath.endsWith('/a.js') || filepath.endsWith('/b.js')) {
+        return {
+          path: undefined,
+          predictions: [sharedPrediction],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/a.js', 'page')
+    await loader.call(pluginCtx, '/project/src/pages/b.js', 'page')
+
+    expect(existsCalls.get(sharedPrediction)).toBe(1)
+  })
+
+  it('refreshes filesystem lookup cache per entry during dev', async () => {
+    const sharedPrediction = '/project/src/shared/index.json'
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return false
+    })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath.endsWith('/a.js') || filepath.endsWith('/b.js')) {
+        return {
+          path: undefined,
+          predictions: [sharedPrediction],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/a.js', 'page')
+    await loader.call(pluginCtx, '/project/src/pages/b.js', 'page')
+
+    expect(existsCalls.get(sharedPrediction)).toBe(2)
   })
 
   it('keeps observing style sidecars across add and delete cycles', async () => {
@@ -602,7 +1563,7 @@ describe('createEntryLoader', () => {
 
     readFileMock.mockResolvedValue('console.log("noop")')
 
-    const { loader } = createLoader()
+    const { loader } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
 
     await loader.call(pluginCtx, script, 'app')
@@ -680,6 +1641,58 @@ describe('createEntryLoader', () => {
 
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
     expect(runtimeState.autoImport.pendingEntriesByImporter.has('/project/src/pages/home')).toBe(false)
+  })
+
+  it('skips awaiting auto-import registrations when none are pending', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+    const awaitPendingRegistrations = vi.fn(async () => {})
+    const { loader, jsonService } = createLoader({
+      autoImportService: {
+        hasPendingRegistrations: vi.fn(() => false),
+        awaitPendingRegistrations,
+      },
+    })
+    jsonService.read.mockResolvedValue({
+      usingComponents: {},
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    expect(awaitPendingRegistrations).not.toHaveBeenCalled()
+  })
+
+  it('dedupes normalized component entries before chunk emission', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, runtimeState } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    runtimeState.autoImport.pendingEntriesByImporter.set(
+      '/project/src/pages/home',
+      new Set(['/components/HotCard/index']),
+    )
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        hot: '/components/HotCard/index',
+      },
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+
+    expect(emittedResolvedIds.filter(id => id === '/project/src/components/HotCard/index')).toHaveLength(1)
   })
 
   it('force emits auto-import entries injected during the current load', async () => {
@@ -780,7 +1793,7 @@ describe('createEntryLoader', () => {
       predictions: [],
     })
 
-    const { loader, entriesMap, jsonService } = createLoader()
+    const { loader, entriesMap, emitEntriesChunks, jsonService } = createLoader()
     jsonService.read.mockResolvedValue({
       tabBar: {
         custom: true,
@@ -805,6 +1818,59 @@ describe('createEntryLoader', () => {
     expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
     expect(entriesMap.get('app-bar/index')?.type).toBe('component')
     expect(entriesMap.get('pages/home/index')?.type).toBe('page')
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toEqual(expect.arrayContaining([
+      '/project/src/custom-tab-bar/index',
+      '/project/src/app-bar/index',
+    ]))
+  })
+
+  it('refreshes vue app config after auto-routes are available before collecting app entries', async () => {
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => {}),
+      getSignature: vi.fn(() => 'routes-ready'),
+    }
+    mockExtractConfigFromVue
+      .mockResolvedValueOnce({
+        pages: [],
+        subPackages: [],
+      })
+      .mockResolvedValueOnce({
+        pages: ['pages/home/index'],
+        usingComponents: {
+          'custom-tab-bar': '/custom-tab-bar/index',
+        },
+        tabBar: {
+          custom: true,
+          list: [
+            {
+              pagePath: 'pages/home/index',
+              text: 'home',
+            },
+          ],
+        },
+      })
+
+    const { loader, entriesMap, emitEntriesChunks } = createLoader({
+      autoRoutesService,
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    await loader.call(createPluginContext(), '/project/src/app.vue', 'app')
+
+    expect(autoRoutesService.ensureFresh).toHaveBeenCalledTimes(1)
+    expect(mockExtractConfigFromVue).toHaveBeenLastCalledWith('/project/src/app.vue', {
+      source: 'console.log("noop")',
+      force: true,
+    })
+    expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toContain('/project/src/custom-tab-bar/index')
   })
 
   it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {
@@ -1421,6 +2487,7 @@ import FooBar from '../../components/foo-bar/index.vue'
         FooBar: '/components/foo-bar/index',
       },
     })
+    expect(readFileMock.mock.calls.filter(([target]) => target === '/project/src/pages/auto/index.vue')).toHaveLength(1)
   })
 
   it('tracks external <script setup> component output mapping for compile flow', async () => {
@@ -1704,6 +2771,8 @@ import { VueCard } from '../../components'
 
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+    expect(readFileMock.mock.calls.filter(([target]) => target === '/project/src/pages/index/index.ts')).toHaveLength(1)
     expect(registerJsonAsset).toHaveBeenCalledWith({
       jsonPath: '/project/src/pages/index/index.json',
       json: {
@@ -1755,6 +2824,135 @@ import { VueCard } from '../../components'
       id: '/project/src/layouts/default/index.ts',
       fileName: 'layouts/default/index.js',
     }))
+  })
+
+  it('reuses static native page layout plan during direct script hmr', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('Page({ data: { title: "one" } })')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue('Page({ data: { title: "two" } })')
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves native page layout again when direct script hmr adds layout hints', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('Page({ data: { title: "one" } })')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue('definePageMeta({ layout: false })\nPage({})')
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(2)
+    expect(mockResolvePageLayoutPlan.mock.calls[1][0]).toContain('definePageMeta')
+  })
+
+  it('reuses static vue page layout plan during direct script hmr', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('<template><view>{{ title }}</view></template>')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue('<template><view>{{ title }} updated</view></template>')
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves vue page layout again when direct script hmr adds layout hints', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('<template><view>{{ title }}</view></template>')
+
+    const { loader, jsonService, runtimeState } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/index/index.ts'
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+    readFileMock.mockResolvedValue([
+      '<script setup>',
+      'definePageMeta({ layout: false })',
+      '</script>',
+      '<template><view>{{ title }}</view></template>',
+    ].join('\n'))
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(2)
+    expect(mockResolvePageLayoutPlan.mock.calls[1][0]).toContain('definePageMeta')
   })
 
   it('registers native layout shared template and wxs deps through the wxml pipeline', async () => {

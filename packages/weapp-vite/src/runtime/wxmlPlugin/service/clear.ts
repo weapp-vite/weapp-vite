@@ -11,6 +11,7 @@ export function createClearAll(
     if (!currentRoot) {
       state.depsMap.clear()
       state.importerMap.clear()
+      state.depKindMap.clear()
       state.tokenMap.clear()
       state.componentsMap.clear()
       state.aggregatedComponentsMap.clear()
@@ -57,6 +58,24 @@ export function createClearAll(
     for (const key of Array.from(state.importerMap.keys())) {
       if (shouldClear(key)) {
         state.importerMap.delete(key)
+      }
+    }
+    for (const key of Array.from(state.depKindMap.keys())) {
+      if (shouldClear(key)) {
+        state.depKindMap.delete(key)
+        continue
+      }
+      const importerKinds = state.depKindMap.get(key)
+      if (!importerKinds) {
+        continue
+      }
+      for (const importer of Array.from(importerKinds.keys())) {
+        if (shouldClear(importer)) {
+          importerKinds.delete(importer)
+        }
+      }
+      if (importerKinds.size === 0) {
+        state.depKindMap.delete(key)
       }
     }
     for (const key of Array.from(state.tokenMap.keys())) {

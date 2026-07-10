@@ -1,1 +1,2 @@
-<view class="layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+<e2e-template-probe marker="LAYOUT-SHARED-INCLUDE-BASE" storage-key="__weapp_vite_layout_shared_include_probe__" />
+<view class="layout-shared-include" data-layout-shared-include="LAYOUT-SHARED-INCLUDE-BASE">LAYOUT-SHARED-INCLUDE-BASE</view>

@@ -114,6 +114,19 @@ async function waitForFileContains(
   )
 }
 
+async function waitForFileRead(filePath: string, timeoutMs = 30_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await fs.readFile(filePath, 'utf8')
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+  return await fs.readFile(filePath, 'utf8')
+}
+
 async function waitForUsingComponent(
   pageJsonPath: string,
   name: string,
@@ -159,15 +172,24 @@ function detectEol(source: string) {
   return source.includes('\r\n') ? '\r\n' : '\n'
 }
 
+function insertVueTemplateHeartbeat(source: string, marker: string, eol: string) {
+  const templateCloseIndex = source.lastIndexOf('</template>')
+  if (templateCloseIndex < 0) {
+    return `${source}${eol}<!-- ${marker} -->${eol}`
+  }
+
+  return `${source.slice(0, templateCloseIndex)}${eol}<view style="display: none;">${marker}</view>${eol}${source.slice(templateCloseIndex)}`
+}
+
 async function rewriteVueSourceForWatch(
   sourcePath: string,
   targetSource: string,
 ) {
   const eol = detectEol(targetSource)
-  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
+  const marker = `auto-import-e2e-retry-${Date.now()}`
   await replaceFileByRename(
     sourcePath,
-    `${targetSource}${eol}${marker}${eol}`,
+    insertVueTemplateHeartbeat(targetSource, marker, eol),
   )
   await new Promise(resolve => setTimeout(resolve, 120))
   await replaceFileByRename(sourcePath, targetSource)
@@ -399,10 +421,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
     await runBuild(APP_ROOT, PLATFORM_LIST[0])
 
-    expect(await fs.pathExists(TYPED_COMPONENTS_DTS)).toBe(true)
-    expect(await fs.pathExists(VUE_COMPONENTS_DTS)).toBe(true)
-
-    const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
+    const typedDts = await waitForFileRead(TYPED_COMPONENTS_DTS)
     expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
     expect(typedDts).toContain('AutoCard: {')
     expect(typedDts).toContain('readonly title?: string;')
@@ -424,7 +443,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
     expect(typedDts).toContain('ResolverCard: Record<string, any>;')
 
-    const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
+    const vueDts = await waitForFileRead(VUE_COMPONENTS_DTS)
     expect(
       vueDts.includes('declare module \'vue\'')
       || vueDts.includes('declare module \'wevu\''),
@@ -696,6 +715,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
       await fs.remove(TYPED_COMPONENTS_DTS)
       await fs.remove(VUE_COMPONENTS_DTS)
       await fs.remove(HOT_COMPONENT_DIR)
+      await fs.ensureDir(HOT_COMPONENT_DIR)
 
       const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
       const pageSourceWithHotCard = /<HotCard\s*\/>/.test(originalPageSource)
@@ -746,7 +766,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         await replaceFileByRename(PAGE_SOURCE_PATH, pageSourceWithHotCard)
 
         await devProcess.waitFor(
-          waitForTaskWithSourceHeartbeat(
+          waitForTaskWithSourceHeartbeats(
             () =>
               waitForUsingComponent(
                 pageJsonPath,
@@ -754,8 +774,16 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
                 '/components/HotCard/index',
                 1_000,
               ),
-            PAGE_SOURCE_PATH,
-            pageSourceWithHotCard,
+            [
+              {
+                touchFilePath: HOT_COMPONENT_SOURCE_PATH,
+                touchContent: hotCardSource,
+              },
+              {
+                touchFilePath: PAGE_SOURCE_PATH,
+                touchContent: pageSourceWithHotCard,
+              },
+            ],
           ),
           `${platform} hotCard registration`,
         )

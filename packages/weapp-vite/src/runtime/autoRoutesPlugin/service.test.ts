@@ -50,6 +50,16 @@ const cloneRoutesMock = vi.hoisted(() => vi.fn((routes: any) => ({
 const matchesRouteFileMock = vi.hoisted(() => vi.fn(() => true))
 const updateCandidateFromFileMock = vi.hoisted(() => vi.fn(async () => true))
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
 vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   return {
@@ -328,6 +338,61 @@ describe('createAutoRoutesService branch coverage', () => {
     expect([...service.getWatchFiles()]).toEqual(['/project/src/pages/index/index.ts'])
   })
 
+  it('checks persistent cache mtimes concurrently during restore', async () => {
+    const firstStat = createDeferred<{ mtimeMs: number }>()
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    readJsonMock.mockResolvedValue({
+      version: 1,
+      snapshot: {
+        pages: ['pages/index/index', 'pages/about/index'],
+        entries: ['pages/index/index', 'pages/about/index'],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: ['pages/index/index', 'pages/about/index'],
+        entries: ['pages/index/index', 'pages/about/index'],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default ["pages/index/index","pages/about/index"]',
+      typedDefinition: 'type TypedRouter = ["pages/index/index", "pages/about/index"]',
+      watchFiles: [
+        '/project/src/pages/index/index.ts',
+        '/project/src/pages/about/index.ts',
+      ],
+      watchDirs: [
+        '/project/src/pages/index',
+        '/project/src/pages/about',
+      ],
+      fileMtims: {
+        '/project/src/pages/index/index.ts': 1,
+        '/project/src/pages/about/index.ts': 2,
+      },
+    })
+    statMock.mockImplementation((filePath: string) => {
+      if (filePath.endsWith('/pages/index/index.ts')) {
+        return firstStat.promise
+      }
+      return Promise.resolve({ mtimeMs: 2 })
+    })
+
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+    const ensureFreshPromise = service.ensureFresh()
+
+    await expect.poll(() => statMock.mock.calls.length).toBe(2)
+    firstStat.resolve({ mtimeMs: 1 })
+    await ensureFreshPromise
+
+    expect(scanRoutesMock).not.toHaveBeenCalled()
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    expect(service.getSnapshot().pages).toEqual(['pages/index/index', 'pages/about/index'])
+  })
+
   it('uses custom persistent cache path when configured as string', async () => {
     const ctx = createContext({
       autoRoutes: {
@@ -379,6 +444,95 @@ describe('createAutoRoutesService branch coverage', () => {
     await service.ensureFresh()
 
     expect(outputJsonMock).not.toHaveBeenCalled()
+  })
+
+  it('collects persistent cache mtimes concurrently before writing', async () => {
+    const firstStat = createDeferred<{ mtimeMs: number }>()
+    scanRoutesMock.mockResolvedValueOnce({
+      snapshot: {
+        pages: ['pages/index/index', 'pages/about/index'],
+        entries: ['pages/index/index', 'pages/about/index'],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: ['pages/index/index', 'pages/about/index'],
+        entries: ['pages/index/index', 'pages/about/index'],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default ["pages/index/index","pages/about/index"]',
+      typedDefinition: 'type TypedRouter = ["pages/index/index", "pages/about/index"]',
+      watchFiles: new Set([
+        '/project/src/pages/index/index.ts',
+        '/project/src/pages/about/index.ts',
+      ]),
+      watchDirs: new Set([
+        '/project/src/pages/index',
+        '/project/src/pages/about',
+      ]),
+    })
+    statMock.mockImplementation((filePath: string) => {
+      if (filePath.endsWith('/pages/index/index.ts')) {
+        return firstStat.promise
+      }
+      return Promise.resolve({ mtimeMs: 2 })
+    })
+
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+    const ensureFreshPromise = service.ensureFresh()
+
+    await expect.poll(() => statMock.mock.calls.length).toBe(2)
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    firstStat.resolve({ mtimeMs: 1 })
+    await ensureFreshPromise
+
+    expect(outputJsonMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/auto-routes.cache.json',
+      expect.objectContaining({
+        fileMtims: {
+          '/project/src/pages/index/index.ts': 1,
+          '/project/src/pages/about/index.ts': 2,
+        },
+      }),
+      { spaces: 2 },
+    )
+  })
+
+  it('skips persistent cache writes when collecting mtimes fails', async () => {
+    scanRoutesMock.mockResolvedValueOnce({
+      snapshot: {
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default ["pages/index/index"]',
+      typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      watchFiles: new Set(['/project/src/pages/index/index.ts']),
+      watchDirs: new Set(['/project/src/pages/index']),
+    })
+    statMock.mockRejectedValueOnce(new Error('gone'))
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 
   it('falls back to a full scan when persistent cache mtimes do not match', async () => {

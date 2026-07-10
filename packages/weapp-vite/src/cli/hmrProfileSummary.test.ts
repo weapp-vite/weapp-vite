@@ -22,9 +22,23 @@ describe('hmrProfileSummary', () => {
         event: 'update',
         file: `${root}/src/pages/logs/index.vue`,
         buildCoreMs: 70,
+        buildStartMs: 6,
+        pluginResolveMs: 5,
+        generateBundleMs: 72,
+        coreLoadMs: 76,
+        entryLoadMs: 45,
+        snapshotBuildMs: 110,
+        requestGlobalsMs: 12,
+        generateRewriteMs: 18,
+        vueTransformMs: 12,
+        vueCompileMs: 90,
         watchToDirtyMs: 8,
         emitMs: 60,
         sharedChunkResolveMs: 10,
+        chunkEmitCount: 3,
+        loadCount: 2,
+        resolveCount: 4,
+        skippedLoadedCount: 1,
       }),
       '',
     ].join('\n'), 'utf8')
@@ -42,7 +56,8 @@ describe('hmrProfileSummary', () => {
     expect(result?.profilePath).toBe(profilePath)
     expect(result?.line).toContain('最近一次热更新 120.00 ms')
     expect(result?.line).toContain('src/pages/logs/index.vue')
-    expect(result?.line).toContain('主耗时 build-core 70.00 ms')
+    expect(result?.line).toContain('主耗时 snapshot-build 110.00 ms')
+    expect(result?.line).toContain('load/resolve/chunk/skip 2/4/3/1')
   })
 
   it('returns undefined when profile output is disabled', async () => {

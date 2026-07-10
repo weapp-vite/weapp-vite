@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrScriptName, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -152,7 +152,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     const originalSource = await fs.readFile(SRC_SCRIPT, 'utf8')
     const distPath = path.join(DIST_ROOT, 'pages/hmr/index.js')
     const marker = createHmrMarker('MODIFY-SCRIPT', platform)
-    const updatedSource = originalSource.replace(`buildResult('hmr',`, `buildResult('${marker}',`)
+    const updatedSource = replaceHmrScriptName(originalSource, marker)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into .ts script source.')
     }

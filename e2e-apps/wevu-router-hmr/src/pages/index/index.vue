@@ -8,7 +8,29 @@ definePageJson({
 
 const route = useRoute()
 const title = 'ROUTER-HMR-BASE'
+const ROUTER_HMR_MARKER_KEY = '__wevuRouterHmrMarker'
 const routeLabel = computed(() => route.fullPath || `/${route.path}`)
+
+function syncRuntimeMarker() {
+  if (typeof getApp !== 'function') {
+    return
+  }
+  ;(getApp() as any)[ROUTER_HMR_MARKER_KEY] = title
+}
+
+async function runE2E() {
+  syncRuntimeMarker()
+  return {
+    ok: true,
+    marker: title,
+    route: routeLabel.value,
+  }
+}
+
+syncRuntimeMarker()
+defineExpose({ runE2E })
+
+const _runE2E = runE2E
 </script>
 
 <template>

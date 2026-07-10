@@ -13,11 +13,11 @@ defineOptions({
 
 const props = withDefaults(defineProps<{
   goodsList?: GoodsListItem[]
-  id?: string
+  listId?: string
   thresholds?: number[]
 }>(), {
   goodsList: () => [],
-  id: '',
+  listId: '',
   thresholds: () => [],
 })
 
@@ -28,17 +28,17 @@ const emit = defineEmits<{
 }>()
 
 const { goodsList, thresholds } = toRefs(props)
-const independentID = ref(props.id || `goods-list-${~~(Math.random() * 10 ** 8)}`)
+const independentID = ref(props.listId || `goods-list-${~~(Math.random() * 10 ** 8)}`)
 
-watch(() => props.id, (id) => {
-  if (!id) {
+watch(() => props.listId, (listId) => {
+  if (!listId) {
     return
   }
-  independentID.value = id
+  independentID.value = listId
 })
 
 function onClickGoods(e: any) {
-  const { index } = e.currentTarget.dataset
+  const index = e.currentTarget.dataset.index ?? e.detail?.index
   emit('click', {
     ...e.detail,
     index,
@@ -46,7 +46,7 @@ function onClickGoods(e: any) {
 }
 
 function onAddCart(e: any) {
-  const { index } = e.currentTarget.dataset
+  const index = e.currentTarget.dataset.index ?? e.detail?.index
   emit('addcart', {
     ...e.detail,
     index,
@@ -54,7 +54,7 @@ function onAddCart(e: any) {
 }
 
 function onClickGoodsThumb(e: any) {
-  const { index } = e.currentTarget.dataset
+  const index = e.currentTarget.dataset.index ?? e.detail?.index
   emit('thumb', {
     ...e.detail,
     index,

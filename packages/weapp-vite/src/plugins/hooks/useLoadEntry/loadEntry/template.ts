@@ -10,6 +10,19 @@ import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vu
 import { resolveUsingComponentReference } from '../../../vue/transform/usingComponentResolver'
 import { ensureTemplateScanned } from './watch'
 
+interface ResolvedScriptSetupUsingComponent {
+  localName: string
+  importSource: string
+  resolvedId?: string
+  from?: string
+}
+
+const TEMPLATE_COMPONENT_TAG_HINT_RE = /<\s*(?:[A-Z_$]|[a-z][\w$]*-)/
+
+function hasTemplateComponentTagHint(source: string) {
+  return TEMPLATE_COMPONENT_TAG_HINT_RE.test(source)
+}
+
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
@@ -49,6 +62,7 @@ export async function scanTemplateEntry(
 export async function applyScriptSetupUsingComponents(options: {
   pluginCtx: PluginContext
   vueEntryPath: string
+  source?: string
   templatePath: string
   json: any
   configService: CompilerContext['configService']
@@ -59,6 +73,7 @@ export async function applyScriptSetupUsingComponents(options: {
   const {
     pluginCtx,
     vueEntryPath,
+    source,
     templatePath,
     json,
     configService,
@@ -68,8 +83,16 @@ export async function applyScriptSetupUsingComponents(options: {
   } = options
 
   try {
+    if (source !== undefined && !hasTemplateComponentTagHint(source)) {
+      return
+    }
+
     const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
-      ...createReadAndParseSfcOptions(pluginCtx, configService),
+      ...createReadAndParseSfcOptions(
+        pluginCtx,
+        configService,
+        source === undefined ? undefined : { source },
+      ),
     })
     if (!errors?.length && descriptor?.template && !templatePath) {
       const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
@@ -95,8 +118,8 @@ export async function applyScriptSetupUsingComponents(options: {
               : {}
           )
 
-          for (const { localName, importSource, importedName, kind } of imports) {
-            const resolved = await resolveUsingComponentReference(
+          const resolvedImports = await Promise.all(imports.map(async ({ localName, importSource, importedName, kind }) => {
+            const { resolvedId, from: resolvedFrom } = await resolveUsingComponentReference(
               pluginCtx,
               configService,
               reExportResolutionCache,
@@ -109,7 +132,16 @@ export async function applyScriptSetupUsingComponents(options: {
                 fallbackRelativeImporterDir: true,
               },
             )
-            let { from } = resolved
+            return {
+              localName,
+              importSource,
+              resolvedId,
+              from: resolvedFrom,
+            } satisfies ResolvedScriptSetupUsingComponent
+          }))
+
+          for (const { localName, importSource, resolvedId, from: resolvedFrom } of resolvedImports) {
+            let from = resolvedFrom
 
             if (!from && importSource.startsWith('/')) {
               from = removeExtensionDeep(importSource)
@@ -126,8 +158,8 @@ export async function applyScriptSetupUsingComponents(options: {
             }
 
             usingComponents[localName] = from
-            if (resolved.resolvedId) {
-              externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolved.resolvedId)
+            if (resolvedId) {
+              externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolvedId)
             }
           }
 

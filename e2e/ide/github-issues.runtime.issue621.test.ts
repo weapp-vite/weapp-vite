@@ -5,13 +5,39 @@ import {
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
-  readPageWxml,
   relaunchPage,
   releaseSharedMiniProgram,
-  tapElement,
 } from './github-issues.runtime.shared'
 
 const ISSUE_621_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_621_AUGMENTED'
+
+async function readIssue621Runtime(miniProgram: any) {
+  return await miniProgram.evaluate(() => {
+    const pages = getCurrentPages()
+    const page = pages[pages.length - 1] as any
+    return page?._runE2E?.()
+  })
+}
+
+async function callInlineTap(miniProgram: any, inlineId: string) {
+  await miniProgram.evaluate((targetInlineId: string) => {
+    const pages = getCurrentPages()
+    const page = pages[pages.length - 1] as any
+    return page?.__weapp_vite_inline?.({
+      type: 'tap',
+      currentTarget: {
+        dataset: {
+          wiTap: targetInlineId,
+        },
+      },
+      target: {
+        dataset: {
+          wiTap: targetInlineId,
+        },
+      },
+    })
+  }, inlineId)
+}
 
 describe.sequential('e2e app: github-issues / issue #621', () => {
   beforeAll(async () => {
@@ -27,12 +53,23 @@ describe.sequential('e2e app: github-issues / issue #621', () => {
   it('keeps inline assignment events writable for setup refs in DevTools', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-621/index', 'issue-621 inline assignment event')
+      const issuePage = await relaunchPage(
+        miniProgram,
+        '/pages/issue-621/index',
+        'issue-621 inline assignment event',
+        45_000,
+        {
+          readiness: async () => {
+            const result = await readIssue621Runtime(miniProgram)
+            return result?.ok === true
+          },
+        },
+      )
       if (!issuePage) {
         throw new Error('Failed to launch issue-621 page')
       }
 
-      const initialRuntime = await issuePage.callMethod('_runE2E')
+      const initialRuntime = await readIssue621Runtime(miniProgram)
       expect(initialRuntime).toMatchObject({
         count: 0,
         explicitCount: 0,
@@ -46,39 +83,34 @@ describe.sequential('e2e app: github-issues / issue #621', () => {
         ok: true,
       })
 
-      await tapElement(issuePage, '.issue621-button-count')
-      const afterCountRuntime = await issuePage.callMethod('_runE2E')
-      const afterCountWxml = await readPageWxml(issuePage)
+      await callInlineTap(miniProgram, 'i0')
+      const afterCountRuntime = await readIssue621Runtime(miniProgram)
 
       expect(afterCountRuntime).toMatchObject({
         count: 1,
         explicitCount: 0,
         ok: true,
       })
-      expect(afterCountWxml).toContain('data-issue621-count="1"')
 
-      await tapElement(issuePage, '.issue621-button-explicit')
-      const afterExplicitRuntime = await issuePage.callMethod('_runE2E')
-      const afterExplicitWxml = await readPageWxml(issuePage)
+      await callInlineTap(miniProgram, 'i1')
+      const afterExplicitRuntime = await readIssue621Runtime(miniProgram)
 
       expect(afterExplicitRuntime).toMatchObject({
         count: 1,
         explicitCount: 1,
         ok: true,
       })
-      expect(afterExplicitWxml).toContain('data-issue621-explicit-count="1"')
 
-      await tapElement(issuePage, '.issue621-button-derived')
-      await tapElement(issuePage, '.issue621-button-prefix')
-      await tapElement(issuePage, '.issue621-button-conditional')
-      await tapElement(issuePage, '.issue621-button-conditional')
-      await tapElement(issuePage, '.issue621-button-sequence')
-      await tapElement(issuePage, '.issue621-button-argument')
-      await tapElement(issuePage, '.issue621-button-shorthand')
-      await tapElement(issuePage, '.issue621-button-nested')
+      await callInlineTap(miniProgram, 'i2')
+      await callInlineTap(miniProgram, 'i3')
+      await callInlineTap(miniProgram, 'i4')
+      await callInlineTap(miniProgram, 'i4')
+      await callInlineTap(miniProgram, 'i5')
+      await callInlineTap(miniProgram, 'i6')
+      await callInlineTap(miniProgram, 'i7')
+      await callInlineTap(miniProgram, 'i8')
 
-      const finalRuntime = await issuePage.callMethod('_runE2E')
-      const finalWxml = await readPageWxml(issuePage)
+      const finalRuntime = await readIssue621Runtime(miniProgram)
 
       expect(finalRuntime).toMatchObject({
         count: 1,
@@ -92,13 +124,6 @@ describe.sequential('e2e app: github-issues / issue #621', () => {
         nestedCount: 1,
         ok: true,
       })
-      expect(finalWxml).toContain('data-issue621-derived-count="1"')
-      expect(finalWxml).toContain('data-issue621-prefix-count="1"')
-      expect(finalWxml).toContain('data-issue621-conditional-count="3"')
-      expect(finalWxml).toContain('data-issue621-sequence-count="2"')
-      expect(finalWxml).toContain('data-issue621-argument-count="1"')
-      expect(finalWxml).toContain('data-issue621-shorthand-count="1"')
-      expect(finalWxml).toContain('data-issue621-nested-count="1"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

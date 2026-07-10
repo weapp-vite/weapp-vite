@@ -14,6 +14,7 @@ import {
   serializeStaticValueToExpression,
   shouldFallbackToRawDefineOptions,
 } from './serialize'
+import { resolveStaticDefineOptionsValues } from './static'
 
 interface DefineOptionsStatement {
   statementPath: any
@@ -271,29 +272,36 @@ export async function inlineScriptSetupDefineOptionsArgs(
 
   let values: unknown[] = []
   let dependencies: string[] = []
-  let scopeValues: Record<string, unknown> = collectStaticTopLevelScopeValues(content)
-  try {
-    const evaluated = await evaluateDefineOptionsValues({
-      content,
-      filename,
-      lang,
-      statements,
-    })
-    values = evaluated.values
-    dependencies = evaluated.dependencies
-    scopeValues = {
-      ...scopeValues,
-      ...evaluated.scopeValues,
-    }
+  let scopeValues: Record<string, unknown> = {}
+  const staticValues = resolveStaticDefineOptionsValues(statements)
+  if (staticValues) {
+    values = staticValues
   }
-  catch (error) {
-    if (shouldFallbackToRawDefineOptions(error)) {
-      return {
-        code: content,
-        dependencies: [],
+  else {
+    scopeValues = collectStaticTopLevelScopeValues(content)
+    try {
+      const evaluated = await evaluateDefineOptionsValues({
+        content,
+        filename,
+        lang,
+        statements,
+      })
+      values = evaluated.values
+      dependencies = evaluated.dependencies
+      scopeValues = {
+        ...scopeValues,
+        ...evaluated.scopeValues,
       }
     }
-    throw error
+    catch (error) {
+      if (shouldFallbackToRawDefineOptions(error)) {
+        return {
+          code: content,
+          dependencies: [],
+        }
+      }
+      throw error
+    }
   }
 
   const ms = new MagicString(content)

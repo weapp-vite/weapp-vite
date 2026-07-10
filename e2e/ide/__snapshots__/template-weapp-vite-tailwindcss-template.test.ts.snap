@@ -5,29 +5,6 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
 text,
 ::after,
 ::before {
-  --tw-border-style: solid;
-  --tw-duration: initial;
-  --tw-ease: initial;
-  --tw-font-weight:;
-  --tw-gradient-from: #0000;
-  --tw-gradient-from-position: 0%;
-  --tw-gradient-position: initial;
-  --tw-gradient-stops: initial;
-  --tw-gradient-to: #0000;
-  --tw-gradient-to-position: 100%;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-  --tw-scale-z: 1;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-color: initial;
-  --tw-space-x-reverse: 0;
-  --tw-space-y-reverse: 0;
-  --tw-tracking:;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -86,6 +63,29 @@ wx-root-portal-content {
   --text-xl--line-height: 1.4;
   --text-xs: 24rpx;
   --text-xs--line-height: 1.33333;
+  --tw-border-style: solid;
+  --tw-duration: initial;
+  --tw-ease: initial;
+  --tw-font-weight:;
+  --tw-gradient-from: #0000;
+  --tw-gradient-from-position: 0%;
+  --tw-gradient-position: initial;
+  --tw-gradient-stops: initial;
+  --tw-gradient-to: #0000;
+  --tw-gradient-to-position: 100%;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-leading:;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-scale-z: 1;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-color: initial;
+  --tw-space-x-reverse: 0;
+  --tw-space-y-reverse: 0;
+  --tw-tracking:;
 }
 .mx-auto {
   margin-left: auto;

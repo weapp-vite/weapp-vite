@@ -1,3 +1,4 @@
+import type { MutableCompilerContext } from '../../../context'
 import type { ComponentMetadata } from '../metadata'
 import type { LocalAutoImportMatch } from '../types'
 import type { RegistryHelpers } from './registry'
@@ -7,7 +8,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 
 interface AutoImportActionsOptions {
   registry: Map<string, LocalAutoImportMatch>
-  autoImportState: { version: number, matcher?: (input: string) => boolean, matcherKey: string }
+  autoImportState: MutableCompilerContext['runtimeState']['autoImport']
   resolvedResolverComponents: Map<string, string>
   componentMetadataMap: Map<string, ComponentMetadata>
   resolverComponentNames: Set<string>
@@ -35,12 +36,63 @@ export function createAutoImportActions(
     options.autoImportState.version += 1
   }
 
+  async function awaitOutputWrites() {
+    while (true) {
+      const pending = [
+        ...options.pendingRegistrations,
+        options.outputsState.pendingWrite,
+        options.outputsState.pendingTypedWrite,
+        options.outputsState.pendingHtmlCustomDataWrite,
+        options.outputsState.pendingVueComponentsWrite,
+      ].filter((task): task is Promise<void> => Boolean(task))
+
+      if (!pending.length) {
+        return
+      }
+
+      await Promise.all(pending)
+    }
+  }
+
+  function setSupportFileResolverComponents(components: Record<string, string>) {
+    const changed = options.resolverHelpers.setSupportFileResolverComponents(components)
+    if (!changed) {
+      return
+    }
+    bumpVersion()
+    options.deferOrSchedule('manifest', true)
+    const { typed, html, vue } = options.getOutputSettingsSnapshot()
+    if (typed.enabled || html.enabled) {
+      options.resolverHelpers.syncResolverComponentProps()
+    }
+    if (typed.enabled) {
+      options.deferOrSchedule('typed', true)
+    }
+    if (html.enabled) {
+      options.deferOrSchedule('html', true)
+    }
+    if (vue.enabled) {
+      options.resolverHelpers.syncResolverComponentProps()
+      options.deferOrSchedule('vue', true)
+    }
+  }
+
+  function clearSupportFileResolverComponents() {
+    const changed = options.resolverHelpers.clearSupportFileResolverComponents()
+    if (!changed) {
+      return
+    }
+    bumpVersion()
+    options.resolverHelpers.syncResolverComponentProps()
+  }
+
   return {
     reset() {
       bumpVersion()
       options.registry.clear()
       options.autoImportState.matcher = undefined
       options.autoImportState.matcherKey = ''
+      options.autoImportState.preparedGlobsKey = undefined
       options.resolvedResolverComponents.clear()
       options.resolverHelpers.clearResolveCache()
       options.deferOrSchedule('manifest', true)
@@ -91,36 +143,18 @@ export function createAutoImportActions(
       options.deferOrSchedule('vue', shouldWriteArtifacts)
     },
 
-    setSupportFileResolverComponents(components: Record<string, string>) {
-      const changed = options.resolverHelpers.setSupportFileResolverComponents(components)
-      if (!changed) {
-        return
-      }
-      bumpVersion()
-      options.deferOrSchedule('manifest', true)
-      const { typed, html, vue } = options.getOutputSettingsSnapshot()
-      if (typed.enabled || html.enabled) {
-        options.resolverHelpers.syncResolverComponentProps()
-      }
-      if (typed.enabled) {
-        options.deferOrSchedule('typed', true)
-      }
-      if (html.enabled) {
-        options.deferOrSchedule('html', true)
-      }
-      if (vue.enabled) {
-        options.resolverHelpers.syncResolverComponentProps()
-        options.deferOrSchedule('vue', true)
-      }
-    },
+    setSupportFileResolverComponents,
 
-    clearSupportFileResolverComponents() {
-      const changed = options.resolverHelpers.clearSupportFileResolverComponents()
-      if (!changed) {
-        return
+    clearSupportFileResolverComponents,
+
+    async syncSupportFileResolverComponents() {
+      try {
+        setSupportFileResolverComponents(options.resolverHelpers.collectStaticResolverComponentsForSupportFiles())
+        await awaitOutputWrites()
       }
-      bumpVersion()
-      options.resolverHelpers.syncResolverComponentProps()
+      finally {
+        clearSupportFileResolverComponents()
+      }
     },
 
     collectStaticResolverComponentsForSupportFiles() {
@@ -185,18 +219,16 @@ export function createAutoImportActions(
       return Array.from(options.registry.values())
     },
 
+    hasPendingRegistrations() {
+      return options.pendingRegistrations.size > 0
+    },
+
     awaitPendingRegistrations() {
       return Promise.all([...options.pendingRegistrations]).then(() => {})
     },
 
     awaitManifestWrites() {
-      return Promise.all([
-        Promise.all([...options.pendingRegistrations]),
-        options.outputsState.pendingWrite ?? Promise.resolve(),
-        options.outputsState.pendingTypedWrite ?? Promise.resolve(),
-        options.outputsState.pendingHtmlCustomDataWrite ?? Promise.resolve(),
-        options.outputsState.pendingVueComponentsWrite ?? Promise.resolve(),
-      ]).then(() => {})
+      return awaitOutputWrites()
     },
   }
 }

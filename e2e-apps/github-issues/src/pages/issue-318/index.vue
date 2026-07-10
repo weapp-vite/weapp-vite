@@ -11,11 +11,15 @@ definePageJson({
   backgroundColor: '#ffffff',
 })
 
+function createInitialRows(): Issue318Row[] {
+  return [
+    { id: 'row-0', label: 'Alpha' },
+    { id: 'row-1', label: 'Beta' },
+  ]
+}
+
 const count = ref(1)
-const list = ref<Issue318Row[]>([
-  { id: 'row-0', label: 'Alpha' },
-  { id: 'row-1', label: 'Beta' },
-])
+const list = ref<Issue318Row[]>(createInitialRows())
 const activeIndex = ref(0)
 
 const activeRow = computed(() => {
@@ -64,7 +68,19 @@ function cycleActive() {
   activeIndex.value = (activeIndex.value + 1) % list.value.length
 }
 
-function _runE2E() {
+function resetE2E() {
+  count.value = 1
+  list.value = createInitialRows()
+  activeIndex.value = 0
+}
+
+function _runE2E(action?: 'mutate') {
+  if (action === 'mutate') {
+    resetE2E()
+    incCount()
+    appendRow()
+    cycleActive()
+  }
   const rows = getRows().map(row => formatRow(row))
   const meta = formatMeta(count.value, getRows().length)
   const active = formatRow(activeRow.value)
@@ -76,6 +92,13 @@ function _runE2E() {
     meta,
   }
 }
+
+defineExpose({
+  incCount,
+  appendRow,
+  cycleActive,
+  _runE2E,
+})
 </script>
 
 <template>

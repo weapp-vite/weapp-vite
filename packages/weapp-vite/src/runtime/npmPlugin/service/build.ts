@@ -28,9 +28,19 @@ function hasSameDependencySet(source: string[], target: string[]) {
   return source.every(dep => target.includes(dep))
 }
 
+async function loadPackageInfo(dep: string, cwd?: string) {
+  try {
+    return await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
+  }
+  catch {
+    return null
+  }
+}
+
 async function resolvePackageDependencyClosure(
   dependencies: string[],
   cwd?: string,
+  resolvePackageInfo: (dep: string, cwd?: string) => Promise<Awaited<ReturnType<typeof getPackageInfo>> | null> = loadPackageInfo,
 ) {
   const visited = new Set<string>()
 
@@ -40,14 +50,7 @@ async function resolvePackageDependencyClosure(
     }
     visited.add(dep)
 
-    let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
-    try {
-      packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
-    }
-    catch {
-      packageInfo = null
-    }
-
+    const packageInfo = await resolvePackageInfo(dep, cwd)
     const transitiveDependencies = Object.keys(packageInfo?.packageJson.dependencies ?? {})
     await Promise.all(transitiveDependencies.map(childDep => visit(childDep)))
   }
@@ -64,36 +67,41 @@ async function copyDirectoryWithFilter(
   await fs.ensureDir(targetDir)
   const entries = await fs.readdir(sourceDir, { withFileTypes: true })
 
-  for (const entry of entries) {
+  await Promise.all(entries.map(async (entry) => {
     const sourcePath = path.resolve(sourceDir, entry.name)
     if (!filter(sourcePath)) {
-      continue
+      return
     }
 
     const targetPath = path.resolve(targetDir, entry.name)
     if (entry.isDirectory()) {
       await copyDirectoryWithFilter(sourcePath, targetPath, filter)
-      continue
+      return
     }
 
     await fs.ensureDir(path.dirname(targetPath))
     await copyFile(sourcePath, targetPath)
-  }
+  }))
 }
 
 export function createNpmBuildService(options: NpmBuildServiceOptions) {
   const { ctx, builder, cache } = options
+  const packageInfoPromiseCache = new Map<string, Promise<Awaited<ReturnType<typeof getPackageInfo>> | null>>()
+
+  function getPackageInfoCached(dep: string, cwd?: string) {
+    const cacheKey = `${cwd ?? ''}\0${dep}`
+    let packageInfoPromise = packageInfoPromiseCache.get(cacheKey)
+    if (!packageInfoPromise) {
+      packageInfoPromise = loadPackageInfo(dep, cwd)
+      packageInfoPromiseCache.set(cacheKey, packageInfoPromise)
+    }
+    return packageInfoPromise
+  }
 
   async function resolveMiniprogramCandidateDependencies(allDependencies: string[], cwd?: string) {
     const miniprogramDependencies = await Promise.all(
       allDependencies.map(async (dep) => {
-        let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
-        try {
-          packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
-        }
-        catch {
-          packageInfo = null
-        }
+        const packageInfo = await getPackageInfoCached(dep, cwd)
         if (packageInfo && builder.isMiniprogramPackage(packageInfo.packageJson)) {
           return dep
         }
@@ -157,6 +165,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     if (!ctx.configService?.weappViteConfig?.npm?.enable) {
       return
     }
+    const configService = ctx.configService
 
     debug?.('buildNpm start')
 
@@ -169,43 +178,48 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
 
     const packNpmRelationList = getPackNpmRelationList(ctx)
     const [mainRelation, ...subRelations] = packNpmRelationList
-    const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
+    const packageJsonPath = path.resolve(configService.cwd, mainRelation.packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
       const pkgJson = ((await fs.readJson(packageJsonPath)) ?? {}) as PackageJson
-      const npmDistDirName = resolveNpmDistDirName(ctx.configService)
-      const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
-      const cachedSourceOutDir = resolveNpmSourceCacheOutDir(ctx.configService.cwd, npmDistDirName)
-      const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)
+      const npmDistDirName = resolveNpmDistDirName(configService)
+      const outDir = path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
+      const cachedSourceOutDir = resolveNpmSourceCacheOutDir(configService.cwd, npmDistDirName)
+      const localSubPackageOutRoot = configService.outDir || path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir)
       const allDependencies = await resolveBuildCandidateDependencies(pkgJson)
       const mainDependencies = resolveTargetDependencies(allDependencies, resolveMainBuildDependencyPatterns(ctx))
       const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
       const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
         .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
 
-      if (sourceOutDir !== outDir) {
-        await buildTargetDependencies({
-          cacheKey: '__all__',
-          dependencies: allDependencies,
-          npmDistDir: sourceOutDir,
-          options,
-        })
-      }
+      const sourceBuildPromise = sourceOutDir !== outDir
+        ? buildTargetDependencies({
+            cacheKey: '__all__',
+            dependencies: allDependencies,
+            npmDistDir: sourceOutDir,
+            options,
+          })
+        : Promise.resolve()
 
-      await buildTargetDependencies({
-        cacheKey: ctx.configService.pluginOnly ? '__plugin__' : undefined,
+      const mainBuildPromise = buildTargetDependencies({
+        cacheKey: configService.pluginOnly ? '__plugin__' : undefined,
         dependencies: mainDependencies,
         npmDistDir: outDir,
         options,
       })
 
+      await Promise.all([
+        sourceBuildPromise,
+        mainBuildPromise,
+      ])
+
       if (mainDependencies.length === 0) {
         await Promise.all(subRelations.map((relation) => {
-          return fs.remove(path.resolve(ctx.configService!.cwd, relation.miniprogramNpmDistDir, npmDistDirName))
+          return fs.remove(path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName))
         }))
       }
       else {
         await Promise.all(subRelations.map(async (relation) => {
-          const targetDir = path.resolve(ctx.configService!.cwd, relation.miniprogramNpmDistDir, npmDistDirName)
+          const targetDir = path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName)
           await fs.remove(targetDir)
           await fs.copy(outDir, targetDir, {
             overwrite: true,
@@ -213,16 +227,18 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         }))
       }
 
-      for (const meta of localSubPackageMetas) {
+      await Promise.all(localSubPackageMetas.map(async (meta) => {
         const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
-        const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
-          ? await resolvePackageDependencyClosure(
-              resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
-              ctx.configService.cwd,
-            )
-          : []
-        if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
+        const shouldRefreshLocalSubPackageNpm = isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))
+        if (shouldRefreshLocalSubPackageNpm) {
+          const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
+            ? await resolvePackageDependencyClosure(
+                resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
+                configService.cwd,
+                getPackageInfoCached,
+              )
+            : []
           await fs.remove(targetDir)
           await copyDirectoryWithFilter(sourceOutDir, targetDir, (sourcePath) => {
             if (subPackageDependencies.length > 0) {
@@ -236,7 +252,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           })
         }
         await cache.writeDependenciesCache(meta.subPackage.root)
-      }
+      }))
     }
 
     debug?.('buildNpm end')

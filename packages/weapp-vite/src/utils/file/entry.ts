@@ -32,6 +32,14 @@ export function normalizeFileExtension(extension: string) {
   return extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
 }
 
+const knownEntryExtensions = new Set([
+  ...configExtensions,
+  ...jsExtensions,
+  ...supportedCssLangs,
+  ...templateExtensions,
+  ...vueExtensions,
+].map(normalizeFileExtension))
+
 export function changeFileExtension(filePath: string, extension: string) {
   if (typeof filePath !== 'string') {
     throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)
@@ -51,85 +59,55 @@ export function changeFileExtension(filePath: string, extension: string) {
   return path.join(path.dirname(filePath), basename + extension)
 }
 
-export async function findVueEntry(filepath: string) {
-  for (const ext of vueExtensions) {
-    const targetPath = changeFileExtension(filepath, ext)
-    if (await pathExistsCached(targetPath)) {
-      return targetPath
-    }
+async function findEntryByExtensions(filepath: string, extensions: readonly string[]) {
+  const normalizedExtensions = extensions.map(normalizeFileExtension)
+  const currentExtension = path.extname(filepath)
+  const shouldReplaceExtension = currentExtension
+    ? knownEntryExtensions.has(currentExtension)
+    : false
+  const predictions = normalizedExtensions.map((ext) => {
+    return shouldReplaceExtension
+      ? changeFileExtension(filepath, ext)
+      : `${filepath}${ext}`
+  })
+  const exists = await Promise.all(predictions.map(targetPath => pathExistsCached(targetPath)))
+  const matchedIndex = exists.findIndex(Boolean)
+  return {
+    predictions,
+    path: matchedIndex >= 0 ? predictions[matchedIndex] : undefined,
   }
+}
+
+export async function findVueEntry(filepath: string) {
+  return (await findEntryByExtensions(filepath, vueExtensions)).path
 }
 
 export async function findJsEntry(filepath: string): Promise<{
   predictions: string[]
   path?: string
 }> {
-  const predictions = jsExtensions.map(ext => changeFileExtension(filepath, ext))
-  for (const targetPath of predictions) {
-    if (await pathExistsCached(targetPath)) {
-      return {
-        path: targetPath,
-        predictions,
-      }
-    }
-  }
-  return {
-    predictions,
-  }
+  return findEntryByExtensions(filepath, jsExtensions)
 }
 
 export async function findJsonEntry(filepath: string): Promise<{
   predictions: string[]
   path?: string
 }> {
-  const predictions = configExtensions.map(ext => changeFileExtension(filepath, ext))
-  for (const targetPath of predictions) {
-    if (await pathExistsCached(targetPath)) {
-      return {
-        predictions,
-        path: targetPath,
-      }
-    }
-  }
-  return {
-    predictions,
-  }
+  return findEntryByExtensions(filepath, configExtensions)
 }
 
 export async function findCssEntry(filepath: string): Promise<{
   predictions: string[]
   path?: string
 }> {
-  const predictions = supportedCssLangs.map(ext => changeFileExtension(filepath, ext))
-  for (const targetPath of predictions) {
-    if (await pathExistsCached(targetPath)) {
-      return {
-        predictions,
-        path: targetPath,
-      }
-    }
-  }
-  return {
-    predictions,
-  }
+  return findEntryByExtensions(filepath, supportedCssLangs)
 }
 
 export async function findTemplateEntry(filepath: string): Promise<{
   predictions: string[]
   path?: string
 }> {
-  const predictions = templateExtensions.map(ext => changeFileExtension(filepath, ext))
-  for (const targetPath of predictions) {
-    if (await pathExistsCached(targetPath)) {
-      return {
-        predictions,
-        path: targetPath,
-      }
-    }
-  }
-  return {
-    predictions,
-  }
+  return findEntryByExtensions(filepath, templateExtensions)
 }
 
 export function isTemplate(filepath: string) {

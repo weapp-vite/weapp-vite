@@ -1,9 +1,10 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import {
   collectAffectedEntries,
   collectAffectedEntriesFromSharedChunks,
+  collectAffectedSharedChunkEntriesAndChunks,
   collectAffectedSharedChunks,
   refreshModuleGraph,
   refreshPartialSharedChunkImporters,
@@ -49,6 +50,16 @@ function createState() {
   } as any
 }
 
+class ThrowOnIterateMap<K, V> extends Map<K, V> {
+  override entries() {
+    throw new Error('unexpected full map scan')
+  }
+
+  override [Symbol.iterator]() {
+    throw new Error('unexpected full map scan')
+  }
+}
+
 describe('core helpers graph', () => {
   it('collects affected entries through importer graph traversal', () => {
     const state = createState()
@@ -65,6 +76,30 @@ describe('core helpers graph', () => {
     expect(collectAffectedEntries(state, '/src/shared.ts')).toEqual(new Set(['/src/app.ts']))
     expect(collectAffectedEntries(state, '/src/external-state.ts')).toEqual(new Set(['/src/components/card.vue']))
     expect(collectAffectedEntries(state, '/src/unknown.ts')).toEqual(new Set())
+  })
+
+  it('collects affected shared chunk entries and chunks in one pass', () => {
+    const state = createState()
+    const sharedModule = '/project/src/shared/tokens.ts'
+    const pageEntry = '/project/src/pages/index.ts'
+    const componentEntry = '/project/src/components/card/index.ts'
+    const unknownImporter = '/project/src/unused/importer.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(componentEntry, { value: true })
+    state.hmrSharedChunksByModule.set(sharedModule, new Set(['common.js', 'vendor.js']))
+    state.hmrSharedChunkImporters.set('common.js', new Set([pageEntry, unknownImporter]))
+    state.hmrSharedChunkImporters.set('vendor.js', new Set([pageEntry, componentEntry]))
+
+    const affected = collectAffectedSharedChunkEntriesAndChunks(state, sharedModule)
+
+    expect(affected.affectedEntries).toEqual(
+      collectAffectedEntriesFromSharedChunks(state, sharedModule),
+    )
+    expect(affected.affectedChunks).toEqual(
+      collectAffectedSharedChunks(state, sharedModule),
+    )
+    expect(affected.affectedEntries).toEqual(new Set([pageEntry, componentEntry]))
+    expect(affected.affectedChunks).toEqual(new Set(['common.js', 'vendor.js']))
   })
 
   it('refreshes module graph and skips virtual or node built-in ids', () => {
@@ -186,6 +221,115 @@ describe('core helpers graph', () => {
     expect(state.moduleImporters.get(composable)).toEqual(new Set([pageEntry]))
     expect(state.moduleImporters.has(staleDep)).toBe(false)
     expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+  })
+
+  it('merges partial bundle entry importers using indexed stale dependency cleanup', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const otherEntry = '/project/src/pages/other.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDepA = '/project/src/shared/stale-a.ts'
+    const staleDepB = '/project/src/shared/stale-b.ts'
+    const otherDep = '/project/src/shared/other.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.entryModuleIds.add(otherEntry)
+    state.moduleImporters.set(staleDepA, new Set([pageEntry, otherEntry]))
+    state.moduleImporters.set(staleDepB, new Set([pageEntry]))
+    state.moduleImporters.set(otherDep, new Set([otherEntry]))
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+      'pages/index-style.js': createChunk('pages/index-style.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(state.moduleImporters.get(staleDepA)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.has(staleDepB)).toBe(false)
+    expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
+  })
+
+  it('keeps merge cleanup scoped to touched entries while preserving unrelated importer edges', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const otherEntry = '/project/src/pages/other.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDep = '/project/src/shared/stale.ts'
+    const sharedDep = '/project/src/shared/reused.ts'
+    const otherDep = '/project/src/shared/other.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.entryModuleIds.add(otherEntry)
+    state.moduleImporters.set(staleDep, new Set([pageEntry]))
+    state.moduleImporters.set(sharedDep, new Set([pageEntry, otherEntry]))
+    state.moduleImporters.set(otherDep, new Set([otherEntry]))
+
+    refreshModuleGraph({
+      getModuleIds: () => [],
+      getModuleInfo: () => undefined,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(state.moduleImporters.has(staleDep)).toBe(false)
+    expect(state.moduleImporters.get(sharedDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(otherDep)).toEqual(new Set([otherEntry]))
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
+  })
+
+  it('skips full plugin module graph scans during bundle-backed merge refreshes', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.vue'
+    const nextDep = '/project/src/shared/next.ts'
+    const staleDep = '/project/src/shared/stale.ts'
+    const getModuleIds = vi.fn(() => {
+      throw new Error('getModuleIds should not be called during merge bundle refresh')
+    })
+    const getModuleInfo = vi.fn()
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry } as any)
+    state.entryModuleIds.add(pageEntry)
+    state.moduleImporters.set(staleDep, new Set([pageEntry]))
+
+    refreshModuleGraph({
+      getModuleIds,
+      getModuleInfo,
+    }, state, {
+      'pages/index.js': createChunk('pages/index.js', {
+        facadeModuleId: pageEntry,
+        moduleIds: [
+          pageEntry,
+          nextDep,
+        ],
+      }),
+    }, { mode: 'merge' })
+
+    expect(getModuleIds).not.toHaveBeenCalled()
+    expect(getModuleInfo).not.toHaveBeenCalled()
+    expect(state.moduleImporters.has(staleDep)).toBe(false)
+    expect(state.moduleImporters.get(nextDep)).toEqual(new Set([pageEntry]))
   })
 
   it('refreshes shared chunk importers from entry chunks only', () => {
@@ -389,6 +533,83 @@ describe('core helpers graph', () => {
     )
   })
 
+  it('clears partial shared chunk importers through entry chunk index', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    const otherEntry = '/project/src/pages/other/index.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(otherEntry, { value: true })
+    state.hmrSharedChunkImporters.set('common.js', new Set([pageEntry, otherEntry]))
+    state.hmrSharedChunkImporters.set('weapp-vendors/runtime.js', new Set([pageEntry]))
+    state.hmrSharedChunkImporters.set('unrelated.js', new Set([otherEntry]))
+    state.hmrSharedChunksByEntry.set(pageEntry, new Set(['common.js', 'weapp-vendors/runtime.js']))
+    state.hmrSharedChunksByEntry.set(otherEntry, new Set(['common.js', 'unrelated.js']))
+    state.hmrSharedChunkDependencies.set('common.js', new Set(['weapp-vendors/runtime.js']))
+    state.hmrSharedChunkDependencies.set('weapp-vendors/runtime.js', new Set())
+    state.hmrSharedChunkDependencies.set('unrelated.js', new Set())
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/runtime.js'],
+      }),
+      'weapp-vendors/runtime.js': createChunk('weapp-vendors/runtime.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(new Set([otherEntry, pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/runtime.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('unrelated.js')).toEqual(new Set([otherEntry]))
+    expect(state.hmrSharedChunksByEntry.get(pageEntry)).toEqual(
+      new Set(['common.js', 'weapp-vendors/runtime.js']),
+    )
+    expect(state.hmrSharedChunksByEntry.get(otherEntry)).toEqual(
+      new Set(['common.js', 'unrelated.js']),
+    )
+  })
+
+  it('snapshots indexed partial shared chunks without scanning unrelated importer maps', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    const otherEntry = '/project/src/pages/other/index.ts'
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.resolvedEntryMap.set(otherEntry, { value: true })
+    state.hmrSharedChunkImporters = new ThrowOnIterateMap([
+      ['common.js', new Set([pageEntry, otherEntry])],
+      ['weapp-vendors/runtime.js', new Set([pageEntry])],
+      ['unrelated.js', new Set([otherEntry])],
+    ])
+    state.hmrSharedChunksByEntry.set(pageEntry, new Set(['common.js', 'weapp-vendors/runtime.js']))
+    state.hmrSharedChunksByEntry.set(otherEntry, new Set(['common.js', 'unrelated.js']))
+    state.hmrSharedChunkDependencies = new ThrowOnIterateMap([
+      ['common.js', new Set(['weapp-vendors/runtime.js'])],
+      ['weapp-vendors/runtime.js', new Set()],
+      ['unrelated.js', new Set()],
+    ])
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/runtime.js'],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(new Set([otherEntry, pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/runtime.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('unrelated.js')).toEqual(new Set([otherEntry]))
+  })
+
   it('refreshes module index for chunks included in partial refreshes', () => {
     const state = createState()
     const entry = '/project/src/pages/hmr/index.ts'
@@ -441,6 +662,41 @@ describe('core helpers graph', () => {
     expect(state.hmrSharedChunksByModule.has(previousModule)).toBe(false)
     expect(state.hmrSharedChunksByModule.get(nextModule)).toEqual(
       new Set(['legacy-common.js', 'common.js']),
+    )
+  })
+
+  it('prunes shared chunk module ownership through chunk module index', () => {
+    const state = createState()
+    const entry = '/project/src/pages/hmr/index.ts'
+    const staleCommonModule = '/project/src/shared/common-stale.ts'
+    const nextCommonModule = '/project/src/shared/common-next.ts'
+    const vendorModule = '/project/src/shared/vendor.ts'
+    state.resolvedEntryMap.set(entry, { value: true })
+    state.hmrSharedChunksByModule.set(staleCommonModule, new Set(['common.js']))
+    state.hmrSharedChunksByModule.set(nextCommonModule, new Set(['legacy-common.js']))
+    state.hmrSharedChunksByModule.set(vendorModule, new Set(['weapp-vendors/vendor.js']))
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: entry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        moduleIds: [nextCommonModule],
+        imports: ['./weapp-vendors/vendor.js'],
+      }),
+      'weapp-vendors/vendor.js': createChunk('weapp-vendors/vendor.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([entry]))
+
+    expect(state.hmrSharedChunksByModule.has(staleCommonModule)).toBe(false)
+    expect(state.hmrSharedChunksByModule.get(nextCommonModule)).toEqual(
+      new Set(['legacy-common.js', 'common.js']),
+    )
+    expect(state.hmrSharedChunksByModule.get(vendorModule)).toEqual(
+      new Set(['weapp-vendors/vendor.js']),
     )
   })
 

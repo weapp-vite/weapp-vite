@@ -111,7 +111,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     invalidateDirtyVueEntryCaches(new Set(['/project/src/app.vue']), compilationCache)
 
     expect(compilationCache.get('/project/src/app.vue')).toEqual({
-      source: undefined,
+      source: '<template />',
       refreshToken: 2,
     })
     expect(compilationCache.get('/project/src/pages/index.vue')).toEqual({
@@ -133,9 +133,25 @@ describe('createVueTransformPlugin lifecycle', () => {
     invalidateDirtyVueEntryCaches(new Set(['D:/project/src/app.vue']), compilationCache)
 
     expect(compilationCache.get('D:\\project\\src\\app.vue')).toEqual({
-      source: undefined,
+      source: '<script setup />',
       refreshToken: 1,
     })
+  })
+
+  it('invalidates component metadata cache with raw and normalized path keys', async () => {
+    normalizeFsResolvedIdMock.mockImplementation((id: string) => id.replace(/\\/g, '/'))
+    const { invalidateComponentMetaCache } = await import('./index')
+    const cache = new Map<string, any>([
+      ['D:\\project\\src\\components\\card.vue', Promise.resolve({ isMiniProgramComponent: false })],
+      ['D:/project/src/components/card.vue', Promise.resolve({ isMiniProgramComponent: true })],
+      ['D:/project/src/components/other.vue', Promise.resolve({ isMiniProgramComponent: true })],
+    ])
+
+    invalidateComponentMetaCache(cache, 'D:\\project\\src\\components\\card.vue')
+
+    expect(cache.has('D:\\project\\src\\components\\card.vue')).toBe(false)
+    expect(cache.has('D:/project/src/components/card.vue')).toBe(false)
+    expect(cache.has('D:/project/src/components/other.vue')).toBe(true)
   })
 
   it('preloads native layout entries during buildStart', async () => {
@@ -262,11 +278,24 @@ describe('createVueTransformPlugin lifecycle', () => {
 
   it('delegates resolveId to scoped slot resolution', async () => {
     const { createVueTransformPlugin } = await import('./index')
-    const plugin = createVueTransformPlugin({} as any)
+    const profile = {}
+    const plugin = createVueTransformPlugin({
+      runtimeState: {
+        build: {
+          hmr: {
+            profile,
+          },
+        },
+      },
+    } as any)
 
     const resolveId = getHookHandler(plugin.resolveId as any)
     expect(resolveId('virtual:slot')).toBe('resolved:virtual:slot')
     expect(resolveScopedSlotVirtualIdMock).toHaveBeenCalledWith('virtual:slot')
+    expect(profile).toEqual(expect.objectContaining({
+      pluginResolveMs: expect.any(Number),
+      resolveCount: 1,
+    }))
   })
 
   it('declares rolldown filters for hot transform paths', async () => {

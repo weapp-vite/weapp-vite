@@ -89,6 +89,7 @@ export function registerServeCommand(cli: CAC) {
         inlineConfig,
         cliPlatform: targets.rawPlatform,
         preloadAppEntry: false,
+        syncAutoImportSupportFiles: false,
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
@@ -158,6 +159,10 @@ export function registerServeCommand(cli: CAC) {
           const buildResult = await buildService.build(options)
           const miniBuildDurationMs = Date.now() - miniBuildStartedAt
           logger.success(`小程序初次构建完成，耗时：${formatDuration(miniBuildDurationMs)}`)
+          void ctx.autoImportService?.syncSupportFileResolverComponents().catch((error) => {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.warn(`[prepare] 后台同步 .weapp-vite 支持文件失败：${message}`)
+          })
 
           if (enableAnalyze) {
             await analyzeController.startDashboard(startAnalyzeDashboard)

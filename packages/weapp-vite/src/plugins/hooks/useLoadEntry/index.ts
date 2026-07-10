@@ -2,8 +2,12 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
+import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { changeFileExtension } from '../../../utils'
+import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
 import { createExtendedLibManager } from './extendedLib'
@@ -31,10 +35,19 @@ interface HmrOptions {
 
 interface PendingEntryResolution {
   pending: Set<string>
+  hmrEntries?: Set<string>
   sharedChunkResolveMs?: number
   pendingReasonSummary?: string[]
   shouldEmitAllEntries?: boolean
   forceFullSharedChunkRefresh?: boolean
+}
+
+interface ChunkEmitStatsSummary {
+  chunkEmitCount: number
+  emitFileMs: number
+  loadCount: number
+  loadMs: number
+  skippedLoadedCount: number
 }
 
 function shouldExpandStableSharedChunk(chunkId: string, importers?: Set<string>) {
@@ -79,6 +92,95 @@ function isEntryAutoRoutesRefresh(dirtyReasonSummary?: string[]) {
   return dirtyReasonSummary?.some(item => item.startsWith('entry-auto-routes:')) === true
 }
 
+function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.some(item => item.startsWith('shared-chunk-source:'))
+    && dirtyReasonSummary.every(item =>
+      item.startsWith('shared-chunk-source:')
+      || item.startsWith('tailwind-content:'),
+    ),
+  )
+}
+
+function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.every(item =>
+      item.startsWith('css-importer:')
+      || item.startsWith('css-importer-fallback:'),
+    ),
+  )
+}
+
+function isWxmlImportOnlyRefresh(dirtyReasonSummary?: string[]) {
+  return Boolean(
+    dirtyReasonSummary?.length
+    && dirtyReasonSummary.every(item => item.startsWith('wxml-importer-import:')),
+  )
+}
+
+function isVueEntryId(entryId: string) {
+  return vueExtensions.some(ext => entryId.endsWith(`.${ext}`))
+}
+
+function resolveCssImporterRepresentative(
+  pending: Set<string>,
+  resolvedEntryMap: Map<string, ResolvedId>,
+  rootInputIds?: Set<string>,
+) {
+  let fallback: string | undefined
+  let nonRootFallback: string | undefined
+  for (const entryId of pending) {
+    if (!resolvedEntryMap.has(entryId)) {
+      continue
+    }
+    const isRootInput = rootInputIds?.has(entryId) === true
+    if (!fallback) {
+      fallback = entryId
+    }
+    if (!isRootInput && !nonRootFallback) {
+      nonRootFallback = entryId
+    }
+    if (!isRootInput && !isVueEntryId(entryId)) {
+      return entryId
+    }
+  }
+  return nonRootFallback ?? fallback
+}
+
+function resolveSharedChunkRepresentative(
+  importers: Set<string>,
+  pending: Set<string>,
+  resolvedEntryMap: Map<string, ResolvedId>,
+) {
+  let resolvedRepresentative: string | undefined
+  for (const entryId of importers) {
+    if (pending.has(entryId)) {
+      return entryId
+    }
+    if (!resolvedRepresentative && resolvedEntryMap.has(entryId)) {
+      resolvedRepresentative = entryId
+    }
+  }
+  return resolvedRepresentative
+}
+
+function previewChunkIds(chunkIds: Set<string>) {
+  const preview: string[] = []
+  for (const chunkId of chunkIds) {
+    if (preview.length >= 2) {
+      break
+    }
+    const segments = chunkId.split('/')
+    preview.push(segments[segments.length - 1]!)
+  }
+  return {
+    label: preview.join(','),
+    overflow: chunkIds.size > 2 ? '+' : '',
+  }
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
@@ -89,6 +191,7 @@ function resolvePendingEntryIds(options: {
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
+  rootInputIds?: Set<string>
 }): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
   const pendingReasonSummary = resolveUpstreamPendingReasonSummary(options.dirtyReasonSummary)
@@ -104,6 +207,23 @@ function resolvePendingEntryIds(options: {
     return {
       pending,
       pendingReasonSummary,
+    }
+  }
+
+  const isRepresentativeOnlyRefresh = isCssImporterOnlyRefresh(options.dirtyReasonSummary)
+    || isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
+  if (isRepresentativeOnlyRefresh && pending.size > 1) {
+    const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap, options.rootInputIds)
+    if (representative) {
+      const reason = isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
+        ? 'wxml-importer-import-representative'
+        : 'css-importer-representative'
+      pendingReasonSummary.push(`${reason}:1/${pending.size}`)
+      return {
+        pending: new Set([representative]),
+        hmrEntries: pending,
+        pendingReasonSummary,
+      }
     }
   }
 
@@ -160,6 +280,7 @@ function resolvePendingEntryIds(options: {
   const expandedImporters = new Set<string>()
   let expansionMode: DirtyEntryReason | 'mixed' | null = null
   let hasStableSharedChunkExpansion = false
+  const representativeImporters = new Set<string>()
   for (const chunkId of relatedChunkIds) {
     const importers = options.sharedChunkImporters.get(chunkId)
     if (!importers) {
@@ -170,7 +291,6 @@ function resolvePendingEntryIds(options: {
     }
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
-    let hasMetadataDirtyImporter = false
     for (const importer of importers) {
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
         hasDependencyDrivenImporter = true
@@ -178,23 +298,25 @@ function resolvePendingEntryIds(options: {
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
         hasDirectDirtyImporter = true
-        continue
-      }
-      if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'metadata') {
-        hasMetadataDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter && !shouldExpandLayoutSharedChunks) {
+    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter && !shouldExpandLayoutSharedChunks) {
       continue
     }
     if (shouldExpandStableSharedChunk(chunkId, importers)) {
       hasStableSharedChunkExpansion = true
     }
-    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter && !hasMetadataDirtyImporter) {
+    if (isSharedChunkSourceRepresentativeRefresh(options.dirtyReasonSummary)) {
+      const representative = resolveSharedChunkRepresentative(importers, pending, options.resolvedEntryMap)
+      if (representative) {
+        representativeImporters.add(representative)
+      }
+    }
+    if (shouldExpandLayoutSharedChunks && !hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
     }
     else if (
-      [hasDependencyDrivenImporter, hasDirectDirtyImporter, hasMetadataDirtyImporter]
+      [hasDependencyDrivenImporter, hasDirectDirtyImporter]
         .filter(Boolean)
         .length > 1
     ) {
@@ -202,9 +324,6 @@ function resolvePendingEntryIds(options: {
     }
     else if (hasDirectDirtyImporter) {
       expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
-    }
-    else if (hasMetadataDirtyImporter) {
-      expansionMode = expansionMode && expansionMode !== 'metadata' ? 'mixed' : 'metadata'
     }
     else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -218,13 +337,28 @@ function resolvePendingEntryIds(options: {
   }
 
   if (expandedImporters.size > 0) {
-    const chunkPreview = [...relatedChunkIds].slice(0, 2).map((chunkId) => {
-      const segments = chunkId.split('/')
-      return segments[segments.length - 1]
-    }).join(',')
-    const overflow = relatedChunkIds.size > 2 ? '+' : ''
+    const { label: chunkPreview, overflow } = previewChunkIds(relatedChunkIds)
     const mode = expansionMode ? `:${expansionMode}` : ''
     pendingReasonSummary.push(`shared-chunk(${chunkPreview}${overflow})+${expandedImporters.size}${mode}`)
+  }
+
+  if (representativeImporters.size && representativeImporters.size < pending.size) {
+    const hmrEntries = new Set(pending)
+    const representativePending = new Set<string>()
+    for (const entryId of representativeImporters) {
+      if (pending.has(entryId)) {
+        representativePending.add(entryId)
+      }
+    }
+    if (representativePending.size) {
+      pendingReasonSummary.push(`shared-chunk-representative:${representativePending.size}/${hmrEntries.size}`)
+      return {
+        pending: representativePending,
+        hmrEntries,
+        sharedChunkResolveMs: performance.now() - startedAt,
+        pendingReasonSummary,
+      }
+    }
   }
 
   return {
@@ -239,9 +373,47 @@ function resolvePendingEntryIds(options: {
 function shouldPreloadEntryAssetOnly(dirtyReasonSummary?: string[]) {
   return dirtyReasonSummary?.some(item =>
     item.startsWith('json-sidecar:')
+    || item.startsWith('entry-json-only:')
     || item.startsWith('style-sidecar:')
-    || item.startsWith('entry-local-asset:'),
+    || item.startsWith('entry-style-only:')
+    || item.startsWith('entry-local-asset:')
+    || item.startsWith('wxml-importer-import:'),
   ) === true
+}
+
+function resolveCurrentStyleOutputFileName(ctx: CompilerContext) {
+  const currentFile = ctx.runtimeState.build.hmr.profile.file
+  if (typeof currentFile !== 'string') {
+    return undefined
+  }
+  const normalizedFile = normalizeFsResolvedId(currentFile)
+  if (!supportedCssLangs.some(ext => normalizedFile.endsWith(`.${ext}`))) {
+    return undefined
+  }
+  return ctx.configService.relativeOutputPath(
+    changeFileExtension(normalizedFile, ctx.configService.outputExtensions.wxss),
+  )
+}
+
+function createChunkEmitStatsSummary(): ChunkEmitStatsSummary {
+  return {
+    chunkEmitCount: 0,
+    emitFileMs: 0,
+    loadCount: 0,
+    loadMs: 0,
+    skippedLoadedCount: 0,
+  }
+}
+
+function addChunkEmitStatsSummary(
+  target: ChunkEmitStatsSummary,
+  source: ChunkEmitStatsSummary,
+) {
+  target.chunkEmitCount += source.chunkEmitCount
+  target.emitFileMs += source.emitFileMs
+  target.loadCount += source.loadCount
+  target.loadMs += source.loadMs
+  target.skippedLoadedCount += source.skippedLoadedCount
 }
 
 export function useLoadEntry(
@@ -266,25 +438,40 @@ export function useLoadEntry(
   const lastChunkEmittedEntryIds = new Set<string>()
   const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
   const metadataEntryIds = new Set<string>()
+  const rootInputIds = options?.hmr?.rootInputIds
+  const chunkEmitStats = createChunkEmitStatsSummary()
+  const addLastEmittedChunkFileName = (entryId: string) => {
+    lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+    if (rootInputIds?.has(entryId)) {
+      lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeAbsoluteSrcRoot(entryId), '.js'))
+    }
+  }
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
 
   const normalizeEntry = createEntryNormalizer(ctx.configService)
   const scanTemplateEntry = createTemplateScanner(ctx.wxmlService, debug)
-  const rootInputIds = options?.hmr?.rootInputIds
   let loadEntry: ReturnType<typeof createEntryLoader>
   const emitEntriesChunks = createChunkEmitter(
     ctx.configService,
     loadedEntrySet,
     debug,
     (entryId) => {
+      if (rootInputIds?.has(entryId)) {
+        addLastEmittedChunkFileName(entryId)
+        if (!metadataEntryIds.has(entryId)) {
+          lastChunkEmittedEntryIds.add(entryId)
+        }
+      }
       lastActualEmittedEntryIds.add(entryId)
     },
     (entryId) => {
       lastChunkEmittedEntryIds.add(entryId)
     },
-    entryId => !rootInputIds?.has(entryId) && !metadataEntryIds.has(entryId),
+    entryId => !rootInputIds?.has(entryId)
+      && !metadataEntryIds.has(entryId)
+      && !lastChunkEmittedEntryIds.has(entryId),
     async function preloadAssetOnlyEntry(resolvedId, entryId) {
       if (rootInputIds?.has(entryId)) {
         await loadEntry.call(this, resolvedId.id, 'app')
@@ -301,11 +488,13 @@ export function useLoadEntry(
     (fileName) => {
       lastEmittedChunkFileNames.add(fileName)
     },
+    stats => addChunkEmitStatsSummary(chunkEmitStats, stats),
   )
   const applyAutoImports = createAutoImportAugmenter(
     ctx.autoImportService,
     ctx.wxmlService,
     ctx.runtimeState.build.hmr.externalComponentEntryMap,
+    ctx.configService,
   )
   const extendedLibManager = createExtendedLibManager()
 
@@ -359,6 +548,12 @@ export function useLoadEntry(
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
   const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
+  const clearDirtyEntry = (entryId: string) => {
+    dirtyEntrySet.delete(entryId)
+    dirtyEntryReasons.delete(entryId)
+    dirtyEntryEventIds.delete(entryId)
+  }
+
   return {
     loadEntry,
     entriesMap,
@@ -415,22 +610,50 @@ export function useLoadEntry(
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
         sourceSharedChunks: options?.hmr?.sourceSharedChunks,
+        rootInputIds,
       })
       const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []
+      chunkEmitStats.chunkEmitCount = 0
+      chunkEmitStats.emitFileMs = 0
+      chunkEmitStats.loadCount = 0
+      chunkEmitStats.loadMs = 0
+      chunkEmitStats.skippedLoadedCount = 0
       lastActualEmittedEntryIds.clear()
       lastChunkEmittedEntryIds.clear()
       lastEmittedChunkFileNames.clear()
       metadataEntryIds.clear()
+      const pendingMetadataEntryIds = new Set<string>()
+      const deferredDirtyEntryIds = new Set<string>()
+      const autoImportReloadedEntryIds = new Set<string>()
+
+      const reloadPendingAutoImportEntry = async (resolvedId: ResolvedId) => {
+        const entryId = normalizeFsResolvedId(resolvedId.id)
+        if (autoImportReloadedEntryIds.has(entryId)) {
+          return
+        }
+        if (!await fs.pathExists(resolvedId.id)) {
+          return
+        }
+        autoImportReloadedEntryIds.add(entryId)
+        const entryType = entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(resolvedId.id)))?.type === 'component'
+          ? 'component'
+          : 'page'
+        await loadEntry.call(this, resolvedId.id, entryType)
+      }
 
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
         if (reason === 'metadata') {
           metadataEntryIds.add(entryId)
+          pendingMetadataEntryIds.add(entryId)
         }
-        dirtyEntrySet.delete(entryId)
-        dirtyEntryReasons.delete(entryId)
-        dirtyEntryEventIds.delete(entryId)
+        if (rootInputIds?.has(entryId)) {
+          deferredDirtyEntryIds.add(entryId)
+        }
+        else {
+          clearDirtyEntry(entryId)
+        }
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
           continue
@@ -443,14 +666,35 @@ export function useLoadEntry(
         if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
           continue
         }
-        const entryType = entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(baseName))?.type === 'component'
-          ? 'component'
-          : 'page'
-        await loadEntry.call(this, resolvedId.id, entryType)
+        await reloadPendingAutoImportEntry(resolvedId)
       }
 
       if (pending.length) {
-        await Promise.all(emitEntriesChunks.call(this, pending))
+        const entryChunkEmitStartedAt = performance.now()
+        try {
+          await Promise.all(emitEntriesChunks.call(this, pending))
+        }
+        finally {
+          recordHmrProfileDuration(
+            ctx.runtimeState?.build?.hmr?.profile,
+            'entryChunkEmitMs',
+            performance.now() - entryChunkEmitStartedAt,
+          )
+        }
+      }
+      for (const resolvedId of pending) {
+        const baseName = removeExtensionDeep(resolvedId.id)
+        const autoImportComponents = ctx.wxmlService.getAggregatedAutoImportComponents?.(baseName)
+        if (!autoImportComponents || Object.keys(autoImportComponents).length === 0) {
+          continue
+        }
+        await reloadPendingAutoImportEntry(resolvedId)
+      }
+      for (const entryId of deferredDirtyEntryIds) {
+        clearDirtyEntry(entryId)
+      }
+      for (const entryId of activeDirtyEntrySet) {
+        clearDirtyEntry(entryId)
       }
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
@@ -459,14 +703,31 @@ export function useLoadEntry(
         if (!rootInputIds?.has(entryId)) {
           continue
         }
-        lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+        addLastEmittedChunkFileName(entryId)
       }
       if (isEntryAutoRoutesRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
         for (const entryId of actualChunkEmittedEntryIds) {
-          lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
+          addLastEmittedChunkFileName(entryId)
         }
       }
-      const hmrEntryIds = new Set(actualEmittedEntryIds)
+      let hmrEntryIds = new Set(actualEmittedEntryIds)
+      if (pendingResolution.hmrEntries) {
+        hmrEntryIds = pendingResolution.hmrEntries
+      }
+      if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+        if (!isWxmlImportOnlyRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
+          hmrEntryIds = new Set(pendingMetadataEntryIds)
+          for (const entryId of actualChunkEmittedEntryIds) {
+            if (pendingEntryIds.has(entryId) && !metadataEntryIds.has(entryId)) {
+              hmrEntryIds.add(entryId)
+            }
+          }
+        }
+        const currentStyleOutputFileName = resolveCurrentStyleOutputFileName(ctx)
+        if (currentStyleOutputFileName) {
+          lastEmittedChunkFileNames.add(currentStyleOutputFileName)
+        }
+      }
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
       const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (
         actualEmittedEntryIds.size === resolvedEntryMap.size
@@ -484,9 +745,14 @@ export function useLoadEntry(
         ...ctx.runtimeState.build.hmr.profile,
         emitMs: performance.now() - emitStartedAt,
         sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
+        entryChunkLoadMs: chunkEmitStats.loadMs,
+        entryChunkEmitFileMs: chunkEmitStats.emitFileMs,
+        chunkEmitCount: chunkEmitStats.chunkEmitCount,
+        loadCount: chunkEmitStats.loadCount,
+        skippedLoadedCount: chunkEmitStats.skippedLoadedCount,
         dirtyCount,
         pendingCount: pending.length,
-        emittedCount: actualEmittedEntryIds.size,
+        emittedCount: hmrEntryIds.size,
         pendingReasonSummary: pendingResolution.pendingReasonSummary,
       }
 

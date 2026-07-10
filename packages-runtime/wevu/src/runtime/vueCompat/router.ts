@@ -1,4 +1,5 @@
 import type { SetupContextRouter } from '../types'
+import { notifyRouteStateSync } from '../../router/routeSync'
 import { parsePathInput } from '../../routerInternal/location'
 import { createAbsoluteRoutePath, resolvePath, stringifyQuery } from '../../routerInternal/shared'
 import { getCurrentSetupContext } from '../hooks'
@@ -80,9 +81,19 @@ function createScopedRuntimeRouter(rawRouter: RuntimeRouter, basePath?: string):
       const nextUrl = typeof option.url === 'string'
         ? resolveScopedRouterUrl(option.url, basePath)
         : option.url
-      const nextOption = nextUrl === option.url
-        ? option
-        : { ...option, url: nextUrl }
+      const originalSuccess = option.success
+      const nextOption = {
+        ...option,
+        url: nextUrl,
+        success: (...args: any[]) => {
+          if (typeof nextUrl === 'string') {
+            notifyRouteStateSync({ url: nextUrl })
+          }
+          return typeof originalSuccess === 'function'
+            ? originalSuccess(...args)
+            : undefined
+        },
+      }
       return rawMethod.call(rawRouter, nextOption)
     }
   }

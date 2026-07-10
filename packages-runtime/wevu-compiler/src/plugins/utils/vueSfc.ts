@@ -16,6 +16,14 @@ export interface ReadAndParseSfcOptions {
    */
   source?: string
   /**
+   * 已完成 `<script src>` 预处理的源码。
+   */
+  preprocessedSource?: string
+  /**
+   * 是否忽略空 SFC block。
+   */
+  ignoreEmpty?: boolean
+  /**
    * 是否按 mtime+size 检查文件变更（dev 推荐开启）。
    */
   checkMtime?: boolean
@@ -124,7 +132,7 @@ export async function readAndParseSfc(
 ): Promise<{ source: string, descriptor: SFCDescriptor, errors: SFCParseResult['errors'] }> {
   const checkMtime = options?.checkMtime ?? true
   const source = normalizeLineEndings(options?.source ?? await readFileCached(filename, { checkMtime }))
-  const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(source))
+  const normalizedSource = options?.preprocessedSource ?? preprocessScriptSrc(preprocessScriptSetupSrc(source))
 
   const signature = checkMtime
     ? (() => {
@@ -158,7 +166,7 @@ export async function readAndParseSfc(
 
   const parsed = parseSfc(normalizedSource, {
     filename,
-    ignoreEmpty: normalizedSource === source,
+    ignoreEmpty: options?.ignoreEmpty ?? normalizedSource === source,
   })
   restoreScriptSetupSrc(parsed.descriptor)
   restoreScriptSrc(parsed.descriptor)

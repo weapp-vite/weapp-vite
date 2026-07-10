@@ -128,4 +128,28 @@ describe('runtime/jsonPlugin', () => {
     })
     expect(await fs.pathExists(path.join(srcRoot, '.app.json.auto-routes-inline.ts'))).toBe(false)
   })
+
+  it('reads from disk when mtime and signature are fresh but the LRU value is missing', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
+    tempRoots.push(root)
+    const srcRoot = path.join(root, 'src')
+    await fs.ensureDir(srcRoot)
+    const entry = path.join(srcRoot, 'app.json')
+    await fs.writeFile(entry, JSON.stringify({
+      pages: ['pages/index/index'],
+    }), 'utf8')
+
+    const ctx = createTestContext(root)
+    const fileStat = await fs.stat(entry)
+    ctx.runtimeState.json.cache.mtimeMap.set(entry, fileStat.mtimeMs)
+    ctx.runtimeState.json.cache.signatureMap.set(entry, JSON.stringify({ pages: ['pages/index/index'] }))
+
+    const result = await ctx.jsonService.read(entry)
+
+    expect(result).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+    expect(ctx.runtimeState.json.cache.get(entry)).toEqual(result)
+  })
 })

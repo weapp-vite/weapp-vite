@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "Layouts HMR",
-  "hmrMarker": "LAYOUTS-PAGE-JSON-BASE"
+  "hmrMarker": "LAYOUTS-PAGE-JSON-BASE",
+  "usingComponents": {
+    "e2e-template-probe": "/components/e2e-template-probe/index"
+  }
 }

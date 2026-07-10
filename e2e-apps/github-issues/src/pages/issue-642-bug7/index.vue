@@ -47,7 +47,10 @@ function bump() {
   tick.value += 1
 }
 
-function _runE2E() {
+function _runE2E(action?: 'bump') {
+  if (action === 'bump') {
+    bump()
+  }
   const runtime = (nativeInstance as any).__wevu
   return {
     tick: tick.value,
@@ -70,7 +73,11 @@ defineExpose({
 </script>
 
 <template>
-  <view class="issue642-bug7-page">
+  <view
+    id="issue642-bug7-page"
+    class="issue642-bug7-page"
+    data-e2e-issue="642-bug7"
+  >
     <button
       class="issue642-bug7-action"
       data-issue642-bug7-action="bump"

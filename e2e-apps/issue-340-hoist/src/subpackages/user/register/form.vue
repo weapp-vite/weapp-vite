@@ -17,7 +17,11 @@ function _runE2E() {
 </script>
 
 <template>
-  <view class="issue340-page">
+  <view
+    class="issue340-page"
+    data-e2e-message="user-register-form:issue-340-hoist:shared"
+    data-e2e-page="user-register-form"
+  >
     <text class="issue340-title">
       issue-340 hoist user register form
     </text>

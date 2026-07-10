@@ -31,7 +31,7 @@ exports[`worker-shared > dist > app.json 1`] = `
 exports[`worker-shared > dist > app.wxss 1`] = `
 ".app {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`worker-shared > dist > components/Navbar/Navbar.js 1`] = `
@@ -57,7 +57,7 @@ exports[`worker-shared > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`worker-shared > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`worker-shared > dist > pages/index/bbc.wxs 1`] = `
@@ -135,7 +135,7 @@ function bar(d) {
 exports[`worker-shared > dist > pages/index/index.wxss 1`] = `
 ".page {
   color: red;
-}/*$vite$:1*/"
+}"
 `;
 
 exports[`worker-shared > dist > pages/index/xx.wxs 1`] = `""`;

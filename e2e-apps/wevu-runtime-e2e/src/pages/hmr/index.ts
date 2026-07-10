@@ -2,6 +2,19 @@ import { defineComponent, nextTick } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
 import { getHotVersion, hotUpdateSetupStore, useSetupStore } from '../../shared/store'
 
+const hmrScriptName = 'hmr'
+const HMR_SCRIPT_PROBE_STORAGE_KEY = '__weapp_vite_core_hmr_script_probe__'
+
+function writeHmrScriptProbe(name: string) {
+  if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') {
+    return
+  }
+  wx.setStorageSync(HMR_SCRIPT_PROBE_STORAGE_KEY, {
+    name,
+    updatedAt: Date.now(),
+  })
+}
+
 export default defineComponent({
   data: () => ({
     __e2e: {
@@ -12,6 +25,7 @@ export default defineComponent({
   }),
   setup(_props, ctx) {
     const setupStore = useSetupStore()
+    writeHmrScriptProbe(hmrScriptName)
 
     const runE2E = async () => {
       const versionBefore = getHotVersion()
@@ -31,7 +45,7 @@ export default defineComponent({
         hotActionApplied: afterHot - afterInc === nextVersion,
       }
 
-      const result = buildResult('hmr', checks, {
+      const result = buildResult(hmrScriptName, checks, {
         versionBefore,
         nextVersion,
         before,

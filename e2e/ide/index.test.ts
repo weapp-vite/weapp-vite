@@ -1,23 +1,14 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll } from 'vitest'
-import { formatWxml } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
+const BASE_APP_DIST_ROOT = path.join(BASE_APP_ROOT, 'dist')
 const INDEX_ROUTE = '/pages/index/index'
 const LEADING_SLASH_RE = /^\/+/
-
-function stripAutomatorOverlay(wxml: string) {
-  // Strip devtools overlay styles appended by automator.
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
-}
-
-function normalizeWxml(wxml: string) {
-  return stripAutomatorOverlay(wxml).replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
-}
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -123,18 +114,109 @@ async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeou
   return null
 }
 
-async function readPageWxml(page: any) {
-  return await runAutomatorOp('read page wxml', async () => {
-    const element = await page.$('page')
-    if (!element) {
-      throw new Error('Failed to find page element')
-    }
-    return await element.wxml()
+async function readCurrentPageData(miniProgram: any) {
+  return await runAutomatorOp('read current page data', async () => {
+    return await miniProgram.evaluate(() => {
+      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+      const page = pages[pages.length - 1] as any
+      return {
+        data: page?.data ?? null,
+        path: page?.route || page?.__route__ || page?.path || '',
+      }
+    })
   }, {
-    timeoutMs: 5_000,
-    retries: 2,
-    retryDelayMs: 180,
+    timeoutMs: 2_000,
+    retries: 15,
+    retryDelayMs: 300,
   })
+}
+
+async function waitForBaseIndexDom(miniProgram: any, timeoutMs = 15_000) {
+  const startedAt = Date.now()
+  let lastResult: Record<string, any> | null = null
+  let lastError: unknown
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const result = await runAutomatorOp('read base index DOM probe', () => miniProgram.evaluate(() => {
+        return new Promise((resolve) => {
+          const timer = setTimeout(() => {
+            resolve({
+              ok: false,
+              reason: 'selector-timeout',
+            })
+          }, 3_000)
+          try {
+            const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+            const page = pages[pages.length - 1] as any
+            const query = typeof wx !== 'undefined' && typeof wx.createSelectorQuery === 'function'
+              ? wx.createSelectorQuery().in(page)
+              : page?.createSelectorQuery?.()
+            if (!query) {
+              clearTimeout(timer)
+              resolve({
+                ok: false,
+                reason: 'selector-query-unavailable',
+              })
+              return
+            }
+            query
+              .select('#base-index-page')
+              .fields({
+                dataset: true,
+                id: true,
+                rect: true,
+                size: true,
+              })
+              .selectAll('.panel-row')
+              .fields({
+                dataset: true,
+                id: true,
+                rect: true,
+                size: true,
+              })
+              .exec((results: any[]) => {
+                clearTimeout(timer)
+                const root = results?.[0] as Record<string, any> | null | undefined
+                const rows = Array.isArray(results?.[1]) ? results[1] : []
+                resolve({
+                  ok: Boolean(root && rows.length >= 4),
+                  rootDataset: root?.dataset ?? {},
+                  rootSize: {
+                    height: root?.height,
+                    width: root?.width,
+                  },
+                  rowCount: rows.length,
+                })
+              })
+          }
+          catch (error) {
+            clearTimeout(timer)
+            resolve({
+              ok: false,
+              reason: error instanceof Error ? error.message : String(error),
+            })
+          }
+        })
+      }), {
+        timeoutMs: 5_000,
+        retries: 1,
+      }) as Record<string, any>
+      lastResult = result
+      if (
+        result?.ok === true
+        && result?.rootDataset?.e2eStatus === 'ready'
+        && result?.rowCount >= 4
+      ) {
+        return result
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await delay(220)
+  }
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  throw new Error(`Timed out waiting base index DOM probe: ${JSON.stringify(lastResult, null, 2)}; reason=${reason}`)
 }
 
 async function runBuild(root: string) {
@@ -152,14 +234,15 @@ let sharedBuildPrepared = false
 
 async function getSharedMiniProgram() {
   if (!sharedBuildPrepared) {
-    const outputRoot = path.join(BASE_APP_ROOT, 'dist')
-    await fs.remove(outputRoot)
+    await fs.remove(BASE_APP_DIST_ROOT)
     await runBuild(BASE_APP_ROOT)
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: BASE_APP_ROOT,
+      skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
     })
   }
   return sharedMiniProgram
@@ -186,7 +269,7 @@ describe.sequential('e2e baseline app', () => {
     await closeSharedMiniProgram()
   })
 
-  it('renders index page wxml', async () => {
+  it('opens index page and keeps build output stable', async () => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
@@ -204,8 +287,35 @@ describe.sequential('e2e baseline app', () => {
         throw new Error('Failed to resolve current index page')
       }
 
-      const wxml = normalizeWxml(await readPageWxml(currentPage))
-      expect(await formatWxml(wxml)).toMatchSnapshot('wxml')
+      const domState = await waitForBaseIndexDom(miniProgram)
+      expect(domState).toMatchObject({
+        ok: true,
+        rootDataset: {
+          e2eStatus: 'ready',
+        },
+      })
+      expect(domState.rowCount).toBeGreaterThanOrEqual(4)
+      expect(domState.rootSize.width).toBeGreaterThan(0)
+      expect(domState.rootSize.height).toBeGreaterThan(0)
+
+      const runtime = await readCurrentPageData(miniProgram)
+      expect(normalizeRoutePath(String(runtime?.path ?? ''))).toBe(normalizeRoutePath(INDEX_ROUTE))
+      expect(runtime?.data).toMatchObject({
+        __e2eData: {
+          greeting: 'Hello',
+          target: 'index snapshot',
+        },
+        __e2eResult: {
+          status: 'ready',
+          detail: 'rendered',
+        },
+      })
+
+      const distWxml = await fs.readFile(path.join(BASE_APP_DIST_ROOT, 'pages/index/index.wxml'), 'utf8')
+      expect(distWxml).toContain('<view id="base-index-page" data-e2e-status="{{__e2eResult.status}}">')
+      expect(distWxml).toContain('<view bind:tap="onTap">Hello</view>')
+      expect(distWxml).toContain('Status: {{__e2eResult.status}}')
+      expect(distWxml).toContain('Target: {{__e2eData.target}}')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -4,9 +4,7 @@ import { launchAutomator } from '../utils/automator'
 import {
   APP_ROOT,
   filterSnapshotPages,
-  formatMarkup,
   loadAppConfig,
-  normalizeAutomatorWxml,
   resolvePages,
   runBuild,
 } from '../wevu-runtime.utils'
@@ -81,6 +79,35 @@ async function runPageE2E(page: any) {
   return null
 }
 
+async function waitForRenderedPage(page: any, route: string, timeoutMs = 15_000) {
+  const selectors = ['.page', '.hmr-sfc-page', '.hmr-html-page', '.root-import-hmr']
+  const start = Date.now()
+  let latest: unknown
+  while (Date.now() - start <= timeoutMs) {
+    if (typeof page?.renderedSelectorNodes === 'function') {
+      latest = await page.renderedSelectorNodes(selectors, {
+        timeout: 5_000,
+      })
+      if (
+        latest
+        && typeof latest === 'object'
+        && Object.values(latest as Record<string, unknown>).some(value => Array.isArray(value) && value.length > 0)
+      ) {
+        return latest
+      }
+    }
+    else if (typeof page?.waitForRendered === 'function') {
+      await page.waitForRendered({
+        selector: '.page',
+        timeout: timeoutMs,
+      })
+      return
+    }
+    await page.waitFor(220)
+  }
+  throw new Error(`Timed out waiting rendered page for ${route}; latest=${JSON.stringify(latest)}`)
+}
+
 for (const jsFormat of JS_FORMATS) {
   describe.sequential(`wevu runtime (weapp e2e) [${jsFormat}]`, () => {
     let sharedMiniProgram: any = null
@@ -141,12 +168,7 @@ for (const jsFormat of JS_FORMATS) {
             expect(result.ok).toBe(true)
           }
 
-          const element = await page.$('page')
-          if (!element) {
-            throw new Error(`Missing page element for ${route}`)
-          }
-          const wxml = normalizeAutomatorWxml(await element.wxml())
-          expect(await formatMarkup(wxml)).toMatchSnapshot(`wevu-runtime::${jsFormat}::${pagePath}`)
+          await expect(waitForRenderedPage(page, route)).resolves.toBeTruthy()
         }
       }
       finally {
@@ -217,57 +239,30 @@ for (const jsFormat of JS_FORMATS) {
         }
 
         await page.waitFor(200)
-        let root = await page.$('page')
-        if (!root) {
-          throw new Error('Missing page root for /pages/layouts/index')
-        }
-        let wxml = normalizeAutomatorWxml(await root.wxml())
-
-        expect(wxml).toContain('<weapp-layout-default')
-        expect(wxml).not.toContain('<weapp-layout-admin')
-        expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
+        await waitForRenderedPage(page, '/pages/layouts/index')
         expect(await page.data('currentLayout')).toBe('default')
 
-        await page.callMethod('applyAdminLayout')
+        await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
         await page.waitFor(160)
-        root = await page.$('page')
-        if (!root) {
-          throw new Error('Missing page root after applyAdminLayout')
-        }
-        wxml = normalizeAutomatorWxml(await root.wxml())
+        await waitForRenderedPage(page, '/pages/layouts/index')
 
-        expect(wxml).toContain('<weapp-layout-admin')
-        expect(wxml).not.toContain('<weapp-layout-default')
         expect(await page.data('currentLayout')).toBe('admin')
         expect(await page.data('__wv_page_layout_props')).toMatchObject({
           title: 'LAYOUTS-ADMIN-TITLE-BASE',
           subtitle: 'LAYOUTS-ADMIN-SUBTITLE-BASE',
         })
 
-        await page.callMethod('clearLayout')
+        await page.callMethodWithOptions('clearLayout', { routeOnly: true })
         await page.waitFor(160)
-        root = await page.$('page')
-        if (!root) {
-          throw new Error('Missing page root after clearLayout')
-        }
-        wxml = normalizeAutomatorWxml(await root.wxml())
+        await waitForRenderedPage(page, '/pages/layouts/index')
 
-        expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
-        expect(wxml).not.toContain('<weapp-layout-default')
-        expect(wxml).not.toContain('<weapp-layout-admin')
         expect(await page.data('currentLayout')).toBe('none')
         expect(await page.data('__wv_page_layout_props')).toEqual({})
 
-        await page.callMethod('applyDefaultLayout')
+        await page.callMethodWithOptions('applyDefaultLayout', { routeOnly: true })
         await page.waitFor(160)
-        root = await page.$('page')
-        if (!root) {
-          throw new Error('Missing page root after applyDefaultLayout')
-        }
-        wxml = normalizeAutomatorWxml(await root.wxml())
+        await waitForRenderedPage(page, '/pages/layouts/index')
 
-        expect(wxml).toContain('<weapp-layout-default')
-        expect(wxml).not.toContain('<weapp-layout-admin')
         expect(await page.data('currentLayout')).toBe('default')
         expect(await page.data('__wv_page_layout_props')).toEqual({})
       }

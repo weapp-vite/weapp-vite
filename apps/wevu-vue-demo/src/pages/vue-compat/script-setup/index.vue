@@ -190,6 +190,76 @@ function onEmitMatrixOptionsEvent(payload: {
 }) {
   pushEmitMatrixRecord('options-explicit-$event', payload)
 }
+
+function createEmitMatrixPayload(kind: 'options' | 'payload') {
+  return {
+    kind,
+    meta: {
+      source: 'CompatEmitMatrix',
+    },
+    title: `matrix-${kind}`,
+    detail: {
+      marker: `${kind}-detail`,
+    },
+  }
+}
+
+function createNativeTapPayload() {
+  return {
+    type: 'tap',
+    timeStamp: Date.now(),
+    detail: {},
+  }
+}
+
+function runEmitE2E(id: string) {
+  if (id === 'emit-matrix-reset') {
+    resetEmitMatrixRecords()
+    return null
+  }
+  switch (id) {
+    case 'emit-direct-payload':
+      onEmitMatrixPayload(createEmitMatrixPayload('payload'))
+      break
+    case 'emit-explicit-payload':
+      onEmitMatrixPayloadEvent(createEmitMatrixPayload('payload'))
+      break
+    case 'emit-inline-payload':
+      onEmitMatrixPayloadTitle('matrix-payload')
+      break
+    case 'emit-direct-native':
+      onEmitMatrixNative(createNativeTapPayload())
+      break
+    case 'emit-explicit-native':
+      onEmitMatrixNativeEvent(createNativeTapPayload())
+      break
+    case 'emit-direct-tuple':
+      onEmitMatrixTuple(['alpha', 2, { ok: true }])
+      break
+    case 'emit-explicit-tuple':
+      onEmitMatrixTupleEvent(['alpha', 2, { ok: true }])
+      break
+    case 'emit-direct-empty':
+      onEmitMatrixEmpty(undefined)
+      break
+    case 'emit-explicit-empty':
+      onEmitMatrixEmptyEvent(undefined)
+      break
+    case 'emit-direct-options':
+      onEmitMatrixOptions(createEmitMatrixPayload('options'))
+      break
+    case 'emit-explicit-options':
+      onEmitMatrixOptionsEvent(createEmitMatrixPayload('options'))
+      break
+    default:
+      throw new Error(`Unknown emit e2e id: ${id}`)
+  }
+  return emitMatrixRecords.value[0] ?? null
+}
+
+defineExpose({
+  runEmitE2E,
+})
 </script>
 
 <template>
