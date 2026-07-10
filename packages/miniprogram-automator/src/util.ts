@@ -5,7 +5,7 @@ import process from 'node:process'
 import { decodeQrCodeFromBase64, renderTerminalQrCode } from '@weapp-vite/qr'
 import { startWith } from './internal/compat'
 
-const regPluginId = /^plugin-private:\/\/([0-9a-zA-Z]+)\//
+const regPluginId = /^(?:plugin-private:\/\/|__plugin__\/)([0-9a-zA-Z]+)\//
 /** decodeQrCode 的方法封装。 */
 export function decodeQrCode(qrCode: string) {
   return decodeQrCodeFromBase64(qrCode)
@@ -22,7 +22,7 @@ export function isPluginPath(p: unknown) {
   if (typeof p !== 'string') {
     return false
   }
-  return startWith(p, 'plugin-private://')
+  return startWith(p, 'plugin-private://') || startWith(p, '__plugin__/')
 }
 /** extractPluginId 的方法封装。 */
 export function extractPluginId(p: unknown) {

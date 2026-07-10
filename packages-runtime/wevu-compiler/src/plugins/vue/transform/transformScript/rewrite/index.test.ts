@@ -82,6 +82,9 @@ describe('rewriteDefaultExport', () => {
     expect(transformed).toBe(true)
     expect(code).toContain('createWevuComponent(__wevuOptions)')
     expect(code).toContain('export default __wevuOptions')
+    expect(code.indexOf('createWevuComponent(__wevuOptions)')).toBeLessThan(
+      code.indexOf('export default __wevuOptions'),
+    )
   })
 
   it('detects existing page marker through Object.assign and spread chain', () => {

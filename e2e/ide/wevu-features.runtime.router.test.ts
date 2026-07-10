@@ -5,7 +5,6 @@ import {
   readPageWxml,
   relaunchPage,
   ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-  tapControlUntil,
   waitForCurrentPagePath,
   waitForRenderedSelector,
 } from './wevu-features.runtime.shared'
@@ -106,12 +105,13 @@ async function assertRouterActionRoute(
   }, ROUTER_TARGET_STORAGE_KEY).catch(() => {}))
   let targetProbe: any = null
   let navigatedPage: any = null
-  async function checkNavigated() {
+  const triggerMode = 'page-method'
+  async function checkNavigated(timeoutMs = 800) {
     targetProbe = await waitForRouterTarget(
       miniProgram,
       expectedPath,
       expectedSource,
-      800,
+      timeoutMs,
     )
     if (targetProbe) {
       return true
@@ -119,32 +119,50 @@ async function assertRouterActionRoute(
     navigatedPage = await waitForCurrentPagePath(
       miniProgram,
       expectedPath,
-      800,
+      timeoutMs,
     )
     return Boolean(navigatedPage)
   }
-  let invoked = false
-  if (rendered) {
-    invoked = await runStep('tap-action', () => tapControlUntil(subPage, actionSelector, checkNavigated)).catch(() => false)
+  if (!rendered) {
+    throw new Error(`[router-assert:${actionId}:dom-missing] selector=${actionSelector}`)
   }
+  const currentSubPage = await runStep('refresh-action-page', async () => {
+    return await miniProgram.currentPage({
+      retries: 2,
+      timeout: 5_000,
+    }).catch(() => subPage)
+  })
+  let methodResult = await runStep('call-action', () => currentSubPage.callMethod(actionMethod))
+  let invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
   if (!invoked) {
-    const currentSubPage = await runStep('refresh-action-page', async () => {
+    process.stdout.write(`[wevu-features:router-action-retry] id=${actionId} reason=navigation-not-observed attempt=2/2\n`)
+    const retrySubPage = await runStep('retry-enter-sub', () => enterRouterSubPage(miniProgram))
+    const retryRendered = await runStep('retry-wait-action-rendered', () => waitForRenderedSelector(retrySubPage, actionSelector, 8_000))
+    if (!retryRendered) {
+      throw new Error(`[router-assert:${actionId}:retry-dom-missing] selector=${actionSelector}`)
+    }
+    await runStep('retry-clear-target-probe', () => miniProgram.callWxMethodWithOptions('removeStorageSync', {
+      timeout: 2_500,
+    }, ROUTER_TARGET_STORAGE_KEY).catch(() => {}))
+    const currentRetryPage = await runStep('retry-refresh-action-page', async () => {
       return await miniProgram.currentPage({
         retries: 2,
         timeout: 5_000,
-      }).catch(() => subPage)
+      }).catch(() => retrySubPage)
     })
-    const methodResult = await runStep('call-action-fallback', () => currentSubPage.callMethod(actionMethod))
-    if (methodResult !== true && methodResult?.ok !== true) {
-      throw new Error(`[router-assert:${actionId}:call-failed] method=${actionMethod} result=${JSON.stringify(methodResult)} rendered=${rendered}`)
-    }
-    invoked = await checkNavigated()
+    methodResult = await runStep('retry-call-action', () => currentRetryPage.callMethod(actionMethod))
+    invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
+  }
+  if (!invoked && methodResult !== true && methodResult?.ok !== true) {
+    throw new Error(`[router-assert:${actionId}:call-failed] method=${actionMethod} result=${JSON.stringify(methodResult)} rendered=${rendered}`)
   }
   if (!invoked) {
-    throw new Error(`[router-assert:${actionId}:trigger-failed] selector=${actionSelector} method=${actionMethod} rendered=${rendered}`)
+    const debug = await readCurrentRouteDebug()
+    throw new Error(`[router-assert:${actionId}:trigger-failed] selector=${actionSelector} method=${actionMethod} rendered=${rendered}${debug}`)
   }
   if (targetProbe) {
     expect(targetProbe.source).toBe(expectedSource)
+    process.stdout.write(`[wevu-features:router-action-ready] id=${actionId} trigger=${triggerMode} route=${targetProbe.route} source=${targetProbe.source}\n`)
     return
   }
   navigatedPage ??= await runStep('wait-action-route', () => waitForCurrentPagePath(
@@ -159,6 +177,7 @@ async function assertRouterActionRoute(
   }
 
   expect(navigatedPage.query?.source).toBe(expectedSource)
+  process.stdout.write(`[wevu-features:router-action-ready] id=${actionId} trigger=${triggerMode} route=${navigatedPage.path} source=${navigatedPage.query?.source}\n`)
 }
 
 let routerMiniProgram: any = null
@@ -167,6 +186,18 @@ async function getRouterMiniProgram() {
   if (!routerMiniProgram) {
     routerMiniProgram = await launchIsolatedMiniProgram()
   }
+  return routerMiniProgram
+}
+
+async function restartRouterMiniProgram() {
+  if (routerMiniProgram) {
+    const miniProgram = routerMiniProgram
+    routerMiniProgram = null
+    await miniProgram.close().catch(() => {})
+  }
+  await closeSharedMiniProgram()
+  routerMiniProgram = await launchIsolatedMiniProgram()
+  process.stdout.write('[wevu-features:router-session-ready] isolated=true reason=reset-native-router-context\n')
   return routerMiniProgram
 }
 
@@ -255,12 +286,13 @@ describe.sequential('e2e app: wevu-features / router', () => {
   })
 
   it('resolves component this.router.navigateTo relative route using component base path', async () => {
-    const miniProgram = await getRouterMiniProgram()
+    // 连续 reLaunch 后当前 DevTools 版本可能保留失效的原生 Router 上下文，此场景需隔离启动后再验证组件相对路由。
+    const miniProgram = await restartRouterMiniProgram()
     await assertRouterActionRoute(
       miniProgram,
       'cmp-router-nav',
-      '#cmp-router-nav',
-      'runComponentRouterFromProbe',
+      '#router-sub-call-component-router',
+      '_runComponentRouterFromProbe',
       '/components/router-origin-probe/target/index',
       'component-router',
     )

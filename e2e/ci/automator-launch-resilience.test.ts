@@ -217,20 +217,6 @@ function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: 
   })
 }
 
-function expectBridgeWrapperPluginRoot(projectPath: string | undefined) {
-  expect(projectPath).toBeTruthy()
-  const wrapperPluginJsonPath = path.join(projectPath!, 'dist-plugin/plugin.json')
-  expect(fs.lstatSync(wrapperPluginJsonPath).isSymbolicLink()).toBe(false)
-  expect(readJson(wrapperPluginJsonPath)).toMatchObject({
-    publicComponents: {},
-  })
-  expect(readJson(path.join(projectPath!, 'project.config.json'))).toMatchObject({
-    miniprogramRoot: './',
-    pluginRoot: 'dist-plugin',
-    srcMiniprogramRoot: './',
-  })
-}
-
 describe.sequential('automator launch resilience', () => {
   let sandboxRoot = ''
 
@@ -1208,7 +1194,7 @@ describe.sequential('automator launch resilience', () => {
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('copies local pluginRoot into cli bridge wrapper project', async () => {
+  it('keeps compileType plugin projects on their original roots in bridge mode', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
@@ -1236,8 +1222,15 @@ describe.sequential('automator launch resilience', () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, warmupAllowRelaunch: false })
 
     const payload = readBridgePayloadFromFirstExecaCall()
-    expectBridgeWrapperProjectPath(sandboxRoot, payload?.projectPath)
-    expectBridgeWrapperPluginRoot(payload?.projectPath)
+    expect(payload?.projectPath).toBe(sandboxRoot)
+    expect(readJson(path.join(payload!.projectPath!, 'project.config.json'))).toMatchObject({
+      compileType: 'plugin',
+      miniprogramRoot: 'dist',
+      pluginRoot: 'dist-plugin',
+    })
+    expect(readJson(path.join(payload!.projectPath!, 'dist-plugin/plugin.json'))).toMatchObject({
+      publicComponents: {},
+    })
     expect(connectMock).toHaveBeenCalledWith({
       wsEndpoint: 'ws://127.0.0.1:9420',
     })

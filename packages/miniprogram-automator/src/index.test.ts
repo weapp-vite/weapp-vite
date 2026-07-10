@@ -15,7 +15,9 @@ describe('miniprogram-automator', () => {
   })
   it('keeps plugin path helpers compatible', () => {
     expect(api.isPluginPath('plugin-private://abc/pages/index')).toBe(true)
+    expect(api.isPluginPath('__plugin__/abc/pages/index')).toBe(true)
     expect(api.extractPluginId('plugin-private://abc/pages/index')).toBe('abc')
+    expect(api.extractPluginId('__plugin__/abc/pages/index')).toBe('abc')
     expect(api.extractPluginId('/pages/index/index')).toBe('')
   })
   it('supports the headless runtime provider switch', async () => {

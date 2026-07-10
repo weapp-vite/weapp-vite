@@ -101,6 +101,8 @@ describe('plugin-demo build regression', () => {
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
+    expect(pluginIndexCode).not.toContain('require("./showcase.js")')
+    expect(pluginIndexCode).not.toContain('require("./weapp-vendors/')
     expect(pluginSupportPath).toContain('weapp-vendors/wevu-')
     expect(pluginVendorCode).toContain('miniprogram_npm/dayjs/index')
     expect(pluginVendorCode).toContain('2026-03-19T12:34:00')

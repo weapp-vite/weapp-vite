@@ -117,6 +117,11 @@ function isDevtoolsProtocolTimeoutError(error: unknown) {
     || Reflect.get(error, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT'
 }
 
+function isPageStackStaleError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('page is not on top of page stack')
+}
+
 function isScreenshotNavigationTimeoutError(error: unknown) {
   return error instanceof Error && Reflect.get(error, 'code') === 'DEVTOOLS_SCREENSHOT_NAVIGATION_TIMEOUT'
 }
@@ -328,9 +333,24 @@ export async function tap(options: TapOptions) {
       `Tapping element ${colors.cyan(options.selector)}...`,
     ))
     const commandTimeout = options.timeout ?? 30_000
-    const page = await miniProgram.currentPage()
-    const element = await requireElement(page, options.selector, commandTimeout)
-    await element.tap()
+    const tapCurrentPageElement = async () => {
+      const page = await miniProgram.currentPage()
+      const element = await requireElement(page, options.selector, commandTimeout)
+      await element.tap()
+    }
+    try {
+      await tapCurrentPageElement()
+    }
+    catch (error) {
+      if (!isPageStackStaleError(error)) {
+        throw error
+      }
+      logger.info(i18nText(
+        '页面栈已切换，正在重新获取顶部页面并重试点击...',
+        'Page stack changed. Refreshing the top page and retrying the tap...',
+      ))
+      await tapCurrentPageElement()
+    }
     logger.success(i18nText(
       `已点击元素 ${colors.cyan(options.selector)}`,
       `Tapped element ${colors.cyan(options.selector)}`,

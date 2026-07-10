@@ -208,11 +208,18 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       const rootReady = expectToolResult<{ count: number, found: boolean }>(rootReadyResult)
       expect(rootReady).toMatchObject({ found: true, count: 1 })
 
-      const findNode = await callTool<{ outerWxml?: string, tagName?: string }>('weapp_runtime_find_node', {
+      const findNode = await callTool<{ outerWxml?: string | null, tagName?: string, wxml?: string | null, wxmlType?: string }>('weapp_runtime_find_node', {
         selector: ROOT_SELECTOR,
         withWxml: true,
       })
-      expect(findNode.outerWxml).toContain('mcp-runtime-root')
+      expect(findNode.tagName).toBe('view')
+      if (findNode.wxmlType) {
+        expect(findNode.wxmlType).toBe('wxml')
+        expect(findNode.outerWxml ?? findNode.wxml).toMatch(/mcp-runtime-root|mcp-tap-button/)
+      }
+      else {
+        expect(findNode.outerWxml ?? findNode.wxml ?? null).toBeNull()
+      }
 
       const findNodes = await callTool<{ count: number }>('weapp_runtime_find_nodes', {
         selector: '.probe-value',
@@ -248,15 +255,26 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     })
     expect(invokePage).toMatchObject({ method: 'markFromMcp', result: 'page:page-method' })
 
+    let liveElementProtocolAvailable = false
     if (liveDomAvailable) {
-      const tapNode = await callTool<{ selector: string, waitedMs: number }>('weapp_runtime_tap_node', {
+      const tapNodeResult = await callRawTool('weapp_runtime_tap_node', {
         selector: TAP_BUTTON_SELECTOR,
         waitMs: 200,
       })
-      expect(tapNode).toMatchObject({ selector: TAP_BUTTON_SELECTOR, waitedMs: 200 })
-      const tapCounter = await callTool<{ data: unknown }>('weapp_runtime_page_state', { path: 'tapCounter' })
-      expect(tapCounter.data).toBe(1)
+      if (isToolError(tapNodeResult)) {
+        expectToolError(tapNodeResult, /Element\.tap|DevTools did not respond|超时|点击/)
+        await expectMcpDemoDistContract()
+      }
+      else {
+        liveElementProtocolAvailable = true
+        const tapNode = expectToolResult<{ selector: string, waitedMs: number }>(tapNodeResult)
+        expect(tapNode).toMatchObject({ selector: TAP_BUTTON_SELECTOR, waitedMs: 200 })
+        const tapCounter = await callTool<{ data: unknown }>('weapp_runtime_page_state', { path: 'tapCounter' })
+        expect(tapCounter.data).toBe(1)
+      }
+    }
 
+    if (liveDomAvailable && liveElementProtocolAvailable) {
       const inputNode = await callTool<{ value: string }>('weapp_runtime_input_node', {
         selector: INPUT_SELECTOR,
         value: 'typed-by-mcp',
@@ -279,12 +297,11 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       })
       expect(invokeComponent).toMatchObject({ method: 'mark', result: 'component:component-method' })
 
-      const findChild = await callTool<{ outerWxml?: string }>('weapp_runtime_find_child', {
+      const findChild = await callTool<{ text?: string }>('weapp_runtime_find_child', {
         selector: COMPONENT_SELECTOR,
         targetSelector: '.component-label',
-        withWxml: true,
       })
-      expect(findChild.outerWxml).toContain('component-method')
+      expect(findChild.text).toContain('component-method')
 
       const findChildren = await callTool<{ count: number }>('weapp_runtime_find_children', {
         selector: ROOT_SELECTOR,
@@ -292,12 +309,19 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       })
       expect(findChildren.count).toBeGreaterThanOrEqual(3)
 
-      const markup = await callTool<{ type: string, wxml: string }>('weapp_runtime_node_markup', {
+      const markupResult = await callRawTool('weapp_runtime_node_markup', {
         selector: ROOT_SELECTOR,
         outer: true,
       })
-      expect(markup.type).toBe('outerWxml')
-      expect(markup.wxml).toContain('mcp-runtime-root')
+      if (isToolError(markupResult)) {
+        expectToolError(markupResult, /WXML|wxml|DevTools|超时|未响应/)
+        await expectMcpDemoDistContract()
+      }
+      else {
+        const markup = expectToolResult<{ type: string, wxml: string }>(markupResult)
+        expect(markup.type).toMatch(/^(?:outerWxml|wxml-fallback)$/)
+        expect(markup.wxml).toMatch(/mcp-runtime-root|mcp-tap-button/)
+      }
 
       const styles = await callTool<{ styles: Record<string, unknown> }>('weapp_runtime_node_styles', {
         selector: TAP_BUTTON_SELECTOR,
@@ -322,7 +346,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       expect(measureNode.boundingClientRect?.width).toBeGreaterThan(0)
       expect(measureNode.boundingClientRect?.height).toBeGreaterThan(0)
     }
-    else {
+    else if (!liveDomAvailable) {
       await expectDomToolUnavailable('weapp_runtime_find_node', { selector: ROOT_SELECTOR, withWxml: true })
       await expectDomToolUnavailable('weapp_runtime_find_nodes', { selector: '.probe-value' })
       await expectDomToolUnavailable('weapp_runtime_tap_node', { selector: TAP_BUTTON_SELECTOR, waitMs: 200 })

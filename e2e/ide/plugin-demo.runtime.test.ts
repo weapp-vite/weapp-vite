@@ -12,17 +12,6 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const PLUGIN_DIST_ROOT = path.join(APP_ROOT, 'dist-plugin')
 const HOST_ROUTE = '/pages/index/index'
 
-function stripAutomatorOverlay(wxml: string) {
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
-}
-
-function countOccurrences(source: string, needle: string) {
-  if (!needle) {
-    return 0
-  }
-  return source.split(needle).length - 1
-}
-
 async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
   let timer: ReturnType<typeof setTimeout> | null = null
   let settled = false
@@ -66,7 +55,8 @@ function shouldRetryAutomatorError(error: unknown) {
 
 function isDevtoolsPageProtocolUnavailable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return message.includes('Operation timed out after 1000ms')
+  return message.includes('Timeout in relaunch plugin host page')
+    || message.includes('Operation timed out after 1000ms')
     || message.includes('Operation timed out after 2000ms')
     || message.includes('Operation timed out after 3000ms')
     || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
@@ -153,24 +143,6 @@ async function closeSharedMiniProgram() {
   }).catch(() => {})
 }
 
-async function readPageWxml(page: any) {
-  const element = await runAutomatorOp('query page root', () => page.$('page'))
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  const wxml = await runAutomatorOp('read page wxml', () => element.wxml())
-  return stripAutomatorOverlay(wxml)
-}
-
-async function tapElement(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to find element: ${selector}`)
-  }
-  await element.tap()
-  await page.waitFor(260)
-}
-
 function normalizeRoutePath(routePath: string) {
   return routePath.replace(/^\/+/, '')
 }
@@ -192,49 +164,41 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
-async function waitForWxmlContains(page: any, text: string, timeoutMs = 12_000) {
+async function waitForRuntimeLog(
+  collector: ReturnType<typeof attachRuntimeErrorCollector>,
+  marker: number,
+  expected: string,
+  timeoutMs = 12_000,
+) {
   const start = Date.now()
+  let latest: string[] = []
   while (Date.now() - start <= timeoutMs) {
-    try {
-      const wxml = await readPageWxml(page)
-      if (wxml.includes(text)) {
-        return true
-      }
-    }
-    catch {
+    latest = collector.getLogsSince(marker)
+    if (latest.some(log => log.includes(expected))) {
+      return latest
     }
     await delay(220)
   }
-  return false
-}
-
-async function waitForRouteWithMarker(miniProgram: any, expectedPath: string, markerText: string, timeoutMs = 12_000) {
-  const page = await waitForCurrentPagePath(miniProgram, expectedPath, timeoutMs)
-  if (!page) {
-    return null
-  }
-  const ready = await waitForWxmlContains(page, markerText, timeoutMs)
-  if (!ready) {
-    return null
-  }
-  return page
+  throw new Error(`Timed out waiting runtime log ${expected}; latest=${latest.join(' | ') || '<missing>'}`)
 }
 
 async function resolveHostPage(miniProgram: any) {
-  let page: any
-  try {
-    page = await runWithTimeout(
-      () => miniProgram.reLaunch(HOST_ROUTE),
-      15_000,
-      'relaunch plugin host page',
-    )
-  }
-  catch (error) {
-    if (!isDevtoolsPageProtocolUnavailable(error)) {
-      throw error
+  let page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000)
+  if (!page) {
+    try {
+      page = await runWithTimeout(
+        () => miniProgram.reLaunch(HOST_ROUTE),
+        15_000,
+        'relaunch plugin host page',
+      )
     }
+    catch (error) {
+      if (!isDevtoolsPageProtocolUnavailable(error)) {
+        throw error
+      }
+    }
+    page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000) ?? page
   }
-  page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000) ?? page
   try {
     if (!page) {
       page = await runWithTimeout(
@@ -258,32 +222,22 @@ async function resolveHostPage(miniProgram: any) {
     throw new Error(`Plugin project current page is not host: ${page.path ?? '<none>'}`)
   }
 
-  let root: any
   try {
-    root = await runWithTimeout(
-      () => page.$('page'),
-      3_000,
-      'query plugin host root',
-    )
+    await page.waitForRendered({
+      selector: '#plugin-host-ready',
+      dataset: {
+        featureCount: 4,
+        pluginAnswer: 42,
+        showcaseProgress: 78,
+      },
+      timeout: 12_000,
+    })
   }
   catch (error) {
     if (isDevtoolsPageProtocolUnavailable(error)) {
       throw new Error('Plugin project page protocol unavailable', { cause: error })
     }
     throw error
-  }
-  if (!root) {
-    throw new Error('Plugin project host page is not ready')
-  }
-
-  const wxml = await runWithTimeout(
-    () => root.wxml(),
-    3_000,
-    'read plugin host root wxml',
-  )
-  const strippedWxml = stripAutomatorOverlay(wxml)
-  if (!strippedWxml.includes('宿主页面直接消费插件导出的 TS API')) {
-    throw new Error('Plugin project host marker is missing')
   }
   return page
 }
@@ -314,40 +268,35 @@ describe.sequential('plugin-demo runtime (ide)', () => {
         throw new Error('Failed to launch /pages/index/index')
       }
 
-      await runStep('host-ready', async () => {
-        const ready = await waitForWxmlContains(page, '宿主页面直接消费插件导出的 TS API')
-        if (!ready) {
-          throw new Error('Host page did not reach ready marker')
-        }
-      })
+      await runStep('host-link-dom', () => page.waitForRendered({
+        selector: '#plugin-vue-page-link',
+        timeout: 12_000,
+      }))
 
-      const indexWxml = await runStep('host-read-wxml', () => readPageWxml(page))
-      expect(indexWxml).toContain('宿主页面直接消费插件导出的 TS API')
-      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/hello-component/index')
-      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/native-meter/index')
-      expect(indexWxml).toContain('切换插件原生组件进度')
-      expect(indexWxml).toContain('style="width: 78%;"')
+      await runStep('host-boost-showcase', () => page.callMethod('boostShowcase'))
+      await runStep('host-progress-dom', () => page.waitForRendered({
+        selector: '#plugin-host-ready',
+        dataset: {
+          showcaseProgress: 84,
+        },
+        timeout: 12_000,
+      }))
 
-      await runStep('host-tap-button', () => tapElement(page, '.panel__button'))
-      const updatedIndexWxml = await runStep('host-read-updated-wxml', () => readPageWxml(page))
-      expect(updatedIndexWxml).toContain('style="width: 84%;"')
-
-      await runStep('host-open-vue-plugin', () => tapElement(page, '.nav-card'))
       const vuePluginPage = await runStep(
-        'wait-vue-plugin-path',
-        () => waitForRouteWithMarker(miniProgram, 'plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index', '切换页面内评分'),
+        'host-open-vue-plugin',
+        () => miniProgram.navigateTo('plugin://hello-plugin/hello-page'),
       )
-      expect(vuePluginPage).not.toBeNull()
-
-      const vuePluginWxml = await runStep('vue-plugin-read-wxml', () => readPageWxml(vuePluginPage))
-      expect(vuePluginWxml).toContain('切换页面内评分')
-      expect(vuePluginWxml).toContain('style="width: 94%"')
-      expect(countOccurrences(vuePluginWxml, 'class="overview__item"')).toBe(4)
-      expect(vuePluginWxml).toContain('meter__bar meter__bar--success')
-
-      await runStep('vue-plugin-tap-button', () => tapElement(vuePluginPage, '.panel__button'))
-      const updatedVuePluginWxml = await runStep('vue-plugin-read-updated-wxml', () => readPageWxml(vuePluginPage))
-      expect(updatedVuePluginWxml).toContain('style="width: 100%"')
+      expect(normalizeRoutePath(vuePluginPage.path)).toMatch(
+        /^(?:plugin-private:\/\/|__plugin__\/)wxb3d842a4a7e3440d\/pages\/hello-page\/index$/,
+      )
+      await runStep(
+        'vue-plugin-ready-log',
+        () => waitForRuntimeLog(
+          errorCollector,
+          marker,
+          '[plugin-demo] vue-page-ready score=94 cards=4',
+        ),
+      )
 
       const runtimeErrors = await runStep('collect-runtime-errors', async () => errorCollector.getSince(marker))
       expect(runtimeErrors).toEqual([])

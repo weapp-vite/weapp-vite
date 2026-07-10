@@ -12,10 +12,11 @@ vi.mock('./util', () => ({
   decodeQrCode: vi.fn(async () => 'decoded-content'),
   extractPluginId: vi.fn((value: unknown) =>
     typeof value === 'string'
-      ? value.match(/^plugin-private:\/\/([^/]+)/)?.[1] || ''
+      ? value.match(/^(?:plugin-private:\/\/|__plugin__\/)([^/]+)/)?.[1] || ''
       : ''),
   isPluginPath: vi.fn((value: unknown) =>
-    typeof value === 'string' && value.startsWith('plugin-private://')),
+    typeof value === 'string'
+    && (value.startsWith('plugin-private://') || value.startsWith('__plugin__/'))),
   printQrCode: vi.fn(async () => {}),
 }))
 
@@ -275,6 +276,33 @@ describe('MiniProgram', () => {
       timeout: 12_000,
     })
     expect(currentPageReads).toBeGreaterThanOrEqual(3)
+  })
+
+  it('accepts the runtime plugin route after navigating with a plugin alias url', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 2
+          ? { pageId: 2, path: '__plugin__/provider-a/pages/hello/index', query: {} }
+          : { pageId: 1, path: '/pages/index/index', query: {} }
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.navigateTo('plugin://hello-plugin/hello-page')
+    await vi.advanceTimersByTimeAsync(600)
+    const page = await pending
+
+    expect(page.path).toBe('__plugin__/provider-a/pages/hello/index')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'navigateTo',
+      args: [{ url: 'plugin://hello-plugin/hello-page' }],
+    }, {
+      timeout: 12_000,
+    })
   })
 
   it('keeps host route changes when DevTools returns a current page without path', async () => {

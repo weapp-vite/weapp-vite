@@ -43,7 +43,7 @@ export interface MiniProgramLike {
   reLaunch: (url: string) => Promise<MiniProgramPage>
   switchTab: (url: string) => Promise<MiniProgramPage>
   navigateBack: () => Promise<MiniProgramPage>
-  screenshot: (options?: { timeout?: number }) => Promise<string | Uint8Array>
+  screenshot: (options?: { timeout?: number }) => Promise<string | Uint8Array | undefined>
   callWxMethod: (method: string, ...args: unknown[]) => Promise<unknown>
 }
 
@@ -296,6 +296,9 @@ export async function captureMiniProgramScreenshot(
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const screenshot = await miniProgram.screenshot({ timeout })
+      if (screenshot == null) {
+        throw new Error('DevTools screenshot returned no data.')
+      }
       return typeof screenshot === 'string' ? Buffer.from(screenshot, 'base64') : Buffer.from(screenshot)
     }
     catch (error) {
@@ -381,14 +384,14 @@ export async function queryElements(page: MiniProgramPage, selectorInput: string
 }
 
 export async function summarizeElement(element: MiniProgramElement, withWxml = false) {
-  const [text, value, size, offset, scrollWidth, scrollHeight, outerWxml] = await Promise.all([
+  const [text, value, size, offset, scrollWidth, scrollHeight, markup] = await Promise.all([
     callMaybe(element, 'text'),
     callMaybe(element, 'value'),
     callMaybe(element, 'size'),
     callMaybe(element, 'offset'),
     callMaybe(element, 'scrollWidth'),
     callMaybe(element, 'scrollHeight'),
-    withWxml ? callMaybe(element, 'outerWxml') : Promise.resolve(undefined),
+    withWxml ? readElementMarkup(element).catch(() => null) : Promise.resolve(null),
   ])
 
   return compactObject({
@@ -399,8 +402,28 @@ export async function summarizeElement(element: MiniProgramElement, withWxml = f
     offset,
     scrollWidth,
     scrollHeight,
-    outerWxml,
+    outerWxml: withWxml && markup?.type === 'outerWxml' ? markup.wxml : null,
+    wxml: withWxml && markup?.type !== 'outerWxml' ? markup?.wxml ?? null : undefined,
+    wxmlType: withWxml ? markup?.type ?? null : undefined,
   })
+}
+
+export async function readElementMarkup(element: MiniProgramElement, outer = false) {
+  if (outer) {
+    const outerWxml = await callMaybe(element, 'outerWxml')
+    if (typeof outerWxml === 'string') {
+      return {
+        type: 'outerWxml' as const,
+        wxml: outerWxml,
+      }
+    }
+  }
+
+  const wxml = await callRequiredMethod<unknown>(element, 'wxml')
+  return {
+    type: outer ? 'wxml-fallback' as const : 'wxml' as const,
+    wxml: typeof wxml === 'string' ? wxml : String(wxml ?? ''),
+  }
 }
 
 export function toSerializableValue(value: unknown): unknown {

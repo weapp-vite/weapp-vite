@@ -37,6 +37,7 @@ interface BindingSnapshot {
 
 const BLUE_RE = /(?:rgb\(37,\s*99,\s*235\)|#2563eb)/i
 const RED_RE = /(?:rgb\(185,\s*28,\s*28\)|#b91c1c)/i
+const SCENARIO_SETTLE_MS = 500
 const WHITE_RE = /(?:rgb\(255,\s*255,\s*255\)|#fff(?:fff)?)/i
 
 function readStyle(snapshot: BindingSnapshot, key: string, styleName: keyof BindingProbeNode) {
@@ -158,7 +159,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
       await page.waitFor(160)
 
       await page.callMethod('applyScenarioBase')
-      await page.waitFor(120)
+      await page.waitFor(SCENARIO_SETTLE_MS)
       let snapshot = await collectSnapshot(page)
       expect(snapshot.state).toMatchObject({
         classObject: {
@@ -182,7 +183,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
       expect(readStyle(snapshot, 'style-var', 'color')).toMatch(BLUE_RE)
 
       await page.callMethod('applyScenarioAllOn')
-      await page.waitFor(120)
+      await page.waitFor(SCENARIO_SETTLE_MS)
       snapshot = await collectSnapshot(page)
       expect(snapshot.state).toMatchObject({
         classObject: {
@@ -209,7 +210,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
       expectInlineStyleContains(snapshot, 'styleString', 'color:#b91c1c')
 
       await page.callMethod('applyScenarioMixed')
-      await page.waitFor(120)
+      await page.waitFor(SCENARIO_SETTLE_MS)
       snapshot = await collectSnapshot(page)
       expect(snapshot.state).toMatchObject({
         hasError: false,
@@ -222,7 +223,7 @@ describe.sequential('e2e app: template-wevu-tdesign-regression class/style bindi
       expect(readStyle(snapshot, 'style-var', 'color')).toMatch(BLUE_RE)
 
       await page.callMethod('applyScenarioErrorGhost')
-      await page.waitFor(120)
+      await page.waitFor(SCENARIO_SETTLE_MS)
       snapshot = await collectSnapshot(page)
       expect(snapshot.state).toMatchObject({
         isActive: false,

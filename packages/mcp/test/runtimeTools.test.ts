@@ -48,7 +48,9 @@ function readStructuredResult(result: unknown) {
   return (result as { structuredContent: { result: unknown } }).structuredContent.result
 }
 
-function createElement(overrides: Record<string, unknown> = {}) {
+type ElementFixture = Record<string, any>
+
+function createElement(overrides: Record<string, unknown> = {}): ElementFixture {
   return {
     tagName: 'view',
     text: vi.fn(async () => 'hello'),
@@ -72,8 +74,8 @@ function createMiniProgram() {
     setData: vi.fn(async () => {}),
     size: vi.fn(async () => ({ width: 390, height: 844 })),
     scrollTop: vi.fn(async () => 0),
-    $: vi.fn(async () => createElement()),
-    $$: vi.fn(async () => [createElement(), createElement()]),
+    $: vi.fn(async (): Promise<ElementFixture | null> => createElement()),
+    $$: vi.fn(async (): Promise<ElementFixture[]> => [createElement(), createElement()]),
     callMethod: vi.fn(async (method: string, ...args: unknown[]) => ({ args, method })),
   }
   const miniProgram = {
@@ -297,6 +299,44 @@ describe('runtime MCP tools', () => {
       waitedMs: 20,
     })
     expect(fixture.page.waitFor).toHaveBeenCalledWith(20)
+  })
+
+  it('uses inner WXML for summaries and only probes outer WXML for explicit markup requests', async () => {
+    const fixture = createMiniProgram()
+    const element = createElement({
+      outerWxml: vi.fn(async () => {
+        throw new Error('outer WXML unavailable')
+      }),
+      wxml: vi.fn(async () => '<view id="child">fallback</view>'),
+    })
+    fixture.page.$.mockResolvedValue(element)
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    const result = await getTool(tools, 'weapp_runtime_find_node')({
+      projectPath: 'apps/demo',
+      selector: '#root',
+      withWxml: true,
+    })
+
+    expect(readStructuredResult(result)).toMatchObject({
+      outerWxml: null,
+      wxml: '<view id="child">fallback</view>',
+      wxmlType: 'wxml',
+    })
+    expect(element.outerWxml).not.toHaveBeenCalled()
+
+    const markupResult = await getTool(tools, 'weapp_runtime_node_markup')({
+      projectPath: 'apps/demo',
+      selector: '#root',
+      outer: true,
+    })
+
+    expect(readStructuredResult(markupResult)).toMatchObject({
+      type: 'wxml-fallback',
+      wxml: '<view id="child">fallback</view>',
+    })
+    expect(element.outerWxml).toHaveBeenCalledTimes(1)
   })
 
   it('retries DevTools capture after a screenshot protocol timeout', async () => {

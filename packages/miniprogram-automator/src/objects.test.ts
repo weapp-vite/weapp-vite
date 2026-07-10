@@ -260,7 +260,7 @@ describe('Page', () => {
       pageId: 8,
       type: 'inner',
     }, {
-      timeout: 2_500,
+      timeout: 8_000,
     })
   })
 
@@ -931,7 +931,7 @@ describe('Element', () => {
     await expect(movableView.property('x')).resolves.toBe(11)
   })
 
-  it('uses short protocol timeouts for child queries and wxml reads', async () => {
+  it('keeps child queries short while allowing complex WXML reads more time', async () => {
     const send = vi.fn(async (method: string) => {
       if (method === 'Element.getElement') {
         return { elementId: 'child-1', tagName: 'view' }
@@ -962,7 +962,7 @@ describe('Element', () => {
       pageId: 3,
       type: 'inner',
     }, {
-      timeout: 2_500,
+      timeout: 8_000,
     })
   })
 

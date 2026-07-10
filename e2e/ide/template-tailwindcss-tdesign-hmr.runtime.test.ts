@@ -1,29 +1,37 @@
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { inflateSync } from 'node:zlib'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { launchAutomator } from '../utils/automator'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { waitForOpenedAutomator } from '../utils/opened-automator'
+import {
+  cleanDevtoolsCache,
+  cleanupResidualDevtoolsProcesses,
+  cleanupResidualIdeProcesses,
+} from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
+const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
+const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
 const INDEX_ROUTE = '/pages/index/index'
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const ROOT_MARKUP_RE = /<view class="min-h-screen \{\{ mode === 'light'\?'[^']+':'bg-gray-900 text-slate-200' \}\} transition-colors duration-500">/
 const LIGHT_BACKGROUND_CLASS_RE = /bg-(?:\[#([0-9a-fA-F]{6})\]|gray-100)/
 const INITIAL_BACKGROUND_HEX = 'f3f4f6'
 const UPDATED_BACKGROUND_HEX = '10b981'
+const INITIAL_BACKGROUND_CSS = 'background-color: #f3f4f6'
+const UPDATED_BACKGROUND_CSS = 'background-color: #10b981'
 const INITIAL_ESCAPED_CLASS = 'bg-_b_hf3f4f6_B'
 const UPDATED_ESCAPED_CLASS = 'bg-_b_h10b981_B'
 const PROBE_ID = 'tailwind-hmr-probe'
@@ -34,13 +42,6 @@ const PNG_SIGNATURE = '89504e470d0a1a0a'
 const SCREENSHOT_COLOR_MIN_MATCHED = 24
 const SCREENSHOT_COLOR_MIN_RATIO = 0.01
 const SCREENSHOT_CAPTURE_TIMEOUT = 30_000
-
-function resolveAutomatorSessionFile(projectPath: string, port?: number) {
-  const normalizedProjectPath = path.resolve(projectPath)
-  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
-  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
-  return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -134,8 +135,8 @@ async function relaunchIndexPage(miniProgram: any) {
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const page = await miniProgram.reLaunch(INDEX_ROUTE)
-      return page || await waitForIndexPage(miniProgram)
+      await miniProgram.reLaunch(INDEX_ROUTE)
+      return await waitForIndexPage(miniProgram)
     }
     catch (error) {
       lastError = error
@@ -155,39 +156,44 @@ async function relaunchIndexPage(miniProgram: any) {
 }
 
 describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', () => {
+  let initialWxml = ''
   let originalWxml = ''
-  let indexPage: any
   let miniProgram: any
   let devProcess: ReturnType<typeof startDevProcess> | undefined
-
-  async function removeAutomatorSessionFiles() {
-    await Promise.all([
-      fs.rm(resolveAutomatorSessionFile(TEMPLATE_ROOT), { force: true }).catch(() => {}),
-      fs.rm(resolveAutomatorSessionFile(TEMPLATE_ROOT, resolveProjectAutomatorPort(TEMPLATE_ROOT)), { force: true }).catch(() => {}),
-    ])
-  }
+  let previousAutomatorLaunchMode: string | undefined
 
   beforeAll(async () => {
+    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
     originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
     const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
     if (!rootMarkupMatch) {
       throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
     }
+    const probedRootMarkup = replaceLightBackgroundClass(
+      rootMarkupMatch[0].replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
+      INITIAL_BACKGROUND_HEX,
+    )
+    initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
+    await replaceFileByRename(INDEX_WXML, initialWxml)
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
-    await removeAutomatorSessionFiles()
     await cleanupResidualIdeProcesses()
+    await fs.rm(DIST_ROOT, { force: true, recursive: true })
   }, 60_000)
 
   async function stopDevSession() {
     if (miniProgram) {
-      await Promise.resolve(miniProgram.disconnect?.()).catch(() => {})
+      if (typeof miniProgram.close === 'function') {
+        await Promise.resolve(miniProgram.close()).catch(() => {})
+      }
+      else {
+        await Promise.resolve(miniProgram.disconnect?.()).catch(() => {})
+      }
       miniProgram = undefined
     }
-    indexPage = undefined
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     await devProcess?.stop().catch(() => {})
     devProcess = undefined
-    await removeAutomatorSessionFiles()
     await cleanupResidualIdeProcesses()
   }
 
@@ -197,30 +203,70 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     }
     await stopDevSession()
     await cleanupTrackedDevProcesses()
+    if (previousAutomatorLaunchMode == null) {
+      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    }
+    else {
+      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
+    }
   }, 60_000)
+
+  async function launchRuntimeAutomator(mode: 'bridge' | 'direct' = 'direct') {
+    const previousMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = mode
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: TEMPLATE_ROOT,
+        skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
+      })
+      return miniProgram
+    }
+    finally {
+      if (previousMode == null) {
+        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousMode
+      }
+    }
+  }
 
   async function startDevSession() {
     process.stdout.write('[template-tailwindcss-tdesign:hmr] start-dev-session\n')
-    devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+    devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
       cwd: TEMPLATE_ROOT,
       env: createDevProcessEnv(),
       reject: false,
     })
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dev-process-started pid=${devProcess.pid ?? 'unknown'}\n`)
-    const session = await devProcess.waitFor(
-      waitForOpenedAutomator(TEMPLATE_ROOT, { timeoutMs: 120_000 }),
-      'tailwindcss tdesign dev:open ready',
+    await devProcess.waitFor(
+      Promise.all([
+        waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS),
+        waitForFileContains(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS),
+      ]),
+      'tailwindcss tdesign initial dist ready',
     )
-    miniProgram = session.miniProgram
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-connected endpoint=${session.metadata.wsEndpoint}\n`)
+    await launchRuntimeAutomator()
+    process.stdout.write('[template-tailwindcss-tdesign:hmr] automator-connected mode=direct\n')
     return miniProgram
   }
 
-  async function refreshRuntimeForDistUpdate(label: string) {
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] refresh-runtime label=${label}\n`)
-    await Promise.resolve(miniProgram?.compile?.({ force: true })).catch(() => {})
-    await delay(1_200)
-    indexPage = await relaunchIndexPage(miniProgram)
+  async function refreshRuntimeForDistUpdate(label: string, requiresIsolatedRelaunch: boolean) {
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-start label=${label}\n`)
+    await delay(5_000)
+    if (requiresIsolatedRelaunch) {
+      // 当前 DevTools 的 Tool.compile/Tool.clearCache 均未实现，更新后的外部产物只能通过清理编译缓存并重连读取。
+      await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+      miniProgram = undefined
+      await cleanupResidualDevtoolsProcesses()
+      await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
+      await delay(1_600)
+      await launchRuntimeAutomator('bridge')
+      process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-relaunched label=${label} isolated=true mode=bridge reason=tool-compile-unimplemented\n`)
+    }
+    await relaunchIndexPage(miniProgram)
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-ready label=${label} route=${INDEX_ROUTE}\n`)
   }
 
   function paethPredictor(left: number, up: number, upLeft: number) {
@@ -360,7 +406,7 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
   }
 
   async function readProbeBackgroundState(expectedBg: string, escapedClass: string) {
-    const page = indexPage ?? await relaunchIndexPage(miniProgram)
+    const page = await waitForIndexPage(miniProgram)
     const selector = `#${PROBE_ID}`
     const element = await runWithTimeout(() => page.$(selector, { timeout: 3_000 }), 5_000, 'query Tailwind HMR probe').catch(() => null)
     const [backgroundColor, outerWxml, size] = element
@@ -370,24 +416,27 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
           runWithTimeout(() => element.size(), 5_000, 'read Tailwind HMR probe size').catch(() => ({ height: 0, width: 0 })),
         ])
       : ['', '', { height: 0, width: 0 }]
-    let nodeCount = element ? 1 : 0
-    let sized = Number((size as any).width) > 0 && Number((size as any).height) > 0
-    if (!element) {
-      const rendered = await page.renderedSelectorNodes([selector], {
-        timeout: 5_000,
-      }).catch(() => ({}))
-      const nodes = rendered[selector] ?? []
-      nodeCount = nodes.length
-      sized = nodes.some((node: any) => Number(node?.width) > 0 && Number(node?.height) > 0)
-    }
+    const rendered = await page.renderedSelectorNodes([selector], {
+      timeout: 5_000,
+    }).catch(() => ({}))
+    const renderedNodes = rendered[selector] ?? []
+    const renderedDataMatched = renderedNodes.some((node: any) => {
+      return Object.values(node?.dataset ?? {}).some(value => String(value) === expectedBg)
+    })
+    const nodeCount = Math.max(element ? 1 : 0, renderedNodes.length)
+    const sized = (
+      Number((size as any).width) > 0
+      && Number((size as any).height) > 0
+    ) || renderedNodes.some((node: any) => Number(node?.width) > 0 && Number(node?.height) > 0)
     const backgroundHex = normalizeCssColorToHex(backgroundColor)
     return {
       backgroundColor,
       backgroundHex,
       classMatched: outerWxml.includes(escapedClass) || outerWxml.includes(`bg-[#${expectedBg}]`),
-      dataMatched: outerWxml.includes(`data-e2e-bg="${expectedBg}"`),
+      dataMatched: outerWxml.includes(`data-e2e-bg="${expectedBg}"`) || renderedDataMatched,
       nodeCount,
       outerWxml: outerWxml.slice(0, 500),
+      renderedNodes: renderedNodes.slice(0, 3),
       sized,
     }
   }
@@ -399,7 +448,11 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
       try {
         lastState = await readProbeBackgroundState(expectedBg, escapedClass)
         const state = lastState as Awaited<ReturnType<typeof readProbeBackgroundState>>
-        if (state.sized && (state.backgroundHex === expectedBg || (state.dataMatched && state.classMatched))) {
+        if (
+          (state.sized && state.backgroundHex === expectedBg)
+          || (state.nodeCount > 0 && state.dataMatched)
+          || (state.sized && state.dataMatched && state.classMatched)
+        ) {
           return state
         }
       }
@@ -413,64 +466,57 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     throw new Error(`Timed out waiting DOM probe for ${label}; lastState=${JSON.stringify(lastState)}`)
   }
 
-  async function waitForVisibleBackgroundWithRecovery(expectedBg: string, escapedClass: string, label: string) {
-    await refreshRuntimeForDistUpdate(label)
+  async function waitForVisibleBackgroundWithRecovery(
+    expectedBg: string,
+    escapedClass: string,
+    label: string,
+    requiresIsolatedRelaunch = false,
+  ) {
+    await refreshRuntimeForDistUpdate(label, requiresIsolatedRelaunch)
     try {
-      return await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
+      const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
+      process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
+      return state
     }
-    catch (error) {
-      const probeMessage = error instanceof Error ? error.message : String(error)
+    catch (probeError) {
+      const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
       process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
       try {
-        return await waitForScreenshotColor(expectedBg, label, 45_000)
+        const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
+        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
+        return analysis
       }
-      catch {
-      }
-      const message = error instanceof Error ? error.message : String(error)
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] restart-dev-session label=${label} reason=${message}\n`)
-      await stopDevSession()
-      await delay(1_200)
-      await startDevSession()
-      indexPage = await relaunchIndexPage(miniProgram)
-      try {
-        return await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 30_000)
-      }
-      catch {
-        return await waitForScreenshotColor(expectedBg, label, 30_000)
+      catch (screenshotError) {
+        const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
+        throw new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
       }
     }
   }
 
   it('updates the visible Tailwind arbitrary background color through dev HMR', async () => {
     await startDevSession()
-    const rootMarkup = originalWxml.match(ROOT_MARKUP_RE)?.[0]
-    if (!rootMarkup) {
-      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
-    }
-
-    const probedRootMarkup = replaceLightBackgroundClass(
-      rootMarkup.replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
-      INITIAL_BACKGROUND_HEX,
-    )
-    const patchedInitialWxml = originalWxml.replace(rootMarkup, probedRootMarkup)
-    expect(patchedInitialWxml).not.toBe(originalWxml)
-    await replaceFileByRename(INDEX_WXML, patchedInitialWxml)
     await waitForFileContains(INDEX_WXML_DIST, PROBE_ID)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS)
+    await waitForFileContains(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS)
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=initial Tailwind background template=${INITIAL_ESCAPED_CLASS} css=${INITIAL_BACKGROUND_CSS}\n`)
     await waitForVisibleBackgroundWithRecovery(INITIAL_BACKGROUND_HEX, INITIAL_ESCAPED_CLASS, 'initial Tailwind background')
 
-    const updatedWxml = originalWxml.replace(
-      rootMarkup,
-      replaceLightBackgroundClass(
-        probedRootMarkup.replace(`data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`),
-        UPDATED_BACKGROUND_HEX,
-      ),
+    const updatedWxml = replaceLightBackgroundClass(
+      initialWxml.replace(`data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`),
+      UPDATED_BACKGROUND_HEX,
     )
-    expect(updatedWxml).not.toBe(originalWxml)
+    expect(updatedWxml).not.toBe(initialWxml)
     await replaceFileByRename(INDEX_WXML, updatedWxml)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, UPDATED_ESCAPED_CLASS)
-    await waitForVisibleBackgroundWithRecovery(UPDATED_BACKGROUND_HEX, UPDATED_ESCAPED_CLASS, 'updated Tailwind background')
+    await waitForFileContains(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=updated Tailwind background template=${UPDATED_ESCAPED_CLASS} css=${UPDATED_BACKGROUND_CSS}\n`)
+    await waitForVisibleBackgroundWithRecovery(
+      UPDATED_BACKGROUND_HEX,
+      UPDATED_ESCAPED_CLASS,
+      'updated Tailwind background',
+      true,
+    )
   }, 420_000)
 })

@@ -258,8 +258,10 @@ export default class Page {
         }
         function createSelectorQuery(scope) {
           var query = null;
+          var createdFromScope = false;
           if (scope && typeof scope.createSelectorQuery === 'function') {
             query = scope.createSelectorQuery();
+            createdFromScope = true;
           }
           else if (typeof wx !== 'undefined' && wx && typeof wx.createSelectorQuery === 'function') {
             query = wx.createSelectorQuery();
@@ -270,7 +272,7 @@ export default class Page {
           if (!query) {
             return null;
           }
-          if (typeof query.in === 'function') {
+          if (!createdFromScope && typeof query.in === 'function') {
             try {
               query = query.in(scope || page);
             }
@@ -439,8 +441,10 @@ export default class Page {
         }
         function createSelectorQuery(scope, page) {
           var query = null;
+          var createdFromScope = false;
           if (scope && typeof scope.createSelectorQuery === 'function') {
             query = scope.createSelectorQuery();
+            createdFromScope = true;
           }
           else if (typeof wx !== 'undefined' && wx && typeof wx.createSelectorQuery === 'function') {
             query = wx.createSelectorQuery();
@@ -451,7 +455,7 @@ export default class Page {
           if (!query) {
             return null;
           }
-          if (typeof query.in === 'function') {
+          if (!createdFromScope && typeof query.in === 'function') {
             try {
               query = query.in(scope || page);
             }

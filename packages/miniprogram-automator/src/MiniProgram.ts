@@ -183,6 +183,26 @@ function normalizeRoutePath(value: string | undefined) {
     .replace(/\/+$/, '')
 }
 
+function isPluginNavigationUrl(value: string | undefined) {
+  return String(value ?? '').startsWith('plugin://')
+}
+
+function matchesRouteChange(options: {
+  currentPath: string | undefined
+  previousPath: string | undefined
+  requestedUrl: string | undefined
+  expectedRoute: string
+}) {
+  const normalizedCurrentPath = normalizeRoutePath(options.currentPath)
+  if (!options.expectedRoute || normalizedCurrentPath === options.expectedRoute) {
+    return true
+  }
+  if (!isPluginNavigationUrl(options.requestedUrl) || !isPluginPath(options.currentPath)) {
+    return false
+  }
+  return normalizedCurrentPath !== normalizeRoutePath(options.previousPath)
+}
+
 function parseRouteQuery(value: string | undefined) {
   const queryText = String(value ?? '').split('?', 2)[1] ?? ''
   const query: Record<string, string> = {}
@@ -599,7 +619,12 @@ export default class MiniProgram extends EventEmitter {
         const page = await this.readRoutePollingCurrentPage()
         lastPage = page
         logChangeRouteDebug(`poll method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
-        if (!expectedRoute || normalizeRoutePath(page?.path) === expectedRoute) {
+        if (matchesRouteChange({
+          currentPath: page?.path,
+          previousPath: currentPage?.path,
+          requestedUrl: url,
+          expectedRoute,
+        })) {
           logChangeRouteDebug(`ready method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
           return page
         }
@@ -615,7 +640,12 @@ export default class MiniProgram extends EventEmitter {
         if (stackTop) {
           lastPage = stackTop
           logChangeRouteDebug(`stack method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
-          if (!expectedRoute || normalizeRoutePath(stackTop.path) === expectedRoute) {
+          if (matchesRouteChange({
+            currentPath: stackTop.path,
+            previousPath: currentPage?.path,
+            requestedUrl: url,
+            expectedRoute,
+          })) {
             logChangeRouteDebug(`stack-ready method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
             return stackTop
           }

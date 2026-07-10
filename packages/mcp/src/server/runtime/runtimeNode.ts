@@ -11,6 +11,7 @@ import {
   callRequiredMethod,
   compactObject,
   connectionInputSchema,
+  readElementMarkup,
   readProperty,
   resolveElement,
   summarizeElement,
@@ -233,12 +234,12 @@ export function registerRuntimeNodeTools(
     try {
       const result = await manager.withPage(connection, async (page) => {
         const element = await resolveElement(page, selector, innerSelector)
-        const method = outer ? 'outerWxml' : 'wxml'
+        const markup = await readElementMarkup(element, outer)
         return {
           selector,
           innerSelector: innerSelector ?? null,
-          type: method,
-          wxml: toSerializableValue(await callRequiredMethod(element, method)),
+          type: markup.type,
+          wxml: toSerializableValue(markup.wxml),
         }
       })
       return toToolResult(result)

@@ -1,4 +1,10 @@
-<view class="page">
+<view
+  id="plugin-host-ready"
+  class="page"
+  data-feature-count="{{ featureCards.length }}"
+  data-plugin-answer="{{ pluginAnswer }}"
+  data-showcase-progress="{{ showcaseProgress }}"
+>
   <view class="hero">
     <text class="hero__eyebrow">weapp-vite plugin demo</text>
     <text class="hero__title">插件能力混合演示</text>
@@ -15,7 +21,7 @@
   </view>
 
   <view class="nav-grid">
-    <navigator class="nav-card" url="plugin://hello-plugin/hello-page">
+    <navigator id="plugin-vue-page-link" class="nav-card" url="plugin://hello-plugin/hello-page">
       <text class="nav-card__title">插件 Vue SFC 页面</text>
       <text class="nav-card__desc">`script setup lang="ts"` + `lang="scss"` + wevu 响应式</text>
     </navigator>

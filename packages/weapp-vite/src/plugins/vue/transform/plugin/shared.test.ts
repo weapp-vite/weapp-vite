@@ -1424,6 +1424,9 @@ console.log(pages, routeSubPackages)
     })
 
     expect(createPageMatcher).toHaveBeenCalledTimes(1)
+    expect(createPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
+      srcRoot: '/project/src',
+    }))
     expect(setPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
       isPageFile,
       markDirty,
@@ -1439,6 +1442,37 @@ console.log(pages, routeSubPackages)
         markDirty,
       }),
     })
+  })
+
+  it('matches plugin pages relative to the plugin root in plugin-only builds', async () => {
+    const createPageMatcher = vi.fn(() => ({
+      isPageFile: vi.fn(async () => true),
+      markDirty: vi.fn(),
+    }))
+
+    const resolved = await resolveTransformEntryFlags({
+      pageMatcher: null,
+      setPageMatcher: vi.fn(),
+      createPageMatcher,
+      configService: {
+        absoluteSrcRoot: '/project/miniprogram',
+        absolutePluginRoot: '/project/plugin',
+        pluginOnly: true,
+        weappLibConfig: {
+          enabled: false,
+        },
+      } as any,
+      scanService: undefined,
+      scanDirty: false,
+      scanDirtySynced: false,
+      setScanDirtySynced: vi.fn(),
+      filename: '/project/plugin/pages/hello/index.vue',
+    })
+
+    expect(createPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
+      srcRoot: '/project/plugin',
+    }))
+    expect(resolved.isPage).toBe(true)
   })
 
   it('reuses existing page matcher and skips page matching in lib mode', async () => {
