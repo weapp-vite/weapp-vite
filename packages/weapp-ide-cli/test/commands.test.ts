@@ -256,6 +256,34 @@ describe('automator commands', () => {
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
 
+    it('tap refreshes the current page once when the selected page leaves the top of the stack', async () => {
+      const { tap } = await loadCommands()
+      const staleElement = {
+        tap: vi.fn().mockRejectedValueOnce(new Error('page is not on top of page stack')),
+      }
+      const freshElement = {
+        tap: vi.fn().mockResolvedValue(undefined),
+      }
+      const stalePage = {
+        $: vi.fn().mockResolvedValue(staleElement),
+      }
+      const freshPage = {
+        $: vi.fn().mockResolvedValue(freshElement),
+      }
+      mockMiniProgram.currentPage
+        .mockResolvedValueOnce(stalePage)
+        .mockResolvedValueOnce(freshPage)
+
+      await tap({ projectPath: mockCwd, selector: '.submit-btn' })
+
+      expect(mockMiniProgram.currentPage).toHaveBeenCalledTimes(2)
+      expect(stalePage.$).toHaveBeenCalledWith('.submit-btn')
+      expect(freshPage.$).toHaveBeenCalledWith('.submit-btn')
+      expect(staleElement.tap).toHaveBeenCalledTimes(1)
+      expect(freshElement.tap).toHaveBeenCalledTimes(1)
+      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
+    })
+
     it('tap throws error when element not found', async () => {
       const { tap } = await loadCommands()
       mockMiniProgram.currentPage.mockResolvedValue(mockPage)

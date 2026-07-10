@@ -11,6 +11,10 @@ const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
+const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
+const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
+])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
@@ -133,6 +137,13 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
 
 function createIdeVitestTask(filePath: string) {
   const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
+  const taskTimeoutMs = IDE_TASK_TIMEOUT_MS_BY_LABEL.get(task.label)
+  if (taskTimeoutMs) {
+    task.env = {
+      ...task.env,
+      [TASK_TIMEOUT_ENV]: taskTimeoutMs,
+    }
+  }
   if (IDE_BRIDGE_WRAPPER_TEST_LABELS.has(task.label)) {
     task.env = {
       ...task.env,

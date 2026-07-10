@@ -31,20 +31,16 @@ export function rewriteComponentExport(params: {
   }
 
   ensureRuntimeImport(ast.program, WE_VU_RUNTIME_APIS.createWevuComponent)
-  exportPath.replaceWith(
+  exportPath.replaceWithMultiple([
     t.variableDeclaration('const', [
       t.variableDeclarator(t.identifier(DEFAULT_OPTIONS_IDENTIFIER), componentExpr),
     ]),
-  )
-  exportPath.insertAfter(
     t.expressionStatement(
       t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.createWevuComponent), [
         t.identifier(DEFAULT_OPTIONS_IDENTIFIER),
       ]),
     ),
-  )
-  exportPath.insertAfter(
     t.exportDefaultDeclaration(t.identifier(DEFAULT_OPTIONS_IDENTIFIER)),
-  )
+  ])
   return true
 }

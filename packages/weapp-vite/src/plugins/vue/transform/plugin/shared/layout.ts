@@ -98,8 +98,11 @@ export async function resolveTransformEntryFlags(options: {
     }
   }
 
+  const pageSourceRoot = configService.pluginOnly
+    ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
+    : configService.absoluteSrcRoot
   const currentPageMatcher = pageMatcher ?? createPageMatcher({
-    srcRoot: configService.absoluteSrcRoot,
+    srcRoot: pageSourceRoot,
     loadEntries: async () => await loadTransformPageEntries(scanService),
     warn: () => {},
   })

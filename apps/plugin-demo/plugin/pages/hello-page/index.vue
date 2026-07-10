@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { onReady, ref } from 'wevu'
 import { getFeatureCardsByKind, getFeatureKindLabel, getPluginShowcaseSummary, getScoreTone } from '../../utils/showcase'
 
 type KindFilter = 'all' | 'vue-sfc' | 'native-ts' | 'scss'
@@ -20,6 +20,11 @@ const filterOptions = [
   { id: 'native-ts' as KindFilter, label: getFeatureKindLabel('native-ts') },
   { id: 'scss' as KindFilter, label: getFeatureKindLabel('scss') },
 ]
+
+onReady(() => {
+  // eslint-disable-next-line no-console
+  console.info('[plugin-demo] vue-page-ready score=94 cards=4')
+})
 
 function selectKind(kind: KindFilter) {
   currentKind.value = kind

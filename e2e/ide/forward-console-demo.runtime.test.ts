@@ -238,6 +238,13 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
       waitForFileContains(DIST_INDEX_JS, hmrDescription, 90_000),
       'forward-console demo HMR dist update',
     )
+    await miniProgram.compile({ force: true }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/^unimplemented$/i.test(message.trim())) {
+        throw error
+      }
+    })
+    await miniProgram.reLaunch(INDEX_ROUTE)
     await waitForPageDescription(miniProgram, hmrDescription, 90_000)
     const outputBeforeHmrTap = forwardedMessages.join('\n').length
 

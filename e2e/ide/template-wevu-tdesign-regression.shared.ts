@@ -1,5 +1,30 @@
 const CURRENT_PAGE_PROBE_TIMEOUT = 2_000
 const WARMUP_ROUTE = '/pages/index/index'
+const RELAUNCH_ATTEMPTS = 2
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function normalizeRoute(route: unknown) {
+  return String(route ?? '').replace(/^\/+/, '').replace(/\/+$/, '')
+}
+
+async function waitForRoute(miniProgram: any, route: string, timeoutMs = 8_000) {
+  const expectedRoute = normalizeRoute(route)
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    const page = await miniProgram.currentPage({
+      retries: 1,
+      timeout: CURRENT_PAGE_PROBE_TIMEOUT,
+    }).catch(() => null)
+    if (page && normalizeRoute(page.path) === expectedRoute) {
+      return page
+    }
+    await delay(250)
+  }
+  return null
+}
 
 export function createTemplateWevuTdesignRegressionLaunchOptions(projectPath: string) {
   return {
@@ -14,6 +39,7 @@ export function createTemplateWevuTdesignRegressionLaunchOptions(projectPath: st
 export function isTemplateWevuTdesignRegressionPageProtocolUnavailable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('Timeout in raw reLaunch')
+    || message.includes('Timed out waiting route')
     || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
     || message.includes('DevTools did not respond to protocol method App.getPageStack')
     || message.includes('DevTools did not respond to protocol method App.callWxMethod')
@@ -46,14 +72,30 @@ export async function relaunchTemplateWevuTdesignRegressionPage(ctx: any, miniPr
     }
     throw error
   })
-  const page = await miniProgram.reLaunch(route).catch((error: unknown) => {
-    if (isTemplateWevuTdesignRegressionPageProtocolUnavailable(error)) {
-      ctx.skip(createTemplateWevuTdesignRegressionSkipMessage(label))
+  let lastError: unknown
+  for (let attempt = 1; attempt <= RELAUNCH_ATTEMPTS; attempt += 1) {
+    try {
+      const page = await miniProgram.reLaunch(route)
+      if (page && normalizeRoute(page.path) === normalizeRoute(route)) {
+        return page
+      }
     }
-    throw error
-  })
-  if (!page) {
-    throw new Error(`Failed to launch route: ${route}`)
+    catch (error) {
+      lastError = error
+      if (!isTemplateWevuTdesignRegressionPageProtocolUnavailable(error)) {
+        throw error
+      }
+    }
+
+    const currentPage = await waitForRoute(miniProgram, route)
+    if (currentPage) {
+      return currentPage
+    }
+    await delay(500)
   }
-  return page
+
+  if (lastError && isTemplateWevuTdesignRegressionPageProtocolUnavailable(lastError)) {
+    ctx.skip(createTemplateWevuTdesignRegressionSkipMessage(label))
+  }
+  throw new Error(`Failed to launch route after ${RELAUNCH_ATTEMPTS} attempts: ${route}`)
 }

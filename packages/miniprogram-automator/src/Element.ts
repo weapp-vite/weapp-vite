@@ -37,7 +37,7 @@ interface ElementQueryOptions {
   timeout?: number
 }
 const ELEMENT_QUERY_TIMEOUT = 2_500
-const ELEMENT_WXML_TIMEOUT = 2_500
+const ELEMENT_WXML_TIMEOUT = 8_000
 /** Element 的实现。 */
 export default class Element {
   tagName = ''

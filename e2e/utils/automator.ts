@@ -1330,11 +1330,15 @@ function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
 ): BridgeWrapperProject | undefined {
-  if (!projectPath || !projectMeta || !shouldUseAutomatorBridgeWrapper()) {
+  if (!projectPath || !projectMeta) {
     return projectPath ? { distRoot: '', path: projectPath } : undefined
   }
 
   const distRoot = path.dirname(projectMeta.appConfigPath)
+  const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
+  if (projectConfig.compileType === 'plugin' || !shouldUseAutomatorBridgeWrapper()) {
+    return { distRoot, path: projectPath }
+  }
   if (!fs.existsSync(distRoot)) {
     return { distRoot, path: projectPath }
   }
@@ -1349,7 +1353,6 @@ function prepareAutomatorBridgeWrapperProject(
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
   copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
 
-  const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
   const preserveRoots = pluginRoot ? [pluginRoot] : []
   if (pluginRoot) {

@@ -5,6 +5,30 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
 text,
 ::after,
 ::before {
+  --tw-content: '';
+  --tw-duration: initial;
+  --tw-ease: initial;
+  --tw-font-weight:;
+  --tw-gradient-from: #0000;
+  --tw-gradient-from-position: 0%;
+  --tw-gradient-position: initial;
+  --tw-gradient-stops: initial;
+  --tw-gradient-to: #0000;
+  --tw-gradient-to-position: 100%;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-leading:;
+  --tw-outline-style: solid;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-scale-z: 1;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-color: initial;
+  --tw-space-x-reverse: 0;
+  --tw-space-y-reverse: 0;
+  --tw-tracking:;
   border: 0 solid;
   box-sizing: border-box;
   margin: 0;
@@ -14,19 +38,19 @@ text,
 page,
 .tw-root,
 wx-root-portal-content {
-  --color-blue-600: #155dfc;
-  --color-gray-100: #f3f4f6;
-  --color-gray-900: #101828;
-  --color-green-400: #05df72;
-  --color-sky-400: #00bcff;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-400: #90a1b9;
-  --color-slate-600: #45556c;
-  --color-slate-700: #314158;
-  --color-slate-800: #1d293d;
-  --color-slate-900: #0f172b;
-  --color-violet-700: #7008e7;
+  --color-blue-600: rgb(21, 93, 252);
+  --color-gray-100: rgb(243, 244, 246);
+  --color-gray-900: rgb(16, 24, 40);
+  --color-green-400: rgb(5, 223, 114);
+  --color-sky-400: rgb(0, 187, 253);
+  --color-slate-100: rgb(241, 245, 249);
+  --color-slate-200: rgb(226, 232, 240);
+  --color-slate-400: rgb(144, 161, 185);
+  --color-slate-600: rgb(69, 85, 108);
+  --color-slate-700: rgb(49, 65, 88);
+  --color-slate-800: rgb(29, 41, 61);
+  --color-slate-900: rgb(15, 23, 43);
+  --color-violet-700: rgb(112, 8, 231);
   --color-white: #fff;
   --default-font-family: var(--font-sans);
   --default-mono-font-family: var(--font-mono);
@@ -56,29 +80,6 @@ wx-root-portal-content {
   --text-xl--line-height: 1.4;
   --text-xs: 24rpx;
   --text-xs--line-height: 1.33333;
-  --tw-duration: initial;
-  --tw-ease: initial;
-  --tw-font-weight:;
-  --tw-gradient-from: #0000;
-  --tw-gradient-from-position: 0%;
-  --tw-gradient-position: initial;
-  --tw-gradient-stops: initial;
-  --tw-gradient-to: #0000;
-  --tw-gradient-to-position: 100%;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-outline-style: solid;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-  --tw-scale-z: 1;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-color: initial;
-  --tw-space-x-reverse: 0;
-  --tw-space-y-reverse: 0;
-  --tw-tracking:;
 }
 .mx-auto {
   margin-left: auto;
