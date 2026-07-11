@@ -16,8 +16,14 @@ function _runE2E() {
   }
 }
 
+function _setProbeStatus(status: string) {
+  probeStatus.value = status
+  return _runE2E()
+}
+
 defineExpose({
   _runE2E,
+  _setProbeStatus,
 })
 </script>
 

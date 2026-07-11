@@ -464,7 +464,9 @@ export default class MiniProgram extends EventEmitter {
   }
 
   async checkVersion() {
-    const sdkVersion = (await this.send('Tool.getInfo')).SDKVersion
+    const toolInfo = await this.send('Tool.getInfo')
+    this.connection.configureToolInfo(toolInfo)
+    const sdkVersion = toolInfo.SDKVersion
     if (sdkVersion !== 'dev' && cmpVersion(sdkVersion, '2.7.3') < 0) {
       throw new Error(`SDKVersion is currently ${sdkVersion}, while automator(${pkg.version}) requires at least version 2.7.3`)
     }

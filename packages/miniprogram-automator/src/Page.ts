@@ -107,11 +107,12 @@ export default class Page {
   query: any = {}
   private id: number
   private elementMap = new Map<string, Element>()
-  private preferRoutePageFallback = false
+  private preferAppServicePageProtocol = false
   constructor(private connection: Connection, options: IPageOptions) {
     this.id = options.id
     this.path = options.path
     this.query = options.query
+    this.preferAppServicePageProtocol = connection.prefersAppServicePageProtocol
   }
 
   updateFromOptions(options: IPageOptions) {
@@ -134,7 +135,7 @@ export default class Page {
   }
 
   async $(selector: string, options: PageQueryOptions = {}) {
-    if (options.routeOnly || this.preferRoutePageFallback) {
+    if (options.routeOnly || (options.fallback !== false && this.preferAppServicePageProtocol)) {
       return await this.queryRouteElement(selector, options)
     }
     try {
@@ -145,7 +146,7 @@ export default class Page {
     }
     catch (error) {
       if (options.fallback !== false && isRecoverablePageProtocolError(error, 'Page.getElement')) {
-        this.preferRoutePageFallback = true
+        this.preferAppServicePageProtocol = true
         return await this.queryRouteElement(selector, options)
       }
       return null
@@ -153,7 +154,7 @@ export default class Page {
   }
 
   async $$(selector: string, options: PageQueryOptions = {}) {
-    if (options.routeOnly || this.preferRoutePageFallback) {
+    if (options.routeOnly || (options.fallback !== false && this.preferAppServicePageProtocol)) {
       return await this.queryRouteElements(selector, options)
     }
     try {
@@ -168,7 +169,7 @@ export default class Page {
       if (options.fallback === false || !isRecoverablePageProtocolError(error, 'Page.getElements')) {
         throw error
       }
-      this.preferRoutePageFallback = true
+      this.preferAppServicePageProtocol = true
       return await this.queryRouteElements(selector, options)
     }
   }
@@ -690,7 +691,7 @@ export default class Page {
       payload.path = path
     }
     const timeout = options.timeout ?? PAGE_DATA_TIMEOUT
-    if (options.routeOnly || this.preferRoutePageFallback) {
+    if (options.routeOnly || (options.fallback !== false && this.preferAppServicePageProtocol)) {
       return await this.readRouteData(path, timeout)
     }
     try {
@@ -705,7 +706,7 @@ export default class Page {
       if (!isRecoverablePageProtocolError(error, 'Page.getData')) {
         throw error
       }
-      this.preferRoutePageFallback = true
+      this.preferAppServicePageProtocol = true
       return await this.readRouteData(path, timeout)
     }
   }
@@ -764,7 +765,7 @@ export default class Page {
   }
 
   async setData(data: any) {
-    if (this.preferRoutePageFallback) {
+    if (this.preferAppServicePageProtocol) {
       await this.setRouteData(data)
       return
     }
@@ -777,7 +778,7 @@ export default class Page {
       if (!isRecoverablePageProtocolError(error, 'Page.setData') && !isPageStackStaleError(error)) {
         throw error
       }
-      this.preferRoutePageFallback = true
+      this.preferAppServicePageProtocol = true
       await this.setRouteData(data)
     }
   }
@@ -795,7 +796,7 @@ export default class Page {
   }
 
   async callMethodWithOptions(method: string, options: PageCallMethodOptions = {}, ...args: any[]) {
-    if (options.routeOnly || this.preferRoutePageFallback) {
+    if (options.routeOnly || (options.fallback !== false && this.preferAppServicePageProtocol)) {
       return await this.callRouteMethod(method, args, options.timeout)
     }
     try {
@@ -810,7 +811,7 @@ export default class Page {
       if (!isRecoverablePageProtocolError(error, 'Page.callMethod') && !isPageStackStaleError(error)) {
         throw error
       }
-      this.preferRoutePageFallback = true
+      this.preferAppServicePageProtocol = true
     }
     return await this.callRouteMethod(method, args, options.timeout)
   }

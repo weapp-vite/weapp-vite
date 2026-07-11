@@ -63,6 +63,18 @@ describe('Connection', () => {
     await expect(pending).resolves.toEqual({ data: { ok: true } })
   })
 
+  it('selects the app-service Page protocol for affected DevTools versions', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+
+    connection.configureToolInfo({ version: '2.01.2510290' })
+    expect(connection.prefersAppServicePageProtocol).toBe(true)
+
+    connection.configureToolInfo({ version: '2.01.2601010' })
+    expect(connection.prefersAppServicePageProtocol).toBe(false)
+  })
+
   it('rejects protocol errors and pending callbacks on close', async () => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()

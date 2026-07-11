@@ -23,6 +23,15 @@ function createConnection(send: (method: string, params?: Record<string, any>, o
   return { send } as any
 }
 
+function createAppServicePageConnection(
+  send: (method: string, params?: Record<string, any>, options?: Record<string, any>) => any,
+) {
+  return {
+    prefersAppServicePageProtocol: true,
+    send,
+  } as any
+}
+
 describe('Automator', () => {
   it('delegates connect and launch to the inner launcher', async () => {
     const automator = new Automator()
@@ -101,6 +110,34 @@ describe('Page', () => {
     })
   })
 
+  it('uses app-service Page protocol immediately for affected DevTools versions', async () => {
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method !== 'App.callFunction') {
+        throw new Error(`${method} should not use the broken page-frame protocol`)
+      }
+      if (params?.args?.[2] === 'status') {
+        return { result: 'ready' }
+      }
+      if (params?.args?.[2] === 'runE2E') {
+        return { result: { ok: true } }
+      }
+      return { result: [{ id: 'app-service-node' }] }
+    })
+    const page = new Page(
+      createAppServicePageConnection(send),
+      { id: 7, path: '/pages/index', query: {} },
+    )
+
+    await expect(page.$$('.hello')).resolves.toHaveLength(1)
+    await expect(page.data('status')).resolves.toBe('ready')
+    await expect(page.callMethod('runE2E')).resolves.toEqual({ ok: true })
+
+    expect(send).toHaveBeenCalledTimes(3)
+    expect(send).not.toHaveBeenCalledWith('Page.getElements', expect.anything(), expect.anything())
+    expect(send).not.toHaveBeenCalledWith('Page.getData', expect.anything(), expect.anything())
+    expect(send).not.toHaveBeenCalledWith('Page.callMethod', expect.anything(), expect.anything())
+  })
+
   it('falls back to app-service rendered nodes when Page.getElements times out', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
@@ -170,6 +207,62 @@ describe('Page', () => {
     expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
       args: ['pages/index', {}, '.hello', []],
       functionDeclaration: expect.stringContaining('createSelectorQuery'),
+    }, {
+      timeout: 2_500,
+    })
+  })
+
+  it('forces native Page RPC when fallback is disabled after a prior protocol timeout', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElements',
+      },
+    )
+    let queryAttempts = 0
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElements') {
+        queryAttempts += 1
+        if (queryAttempts === 1) {
+          throw timeoutError
+        }
+        return { elements: [{ elementId: 'native-element', tagName: 'view' }] }
+      }
+      if (method === 'Page.getData') {
+        return { data: 'native-data' }
+      }
+      if (method === 'Page.callMethod') {
+        return { result: 'native-method' }
+      }
+      if (method === 'App.callFunction') {
+        return { result: [{ id: 'fallback-node' }] }
+      }
+      return {}
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+
+    await expect(page.$$('view')).resolves.toHaveLength(1)
+    await expect(page.$$('view', { fallback: false })).resolves.toHaveLength(1)
+    await expect(page.data('status', { fallback: false })).resolves.toBe('native-data')
+    await expect(page.callMethodWithOptions('runE2E', { fallback: false })).resolves.toBe('native-method')
+
+    expect(send).toHaveBeenCalledWith('Page.getElements', {
+      pageId: 7,
+      selector: 'view',
+    }, {
+      timeout: 2_500,
+    })
+    expect(send).toHaveBeenCalledWith('Page.getData', {
+      pageId: 7,
+      path: 'status',
+    }, {
+      timeout: 2_500,
+    })
+    expect(send).toHaveBeenCalledWith('Page.callMethod', {
+      args: [],
+      method: 'runE2E',
+      pageId: 7,
     }, {
       timeout: 2_500,
     })
