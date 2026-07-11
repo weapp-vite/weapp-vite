@@ -77,6 +77,20 @@ const vueCore = (name: string, anchor = name.toLowerCase()) => api(`${name}()`, 
 const reactivity = (name: string, compatibility: ApiCompatibility = 'vue-compatible') => api(`${name}()`, `/wevu/api/reactivity#${name.toLowerCase()}`, '响应式与调度', 'reactivity', compatibility)
 const lifecycle = (name: string, compatibility: ApiCompatibility, scopes: ApiScope[]) => api(`${name}()`, `/wevu/api/lifecycle#${name.toLowerCase()}`, '生命周期', 'lifecycle', compatibility, { entry: 'wevu', scopes })
 const setup = (name: string, anchor = name.toLowerCase(), compatibility: ApiCompatibility = 'wevu-extension') => api(`${name}()`, `/wevu/api/setup-context#${anchor}`, 'Setup 与宿主能力', 'setup', compatibility)
+function routerApi(
+  name: string,
+  anchor: string,
+  group: string,
+  kind: ApiKind = 'runtime',
+  compatibility: ApiCompatibility = 'vue-different',
+  keywords: string[] = [],
+) {
+  return api(name, `/wevu/api/router#${anchor}`, group, kind, compatibility, { entry: 'wevu/router', keywords })
+}
+
+function routerType(name: string, group: string, compatibility: ApiCompatibility = 'vue-different', keywords: string[] = []) {
+  return api(name, `/wevu/api/router-types#type-${name.toLowerCase()}`, group, 'type', compatibility, { entry: 'wevu/router', keywords })
+}
 
 export const wevuApiCatalog: WevuApiItem[] = [
   api('createApp()', '/wevu/api/core#createapp', '入口与 Vue 兼容', 'global', 'vue-different'),
@@ -163,8 +177,88 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['StoreSubscribeOptions', 'storesubscribeoptions'],
     ['MutationType', 'mutationtype'],
   ].map(([name, anchor]) => api(name, `/wevu/api/store#${anchor}`, 'Store 类型', 'type', 'wevu-extension', { entry: 'wevu/store', keywords: ['TypeScript', '类型'] })),
-  ...['createRouter', 'useRouter', 'useRoute', 'parseQuery', 'stringifyQuery', 'isNavigationFailure']
-    .map(name => api(`${name}()`, '/wevu/router', 'Router', 'runtime', name === 'useRouter' || name === 'useRoute' ? 'vue-different' : 'wevu-extension', { entry: 'wevu/router' })),
+  ...[
+    ['createRouter()', 'createrouter'],
+    ['useRouter()', 'userouter'],
+    ['useRoute()', 'useroute'],
+  ].map(([name, anchor]) => routerApi(name, anchor, 'Router 入口', 'runtime', 'vue-different', ['Vue Router', '路由实例'])),
+  ...[
+    ['useNativeRouter()', 'usenativerouter'],
+    ['useNativePageRouter()', 'usenativepagerouter'],
+  ].map(([name, anchor]) => routerApi(name, anchor, '原生 Router', 'runtime', 'miniprogram-bridge', ['原生路由', 'SetupContextRouter'])),
+  ...[
+    ['resolveRouteLocation()', 'resolveroutelocation', 'wevu-extension'],
+    ['parseQuery()', 'parsequery', 'wevu-extension'],
+    ['stringifyQuery()', 'stringifyquery', 'wevu-extension'],
+    ['createNavigationFailure()', 'createnavigationfailure', 'wevu-extension'],
+    ['isNavigationFailure()', 'isnavigationfailure', 'vue-different'],
+    ['NavigationFailureType', 'navigationfailuretype', 'vue-different'],
+  ].map(([name, anchor, compatibility]) => routerApi(name, anchor, '解析与导航失败', 'runtime', compatibility as ApiCompatibility, ['resolve', 'query', 'failure'])),
+  ...[
+    ['router.nativeRouter', 'router-nativerouter'],
+    ['router.options', 'router-options'],
+    ['router.currentRoute', 'router-currentroute'],
+    ['router.install()', 'router-install'],
+    ['router.resolve()', 'router-resolve'],
+    ['router.isReady()', 'router-isready'],
+  ].map(([name, anchor]) => routerApi(name, anchor, 'Router 实例', 'runtime', 'vue-different', ['实例', '状态', '安装'])),
+  ...['push', 'replace', 'back', 'go', 'forward']
+    .map(name => routerApi(`router.${name}()`, `router-${name}`, '导航方法', 'runtime', 'vue-different', ['跳转', 'navigate', 'history'])),
+  ...['hasRoute', 'getRoutes', 'addRoute', 'removeRoute', 'clearRoutes']
+    .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '动态路由', 'runtime', 'vue-different', ['路由记录', 'route record', '动态'])),
+  ...['beforeEach', 'beforeResolve', 'afterEach', 'onError']
+    .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '导航守卫', 'runtime', 'vue-different', ['守卫', 'guard', '错误处理'])),
+  ...[
+    'RouterNavigation',
+    'UseRouterOptions',
+    'AddRoute',
+    'RouteLocationRaw',
+    'RouteLocationNormalizedLoaded',
+    'RouteLocationRedirectedFrom',
+    'LocationQuery',
+    'LocationQueryRaw',
+    'LocationQueryValue',
+    'LocationQueryValueRaw',
+    'RouteParams',
+    'RouteParamsRaw',
+    'RouteParamValue',
+    'RouteParamValueRaw',
+    'RouteParamsMode',
+    'RouteQueryParser',
+    'RouteQueryStringifier',
+  ].map(name => routerType(name, '位置与参数类型', 'vue-different', ['TypeScript', 'location', 'query', 'params'])),
+  ...[
+    'NavigationFailure',
+    'NavigationFailureTypeValue',
+    'NavigationMode',
+    'NavigationRedirect',
+    'NavigationGuard',
+    'NavigationGuardResult',
+    'NavigationGuardContext',
+    'NavigationAfterEach',
+    'NavigationAfterEachContext',
+    'NavigationErrorHandler',
+    'NavigationErrorContext',
+  ].map(name => routerType(name, '守卫与失败类型', 'vue-different', ['TypeScript', 'guard', 'failure'])),
+  ...[
+    'NamedRouteRecord',
+    'NamedRoutes',
+    'RouteMeta',
+    'RouteRecordInput',
+    'RouteRecordRaw',
+    'RouteRecordMatched',
+    'RouteRecordRedirect',
+  ].map(name => routerType(name, '路由记录类型', 'vue-different', ['TypeScript', 'route record', 'meta'])),
+  ...[
+    'SetupContextRouter',
+    'RouterNavigateToOption',
+    'RouterRedirectToOption',
+    'RouterReLaunchOption',
+    'RouterSwitchTabOption',
+    'TypedRouterUrl',
+    'TypedRouterTabBarUrl',
+    'WevuTypedRouterRouteMap',
+  ].map(name => routerType(name, '小程序 Router 类型', 'miniprogram-bridge', ['TypeScript', '原生路由', '类型路由'])),
   ...['setWevuDefaults', 'resetWevuDefaults', 'markNoSetData', 'isNoSetData', 'addMutationRecorder', 'removeMutationRecorder']
     .map(name => api(`${name}()`, `/wevu/api/runtime-bridge#${name.toLowerCase()}`, '运行时桥接', 'runtime', 'wevu-extension')),
 ]

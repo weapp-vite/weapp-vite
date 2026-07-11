@@ -160,6 +160,7 @@ const result = await router.forward()
 
 ## 8. 相关页面
 
+- [Wevu Router API 完整参考](/wevu/api/router)
 - [wevu/api/setup-context](/wevu/api/setup-context)
 - [wevu/api/runtime-bridge](/wevu/api/runtime-bridge)
 - [wevu/api-package](/wevu/api-package)

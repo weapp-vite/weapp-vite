@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T15:59:30.661Z",
+  "generatedAt": "2026-07-11T16:10:20.538Z",
   "site": "https://vite.icebreaker.top",
-  "count": 269,
+  "count": 271,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -6293,6 +6293,72 @@
       "source": "wevu/api/reactivity.md"
     },
     {
+      "id": "doc-84173e6d05",
+      "title": "Wevu Router 类型",
+      "summary": "wevu/router 的公开 TypeScript 类型，覆盖位置、参数、守卫、失败、路由记录和小程序宿主 Router。",
+      "url": "/wevu/api/router-types",
+      "canonical": "https://vite.icebreaker.top/wevu/api/router-types",
+      "keywords": [
+        "wevu/router",
+        "typescript",
+        "routelocation",
+        "navigationguard",
+        "routernavigation",
+        "wevu",
+        "微信小程序",
+        "api"
+      ],
+      "headings": [
+        "Wevu Router 类型",
+        "位置与参数类型",
+        "RouterNavigation {#type-routernavigation}",
+        "UseRouterOptions {#type-userouteroptions}",
+        "AddRoute {#type-addroute}",
+        "RouteLocationRaw {#type-routelocationraw}",
+        "RouteLocationNormalizedLoaded {#type-routelocationnormalizedloaded}",
+        "RouteLocationRedirectedFrom {#type-routelocationredirectedfrom}",
+        "LocationQuery {#type-locationquery}",
+        "LocationQueryRaw {#type-locationqueryraw}",
+        "LocationQueryValue {#type-locationqueryvalue}",
+        "LocationQueryValueRaw {#type-locationqueryvalueraw}"
+      ],
+      "updatedAt": "2026-07-12",
+      "source": "wevu/api/router-types.md"
+    },
+    {
+      "id": "doc-fd7ed96444",
+      "title": "Wevu Router API",
+      "summary": "wevu/router 完整 API 参考，覆盖入口函数、Router 实例、导航守卫、动态路由和公开类型。",
+      "url": "/wevu/api/router",
+      "canonical": "https://vite.icebreaker.top/wevu/api/router",
+      "keywords": [
+        "wevu/router",
+        "createrouter",
+        "userouter",
+        "Vue Router",
+        "小程序路由",
+        "wevu",
+        "api",
+        "router"
+      ],
+      "headings": [
+        "Wevu Router API",
+        "Router 入口",
+        "createRouter() {#createrouter}",
+        "useRouter() {#userouter}",
+        "useRoute() {#useroute}",
+        "原生 Router",
+        "useNativeRouter() {#usenativerouter}",
+        "useNativePageRouter() {#usenativepagerouter}",
+        "解析与导航失败",
+        "resolveRouteLocation() {#resolveroutelocation}",
+        "parseQuery() {#parsequery}",
+        "stringifyQuery() {#stringifyquery}"
+      ],
+      "updatedAt": "2026-07-12",
+      "source": "wevu/api/router.md"
+    },
+    {
       "id": "doc-080524a704",
       "title": "Runtime Bridge API",
       "summary": "本页仅展示面向业务与配置层的 Wevu 运行时 API。框架内部桥接函数不会在文档中展开。",
@@ -6646,7 +6712,7 @@
         "6. 调试与迁移建议",
         "7. 速查表"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-12",
       "source": "wevu/router.md"
     },
     {
