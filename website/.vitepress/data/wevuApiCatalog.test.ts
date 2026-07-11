@@ -5,6 +5,49 @@ import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/sr
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
+const includeRE = /<!--\s*@include:\s*(\S+)\s*-->/g
+
+async function readMarkdownWithIncludes(sourcePath: string, seen = new Set<string>()): Promise<string> {
+  const normalizedPath = path.normalize(sourcePath)
+  if (seen.has(normalizedPath)) {
+    throw new Error(`circular markdown include: ${normalizedPath}`)
+  }
+
+  const source = await fs.readFile(normalizedPath, 'utf8')
+  const nextSeen = new Set(seen).add(normalizedPath)
+  const matches = [...source.matchAll(includeRE)]
+  let resolved = source
+
+  for (const match of matches) {
+    const includePath = path.resolve(path.dirname(normalizedPath), match[1])
+    const included = await readMarkdownWithIncludes(includePath, nextSeen)
+    resolved = resolved.replace(match[0], included)
+  }
+
+  return resolved
+}
+
+function getAnchoredSection(source: string, anchor: string) {
+  const anchorToken = `{#${anchor}}`
+  const start = source.indexOf(anchorToken)
+  if (start < 0) {
+    return undefined
+  }
+  const nextHeading = source.slice(start + anchorToken.length).search(/^#{2,3}\s+/m)
+  return nextHeading < 0
+    ? source.slice(start)
+    : source.slice(start, start + anchorToken.length + nextHeading)
+}
+
+function hasSignature(section: string) {
+  return /(?:类型签名|类型定义|运行时值)：/.test(section)
+    || /```(?:ts|typescript)\n[\s\S]*?(?:function|interface|type|const|=>)[\s\S]*?```/.test(section)
+}
+
+function hasExample(section: string) {
+  return /(?:示例|共用示例)(?:\*\*)?：(?:\*\*)?(?:\s*见)?\s*\[/.test(section)
+    || /```(?:vue|ts|typescript|js|javascript)\n[\s\S]*?```/.test(section)
+}
 
 function plainName(name: string) {
   return name.replace(/\(\)$/, '')
@@ -194,7 +237,7 @@ describe('wevu API catalog', () => {
     expect(routerNames).toEqual(new Set(expectedNames))
   })
 
-  it('links every catalog item to an existing page and explicit anchor', async () => {
+  it('documents every catalog item with an explicit anchor and useful reference content', async () => {
     const sources = new Map<string, string>()
     for (const item of wevuApiCatalog) {
       const [pathname, anchor] = item.href.split('#')
@@ -203,10 +246,22 @@ describe('wevu API catalog', () => {
       }
       const relativePath = pathname.endsWith('/') ? `${pathname}index.md` : `${pathname}.md`
       const sourcePath = path.join(websiteRoot, relativePath)
-      const source = sources.get(sourcePath) || await fs.readFile(sourcePath, 'utf8')
+      const source = sources.get(sourcePath) || await readMarkdownWithIncludes(sourcePath)
       sources.set(sourcePath, source)
       if (anchor) {
         expect(source, `missing anchor ${item.href}`).toContain(`{#${anchor}}`)
+        const section = getAnchoredSection(source, anchor)!
+        const prose = section
+          .replace(/```[\s\S]*?```/g, '')
+          .replace(/<!--.*?-->/gs, '')
+          .replace(/[#*`[\](){}:|>-]/g, '')
+          .replace(/\s+/g, '')
+        expect(prose.length, `description is too terse for ${item.entry}:${item.name}`).toBeGreaterThanOrEqual(45)
+        expect(hasSignature(section), `missing signature for ${item.entry}:${item.name}`).toBe(true)
+        expect(hasExample(section), `missing example for ${item.entry}:${item.name}`).toBe(true)
+        if (item.compatibility === 'vue-different') {
+          expect(section, `missing Vue difference for ${item.entry}:${item.name}`).toMatch(/Vue(?: Router|\/Pinia)? 差异：/)
+        }
       }
     }
   })

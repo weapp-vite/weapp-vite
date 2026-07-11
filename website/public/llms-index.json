@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T16:22:54.198Z",
+  "generatedAt": "2026-07-11T17:32:13.426Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -4700,7 +4700,13 @@
         "packages"
       ],
       "headings": [
-        "@wevu/api 兼容总览"
+        "@wevu/api 兼容总览",
+        "01 Overview",
+        "覆盖结论",
+        "不兼容规模",
+        "不兼容示例（前 40 项）",
+        "支付宝不兼容示例",
+        "抖音不兼容示例"
       ],
       "updatedAt": "2026-04-13",
       "source": "packages/weapi/compat-overview.md"
@@ -5228,7 +5234,11 @@
         "notes"
       ],
       "headings": [
-        "兼容差异说明"
+        "兼容差异说明",
+        "05 兼容差异说明",
+        "说明范围",
+        "关键差异",
+        "后续建议"
       ],
       "updatedAt": "2026-04-13",
       "source": "packages/weapi/gap-notes.md"
@@ -5293,12 +5303,15 @@
         "支付宝",
         "抖音",
         "API 清单",
+        "微信小程序",
         "api",
-        "packages",
-        "weapi"
+        "packages"
       ],
       "headings": [
-        "平台独有 API 清单"
+        "平台独有 API 清单",
+        "06 平台独有方法清单",
+        "支付宝独有（相对微信命名）",
+        "抖音独有（相对微信命名）"
       ],
       "updatedAt": "2026-04-13",
       "source": "packages/weapi/platform-only-methods.md"
@@ -6180,7 +6193,7 @@
         "defineModel() {#definemodel}",
         "defineOptions() {#defineoptions}"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/core.md"
     },
     {
@@ -6198,7 +6211,7 @@
         "速查"
       ],
       "headings": [],
-      "updatedAt": "2026-07-11",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/index.md"
     },
     {
@@ -6228,7 +6241,7 @@
         "页面生命周期 Hook",
         "onLoad() {#onload}"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/lifecycle.md"
     },
     {
@@ -6259,7 +6272,7 @@
         "properties {#properties}",
         "behaviors {#behaviors}"
       ],
-      "updatedAt": "2026-07-11",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/options-api.md"
     },
     {
@@ -6289,7 +6302,7 @@
         "监听与副作用",
         "watch() {#watch}"
       ],
-      "updatedAt": "2026-07-11",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/reactivity.md"
     },
     {
@@ -6388,7 +6401,7 @@
         "页面布局桥接",
         "setPageLayout() / usePageLayout() {#pagelayout}"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/runtime-bridge.md"
     },
     {
@@ -6418,7 +6431,7 @@
         "useNativeRouter() {#usenativerouter}",
         "useNativePageRouter() {#usenativepagerouter}"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/setup-context.md"
     },
     {
@@ -6447,7 +6460,7 @@
         "$subscribe() {#store-subscribe}",
         "$onAction() {#store-onaction}"
       ],
-      "updatedAt": "2026-07-11",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/store.md"
     },
     {
@@ -6480,7 +6493,7 @@
         "ShallowRef {#shallowref-type}",
         "WatchOptions {#watchoptions}"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-12",
       "source": "wevu/api/types.md"
     },
     {

@@ -285,7 +285,7 @@ export function assertAuditStrict(result: AuditResult) {
 export async function collectDocuments(relativePaths: string[]) {
   const documents: MarkdownDocument[] = []
   for (const relativePath of relativePaths) {
-    documents.push(await readMarkdownDocument(relativePath))
+    documents.push(await readMarkdownDocument(relativePath, { resolveIncludes: true }))
   }
   return documents
 }

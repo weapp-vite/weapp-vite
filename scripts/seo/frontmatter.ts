@@ -1,12 +1,14 @@
 import type { DocumentBucket, FrontmatterKind, MarkdownDocument } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+// eslint-disable-next-line e18e/ban-dependencies -- SEO 脚本沿用仓库现有 glob 依赖，依赖迁移不属于本次文档改动。
 import fg from 'fast-glob'
 import YAML from 'yaml'
 import { frontmatterKeyHints, markdownIgnoreGlobs, websiteRoot } from './constants'
 
 const standardFrontmatterPattern = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/
 const yamlKeyPattern = /^[A-Z_][\w-]*\s*:/i
+const markdownIncludePattern = /<!--\s*@include:\s*(\S+)\s*-->/g
 
 function toPosixPath(filePath: string) {
   return filePath.replace(/\\/g, '/')
@@ -292,10 +294,36 @@ export function isPartialDocument(relativePath: string) {
   return path.posix.basename(relativePath).startsWith('_')
 }
 
-export async function readMarkdownDocument(relativePath: string): Promise<MarkdownDocument> {
+async function resolveMarkdownIncludes(absolutePath: string, seen = new Set<string>()): Promise<string> {
+  const normalizedPath = path.normalize(absolutePath)
+  if (seen.has(normalizedPath)) {
+    throw new Error(`检测到循环 Markdown include：${normalizedPath}`)
+  }
+
+  const source = await fs.readFile(normalizedPath, 'utf8')
+  const matches = [...source.matchAll(markdownIncludePattern)]
+  if (matches.length === 0) {
+    return source
+  }
+
+  const nextSeen = new Set(seen).add(normalizedPath)
+  let resolved = source
+  for (const match of matches) {
+    const includePath = path.resolve(path.dirname(normalizedPath), match[1])
+    const included = await resolveMarkdownIncludes(includePath, nextSeen)
+    resolved = resolved.replace(match[0], included)
+  }
+  return resolved
+}
+
+export async function readMarkdownDocument(
+  relativePath: string,
+  options: { resolveIncludes?: boolean } = {},
+): Promise<MarkdownDocument> {
   const absolutePath = path.resolve(websiteRoot, relativePath)
   const raw = await fs.readFile(absolutePath, 'utf8')
-  const parsed = parseFrontmatter(raw)
+  const content = options.resolveIncludes ? await resolveMarkdownIncludes(absolutePath) : raw
+  const parsed = parseFrontmatter(content)
 
   return {
     absolutePath,
