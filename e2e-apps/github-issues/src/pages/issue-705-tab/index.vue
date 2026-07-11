@@ -3,15 +3,14 @@ import { computed, onReady, onUnload } from 'wevu'
 import { useRoute, useRouter } from 'wevu/router'
 
 definePageJson({
-  navigationBarTitleText: 'issue-705',
+  navigationBarTitleText: 'issue-705-tab',
 })
 
 const route = useRoute()
 const router = useRouter()
 const routePath = computed(() => route.path)
 const hookCalls: Array<{ phase: string, to?: string, from: string }> = []
-const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
-const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result__'
+const TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_tab_push_result__'
 let lastFailure: null | { cause: string, type: number } = null
 let ready = false
 
@@ -34,7 +33,7 @@ const removeBeforeEach = router.beforeEach((to, from) => {
     to: to?.path,
     from: from.path,
   })
-  wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, {
+  wx.setStorageSync(TAB_PUSH_RESULT_STORAGE_KEY, {
     from: from.path,
     stage: 'before',
     to: to?.path,
@@ -53,7 +52,7 @@ const removeAfterEach = router.afterEach((to, from, failure) => {
         type: failure.type,
       }
     : null
-  wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, createSnapshot())
+  wx.setStorageSync(TAB_PUSH_RESULT_STORAGE_KEY, createSnapshot())
 })
 
 onUnload(() => {
@@ -65,30 +64,16 @@ onReady(() => {
   ready = true
 })
 
-async function _runE2E(action?: 'push' | 'switchTab') {
-  if (action === 'push') {
-    hookCalls.length = 0
-    lastFailure = null
-    wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, {
-      stage: 'started',
-    })
-    await router.push('/pages/issue-550/index')
+async function _runE2E(action?: 'push') {
+  if (action !== 'push') {
     return createSnapshot()
   }
-
-  if (action === 'switchTab') {
-    await new Promise<void>((resolve, reject) => {
-      wx.switchTab({
-        url: '/pages/issue-705-tab/index',
-        success() {
-          wx.setStorageSync(SWITCH_TAB_RESULT_STORAGE_KEY, createSnapshot())
-          resolve()
-        },
-        fail: reject,
-      })
-    })
-  }
-
+  hookCalls.length = 0
+  lastFailure = null
+  wx.setStorageSync(TAB_PUSH_RESULT_STORAGE_KEY, {
+    stage: 'started',
+  })
+  await router.push('/pages/issue-550/index')
   return createSnapshot()
 }
 
@@ -99,24 +84,24 @@ defineExpose({
 
 <template>
   <view
-    class="issue705-page"
+    class="issue705-tab-page"
     :data-route-path="routePath"
   >
-    <text class="issue705-title">
-      issue-705 router route sync
+    <text class="issue705-tab-title">
+      issue-705 native switchTab target
     </text>
   </view>
 </template>
 
 <style scoped>
-.issue705-page {
+.issue705-tab-page {
   box-sizing: border-box;
   min-height: 100vh;
   padding: 24rpx;
   background: #fff;
 }
 
-.issue705-title {
+.issue705-tab-title {
   display: block;
   font-size: 30rpx;
   font-weight: 700;

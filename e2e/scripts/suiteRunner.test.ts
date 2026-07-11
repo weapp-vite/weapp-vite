@@ -294,11 +294,12 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-default.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-performance.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue706.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(16)
+    expect(ideGithubIssuesTasks.length).toBe(17)
     expect(ideGithubIssuesTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
   })
 

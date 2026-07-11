@@ -30,6 +30,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue642-bug7-default.test.ts',
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642.test.ts',
+  'ide/github-issues.runtime.issue705.test.ts',
   'ide/github-issues.runtime.issue706.test.ts',
   'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',

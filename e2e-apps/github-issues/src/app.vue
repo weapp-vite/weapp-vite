@@ -5,6 +5,14 @@ import { ensureGithubIssuesRouter } from './shared/appRouter'
 
 const tabBarList = [
   {
+    pagePath: 'pages/issue-705/index',
+    text: 'issue-705',
+  },
+  {
+    pagePath: 'pages/issue-705-tab/index',
+    text: 'issue-705-tab',
+  },
+  {
     pagePath: 'pages/issue-380/index',
     text: 'issue-380',
   },
