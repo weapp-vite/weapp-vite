@@ -109,6 +109,8 @@ exports.run = async function run() {
 
   await assertClassDefinition(vscode, rawBannerDocument, 'feature-card', path.join('raw-banner', 'index.wxss'))
   await assertClassDefinition(vscode, rawBannerDocument, 'feature-card__main', path.join('raw-banner', 'index.scss'))
+  await assertClassDefinition(vscode, rawBannerDocument, 'base-css-card', path.join('raw-banner', 'index.css'))
+  await assertClassDefinition(vscode, rawBannerDocument, 'less-card__title', path.join('raw-banner', 'index.less'))
   await assertTextDefinition(vscode, rawBannerDocument, 'item.tone', 2, {
     fileName: path.join('raw-banner', 'index.wxml'),
     line: 2,

@@ -52,6 +52,8 @@ const requiredFiles = [
   'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.scss',
   'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.wxml',
   'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.wxss',
+  'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.css',
+  'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.less',
   'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/platform.axml',
   'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/platform.less',
   'scripts/fixtures/vscode-vsix-test-harness/package.json',

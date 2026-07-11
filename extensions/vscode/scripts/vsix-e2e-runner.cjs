@@ -19,6 +19,30 @@ async function waitForCommand(commandId, timeoutMs = 15000) {
   throw new Error(`等待命令注册超时: ${commandId}`)
 }
 
+function getLocationUri(location) {
+  return location?.targetUri ?? location?.uri
+}
+
+async function assertClassDefinition(vscode, document, className, expectedFileName) {
+  const sourceText = document.getText()
+  const classOffset = sourceText.indexOf(className)
+
+  assert.notEqual(classOffset, -1, `missing class in fixture: ${className}`)
+
+  const definitions = await vscode.commands.executeCommand(
+    'vscode.executeDefinitionProvider',
+    document.uri,
+    document.positionAt(classOffset + 2),
+  )
+
+  assert.ok(Array.isArray(definitions), `definition result must be an array for ${className}`)
+  assert.equal(
+    definitions.some(definition => getLocationUri(definition)?.fsPath?.endsWith(expectedFileName)),
+    true,
+    `definition for ${className} should target ${expectedFileName}`,
+  )
+}
+
 exports.run = async function run() {
   const vscode = require('vscode')
   const extensionId = process.env.WEAPP_VITE_VSIX_ID || 'weapp-vite.weapp-vite'
@@ -54,4 +78,30 @@ exports.run = async function run() {
   assert.equal(commands.includes('weapp-vite.revealCurrentPageInPagesTree'), true)
   assert.equal(commands.includes('weapp-vite.filterCurrentPageInTree'), true)
   assert.equal(Boolean(vueOfficialExtension), expectVueOfficial)
+
+  const rawBannerPath = path.join(
+    workspaceFolder.uri.fsPath,
+    'src',
+    'components',
+    'raw-banner',
+    'index.wxml',
+  )
+  const rawBannerDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(rawBannerPath))
+
+  await assertClassDefinition(vscode, rawBannerDocument, 'feature-card', path.join('raw-banner', 'index.wxss'))
+  await assertClassDefinition(vscode, rawBannerDocument, 'feature-card__main', path.join('raw-banner', 'index.scss'))
+  await assertClassDefinition(vscode, rawBannerDocument, 'base-css-card', path.join('raw-banner', 'index.css'))
+  await assertClassDefinition(vscode, rawBannerDocument, 'less-card__title', path.join('raw-banner', 'index.less'))
+
+  const alipayTemplatePath = path.join(
+    workspaceFolder.uri.fsPath,
+    'src',
+    'components',
+    'raw-banner',
+    'platform.axml',
+  )
+  const alipayTemplateDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(alipayTemplatePath))
+
+  assert.equal(alipayTemplateDocument.languageId, 'miniprogram-template')
+  await assertClassDefinition(vscode, alipayTemplateDocument, 'platform-card__title', path.join('raw-banner', 'platform.less'))
 }

@@ -1,4 +1,4 @@
-<view class="raw-banner feature-card">
-  <view class="feature-card__main">style definition target</view>
+<view class="raw-banner feature-card base-css-card">
+  <view class="feature-card__main less-card__title">style definition target</view>
   <view wx:for="{{items}}" wx:key="id" bindtap="handleTap" data-tone="{{ item.tone }}">{{ item.label }}</view>
 </view>
