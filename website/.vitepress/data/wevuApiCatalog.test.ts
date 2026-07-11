@@ -66,6 +66,36 @@ describe('wevu API catalog', () => {
     })
   })
 
+  it('covers the complete public Store surface', () => {
+    const storeNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/store').map(item => item.name))
+    const expectedNames = [
+      'defineStore()',
+      'createStore()',
+      'storeToRefs()',
+      '$id',
+      '$state',
+      '$patch()',
+      '$reset()',
+      '$subscribe()',
+      '$onAction()',
+      'manager.install()',
+      'manager.use()',
+      'state',
+      'getters',
+      'actions',
+      'StoreManager',
+      'DefineStoreOptions',
+      'StoreToRefsResult',
+      'ActionContext',
+      'ActionSubscriber',
+      'SubscriptionCallback',
+      'StoreSubscribeOptions',
+      'MutationType',
+    ]
+
+    expect(storeNames).toEqual(new Set(expectedNames))
+  })
+
   it('links every catalog item to an existing page and explicit anchor', async () => {
     const sources = new Map<string, string>()
     for (const item of wevuApiCatalog) {

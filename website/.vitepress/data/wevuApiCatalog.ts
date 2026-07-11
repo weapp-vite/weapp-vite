@@ -1,5 +1,5 @@
 export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram-bridge' | 'wevu-extension'
-export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime'
+export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime' | 'type'
 export type ApiScope = 'app' | 'page' | 'component'
 export type ApiEntry = 'wevu' | 'wevu/router' | 'wevu/store'
 export type ApiEntryTab = 'core' | 'router' | 'store'
@@ -135,7 +135,34 @@ export const wevuApiCatalog: WevuApiItem[] = [
     .map(name => api(name, `/wevu/api/options-api#${name}`, 'Options API', 'options', 'vue-different', { entry: 'wevu', scopes: ['page', 'component'] })),
   ...['properties', 'behaviors', 'lifetimes', 'pageLifetimes', 'externalClasses', 'options', 'observers', 'relations', 'features', 'setData', 'setupLifecycle']
     .map(name => api(name, `/wevu/api/options-api#${name.toLowerCase()}`, 'Options API', 'options', 'miniprogram-bridge', { entry: 'wevu', scopes: ['page', 'component'] })),
-  ...['defineStore', 'createStore', 'storeToRefs'].map(name => api(`${name}()`, `/wevu/api/store#${name.toLowerCase()}`, 'Store', 'store', name === 'defineStore' || name === 'storeToRefs' ? 'vue-compatible' : 'wevu-extension', { entry: 'wevu/store' })),
+  api('defineStore()', '/wevu/api/store#definestore', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '定义'] }),
+  api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
+  api('storeToRefs()', '/wevu/api/store#storetorefs', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '解构', '响应式'] }),
+  ...[
+    ['$id', 'store-id', ['标识', 'id']],
+    ['$state', 'store-state', ['状态', 'Options Store']],
+    ['$patch()', 'store-patch', ['批量更新', 'mutation']],
+    ['$reset()', 'store-reset', ['重置', '初始状态']],
+    ['$subscribe()', 'store-subscribe', ['订阅', 'mutation']],
+    ['$onAction()', 'store-onaction', ['Action', '订阅']],
+  ].map(([name, anchor, keywords]) => api(name as string, `/wevu/api/store#${anchor}`, 'Store 实例', 'store', 'vue-different', { entry: 'wevu/store', keywords: keywords as string[] })),
+  api('manager.install()', '/wevu/api/store#storemanager-install', 'Store Manager', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['安装', 'app.use', 'no-op'] }),
+  api('manager.use()', '/wevu/api/store#storemanager-use', 'Store Manager', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['插件', 'plugin'] }),
+  ...[
+    ['state', 'options-state', ['状态', 'Options Store']],
+    ['getters', 'options-getters', ['派生状态', 'computed', 'Options Store']],
+    ['actions', 'options-actions', ['方法', 'Action', 'Options Store']],
+  ].map(([name, anchor, keywords]) => api(name as string, `/wevu/api/store#${anchor}`, 'Options Store', 'options', 'vue-different', { entry: 'wevu/store', keywords: keywords as string[] })),
+  ...[
+    ['StoreManager', 'storemanager'],
+    ['DefineStoreOptions', 'definestoreoptions'],
+    ['StoreToRefsResult', 'storetorefsresult'],
+    ['ActionContext', 'actioncontext'],
+    ['ActionSubscriber', 'actionsubscriber'],
+    ['SubscriptionCallback', 'subscriptioncallback'],
+    ['StoreSubscribeOptions', 'storesubscribeoptions'],
+    ['MutationType', 'mutationtype'],
+  ].map(([name, anchor]) => api(name, `/wevu/api/store#${anchor}`, 'Store 类型', 'type', 'wevu-extension', { entry: 'wevu/store', keywords: ['TypeScript', '类型'] })),
   ...['createRouter', 'useRouter', 'useRoute', 'parseQuery', 'stringifyQuery', 'isNavigationFailure']
     .map(name => api(`${name}()`, '/wevu/router', 'Router', 'runtime', name === 'useRouter' || name === 'useRoute' ? 'vue-different' : 'wevu-extension', { entry: 'wevu/router' })),
   ...['setWevuDefaults', 'resetWevuDefaults', 'markNoSetData', 'isNoSetData', 'addMutationRecorder', 'removeMutationRecorder']

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T15:43:54.311Z",
+  "generatedAt": "2026-07-11T15:59:30.661Z",
   "site": "https://vite.icebreaker.top",
   "count": 269,
   "items": [
@@ -6358,13 +6358,14 @@
     {
       "id": "doc-87dc129540",
       "title": "Store API",
-      "summary": "本页严格对应 wevu/store 的公开导出，包含 defineStore、createStore、storeToRefs 及相关类型。",
+      "summary": "本页覆盖 wevu/store 的入口函数、Store 实例 API、Manager、Options Store 配置及公开类型。",
       "url": "/wevu/api/store",
       "canonical": "https://vite.icebreaker.top/wevu/api/store",
       "keywords": [
         "wevu",
         "api",
-        "store"
+        "store",
+        "配置"
       ],
       "headings": [
         "Store API（状态管理）",
@@ -6372,15 +6373,15 @@
         "defineStore() {#definestore}",
         "createStore() {#createstore}",
         "storeToRefs() {#storetorefs}",
-        "Store 类型",
-        "StoreManager {#storemanager}",
-        "DefineStoreOptions {#definestoreoptions}",
-        "StoreToRefsResult {#storetorefsresult}",
-        "ActionContext {#actioncontext}",
-        "ActionSubscriber {#actionsubscriber}",
-        "SubscriptionCallback {#subscriptioncallback}"
+        "Store 实例 API",
+        "$id {#store-id}",
+        "$state {#store-state}",
+        "$patch() {#store-patch}",
+        "$reset() {#store-reset}",
+        "$subscribe() {#store-subscribe}",
+        "$onAction() {#store-onaction}"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-11",
       "source": "wevu/api/store.md"
     },
     {

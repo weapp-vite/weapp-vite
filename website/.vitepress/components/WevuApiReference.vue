@@ -224,7 +224,6 @@ onBeforeUnmount(() => {
                     <code>{{ item.name }}</code>
                     <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
                   </span>
-                  <code v-if="item.entry !== 'wevu'" class="wevu-api-reference__entry">{{ item.entry }}</code>
                   <span class="wevu-api-reference__meta">
                     <span
                       class="wevu-api-reference__tag"

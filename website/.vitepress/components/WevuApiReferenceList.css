@@ -113,16 +113,6 @@
   opacity: 1;
 }
 
-.wevu-api-reference__entry {
-  margin-top: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 10px;
-  color: var(--vp-c-text-3);
-  white-space: nowrap;
-  background: transparent;
-}
-
 .wevu-api-reference__meta {
   display: flex;
   gap: 7px;
