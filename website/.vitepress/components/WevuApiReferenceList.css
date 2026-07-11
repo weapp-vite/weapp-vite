@@ -1,0 +1,186 @@
+.wevu-api-reference__groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px 40px;
+  padding-top: 30px;
+}
+
+.wevu-api-reference__group-heading {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--vp-c-text-1);
+}
+
+.wevu-api-reference__group-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.wevu-api-reference__group-heading span {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+}
+
+.wevu-api-reference__group ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.wevu-api-reference__group li {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(220px, 1.2fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--catalog-border);
+}
+
+.wevu-api-reference__item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wevu-api-reference__item-main a {
+  width: fit-content;
+  max-width: 100%;
+  font-weight: 650;
+}
+
+.wevu-api-reference__item-main a code {
+  color: var(--vp-c-brand-1);
+  overflow-wrap: anywhere;
+  background: transparent;
+}
+
+.wevu-api-reference__entry {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+  background: transparent;
+}
+
+.wevu-api-reference__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.wevu-api-reference__tag,
+.wevu-api-reference__scope {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--vp-c-text-2);
+  background: var(--vp-c-default-soft);
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.wevu-api-reference__tag[data-compatibility="vue-compatible"] {
+  color: var(--vp-c-green-1);
+  background: var(--vp-c-green-soft);
+}
+
+.wevu-api-reference__tag[data-compatibility="vue-different"] {
+  color: var(--vp-c-warning-1);
+  background: var(--vp-c-warning-soft);
+}
+
+.wevu-api-reference__tag[data-compatibility="miniprogram-bridge"] {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+.wevu-api-reference__tag[data-evidence="runtime-e2e"] {
+  color: var(--vp-c-green-1);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--vp-c-green-1) 45%, transparent);
+}
+
+.wevu-api-reference__tag[data-evidence="pending-e2e"] {
+  color: var(--vp-c-text-3);
+  background: transparent;
+  border-color: var(--vp-c-divider);
+}
+
+.wevu-api-reference__empty {
+  display: grid;
+  justify-items: center;
+  padding: 70px 20px;
+  color: var(--vp-c-text-2);
+  text-align: center;
+}
+
+.wevu-api-reference__empty > svg {
+  width: 32px;
+  height: 32px;
+}
+
+.wevu-api-reference__empty h2 {
+  margin: 12px 0 0;
+  font-size: 18px;
+}
+
+.wevu-api-reference__empty p {
+  margin: 5px 0 12px;
+}
+
+@media (max-width: 900px) {
+  .wevu-api-reference__filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wevu-api-reference__groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .wevu-api-reference__header {
+    padding-top: 0;
+  }
+
+  .wevu-api-reference__stats,
+  .wevu-api-reference__filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .wevu-api-reference__toolbar {
+    padding: 14px;
+  }
+
+  .wevu-api-reference__filter-grid {
+    gap: 14px 10px;
+  }
+
+  .wevu-api-reference__group li {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding: 11px 0;
+  }
+
+  .wevu-api-reference__tags {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wevu-api-reference * {
+    scroll-behavior: auto !important;
+  }
+}

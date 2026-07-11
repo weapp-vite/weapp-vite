@@ -489,7 +489,10 @@ const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: 'Global API',
     collapsed: false,
-    items: [{ text: 'Core API', link: '/wevu/api/core' }],
+    items: [
+      { text: 'Core API', link: '/wevu/api/core' },
+      { text: 'Options API', link: '/wevu/api/options-api' },
+    ],
   },
   {
     text: 'Composition API',

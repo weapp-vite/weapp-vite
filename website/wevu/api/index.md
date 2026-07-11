@@ -1,11 +1,13 @@
 ---
-title: Wevu API
-description: Wevu API 文档入口页，按主题聚合 API 参考与使用说明，便于快速定位能力域。
+title: Wevu API 速查
+description: Wevu API 完整速查页，按 Vue 迁移兼容性、能力类型、运行作用域与真实 e2e 证据筛选公开能力。
 keywords:
   - wevu
   - api
   - reference
   - vue-style
+  - options-api
+  - e2e
 sidebar: false
 aside: false
 outline: false
