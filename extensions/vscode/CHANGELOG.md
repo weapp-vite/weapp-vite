@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.4.2
+
+### Patch Changes
+
+- 🐛 **修复 VS Code 扩展格式化 WXML 时打开临时 HTML 文档并可能在结果中拼出 undefined 的问题，改为使用内置 WXML formatter 直接生成当前文档的格式化结果。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
 ## 0.4.1
 
 ### Patch Changes

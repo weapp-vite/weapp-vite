@@ -1,5 +1,15 @@
 # weapp-ide-cli
 
+## 5.4.11
+
+### Patch Changes
+
+- 🐛 **增强微信开发者工具真实运行时与自动化链路稳定性。新版 DevTools 中 Page 域 RPC 超时后，页面查询、数据读取、setData 和页面方法调用会降级到 App-Service route 查询，避免自动化探针长期卡住；同时完善真实 DOM 与运行时状态验收，降低 request globals 场景的 setData 传输体积，并保持 native 加速能力缺失时的回退路径。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- 🐛 **修复微信开发者工具真实运行时中的插件页面识别、插件路由跳转、选择器查询、WXML 读取与页面栈切换稳定性，并确保 Wevu 组件注册在默认导出前完成。IDE 自动化现在会对受限协议提供明确的降级证据，同时保留真实路由、DOM 状态和构建产物验收。** [`99a816a`](https://github.com/weapp-vite/weapp-vite/commit/99a816ab79b0d93aed711a5b54f4ae4b0a4a86e3) by @sonofmagic
+- 📦 **Dependencies** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc)
+  → `@weapp-vite/miniprogram-automator@1.2.6`, `@weapp-vite/devtools-runtime@0.4.7`
+
 ## 5.4.10
 
 ### Patch Changes
