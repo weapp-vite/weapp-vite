@@ -12,6 +12,14 @@ it('runs generated catalog syncs before dependency upgrade changesets', () => {
     },
     {
       command: 'pnpm',
+      args: ['dedupe', '--lockfile-only'],
+    },
+    {
+      command: 'pnpm',
+      args: ['run', 'check:rolldown:single-version'],
+    },
+    {
+      command: 'pnpm',
       args: ['run', 'catalog:sync:weapi'],
     },
     {

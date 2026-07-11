@@ -29,6 +29,7 @@ jobs:
         pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset
         pnpm check:weapp-core-constants-dependency-range
+        pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
@@ -60,6 +61,7 @@ jobs:
         pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset
         pnpm check:weapp-core-constants-dependency-range
+        pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
