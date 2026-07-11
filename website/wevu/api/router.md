@@ -2,7 +2,7 @@
 title: Wevu Router API
 description: wevu/router 完整 API 参考，覆盖入口函数、Router 实例、导航守卫、动态路由和公开类型。
 outline:
-  level: [2, 3]
+  level: [2, 2]
 keywords:
   - wevu/router
   - createRouter
@@ -19,6 +19,8 @@ keywords:
 import { createRouter, useRoute, useRouter } from 'wevu/router'
 ```
 
+<WevuApiDocPage :group-count="7" />
+
 <!--@include: ../../.partials/wevu-api/router/01-router-入口.md-->
 
 <!--@include: ../../.partials/wevu-api/router/02-原生-router.md-->
@@ -34,5 +36,3 @@ import { createRouter, useRoute, useRouter } from 'wevu/router'
 <!--@include: ../../.partials/wevu-api/router/07-导航守卫.md-->
 
 <!--@include: ../../.partials/wevu-api/router/08-兼容边界.md-->
-
-<!--@include: ../../.partials/wevu-api/router/09-typescript-共用示例.md-->

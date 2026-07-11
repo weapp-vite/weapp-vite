@@ -40,6 +40,12 @@ const WeapiReference = defineAsyncComponent(
 const WevuApiReference = defineAsyncComponent(
   () => import('../components/WevuApiReference.vue'),
 )
+const WevuApiDocPage = defineAsyncComponent(
+  () => import('../components/WevuApiDocPage.vue'),
+)
+const WevuApiDocGroup = defineAsyncComponent(
+  () => import('../components/WevuApiDocGroup.vue'),
+)
 
 export default {
   extends: DefaultTheme,
@@ -60,6 +66,8 @@ export default {
     app.component('WeapiCompatibilityCatalog', WeapiCompatibilityCatalog)
     app.component('WeapiReference', WeapiReference)
     app.component('WevuApiReference', WevuApiReference)
+    app.component('WevuApiDocPage', WevuApiDocPage)
+    app.component('WevuApiDocGroup', WevuApiDocGroup)
     if (typeof window !== 'undefined') {
       let cleanupOutline: (() => void) | null = null
       // keep a single click handler per aside element without mutating DOM nodes
@@ -87,6 +95,12 @@ export default {
           const section = document.getElementById(id)
           if (!section) {
             return
+          }
+          const parentGroup = section.closest<HTMLDetailsElement>('details[data-wevu-api-group]')
+          const sibling = section.nextElementSibling
+          const apiGroup = parentGroup || (sibling?.matches('details[data-wevu-api-group]') ? sibling as HTMLDetailsElement : null)
+          if (apiGroup) {
+            apiGroup.open = true
           }
           evt.preventDefault()
           // optimistic active state for better visual feedback

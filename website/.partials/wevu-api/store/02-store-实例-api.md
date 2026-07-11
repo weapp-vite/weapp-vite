@@ -1,5 +1,7 @@
 ## Store 实例 API
 
+<WevuApiDocGroup :api-count="6" summary="读取标识和状态，批量修改、重置并订阅状态或 Action。" title="Store 实例 API">
+
 ### `$id` {#store-id}
 
 <!-- api-reference-details -->
@@ -10,7 +12,7 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：读取 `defineStore()` 声明的 Store 标识。
 - 适用：Setup Store 与 Options Store。
@@ -25,7 +27,7 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：读取或浅合并替换 Options Store 的响应式 state。
 - 适用：仅 Options Store 的公共类型包含 `$state`；Setup Store 应直接使用 setup 返回的 state/ref。
@@ -40,7 +42,7 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：通过部分对象或回调函数批量修改状态。
 - 订阅类型：分别触发 `patch object` 或 `patch function`。
@@ -55,7 +57,7 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：恢复 Store 创建时保存的初始状态快照。
 - 适用：Setup Store 与 Options Store；Setup Store 中不可写的 computed/readonly ref 会被跳过。
@@ -70,7 +72,7 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：订阅 Store 状态变化，回调接收 mutation 信息和当前状态。
 - 返回值：取消订阅函数。
@@ -86,7 +88,31 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store 实例共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 - 用途：订阅 Action 调用，可通过 `after()` 和 `onError()` 监听成功结果或错误。
 - 返回值：取消订阅函数。
+
+### 本组示例 {#example-store-instance}
+
+实例 API 可以批量更新、重置并观察 mutation 与 Action 结果。
+
+```ts
+const stopState = counter.$subscribe((mutation, state) => {
+  console.log(mutation.type, state.count)
+})
+const stopAction = counter.$onAction(({ name, after, onError }) => {
+  after(result => console.log(name, result))
+  onError(error => console.error(name, error))
+})
+
+counter.$patch({ count: 2 })
+counter.$patch((state) => {
+  state.count += 1
+})
+counter.$reset()
+stopState()
+stopAction()
+```
+
+</WevuApiDocGroup>

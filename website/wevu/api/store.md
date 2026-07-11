@@ -2,7 +2,7 @@
 title: Store API
 description: 本页覆盖 wevu/store 的入口函数、Store 实例 API、Manager、Options Store 配置及公开类型。
 outline:
-  level: [3, 3]
+  level: [2, 2]
 keywords:
   - Wevu
   - api
@@ -15,6 +15,8 @@ keywords:
 
 > Wevu Store 对齐 Pinia 的主要使用心智，但不是 Pinia 的完整实现。`createStore()`、Manager 安装行为、订阅时机和小程序响应式更新均以本页契约为准。
 
+<WevuApiDocPage :group-count="5" />
+
 <!--@include: ../../.partials/wevu-api/store/01-核心函数.md-->
 
 <!--@include: ../../.partials/wevu-api/store/02-store-实例-api.md-->
@@ -24,5 +26,3 @@ keywords:
 <!--@include: ../../.partials/wevu-api/store/04-options-store-配置.md-->
 
 <!--@include: ../../.partials/wevu-api/store/05-store-类型.md-->
-
-<!--@include: ../../.partials/wevu-api/store/06-示例.md-->

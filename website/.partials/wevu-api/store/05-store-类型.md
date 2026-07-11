@@ -1,5 +1,7 @@
 ## Store 类型
 
+<WevuApiDocGroup :api-count="8" summary="约束 Manager、Store 定义、订阅回调、Action 上下文和 mutation 类型。" title="Store 类型">
+
 ### `StoreManager` {#storemanager}
 
 <!-- api-reference-details -->
@@ -17,7 +19,7 @@ interface StoreManager {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：store 根管理器类型。
 
@@ -41,7 +43,7 @@ interface DefineStoreOptions<
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：定义 option 风格 store 的类型约束。
 
@@ -64,7 +66,7 @@ type StoreToRefsResult<T extends Record<string, any>> = {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：`storeToRefs()` 返回结果类型。
 
@@ -86,7 +88,7 @@ interface ActionContext<TStore = any> {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：`$onAction` 回调上下文。
 
@@ -104,7 +106,7 @@ interface ActionSubscriber<TStore = any> {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：action 订阅回调签名。
 
@@ -122,7 +124,7 @@ interface SubscriptionCallback<S = any> {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：状态变更订阅回调签名。
 
@@ -143,7 +145,7 @@ interface StoreSubscribeOptions {
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：`$subscribe` 的订阅选项类型。
 
@@ -159,6 +161,27 @@ type MutationType = 'patch object' | 'patch function' | 'direct'
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
 
-**示例：** 见 [Store 类型共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-types)。
 
 - 用途：store mutation 类型（`'patch object' | 'patch function' | 'direct'`）。
+
+### 本组示例 {#example-store-types}
+
+公开类型适合约束插件、订阅器和 Action 观察工具。
+
+```ts
+import type { ActionSubscriber, StoreManager, SubscriptionCallback } from 'wevu'
+
+const logMutation: SubscriptionCallback<{ count: number }> = (mutation, state) => {
+  console.log(mutation.storeId, mutation.type, state.count)
+}
+
+const logAction: ActionSubscriber = ({ name, args }) => console.log(name, args)
+declare const manager: StoreManager
+manager.use(({ store }) => {
+  store.$subscribe(logMutation)
+  store.$onAction(logAction)
+})
+```
+
+</WevuApiDocGroup>

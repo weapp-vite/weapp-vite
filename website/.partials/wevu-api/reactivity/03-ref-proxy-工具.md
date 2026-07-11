@@ -1,5 +1,7 @@
 ## Ref / Proxy 工具
 
+<WevuApiDocGroup :api-count="7" summary="在值、Ref、getter 和代理对象之间安全转换或手动触发更新。" title="Ref / Proxy 工具">
+
 ### `toRef()` {#toref}
 
 <!-- api-reference-details -->
@@ -8,7 +10,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`Ref<T>`
 - 用途：把对象某个属性映射为 ref。
@@ -22,7 +24,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`ToRefs<T>`
 - 用途：批量把对象属性转换为 ref。
@@ -36,7 +38,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`T`
 - 用途：统一读取 `ref.value` 或普通值。
@@ -50,7 +52,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`MaybeRefOrGetter<T>`
 - 用途：统一展开普通值、Ref 或 getter。
@@ -64,7 +66,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`void`
 - 用途：手动触发 `shallowRef` 依赖更新。
@@ -78,7 +80,7 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`T`
 - 用途：拿到代理前的原始对象。
@@ -92,8 +94,27 @@
 
 **运行时说明：** 依赖变化进入 Wevu 调度队列，并最终收敛为小程序 `setData` 更新；模板状态必须保持可序列化。
 
-**示例：** 见 [响应式与调度共用示例](/wevu/api/reactivity#reactivity-examples)。
+**示例：** 见 [本组示例](/wevu/api/reactivity#example-reactivity-ref-tools)。
 
 - 类型入口：`T`
 - 用途：标记对象跳过响应式代理。
 - 说明：适用于大型类实例、SDK 对象。
+
+### 本组示例 {#example-reactivity-ref-tools}
+
+工具函数让组合式函数同时接受普通值、Ref 或 getter。
+
+```ts
+import { reactive, shallowRef, toRaw, toRef, toRefs, toValue, triggerRef } from 'wevu'
+
+const state = reactive({ count: 0, name: 'Ada' })
+const count = toRef(state, 'count')
+const fields = toRefs(state)
+const config = shallowRef({ enabled: true })
+
+config.value.enabled = false
+triggerRef(config)
+console.log(toValue(count), fields.name.value, toRaw(state))
+```
+
+</WevuApiDocGroup>

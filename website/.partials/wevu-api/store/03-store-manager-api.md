@@ -1,5 +1,7 @@
 ## Store Manager API
 
+<WevuApiDocGroup :api-count="2" summary="安装 Store Manager 并注册作用于后续 Store 的插件。" title="Store Manager API">
+
 ### `manager.install()` {#storemanager-install}
 
 <!-- api-reference-details -->
@@ -10,7 +12,7 @@
 
 **Vue/Pinia 差异：** Pinia 通过 `app.use(pinia)` 注入 Vue App；Wevu 小程序没有同等插件挂载阶段，`install()` 仅保留兼容入口。
 
-**示例：** 见 [Store Manager共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-manager)。
 
 - 用途：保留与插件安装心智一致的接口。
 - 差异：小程序环境不需要注册全局插件入口，当前实现不执行额外逻辑。
@@ -25,7 +27,26 @@
 
 **Vue/Pinia 差异：** API 心智接近 Pinia，但实现使用 Wevu 响应式与小程序实例作用域；不包含 Pinia devtools、SSR hydration 和完整插件生态。
 
-**示例：** 见 [Store Manager共用示例](/wevu/api/store#store-examples)。
+**示例：** 见 [本组示例](/wevu/api/store#example-store-manager)。
 
 - 用途：注册 Store 插件；每个新建 Store 会调用插件并传入 `{ store }`。
 - 返回值：当前 `StoreManager`，支持链式调用。
+
+### 本组示例 {#example-store-manager}
+
+Manager 插件只影响之后创建的 Store，适合隔离测试和注入横切能力。
+
+```ts
+import { createStore, defineStore } from 'wevu'
+
+const manager = createStore()
+manager.use(({ store }) => {
+  console.log('created store', store.$id)
+})
+manager.install()
+
+const useSession = defineStore('session', { state: () => ({ token: '' }) })
+const session = useSession(manager)
+```
+
+</WevuApiDocGroup>

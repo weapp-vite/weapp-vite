@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T17:32:13.426Z",
+  "generatedAt": "2026-07-11T18:43:58.674Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -6184,14 +6184,14 @@
         "入口与组件定义",
         "createApp() {#createapp}",
         "defineComponent() {#definecomponent}",
+        "本组示例 {#example-core-entry}",
         "Script Setup 宏",
         "defineProps() {#defineprops}",
         "withDefaults() {#withdefaults}",
         "defineEmits() {#defineemits}",
         "defineSlots() {#defineslots}",
         "defineExpose() {#defineexpose}",
-        "defineModel() {#definemodel}",
-        "defineOptions() {#defineoptions}"
+        "defineModel() {#definemodel}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/core.md"
@@ -6238,8 +6238,8 @@
         "onUnhandledRejection() {#onunhandledrejection}",
         "onThemeChange() {#onthemechange}",
         "onMemoryWarning() {#onmemorywarning}",
-        "页面生命周期 Hook",
-        "onLoad() {#onload}"
+        "本组示例 {#example-lifecycle-app}",
+        "页面生命周期 Hook"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/lifecycle.md"
@@ -6268,9 +6268,9 @@
         "computed {#computed}",
         "methods {#methods}",
         "watch {#watch}",
+        "本组示例 {#example-options-vue}",
         "小程序宿主选项",
-        "properties {#properties}",
-        "behaviors {#behaviors}"
+        "properties {#properties}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/options-api.md"
@@ -6299,8 +6299,8 @@
         "readonly() {#readonly}",
         "shallowReadonly() {#shallowreadonly}",
         "computed() {#computed}",
-        "监听与副作用",
-        "watch() {#watch}"
+        "本组示例 {#example-reactivity-state}",
+        "监听与副作用"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/reactivity.md"
@@ -6360,13 +6360,13 @@
         "createRouter() {#createrouter}",
         "useRouter() {#userouter}",
         "useRoute() {#useroute}",
+        "本组示例 {#example-router-entry}",
         "原生 Router",
         "useNativeRouter() {#usenativerouter}",
         "useNativePageRouter() {#usenativepagerouter}",
+        "本组示例 {#example-router-native}",
         "解析与导航失败",
-        "resolveRouteLocation() {#resolveroutelocation}",
-        "parseQuery() {#parsequery}",
-        "stringifyQuery() {#stringifyquery}"
+        "resolveRouteLocation() {#resolveroutelocation}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/router.md"
@@ -6392,14 +6392,14 @@
         "全局默认值",
         "setWevuDefaults() {#setwevudefaults}",
         "resetWevuDefaults() {#resetwevudefaults}",
+        "本组示例 {#example-runtime-defaults}",
         "setData 排除标记",
         "markNoSetData() {#marknosetdata}",
         "isNoSetData() {#isnosetdata}",
+        "本组示例 {#example-runtime-no-setdata}",
         "调试记录",
         "addMutationRecorder() {#addmutationrecorder}",
-        "removeMutationRecorder() {#removemutationrecorder}",
-        "页面布局桥接",
-        "setPageLayout() / usePageLayout() {#pagelayout}"
+        "removeMutationRecorder() {#removemutationrecorder}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/runtime-bridge.md"
@@ -6422,14 +6422,14 @@
         "实例与上下文访问 API",
         "getCurrentInstance() {#getcurrentinstance}",
         "getCurrentSetupContext() {#getcurrentsetupcontext}",
+        "本组示例 {#example-setup-instance}",
         "依赖注入 API",
         "provide() {#provide}",
         "inject() {#inject}",
         "provideGlobal() / injectGlobal()（Deprecated） {#provideglobal}",
+        "本组示例 {#example-setup-provide}",
         "Setup 兼容工具 API",
-        "useNativeInstance() {#usenativeinstance}",
-        "useNativeRouter() {#usenativerouter}",
-        "useNativePageRouter() {#usenativepagerouter}"
+        "useNativeInstance() {#usenativeinstance}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/setup-context.md"
@@ -6452,13 +6452,13 @@
         "defineStore() {#definestore}",
         "createStore() {#createstore}",
         "storeToRefs() {#storetorefs}",
+        "本组示例 {#example-store-entry}",
         "Store 实例 API",
         "$id {#store-id}",
         "$state {#store-state}",
         "$patch() {#store-patch}",
         "$reset() {#store-reset}",
-        "$subscribe() {#store-subscribe}",
-        "$onAction() {#store-onaction}"
+        "$subscribe() {#store-subscribe}"
       ],
       "updatedAt": "2026-07-12",
       "source": "wevu/api/store.md"

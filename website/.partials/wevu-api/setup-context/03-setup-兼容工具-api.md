@@ -1,5 +1,7 @@
 ## Setup 兼容工具 API
 
+<WevuApiDocGroup :api-count="18" summary="处理 model、节点查询、观察器、资源清理、layout、页面栈和性能事件。" title="Setup 兼容工具 API">
+
 ### `useNativeInstance()` {#usenativeinstance}
 
 <!-- api-reference-details -->
@@ -8,7 +10,7 @@
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：获取当前 setup 对应的原生实例。
 - 源码：`runtime/vueCompat.ts`。
@@ -21,7 +23,7 @@
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：获取当前组件路径语义的 Router 对象。
 - 行为：优先使用 `this.router`；不可用时回退 `this.pageRouter`；低版本基础库（`< 2.16.1`）再回退全局路由方法（`wx`/`my`/`tt`）。
@@ -36,7 +38,7 @@
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：获取当前页面路径语义的 Router 对象。
 - 行为：优先使用 `this.pageRouter`；不可用时回退 `this.router`；低版本基础库（`< 2.16.1`）再回退全局路由方法（`wx`/`my`/`tt`）。
@@ -69,7 +71,7 @@
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：创建绑定 payload（`value + onXxx`）辅助函数。
 - 源码：`runtime/vueCompat.ts`。
@@ -82,7 +84,7 @@
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：创建默认使用 `change` 事件的 model 绑定辅助函数。
 - 适合：TDesign、Vant 等第三方小程序组件库中大量使用 `change` 事件的表单场景。
@@ -121,7 +123,7 @@ const budgetModel = changeModel<number>('formState.budget', {
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：在 `setup()` 中创建 `IntersectionObserver`，并在卸载时自动 `disconnect()`。
 - 建议：优先用它替代 `onPageScroll + setData` 的可见性轮询逻辑。
@@ -135,7 +137,7 @@ const budgetModel = changeModel<number>('formState.budget', {
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：声明式观察当前页面/组件内某个 selector 的可见性，并在卸载时自动断开。
 - 适合：商品卡片曝光、懒加载、可见区域统计。
@@ -168,7 +170,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：创建绑定当前原生实例的 `SelectorQuery` 工厂。
 - 适合：需要直接调用小程序 `select()` / `selectAll()` / `exec()` 的高级节点查询。
@@ -182,7 +184,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：创建节点布局查询函数。
 - 说明：默认查询单个节点；传入 `{ all: true }` 时返回节点数组。
@@ -196,7 +198,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：按小程序 `fields()` 语义读取节点字段。
 - 说明：必须显式传入 `fields`，例如 `{ size: true, dataset: true }`。
@@ -210,7 +212,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：读取 scroll-view 等可滚动节点的滚动位置。
 - 说明：默认查询单个节点；传入 `{ all: true }` 时返回节点数组。
@@ -224,7 +226,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：创建一个自动随页面/组件卸载执行的清理袋。
 - 适合：定时器、请求任务、事件退订函数、`disconnect()` / `abort()` / `stop()` 一类资源清理。
@@ -238,7 +240,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：读取或切换当前页面的 layout 状态。
 - 说明：这是 `wevu` 根入口的页面运行时辅助能力，常与 Weapp-vite 的 `routeRules.layout`、`definePageMeta({ layout })` 配合。
@@ -252,7 +254,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：读取当前小程序页面栈快照。
 - 返回：`currentRoute`、`stackLength`、`canGoBack` 与 `refresh()`。
@@ -268,7 +270,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：计算自定义导航栏需要的状态栏、导航栏和总高度。
 - 返回：`statusBarHeight`、`navigationBarHeight`、`navigationHeight` 与 `refresh()`。
@@ -284,7 +286,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：在 `onPageScroll()` 基础上提供节流包装，并在卸载时自动清理。
 - 适合：吸顶状态、滚动进度、轻量联动，而不是每次滚动都直接 `setData`。
@@ -298,7 +300,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：注册原生 `setUpdatePerformanceListener` 监听，并在卸载时自动移除。
 - 适合：排查页面/组件更新耗时与更新结果。
@@ -312,7 +314,7 @@ useElementIntersectionObserver({
 
 **运行时说明：** 返回值或回调直接连接当前小程序宿主实例，不应把原生实例、查询器或观察器暴露为模板可序列化状态。
 
-**示例：** 见 [Setup 与宿主能力共用示例](/wevu/api/setup-context#setup-context-examples)。
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-host-tools)。
 
 - 用途：注册异步下拉刷新回调，并在回调结束后自动停止宿主下拉刷新状态。
 - 适合：页面刷新逻辑需要 `await` 请求、错误处理和统一 `stopPullDownRefresh()` 的场景。
@@ -344,3 +346,25 @@ useAsyncPullDownRefresh(reload, {
 })
 </script>
 ```
+
+### 本组示例 {#example-setup-host-tools}
+
+节点查询、页面栈和自动清理工具可以在同一 setup 中组合。
+
+```vue
+<script setup lang="ts">
+import { onReady, ref, useBoundingClientRect, useDisposables, usePageStack } from 'wevu'
+
+const rect = ref<WechatMiniprogram.BoundingClientRectCallbackResult>()
+const queryRect = useBoundingClientRect('#hero')
+const disposables = useDisposables()
+const pageStack = usePageStack()
+
+onReady(async () => {
+  rect.value = await queryRect()
+})
+disposables.add(() => console.log('cleanup', pageStack.value.length))
+</script>
+```
+
+</WevuApiDocGroup>

@@ -1,5 +1,7 @@
 ## App 生命周期 Hook
 
+<WevuApiDocGroup :api-count="8" summary="注册 App 启动、显示、异常、主题和内存告警等宿主生命周期。" default-open title="App 生命周期 Hook">
+
 ### `onLaunch()` {#onlaunch}
 
 <!-- api-reference-details -->
@@ -8,7 +10,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App`
 - 源码行为：注册到 `onLaunch`。
@@ -21,7 +23,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App / Page / Component`
 - 源码行为：统一注册到 `onShow`（App 与页面/组件共用函数名）。
@@ -34,7 +36,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App / Page / Component`
 - 源码行为：统一注册到 `onHide`。
@@ -47,7 +49,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App / Component`
 - 源码行为：注册到 `onError`。
@@ -60,7 +62,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App`
 - 源码行为：注册到 `onPageNotFound`。
@@ -73,7 +75,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App`
 - 源码行为：注册到 `onUnhandledRejection`。
@@ -86,7 +88,7 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App`
 - 源码行为：注册到 `onThemeChange`。
@@ -99,8 +101,29 @@
 
 **运行时说明：** 必须在同步 `setup()` 阶段注册，运行时才能把回调绑定到当前 App、页面或组件实例；不要在 `await` 之后注册。
 
-**示例：** 见 [生命周期共用示例](/wevu/api/lifecycle#lifecycle-examples)。
+**示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-app)。
 
 - 作用域：`App`
 - 源码行为：通过 `wx.onMemoryWarning` 注册监听，并在重复绑定时自动调用 `wx.offMemoryWarning` 清理旧监听。
 - 建议：回调内优先释放大缓存、长列表临时数据与不必要的订阅/定时器。
+
+<span id="lifecycle-examples"></span>
+
+### 本组示例 {#example-lifecycle-app}
+
+App hook 同样必须在同步 `setup()` 中注册。
+
+```ts
+import { createApp, onError, onLaunch, onMemoryWarning, onShow } from 'wevu'
+
+createApp({
+  setup() {
+    onLaunch(options => console.log('launch', options))
+    onShow(options => console.log('show', options))
+    onError(error => console.error(error))
+    onMemoryWarning(({ level }) => console.warn('memory', level))
+  },
+})
+```
+
+</WevuApiDocGroup>

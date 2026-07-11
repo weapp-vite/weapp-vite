@@ -1,5 +1,7 @@
 ## Script Setup 宏
 
+<WevuApiDocGroup :api-count="12" summary="声明 props、事件、model、页面元信息和 App 级初始化逻辑。" title="Script Setup 宏">
+
 ### `defineProps()` {#defineprops}
 
 <!-- api-reference-details -->
@@ -8,7 +10,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ComponentPropsOptions` / `ExtractPropTypes`
 - 用途：声明组件 props。
@@ -22,7 +24,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ExtractDefaultPropTypes`
 - 用途：给类型化 props 设置默认值。
@@ -36,7 +38,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`EmitsOptions` / `TriggerEventOptions`
 - 用途：声明事件与参数类型。
@@ -50,7 +52,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`VNode`
 - 用途：声明 slots 类型。
@@ -63,7 +65,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ComponentPublicInstance`
 - 用途：显式暴露实例字段。
@@ -76,7 +78,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ModelBinding`
 - 用途：声明 `v-model` 绑定。
@@ -89,7 +91,7 @@
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`MiniProgramComponentOptions`
 - 用途：在 `<script setup>` 中定义组件配置项。
@@ -120,7 +122,7 @@ defineOptions({
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`PageMeta` / `PageLayoutMeta`
 - 用途：在 `<script setup>` 中声明页面级元信息。
@@ -144,7 +146,7 @@ definePageMeta({
 
 **运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
 
-**示例：** 见 [Script Setup 宏共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`RuntimeApp`
 - 用途：声明 App 级 setup 初始化逻辑。
@@ -158,7 +160,7 @@ definePageMeta({
 
 **运行时说明：** 该 API 运行在 Wevu 的组件作用域内；涉及 hook 或实例上下文时，应在同步 `setup()` 中调用。
 
-**示例：** 见 [模板与模型工具共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`WevuPlugin`
 - 用途：安装 Wevu 插件。
@@ -172,7 +174,7 @@ definePageMeta({
 
 **运行时说明：** 该 API 运行在 Wevu 的组件作用域内；涉及 hook 或实例上下文时，应在同步 `setup()` 中调用。
 
-**示例：** 见 [模板与模型工具共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ModelBindingPayload`
 - 用途：合并多路 model 绑定结果。
@@ -185,7 +187,26 @@ definePageMeta({
 
 **运行时说明：** 该 API 运行在 Wevu 的组件作用域内；涉及 hook 或实例上下文时，应在同步 `setup()` 中调用。
 
-**示例：** 见 [模板与模型工具共用示例](/wevu/api/core#core-examples)。
+**示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`ModelBinding`
 - 用途：运行时读取/写入某个 model。
+
+### 本组示例 {#example-core-macros}
+
+相关宏可以在一个组件中共同声明类型、默认值、事件和 model。
+
+```vue
+<script setup lang="ts">
+interface Props { title?: string }
+
+defineOptions({ options: { virtualHost: true } })
+const props = withDefaults(defineProps<Props>(), { title: '未命名' })
+const emit = defineEmits<{ submit: [title: string] }>()
+const model = defineModel<number>({ default: 0 })
+
+defineExpose({ submit: () => emit('submit', props.title) })
+</script>
+```
+
+</WevuApiDocGroup>
