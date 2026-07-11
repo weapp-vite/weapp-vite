@@ -13,6 +13,7 @@ export function createVueOxcTsconfigGuard(
   vuePlugin?: VuePluginWithApi,
   pluginName = 'vue-oxc-tsconfig-guard',
 ): Plugin {
+  const configuredVuePlugin = vuePlugin
   let resolvedVuePlugin = vuePlugin
   let resolvedConfig: ResolvedConfig | undefined
   let previousDevServer: ViteDevServer | undefined
@@ -34,7 +35,8 @@ export function createVueOxcTsconfigGuard(
     apply: 'build',
     configResolved(config) {
       resolvedConfig = config
-      resolvedVuePlugin ??= config.plugins.find(plugin => plugin.name === 'vite:vue')
+      resolvedVuePlugin = configuredVuePlugin
+        ?? config.plugins.find(plugin => plugin.name === 'vite:vue')
     },
     buildStart() {
       const api = resolvedVuePlugin?.api

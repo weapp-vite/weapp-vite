@@ -71,6 +71,34 @@ describe('createVueOxcTsconfigGuard', () => {
     expect(vuePlugin.api.options.devServer).toBe(devServer)
   })
 
+  it('rebinds to the Vue plugin created for each VitePress build phase', () => {
+    const { devServer: clientDevServer, plugin: clientVuePlugin } = createVuePlugin()
+    const { devServer: ssrDevServer, plugin: ssrVuePlugin } = createVuePlugin()
+    const guard = createVueOxcTsconfigGuard()
+    const configResolved = guard.configResolved as (config: ResolvedConfig) => void
+    const buildStart = guard.buildStart as () => void
+    const buildEnd = guard.buildEnd as () => void
+
+    configResolved({
+      plugins: [clientVuePlugin, guard],
+    } as unknown as ResolvedConfig)
+    buildStart()
+    expect(clientVuePlugin.api.options.devServer).not.toBe(clientDevServer)
+    buildEnd()
+    expect(clientVuePlugin.api.options.devServer).toBe(clientDevServer)
+
+    configResolved({
+      plugins: [ssrVuePlugin, guard],
+    } as unknown as ResolvedConfig)
+    buildStart()
+
+    expect(ssrVuePlugin.api.options.devServer).not.toBe(ssrDevServer)
+    expect(ssrVuePlugin.api.options.devServer?.config.oxc).toMatchObject({
+      tsconfig: false,
+    })
+    expect(clientVuePlugin.api.options.devServer).toBe(clientDevServer)
+  })
+
   it('provides a no-op watcher compatible with plugin-vue build transforms', () => {
     const { plugin: vuePlugin } = createVuePlugin()
     const guard = createVueOxcTsconfigGuard(vuePlugin)
