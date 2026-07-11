@@ -240,7 +240,7 @@
     "fast-sort": "^3.4.1",
     "fdir": "catalog:",
     "get-value": "^4.1.0",
-    "hono": "^4.12.28",
+    "hono": "^4.12.29",
     "htmlparser2": "catalog:",
     "husky": "^9.1.7",
     "importx": "^0.5.2",

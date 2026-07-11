@@ -49,7 +49,7 @@ catalog:
   dayjs: ^1.11.21
   echarts: ^6.1.0
   esbuild: ^0.28.1
-  eslint: ^10.6.0
+  eslint: ^10.7.0
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
@@ -80,7 +80,7 @@ catalog:
   vite-plugin-inspect: ^11.4.1
   vue: ^3.5.39
   vue-tsc: ^3.3.7
-  weapp-tailwindcss: ^5.1.13
+  weapp-tailwindcss: ^5.1.14
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +94,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.3
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.1.13
+    weapp-tailwindcss: 5.1.14
 
 gitChecks: false
 
