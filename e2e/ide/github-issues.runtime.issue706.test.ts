@@ -17,7 +17,7 @@ describe.sequential('e2e app: github-issues / issue #706', () => {
     await closeSharedMiniProgram()
   })
 
-  it('keeps Page query and data probes responsive when DevTools Page RPC degrades', async (ctx) => {
+  it('uses the app-service Page protocol when the DevTools page-frame channel is unavailable', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(
@@ -43,13 +43,20 @@ describe.sequential('e2e app: github-issues / issue #706', () => {
         timeout: 10_000,
       })
 
+      const startedAt = Date.now()
       const helloElements = await issuePage.$$('.hello', { timeout: 5_000 })
       const hello = await issuePage.$('.hello', { timeout: 5_000 })
       const status = await issuePage.data('probeStatus', { timeout: 5_000 })
+      await issuePage.setData({ probeStatus: 'updated' })
+      const updatedStatus = await issuePage.data('probeStatus', { timeout: 5_000 })
+      const runtime = await issuePage.callMethodWithOptions('_setProbeStatus', { timeout: 5_000 }, 'method')
 
       expect(helloElements.length).toBeGreaterThan(0)
       expect(hello).not.toBeNull()
       expect(status).toBe('ready')
+      expect(updatedStatus).toBe('updated')
+      expect(runtime).toMatchObject({ ok: false, status: 'method' })
+      expect(Date.now() - startedAt).toBeLessThan(2_000)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

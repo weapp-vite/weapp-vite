@@ -28,9 +28,17 @@ interface ProtocolResponse {
   result?: any
   params?: any
 }
+interface ToolInfo {
+  version?: string
+}
+/** Page frame 定向消息失效、需要切换到 App-service Page 协议的 DevTools 版本。 */
+const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
+  '2.01.2510290',
+])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
   private callbacks = new Map<string, PendingCallback>()
+  private useAppServicePageProtocol = false
   constructor(private transport: Transport) {
     super()
     transport.on('message', this.onMessage)
@@ -68,6 +76,15 @@ export default class Connection extends EventEmitter {
 
   dispose() {
     this.transport.close()
+  }
+
+  /** 根据 DevTools 版本选择稳定的 Page 协议实现。 */
+  configureToolInfo(info: ToolInfo) {
+    this.useAppServicePageProtocol = APP_SERVICE_PAGE_PROTOCOL_VERSIONS.has(String(info.version ?? ''))
+  }
+
+  get prefersAppServicePageProtocol() {
+    return this.useAppServicePageProtocol
   }
 
   private onMessage = (message: string) => {

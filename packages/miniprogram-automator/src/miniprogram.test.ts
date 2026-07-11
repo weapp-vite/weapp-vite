@@ -22,6 +22,7 @@ vi.mock('./util', () => ({
 
 class FakeConnection extends EventEmitter {
   send = vi.fn<(method: string, params?: Record<string, any>, options?: Record<string, any>) => Promise<any>>(async () => ({}))
+  configureToolInfo = vi.fn()
   dispose = vi.fn()
 }
 
@@ -142,8 +143,12 @@ describe('MiniProgram', () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)
 
-    connection.send.mockResolvedValueOnce({ SDKVersion: '2.7.2' })
+    connection.send.mockResolvedValueOnce({ SDKVersion: '2.7.2', version: '2.01.2510290' })
     await expect(miniProgram.checkVersion()).rejects.toThrow('requires at least version 2.7.3')
+    expect(connection.configureToolInfo).toHaveBeenCalledWith({
+      SDKVersion: '2.7.2',
+      version: '2.01.2510290',
+    })
 
     connection.send.mockResolvedValueOnce({ SDKVersion: 'dev' })
     await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
