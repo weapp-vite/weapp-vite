@@ -221,7 +221,6 @@
   min-height: 54px;
   font-size: 13px;
   color: var(--vp-c-text-2);
-  border-bottom: 1px solid var(--catalog-border);
 }
 
 .wevu-api-reference__result-bar strong {
