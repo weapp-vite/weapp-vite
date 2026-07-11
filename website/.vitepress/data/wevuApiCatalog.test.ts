@@ -32,6 +32,12 @@ describe('wevu API catalog', () => {
     }
   })
 
+  it('keeps the root, router, and store entry tabs populated', () => {
+    for (const entry of ['wevu', 'wevu/router', 'wevu/store']) {
+      expect(wevuApiCatalog.some(item => item.entry === entry), `empty entry tab ${entry}`).toBe(true)
+    }
+  })
+
   it('links every catalog item to an existing page and explicit anchor', async () => {
     const sources = new Map<string, string>()
     for (const item of wevuApiCatalog) {

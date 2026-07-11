@@ -1,6 +1,7 @@
 export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram-bridge' | 'wevu-extension'
 export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime'
 export type ApiScope = 'app' | 'page' | 'component'
+export type ApiEntry = 'wevu' | 'wevu/router' | 'wevu/store'
 
 export interface WevuApiItem {
   name: string
@@ -8,7 +9,7 @@ export interface WevuApiItem {
   group: string
   kind: ApiKind
   compatibility: ApiCompatibility
-  entry: 'wevu' | 'wevu/router' | 'wevu/store'
+  entry: ApiEntry
   scopes?: ApiScope[]
   keywords?: string[]
 }

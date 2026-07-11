@@ -23,6 +23,58 @@
   color: var(--vp-c-text-2);
 }
 
+.wevu-api-reference__entry-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--catalog-border);
+}
+
+.wevu-api-reference__entry-tabs a {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+}
+
+.wevu-api-reference__entry-tabs a::after {
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  content: "";
+  background: transparent;
+}
+
+.wevu-api-reference__entry-tabs a:hover {
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  background: var(--vp-c-bg-soft);
+}
+
+.wevu-api-reference__entry-tabs a[aria-current="page"] {
+  color: var(--vp-c-brand-1);
+}
+
+.wevu-api-reference__entry-tabs a[aria-current="page"]::after {
+  background: var(--vp-c-brand-1);
+}
+
+.wevu-api-reference__entry-tabs small {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vp-c-text-3);
+}
+
 .wevu-api-reference__tools {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) auto;
@@ -221,5 +273,11 @@
 
   .wevu-api-reference__compatibility button {
     flex: 1 0 calc(33.333% - 6px);
+  }
+
+  .wevu-api-reference__entry-tabs a {
+    min-height: 50px;
+    padding: 8px 6px;
+    font-size: 13px;
   }
 }

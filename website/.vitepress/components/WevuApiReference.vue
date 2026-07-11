@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ApiCompatibility, ApiKind, ApiScope } from '../data/wevuApiCatalog'
+import type { ApiCompatibility, ApiEntry, ApiKind, ApiScope } from '../data/wevuApiCatalog'
 import { Icon } from '@iconify/vue'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { wevuApiCatalog, wevuApiGroups } from '../data/wevuApiCatalog'
 
 interface FilterOption<T extends string> {
@@ -10,6 +10,20 @@ interface FilterOption<T extends string> {
   shortLabel?: string
   description?: string
 }
+
+type EntryTab = 'core' | 'router' | 'store'
+
+interface EntryTabOption {
+  value: EntryTab
+  label: string
+  entry: ApiEntry
+}
+
+const entryTabs: EntryTabOption[] = [
+  { value: 'core', label: '核心 API', entry: 'wevu' },
+  { value: 'router', label: 'Router', entry: 'wevu/router' },
+  { value: 'store', label: 'Store', entry: 'wevu/store' },
+]
 
 const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
   { value: 'vue-compatible', label: 'Vue 完全兼容', shortLabel: 'Vue 兼容', description: '名称、参数和主要行为与 Vue 对应 API 保持一致' },
@@ -36,11 +50,17 @@ const scopeOptions: FilterOption<ApiScope>[] = [
 ]
 
 const query = ref('')
+const activeEntry = ref<EntryTab>('core')
 const selectedCompatibility = ref<'all' | ApiCompatibility>('all')
 const selectedKind = ref<'all' | ApiKind>('all')
 const selectedScope = ref<'all' | ApiScope>('all')
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
+const activeEntryOption = computed(() => entryTabs.find(tab => tab.value === activeEntry.value) || entryTabs[0])
+const activeItems = computed(() => wevuApiCatalog.filter(item => item.entry === activeEntryOption.value.entry))
+const availableCompatibilityOptions = computed(() => compatibilityOptions.filter(option => activeItems.value.some(item => item.compatibility === option.value)))
+const availableKindOptions = computed(() => kindOptions.filter(option => activeItems.value.some(item => item.kind === option.value)))
+const availableScopeOptions = computed(() => scopeOptions.filter(option => activeItems.value.some(item => item.scopes?.includes(option.value))))
 const hasFilters = computed(() => Boolean(
   normalizedQuery.value
   || selectedCompatibility.value !== 'all'
@@ -48,7 +68,7 @@ const hasFilters = computed(() => Boolean(
   || selectedScope.value !== 'all',
 ))
 
-const filteredItems = computed(() => wevuApiCatalog.filter((item) => {
+const filteredItems = computed(() => activeItems.value.filter((item) => {
   const searchText = [item.name, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
   return (!normalizedQuery.value || searchText.includes(normalizedQuery.value))
     && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
@@ -70,9 +90,44 @@ function clearFilters() {
   selectedScope.value = 'all'
 }
 
+function entryHref(value: EntryTab) {
+  return value === 'core' ? '/wevu/api/' : `/wevu/api/?entry=${value}`
+}
+
+function entryFromLocation(): EntryTab {
+  if (typeof window === 'undefined') {
+    return 'core'
+  }
+  const value = new URL(window.location.href).searchParams.get('entry')
+  return value === 'router' || value === 'store' ? value : 'core'
+}
+
+function selectEntry(value: EntryTab) {
+  if (activeEntry.value === value) {
+    return
+  }
+  activeEntry.value = value
+  clearFilters()
+  window.history.pushState({}, '', entryHref(value))
+}
+
+function syncEntryFromHistory() {
+  activeEntry.value = entryFromLocation()
+  clearFilters()
+}
+
 function compatibilityOption(value: ApiCompatibility) {
   return compatibilityOptions.find(option => option.value === value)
 }
+
+onMounted(() => {
+  activeEntry.value = entryFromLocation()
+  window.addEventListener('popstate', syncEntryFromHistory)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', syncEntryFromHistory)
+})
 </script>
 
 <template>
@@ -81,6 +136,19 @@ function compatibilityOption(value: ApiCompatibility) {
       <h1>Wevu API</h1>
       <p>快速确认 API 的 Vue 兼容程度、适用范围与导入入口。</p>
     </header>
+
+    <nav class="wevu-api-reference__entry-tabs" aria-label="API 模块">
+      <a
+        v-for="tab in entryTabs"
+        :key="tab.value"
+        :href="entryHref(tab.value)"
+        :aria-current="activeEntry === tab.value ? 'page' : undefined"
+        @click.prevent="selectEntry(tab.value)"
+      >
+        <span>{{ tab.label }}</span>
+        <small>{{ wevuApiCatalog.filter(item => item.entry === tab.entry).length }}</small>
+      </a>
+    </nav>
 
     <section class="wevu-api-reference__tools" aria-label="API 筛选">
       <div class="wevu-api-reference__search">
@@ -106,7 +174,7 @@ function compatibilityOption(value: ApiCompatibility) {
           全部
         </button>
         <button
-          v-for="option in compatibilityOptions"
+          v-for="option in availableCompatibilityOptions"
           :key="option.value"
           type="button"
           :title="option.description"
@@ -123,7 +191,7 @@ function compatibilityOption(value: ApiCompatibility) {
           <span>类型</span>
           <select v-model="selectedKind">
             <option value="all">全部类型</option>
-            <option v-for="option in kindOptions" :key="option.value" :value="option.value">
+            <option v-for="option in availableKindOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </select>
@@ -132,7 +200,7 @@ function compatibilityOption(value: ApiCompatibility) {
           <span>作用域</span>
           <select v-model="selectedScope">
             <option value="all">全部作用域</option>
-            <option v-for="option in scopeOptions" :key="option.value" :value="option.value">
+            <option v-for="option in availableScopeOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </select>
