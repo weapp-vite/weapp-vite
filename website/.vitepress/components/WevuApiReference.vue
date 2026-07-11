@@ -155,23 +155,25 @@ function compatibilityOption(value: ApiCompatibility) {
         </div>
         <ul>
           <li v-for="item in group.items" :key="`${item.entry}:${item.name}`">
-            <a :href="item.href" class="wevu-api-reference__item-main">
-              <code>{{ item.name }}</code>
-              <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
+            <a :href="item.href" class="wevu-api-reference__item-link">
+              <span class="wevu-api-reference__item-main">
+                <code>{{ item.name }}</code>
+                <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
+              </span>
+              <code v-if="item.entry !== 'wevu'" class="wevu-api-reference__entry">{{ item.entry }}</code>
+              <span class="wevu-api-reference__meta">
+                <span
+                  class="wevu-api-reference__tag"
+                  :data-compatibility="item.compatibility"
+                  :title="compatibilityOption(item.compatibility)?.description"
+                >
+                  {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
+                </span>
+                <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
+                  {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
+                </span>
+              </span>
             </a>
-            <code class="wevu-api-reference__entry">{{ item.entry }}</code>
-            <div class="wevu-api-reference__meta">
-              <span
-                class="wevu-api-reference__tag"
-                :data-compatibility="item.compatibility"
-                :title="compatibilityOption(item.compatibility)?.description"
-              >
-                {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
-              </span>
-              <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
-                {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
-              </span>
-            </div>
           </li>
         </ul>
       </section>
