@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T14:49:15.634Z",
+  "generatedAt": "2026-07-11T15:12:10.006Z",
   "site": "https://vite.icebreaker.top",
   "count": 269,
   "items": [
@@ -6186,7 +6186,7 @@
     {
       "id": "doc-5396df2a85",
       "title": "Wevu API 速查",
-      "summary": "Wevu API 完整速查页，按 Vue 迁移兼容性、能力类型、运行作用域与真实 e2e 证据筛选公开能力。",
+      "summary": "Wevu API 完整速查页，按 Vue 迁移兼容性、能力类型与运行作用域筛选公开能力。",
       "url": "/wevu/api/",
       "canonical": "https://vite.icebreaker.top/wevu/api/",
       "keywords": [
@@ -6195,7 +6195,6 @@
         "reference",
         "vue-style",
         "options-api",
-        "e2e",
         "速查"
       ],
       "headings": [],

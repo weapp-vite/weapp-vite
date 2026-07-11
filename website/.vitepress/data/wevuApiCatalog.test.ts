@@ -11,13 +11,12 @@ function plainName(name: string) {
 }
 
 describe('wevu API catalog', () => {
-  it('uses the runtime fixture as the only source of verified API evidence', () => {
-    const verifiedNames = wevuApiCatalog
-      .filter(item => item.evidence === 'runtime-e2e')
-      .map(item => plainName(item.name))
-      .sort()
+  it('contains every API covered by the runtime e2e fixture', () => {
+    const catalogNames = new Set(wevuApiCatalog.map(item => plainName(item.name)))
 
-    expect(verifiedNames).toEqual([...COMPOSITION_API_E2E_NAMES].sort())
+    for (const name of COMPOSITION_API_E2E_NAMES) {
+      expect(catalogNames, `missing e2e-covered API ${name}`).toContain(name)
+    }
   })
 
   it('keeps identifiers unique and covers macros and Options API', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ApiCompatibility, ApiEvidence, ApiKind, ApiScope } from '../data/wevuApiCatalog'
+import type { ApiCompatibility, ApiKind, ApiScope } from '../data/wevuApiCatalog'
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
 import { wevuApiCatalog, wevuApiGroups } from '../data/wevuApiCatalog'
@@ -8,13 +8,14 @@ interface FilterOption<T extends string> {
   value: T
   label: string
   shortLabel?: string
+  description?: string
 }
 
 const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
-  { value: 'vue-compatible', label: 'Vue 完全兼容', shortLabel: 'Vue 兼容' },
-  { value: 'vue-different', label: 'Vue 同名有差异', shortLabel: 'Vue 差异' },
-  { value: 'miniprogram-bridge', label: '小程序桥接', shortLabel: '宿主桥接' },
-  { value: 'wevu-extension', label: 'Wevu 扩展' },
+  { value: 'vue-compatible', label: 'Vue 完全兼容', shortLabel: 'Vue 兼容', description: '名称、参数和主要行为与 Vue 对应 API 保持一致' },
+  { value: 'vue-different', label: 'Vue 同名有差异', shortLabel: 'Vue 差异', description: '名称相同，但参数、时机或宿主行为存在差异' },
+  { value: 'miniprogram-bridge', label: '小程序桥接', shortLabel: '宿主桥接', description: '连接小程序生命周期或宿主能力，不属于 Vue API' },
+  { value: 'wevu-extension', label: 'Wevu 扩展', description: 'Wevu 提供的框架扩展能力' },
 ]
 
 const kindOptions: FilterOption<ApiKind>[] = [
@@ -34,39 +35,25 @@ const scopeOptions: FilterOption<ApiScope>[] = [
   { value: 'component', label: 'Component', shortLabel: 'Comp' },
 ]
 
-const evidenceOptions: FilterOption<ApiEvidence>[] = [
-  { value: 'runtime-e2e', label: '真实 e2e 已验证', shortLabel: 'e2e 已验证' },
-  { value: 'pending-e2e', label: '待补 e2e' },
-]
-
 const query = ref('')
-const selectedCompatibility = ref<ApiCompatibility[]>([])
-const selectedKinds = ref<ApiKind[]>([])
-const selectedScopes = ref<ApiScope[]>([])
-const selectedEvidence = ref<ApiEvidence[]>([])
+const selectedCompatibility = ref<'all' | ApiCompatibility>('all')
+const selectedKind = ref<'all' | ApiKind>('all')
+const selectedScope = ref<'all' | ApiScope>('all')
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
 const hasFilters = computed(() => Boolean(
   normalizedQuery.value
-  || selectedCompatibility.value.length
-  || selectedKinds.value.length
-  || selectedScopes.value.length
-  || selectedEvidence.value.length,
+  || selectedCompatibility.value !== 'all'
+  || selectedKind.value !== 'all'
+  || selectedScope.value !== 'all',
 ))
-
-function includesSelected<T>(selected: T[], value: T) {
-  return selected.length === 0 || selected.includes(value)
-}
 
 const filteredItems = computed(() => wevuApiCatalog.filter((item) => {
   const searchText = [item.name, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
-  const scopeMatched = selectedScopes.value.length === 0
-    || selectedScopes.value.some(scope => item.scopes?.includes(scope))
   return (!normalizedQuery.value || searchText.includes(normalizedQuery.value))
-    && includesSelected(selectedCompatibility.value, item.compatibility)
-    && includesSelected(selectedKinds.value, item.kind)
-    && includesSelected(selectedEvidence.value, item.evidence)
-    && scopeMatched
+    && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
+    && (selectedKind.value === 'all' || item.kind === selectedKind.value)
+    && (selectedScope.value === 'all' || item.scopes?.includes(selectedScope.value))
 }))
 
 const groupedItems = computed(() => wevuApiGroups
@@ -78,38 +65,24 @@ const groupedItems = computed(() => wevuApiGroups
 
 function clearFilters() {
   query.value = ''
-  selectedCompatibility.value = []
-  selectedKinds.value = []
-  selectedScopes.value = []
-  selectedEvidence.value = []
+  selectedCompatibility.value = 'all'
+  selectedKind.value = 'all'
+  selectedScope.value = 'all'
 }
 
-function compatibilityLabel(value: ApiCompatibility) {
-  return compatibilityOptions.find(option => option.value === value)?.shortLabel
-    || compatibilityOptions.find(option => option.value === value)?.label
-}
-
-function evidenceLabel(value: ApiEvidence) {
-  return evidenceOptions.find(option => option.value === value)?.shortLabel
-    || evidenceOptions.find(option => option.value === value)?.label
+function compatibilityOption(value: ApiCompatibility) {
+  return compatibilityOptions.find(option => option.value === value)
 }
 </script>
 
 <template>
   <main class="wevu-api-reference">
     <header class="wevu-api-reference__header">
-      <p class="wevu-api-reference__eyebrow">WEVU REFERENCE</p>
-      <h1>API 速查</h1>
-      <p>按迁移兼容性、能力类型、运行作用域与真实 e2e 证据定位 API。</p>
-      <div class="wevu-api-reference__stats" aria-label="API 目录统计">
-        <strong>{{ wevuApiCatalog.length }}</strong>
-        <span>项公开能力</span>
-        <strong>{{ wevuApiCatalog.filter(item => item.evidence === 'runtime-e2e').length }}</strong>
-        <span>项真实 e2e 已验证</span>
-      </div>
+      <h1>Wevu API</h1>
+      <p>快速确认 API 的 Vue 兼容程度、适用范围与导入入口。</p>
     </header>
 
-    <section class="wevu-api-reference__toolbar" aria-label="API 筛选">
+    <section class="wevu-api-reference__tools" aria-label="API 筛选">
       <div class="wevu-api-reference__search">
         <Icon icon="mdi:magnify" aria-hidden="true" />
         <label class="wevu-api-reference__visually-hidden" for="wevu-api-filter">搜索 API</label>
@@ -117,47 +90,60 @@ function evidenceLabel(value: ApiEvidence) {
           id="wevu-api-filter"
           v-model="query"
           type="search"
-          placeholder="搜索 API、分组或导入入口"
+          placeholder="搜索 API，例如 ref、router、lifecycle"
         >
+        <button v-if="query" type="button" title="清空搜索" aria-label="清空搜索" @click="query = ''">
+          <Icon icon="mdi:close" aria-hidden="true" />
+        </button>
       </div>
 
-      <div class="wevu-api-reference__filter-grid">
-        <fieldset>
-          <legend>迁移兼容性</legend>
-          <label v-for="option in compatibilityOptions" :key="option.value">
-            <input v-model="selectedCompatibility" type="checkbox" :value="option.value">
-            <span>{{ option.label }}</span>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>能力类型</legend>
-          <label v-for="option in kindOptions" :key="option.value">
-            <input v-model="selectedKinds" type="checkbox" :value="option.value">
-            <span>{{ option.label }}</span>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>运行作用域</legend>
-          <label v-for="option in scopeOptions" :key="option.value">
-            <input v-model="selectedScopes" type="checkbox" :value="option.value">
-            <span>{{ option.label }}</span>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>验证证据</legend>
-          <label v-for="option in evidenceOptions" :key="option.value">
-            <input v-model="selectedEvidence" type="checkbox" :value="option.value">
-            <span>{{ option.label }}</span>
-          </label>
-        </fieldset>
+      <div class="wevu-api-reference__compatibility" aria-label="按迁移兼容性筛选">
+        <button
+          type="button"
+          :aria-pressed="selectedCompatibility === 'all'"
+          @click="selectedCompatibility = 'all'"
+        >
+          全部
+        </button>
+        <button
+          v-for="option in compatibilityOptions"
+          :key="option.value"
+          type="button"
+          :title="option.description"
+          :data-compatibility="option.value"
+          :aria-pressed="selectedCompatibility === option.value"
+          @click="selectedCompatibility = option.value"
+        >
+          {{ option.shortLabel || option.label }}
+        </button>
+      </div>
+
+      <div class="wevu-api-reference__secondary-filters">
+        <label>
+          <span>类型</span>
+          <select v-model="selectedKind">
+            <option value="all">全部类型</option>
+            <option v-for="option in kindOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span>作用域</span>
+          <select v-model="selectedScope">
+            <option value="all">全部作用域</option>
+            <option v-for="option in scopeOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
       </div>
     </section>
 
     <div class="wevu-api-reference__result-bar" aria-live="polite">
-      <span>显示 <strong>{{ filteredItems.length }}</strong> / {{ wevuApiCatalog.length }} 项</span>
+      <span><strong>{{ filteredItems.length }}</strong> 个 API</span>
       <button v-if="hasFilters" type="button" @click="clearFilters">
-        <Icon icon="mdi:close" aria-hidden="true" />
-        清除筛选
+        重置筛选
       </button>
     </div>
 
@@ -169,19 +155,21 @@ function evidenceLabel(value: ApiEvidence) {
         </div>
         <ul>
           <li v-for="item in group.items" :key="`${item.entry}:${item.name}`">
-            <div class="wevu-api-reference__item-main">
-              <a :href="item.href"><code>{{ item.name }}</code></a>
-              <code class="wevu-api-reference__entry">{{ item.entry }}</code>
-            </div>
-            <div class="wevu-api-reference__tags">
-              <span class="wevu-api-reference__tag" :data-compatibility="item.compatibility">
-                {{ compatibilityLabel(item.compatibility) }}
+            <a :href="item.href" class="wevu-api-reference__item-main">
+              <code>{{ item.name }}</code>
+              <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
+            </a>
+            <code class="wevu-api-reference__entry">{{ item.entry }}</code>
+            <div class="wevu-api-reference__meta">
+              <span
+                class="wevu-api-reference__tag"
+                :data-compatibility="item.compatibility"
+                :title="compatibilityOption(item.compatibility)?.description"
+              >
+                {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
               </span>
-              <span class="wevu-api-reference__tag" :data-evidence="item.evidence">
-                {{ evidenceLabel(item.evidence) }}
-              </span>
-              <span v-for="scope in item.scopes || []" :key="scope" class="wevu-api-reference__scope">
-                {{ scopeOptions.find(option => option.value === scope)?.shortLabel || scope }}
+              <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
+                {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
               </span>
             </div>
           </li>
@@ -191,9 +179,9 @@ function evidenceLabel(value: ApiEvidence) {
 
     <section v-else class="wevu-api-reference__empty">
       <Icon icon="mdi:file-search-outline" aria-hidden="true" />
-      <h2>没有匹配的 API</h2>
-      <p>调整关键词或减少筛选条件。</p>
-      <button type="button" @click="clearFilters">清除筛选</button>
+      <h2>没有找到匹配项</h2>
+      <p>换一个关键词，或重置当前筛选。</p>
+      <button type="button" @click="clearFilters">重置筛选</button>
     </section>
   </main>
 </template>

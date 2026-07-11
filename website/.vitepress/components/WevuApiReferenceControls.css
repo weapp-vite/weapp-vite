@@ -1,58 +1,33 @@
 .wevu-api-reference {
-  --catalog-accent: var(--vp-c-brand-1);
-  --catalog-border: color-mix(in srgb, var(--vp-c-divider) 82%, transparent);
+  --catalog-border: color-mix(in srgb, var(--vp-c-divider) 84%, transparent);
 
-  padding-bottom: 48px;
+  padding-bottom: 56px;
 }
 
 .wevu-api-reference__header {
-  max-width: 760px;
-  padding: 12px 0 28px;
-}
-
-.wevu-api-reference__eyebrow {
-  margin: 0 0 8px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--catalog-accent);
+  max-width: 680px;
+  padding: 8px 0 32px;
 }
 
 .wevu-api-reference__header h1 {
   margin: 0;
-  font-size: clamp(32px, 6vw, 52px);
-  line-height: 1.08;
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1.12;
   letter-spacing: 0;
 }
 
-.wevu-api-reference__header > p:not(.wevu-api-reference__eyebrow) {
-  margin: 14px 0 0;
-  font-size: 17px;
+.wevu-api-reference__header p {
+  margin: 12px 0 0;
+  font-size: 16px;
   line-height: 1.7;
   color: var(--vp-c-text-2);
 }
 
-.wevu-api-reference__stats {
+.wevu-api-reference__tools {
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr;
-  gap: 4px 8px;
-  align-items: baseline;
-  max-width: 520px;
-  padding-top: 22px;
-}
-
-.wevu-api-reference__stats strong {
-  font-family: var(--vp-font-family-mono);
-  font-size: 22px;
-  color: var(--vp-c-text-1);
-}
-
-.wevu-api-reference__stats span {
-  font-size: 13px;
-  color: var(--vp-c-text-2);
-}
-
-.wevu-api-reference__toolbar {
+  grid-template-columns: minmax(300px, 1fr) auto;
+  gap: 16px 24px;
+  align-items: end;
   padding: 18px;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--catalog-border);
@@ -62,8 +37,51 @@
 .wevu-api-reference__search {
   position: relative;
   display: flex;
+  grid-column: 1 / -1;
   align-items: center;
-  max-width: 560px;
+}
+
+.wevu-api-reference__search > svg {
+  position: absolute;
+  left: 13px;
+  width: 20px;
+  height: 20px;
+  color: var(--vp-c-text-3);
+  pointer-events: none;
+}
+
+.wevu-api-reference__search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 44px 10px 42px;
+  font-size: 15px;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+}
+
+.wevu-api-reference__search input::placeholder {
+  color: var(--vp-c-text-3);
+  opacity: 1;
+}
+
+.wevu-api-reference__search button {
+  position: absolute;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.wevu-api-reference__search button:hover {
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-default-soft);
 }
 
 .wevu-api-reference__visually-hidden {
@@ -77,110 +95,131 @@
   clip-path: inset(50%);
 }
 
-.wevu-api-reference__search > svg {
-  position: absolute;
-  left: 12px;
-  width: 19px;
-  height: 19px;
-  color: var(--vp-c-text-2);
-  pointer-events: none;
+.wevu-api-reference__compatibility {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.wevu-api-reference__search input {
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 12px 9px 40px;
-  font-size: 14px;
-  color: var(--vp-c-text-1);
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 6px;
-}
-
-.wevu-api-reference__search input:focus-visible,
-.wevu-api-reference button:focus-visible,
-.wevu-api-reference input:focus-visible + span {
-  outline: 2px solid var(--catalog-accent);
-  outline-offset: 2px;
-}
-
-.wevu-api-reference__filter-grid {
-  display: grid;
-  grid-template-columns: 1.3fr 1.5fr 0.8fr 0.9fr;
-  gap: 18px 24px;
-  margin-top: 18px;
-}
-
-.wevu-api-reference fieldset {
-  min-width: 0;
-  padding: 0;
-  margin: 0;
-  border: 0;
-}
-
-.wevu-api-reference legend {
-  margin-bottom: 8px;
+.wevu-api-reference__compatibility button {
+  min-height: 34px;
+  padding: 6px 10px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 650;
   color: var(--vp-c-text-2);
-}
-
-.wevu-api-reference fieldset label {
-  position: relative;
-  display: inline-flex;
-  margin: 0 6px 6px 0;
   cursor: pointer;
-}
-
-.wevu-api-reference fieldset input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.wevu-api-reference fieldset span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 4px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--vp-c-text-2);
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-border);
   border-radius: 6px;
 }
 
-.wevu-api-reference fieldset input:checked + span {
+.wevu-api-reference__compatibility button:hover {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-text-3);
+}
+
+.wevu-api-reference__compatibility button[aria-pressed="true"] {
   color: var(--vp-c-brand-1);
   background: var(--vp-c-brand-soft);
   border-color: var(--vp-c-brand-1);
+}
+
+.wevu-api-reference__secondary-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.wevu-api-reference__secondary-filters label {
+  display: grid;
+  grid-template-columns: auto minmax(118px, 1fr);
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--vp-c-text-2);
+}
+
+.wevu-api-reference__secondary-filters select {
+  min-height: 34px;
+  padding: 5px 30px 5px 9px;
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+  cursor: pointer;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+}
+
+.wevu-api-reference input:focus-visible,
+.wevu-api-reference select:focus-visible,
+.wevu-api-reference button:focus-visible,
+.wevu-api-reference a:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.wevu-api-reference button:active {
+  transform: translateY(1px);
 }
 
 .wevu-api-reference__result-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 52px;
+  min-height: 54px;
   font-size: 13px;
   color: var(--vp-c-text-2);
   border-bottom: 1px solid var(--catalog-border);
 }
 
+.wevu-api-reference__result-bar strong {
+  font-family: var(--vp-font-family-mono);
+  color: var(--vp-c-text-1);
+}
+
 .wevu-api-reference__result-bar button,
 .wevu-api-reference__empty button {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  min-height: 34px;
+  min-height: 32px;
   padding: 5px 9px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 650;
   color: var(--vp-c-brand-1);
+  cursor: pointer;
   border-radius: 6px;
 }
 
 .wevu-api-reference__result-bar button:hover,
 .wevu-api-reference__empty button:hover {
   background: var(--vp-c-brand-soft);
+}
+
+@media (max-width: 760px) {
+  .wevu-api-reference__tools {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .wevu-api-reference__compatibility,
+  .wevu-api-reference__secondary-filters {
+    width: 100%;
+  }
+
+  .wevu-api-reference__secondary-filters label {
+    flex: 1;
+    grid-template-columns: 1fr;
+  }
+
+  .wevu-api-reference__secondary-filters select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .wevu-api-reference__header {
+    padding-top: 0;
+  }
+
+  .wevu-api-reference__compatibility button {
+    flex: 1 0 calc(33.333% - 6px);
+  }
 }

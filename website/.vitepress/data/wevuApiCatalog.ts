@@ -1,5 +1,4 @@
 export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram-bridge' | 'wevu-extension'
-export type ApiEvidence = 'runtime-e2e' | 'pending-e2e'
 export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime'
 export type ApiScope = 'app' | 'page' | 'component'
 
@@ -9,83 +8,10 @@ export interface WevuApiItem {
   group: string
   kind: ApiKind
   compatibility: ApiCompatibility
-  evidence: ApiEvidence
   entry: 'wevu' | 'wevu/router' | 'wevu/store'
   scopes?: ApiScope[]
   keywords?: string[]
 }
-
-const runtimeE2E = new Set([
-  'ref',
-  'shallowRef',
-  'triggerRef',
-  'customRef',
-  'reactive',
-  'shallowReactive',
-  'readonly',
-  'computed',
-  'watch',
-  'watchEffect',
-  'toRef',
-  'toRefs',
-  'unref',
-  'toValue',
-  'effect',
-  'stop',
-  'batch',
-  'startBatch',
-  'endBatch',
-  'effectScope',
-  'getCurrentScope',
-  'onScopeDispose',
-  'traverse',
-  'nextTick',
-  'getCurrentInstance',
-  'getCurrentSetupContext',
-  'onLoad',
-  'onShow',
-  'onReady',
-  'onHide',
-  'onUnload',
-  'onPullDownRefresh',
-  'onReachBottom',
-  'onPageScroll',
-  'onRouteDone',
-  'onTabItemTap',
-  'onResize',
-  'onMoved',
-  'onShareAppMessage',
-  'onShareTimeline',
-  'onAddToFavorites',
-  'onSaveExitState',
-  'onUnhandledRejection',
-  'onMounted',
-  'onBeforeMount',
-  'onBeforeUnmount',
-  'onUnmounted',
-  'onBeforeUpdate',
-  'onUpdated',
-  'onActivated',
-  'onDeactivated',
-  'onErrorCaptured',
-  'provide',
-  'inject',
-  'provideGlobal',
-  'injectGlobal',
-  'useAttrs',
-  'useSlots',
-  'useNativeInstance',
-  'useTemplateRef',
-  'useElementIntersectionObserver',
-  'useBindModel',
-  'useModel',
-  'mergeModels',
-  'normalizeClass',
-  'normalizeStyle',
-  'defineStore',
-  'createStore',
-  'storeToRefs',
-])
 
 function api(
   name: string,
@@ -101,7 +27,6 @@ function api(
     group,
     kind,
     compatibility,
-    evidence: name.endsWith('()') && runtimeE2E.has(name.slice(0, -2)) ? 'runtime-e2e' : 'pending-e2e',
     entry: options.entry,
     scopes: options.scopes,
     keywords: options.keywords,
