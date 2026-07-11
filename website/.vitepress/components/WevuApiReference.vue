@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ApiCompatibility, ApiEntry, ApiKind, ApiScope } from '../data/wevuApiCatalog'
+import type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiScope, CoreApiCategory } from '../data/wevuApiCatalog'
 import { Icon } from '@iconify/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { wevuApiCatalog, wevuApiGroups } from '../data/wevuApiCatalog'
+import { getApiEntryHref, getCoreCategoryHref, resolveWevuApiNavigation, wevuApiCatalog, wevuApiGroups, wevuCoreCategories } from '../data/wevuApiCatalog'
 
 interface FilterOption<T extends string> {
   value: T
@@ -11,10 +11,8 @@ interface FilterOption<T extends string> {
   description?: string
 }
 
-type EntryTab = 'core' | 'router' | 'store'
-
 interface EntryTabOption {
-  value: EntryTab
+  value: ApiEntryTab
   label: string
   entry: ApiEntry
 }
@@ -32,17 +30,6 @@ const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
   { value: 'wevu-extension', label: 'Wevu 扩展', description: 'Wevu 提供的框架扩展能力' },
 ]
 
-const kindOptions: FilterOption<ApiKind>[] = [
-  { value: 'global', label: '全局 API' },
-  { value: 'macro', label: '编译宏' },
-  { value: 'reactivity', label: '响应式' },
-  { value: 'lifecycle', label: '生命周期' },
-  { value: 'setup', label: 'Setup 工具' },
-  { value: 'options', label: 'Options API' },
-  { value: 'store', label: 'Store' },
-  { value: 'runtime', label: '运行时' },
-]
-
 const scopeOptions: FilterOption<ApiScope>[] = [
   { value: 'app', label: 'App' },
   { value: 'page', label: 'Page' },
@@ -50,21 +37,23 @@ const scopeOptions: FilterOption<ApiScope>[] = [
 ]
 
 const query = ref('')
-const activeEntry = ref<EntryTab>('core')
+const activeEntry = ref<ApiEntryTab>('core')
+const activeCategory = ref<CoreApiCategory>('all')
 const selectedCompatibility = ref<'all' | ApiCompatibility>('all')
-const selectedKind = ref<'all' | ApiKind>('all')
 const selectedScope = ref<'all' | ApiScope>('all')
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
 const activeEntryOption = computed(() => entryTabs.find(tab => tab.value === activeEntry.value) || entryTabs[0])
-const activeItems = computed(() => wevuApiCatalog.filter(item => item.entry === activeEntryOption.value.entry))
+const entryItems = computed(() => wevuApiCatalog.filter(item => item.entry === activeEntryOption.value.entry))
+const activeCategoryOption = computed(() => wevuCoreCategories.find(category => category.value === activeCategory.value) || wevuCoreCategories[0])
+const activeItems = computed(() => activeEntry.value === 'core' && activeCategoryOption.value.group
+  ? entryItems.value.filter(item => item.group === activeCategoryOption.value.group)
+  : entryItems.value)
 const availableCompatibilityOptions = computed(() => compatibilityOptions.filter(option => activeItems.value.some(item => item.compatibility === option.value)))
-const availableKindOptions = computed(() => kindOptions.filter(option => activeItems.value.some(item => item.kind === option.value)))
 const availableScopeOptions = computed(() => scopeOptions.filter(option => activeItems.value.some(item => item.scopes?.includes(option.value))))
 const hasFilters = computed(() => Boolean(
   normalizedQuery.value
   || selectedCompatibility.value !== 'all'
-  || selectedKind.value !== 'all'
   || selectedScope.value !== 'all',
 ))
 
@@ -72,7 +61,6 @@ const filteredItems = computed(() => activeItems.value.filter((item) => {
   const searchText = [item.name, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
   return (!normalizedQuery.value || searchText.includes(normalizedQuery.value))
     && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
-    && (selectedKind.value === 'all' || item.kind === selectedKind.value)
     && (selectedScope.value === 'all' || item.scopes?.includes(selectedScope.value))
 }))
 
@@ -86,33 +74,32 @@ const groupedItems = computed(() => wevuApiGroups
 function clearFilters() {
   query.value = ''
   selectedCompatibility.value = 'all'
-  selectedKind.value = 'all'
   selectedScope.value = 'all'
 }
 
-function entryHref(value: EntryTab) {
-  return value === 'core' ? '/wevu/api/' : `/wevu/api/?entry=${value}`
-}
-
-function entryFromLocation(): EntryTab {
-  if (typeof window === 'undefined') {
-    return 'core'
-  }
-  const value = new URL(window.location.href).searchParams.get('entry')
-  return value === 'router' || value === 'store' ? value : 'core'
-}
-
-function selectEntry(value: EntryTab) {
+function selectEntry(value: ApiEntryTab) {
   if (activeEntry.value === value) {
     return
   }
   activeEntry.value = value
+  activeCategory.value = 'all'
   clearFilters()
-  window.history.pushState({}, '', entryHref(value))
+  window.history.pushState({}, '', getApiEntryHref(value))
+}
+
+function selectCategory(value: CoreApiCategory) {
+  if (activeCategory.value === value) {
+    return
+  }
+  activeCategory.value = value
+  clearFilters()
+  window.history.pushState({}, '', getCoreCategoryHref(value))
 }
 
 function syncEntryFromHistory() {
-  activeEntry.value = entryFromLocation()
+  const navigation = resolveWevuApiNavigation(new URL(window.location.href))
+  activeEntry.value = navigation.entry
+  activeCategory.value = navigation.category
   clearFilters()
 }
 
@@ -121,7 +108,7 @@ function compatibilityOption(value: ApiCompatibility) {
 }
 
 onMounted(() => {
-  activeEntry.value = entryFromLocation()
+  syncEntryFromHistory()
   window.addEventListener('popstate', syncEntryFromHistory)
 })
 
@@ -141,12 +128,25 @@ onBeforeUnmount(() => {
       <a
         v-for="tab in entryTabs"
         :key="tab.value"
-        :href="entryHref(tab.value)"
+        :href="getApiEntryHref(tab.value)"
         :aria-current="activeEntry === tab.value ? 'page' : undefined"
         @click.prevent="selectEntry(tab.value)"
       >
         <span>{{ tab.label }}</span>
         <small>{{ wevuApiCatalog.filter(item => item.entry === tab.entry).length }}</small>
+      </a>
+    </nav>
+
+    <nav v-if="activeEntry === 'core'" class="wevu-api-reference__category-tabs" aria-label="核心 API 分类">
+      <a
+        v-for="category in wevuCoreCategories"
+        :key="category.value"
+        :href="getCoreCategoryHref(category.value)"
+        :aria-current="activeCategory === category.value ? 'page' : undefined"
+        @click.prevent="selectCategory(category.value)"
+      >
+        <span>{{ category.label }}</span>
+        <small>{{ category.group ? entryItems.filter(item => item.group === category.group).length : entryItems.length }}</small>
       </a>
     </nav>
 
@@ -187,15 +187,6 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="wevu-api-reference__secondary-filters">
-        <label>
-          <span>类型</span>
-          <select v-model="selectedKind">
-            <option value="all">全部类型</option>
-            <option v-for="option in availableKindOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
         <label>
           <span>作用域</span>
           <select v-model="selectedScope">

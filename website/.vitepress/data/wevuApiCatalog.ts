@@ -2,6 +2,14 @@ export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram
 export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime'
 export type ApiScope = 'app' | 'page' | 'component'
 export type ApiEntry = 'wevu' | 'wevu/router' | 'wevu/store'
+export type ApiEntryTab = 'core' | 'router' | 'store'
+export type CoreApiCategory = 'all' | 'core' | 'macros' | 'reactivity' | 'lifecycle' | 'setup' | 'template' | 'options' | 'runtime'
+
+export interface CoreApiCategoryOption {
+  value: CoreApiCategory
+  label: string
+  group?: string
+}
 
 export interface WevuApiItem {
   name: string
@@ -12,6 +20,37 @@ export interface WevuApiItem {
   entry: ApiEntry
   scopes?: ApiScope[]
   keywords?: string[]
+}
+
+export const wevuCoreCategories: CoreApiCategoryOption[] = [
+  { value: 'all', label: '全部' },
+  { value: 'core', label: '入口与组件', group: '入口与 Vue 兼容' },
+  { value: 'macros', label: '编译宏', group: 'Script Setup 宏' },
+  { value: 'reactivity', label: '响应式', group: '响应式与调度' },
+  { value: 'lifecycle', label: '生命周期', group: '生命周期' },
+  { value: 'setup', label: 'Setup 与宿主', group: 'Setup 与宿主能力' },
+  { value: 'template', label: '模板与模型', group: '模板与模型工具' },
+  { value: 'options', label: 'Options', group: 'Options API' },
+  { value: 'runtime', label: '运行时桥接', group: '运行时桥接' },
+]
+
+export function getApiEntryHref(value: ApiEntryTab) {
+  return value === 'core' ? '/wevu/api/' : `/wevu/api/?entry=${value}`
+}
+
+export function getCoreCategoryHref(value: CoreApiCategory) {
+  return value === 'all' ? '/wevu/api/' : `/wevu/api/?category=${value}`
+}
+
+export function resolveWevuApiNavigation(url: URL): { entry: ApiEntryTab, category: CoreApiCategory } {
+  const entryParam = url.searchParams.get('entry')
+  const entry = entryParam === 'router' || entryParam === 'store' ? entryParam : 'core'
+  const categoryParam = url.searchParams.get('category')
+  const category = entry === 'core' && wevuCoreCategories.some(item => item.value === categoryParam)
+    ? categoryParam as CoreApiCategory
+    : 'all'
+
+  return { entry, category }
 }
 
 function api(

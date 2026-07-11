@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/src/shared/compositionApiCoverage'
-import { wevuApiCatalog } from './wevuApiCatalog'
+import { getApiEntryHref, getCoreCategoryHref, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
 
@@ -36,6 +36,34 @@ describe('wevu API catalog', () => {
     for (const entry of ['wevu', 'wevu/router', 'wevu/store']) {
       expect(wevuApiCatalog.some(item => item.entry === entry), `empty entry tab ${entry}`).toBe(true)
     }
+  })
+
+  it('classifies every core API group exactly once', () => {
+    const catalogGroups = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu').map(item => item.group))
+    const categoryGroups = wevuCoreCategories.flatMap(category => category.group ? [category.group] : [])
+
+    expect(new Set(categoryGroups).size).toBe(categoryGroups.length)
+    expect(new Set(categoryGroups)).toEqual(catalogGroups)
+  })
+
+  it('keeps entry and category URLs shareable', () => {
+    expect(getApiEntryHref('core')).toBe('/wevu/api/')
+    expect(getApiEntryHref('router')).toBe('/wevu/api/?entry=router')
+    expect(getApiEntryHref('store')).toBe('/wevu/api/?entry=store')
+    expect(getCoreCategoryHref('reactivity')).toBe('/wevu/api/?category=reactivity')
+
+    expect(resolveWevuApiNavigation(new URL('https://example.test/wevu/api/?category=lifecycle'))).toEqual({
+      category: 'lifecycle',
+      entry: 'core',
+    })
+    expect(resolveWevuApiNavigation(new URL('https://example.test/wevu/api/?entry=router&category=lifecycle'))).toEqual({
+      category: 'all',
+      entry: 'router',
+    })
+    expect(resolveWevuApiNavigation(new URL('https://example.test/wevu/api/?category=unknown'))).toEqual({
+      category: 'all',
+      entry: 'core',
+    })
   })
 
   it('links every catalog item to an existing page and explicit anchor', async () => {
