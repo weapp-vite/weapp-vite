@@ -10,14 +10,15 @@ interface VuePluginWithApi extends Plugin {
 }
 
 export function createVueOxcTsconfigGuard(
-  vuePlugin: VuePluginWithApi,
+  vuePlugin?: VuePluginWithApi,
   pluginName = 'vue-oxc-tsconfig-guard',
 ): Plugin {
+  let resolvedVuePlugin = vuePlugin
   let resolvedConfig: ResolvedConfig | undefined
   let previousDevServer: ViteDevServer | undefined
 
   function restoreDevServer() {
-    const api = vuePlugin.api
+    const api = resolvedVuePlugin?.api
     if (!api) {
       return
     }
@@ -33,9 +34,10 @@ export function createVueOxcTsconfigGuard(
     apply: 'build',
     configResolved(config) {
       resolvedConfig = config
+      resolvedVuePlugin ??= config.plugins.find(plugin => plugin.name === 'vite:vue')
     },
     buildStart() {
-      const api = vuePlugin.api
+      const api = resolvedVuePlugin?.api
       if (!api || !resolvedConfig) {
         return
       }

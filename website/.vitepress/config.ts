@@ -14,6 +14,7 @@ import llmstxt, {
   copyOrDownloadAsMarkdownButtons,
 } from 'vitepress-plugin-llms'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
 import { createSeoHead, transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 
@@ -887,6 +888,7 @@ export default withMermaid(
       //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
       // },
       plugins: [
+        createVueOxcTsconfigGuard(),
         tailwindcss(),
         llmstxt({
           excludeBlog: false,
