@@ -15,12 +15,13 @@ interface EntryTabOption {
   value: ApiEntryTab
   label: string
   entry: ApiEntry
+  icon: string
 }
 
 const entryTabs: EntryTabOption[] = [
-  { value: 'core', label: '核心 API', entry: 'wevu' },
-  { value: 'router', label: 'Router', entry: 'wevu/router' },
-  { value: 'store', label: 'Store', entry: 'wevu/store' },
+  { value: 'core', label: '核心 API', entry: 'wevu', icon: 'mdi:package-variant-closed' },
+  { value: 'router', label: 'Router', entry: 'wevu/router', icon: 'mdi:routes' },
+  { value: 'store', label: 'Store', entry: 'wevu/store', icon: 'mdi:database-outline' },
 ]
 
 const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
@@ -70,6 +71,7 @@ const groupedItems = computed(() => wevuApiGroups
     items: filteredItems.value.filter(item => item.group === group),
   }))
   .filter(group => group.items.length > 0))
+const viewKey = computed(() => `${activeEntry.value}:${activeCategory.value}`)
 
 function clearFilters() {
   query.value = ''
@@ -132,6 +134,7 @@ onBeforeUnmount(() => {
         :aria-current="activeEntry === tab.value ? 'page' : undefined"
         @click.prevent="selectEntry(tab.value)"
       >
+        <Icon :icon="tab.icon" aria-hidden="true" />
         <span>{{ tab.label }}</span>
         <small>{{ wevuApiCatalog.filter(item => item.entry === tab.entry).length }}</small>
       </a>
@@ -199,51 +202,57 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div class="wevu-api-reference__result-bar" aria-live="polite">
-      <span><strong>{{ filteredItems.length }}</strong> 个 API</span>
-      <button v-if="hasFilters" type="button" @click="clearFilters">
-        重置筛选
-      </button>
-    </div>
-
-    <div v-if="groupedItems.length" class="wevu-api-reference__groups">
-      <section v-for="group in groupedItems" :key="group.name" class="wevu-api-reference__group">
-        <div class="wevu-api-reference__group-heading">
-          <h2>{{ group.name }}</h2>
-          <span>{{ group.items.length }}</span>
+    <Transition name="wevu-api-view" mode="out-in">
+      <div :key="viewKey" class="wevu-api-reference__view">
+        <div class="wevu-api-reference__result-bar" aria-live="polite">
+          <span><strong>{{ filteredItems.length }}</strong> 个 API</span>
+          <button v-if="hasFilters" type="button" @click="clearFilters">
+            重置筛选
+          </button>
         </div>
-        <ul>
-          <li v-for="item in group.items" :key="`${item.entry}:${item.name}`">
-            <a :href="item.href" class="wevu-api-reference__item-link">
-              <span class="wevu-api-reference__item-main">
-                <code>{{ item.name }}</code>
-                <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
-              </span>
-              <code v-if="item.entry !== 'wevu'" class="wevu-api-reference__entry">{{ item.entry }}</code>
-              <span class="wevu-api-reference__meta">
-                <span
-                  class="wevu-api-reference__tag"
-                  :data-compatibility="item.compatibility"
-                  :title="compatibilityOption(item.compatibility)?.description"
-                >
-                  {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
-                </span>
-                <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
-                  {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
-                </span>
-              </span>
-            </a>
-          </li>
-        </ul>
-      </section>
-    </div>
 
-    <section v-else class="wevu-api-reference__empty">
-      <Icon icon="mdi:file-search-outline" aria-hidden="true" />
-      <h2>没有找到匹配项</h2>
-      <p>换一个关键词，或重置当前筛选。</p>
-      <button type="button" @click="clearFilters">重置筛选</button>
-    </section>
+        <div v-if="groupedItems.length" class="wevu-api-reference__groups">
+          <section v-for="group in groupedItems" :key="group.name" class="wevu-api-reference__group">
+            <div class="wevu-api-reference__group-heading">
+              <h2>{{ group.name }}</h2>
+              <span>{{ group.items.length }}</span>
+            </div>
+            <ul>
+              <li v-for="item in group.items" :key="`${item.entry}:${item.name}`">
+                <a :href="item.href" class="wevu-api-reference__item-link">
+                  <span class="wevu-api-reference__item-main">
+                    <code>{{ item.name }}</code>
+                    <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
+                  </span>
+                  <code v-if="item.entry !== 'wevu'" class="wevu-api-reference__entry">{{ item.entry }}</code>
+                  <span class="wevu-api-reference__meta">
+                    <span
+                      class="wevu-api-reference__tag"
+                      :data-compatibility="item.compatibility"
+                      :title="compatibilityOption(item.compatibility)?.description"
+                    >
+                      {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
+                    </span>
+                    <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
+                      {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <section v-else class="wevu-api-reference__empty">
+          <Icon icon="mdi:file-search-outline" aria-hidden="true" />
+          <h2>没有找到匹配项</h2>
+          <p>换一个关键词，或重置当前筛选。</p>
+          <button type="button" @click="clearFilters">
+            重置筛选
+          </button>
+        </section>
+      </div>
+    </Transition>
   </main>
 </template>
 

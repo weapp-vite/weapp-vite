@@ -1,3 +1,29 @@
+.wevu-api-reference__view {
+  min-height: 240px;
+}
+
+.wevu-api-view-enter-active {
+  transition:
+    opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wevu-api-view-leave-active {
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.wevu-api-view-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.wevu-api-view-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 .wevu-api-reference__groups {
   display: grid;
   gap: 42px;
@@ -186,5 +212,17 @@
 
   .wevu-api-reference__item-main svg {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wevu-api-view-enter-active,
+  .wevu-api-view-leave-active {
+    transition: none;
+  }
+
+  .wevu-api-view-enter-from,
+  .wevu-api-view-leave-to {
+    transform: none;
   }
 }

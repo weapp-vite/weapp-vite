@@ -26,12 +26,15 @@
 .wevu-api-reference__entry-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
   margin-bottom: 18px;
-  border-bottom: 1px solid var(--catalog-border);
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--catalog-border);
+  border-radius: 8px;
 }
 
 .wevu-api-reference__entry-tabs a {
-  position: relative;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -42,30 +45,34 @@
   font-weight: 650;
   color: var(--vp-c-text-2);
   text-decoration: none;
-}
-
-.wevu-api-reference__entry-tabs a::after {
-  position: absolute;
-  right: 14px;
-  bottom: -1px;
-  left: 14px;
-  height: 2px;
-  content: "";
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .wevu-api-reference__entry-tabs a:hover {
   color: var(--vp-c-text-1);
   text-decoration: none;
-  background: var(--vp-c-bg-soft);
+  background: color-mix(in srgb, var(--vp-c-bg) 72%, transparent);
+  transform: translateY(-1px);
 }
 
 .wevu-api-reference__entry-tabs a[aria-current="page"] {
   color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+  border-color: var(--vp-c-border);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--vp-c-text-1) 10%, transparent);
+  transform: translateY(0);
 }
 
-.wevu-api-reference__entry-tabs a[aria-current="page"]::after {
-  background: var(--vp-c-brand-1);
+.wevu-api-reference__entry-tabs svg {
+  width: 18px;
+  height: 18px;
 }
 
 .wevu-api-reference__entry-tabs small {
@@ -77,15 +84,16 @@
 
 .wevu-api-reference__category-tabs {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  padding: 4px;
   margin: -4px 0 18px;
   overflow-x: auto;
   scrollbar-width: thin;
-  border-bottom: 1px solid var(--catalog-border);
+  background: var(--vp-c-bg-soft);
+  border-radius: 8px;
 }
 
 .wevu-api-reference__category-tabs a {
-  position: relative;
   display: flex;
   flex: 0 0 auto;
   gap: 6px;
@@ -97,29 +105,24 @@
   color: var(--vp-c-text-2);
   white-space: nowrap;
   text-decoration: none;
-}
-
-.wevu-api-reference__category-tabs a::after {
-  position: absolute;
-  right: 8px;
-  bottom: -1px;
-  left: 8px;
-  height: 2px;
-  content: "";
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 .wevu-api-reference__category-tabs a:hover {
   color: var(--vp-c-text-1);
   text-decoration: none;
+  background: color-mix(in srgb, var(--vp-c-bg) 70%, transparent);
 }
 
 .wevu-api-reference__category-tabs a[aria-current="page"] {
   color: var(--vp-c-brand-1);
-}
-
-.wevu-api-reference__category-tabs a[aria-current="page"]::after {
-  background: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+  border-color: var(--vp-c-border);
 }
 
 .wevu-api-reference__category-tabs small {
@@ -334,8 +337,16 @@
   }
 
   .wevu-api-reference__category-tabs {
-    padding: 0 12px;
+    padding: 4px 12px;
     margin-right: -12px;
     margin-left: -12px;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wevu-api-reference__entry-tabs a,
+  .wevu-api-reference__category-tabs a {
+    transition: none;
   }
 }
