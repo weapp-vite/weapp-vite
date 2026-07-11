@@ -646,6 +646,30 @@ it('resolves style class definitions from mini program style files and preproces
   assert.equal(swanDefinition?.uri.fsPath, `${pagePath}.css`)
   assert.equal(lessDefinition?.uri.fsPath, `${pagePath}.less`)
   assert.equal(stylusDefinition?.uri.fsPath, `${pagePath}.stylus`)
+
+  for (const [languageId, extension] of [
+    ['html', '.html'],
+    ['wxml', '.wxml'],
+    ['miniprogram-template', '.axml'],
+    ['miniprogram-template', '.ttml'],
+    ['miniprogram-template', '.swan'],
+    ['miniprogram-template', '.jxml'],
+    ['miniprogram-template', '.qml'],
+    ['miniprogram-template', '.ksml'],
+    ['miniprogram-template', '.xhsml'],
+  ]) {
+    const platformDocument = createTextDocument(
+      languageId,
+      '<view class="feature-card__main"></view>',
+      `${pagePath}${extension}`,
+    )
+    const platformDefinition = await definitionProvider.provideDefinition(
+      platformDocument as any,
+      platformDocument.positionAt(platformDocument.getText().indexOf('feature-card__main') + 2) as any,
+    )
+
+    assert.equal(platformDefinition?.uri.fsPath, `${pagePath}.scss`)
+  }
 })
 
 it('provides route links inside recognized vue template documents', async () => {

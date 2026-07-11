@@ -24,6 +24,9 @@ import {
   toPosixPath,
 } from '../shared/pathUtils'
 import {
+  collectStyleClassMatches,
+} from './styleClassIndex'
+import {
   extractTemplateComponentMeta,
 } from './templateComponentMeta'
 import {
@@ -32,6 +35,11 @@ import {
   resolveWxmlFileCompanionPaths,
   toDocumentOffsetFromWxmlSource,
 } from './templateContext'
+import {
+  getTemplateFileCandidates,
+  isStandaloneTemplateDocument,
+  MINI_PROGRAM_TEMPLATE_EXTENSIONS,
+} from './templateLanguages'
 
 interface ResolvedUsingComponentReference {
   declarationEnd: number | null
@@ -65,12 +73,6 @@ export interface TemplateComponentMemberReference {
   kind: 'event' | 'prop'
   sourceName: string
   templateName: string
-}
-
-interface StyleClassMatch {
-  className: string
-  filePath: string
-  offset: number
 }
 
 const TEMPLATE_STYLE_FILE_EXTENSIONS = [
@@ -446,144 +448,10 @@ async function resolveExistingFile(candidatePaths: string[]) {
   return null
 }
 
-function getLastSelectorClassMatch(selectorText: string, selectorStartOffset: number) {
-  const pattern = /\.([_a-zA-Z][\w-]*)/gu
-  let classMatch: StyleClassMatch | null = null
-
-  for (const match of selectorText.matchAll(pattern)) {
-    if (match.index == null) {
-      continue
-    }
-
-    classMatch = {
-      className: match[1],
-      filePath: '',
-      offset: selectorStartOffset + match.index + 1,
-    }
-  }
-
-  return classMatch
-}
-
-function collectSelectorClassMatches(
-  selectorText: string,
-  selectorStartOffset: number,
-  filePath: string,
-  parentClasses: StyleClassMatch[],
-) {
-  const matches: StyleClassMatch[] = []
-
-  for (const selectorPartMatch of selectorText.matchAll(/[^,]+/gu)) {
-    if (selectorPartMatch.index == null) {
-      continue
-    }
-
-    const selectorPart = selectorPartMatch[0]
-    const selectorPartStart = selectorStartOffset + selectorPartMatch.index
-    const lastClassMatch = getLastSelectorClassMatch(selectorPart, selectorPartStart)
-
-    if (lastClassMatch) {
-      matches.push({
-        ...lastClassMatch,
-        filePath,
-      })
-    }
-
-    const parentClassMatches = lastClassMatch
-      ? {
-          ...lastClassMatch,
-          filePath,
-        }
-      : null
-    const inheritedClasses = parentClassMatches ? [parentClassMatches] : parentClasses
-
-    if (inheritedClasses.length === 0) {
-      continue
-    }
-
-    const ampersandPattern = /&([-_a-zA-Z][\w-]*)/gu
-
-    for (const match of selectorPart.matchAll(ampersandPattern)) {
-      if (match.index == null) {
-        continue
-      }
-
-      for (const inheritedClass of inheritedClasses) {
-        matches.push({
-          className: `${inheritedClass.className}${match[1]}`,
-          filePath,
-          offset: selectorPartStart + match.index,
-        })
-      }
-    }
-  }
-
-  return matches
-}
-
-function collectNestedStyleClassMatches(sourceText: string, filePath: string) {
-  const matches: StyleClassMatch[] = []
-  const stack: StyleClassMatch[][] = []
-  let selectorStartOffset = 0
-  let index = 0
-
-  while (index < sourceText.length) {
-    const char = sourceText[index]
-
-    if (char === '{') {
-      const selectorText = sourceText.slice(selectorStartOffset, index)
-      const parentClasses = stack.at(-1) ?? []
-      const selectorMatches = collectSelectorClassMatches(selectorText, selectorStartOffset, filePath, parentClasses)
-
-      for (const match of selectorMatches) {
-        matches.push(match)
-      }
-
-      stack.push(selectorMatches.length > 0 ? selectorMatches : parentClasses)
-      selectorStartOffset = index + 1
-    }
-    else if (char === '}') {
-      stack.pop()
-      selectorStartOffset = index + 1
-    }
-    else if (char === ';') {
-      selectorStartOffset = index + 1
-    }
-
-    index += 1
-  }
-
-  return matches
-}
-
-function collectStyleClassMatches(sourceText: string, filePath: string) {
-  const matches: StyleClassMatch[] = []
-  const pattern = /\.([_a-zA-Z][\w-]*)/gu
-
-  for (const match of sourceText.matchAll(pattern)) {
-    if (match.index == null) {
-      continue
-    }
-
-    matches.push({
-      className: match[1],
-      filePath,
-      offset: match.index + 1,
-    })
-  }
-
-  for (const match of collectNestedStyleClassMatches(sourceText, filePath)) {
-    if (!matches.some(item => item.className === match.className && item.offset === match.offset)) {
-      matches.push(match)
-    }
-  }
-
-  return matches
-}
-
 function getWxmlCompanionStylePaths(filePath: string) {
   const companionPaths = resolveWxmlFileCompanionPaths(filePath)
-  const basePath = companionPaths.wxml.replace(/\.wxml$/u, '')
+  const extension = path.extname(companionPaths.wxml)
+  const basePath = extension ? companionPaths.wxml.slice(0, -extension.length) : companionPaths.wxml
 
   return TEMPLATE_STYLE_FILE_EXTENSIONS.map(extension => `${basePath}${extension}`)
 }
@@ -1473,8 +1341,7 @@ export async function getWxmlLocalComponents(document: vscode.TextDocument) {
         ? path.resolve(path.dirname(document.uri.fsPath), componentPath)
         : path.resolve(appJsonDir, componentPath.replace(/^\/+/u, ''))
       const targetPath = await resolveExistingFile([
-        `${normalizedPath}.vue`,
-        `${normalizedPath}.wxml`,
+        ...getTemplateFileCandidates(normalizedPath),
         `${normalizedPath}.js`,
         `${normalizedPath}.ts`,
       ])
@@ -1600,7 +1467,7 @@ export function getTemplateComponentMemberRenameText(
 async function getCurrentComponentTargetPaths(document: vscode.TextDocument) {
   const filePath = document.uri.fsPath
 
-  if (filePath.endsWith('.vue') || filePath.endsWith('.wxml')) {
+  if (document.languageId === 'vue' || isStandaloneTemplateDocument(document)) {
     return [filePath]
   }
 
@@ -1608,14 +1475,10 @@ async function getCurrentComponentTargetPaths(document: vscode.TextDocument) {
     return []
   }
 
-  const companionPaths = resolveWxmlFileCompanionPaths(filePath)
   const targetPaths = [
     filePath,
   ]
-  const companionTargetPath = await resolveExistingFile([
-    companionPaths.wxml,
-    companionPaths.vue,
-  ])
+  const companionTargetPath = await resolveExistingFile(getTemplateFileCandidates(filePath))
 
   if (companionTargetPath) {
     targetPaths.push(companionTargetPath)
@@ -1633,11 +1496,8 @@ async function getWorkspaceTemplateDocuments(document: vscode.TextDocument) {
 
   const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
   const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
-  const [vueFiles, wxmlFiles] = await Promise.all([
-    findWorkspaceFiles(searchRoot, '**/*.vue'),
-    findWorkspaceFiles(searchRoot, '**/*.wxml'),
-  ])
-  const files = [...vueFiles, ...wxmlFiles]
+  const templateExtensionGlob = ['vue', 'html', ...MINI_PROGRAM_TEMPLATE_EXTENSIONS.map(extension => extension.slice(1))].join(',')
+  const files = await findWorkspaceFiles(searchRoot, `**/*.{${templateExtensionGlob}}`)
   const seen = new Set<string>()
   const documents: vscode.TextDocument[] = []
 
@@ -1715,12 +1575,12 @@ export async function getTemplateResolvedComponentMeta(document: vscode.TextDocu
     return null
   }
 
-  const metaTargetPath = componentTargetPath.endsWith('.wxml')
-    ? await resolveExistingFile([
+  const metaTargetPath = componentTargetPath.endsWith('.vue')
+    ? componentTargetPath
+    : await resolveExistingFile([
         resolveWxmlFileCompanionPaths(componentTargetPath).ts,
         resolveWxmlFileCompanionPaths(componentTargetPath).js,
       ])
-    : componentTargetPath
 
   if (!metaTargetPath) {
     return null

@@ -66,6 +66,9 @@ import {
   TemplateDecorationController,
 } from './template/templateDecorations'
 import {
+  TEMPLATE_DOCUMENT_SELECTORS,
+} from './template/templateLanguages'
+import {
   WeappTemplateCompletionProvider,
   WeappTemplateDefinitionProvider,
   WeappTemplateDocumentHighlightProvider,
@@ -78,6 +81,10 @@ import {
   WeappTemplateScriptReferenceProvider,
   WeappTemplateScriptRenameProvider,
 } from './template/templateScriptProviders'
+import {
+  TEMPLATE_SEMANTIC_TOKENS_LEGEND,
+  WeappTemplateSemanticTokensProvider,
+} from './template/templateSemanticTokens'
 import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
@@ -625,10 +632,7 @@ export function activate(context: any) {
       wxmlDocumentFormattingProvider,
     ),
     vscode.languages.registerDocumentLinkProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDocumentLinkProvider,
     ),
     vscode.languages.registerCompletionItemProvider(
@@ -649,10 +653,7 @@ export function activate(context: any) {
       '\n',
     ),
     vscode.languages.registerCompletionItemProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlCompletionProvider,
       '<',
       ' ',
@@ -673,31 +674,19 @@ export function activate(context: any) {
       hoverProvider,
     ),
     vscode.languages.registerHoverProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlHoverProvider,
     ),
     vscode.languages.registerDocumentHighlightProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDocumentHighlightProvider,
     ),
     vscode.languages.registerDefinitionProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDefinitionProvider,
     ),
     vscode.languages.registerReferenceProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlReferenceProvider,
     ),
     vscode.languages.registerReferenceProvider(
@@ -709,11 +698,13 @@ export function activate(context: any) {
       wxmlScriptReferenceProvider,
     ),
     vscode.languages.registerRenameProvider(
-      [
-        { language: 'vue', scheme: 'file' },
-        { language: 'wxml', scheme: 'file' },
-      ],
+      TEMPLATE_DOCUMENT_SELECTORS,
       wxmlRenameProvider,
+    ),
+    vscode.languages.registerDocumentSemanticTokensProvider(
+      TEMPLATE_DOCUMENT_SELECTORS,
+      new WeappTemplateSemanticTokensProvider(),
+      TEMPLATE_SEMANTIC_TOKENS_LEGEND,
     ),
     vscode.languages.registerRenameProvider(
       [

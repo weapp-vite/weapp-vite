@@ -101,6 +101,8 @@ it('manifest contributes weapp-vite file icon theme for dedicated config files',
 it('file icon theme keeps language fallbacks and covers standalone wxml files', () => {
   assert.equal(fileIconTheme.showLanguageModeIcons, true)
   assert.equal(fileIconTheme.fileExtensions.wxml, '_wxml')
+  assert.equal(fileIconTheme.fileExtensions.axml, '_wxml')
+  assert.equal(fileIconTheme.fileExtensions.ttml, '_wxml')
   assert.equal(fileIconTheme.iconDefinitions._wxml.iconPath, './wxml.svg')
 })
 
@@ -134,9 +136,12 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableHover'].default, true)
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
   assert.equal(properties['weapp-vite.enableWxmlEnhancements'].default, true)
+  assert.equal(properties['weapp-vite.enableTemplateEnhancements'].default, true)
   assert.equal(properties['weapp-vite.enableVueTemplateWxmlEnhancements'].default, true)
   assert.equal(properties['weapp-vite.enableStandaloneWxmlEnhancements'].default, true)
+  assert.equal(properties['weapp-vite.enableStandaloneTemplateEnhancements'].default, true)
   assert.equal(properties['weapp-vite.enableWxmlDefinition'].default, true)
+  assert.equal(properties['weapp-vite.enableTemplateDefinition'].default, true)
   assert.equal(properties['weapp-vite.enableTemplateDecorations'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
 })
@@ -158,6 +163,25 @@ it('manifest contributes wxml language and grammars', () => {
   )
 
   assert.equal(
+    packageJson.contributes.languages.some(language =>
+      language.id === 'miniprogram-template'
+      && language.extensions.includes('.axml')
+      && language.extensions.includes('.ttml')
+      && language.extensions.includes('.xhsml'),
+    ),
+    true,
+  )
+
+  assert.equal(
+    packageJson.contributes.grammars.some(grammar =>
+      grammar.language === 'miniprogram-template'
+      && grammar.scopeName === 'text.html.miniprogram-template'
+      && grammar.path === './syntaxes/miniprogram-template.tmLanguage.json',
+    ),
+    true,
+  )
+
+  assert.equal(
     packageJson.contributes.grammars.some(grammar =>
       grammar.language === 'wxml'
       && grammar.scopeName === 'text.html.wxml'
@@ -173,6 +197,14 @@ it('manifest contributes wxml language and grammars', () => {
     ),
     true,
   )
+
+  assert.deepEqual(packageJson.contributes.semanticTokenScopes, [
+    {
+      scopes: {
+        class: ['entity.other.attribute-name.class.html'],
+      },
+    },
+  ])
 })
 
 it('wxml language word pattern keeps member expressions and kebab classes whole', () => {

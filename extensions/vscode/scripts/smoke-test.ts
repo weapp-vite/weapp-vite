@@ -25,6 +25,20 @@ function createMockVscode() {
         this.id = id
       }
     },
+    SemanticTokensLegend: class {
+      tokenTypes: string[]
+
+      constructor(tokenTypes: string[]) {
+        this.tokenTypes = tokenTypes
+      }
+    },
+    SemanticTokensBuilder: class {
+      build() {
+        return { data: [] }
+      }
+
+      push() {}
+    },
     window: {
       activeTextEditor: undefined,
       visibleTextEditors: [],
@@ -183,6 +197,10 @@ function createMockVscode() {
       },
       registerRenameProvider(selector: unknown) {
         registeredProviders.push({ type: 'rename', selector })
+        return { dispose() {} }
+      },
+      registerDocumentSemanticTokensProvider(selector: unknown) {
+        registeredProviders.push({ type: 'semanticTokens', selector })
         return { dispose() {} }
       },
     },
@@ -422,7 +440,8 @@ async function main() {
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 18)
+    assert.equal(state.registeredProviders.length, 19)
+    assert.ok(state.registeredProviders.some(item => item.type === 'semanticTokens'))
     assert.ok(
       state.registeredProviders.some(item => item.type === 'documentFormatting'
         && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),

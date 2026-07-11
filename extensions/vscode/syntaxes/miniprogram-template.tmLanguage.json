@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Mini Program Template",
+  "scopeName": "text.html.miniprogram-template",
+  "patterns": [
+    {
+      "include": "text.html.wxml"
+    }
+  ]
+}

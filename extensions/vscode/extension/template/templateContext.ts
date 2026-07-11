@@ -1,6 +1,11 @@
 import type * as vscode from 'vscode'
 import path from 'node:path'
 
+import {
+  isMiniProgramTemplatePath,
+  isStandaloneTemplateDocument,
+} from './templateLanguages'
+
 const TEMPLATE_BLOCK_PATTERN = /<template\b[^>]*>/giu
 const TEMPLATE_CLOSE_PATTERN = /<\/template>/giu
 const LINK_ATTRIBUTE_NAMES = new Set(['src', 'href', 'url'])
@@ -327,7 +332,7 @@ function getWxmlOpenTagStack(sourceText: string, offset: number) {
 }
 
 export function isWxmlDocument(document: vscode.TextDocument) {
-  return document.languageId === 'wxml' || document.uri.fsPath.endsWith('.wxml')
+  return isStandaloneTemplateDocument(document)
 }
 
 export function getVueTemplateBlockRange(documentText: string): TemplateBlockRange | null {
@@ -415,13 +420,16 @@ export function toDocumentOffsetFromWxmlSource(document: vscode.TextDocument, so
 export function resolveWxmlFileCompanionPaths(filePath: string) {
   const extension = path.extname(filePath)
   const basePath = extension ? filePath.slice(0, -extension.length) : filePath
+  const templatePath = isMiniProgramTemplatePath(filePath) || extension.toLowerCase() === '.html'
+    ? filePath
+    : `${basePath}.wxml`
 
   return {
     js: `${basePath}.js`,
     json: `${basePath}.json`,
     ts: `${basePath}.ts`,
     vue: `${basePath}.vue`,
-    wxml: `${basePath}.wxml`,
+    wxml: templatePath,
   }
 }
 

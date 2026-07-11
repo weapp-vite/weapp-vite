@@ -226,12 +226,6 @@ export class TemplateDecorationController implements vscode.Disposable {
     color: new vscode.ThemeColor('symbolIcon.variableForeground'),
   })
 
-  private classDecorationType = vscode.window.createTextEditorDecorationType({
-    borderColor: new vscode.ThemeColor('editorLink.activeForeground'),
-    borderStyle: 'dotted',
-    borderWidth: '0 0 1px 0',
-  })
-
   private pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   private disposables: vscode.Disposable[] = []
@@ -265,6 +259,8 @@ export class TemplateDecorationController implements vscode.Disposable {
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (
           event.affectsConfiguration('weapp-vite.enableTemplateDecorations')
+          || event.affectsConfiguration('weapp-vite.enableTemplateEnhancements')
+          || event.affectsConfiguration('weapp-vite.enableStandaloneTemplateEnhancements')
           || event.affectsConfiguration('weapp-vite.enableWxmlEnhancements')
           || event.affectsConfiguration('weapp-vite.enableVueTemplateWxmlEnhancements')
           || event.affectsConfiguration('weapp-vite.enableStandaloneWxmlEnhancements')
@@ -285,10 +281,8 @@ export class TemplateDecorationController implements vscode.Disposable {
 
     this.pendingTimers.clear()
     this.decorationType.dispose()
-    this.classDecorationType.dispose()
     vscode.window.visibleTextEditors.forEach((editor) => {
       editor.setDecorations(this.decorationType, [])
-      editor.setDecorations(this.classDecorationType, [])
     })
     this.disposables.forEach(disposable => disposable.dispose())
     this.disposables = []
@@ -323,11 +317,9 @@ export class TemplateDecorationController implements vscode.Disposable {
   private async updateEditor(editor: vscode.TextEditor) {
     if (!(await isDecorationEnabledForDocument(editor.document))) {
       editor.setDecorations(this.decorationType, [])
-      editor.setDecorations(this.classDecorationType, [])
       return
     }
 
     editor.setDecorations(this.decorationType, collectTemplateDecorationRanges(editor.document))
-    editor.setDecorations(this.classDecorationType, await collectDefinedTemplateClassDecorationRanges(editor.document))
   }
 }

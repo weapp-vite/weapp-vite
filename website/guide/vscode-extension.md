@@ -1,6 +1,6 @@
 ---
 title: VS Code 扩展
-description: 为 weapp-vite 项目安装官方 VS Code 扩展，获得命令入口、页面树、生成器、路由维护、配置提示与 WXML 编辑器增强。
+description: 为 weapp-vite 项目安装官方 VS Code 扩展，获得命令入口、页面树、生成器、路由维护、配置提示与多端模板增强。
 keywords:
   - Weapp-vite
   - guide
@@ -12,7 +12,7 @@ keywords:
 
 # VS Code 扩展
 
-如果你使用 VS Code 开发 `weapp-vite` 项目，建议同时安装扩展市场里的 `weapp-vite` 扩展。它把常用 CLI、页面维护、配置提示和 WXML 编辑器增强直接放进编辑器里，减少在终端、资源管理器、`app.json` 和页面文件之间来回切换。
+如果你使用 VS Code 开发 `weapp-vite` 项目，建议同时安装扩展市场里的 `weapp-vite` 扩展。它把常用 CLI、页面维护、配置提示和多端模板增强直接放进编辑器里，减少在终端、资源管理器、`app.json` 和页面文件之间来回切换。
 
 ## 安装
 
@@ -33,9 +33,10 @@ keywords:
 | Pages 侧边栏           | 提供 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组查看，并支持过滤当前页面或问题页面。                                            |
 | Route 导航与定位       | 支持复制当前页面 route、在 `app.json` 中定位当前页面声明、在页面树中高亮当前页面。                                                                |
 | 配置补全与提示         | 为 `package.json`、`app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `definePageJson(...)` 与 `.vue` 中的配置块提供补全、悬浮和轻量诊断。 |
-| WXML 编辑器增强        | 在 `.wxml` 和 weapp-vite 页面/组件的 `.vue <template>` 中提供补全、悬浮、跳转、引用、重命名和模板装饰提示。                                       |
+| 多端模板编辑器增强     | 在 `.vue <template>`、HTML、WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML 与 TyML 中提供补全、悬浮、跳转、引用和重命名。                         |
+| 样式 class 智能提示    | 为 CSS、SCSS、Sass、Less、Stylus 嵌套选择器提供 class 补全、定义跳转与主题感知语义着色。                                                          |
 | `usingComponents` 治理 | 支持本地组件路径校验、缺失组件提示、跳转到组件定义，以及按需生成缺失组件。                                                                        |
-| 语法高亮与片段         | 提供 `.vue` 里的 `<json>` 自定义块高亮、WXML 语法支持、常用代码片段与可选文件图标主题。                                                           |
+| 语法高亮与片段         | 提供 `.vue` 里的 `<json>` 自定义块高亮、多端小程序模板语法、常用代码片段与可选文件图标主题。                                                      |
 
 ## 常用场景
 

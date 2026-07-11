@@ -1,5 +1,12 @@
 # 更新日志
 
+## Unreleased
+
+### Minor Changes
+
+- 扩展模板增强能力到 HTML、WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML 与 TyML，并为这些模板提供统一语法高亮、class 补全、定义跳转、引用、重命名和语义着色。
+- 重构 CSS class 索引，支持 CSS、SCSS、缩进式 Sass、Less 与 Stylus 的多层嵌套、`&` 拼接、BEM 状态类、分组和组合选择器。
+
 ## 0.4.2
 
 ### Patch Changes

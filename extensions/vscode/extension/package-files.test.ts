@@ -66,9 +66,13 @@ it('package output keeps runtime entry files on disk', () => {
     'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.scss',
     'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.wxml',
     'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/index.wxss',
+    'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/platform.axml',
+    'scripts/fixtures/vscode-host-smoke/src/components/raw-banner/platform.less',
     'scripts/fixtures/vscode-vsix-test-harness/package.json',
     'scripts/fixtures/vscode-vsix-test-harness/extension.js',
     'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
+    'syntaxes/wxml.tmLanguage.json',
+    'syntaxes/miniprogram-template.tmLanguage.json',
   ]
 
   for (const relativePath of requiredFiles) {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T18:43:58.674Z",
+  "generatedAt": "2026-07-11T19:22:04.120Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -2527,7 +2527,7 @@
     {
       "id": "doc-efba27915d",
       "title": "VS Code 扩展",
-      "summary": "为 weapp-vite 项目安装官方 VS Code 扩展，获得命令入口、页面树、生成器、路由维护、配置提示与 WXML 编辑器增强。",
+      "summary": "为 weapp-vite 项目安装官方 VS Code 扩展，获得命令入口、页面树、生成器、路由维护、配置提示与多端模板增强。",
       "url": "/guide/vscode-extension",
       "canonical": "https://vite.icebreaker.top/guide/vscode-extension",
       "keywords": [
@@ -2551,7 +2551,7 @@
         "常见说明",
         "相关文档"
       ],
-      "updatedAt": "2026-04-20",
+      "updatedAt": "2026-07-12",
       "source": "guide/vscode-extension.md"
     },
     {

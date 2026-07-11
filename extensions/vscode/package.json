@@ -313,7 +313,13 @@
         "weapp-vite.enableWxmlEnhancements": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 的 WXML 增强能力。"
+          "deprecationMessage": "请改用 weapp-vite.enableTemplateEnhancements。",
+          "description": "兼容配置：是否启用小程序模板增强能力。"
+        },
+        "weapp-vite.enableTemplateEnhancements": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在 weapp-vite 项目中启用 Vue、HTML 与多端小程序模板增强能力。"
         },
         "weapp-vite.enableVueTemplateWxmlEnhancements": {
           "type": "boolean",
@@ -323,12 +329,24 @@
         "weapp-vite.enableStandaloneWxmlEnhancements": {
           "type": "boolean",
           "default": true,
-          "description": "是否在独立 .wxml 文件中启用 WXML 增强能力。"
+          "deprecationMessage": "请改用 weapp-vite.enableStandaloneTemplateEnhancements。",
+          "description": "兼容配置：是否在独立小程序模板文件中启用增强能力。"
+        },
+        "weapp-vite.enableStandaloneTemplateEnhancements": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在独立 HTML 与多端小程序模板文件中启用增强能力。"
         },
         "weapp-vite.enableWxmlDefinition": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 中的点击跳转。"
+          "deprecationMessage": "请改用 weapp-vite.enableTemplateDefinition。",
+          "description": "兼容配置：是否启用模板点击跳转。"
+        },
+        "weapp-vite.enableTemplateDefinition": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 Vue、HTML 与多端小程序模板中的点击跳转。"
         },
         "weapp-vite.enableTemplateDecorations": {
           "type": "boolean",
@@ -351,6 +369,24 @@
         ],
         "extensions": [
           ".wxml"
+        ],
+        "configuration": "./syntaxes/wxml.language-configuration.json"
+      },
+      {
+        "id": "miniprogram-template",
+        "aliases": [
+          "Mini Program Template",
+          "miniprogram-template"
+        ],
+        "extensions": [
+          ".axml",
+          ".ttml",
+          ".swan",
+          ".jxml",
+          ".qml",
+          ".ksml",
+          ".xhsml",
+          ".tyml"
         ],
         "configuration": "./syntaxes/wxml.language-configuration.json"
       }
@@ -376,6 +412,11 @@
         "path": "./syntaxes/wxml.tmLanguage.json"
       },
       {
+        "language": "miniprogram-template",
+        "scopeName": "text.html.miniprogram-template",
+        "path": "./syntaxes/miniprogram-template.tmLanguage.json"
+      },
+      {
         "scopeName": "text.html.vue.weapp-vite-custom-blocks",
         "path": "./syntaxes/weapp-vite-custom-blocks.tmLanguage.json",
         "injectTo": [
@@ -397,6 +438,15 @@
         ],
         "embeddedLanguages": {
           "text.html.wxml": "wxml"
+        }
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "scopes": {
+          "class": [
+            "entity.other.attribute-name.class.html"
+          ]
         }
       }
     ],

@@ -58,6 +58,8 @@
 - 为 `.vue` 中的 `<json>` 自定义块提供语法高亮
 - 为 `app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
 - 支持本地 `usingComponents` 路径校验、跳转和缺失组件创建
+- 在 `.vue <template>`、HTML 及 WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML、TyML 中提供小程序模板语法高亮和智能增强
+- 为静态 class 提供补全、定义跳转、引用、重命名和主题感知语义着色，并支持 CSS、SCSS、Sass、Less、Stylus 嵌套选择器
 - 内置 `weapp-vite File Icons` 文件图标主题，可按需手动启用
 
 ## 4. 常用命令
@@ -108,8 +110,9 @@
 | `weapp-vite.enableAppJsonDiagnostics`     | 控制 `app.json` 相关诊断              |
 | `weapp-vite.enableHover`                  | 控制悬浮提示                          |
 | `weapp-vite.enableCompletion`             | 控制补全能力                          |
-| `weapp-vite.enableWxmlEnhancements`       | 控制 WXML 相关增强能力                |
-| `weapp-vite.enableTemplateDecorations`    | 控制模板装饰提示                      |
+| `weapp-vite.enableTemplateEnhancements`   | 控制 Vue、HTML 与多端模板增强能力     |
+| `weapp-vite.enableTemplateDefinition`     | 控制模板中的点击跳转                  |
+| `weapp-vite.enableTemplateDecorations`    | 控制模板变量装饰与 class 语义着色     |
 | `weapp-vite.preferWvAlias`                | 控制命令更偏向 `wv` 还是 `weapp-vite` |
 
 > **说明**：如果你更偏好显式命令名，可以关闭 `weapp-vite.preferWvAlias`，扩展会优先生成 `weapp-vite dev` 这一类命令形式，而不是 `wv dev`。

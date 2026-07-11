@@ -123,4 +123,16 @@ exports.run = async function run() {
     line: 3,
     character: 36,
   })
+
+  const alipayTemplatePath = path.join(
+    workspaceFolder.uri.fsPath,
+    'src',
+    'components',
+    'raw-banner',
+    'platform.axml',
+  )
+  const alipayTemplateDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(alipayTemplatePath))
+
+  assert.equal(alipayTemplateDocument.languageId, 'miniprogram-template')
+  await assertClassDefinition(vscode, alipayTemplateDocument, 'platform-card__title', path.join('raw-banner', 'platform.less'))
 }

@@ -31,6 +31,8 @@ const requiredEntries = [
   'extension/package.json',
   'extension/snippets/weapp-vite.code-snippets',
   'extension/syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
+  'extension/syntaxes/wxml.tmLanguage.json',
+  'extension/syntaxes/miniprogram-template.tmLanguage.json',
 ]
 
 const forbiddenEntries = [
