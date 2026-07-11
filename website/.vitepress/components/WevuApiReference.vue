@@ -2,7 +2,7 @@
 import type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiScope, CoreApiCategory } from '../data/wevuApiCatalog'
 import { Icon } from '@iconify/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { getApiEntryHref, getCoreCategoryHref, resolveWevuApiNavigation, wevuApiCatalog, wevuApiGroups, wevuCoreCategories } from '../data/wevuApiCatalog'
+import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuApiGroups, wevuCoreCategories } from '../data/wevuApiCatalog'
 
 interface FilterOption<T extends string> {
   value: T
@@ -59,8 +59,7 @@ const hasFilters = computed(() => Boolean(
 ))
 
 const filteredItems = computed(() => activeItems.value.filter((item) => {
-  const searchText = [item.name, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
-  return (!normalizedQuery.value || searchText.includes(normalizedQuery.value))
+  return matchesWevuApiSearch(item, normalizedQuery.value)
     && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
     && (selectedScope.value === 'all' || item.scopes?.includes(selectedScope.value))
 }))
@@ -224,6 +223,7 @@ onBeforeUnmount(() => {
                     <code>{{ item.name }}</code>
                     <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
                   </span>
+                  <span class="wevu-api-reference__description">{{ item.description }}</span>
                   <span class="wevu-api-reference__meta">
                     <span
                       class="wevu-api-reference__tag"

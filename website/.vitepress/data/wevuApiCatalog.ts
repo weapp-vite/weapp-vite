@@ -1,3 +1,5 @@
+import { getWevuApiDescription } from './wevuApiDescriptions'
+
 export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram-bridge' | 'wevu-extension'
 export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime' | 'type'
 export type ApiScope = 'app' | 'page' | 'component'
@@ -13,6 +15,7 @@ export interface CoreApiCategoryOption {
 
 export interface WevuApiItem {
   name: string
+  description: string
   href: string
   group: string
   kind: ApiKind
@@ -53,6 +56,15 @@ export function resolveWevuApiNavigation(url: URL): { entry: ApiEntryTab, catego
   return { entry, category }
 }
 
+export function matchesWevuApiSearch(item: WevuApiItem, query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) {
+    return true
+  }
+  const searchText = [item.name, item.description, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
+  return searchText.includes(normalizedQuery)
+}
+
 function api(
   name: string,
   href: string,
@@ -61,13 +73,15 @@ function api(
   compatibility: ApiCompatibility,
   options: Pick<WevuApiItem, 'entry' | 'scopes' | 'keywords'> = { entry: 'wevu' },
 ): WevuApiItem {
+  const entry = options.entry
   return {
     name,
+    description: getWevuApiDescription(entry, name),
     href,
     group,
     kind,
     compatibility,
-    entry: options.entry,
+    entry,
     scopes: options.scopes,
     keywords: options.keywords,
   }

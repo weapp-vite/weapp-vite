@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/src/shared/compositionApiCoverage'
-import { getApiEntryHref, getCoreCategoryHref, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
+import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
 
@@ -30,6 +30,22 @@ describe('wevu API catalog', () => {
     for (const option of ['props', 'emits', 'data', 'setup', 'computed', 'methods', 'watch', 'properties', 'lifetimes', 'pageLifetimes', 'features', 'setData', 'setupLifecycle']) {
       expect(names, `missing option ${option}`).toContain(option)
     }
+  })
+
+  it('gives every API a concise searchable description', () => {
+    for (const item of wevuApiCatalog) {
+      expect(item.description.trim(), `missing description for ${item.entry}:${item.name}`).not.toBe('')
+      expect(item.description.length, `description is too long for ${item.entry}:${item.name}`).toBeLessThanOrEqual(40)
+    }
+  })
+
+  it('matches APIs by words found only in their descriptions', () => {
+    const patch = wevuApiCatalog.find(item => item.entry === 'wevu/store' && item.name === '$patch()')!
+    const onError = wevuApiCatalog.find(item => item.entry === 'wevu/router' && item.name === 'router.onError()')!
+
+    expect(matchesWevuApiSearch(patch, '批量修改')).toBe(true)
+    expect(matchesWevuApiSearch(onError, '异常型')).toBe(true)
+    expect(matchesWevuApiSearch(patch, '前置守卫')).toBe(false)
   })
 
   it('keeps the root, router, and store entry tabs populated', () => {
