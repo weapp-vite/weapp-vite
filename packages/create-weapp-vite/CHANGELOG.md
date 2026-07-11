@@ -1,5 +1,25 @@
 # create-weapp-vite
 
+## 2.5.0
+
+### Minor Changes
+
+- ✨ **优化构建启动、自动路由、配置发现和 npm 处理流程：并行执行可独立的目录扫描、配置加载、包信息解析、文件复制与平台归一化任务，并复用 managed tsconfig、组件 metadata、入口探测和本地 npm 依赖闭包缓存。多分包项目会减少串行等待、重复文件系统查询和 bundle 后处理遍历，提升开发启动与生产构建吞吐。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- ✨ **系统优化开发态 HMR 与输出生成链路：收敛 shared chunk、模块图、CSS importer、WXML/WXS 和 Wevu runtime 的重复扫描，复用入口、依赖图与 bundle 索引，并通过代表入口和精确输出目标缩小增量重建范围。共享脚本、样式、Tailwind 内容与模板依赖更新会减少无关入口编译和重复产物写入，降低大型项目持续开发时的热更新延迟。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- ✨ **增强微信开发者工具真实运行时与自动化链路稳定性。新版 DevTools 中 Page 域 RPC 超时后，页面查询、数据读取、setData 和页面方法调用会降级到 App-Service route 查询，避免自动化探针长期卡住；同时完善真实 DOM 与运行时状态验收，降低 request globals 场景的 setData 传输体积，并保持 native 加速能力缺失时的回退路径。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- ✨ **新增可选的 native AST 批量分析与性能评估能力，将同一份脚本上的多项静态检查合并为一次 JS 与 Rust 通信和一次解析，并在 bundle rewrite 热路径复用分析缓存。native binding 未配置、加载失败或执行失败时继续回退 Babel、Oxc 与 Vue compiler 路径，保持现有构建兼容性。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- ✨ **修复多类开发态增量更新稳定性问题，包括根入口脚本未重新写出、带点号入口被误识别、Vue JSON 宏与外部样式复用旧缓存、auto-routes 配置未刷新、共享 WXML/WXS 与 SCSS 原子保存漏更新、Tailwind 内容刷新复用旧 JIT 输出，以及支付宝原生样式依赖更新范围不完整。相关场景现在会在保持局部 HMR 的同时正确刷新配置、脚本、模板和样式产物。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+- ✨ **升级 Vue SFC 与 Wevu 编译热路径：共享 SFC parse、组件元信息、模板标签和 props 分析结果，为静态 JSON 宏与 defineOptions 提供直接快路径，并在默认关闭 sourcemap 时跳过无用映射生成。连续 HMR、自动导入和多组件页面会减少重复 Vue/Babel 解析；同时修复普通 TypeScript 泛型箭头函数被误判为 JSX，以及路由成功导航后 currentRoute 与 from 状态未及时同步的问题。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复微信开发者工具真实运行时中的插件页面识别、插件路由跳转、选择器查询、WXML 读取与页面栈切换稳定性，并确保 Wevu 组件注册在默认导出前完成。IDE 自动化现在会对受限协议提供明确的降级证据，同时保留真实路由、DOM 状态和构建产物验收。** [`99a816a`](https://github.com/weapp-vite/weapp-vite/commit/99a816ab79b0d93aed711a5b54f4ae4b0a4a86e3) by @sonofmagic
+
 ## 2.4.6
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.18.0
+
+### Minor Changes
+
+- ✨ **升级 Vue SFC 与 Wevu 编译热路径：共享 SFC parse、组件元信息、模板标签和 props 分析结果，为静态 JSON 宏与 defineOptions 提供直接快路径，并在默认关闭 sourcemap 时跳过无用映射生成。连续 HMR、自动导入和多组件页面会减少重复 Vue/Babel 解析；同时修复普通 TypeScript 泛型箭头函数被误判为 JSX，以及路由成功导航后 currentRoute 与 from 状态未及时同步的问题。** [`1f62703`](https://github.com/weapp-vite/weapp-vite/commit/1f62703e60b9db5223ef349ad4dff7ac4f16bdfc) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复微信开发者工具真实运行时中的插件页面识别、插件路由跳转、选择器查询、WXML 读取与页面栈切换稳定性，并确保 Wevu 组件注册在默认导出前完成。IDE 自动化现在会对受限协议提供明确的降级证据，同时保留真实路由、DOM 状态和构建产物验收。** [`99a816a`](https://github.com/weapp-vite/weapp-vite/commit/99a816ab79b0d93aed711a5b54f4ae4b0a4a86e3) by @sonofmagic
+- 📦 **Dependencies** [`da04b13`](https://github.com/weapp-vite/weapp-vite/commit/da04b1334bd47f5b7182f61b17e66908aad9ca3f)
+  → `rolldown-require@2.0.20`, `@weapp-vite/ast@6.18.0`
+
 ## 6.17.8
 
 ### Patch Changes
