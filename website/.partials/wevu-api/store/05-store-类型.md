@@ -1,7 +1,5 @@
 ## Store 类型
 
-<WevuApiDocGroup :api-count="8" summary="约束 Manager、Store 定义、订阅回调、Action 上下文和 mutation 类型。" title="Store 类型">
-
 ### `StoreManager` {#storemanager}
 
 <!-- api-reference-details -->
@@ -183,5 +181,3 @@ manager.use(({ store }) => {
   store.$onAction(logAction)
 })
 ```
-
-</WevuApiDocGroup>

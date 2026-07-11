@@ -1,7 +1,5 @@
 ## App 生命周期 Hook
 
-<WevuApiDocGroup :api-count="8" summary="注册 App 启动、显示、异常、主题和内存告警等宿主生命周期。" default-open title="App 生命周期 Hook">
-
 ### `onLaunch()` {#onlaunch}
 
 <!-- api-reference-details -->
@@ -125,5 +123,3 @@ createApp({
   },
 })
 ```
-
-</WevuApiDocGroup>

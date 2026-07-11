@@ -1,7 +1,5 @@
 ## Router 实例
 
-<WevuApiDocGroup :api-count="6" summary="读取 Router 配置、当前路由和原生桥接，并解析位置或等待就绪。" title="Router 实例">
-
 ### `router.nativeRouter` {#router-nativerouter}
 
 <!-- api-reference-details -->
@@ -100,5 +98,3 @@ const target = router.resolve({ name: 'detail', params: { id: 42 } })
 console.log(router.options, router.currentRoute, target.href)
 router.install()
 ```
-
-</WevuApiDocGroup>

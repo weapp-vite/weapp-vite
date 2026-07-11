@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/src/shared/compositionApiCoverage'
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
+import { wevuApiSidebarItems } from './wevuApiSidebar'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
 const includeRE = /<!--\s*@include:\s*(\S+)\s*-->/g
@@ -39,18 +40,24 @@ function getAnchoredSection(source: string, anchor: string) {
     : source.slice(start, start + anchorToken.length + nextHeading)
 }
 
-function getContainingApiGroup(source: string, anchor: string) {
+function getContainingH2Section(source: string, anchor: string) {
   const anchorIndex = source.indexOf(`{#${anchor}}`)
   if (anchorIndex < 0) {
     return undefined
   }
-  const groupStart = source.lastIndexOf('<WevuApiDocGroup', anchorIndex)
-  const previousGroupEnd = source.lastIndexOf('</WevuApiDocGroup>', anchorIndex)
-  if (groupStart < 0 || groupStart < previousGroupEnd) {
+  const sectionStart = source.lastIndexOf('\n## ', anchorIndex)
+  if (sectionStart < 0) {
     return undefined
   }
-  const groupEnd = source.indexOf('</WevuApiDocGroup>', anchorIndex)
-  return groupEnd < 0 ? undefined : source.slice(groupStart, groupEnd)
+  const sectionEnd = source.indexOf('\n## ', anchorIndex)
+  return sectionEnd < 0 ? source.slice(sectionStart) : source.slice(sectionStart, sectionEnd)
+}
+
+function collectSidebarLinks(items = wevuApiSidebarItems): string[] {
+  return items.flatMap(item => [
+    ...(item.link ? [item.link] : []),
+    ...collectSidebarLinks(item.items || []),
+  ])
 }
 
 function hasSignature(section: string) {
@@ -273,8 +280,8 @@ describe('wevu API catalog', () => {
         expect(prose.length, `description is too terse for ${item.entry}:${item.name}`).toBeGreaterThanOrEqual(45)
         expect(hasSignature(section), `missing signature for ${item.entry}:${item.name}`).toBe(true)
         expect(hasExample(section), `missing example for ${item.entry}:${item.name}`).toBe(true)
-        const group = getContainingApiGroup(source, anchor)
-        expect(group, `missing collapsible group for ${item.entry}:${item.name}`).toBeDefined()
+        const group = getContainingH2Section(source, anchor)
+        expect(group, `missing H2 section for ${item.entry}:${item.name}`).toBeDefined()
         expect(group, `missing colocated group example for ${item.entry}:${item.name}`).toMatch(/### 本组示例 \{#example-[^}]+\}/)
         expect(group, `missing code in group for ${item.entry}:${item.name}`).toMatch(/```(?:vue|ts|typescript|js|javascript)\n/)
         const exampleLine = section.split('\n').find(line => line.startsWith('**示例：** 见 [本组示例]'))
@@ -288,30 +295,21 @@ describe('wevu API catalog', () => {
     }
   })
 
-  it('keeps API page and group counts aligned with progressive disclosure markup', async () => {
+  it('keeps API anchors in the sidebar instead of adding controls to the article', async () => {
     const pagePaths = new Set(wevuApiCatalog.map(item => item.href.split('#')[0]))
+    const sidebarLinks = new Set(collectSidebarLinks())
+
+    for (const item of wevuApiCatalog) {
+      expect(sidebarLinks, `missing sidebar link for ${item.entry}:${item.name}`).toContain(item.href)
+    }
 
     for (const pathname of pagePaths) {
       const sourcePath = path.join(websiteRoot, `${pathname}.md`)
       const source = await readMarkdownWithIncludes(sourcePath)
       const pageSource = await fs.readFile(sourcePath, 'utf8')
-      const groups = source.split('<WevuApiDocGroup ').slice(1).map((chunk) => {
-        const attributeEnd = chunk.indexOf('>')
-        const attributes = chunk.slice(0, attributeEnd)
-        const content = chunk.slice(attributeEnd + 1).split('</WevuApiDocGroup>', 1)[0]
-        return { attributes, content }
-      })
-      const declaredGroupCount = Number(pageSource.match(/<WevuApiDocPage :group-count="(\d+)"\s*\/>/)?.[1])
 
       expect(pageSource, `missing H2-only outline for ${pathname}`).toContain('level: [2, 2]')
-      expect(declaredGroupCount, `wrong page group count for ${pathname}`).toBe(groups.length)
-      expect(groups.filter(group => group.attributes.includes('default-open')).length, `wrong default-open count for ${pathname}`).toBe(1)
-
-      for (const group of groups) {
-        const declaredApiCount = Number(group.attributes.match(/:api-count="(\d+)"/)?.[1])
-        const actualApiCount = (group.content.match(/<!-- api-reference-details -->/g) || []).length
-        expect(declaredApiCount, `wrong API count in ${pathname}`).toBe(actualApiCount)
-      }
+      expect(source, `article contains obsolete disclosure controls for ${pathname}`).not.toMatch(/WevuApiDoc(?:Page|Group)/)
     }
   })
 })

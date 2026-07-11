@@ -1,7 +1,5 @@
 ## 小程序 Router 类型
 
-<WevuApiDocGroup :api-count="8" summary="约束原生 Router 方法、类型路由 URL 和项目声明合并入口。" title="小程序 Router 类型">
-
 ### `SetupContextRouter` {#type-setupcontextrouter}
 
 <!-- api-reference-details -->
@@ -152,5 +150,3 @@ declare module 'wevu/router' {
 
 const url: TypedRouterUrl<WevuTypedRouterRouteMap> = '/pages/detail/index'
 ```
-
-</WevuApiDocGroup>

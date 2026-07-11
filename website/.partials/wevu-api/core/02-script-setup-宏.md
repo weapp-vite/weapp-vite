@@ -1,7 +1,5 @@
 ## Script Setup 宏
 
-<WevuApiDocGroup :api-count="12" summary="声明 props、事件、model、页面元信息和 App 级初始化逻辑。" title="Script Setup 宏">
-
 ### `defineProps()` {#defineprops}
 
 <!-- api-reference-details -->
@@ -208,5 +206,3 @@ const model = defineModel<number>({ default: 0 })
 defineExpose({ submit: () => emit('submit', props.title) })
 </script>
 ```
-
-</WevuApiDocGroup>

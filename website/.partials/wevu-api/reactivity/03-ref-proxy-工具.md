@@ -1,7 +1,5 @@
 ## Ref / Proxy 工具
 
-<WevuApiDocGroup :api-count="7" summary="在值、Ref、getter 和代理对象之间安全转换或手动触发更新。" title="Ref / Proxy 工具">
-
 ### `toRef()` {#toref}
 
 <!-- api-reference-details -->
@@ -116,5 +114,3 @@ config.value.enabled = false
 triggerRef(config)
 console.log(toValue(count), fields.name.value, toRaw(state))
 ```
-
-</WevuApiDocGroup>

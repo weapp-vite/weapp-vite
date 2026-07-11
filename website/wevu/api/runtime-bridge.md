@@ -14,8 +14,6 @@ keywords:
 
 本页聚焦可在业务工程中直接使用的运行时能力。内部注册与调度函数已从文档目录中移除。
 
-<WevuApiDocPage :group-count="4" />
-
 <!--@include: ../../.partials/wevu-api/runtime-bridge/01-全局默认值.md-->
 
 <!--@include: ../../.partials/wevu-api/runtime-bridge/02-setdata-排除标记.md-->

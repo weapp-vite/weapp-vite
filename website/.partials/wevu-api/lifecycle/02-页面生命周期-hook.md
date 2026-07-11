@@ -1,7 +1,5 @@
 ## 页面生命周期 Hook
 
-<WevuApiDocGroup :api-count="3" summary="处理页面加载、就绪与卸载，所有 hook 都必须在同步 setup 中注册。" title="页面生命周期 Hook">
-
 ### `onLoad()` {#onload}
 
 <!-- api-reference-details -->
@@ -62,5 +60,3 @@ onUnload(() => {
 })
 </script>
 ```
-
-</WevuApiDocGroup>

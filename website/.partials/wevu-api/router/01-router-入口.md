@@ -1,7 +1,5 @@
 ## Router 入口
 
-<WevuApiDocGroup :api-count="3" summary="创建 Router，并在 setup 中读取当前 Router 与响应式路由状态。" default-open title="Router 入口">
-
 ### `createRouter()` {#createrouter}
 
 <!-- api-reference-details -->
@@ -62,5 +60,3 @@ const router = useRouter()
 const route = useRoute()
 console.log(router.currentRoute, route.fullPath)
 ```
-
-</WevuApiDocGroup>

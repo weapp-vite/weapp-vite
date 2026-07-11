@@ -1,7 +1,5 @@
 ## 原生 Router
 
-<WevuApiDocGroup :api-count="2" summary="直接访问组件或页面路径语义的小程序原生 Router。" title="原生 Router">
-
 ### `useNativeRouter()` {#usenativerouter}
 
 <!-- api-reference-details -->
@@ -39,5 +37,3 @@ const pageRouter = useNativePageRouter()
 componentRouter.navigateTo({ url: '../detail/index?id=42' })
 pageRouter.redirectTo({ url: '/pages/home/index' })
 ```
-
-</WevuApiDocGroup>

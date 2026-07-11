@@ -1,7 +1,5 @@
 ## Setup 兼容工具 API
 
-<WevuApiDocGroup :api-count="18" summary="处理 model、节点查询、观察器、资源清理、layout、页面栈和性能事件。" title="Setup 兼容工具 API">
-
 ### `useNativeInstance()` {#usenativeinstance}
 
 <!-- api-reference-details -->
@@ -366,5 +364,3 @@ onReady(async () => {
 disposables.add(() => console.log('cleanup', pageStack.value.length))
 </script>
 ```
-
-</WevuApiDocGroup>

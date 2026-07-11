@@ -40,12 +40,6 @@ const WeapiReference = defineAsyncComponent(
 const WevuApiReference = defineAsyncComponent(
   () => import('../components/WevuApiReference.vue'),
 )
-const WevuApiDocPage = defineAsyncComponent(
-  () => import('../components/WevuApiDocPage.vue'),
-)
-const WevuApiDocGroup = defineAsyncComponent(
-  () => import('../components/WevuApiDocGroup.vue'),
-)
 
 export default {
   extends: DefaultTheme,
@@ -66,12 +60,45 @@ export default {
     app.component('WeapiCompatibilityCatalog', WeapiCompatibilityCatalog)
     app.component('WeapiReference', WeapiReference)
     app.component('WevuApiReference', WevuApiReference)
-    app.component('WevuApiDocPage', WevuApiDocPage)
-    app.component('WevuApiDocGroup', WevuApiDocGroup)
     if (typeof window !== 'undefined') {
       let cleanupOutline: (() => void) | null = null
       // keep a single click handler per aside element without mutating DOM nodes
       const tocHandlers = new WeakMap<Element, EventListener>()
+      const syncSidebarHashActive = (): void => {
+        for (const item of document.querySelectorAll<HTMLElement>('[data-wevu-api-hash-active]')) {
+          item.classList.remove('is-active')
+          item.removeAttribute('data-wevu-api-hash-active')
+          item.querySelector(':scope > .item > a')?.removeAttribute('aria-current')
+        }
+
+        if (!location.pathname.startsWith('/wevu/api/') || !location.hash) {
+          return
+        }
+
+        const activeLink = [...document.querySelectorAll<HTMLAnchorElement>('.VPSidebar a[href*="#"]')]
+          .find((link) => {
+            const target = new URL(link.href, location.href)
+            return target.pathname === location.pathname && target.hash === location.hash
+          })
+        const activeItem = activeLink?.closest<HTMLElement>('.VPSidebarItem')
+        if (!activeLink || !activeItem) {
+          return
+        }
+
+        activeItem.classList.add('is-active')
+        activeItem.setAttribute('data-wevu-api-hash-active', '')
+        activeLink.setAttribute('aria-current', 'location')
+      }
+      const handleSidebarHashClick = (event: Event): void => {
+        const target = event.target as HTMLElement | null
+        const hashLink = target?.closest<HTMLAnchorElement>('.VPSidebar a[href*="#"]')
+        if (hashLink) {
+          setTimeout(() => {
+            syncSidebarHashActive()
+            document.querySelector<HTMLElement>('.VPBackdrop')?.click()
+          }, 250)
+        }
+      }
       const setupSmoothTOCScroll = (): void => {
         const aside = document.querySelector<HTMLElement>('.VPDocAsideOutline .content, .VPDocAside .content')
         if (!aside) {
@@ -95,12 +122,6 @@ export default {
           const section = document.getElementById(id)
           if (!section) {
             return
-          }
-          const parentGroup = section.closest<HTMLDetailsElement>('details[data-wevu-api-group]')
-          const sibling = section.nextElementSibling
-          const apiGroup = parentGroup || (sibling?.matches('details[data-wevu-api-group]') ? sibling as HTMLDetailsElement : null)
-          if (apiGroup) {
-            apiGroup.open = true
           }
           evt.preventDefault()
           // optimistic active state for better visual feedback
@@ -272,6 +293,7 @@ export default {
           renderMermaid()
           setupSmoothTOCScroll()
           setupOutlineMarkerTuning()
+          syncSidebarHashActive()
         }, 0)
       }
 
@@ -288,7 +310,10 @@ export default {
       requestAnimationFrame(() => {
         setupSmoothTOCScroll()
         setupOutlineMarkerTuning()
+        syncSidebarHashActive()
       })
+      document.addEventListener('click', handleSidebarHashClick, true)
+      window.addEventListener('hashchange', syncSidebarHashActive, { passive: true })
 
       // re-render on theme change to switch mermaid theme
       const rerenderForTheme = async () => {

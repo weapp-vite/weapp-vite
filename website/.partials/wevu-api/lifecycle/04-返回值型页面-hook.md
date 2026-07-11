@@ -1,7 +1,5 @@
 ## 返回值型页面 Hook
 
-<WevuApiDocGroup :api-count="4" summary="声明分享、收藏和退出状态等需要向小程序宿主返回配置的 hook。" title="返回值型页面 Hook">
-
 ### `onShareAppMessage()` {#onshareappmessage}
 
 <!-- api-reference-details -->
@@ -67,5 +65,3 @@ onShareTimeline(() => ({ title: '商品详情', query: 'id=42' }))
 onAddToFavorites(() => ({ title: '商品详情', query: 'id=42' }))
 </script>
 ```
-
-</WevuApiDocGroup>

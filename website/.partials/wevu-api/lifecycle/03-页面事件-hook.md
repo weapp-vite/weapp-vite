@@ -1,7 +1,5 @@
 ## 页面事件 Hook
 
-<WevuApiDocGroup :api-count="6" summary="响应下拉刷新、触底、滚动、路由完成、tab 点击和尺寸变化。" title="页面事件 Hook">
-
 ### `onPullDownRefresh()` {#onpulldownrefresh}
 
 <!-- api-reference-details -->
@@ -99,5 +97,3 @@ onPullDownRefresh(async () => {
 })
 </script>
 ```
-
-</WevuApiDocGroup>

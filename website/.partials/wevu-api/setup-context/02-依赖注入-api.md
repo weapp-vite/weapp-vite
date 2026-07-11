@@ -1,7 +1,5 @@
 ## 依赖注入 API
 
-<WevuApiDocGroup :api-count="3" summary="在页面和组件树中提供、注入或兼容旧的全局依赖。" title="依赖注入 API">
-
 ### `provide()` {#provide}
 
 <!-- api-reference-details -->
@@ -62,5 +60,3 @@ provide(ThemeKey, ref('light'))
 // 下层读取；缺失时使用显式默认值。
 const theme = inject(ThemeKey, ref('light'))
 ```
-
-</WevuApiDocGroup>

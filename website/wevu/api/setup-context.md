@@ -20,8 +20,6 @@ keywords:
 - `ctx.instance`：原生小程序实例
 - `ctx.emit`：事件派发函数
 
-<WevuApiDocPage :group-count="3" />
-
 <!--@include: ../../.partials/wevu-api/setup-context/01-实例与上下文访问-api.md-->
 
 <!--@include: ../../.partials/wevu-api/setup-context/02-依赖注入-api.md-->

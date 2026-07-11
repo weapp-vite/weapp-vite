@@ -1,7 +1,5 @@
 ## setData 排除标记
 
-<WevuApiDocGroup :api-count="2" summary="阻止不适合序列化的对象进入小程序 setData 快照。" title="setData 排除标记">
-
 ### `markNoSetData()` {#marknosetdata}
 
 <!-- api-reference-details -->
@@ -40,5 +38,3 @@ const state = reactive({ title: '视频详情', player })
 
 console.log(isNoSetData(state.player))
 ```
-
-</WevuApiDocGroup>

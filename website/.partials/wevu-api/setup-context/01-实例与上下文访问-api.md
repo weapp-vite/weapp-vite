@@ -1,7 +1,5 @@
 ## 实例与上下文访问 API
 
-<WevuApiDocGroup :api-count="2" summary="读取当前 Wevu 实例、setup 上下文和原生小程序实例。" default-open title="实例与上下文访问 API">
-
 ### `getCurrentInstance()` {#getcurrentinstance}
 
 <!-- api-reference-details -->
@@ -48,5 +46,3 @@ function submit() {
 }
 </script>
 ```
-
-</WevuApiDocGroup>

@@ -15,6 +15,7 @@ import llmstxt, {
 } from 'vitepress-plugin-llms'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
+import { wevuApiSidebarItems } from './data/wevuApiSidebar'
 import { createSeoHead, transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 
@@ -41,8 +42,13 @@ function sanitizeSidebarLinks(
         const cleanedChildren = item.items ? cleanItems(item.items) : undefined
         const link = typeof item.link === 'string' ? item.link : ''
         const isExternal = EXTERNAL_LINK_REGEX.test(link)
+        const isHashLink = link.includes('#')
 
-        if (isExternal && (!cleanedChildren || cleanedChildren.length === 0)) {
+        if (isHashLink || (isExternal && (!cleanedChildren || cleanedChildren.length === 0))) {
+          return null
+        }
+
+        if (item.items && !link && cleanedChildren?.length === 0) {
           return null
         }
 
@@ -478,44 +484,6 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/wevu/when-setdata-triggers',
       },
     ],
-  },
-]
-
-const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
-  {
-    text: 'API 首页',
-    collapsed: false,
-    items: [{ text: 'API 首页', link: '/wevu/api/' }],
-  },
-  {
-    text: 'Global API',
-    collapsed: false,
-    items: [
-      { text: 'Core API', link: '/wevu/api/core' },
-      { text: 'Options API', link: '/wevu/api/options-api' },
-    ],
-  },
-  {
-    text: 'Composition API',
-    collapsed: false,
-    items: [
-      { text: 'Reactivity API', link: '/wevu/api/reactivity' },
-      { text: 'Lifecycle API', link: '/wevu/api/lifecycle' },
-      { text: 'Setup Context API', link: '/wevu/api/setup-context' },
-    ],
-  },
-  {
-    text: 'Runtime API',
-    collapsed: false,
-    items: [
-      { text: 'Store API', link: '/wevu/api/store' },
-      { text: 'Runtime Bridge API', link: '/wevu/api/runtime-bridge' },
-    ],
-  },
-  {
-    text: 'Type API',
-    collapsed: false,
-    items: [{ text: 'Type Reference', link: '/wevu/api/types' }],
   },
 ]
 

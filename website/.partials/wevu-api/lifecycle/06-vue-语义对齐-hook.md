@@ -1,7 +1,5 @@
 ## Vue 语义对齐 Hook
 
-<WevuApiDocGroup :api-count="10" summary="对照 Vue 生命周期理解 Wevu 的宿主映射、更新批次和无 SSR 边界。" title="Vue 语义对齐 Hook">
-
 ### `onBeforeMount()` {#onbeforemount}
 
 <!-- api-reference-details -->
@@ -169,5 +167,3 @@ onUnmounted(() => console.log('宿主实例已销毁'))
 onServerPrefetch(async () => {})
 </script>
 ```
-
-</WevuApiDocGroup>

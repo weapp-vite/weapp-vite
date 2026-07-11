@@ -1,7 +1,5 @@
 ## Store Manager API
 
-<WevuApiDocGroup :api-count="2" summary="安装 Store Manager 并注册作用于后续 Store 的插件。" title="Store Manager API">
-
 ### `manager.install()` {#storemanager-install}
 
 <!-- api-reference-details -->
@@ -48,5 +46,3 @@ manager.install()
 const useSession = defineStore('session', { state: () => ({ token: '' }) })
 const session = useSession(manager)
 ```
-
-</WevuApiDocGroup>

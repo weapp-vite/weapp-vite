@@ -1,7 +1,5 @@
 ## Store 实例 API
 
-<WevuApiDocGroup :api-count="6" summary="读取标识和状态，批量修改、重置并订阅状态或 Action。" title="Store 实例 API">
-
 ### `$id` {#store-id}
 
 <!-- api-reference-details -->
@@ -114,5 +112,3 @@ counter.$reset()
 stopState()
 stopAction()
 ```
-
-</WevuApiDocGroup>

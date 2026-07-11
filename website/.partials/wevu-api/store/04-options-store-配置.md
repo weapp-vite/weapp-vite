@@ -1,7 +1,5 @@
 ## Options Store 配置
 
-<WevuApiDocGroup :api-count="3" summary="通过 state、getters 和 actions 定义 Options Store。" title="Options Store 配置">
-
 ### `state` {#options-state}
 
 <!-- api-reference-details -->
@@ -61,5 +59,3 @@ export const useCart = defineStore('cart', {
   },
 })
 ```
-
-</WevuApiDocGroup>

@@ -1,7 +1,5 @@
 ## Vue 风格选项
 
-<WevuApiDocGroup :api-count="7" summary="使用熟悉的 props、data、computed、methods 和 watch 组织组件逻辑。" default-open title="Vue 风格选项">
-
 ### `props` {#props}
 
 <!-- api-reference-details -->
@@ -117,5 +115,3 @@ export default defineComponent({
   watch: { count(value) { console.log('count', value) } },
 })
 ```
-
-</WevuApiDocGroup>

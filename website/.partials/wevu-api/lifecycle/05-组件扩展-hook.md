@@ -1,7 +1,5 @@
 ## 组件扩展 Hook
 
-<WevuApiDocGroup :api-count="3" summary="处理组件 attached、detached 和 moved 等原生实例阶段。" title="组件扩展 Hook">
-
 ### `onAttached()` {#onattached}
 
 <!-- api-reference-details -->
@@ -60,5 +58,3 @@ onDetached(() => {
 })
 </script>
 ```
-
-</WevuApiDocGroup>

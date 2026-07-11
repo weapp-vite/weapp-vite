@@ -19,8 +19,6 @@ keywords:
 import { createRouter, useRoute, useRouter } from 'wevu/router'
 ```
 
-<WevuApiDocPage :group-count="7" />
-
 <!--@include: ../../.partials/wevu-api/router/01-router-入口.md-->
 
 <!--@include: ../../.partials/wevu-api/router/02-原生-router.md-->

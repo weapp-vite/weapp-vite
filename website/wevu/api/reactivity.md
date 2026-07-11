@@ -15,8 +15,6 @@ keywords:
 
 本页按「一个 API 一个小节」组织，结构参考 Vue 官方 API 文档。每个小节都包含用途、类型入口与使用建议，便于快速定位与深入阅读。
 
-<WevuApiDocPage :group-count="5" />
-
 <!--@include: ../../.partials/wevu-api/reactivity/01-状态创建与派生.md-->
 
 <!--@include: ../../.partials/wevu-api/reactivity/02-监听与副作用.md-->

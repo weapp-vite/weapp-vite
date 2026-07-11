@@ -14,8 +14,6 @@ keywords:
 
 以下条目严格对应 `packages-runtime/wevu/src/runtime/hooks.ts` 的导出函数。所有 Hook 都要求在 `setup()` 同步阶段调用。
 
-<WevuApiDocPage :group-count="6" />
-
 <!--@include: ../../.partials/wevu-api/lifecycle/01-app-生命周期-hook.md-->
 
 <!--@include: ../../.partials/wevu-api/lifecycle/02-页面生命周期-hook.md-->
