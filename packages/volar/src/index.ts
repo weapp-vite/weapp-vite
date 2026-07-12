@@ -41,6 +41,10 @@ function parseVueSfc(content: string, filename = 'component.vue') {
   }
 }
 
+function isSfcEnhancementCandidate(content: string) {
+  return /<wxs(?:\s|>)/i.test(content) || content.includes('defineOptions')
+}
+
 /**
  * Volar 语言插件：为 weapp 配置块提供类型与 schema 提示。
  */
@@ -61,7 +65,7 @@ const plugin: VueLanguagePlugin = (ctx) => {
     version: PLUGIN_VERSION,
     order: -1,
     parseSFC2(fileName, languageId, content) {
-      if (languageId !== 'vue') {
+      if (languageId !== 'vue' || !isSfcEnhancementCandidate(content)) {
         return
       }
 
@@ -74,12 +78,12 @@ const plugin: VueLanguagePlugin = (ctx) => {
       const wxsModuleNames = collectWxsModuleNames(descriptor.template?.content)
       const scriptSetup = descriptor.scriptSetup
       const scriptSetupLang = resolveScriptSetupLang(scriptSetup?.lang)
-      const defineOptionsDeclarations = scriptSetup?.content && tsModule
+      const defineOptionsDeclarations = scriptSetup?.content.includes('defineOptions') && tsModule
         ? createDefineOptionsTemplateDeclarations(scriptSetup.content, tsModule, scriptSetupLang)
         : ''
 
       if (!wxsModuleNames.length && !defineOptionsDeclarations) {
-        return parsed
+        return
       }
 
       if (descriptor.scriptSetup) {

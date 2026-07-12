@@ -40,6 +40,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
+    "benchmark": "node --import tsx benchmark/sfc.ts",
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown --no-dts && tsc -p tsconfig.build.json",
     "test": "vitest run",

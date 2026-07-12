@@ -3,6 +3,8 @@ import { forEachEmbeddedCode } from '@volar/language-core'
 import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import plugin from '../src/index'
+import { resolveEmbeddedJsonBlock } from '../src/jsonBlock'
+import { getSchemaForType } from '../src/schema'
 
 interface ServiceScriptSnapshot {
   getText: (start: number, end: number) => string
@@ -110,6 +112,24 @@ function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) 
   }
 }
 
+function getPluginParser(tsModule: typeof ts = ts) {
+  const result = plugin({
+    modules: {
+      'typescript': tsModule,
+      '@vue/compiler-dom': {} as any,
+    },
+  } as any)
+  const items = Array.isArray(result) ? result : [result]
+  return items.find(entry => typeof entry.parseSFC2 === 'function')
+}
+
+function getEmbeddedText(root: VueVirtualCode, id: string) {
+  const code = Array.from(forEachEmbeddedCode(root), embedded => embedded)
+    .find(embedded => embedded.id === id)
+  expect(code).toBeTruthy()
+  return code!.snapshot.getText(0, code!.snapshot.getLength())
+}
+
 describe('@weapp-vite/volar plugin', () => {
   it('uses the latest Vue language plugin version', () => {
     const result = plugin({} as any)
@@ -117,6 +137,74 @@ describe('@weapp-vite/volar plugin', () => {
     for (const entry of items) {
       expect(entry.version).toBe(2.2)
     }
+  })
+
+  it('lets the default Vue parser own ordinary SFCs without creating an extra TypeScript AST', () => {
+    let sourceFileCount = 0
+    const countingTs = new Proxy(ts, {
+      get(target, property, receiver) {
+        if (property === 'createSourceFile') {
+          return (...args: Parameters<typeof ts.createSourceFile>) => {
+            sourceFileCount += 1
+            return target.createSourceFile(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const parser = getPluginParser(countingTs)
+    const parsed = parser?.parseSFC2?.(
+      'fixture.vue',
+      'vue',
+      `<script setup lang="ts">
+const props = defineProps<{ title: string }>()
+function onTap() {}
+</script>
+<template><view :title="props.title" @tap="onTap" /></template>`,
+    )
+
+    expect(parsed).toBeUndefined()
+    expect(sourceFileCount).toBe(0)
+
+    const { generated, root } = getGeneratedServiceScript(`<script setup lang="ts">
+const props = defineProps<{ title: string }>()
+function onTap() {}
+</script>
+<template><view :title="props.title" @tap="onTap" /></template>`)
+    expect(generated).toContain('__VLS_ctx.onTap')
+    expect(generated).toContain('props.title')
+    const serviceCode = Array.from(forEachEmbeddedCode(root), code => code)
+      .find(code => code.id === 'script_ts')
+    expect(serviceCode?.mappings.some(mapping => mapping.data.navigation)).toBe(true)
+  })
+
+  it('keeps json and TypeScript config blocks embedded when the default parser owns the SFC', () => {
+    const jsonSource = `<script setup lang="ts">const title = 'demo'</script>
+<template><view>{{ title }}</view></template>
+<json lang="jsonc">{
+  // page config
+    "navigationBarTitleText": "Cart"
+}</json>`
+    const jsonResult = getGeneratedServiceScript(jsonSource)
+    expect(getEmbeddedText(jsonResult.root, 'json_0')).toContain('navigationBarTitleText')
+
+    const tsSource = `<script setup lang="ts">const title = 'demo'</script>
+<template><view>{{ title }}</view></template>
+<json lang="ts">export default { navigationBarTitleText: 'Cart' }</json>`
+    const tsResult = getGeneratedServiceScript(tsSource)
+    expect(getEmbeddedText(tsResult.root, 'json_0')).toContain('navigationBarTitleText')
+
+    expect(getSchemaForType('Page')?.properties).toHaveProperty('navigationBarTitleText')
+
+    const tsEmbedded = { id: 'json_0', content: [] as any[] }
+    resolveEmbeddedJsonBlock(
+      'src/pages/cart/index.vue',
+      { customBlocks: [{ type: 'json', lang: 'ts', content: 'export default { navigationBarTitleText: \'Cart\' }', name: 'customBlock_0' }] },
+      tsEmbedded,
+      ts,
+      true,
+    )
+    expect(tsEmbedded.content.flat().join('')).toContain('__weapp_defineConfig')
   })
 
   it('injects wxs modules into script setup bindings for template type checking', () => {
@@ -150,14 +238,7 @@ const title = 'demo'
   })
 
   it('creates a synthetic script setup block for wxs modules when no script exists', () => {
-    const result = plugin({
-      modules: {
-        'typescript': ts,
-        '@vue/compiler-dom': {} as any,
-      },
-    } as any)
-    const items = Array.isArray(result) ? result : [result]
-    const parser = items.find(entry => typeof entry.parseSFC2 === 'function')
+    const parser = getPluginParser()
 
     const parsed = parser?.parseSFC2?.(
       'fixture.vue',
@@ -166,6 +247,74 @@ const title = 'demo'
     )
 
     expect(parsed?.descriptor.scriptSetup?.content).toContain(`const util = {} as Record<string, (...args: any[]) => any>`)
+  })
+
+  it('deduplicates wxs modules without parsing script setup as TypeScript', () => {
+    let sourceFileCount = 0
+    const countingTs = new Proxy(ts, {
+      get(target, property, receiver) {
+        if (property === 'createSourceFile') {
+          return (...args: Parameters<typeof ts.createSourceFile>) => {
+            sourceFileCount += 1
+            return target.createSourceFile(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const parser = getPluginParser(countingTs)
+    const parsed = parser?.parseSFC2?.(
+      'fixture.vue',
+      'vue',
+      `<script setup lang="ts">const title = 'demo'</script>
+<template>
+  <wxs module="util" src="./util.wxs" />
+  <wxs module='util' src='./util.wxs' />
+  <view>{{ util.format(title) }}</view>
+</template>`,
+    )
+    const declarations = parsed?.descriptor.scriptSetup?.content.match(/const util =/g)
+
+    expect(declarations).toHaveLength(1)
+    expect(sourceFileCount).toBe(0)
+  })
+
+  it('builds one TypeScript AST for defineOptions and skips duplicate top-level bindings', () => {
+    let sourceFileCount = 0
+    const countingTs = new Proxy(ts, {
+      get(target, property, receiver) {
+        if (property === 'createSourceFile') {
+          return (...args: Parameters<typeof ts.createSourceFile>) => {
+            sourceFileCount += 1
+            return target.createSourceFile(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const parser = getPluginParser(countingTs)
+    const parsed = parser?.parseSFC2?.(
+      'fixture.vue',
+      'vue',
+      `<script setup lang="ts">
+const total = 2
+defineOptions({
+  data: { total: 1, loading: false },
+  computed: { summary: () => 'ok' },
+  methods: { onSubmit() {} },
+  properties: { enabled: Boolean },
+})
+</script>
+<template><view @tap="onSubmit">{{ total }} {{ loading }} {{ summary }} {{ enabled }}</view></template>`,
+    )
+    const content = parsed?.descriptor.scriptSetup?.content ?? ''
+
+    expect(sourceFileCount).toBe(1)
+    expect(content.match(/const total/g)).toHaveLength(1)
+    expect(content).toContain('const loading: boolean = null as any')
+    expect(content).toContain('const summary: string = null as any')
+    expect(content).toContain('const onSubmit: (...args: any[]) => any = null as any')
+    expect(content).toContain('const enabled: boolean = null as any')
   })
 
   it('injects defineOptions data, methods and properties into script setup bindings for template type checking', () => {
