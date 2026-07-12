@@ -275,8 +275,7 @@ export function createMarketplaceReleasePlan(
   const releaseTag = `${releaseTagPrefix}${currentVersion}`
   const isMainRef = isMainReleaseRef(currentRef)
   const versionBumped = isVersionBumped(currentVersion, previousVersion)
-  const hasAllowedTrigger = changesetsPublished || versionBumped
-  const shouldPublish = isMainRef && hasAllowedTrigger && (marketplaceVersion === null
+  const shouldPublish = isMainRef && (marketplaceVersion === null
     ? !tagExists
     : compareSemverVersions(currentVersion, marketplaceVersion) > 0 && !tagExists)
 

@@ -86,14 +86,18 @@ describe('vscode marketplace release planning', () => {
       tagExists: false,
       versionBumped: true,
     })
+
+    assert.equal(
+      createMarketplaceReleasePlan(false, '0.0.3', '0.0.3', '0.0.2', false, 'refs/heads/main').shouldPublish,
+      true,
+    )
   })
 
-  it('does not publish when marketplace is already current or newer, when tag already exists, or when trigger is not allowed', () => {
+  it('does not publish when marketplace is already current or newer, when tag already exists, or outside main', () => {
     assert.equal(createMarketplaceReleasePlan(false, '0.0.3', '0.0.3', '0.0.3', false, 'refs/heads/main').shouldPublish, false)
     assert.equal(createMarketplaceReleasePlan(false, '0.0.3', '0.0.2', '0.0.4', false, 'refs/heads/main').shouldPublish, false)
     assert.equal(createMarketplaceReleasePlan(false, '0.0.3', '0.0.2', '0.0.2', true, 'refs/heads/main').shouldPublish, false)
     assert.equal(createMarketplaceReleasePlan(false, '0.0.4', '0.0.3', '0.0.3', false, 'refs/heads/changeset-release/main').shouldPublish, false)
-    assert.equal(createMarketplaceReleasePlan(false, '0.0.4', '0.0.4', '0.0.3', false, 'refs/heads/main').shouldPublish, false)
   })
 
   it('publishes initial marketplace release when no remote version exists and tag is absent', () => {
