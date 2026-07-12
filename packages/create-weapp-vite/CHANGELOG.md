@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.5.1
+
+### Patch Changes
+
+- 🐛 **优化插件项目模板中的 SCSS 嵌套示例，使生成项目能够直接展示多层选择器与 BEM 状态类写法。** [`6d52f7d`](https://github.com/weapp-vite/weapp-vite/commit/6d52f7dd4f640d1693b0887df108f0b79ab21a59) by @sonofmagic
+
+- 🐛 **修复 Web Runtime URL polyfill 解析自定义协议根路径时重复插入路径分隔符的问题，并让 installer 与 chunk 局部绑定统一校验宿主 URL 的相对路径语义，使 `URL` 构造器和 `URL.parse()` 的结果与 Web 标准行为保持一致。** [#715](https://github.com/weapp-vite/weapp-vite/pull/715) by @sonofmagic
+
 ## 2.5.0
 
 ### Minor Changes

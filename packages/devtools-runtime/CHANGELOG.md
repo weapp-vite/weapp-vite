@@ -1,5 +1,12 @@
 # @weapp-vite/devtools-runtime
 
+## 0.4.8
+
+### Patch Changes
+
+- 📦 **Dependencies** [`7caa834`](https://github.com/weapp-vite/weapp-vite/commit/7caa8345cfc208b9a1321cba6d7cf4b7965a9221)
+  → `@weapp-vite/miniprogram-automator@1.2.7`
+
 ## 0.4.7
 
 ### Patch Changes

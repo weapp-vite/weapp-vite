@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.18.1
+
+### Patch Changes
+
+- 🐛 **修复 Web Runtime URL polyfill 解析自定义协议根路径时重复插入路径分隔符的问题，并让 installer 与 chunk 局部绑定统一校验宿主 URL 的相对路径语义，使 `URL` 构造器和 `URL.parse()` 的结果与 Web 标准行为保持一致。** [#715](https://github.com/weapp-vite/weapp-vite/pull/715) by @sonofmagic
+- 📦 Updated 6 dependencies [`7caa834`](https://github.com/weapp-vite/weapp-vite/commit/7caa8345cfc208b9a1321cba6d7cf4b7965a9221)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/miniprogram-automator@1.2.7`, `@wevu/web-apis@1.2.26`, `weapp-ide-cli@5.4.12`, `wevu@6.18.1`, `@weapp-vite/mcp@1.4.8`, `@weapp-vite/ast@6.18.1`
+
+  </details>
+
 ## 6.18.0
 
 ### Minor Changes
