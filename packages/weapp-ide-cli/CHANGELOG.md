@@ -1,5 +1,12 @@
 # weapp-ide-cli
 
+## 5.4.12
+
+### Patch Changes
+
+- 📦 **Dependencies** [`7caa834`](https://github.com/weapp-vite/weapp-vite/commit/7caa8345cfc208b9a1321cba6d7cf4b7965a9221)
+  → `@weapp-vite/miniprogram-automator@1.2.7`, `@weapp-vite/devtools-runtime@0.4.8`
+
 ## 5.4.11
 
 ### Patch Changes
