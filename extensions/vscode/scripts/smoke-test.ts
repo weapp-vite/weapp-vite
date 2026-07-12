@@ -440,8 +440,8 @@ async function main() {
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 19)
-    assert.ok(state.registeredProviders.some(item => item.type === 'semanticTokens'))
+    assert.equal(state.registeredProviders.length, 18)
+    assert.equal(state.registeredProviders.some(item => item.type === 'semanticTokens'), false)
     assert.ok(
       state.registeredProviders.some(item => item.type === 'documentFormatting'
         && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),

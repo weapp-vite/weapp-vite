@@ -82,10 +82,6 @@ import {
   WeappTemplateScriptRenameProvider,
 } from './template/templateScriptProviders'
 import {
-  TEMPLATE_SEMANTIC_TOKENS_LEGEND,
-  WeappTemplateSemanticTokensProvider,
-} from './template/templateSemanticTokens'
-import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
   copyCurrentPageRoute,
@@ -700,11 +696,6 @@ export function activate(context: any) {
     vscode.languages.registerRenameProvider(
       TEMPLATE_DOCUMENT_SELECTORS,
       wxmlRenameProvider,
-    ),
-    vscode.languages.registerDocumentSemanticTokensProvider(
-      TEMPLATE_DOCUMENT_SELECTORS,
-      new WeappTemplateSemanticTokensProvider(),
-      TEMPLATE_SEMANTIC_TOKENS_LEGEND,
     ),
     vscode.languages.registerRenameProvider(
       [

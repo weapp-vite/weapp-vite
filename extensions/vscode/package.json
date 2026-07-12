@@ -441,15 +441,6 @@
         }
       }
     ],
-    "semanticTokenScopes": [
-      {
-        "scopes": {
-          "class": [
-            "entity.other.attribute-name.class.html"
-          ]
-        }
-      }
-    ],
     "views": {
       "weapp-vite": [
         {

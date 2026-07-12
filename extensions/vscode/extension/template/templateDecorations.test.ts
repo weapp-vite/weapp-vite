@@ -93,6 +93,55 @@ it('collects defined static class ranges while ignoring comments and dynamic exp
   assert.deepEqual(ranges, ['section-title', 'route-button'])
 })
 
+it('uses a dotted underline for classes that resolve to style definitions', async () => {
+  const decorationOptions: Array<Record<string, unknown>> = []
+  const disposable = { dispose() {} }
+  const subscribe = () => disposable
+
+  vi.doMock('vscode', () => {
+    return createVscodeModule({
+      ThemeColor: class {
+        id: string
+
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      Range: class {},
+      window: {
+        activeTextEditor: undefined,
+        visibleTextEditors: [],
+        createTextEditorDecorationType(options: Record<string, unknown>) {
+          decorationOptions.push(options)
+          return disposable
+        },
+        onDidChangeActiveTextEditor: subscribe,
+        onDidChangeVisibleTextEditors: subscribe,
+      },
+      workspace: {
+        onDidChangeConfiguration: subscribe,
+        onDidChangeTextDocument: subscribe,
+        onDidCloseTextDocument: subscribe,
+      },
+    })
+  })
+  vi.resetModules()
+
+  const {
+    TemplateDecorationController,
+  } = await import('./templateDecorations')
+
+  const controller = new TemplateDecorationController()
+  const classDecoration = decorationOptions[1]
+
+  assert.equal(decorationOptions.length, 2)
+  assert.equal((classDecoration.borderColor as { id: string }).id, 'editorLink.activeForeground')
+  assert.equal(classDecoration.borderStyle, 'dotted')
+  assert.equal(classDecoration.borderWidth, '0 0 1px 0')
+
+  controller.dispose()
+})
+
 it('maps template decoration ranges back to vue document positions', async () => {
   vi.doMock('vscode', () => {
     return createVscodeModule({
@@ -134,7 +183,7 @@ it('maps template decoration ranges back to vue document positions', async () =>
   assert.deepEqual(ranges.map((range: any) => range.start.character), [17, 31])
 })
 
-it('can disable vue template decorations while keeping standalone wxml decorations enabled', async () => {
+it('can disable vue template decorations while keeping standalone template decorations enabled', async () => {
   vi.doMock('vscode', () => {
     return createVscodeModule({
       workspace: {
@@ -206,7 +255,19 @@ it('can disable vue template decorations while keeping standalone wxml decoratio
     '<view bindtap="handleTap">{{ titleText }}</view>',
     '/workspace/src/pages/home/index.wxml',
   )
+  const htmlDocument = createTextDocument(
+    'html',
+    '<view bindtap="handleTap">{{ titleText }}</view>',
+    '/workspace/src/pages/home/index.html',
+  )
+  const multiPlatformDocument = createTextDocument(
+    'miniprogram-template',
+    '<view bindtap="handleTap">{{ titleText }}</view>',
+    '/workspace/src/pages/home/index.axml',
+  )
 
   assert.equal(await isDecorationEnabledForDocument(vueDocument as any), false)
   assert.equal(await isDecorationEnabledForDocument(wxmlDocument as any), true)
+  assert.equal(await isDecorationEnabledForDocument(htmlDocument as any), true)
+  assert.equal(await isDecorationEnabledForDocument(multiPlatformDocument as any), true)
 })

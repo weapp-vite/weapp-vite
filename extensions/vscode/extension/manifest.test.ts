@@ -198,13 +198,7 @@ it('manifest contributes wxml language and grammars', () => {
     true,
   )
 
-  assert.deepEqual(packageJson.contributes.semanticTokenScopes, [
-    {
-      scopes: {
-        class: ['entity.other.attribute-name.class.html'],
-      },
-    },
-  ])
+  assert.equal(packageJson.contributes.semanticTokenScopes, undefined)
 })
 
 it('wxml language word pattern keeps member expressions and kebab classes whole', () => {

@@ -1,7 +1,8 @@
+import type { StyleClassMatch } from './styleClassIndex'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
-import * as vscode from 'vscode'
 
+import * as vscode from 'vscode'
 import {
   getVueJsonUsingComponentReferences,
 } from '../project/logic'
