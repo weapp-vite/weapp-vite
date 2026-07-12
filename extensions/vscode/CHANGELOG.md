@@ -1,11 +1,18 @@
 # 更新日志
 
-## Unreleased
+## 0.5.1
+
+### Patch Changes
+
+- 🐛 **恢复独立模板文件中可解析 class 的点状下划线标识，并移除清晰度较低的主题语义染色。** [`f8b1856`](https://github.com/weapp-vite/weapp-vite/commit/f8b1856d0d073f1c8d7a494416073b7231991d37) by @sonofmagic
+
+- 🐛 **将 class 虚线标识限定在 WXML、HTML 与多端独立模板文件中，Vue SFC 不再显示该标识，同时保留模板补全、跳转、引用和重命名能力。** [`fef2ac6`](https://github.com/weapp-vite/weapp-vite/commit/fef2ac60ef997cd3955d318b6eab61b646039b90) by @sonofmagic
+
+## 0.5.0
 
 ### Minor Changes
 
-- 扩展模板增强能力到 HTML、WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML 与 TyML，并为这些模板提供统一语法高亮、class 补全、定义跳转、引用、重命名和语义着色。
-- 重构 CSS class 索引，支持 CSS、SCSS、缩进式 Sass、Less 与 Stylus 的多层嵌套、`&` 拼接、BEM 状态类、分组和组合选择器。
+- ✨ **增强 VS Code 扩展的多平台模板编辑能力，为 HTML、WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML 与 TyML 提供统一的语法高亮、class 补全、定义跳转、引用、重命名和语义着色；同时完善 CSS、SCSS、Sass、Less 与 Stylus 嵌套选择器的 class 索引，并修复模板样式及 `wx:for` 成员变量的定义跳转。** [`4247040`](https://github.com/weapp-vite/weapp-vite/commit/4247040be258e075915c77289c3bcc612120328d) by @sonofmagic
 
 ## 0.4.2
 
