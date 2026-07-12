@@ -23,6 +23,31 @@ function getLocationUri(location) {
   return location?.targetUri ?? location?.uri
 }
 
+function getDecoratedTexts(vscode, document, snapshot) {
+  return snapshot.ranges.map((range) => {
+    return document.getText(new vscode.Range(range.start, range.end))
+  })
+}
+
+async function getClassDecorationSnapshot(vscode, document) {
+  const snapshot = await vscode.commands.executeCommand(
+    'weapp-vite.__e2e.getTemplateClassDecorations',
+    document.uri,
+  )
+
+  assert.ok(snapshot, `missing class decoration snapshot for ${document.uri.fsPath}`)
+  assert.ok(Array.isArray(snapshot.ranges), 'class decoration ranges must be an array')
+  return snapshot
+}
+
+function assertDottedClassDecoration(snapshot) {
+  assert.deepEqual(snapshot.style, {
+    borderColorThemeId: 'editorLink.activeForeground',
+    borderStyle: 'dotted',
+    borderWidth: '0 0 1px 0',
+  })
+}
+
 async function assertClassDefinition(vscode, document, className, expectedFileName) {
   const sourceText = document.getText()
   const classOffset = sourceText.indexOf(className)
@@ -79,6 +104,11 @@ exports.run = async function run() {
   assert.equal(commands.includes('weapp-vite.filterCurrentPageInTree'), true)
   assert.equal(Boolean(vueOfficialExtension), expectVueOfficial)
 
+  const vueClassDecorationSnapshot = await getClassDecorationSnapshot(vscode, document)
+
+  assert.equal(vueClassDecorationSnapshot.enabled, false)
+  assert.deepEqual(vueClassDecorationSnapshot.ranges, [])
+
   const rawBannerPath = path.join(
     workspaceFolder.uri.fsPath,
     'src',
@@ -93,6 +123,18 @@ exports.run = async function run() {
   await assertClassDefinition(vscode, rawBannerDocument, 'base-css-card', path.join('raw-banner', 'index.css'))
   await assertClassDefinition(vscode, rawBannerDocument, 'less-card__title', path.join('raw-banner', 'index.less'))
 
+  const wxmlClassDecorationSnapshot = await getClassDecorationSnapshot(vscode, rawBannerDocument)
+  const wxmlDecoratedClasses = getDecoratedTexts(vscode, rawBannerDocument, wxmlClassDecorationSnapshot)
+
+  assert.equal(wxmlClassDecorationSnapshot.enabled, true)
+  assertDottedClassDecoration(wxmlClassDecorationSnapshot)
+  assert.deepEqual(wxmlDecoratedClasses, [
+    'feature-card',
+    'base-css-card',
+    'feature-card__main',
+    'less-card__title',
+  ])
+
   const alipayTemplatePath = path.join(
     workspaceFolder.uri.fsPath,
     'src',
@@ -104,4 +146,12 @@ exports.run = async function run() {
 
   assert.equal(alipayTemplateDocument.languageId, 'miniprogram-template')
   await assertClassDefinition(vscode, alipayTemplateDocument, 'platform-card__title', path.join('raw-banner', 'platform.less'))
+
+  const alipayClassDecorationSnapshot = await getClassDecorationSnapshot(vscode, alipayTemplateDocument)
+
+  assert.equal(alipayClassDecorationSnapshot.enabled, true)
+  assertDottedClassDecoration(alipayClassDecorationSnapshot)
+  assert.deepEqual(getDecoratedTexts(vscode, alipayTemplateDocument, alipayClassDecorationSnapshot), [
+    'platform-card__title',
+  ])
 }

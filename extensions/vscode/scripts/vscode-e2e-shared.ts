@@ -248,6 +248,7 @@ export async function launchPreparedVscodeScenario(prepared: PreparedVscodeScena
 export function getScenarioRunnerEnv(scenarioId: VscodeE2EScenarioId) {
   return {
     WEAPP_VITE_EXPECT_VUE_OFFICIAL: scenarioId === 'vue-official' ? '1' : '0',
+    WEAPP_VITE_VSCODE_E2E: '1',
     WEAPP_VITE_VSIX_ID: 'weapp-vite.weapp-vite',
     WEAPP_VITE_VUE_OFFICIAL_EXTENSION_ID: VUE_OFFICIAL_EXTENSION_ID,
   }

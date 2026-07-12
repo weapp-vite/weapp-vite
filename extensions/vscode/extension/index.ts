@@ -8,6 +8,7 @@ import type {
 } from './ui/tree'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
+import process from 'node:process'
 import * as vscode from 'vscode'
 import {
   buildAppJsonDiagnostics,
@@ -63,6 +64,7 @@ import {
   VITE_CONFIG_FILE_PATTERN,
 } from './shared/constants'
 import {
+  getTemplateClassDecorationSnapshot,
   TemplateDecorationController,
 } from './template/templateDecorations'
 import {
@@ -831,6 +833,15 @@ export function activate(context: any) {
       },
     },
   ]
+
+  if (process.env.WEAPP_VITE_VSCODE_E2E === '1') {
+    disposables.push(
+      vscode.commands.registerCommand('weapp-vite.__e2e.getTemplateClassDecorations', async (documentUri: vscode.Uri) => {
+        const document = await vscode.workspace.openTextDocument(documentUri)
+        return getTemplateClassDecorationSnapshot(document)
+      }),
+    )
+  }
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUS_BAR_PRIORITY)
   statusBarItem.command = 'weapp-vite.runAction'

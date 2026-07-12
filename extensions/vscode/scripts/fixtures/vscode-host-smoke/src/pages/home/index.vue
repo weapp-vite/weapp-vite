@@ -26,3 +26,13 @@ const cards = [
     />
   </view>
 </template>
+
+<style>
+.page {
+  display: block;
+}
+
+.hero {
+  font-weight: 600;
+}
+</style>

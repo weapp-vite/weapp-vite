@@ -93,6 +93,29 @@ it('collects defined static class ranges while ignoring comments and dynamic exp
   assert.deepEqual(ranges, ['section-title', 'route-button'])
 })
 
+it('limits class decorations to standalone template documents', async () => {
+  vi.doMock('vscode', () => {
+    return createVscodeModule({
+      Range: class {},
+    })
+  })
+  vi.resetModules()
+
+  const {
+    isTemplateClassDecorationDocument,
+  } = await import('./templateDecorations')
+
+  const vueDocument = createTextDocument('vue', '<template><view class="page" /></template>', '/workspace/index.vue')
+  const wxmlDocument = createTextDocument('wxml', '<view class="page" />', '/workspace/index.wxml')
+  const htmlDocument = createTextDocument('html', '<view class="page" />', '/workspace/index.html')
+  const multiPlatformDocument = createTextDocument('miniprogram-template', '<view class="page" />', '/workspace/index.axml')
+
+  assert.equal(isTemplateClassDecorationDocument(vueDocument as any), false)
+  assert.equal(isTemplateClassDecorationDocument(wxmlDocument as any), true)
+  assert.equal(isTemplateClassDecorationDocument(htmlDocument as any), true)
+  assert.equal(isTemplateClassDecorationDocument(multiPlatformDocument as any), true)
+})
+
 it('uses a dotted underline for classes that resolve to style definitions', async () => {
   const decorationOptions: Array<Record<string, unknown>> = []
   const disposable = { dispose() {} }

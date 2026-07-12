@@ -29,6 +29,12 @@ interface SourceRange {
   start: number
 }
 
+export const TEMPLATE_CLASS_DECORATION_STYLE = {
+  borderColorThemeId: 'editorLink.activeForeground',
+  borderStyle: 'dotted',
+  borderWidth: '0 0 1px 0',
+} as const
+
 function toSourceRange(start: number, end: number): SourceRange {
   return {
     end,
@@ -221,15 +227,42 @@ export async function isDecorationEnabledForDocument(document: vscode.TextDocume
   return isRecognizedWeappVueDocument(document)
 }
 
+export function isTemplateClassDecorationDocument(document: vscode.TextDocument) {
+  return isWxmlDocument(document)
+}
+
+export async function getTemplateClassDecorationSnapshot(document: vscode.TextDocument) {
+  const enabled = isTemplateClassDecorationDocument(document)
+    && await isDecorationEnabledForDocument(document)
+  const ranges = enabled
+    ? await collectDefinedTemplateClassDecorationRanges(document)
+    : []
+
+  return {
+    enabled,
+    ranges: ranges.map(range => ({
+      end: {
+        character: range.end.character,
+        line: range.end.line,
+      },
+      start: {
+        character: range.start.character,
+        line: range.start.line,
+      },
+    })),
+    style: TEMPLATE_CLASS_DECORATION_STYLE,
+  }
+}
+
 export class TemplateDecorationController implements vscode.Disposable {
   private decorationType = vscode.window.createTextEditorDecorationType({
     color: new vscode.ThemeColor('symbolIcon.variableForeground'),
   })
 
   private classDecorationType = vscode.window.createTextEditorDecorationType({
-    borderColor: new vscode.ThemeColor('editorLink.activeForeground'),
-    borderStyle: 'dotted',
-    borderWidth: '0 0 1px 0',
+    borderColor: new vscode.ThemeColor(TEMPLATE_CLASS_DECORATION_STYLE.borderColorThemeId),
+    borderStyle: TEMPLATE_CLASS_DECORATION_STYLE.borderStyle,
+    borderWidth: TEMPLATE_CLASS_DECORATION_STYLE.borderWidth,
   })
 
   private pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -330,6 +363,11 @@ export class TemplateDecorationController implements vscode.Disposable {
     }
 
     editor.setDecorations(this.decorationType, collectTemplateDecorationRanges(editor.document))
-    editor.setDecorations(this.classDecorationType, await collectDefinedTemplateClassDecorationRanges(editor.document))
+    editor.setDecorations(
+      this.classDecorationType,
+      isTemplateClassDecorationDocument(editor.document)
+        ? await collectDefinedTemplateClassDecorationRanges(editor.document)
+        : [],
+    )
   }
 }
