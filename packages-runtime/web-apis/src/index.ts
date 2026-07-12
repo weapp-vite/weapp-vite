@@ -115,6 +115,21 @@ function hasUsableConstructor(value: unknown, args: unknown[] = []) {
   }
 }
 
+function hasWebCompatibleUrlConstructor(value: unknown) {
+  if (!hasUsableConstructor(value, ['https://request-globals.invalid'])) {
+    return false
+  }
+
+  try {
+    const URLConstructor = value as new (input: string, base?: string) => { href?: unknown }
+    const resolved = new URLConstructor('123', 'fake://abc')
+    return resolved.href === 'fake://abc/123'
+  }
+  catch {
+    return false
+  }
+}
+
 function assignHostGlobal(host: Record<string, any>, key: string, value: unknown) {
   try {
     host[key] = value
@@ -375,7 +390,7 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
 }
 
 function installUrlGlobals(host: Record<string, any>) {
-  if (!hasUsableConstructor(host.URL, ['https://request-globals.invalid']) || !patchUrlConstructor(host)) {
+  if (!hasWebCompatibleUrlConstructor(host.URL) || !patchUrlConstructor(host)) {
     assignHostGlobal(host, 'URL', URLPolyfill)
   }
   if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request']) || !patchUrlSearchParamsConstructor(host)) {

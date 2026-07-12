@@ -343,8 +343,9 @@ describe('injectRequestGlobals helpers', () => {
 
     expect(code).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
     expect(code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
+    expect(code).toContain(`function ${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(value,args,expectedHref)`)
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
-    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["URL"],["123","fake://abc"],"fake://abc/123")`)
     expect(code).toContain(`var File = ${REQUEST_GLOBAL_EXPOSE_HELPER}("File",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
     expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextDecoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
     expect(code).not.toContain('import { installWebRuntimeGlobals')

@@ -19,7 +19,7 @@ const customEventType = new CustomEvent('payload', {
     ok: true,
   },
 }).type
-const parsedUrlHref = URL.parse('/next?b=2&a=1', 'https://issue-448.invalid/base/')?.href
+const parsedUrlHref = URL.parse('123', 'fake://abc')?.href
 const canParseUrl = URL.canParse('/next', 'https://issue-448.invalid')
 const { searchParamsSize, sortedParams } = (() => {
   const searchParams = new URLSearchParams('b=2&a=1&a=0')

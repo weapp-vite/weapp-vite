@@ -28,7 +28,7 @@ describe.sequential('github-issues runtime web runtime globals', () => {
     expect(pageJs).toContain('"CustomEvent"')
     expect(pageJs).toContain('btoa("AB")')
     expect(pageJs).toContain('atob(encoded)')
-    expect(pageJs).toContain('URL.parse("/next?b=2&a=1", "https://issue-448.invalid/base/")')
+    expect(pageJs).toContain('URL.parse("123", "fake://abc")')
     expect(pageJs).toContain('new URLSearchParams("b=2&a=1&a=0")')
     expect(pageJs).toContain('headers.getSetCookie().length')
     expect(pageJs).toContain('Response.json({ ok: true })')

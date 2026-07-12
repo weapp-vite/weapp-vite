@@ -101,7 +101,7 @@ function resolveRelativeUrl(input: string, base: string) {
     }
     basePathSegments.push(segment)
   }
-  return `${parsedBase.origin}/${basePathSegments.join('/')}`
+  return `${parsedBase.origin}${basePathSegments.join('/')}`
 }
 
 export class URLSearchParamsPolyfill {
