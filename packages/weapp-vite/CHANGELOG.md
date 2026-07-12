@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 6.18.2
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`040c361`](https://github.com/weapp-vite/weapp-vite/commit/040c361c7756d5e3cfaa5effe703fda78f014108) by @sonofmagic
+  - 默认 catalog 变更键：postcss。命名 catalog 变更键：无。
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.18.2`, `wevu@6.18.2`
+
 ## 6.18.1
 
 ### Patch Changes
