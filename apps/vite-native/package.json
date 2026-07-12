@@ -66,7 +66,7 @@
     "postcss": "catalog:",
     "sass-embedded": "catalog:",
     "sharp": "^0.35.3",
-    "svgo": "^4.0.1",
+    "svgo": "^4.0.2",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite-imagetools": "^10.0.1",

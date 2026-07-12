@@ -49,7 +49,7 @@
     "unplugin-vue-components": "^32.1.0",
     "vitepress": "2.0.0-alpha.18",
     "vitepress-plugin-group-icons": "^1.7.5",
-    "vitepress-plugin-llms": "1.13.2",
+    "vitepress-plugin-llms": "1.13.3",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
   }
