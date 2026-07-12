@@ -1,0 +1,6 @@
+<view class="page">
+  <view class="marker">{{ marker }}</view>
+  <view class="count">{{ count }}</view>
+  <input class="input" value="{{ input }}" bindinput="onInput" />
+  <button class="increment" bindtap="increment">increment</button>
+</view>

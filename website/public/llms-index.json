@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-11T19:22:04.120Z",
+  "generatedAt": "2026-07-12T21:21:51.206Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -21,7 +21,7 @@
         "/"
       ],
       "headings": [],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "ai.md"
     },
     {
@@ -146,7 +146,7 @@
         "layout: section",
         "案例 2"
       ],
-      "updatedAt": "2026-04-28",
+      "updatedAt": "2026-07-13",
       "source": "blog/drafts/weapp-vite-rethinking-slidev-detailed.md"
     },
     {
@@ -179,7 +179,7 @@
         "1) AI 协作",
         "AI 协作的三层结构"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "blog/drafts/weapp-vite-rethinking-slidev.md"
     },
     {
@@ -369,7 +369,7 @@
         "Patch Changes",
         "1.0.1"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "CHANGELOG.md"
     },
     {
@@ -388,7 +388,7 @@
       "headings": [
         "加入技术交流群"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "community/group.md"
     },
     {
@@ -414,7 +414,7 @@
         "草莓拼豆",
         "早睡搭子小程序：按时睡教"
       ],
-      "updatedAt": "2026-04-22",
+      "updatedAt": "2026-07-13",
       "source": "community/showcase.md"
     },
     {
@@ -441,7 +441,7 @@
         "Web 平台边界 {#web-platform}",
         "关联阅读"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-07-13",
       "source": "config/analyze.md"
     },
     {
@@ -469,7 +469,7 @@
         "关闭前置脚本注入",
         "继续阅读"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "config/app-prelude.md"
     },
     {
@@ -495,7 +495,7 @@
         "字段说明",
         "禁用与分包覆盖"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/auto-import-components.md"
     },
     {
@@ -528,7 +528,7 @@
         "多平台项目",
         "保守兼容输出"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "config/build-and-output.md"
     },
     {
@@ -561,7 +561,7 @@
         "path",
         "inline"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/chunks.md"
     },
     {
@@ -586,34 +586,35 @@
         "字段说明",
         "CLI 说明与常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/generate.md"
     },
     {
       "id": "doc-e18a5cc790",
       "title": "开发态 HMR 配置",
-      "summary": "说明 weapp.hmr.sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。",
+      "summary": "说明 weapp.hmr.runtime、sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。",
       "url": "/config/hmr",
       "canonical": "https://vite.icebreaker.top/config/hmr",
       "keywords": [
         "配置",
         "config",
         "hmr",
+        "stateful",
         "sharedchunks",
         "touchappwxss",
         "loglevel",
-        "profilejson",
-        "开发态"
+        "profilejson"
       ],
       "headings": [
         "开发态 HMR 配置 {#hmr-config}",
+        "weapp.hmr.runtime {#weapp-hmr-runtime}",
         "weapp.hmr.sharedChunks {#weapp-hmr-sharedchunks}",
         "weapp.hmr.touchAppWxss {#weapp-hmr-touchappwxss}",
         "weapp.hmr.logLevel {#weapp-hmr-loglevel}",
         "weapp.hmr.profileJson {#weapp-hmr-profilejson}",
         "关联阅读"
       ],
-      "updatedAt": "2026-04-30",
+      "updatedAt": "2026-07-13",
       "source": "config/hmr.md"
     },
     {
@@ -646,7 +647,7 @@
         "配置改了但编辑器没提示",
         "不知道一个字段到底归谁管"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "config/index.md"
     },
     {
@@ -671,7 +672,7 @@
         "常见问题",
         "weapp.ast {#weapp-ast}"
       ],
-      "updatedAt": "2026-05-28",
+      "updatedAt": "2026-07-13",
       "source": "config/js.md"
     },
     {
@@ -695,7 +696,7 @@
         "weapp.json.defaults {#weapp-json-defaults}",
         "weapp.json.mergeStrategy {#weapp-json-merge-strategy}"
       ],
-      "updatedAt": "2026-05-28",
+      "updatedAt": "2026-07-13",
       "source": "config/json.md"
     },
     {
@@ -727,7 +728,7 @@
         "mode 怎么选",
         "常见组合"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/lib.md"
     },
     {
@@ -760,7 +761,7 @@
         "subPackages",
         "buildOptions"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/npm.md"
     },
     {
@@ -787,7 +788,7 @@
         "weapp.isAdditionalWxml {#weapp-isadditionalwxml}",
         "顶层 root 和 weapp.srcRoot 的区别"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/paths.md"
     },
     {
@@ -820,7 +821,7 @@
         "适用场景",
         "相关文档"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/route-rules.md"
     },
     {
@@ -849,7 +850,7 @@
         "weapp.mcp {#weapp-mcp}",
         "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "config/shared.md"
     },
     {
@@ -881,7 +882,7 @@
         "与 npm 分包落位的关系",
         "常见建议"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/subpackages.md"
     },
     {
@@ -914,7 +915,7 @@
         "常见问题",
         "为什么改了配置后编辑器还没提示"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "config/typescript.md"
     },
     {
@@ -945,7 +946,7 @@
         "wrapper 必须能承载实际内容 {#slot-wrapper-content}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-05-30",
+      "updatedAt": "2026-07-13",
       "source": "config/vue.md"
     },
     {
@@ -977,7 +978,7 @@
         "仅兼容 axios / graphql-request 请求链路",
         "继续阅读"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "config/web-runtime-globals.md"
     },
     {
@@ -1009,7 +1010,7 @@
         "和截图 / AI 联调的关系",
         "与 Vite 顶层配置的边界"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/web.md"
     },
     {
@@ -1042,7 +1043,7 @@
         "方式 3：defineComponent({ options })",
         "方式 4： 配置块"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/wevu.md"
     },
     {
@@ -1064,7 +1065,7 @@
         "Worker 配置 {#worker-config}",
         "weapp.worker {#weapp-worker}"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/worker.md"
     },
     {
@@ -1088,7 +1089,7 @@
         "当前版本的实际生效范围",
         "示例"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/wxml.md"
     },
     {
@@ -1113,7 +1114,7 @@
         "示例",
         "常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "config/wxs.md"
     },
     {
@@ -1132,7 +1133,7 @@
         "Dashb…"
       ],
       "headings": [],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "dashboard.md"
     },
     {
@@ -1158,7 +1159,7 @@
         "internal/loadConfig.ts",
         "internal/merge.ts"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "deep/config-service.md"
     },
     {
@@ -1186,7 +1187,7 @@
         "5. 更新 .gitignore",
         "6. 其他辅助文件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "deep/init.md"
     },
     {
@@ -1211,7 +1212,7 @@
         "引用边与递归规则",
         "调试建议"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "deep/scan.md"
     },
     {
@@ -1239,7 +1240,7 @@
         "生成组件/页面",
         "文档地址"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "demos/my-app/README.md"
     },
     {
@@ -1302,7 +1303,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "guide/ai.md"
     },
     {
@@ -1326,7 +1327,7 @@
         "JSON / JSONC 别名",
         "常见问题排查"
       ],
-      "updatedAt": "2026-05-28",
+      "updatedAt": "2026-07-13",
       "source": "guide/alias.md"
     },
     {
@@ -1349,7 +1350,7 @@
         "App Prelude 与 Web Runtime 注入",
         "继续阅读"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "guide/app-prelude-web-runtime.md"
     },
     {
@@ -1374,7 +1375,7 @@
         "验证方式",
         "继续阅读"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "guide/app-prelude.md"
     },
     {
@@ -1402,7 +1403,7 @@
         "进阶：函数写法（按需动态解析）",
         "参考实现"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/auto-import-resolver.md"
     },
     {
@@ -1431,7 +1432,7 @@
         "类型声明与 HTML 自定义数据",
         "常见疑问"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/auto-import.md"
     },
     {
@@ -1461,7 +1462,7 @@
         "写入 app.json 的方式",
         "常见问题"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/auto-routes.md"
     },
     {
@@ -1494,7 +1495,7 @@
         "forceDuplicatePatterns：强制复制共享模块",
         "duplicateWarningBytes：冗余体积告警"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/chunks.md"
     },
     {
@@ -1525,7 +1526,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-05-21",
+      "updatedAt": "2026-07-13",
       "source": "guide/cli.md"
     },
     {
@@ -1551,7 +1552,7 @@
         "补充：直接把 DevTools 日志桥接回终端",
         "3. 提交贡献"
       ],
-      "updatedAt": "2026-06-11",
+      "updatedAt": "2026-07-13",
       "source": "guide/debug.md"
     },
     {
@@ -1576,7 +1577,7 @@
         "位置要求",
         "它和普通页面的区别"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/app-bar.md"
     },
     {
@@ -1602,7 +1603,7 @@
         "和目录结构的关键关系",
         "什么时候用脚本化形式"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/app-json.md"
     },
     {
@@ -1626,7 +1627,7 @@
         "常见后缀",
         "常见用途"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/app-style.md"
     },
     {
@@ -1651,7 +1652,7 @@
         "支持哪些后缀",
         "它和页面目录的关系"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/app-ts.md"
     },
     {
@@ -1676,7 +1677,7 @@
         "典型写法",
         "它和 app.(js|ts) / app.json(.js|.ts)? / app.(css|scss|wxss|...) 的关系"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/app-vue.md"
     },
     {
@@ -1700,7 +1701,7 @@
         "它解决什么问题",
         "适合放什么"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/components.md"
     },
     {
@@ -1724,7 +1725,7 @@
         "触发条件",
         "位置要求"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/custom-tab-bar.md"
     },
     {
@@ -1753,7 +1754,7 @@
         "默认位置",
         "相关文档"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/generated-files.md"
     },
     {
@@ -1780,7 +1781,7 @@
         "默认能力速查",
         "相关文档"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/index.md"
     },
     {
@@ -1813,7 +1814,7 @@
         "6.2 以为 layout 可以写成动态表达式",
         "7. 总结"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/layouts.md"
     },
     {
@@ -1837,7 +1838,7 @@
         "通常会放什么",
         "为什么目录结构页要提它"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/package-json.md"
     },
     {
@@ -1862,7 +1863,7 @@
         "页面目录的常见形态",
         "识别规则"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/pages.md"
     },
     {
@@ -1886,7 +1887,7 @@
         "常见职责",
         "与目录结构的关系"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/project-config.md"
     },
     {
@@ -1909,7 +1910,7 @@
         "适合放这里的内容",
         "不适合放这里的内容"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/public.md"
     },
     {
@@ -1932,7 +1933,7 @@
         "适合放什么",
         "为什么它常见"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/shared.md"
     },
     {
@@ -1957,7 +1958,7 @@
         "它会影响什么",
         "一个简单判断"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/src-root.md"
     },
     {
@@ -1982,7 +1983,7 @@
         "对应目录",
         "默认行为"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/subpackages.md"
     },
     {
@@ -2004,7 +2005,7 @@
         "utils/",
         "常见内容"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/utils.md"
     },
     {
@@ -2029,7 +2030,7 @@
         "最小示例",
         "什么时候先看它"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/vite-config.md"
     },
     {
@@ -2050,7 +2051,7 @@
       "headings": [
         "workers/"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/directory-structure/workers.md"
     },
     {
@@ -2078,7 +2079,7 @@
         "生成不同类型的模板",
         "CLI 参数速查"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/generate.md"
     },
     {
@@ -2106,7 +2107,7 @@
         "与 CDN/OSS 协同",
         "常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/image-optimize.md"
     },
     {
@@ -2139,7 +2140,7 @@
         "1. 先准备一个原生项目",
         "2. 接入 weapp-vite"
       ],
-      "updatedAt": "2026-04-20",
+      "updatedAt": "2026-07-13",
       "source": "guide/index.md"
     },
     {
@@ -2166,7 +2167,7 @@
         "组合与复用配置",
         "提示与最佳实践"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/json-enhance.md"
     },
     {
@@ -2192,7 +2193,7 @@
         "效果展示",
         "常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/json-intelli-sense.md"
     },
     {
@@ -2225,7 +2226,7 @@
         "5.1 优先级",
         "6. 运行时怎么切换 layout"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "guide/layouts.md"
     },
     {
@@ -2258,7 +2259,7 @@
         "常见问题",
         "为什么没有 app.json 与页面产物？"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/lib-mode.md"
     },
     {
@@ -2289,7 +2290,7 @@
         "4. 验证运行",
         "5. 可选增强"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/manual-integration.md"
     },
     {
@@ -2315,7 +2316,7 @@
         "混合 ESM 与 CJS 时的注意事项",
         "其他最佳实践"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/module.md"
     },
     {
@@ -2343,7 +2344,7 @@
         "京东小程序 {#platform-jd}",
         "小红书小程序 {#platform-xhs}"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "guide/multi-platform.md"
     },
     {
@@ -2371,7 +2372,7 @@
         "怎么选（建议）",
         "手动构建"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/npm.md"
     },
     {
@@ -2403,7 +2404,7 @@
         "插件 WXSS 没有生成？",
         "附加功能是否生效？"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "guide/plugin.md"
     },
     {
@@ -2490,7 +2491,7 @@
         "分包样式共享",
         "调试建议"
       ],
-      "updatedAt": "2026-05-21",
+      "updatedAt": "2026-07-13",
       "source": "guide/subpackage.md"
     },
     {
@@ -2521,7 +2522,7 @@
         "类型与导入位置",
         "适用范围说明"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vite-plugin-host.md"
     },
     {
@@ -2551,7 +2552,7 @@
         "常见说明",
         "相关文档"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "guide/vscode-extension.md"
     },
     {
@@ -2573,7 +2574,7 @@
       "headings": [
         "已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/basics.md"
     },
     {
@@ -2595,7 +2596,7 @@
       "headings": [
         "已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/config.md"
     },
     {
@@ -2617,7 +2618,7 @@
       "headings": [
         "已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/examples.md"
     },
     {
@@ -2640,7 +2641,7 @@
         "Vue SFC 开发",
         "目录"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/index.md"
     },
     {
@@ -2662,7 +2663,7 @@
       "headings": [
         "已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/template.md"
     },
     {
@@ -2684,7 +2685,7 @@
       "headings": [
         "已迁移"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/vue-sfc/troubleshoot.md"
     },
     {
@@ -2710,7 +2711,7 @@
         "已知限制",
         "建议用法"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/web-compat-matrix.md"
     },
     {
@@ -2738,7 +2739,7 @@
         "验证方式",
         "继续阅读"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "guide/web-runtime-globals.md"
     },
     {
@@ -2768,7 +2769,7 @@
         "迁移与生态",
         "对 AI 更友好的地方"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/what-is-weapp-vite.md"
     },
     {
@@ -2793,7 +2794,7 @@
         "事件绑定语法糖（可选）",
         "当前可配置的范围"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/wxml.md"
     },
     {
@@ -2819,7 +2820,7 @@
         "当前支持的语法",
         "调试与回退方案"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/wxs.md"
     },
     {
@@ -2847,7 +2848,7 @@
         "资源引用与公共样式",
         "常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "guide/wxss.md"
     },
     {
@@ -2880,7 +2881,7 @@
         "2. 组件生成了，但页面里用不了",
         "3. 图片、字体、静态资源路径不对"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/build-and-output.md"
     },
     {
@@ -2913,7 +2914,7 @@
         "最常见的误判",
         "误判 1：白屏一定是运行时问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/debugging.md"
     },
     {
@@ -2945,7 +2946,7 @@
         "最小配置检查清单",
         "新用户建议"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "handbook/env-and-config.md"
     },
     {
@@ -2973,7 +2974,7 @@
         "这套技术栈是怎么分工的",
         "下一步"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/index.md"
     },
     {
@@ -3006,7 +3007,7 @@
         "什么叫“可回滚迁移”",
         "一份迁移清单"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "handbook/migration.md"
     },
     {
@@ -3037,7 +3038,7 @@
         "页面里到底该保留多少平台细节",
         "一份很实用的原生能力检查清单"
       ],
-      "updatedAt": "2026-04-14",
+      "updatedAt": "2026-07-13",
       "source": "handbook/native-apis.md"
     },
     {
@@ -3068,7 +3069,7 @@
         "大对象：不要直接塞 URL",
         "页面栈什么时候会出问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/navigation.md"
     },
     {
@@ -3095,7 +3096,7 @@
         "上传和下载属于同一层吗",
         "一个足够稳的最小原则"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/network.md"
     },
     {
@@ -3126,7 +3127,7 @@
         "体验优化不要只盯性能指标",
         "一份很实用的性能检查清单"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/performance.md"
     },
     {
@@ -3158,7 +3159,7 @@
         "4. 忽略项目根目录的 AI / 工具文件",
         "什么时候应该运行 wv prepare"
       ],
-      "updatedAt": "2026-04-15",
+      "updatedAt": "2026-07-13",
       "source": "handbook/project-structure.md"
     },
     {
@@ -3188,7 +3189,7 @@
         "什么时候适合接入命令行 IDE 流程",
         "一个给新用户的建议"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/publish.md"
     },
     {
@@ -3221,7 +3222,7 @@
         "3. 一个常见问题到入口的映射表",
         "4. 你也可以按“当前阶段”找"
       ],
-      "updatedAt": "2026-06-08",
+      "updatedAt": "2026-07-13",
       "source": "handbook/reference.md"
     },
     {
@@ -3248,7 +3249,7 @@
         "插槽",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/components.md"
     },
     {
@@ -3275,7 +3276,7 @@
         "Toast / Modal 封装",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/cookbook.md"
     },
     {
@@ -3307,7 +3308,7 @@
         "怎么判断一个写法在小程序里行不行",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/index.md"
     },
     {
@@ -3340,7 +3341,7 @@
         "如果你更习惯 Options API",
         "三个最常见的错误"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/script-setup.md"
     },
     {
@@ -3373,7 +3374,7 @@
         "小图片：放在页面或组件旁边",
         "跨页面复用的图片：放 src/assets/"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/style.md"
     },
     {
@@ -3406,7 +3407,7 @@
         "不要调有副作用的函数",
         "原生 WXML 语法"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/sfc/template.md"
     },
     {
@@ -3436,7 +3437,7 @@
         "3. 共享组件没有真正共享边界",
         "4. 只看构建成功，不看真实加载体验"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/subpackages.md"
     },
     {
@@ -3466,7 +3467,7 @@
         "useChangeModel：第三方组件库的 change 事件快捷写法",
         "接下来"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "handbook/wevu/bind-model.md"
     },
     {
@@ -3491,7 +3492,7 @@
         "组件设计的建议",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/wevu/component.md"
     },
     {
@@ -3517,7 +3518,7 @@
         "什么时候可以不用",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/wevu/index.md"
     },
     {
@@ -3550,7 +3551,7 @@
         "一个完整的页面示例",
         "小程序宿主组合式 API"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "handbook/wevu/runtime.md"
     },
     {
@@ -3577,7 +3578,7 @@
         "不要过早引入 store",
         "接下来"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "handbook/wevu/store.md"
     },
     {
@@ -3596,7 +3597,7 @@
         "自动化"
       ],
       "headings": [],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "index.md"
     },
     {
@@ -3617,7 +3618,7 @@
         "安装",
         "使用方式"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "integration/miniprogram-computed.md"
     },
     {
@@ -3641,7 +3642,7 @@
         "直接使用模板（推荐）",
         "手动集成"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "integration/tailwindcss.md"
     },
     {
@@ -3669,7 +3670,7 @@
         "使用组件",
         "自动导入组件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "integration/tdesign.md"
     },
     {
@@ -3696,7 +3697,7 @@
         "使用组件",
         "自动导入组件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "integration/vant.md"
     },
     {
@@ -3721,7 +3722,7 @@
         "集成",
         "模板地址"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "integration/vue-mini.md"
     },
     {
@@ -3741,7 +3742,7 @@
         "/ai"
       ],
       "headings": [],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "llms.md"
     },
     {
@@ -3760,7 +3761,7 @@
       "headings": [
         "迁移"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "migration/index.md"
     },
     {
@@ -3785,7 +3786,7 @@
         "升级了内置 vite 的版本，从 v5 到 v6,",
         "修复"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "migration/v3.md"
     },
     {
@@ -3808,7 +3809,7 @@
         "从 v3 升级到 v4",
         "重大变更"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "migration/v4.md"
     },
     {
@@ -3836,7 +3837,7 @@
         "迁移成本",
         "是否过于激进?"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "migration/v5.md"
     },
     {
@@ -3860,7 +3861,7 @@
         "升级步骤",
         "变更要点"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "migration/v6.md"
     },
     {
@@ -3890,7 +3891,7 @@
         "初始化后会做什么",
         "与主文档的关系"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "packages/create-weapp-vite.md"
     },
     {
@@ -3915,7 +3916,7 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/index.md"
     },
     {
@@ -3947,7 +3948,7 @@
         "Prompts",
         "AI 友好的截图工具"
       ],
-      "updatedAt": "2026-04-30",
+      "updatedAt": "2026-07-13",
       "source": "packages/mcp.md"
     },
     {
@@ -3974,7 +3975,7 @@
         "Cache strategy",
         "Debugging tips"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/cache.md"
     },
     {
@@ -4001,7 +4002,7 @@
         "缓存策略",
         "调试建议"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/cache.zh.md"
     },
     {
@@ -4028,7 +4029,7 @@
         "How it differs from bundle-require",
         "Next steps"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/index.md"
     },
     {
@@ -4055,7 +4056,7 @@
         "和 bundle-require 的区别",
         "下一步"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/index.zh.md"
     },
     {
@@ -4088,7 +4089,7 @@
         "cache",
         "Example configuration"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/options.md"
     },
     {
@@ -4121,7 +4122,7 @@
         "cache",
         "组合示例"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/rolldown-require/options.zh.md"
     },
     {
@@ -4148,7 +4149,7 @@
         "常用选项",
         "相关导出"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/vite-plugin-performance.md"
     },
     {
@@ -4174,7 +4175,7 @@
         "主要能力",
         "推荐阅读"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/volar.md"
     },
     {
@@ -4196,7 +4197,7 @@
       "headings": [
         "支付宝兼容矩阵"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix.md"
     },
     {
@@ -4218,7 +4219,7 @@
       "headings": [
         "支付宝兼容矩阵 · 广告"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/ad.md"
     },
     {
@@ -4240,7 +4241,7 @@
       "headings": [
         "支付宝兼容矩阵 · AI"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/ai.md"
     },
     {
@@ -4262,7 +4263,7 @@
       "headings": [
         "支付宝兼容矩阵 · 基础"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/base.md"
     },
     {
@@ -4284,7 +4285,7 @@
       "headings": [
         "支付宝兼容矩阵 · 画布"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/canvas.md"
     },
     {
@@ -4306,7 +4307,7 @@
       "headings": [
         "支付宝兼容矩阵 · 聊天工具"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/chattool.md"
     },
     {
@@ -4328,7 +4329,7 @@
       "headings": [
         "支付宝兼容矩阵 · 数据分析"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/data-analysis.md"
     },
     {
@@ -4350,7 +4351,7 @@
       "headings": [
         "支付宝兼容矩阵 · 设备"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/device.md"
     },
     {
@@ -4372,7 +4373,7 @@
       "headings": [
         "支付宝兼容矩阵 · 第三方平台"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/ext.md"
     },
     {
@@ -4394,7 +4395,7 @@
       "headings": [
         "支付宝兼容矩阵 · 文件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/file.md"
     },
     {
@@ -4416,7 +4417,7 @@
       "headings": [
         "支付宝兼容矩阵 · 位置"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/location.md"
     },
     {
@@ -4438,7 +4439,7 @@
       "headings": [
         "支付宝兼容矩阵 · 媒体"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/media.md"
     },
     {
@@ -4460,7 +4461,7 @@
       "headings": [
         "支付宝兼容矩阵 · 跳转"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/navigate.md"
     },
     {
@@ -4482,7 +4483,7 @@
       "headings": [
         "支付宝兼容矩阵 · 网络"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/network.md"
     },
     {
@@ -4504,7 +4505,7 @@
       "headings": [
         "支付宝兼容矩阵 · 开放接口"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/open-api.md"
     },
     {
@@ -4526,7 +4527,7 @@
       "headings": [
         "支付宝兼容矩阵 · 支付"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/payment.md"
     },
     {
@@ -4548,7 +4549,7 @@
       "headings": [
         "支付宝兼容矩阵 · 路由"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/route.md"
     },
     {
@@ -4570,7 +4571,7 @@
       "headings": [
         "支付宝兼容矩阵 · 转发"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/share.md"
     },
     {
@@ -4592,7 +4593,7 @@
       "headings": [
         "支付宝兼容矩阵 · 数据缓存"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/storage.md"
     },
     {
@@ -4614,7 +4615,7 @@
       "headings": [
         "支付宝兼容矩阵 · 界面"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/ui.md"
     },
     {
@@ -4636,7 +4637,7 @@
       "headings": [
         "支付宝兼容矩阵 · Worker"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/worker.md"
     },
     {
@@ -4658,7 +4659,7 @@
       "headings": [
         "支付宝兼容矩阵 · WXML"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/wxml.md"
     },
     {
@@ -4680,7 +4681,7 @@
       "headings": [
         "支付宝兼容矩阵 · XR-FRAME"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/alipay-compat-matrix/xr-frame.md"
     },
     {
@@ -4708,7 +4709,7 @@
         "支付宝不兼容示例",
         "抖音不兼容示例"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/compat-overview.md"
     },
     {
@@ -4730,7 +4731,7 @@
       "headings": [
         "抖音兼容矩阵"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix.md"
     },
     {
@@ -4752,7 +4753,7 @@
       "headings": [
         "抖音兼容矩阵 · 广告"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/ad.md"
     },
     {
@@ -4774,7 +4775,7 @@
       "headings": [
         "抖音兼容矩阵 · AI"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/ai.md"
     },
     {
@@ -4796,7 +4797,7 @@
       "headings": [
         "抖音兼容矩阵 · 基础"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/base.md"
     },
     {
@@ -4818,7 +4819,7 @@
       "headings": [
         "抖音兼容矩阵 · 画布"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/canvas.md"
     },
     {
@@ -4840,7 +4841,7 @@
       "headings": [
         "抖音兼容矩阵 · 聊天工具"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/chattool.md"
     },
     {
@@ -4862,7 +4863,7 @@
       "headings": [
         "抖音兼容矩阵 · 数据分析"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/data-analysis.md"
     },
     {
@@ -4884,7 +4885,7 @@
       "headings": [
         "抖音兼容矩阵 · 设备"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/device.md"
     },
     {
@@ -4906,7 +4907,7 @@
       "headings": [
         "抖音兼容矩阵 · 第三方平台"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/ext.md"
     },
     {
@@ -4928,7 +4929,7 @@
       "headings": [
         "抖音兼容矩阵 · 文件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/file.md"
     },
     {
@@ -4950,7 +4951,7 @@
       "headings": [
         "抖音兼容矩阵 · 位置"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/location.md"
     },
     {
@@ -4972,7 +4973,7 @@
       "headings": [
         "抖音兼容矩阵 · 媒体"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/media.md"
     },
     {
@@ -4994,7 +4995,7 @@
       "headings": [
         "抖音兼容矩阵 · 跳转"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/navigate.md"
     },
     {
@@ -5016,7 +5017,7 @@
       "headings": [
         "抖音兼容矩阵 · 网络"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/network.md"
     },
     {
@@ -5038,7 +5039,7 @@
       "headings": [
         "抖音兼容矩阵 · 开放接口"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/open-api.md"
     },
     {
@@ -5060,7 +5061,7 @@
       "headings": [
         "抖音兼容矩阵 · 支付"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/payment.md"
     },
     {
@@ -5082,7 +5083,7 @@
       "headings": [
         "抖音兼容矩阵 · 路由"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/route.md"
     },
     {
@@ -5104,7 +5105,7 @@
       "headings": [
         "抖音兼容矩阵 · 转发"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/share.md"
     },
     {
@@ -5126,7 +5127,7 @@
       "headings": [
         "抖音兼容矩阵 · 数据缓存"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/storage.md"
     },
     {
@@ -5148,7 +5149,7 @@
       "headings": [
         "抖音兼容矩阵 · 界面"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/ui.md"
     },
     {
@@ -5170,7 +5171,7 @@
       "headings": [
         "抖音兼容矩阵 · Worker"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/worker.md"
     },
     {
@@ -5192,7 +5193,7 @@
       "headings": [
         "抖音兼容矩阵 · WXML"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/wxml.md"
     },
     {
@@ -5214,7 +5215,7 @@
       "headings": [
         "抖音兼容矩阵 · XR-FRAME"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/douyin-compat-matrix/xr-frame.md"
     },
     {
@@ -5240,7 +5241,7 @@
         "关键差异",
         "后续建议"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/gap-notes.md"
     },
     {
@@ -5258,7 +5259,7 @@
         "packages"
       ],
       "headings": [],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/index.md"
     },
     {
@@ -5288,7 +5289,7 @@
         "行为说明",
         "下一步"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/overview.md"
     },
     {
@@ -5313,7 +5314,7 @@
         "支付宝独有（相对微信命名）",
         "抖音独有（相对微信命名）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/platform-only-methods.md"
     },
     {
@@ -5335,7 +5336,7 @@
       "headings": [
         "API 全量清单"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list.md"
     },
     {
@@ -5357,7 +5358,7 @@
       "headings": [
         "API 全量清单 · 广告"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/ad.md"
     },
     {
@@ -5379,7 +5380,7 @@
       "headings": [
         "API 全量清单 · AI"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/ai.md"
     },
     {
@@ -5401,7 +5402,7 @@
       "headings": [
         "API 全量清单 · 基础"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/base.md"
     },
     {
@@ -5423,7 +5424,7 @@
       "headings": [
         "API 全量清单 · 画布"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/canvas.md"
     },
     {
@@ -5445,7 +5446,7 @@
       "headings": [
         "API 全量清单 · 聊天工具"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/chattool.md"
     },
     {
@@ -5467,7 +5468,7 @@
       "headings": [
         "API 全量清单 · 数据分析"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/data-analysis.md"
     },
     {
@@ -5489,7 +5490,7 @@
       "headings": [
         "API 全量清单 · 设备"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/device.md"
     },
     {
@@ -5511,7 +5512,7 @@
       "headings": [
         "API 全量清单 · 第三方平台"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/ext.md"
     },
     {
@@ -5533,7 +5534,7 @@
       "headings": [
         "API 全量清单 · 文件"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/file.md"
     },
     {
@@ -5555,7 +5556,7 @@
       "headings": [
         "API 全量清单 · 位置"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/location.md"
     },
     {
@@ -5577,7 +5578,7 @@
       "headings": [
         "API 全量清单 · 媒体"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/media.md"
     },
     {
@@ -5599,7 +5600,7 @@
       "headings": [
         "API 全量清单 · 跳转"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/navigate.md"
     },
     {
@@ -5621,7 +5622,7 @@
       "headings": [
         "API 全量清单 · 网络"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/network.md"
     },
     {
@@ -5643,7 +5644,7 @@
       "headings": [
         "API 全量清单 · 开放接口"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/open-api.md"
     },
     {
@@ -5665,7 +5666,7 @@
       "headings": [
         "API 全量清单 · 支付"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/payment.md"
     },
     {
@@ -5687,7 +5688,7 @@
       "headings": [
         "API 全量清单 · 路由"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/route.md"
     },
     {
@@ -5709,7 +5710,7 @@
       "headings": [
         "API 全量清单 · 转发"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/share.md"
     },
     {
@@ -5731,7 +5732,7 @@
       "headings": [
         "API 全量清单 · 数据缓存"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/storage.md"
     },
     {
@@ -5753,7 +5754,7 @@
       "headings": [
         "API 全量清单 · 界面"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/ui.md"
     },
     {
@@ -5775,7 +5776,7 @@
       "headings": [
         "API 全量清单 · Worker"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/worker.md"
     },
     {
@@ -5797,7 +5798,7 @@
       "headings": [
         "API 全量清单 · WXML"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/wxml.md"
     },
     {
@@ -5819,7 +5820,7 @@
       "headings": [
         "API 全量清单 · XR-FRAME"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapi/wx-method-list/xr-frame.md"
     },
     {
@@ -5852,7 +5853,7 @@
         "5) 程序化命令目录导出",
         "6) opened-session helper"
       ],
-      "updatedAt": "2026-04-22",
+      "updatedAt": "2026-07-13",
       "source": "packages/weapp-ide-cli.md"
     },
     {
@@ -5879,7 +5880,7 @@
         "运行时能力",
         "能力边界"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/web.md"
     },
     {
@@ -5906,7 +5907,7 @@
         "常用导出",
         "与 Weapp-vite 的关系"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "packages/wevu-compiler.md"
     },
     {
@@ -5939,7 +5940,7 @@
         "custom-tab-bar 不生效？",
         ".weapp-vite 支持文件缺失或过期？"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "troubleshoot/index.md"
     },
     {
@@ -5972,7 +5973,7 @@
         "3. 回调风格调用",
         "4. *Sync 直连调用"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-package.md"
     },
     {
@@ -5996,7 +5997,7 @@
         "2. 推荐做法",
         "3. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/core.md"
     },
     {
@@ -6021,7 +6022,7 @@
         "3. 迁移建议",
         "4. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/index.md"
     },
     {
@@ -6044,7 +6045,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/lifecycle.md"
     },
     {
@@ -6067,7 +6068,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/reactivity.md"
     },
     {
@@ -6091,7 +6092,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/runtime-bridge.md"
     },
     {
@@ -6116,7 +6117,7 @@
         "2. 迁移建议",
         "3. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/setup-context.md"
     },
     {
@@ -6139,7 +6140,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/store.md"
     },
     {
@@ -6163,7 +6164,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api-reference/types.md"
     },
     {
@@ -6193,7 +6194,7 @@
         "defineExpose() {#defineexpose}",
         "defineModel() {#definemodel}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/core.md"
     },
     {
@@ -6211,7 +6212,7 @@
         "速查"
       ],
       "headings": [],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/index.md"
     },
     {
@@ -6241,7 +6242,7 @@
         "本组示例 {#example-lifecycle-app}",
         "页面生命周期 Hook"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/lifecycle.md"
     },
     {
@@ -6272,7 +6273,7 @@
         "小程序宿主选项",
         "properties {#properties}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/options-api.md"
     },
     {
@@ -6302,7 +6303,7 @@
         "本组示例 {#example-reactivity-state}",
         "监听与副作用"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/reactivity.md"
     },
     {
@@ -6335,7 +6336,7 @@
         "LocationQueryValue {#type-locationqueryvalue}",
         "LocationQueryValueRaw {#type-locationqueryvalueraw}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/router-types.md"
     },
     {
@@ -6368,7 +6369,7 @@
         "解析与导航失败",
         "resolveRouteLocation() {#resolveroutelocation}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/router.md"
     },
     {
@@ -6401,7 +6402,7 @@
         "addMutationRecorder() {#addmutationrecorder}",
         "removeMutationRecorder() {#removemutationrecorder}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/runtime-bridge.md"
     },
     {
@@ -6431,7 +6432,7 @@
         "Setup 兼容工具 API",
         "useNativeInstance() {#usenativeinstance}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/setup-context.md"
     },
     {
@@ -6460,7 +6461,7 @@
         "$reset() {#store-reset}",
         "$subscribe() {#store-subscribe}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/store.md"
     },
     {
@@ -6493,7 +6494,7 @@
         "ShallowRef {#shallowref-type}",
         "WatchOptions {#watchoptions}"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/api/types.md"
     },
     {
@@ -6513,7 +6514,7 @@
       "headings": [
         "兼容性与注意事项"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/compatibility.md"
     },
     {
@@ -6546,7 +6547,7 @@
         "Behavior 迁移补充（SFC 场景）",
         "写法 1： + defineComponent（最直观）"
       ],
-      "updatedAt": "2026-05-19",
+      "updatedAt": "2026-07-13",
       "source": "wevu/component.md"
     },
     {
@@ -6572,7 +6573,7 @@
         "适合什么场景",
         "相关页面"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/fetch.md"
     },
     {
@@ -6605,7 +6606,7 @@
         "10. 推荐学习顺序（按“最短上手 → 深入理解”）",
         "10. 速查表"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-07-13",
       "source": "wevu/index.md"
     },
     {
@@ -6632,7 +6633,7 @@
         "5. 注意事项",
         "6. 相关页面"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/jsx-runtime.md"
     },
     {
@@ -6665,7 +6666,7 @@
         "阶段 2A：路线 A 收口（继续原生）",
         "阶段 2B：路线 B 试点（原生与 Vue SFC 共存）"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "wevu/migration/from-native-to-vue-sfc.md"
     },
     {
@@ -6693,7 +6694,7 @@
         "5. 组件 props / emit（运行时约定）",
         "6. 接入 Store（可选但常用）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/quick-start.md"
     },
     {
@@ -6725,7 +6726,7 @@
         "6. 调试与迁移建议",
         "7. 速查表"
       ],
-      "updatedAt": "2026-07-12",
+      "updatedAt": "2026-07-13",
       "source": "wevu/router.md"
     },
     {
@@ -6758,7 +6759,7 @@
         "setup：签名与上下文",
         "生命周期钩子"
       ],
-      "updatedAt": "2026-05-18",
+      "updatedAt": "2026-07-13",
       "source": "wevu/runtime.md"
     },
     {
@@ -6789,7 +6790,7 @@
         "TypeScript 与最佳实践",
         "常见问题"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/store.md"
     },
     {
@@ -6817,7 +6818,7 @@
         "页面与组件：如何区分",
         ".vue 编写注意事项（示例前必看）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/basics.md"
     },
     {
@@ -6841,7 +6842,7 @@
         "运行时模式",
         "实现细节与限制"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/class-style.md"
     },
     {
@@ -6868,7 +6869,7 @@
         "virtualHost 与样式透传边界",
         "推荐写法"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/config.md"
     },
     {
@@ -6892,7 +6893,7 @@
         "页面示例：计数 + 分享 + 页面滚动",
         "组件示例：Props + Emits + v-model（Script Setup + 宏）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/examples.md"
     },
     {
@@ -6917,7 +6918,7 @@
         "心智模型",
         "章节导航"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/index.md"
     },
     {
@@ -6939,7 +6940,7 @@
       "headings": [
         "章节已迁移"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/migrate-from-native.md"
     },
     {
@@ -6971,7 +6972,7 @@
         "block 和内容承载限制",
         "延伸阅读"
       ],
-      "updatedAt": "2026-05-30",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/template.md"
     },
     {
@@ -6999,7 +7000,7 @@
         "3) hooks 不触发（滚动/分享/触底等）",
         "4) v-model 行为不符合 Vue 预期"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/troubleshoot.md"
     },
     {
@@ -7030,7 +7031,7 @@
         "快速对照示例",
         "实用总结"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/vue3-vs-weapp-sfc.md"
     },
     {
@@ -7063,7 +7064,7 @@
         "setup() 上下文（Setup Context）",
         "emit 的差异（triggerEvent 语义）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue3-compat.md"
     },
     {
@@ -7096,7 +7097,7 @@
         "不同的部分",
         "1. 渲染层（完全不同）"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/vue3-vs-wevu.md"
     },
     {
@@ -7129,7 +7130,7 @@
         "3. 有阈值回退，不把极端场景做成性能陷阱",
         "4. 可配置调试，便于观察真实开销"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/when-setdata-triggers.md"
     },
     {
@@ -7161,7 +7162,7 @@
         "当前策略与后续路线",
         "一句话总结"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-07-13",
       "source": "wevu/why-not-runtime-core-create-renderer.md"
     }
   ]

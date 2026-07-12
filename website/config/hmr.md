@@ -1,10 +1,11 @@
 ---
 title: 开发态 HMR 配置
-description: 说明 weapp.hmr.sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。
+description: 说明 weapp.hmr.runtime、sharedChunks、touchAppWxss、logLevel 与 profileJson 的默认行为、适用场景和取舍。
 keywords:
   - 配置
   - config
   - hmr
+  - stateful
   - sharedChunks
   - touchAppWxss
   - logLevel
@@ -16,11 +17,39 @@ keywords:
 `weapp.hmr` 用来控制开发态更新时的“稳定性 vs 速度”取舍，也可以打开更细的终端诊断与结构化 profile 输出。本页覆盖：
 
 - `weapp.hmr.sharedChunks`
+- `weapp.hmr.runtime`
 - `weapp.hmr.touchAppWxss`
 - `weapp.hmr.logLevel`
 - `weapp.hmr.profileJson`
 
 [[toc]]
+
+## `weapp.hmr.runtime` {#weapp-hmr-runtime}
+
+- **类型**：`'classic' | 'stateful-experimental'`
+- **默认值**：`'classic'`
+- **适用场景**：在微信开发者工具中更新原生 Page、原生 Component 或 wevu Vue SFC 时，保留当前页面实例、路由参数、输入和可序列化 data/setup ref。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    hmr: {
+      runtime: 'stateful-experimental',
+    },
+  },
+})
+```
+
+`stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，JavaScript/Vue 安全更新会在现有实例上替换方法并恢复状态。CSS、静态资源、JSON/配置变化、模块边界不兼容、补丁积压超过保留上限或补丁执行失败时，会回退到完整构建并通过 `wx.reLaunch` 恢复当前 route/query。
+
+使用前请确认：
+
+- 微信开发者工具已开启服务端口，并在项目设置中启用热重载。
+- `project.private.config.json` 的 `setting.compileHotReLoad` 为 `true`。
+- 这是实验能力；需要完全沿用既有写盘/刷新语义时保持默认 `classic`。
+- 状态恢复只覆盖可序列化的小程序 data 和 wevu setup ref；定时器、网络连接、原生句柄等副作用仍应由应用生命周期管理。
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`

@@ -73,6 +73,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_HMR_PATTERNS = [
+  'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ]

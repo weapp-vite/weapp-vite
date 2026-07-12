@@ -1,0 +1,15 @@
+{
+  "name": "e2e-app-stateful-hmr",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wv build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

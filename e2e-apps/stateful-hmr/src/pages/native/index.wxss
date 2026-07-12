@@ -1,0 +1,9 @@
+.page {
+  padding: 24rpx;
+}
+
+.marker,
+.count,
+.input {
+  margin-bottom: 16rpx;
+}

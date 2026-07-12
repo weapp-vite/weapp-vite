@@ -34,6 +34,7 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
 import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { runStatefulHmrDev } from '../statefulHmr/session'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
@@ -1222,6 +1223,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     buildOptions.build = {
       ...(buildOptions.build ?? {}),
       write: true,
+    }
+    if (target === 'app' && configService.weappViteConfig.hmr?.runtime === 'stateful-experimental') {
+      const workerPromise = hasWorkersDir && workersDir
+        ? devWorkers(configService, watcherService, workersDir)
+        : Promise.resolve()
+      const [watcher] = await Promise.all([
+        runStatefulHmrDev(ctx, buildOptions),
+        workerPromise,
+      ])
+      watcherService.setRollupWatcher(watcher, '/')
+      return watcher
     }
     const snapshotBuildOptions: InlineConfig = {
       ...buildOptions,
