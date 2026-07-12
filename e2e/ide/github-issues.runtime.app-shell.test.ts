@@ -63,7 +63,7 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
     }
   })
 
-  it('issue #563: keeps app.vue shell when page layout is disabled', async (ctx) => {
+  it('issue #448/#563: keeps web runtime URL parsing and app shell when page layout is disabled', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-448/index', undefined, 45_000, {
@@ -78,9 +78,11 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
       await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
 
       const pageWxml = await readDistWxml('pages/issue-448/index.wxml')
+      const runtime = await page._runE2E()
       expect(pageWxml).toContain('<weapp-app-shell')
       expect(pageWxml).toContain('issue448-page')
       expect(pageWxml).not.toContain('<weapp-layout-default')
+      expect(runtime.parsedUrl).toBe('fake://abc/123')
 
       await expect(readDistWxml('__weapp_vite_app_shell.wxml')).resolves.toContain('issue-563-app-shell')
     }

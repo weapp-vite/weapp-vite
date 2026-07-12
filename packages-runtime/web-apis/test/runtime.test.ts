@@ -841,10 +841,20 @@ describe('request globals runtime', () => {
     const { URLPolyfill, URLSearchParamsPolyfill } = await import('../src/url')
 
     const parsed = URLPolyfill.parse('/graphql?b=2&a=1', 'https://request-globals.invalid/base/')
+    const relativeUrlCases = [
+      ['/123', 'fake://abc/'],
+      ['123', 'fake://abc/'],
+      ['/123', 'fake://abc'],
+      ['123', 'fake://abc'],
+    ] as const
     const params = new URLSearchParamsPolyfill('b=2&a=1&a=0')
     params.sort()
 
     expect(parsed?.href).toBe('https://request-globals.invalid/graphql?b=2&a=1')
+    for (const [input, base] of relativeUrlCases) {
+      expect(new URLPolyfill(input, base).href).toBe('fake://abc/123')
+      expect(URLPolyfill.parse(input, base)?.href).toBe('fake://abc/123')
+    }
     expect(URLPolyfill.parse('/graphql')).toBeNull()
     expect(URLPolyfill.canParse('/graphql', 'https://request-globals.invalid')).toBe(true)
     expect(URLPolyfill.canParse('/graphql')).toBe(false)
@@ -1031,6 +1041,33 @@ describe('request globals runtime', () => {
     expect(await jsonResponse.json()).toEqual({ ok: true })
     expect(errorResponse.status).toBe(0)
     expect(errorResponse.type).toBe('error')
+  })
+
+  it('replaces host URL constructors whose relative custom-protocol parsing diverges from Web behavior', async () => {
+    const originalUrl = globalThis.URL
+
+    class MisalignedHostURL {
+      readonly href: string
+
+      constructor(input: string, base?: string) {
+        this.href = base ? `${base}//${input}` : input
+      }
+    }
+
+    try {
+      setGlobalValue('URL', MisalignedHostURL)
+
+      const { installWebRuntimeGlobals, URLPolyfill } = await import('../src')
+      installWebRuntimeGlobals({
+        targets: ['fetch'],
+      })
+
+      expect((globalThis as Record<string, any>).URL).toBe(URLPolyfill)
+      expect(globalThis.URL.parse('123', 'fake://abc')?.href).toBe('fake://abc/123')
+    }
+    finally {
+      setGlobalValue('URL', originalUrl)
+    }
   })
 
   it('falls back to additional mini-program host getRandomValues implementations', async () => {
