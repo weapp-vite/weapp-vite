@@ -19,6 +19,7 @@
     "@swc/core": "1.15.43",
     "@types/react": "19.2.17",
     "@types/react-reconciler": "0.33.0",
+    "@weapp-vite/ast": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "tsx": "^4.23.0",
     "vite": "catalog:",

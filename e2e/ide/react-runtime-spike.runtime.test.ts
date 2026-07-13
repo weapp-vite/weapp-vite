@@ -1,5 +1,5 @@
 import path from 'pathe'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -8,13 +8,15 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime
 
 let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 
-describe.sequential('react runtime spike (weapp e2e)', () => {
-  afterAll(async () => {
-    await miniProgram?.close()
-    miniProgram = undefined
-  })
+function getMiniProgram() {
+  if (!miniProgram) {
+    throw new Error('React runtime spike automator is not initialized')
+  }
+  return miniProgram
+}
 
-  it('renders React hooks and dispatches host events through generic WXML', async () => {
+describe.sequential('react runtime spike (weapp e2e)', () => {
+  beforeAll(async () => {
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
       projectRoot: APP_ROOT,
@@ -26,13 +28,24 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
 
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      skipRelaunchPageRootCheck: true,
     })
-    const page = await miniProgram.currentPage()
+  }, 60_000)
+
+  afterAll(async () => {
+    await miniProgram?.close()
+    miniProgram = undefined
+  })
+
+  it('renders React hooks and dispatches host events through generic WXML', async () => {
+    const app = getMiniProgram()
+    await app.reLaunch('/pages/index/index')
+    const page = await app.currentPage()
     if (!page) {
       throw new Error('Failed to launch React runtime spike page')
     }
 
-    const result = await miniProgram.evaluate(() => {
+    const result = await app.evaluate(() => {
       return new Promise((resolve) => {
         const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
         const currentPage = pages[pages.length - 1] as any
@@ -99,6 +112,64 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
     expect(result.initialCount).toContain('count:0 doubled:0')
     expect(result.countAfterTap).toContain('count:1 doubled:2')
     expect(result.itemCount).toBe(3)
+    expect(Number(result.countRect?.width ?? 0)).toBeGreaterThan(0)
+  })
+
+  it('renders the compiled native WXML page with binding-only payloads', async () => {
+    const app = getMiniProgram()
+    await app.reLaunch('/pages/static/index')
+    const page = await app.currentPage()
+    if (!page) {
+      throw new Error('Failed to launch React static binding spike page')
+    }
+
+    const initialCount = await app.evaluate(() => {
+      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+      const currentPage = pages[pages.length - 1] as any
+      const originalSetData = currentPage.setData
+      currentPage.__reactStaticPayloads = []
+      currentPage.setData = function (payload: Record<string, unknown>, callback?: () => void) {
+        currentPage.__reactStaticPayloads.push(payload)
+        return originalSetData.call(currentPage, payload, callback)
+      }
+      return currentPage.data.slots.s3.text
+    })
+
+    await app.evaluate(() => {
+      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+      const currentPage = pages[pages.length - 1] as any
+      currentPage.eh({
+        currentTarget: {
+          dataset: {
+            sid: 's4',
+          },
+        },
+        type: 'tap',
+      })
+    })
+    await page.waitFor(160)
+
+    const result = await app.evaluate(() => {
+      return new Promise((resolve) => {
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const currentPage = pages[pages.length - 1] as any
+        const query = wx.createSelectorQuery().in(currentPage)
+        query.select('#count').boundingClientRect((rect) => {
+          const payloads = currentPage.__reactStaticPayloads ?? []
+          resolve({
+            countAfterTap: currentPage.data.slots.s3.text,
+            countRect: rect,
+            payloadBytes: payloads.map((payload: Record<string, unknown>) => JSON.stringify(payload).length),
+            payloads,
+          })
+        }).exec()
+      })
+    }) as Record<string, any>
+
+    expect(initialCount).toBe('count:0 doubled:0')
+    expect(result.countAfterTap).toBe('count:1 doubled:2')
+    expect(result.payloads).toEqual([{ 'slots.s3.text': 'count:1 doubled:2' }])
+    expect(result.payloadBytes).toEqual([37])
     expect(Number(result.countRect?.width ?? 0)).toBeGreaterThan(0)
   })
 })

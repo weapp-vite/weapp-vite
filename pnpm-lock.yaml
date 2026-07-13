@@ -1596,6 +1596,9 @@ importers:
       '@types/react-reconciler':
         specifier: 0.33.0
         version: 0.33.0(@types/react@19.2.17)
+      '@weapp-vite/ast':
+        specifier: workspace:*
+        version: link:../../packages/ast
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.1

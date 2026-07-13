@@ -1,139 +1,17 @@
-import type { HostProps, MiniProgramPageAdapter, SerializedHostNode } from '../types'
-import { serializeProps, serializeStyle } from './serialization'
+import type { HostProps, MiniProgramPageAdapter } from '../types'
+import type { HostNode, HostParent } from './nodes'
+import { attachHostNode, HostElement } from './nodes'
+import { hasSerializedPropChanges } from './serialization'
+import { hasStaticBindingChanges, readStaticSlot, StaticBindingState } from './staticBindings'
 
+export { HostElement, HostText } from './nodes'
+export type { HostNode, HostParent } from './nodes'
 export { hasSerializedPropChanges } from './serialization'
-
-export type HostParent = HostElement | HostRoot
-export type HostNode = HostElement | HostText
-
-function attach(parent: HostParent, child: HostNode, index?: number) {
-  if (child.parent) {
-    const previousIndex = child.parent.children.indexOf(child)
-    if (previousIndex >= 0) {
-      child.parent.children.splice(previousIndex, 1)
-    }
-  }
-  child.parent = parent
-  if (index === undefined) {
-    parent.children.push(child)
-  }
-  else {
-    parent.children.splice(index, 0, child)
-  }
-}
-
-export class HostText {
-  parent: HostParent | null = null
-  readonly root: HostRoot
-  readonly sid: string
-  value: string
-
-  constructor(
-    root: HostRoot,
-    sid: string,
-    value: string,
-  ) {
-    this.root = root
-    this.sid = sid
-    this.value = value
-    root.register(this)
-  }
-
-  serialize(): SerializedHostNode {
-    return {
-      nn: '#text',
-      sid: this.sid,
-      v: this.value,
-    }
-  }
-
-  setValue(value: string) {
-    if (value === this.value) {
-      return
-    }
-    this.value = value
-    this.root.markNode(this)
-  }
-}
-
-export class HostElement {
-  readonly children: HostNode[] = []
-  parent: HostParent | null = null
-  props: HostProps
-  readonly root: HostRoot
-  readonly sid: string
-  readonly type: string
-
-  constructor(
-    root: HostRoot,
-    sid: string,
-    type: string,
-    props: HostProps,
-  ) {
-    this.props = props
-    this.root = root
-    this.sid = sid
-    this.type = type
-    root.register(this)
-  }
-
-  append(child: HostNode, notify = true) {
-    attach(this, child)
-    if (notify) {
-      this.root.markStructure(this)
-    }
-  }
-
-  insertBefore(child: HostNode, before: HostNode) {
-    const index = this.children.indexOf(before)
-    attach(this, child, index < 0 ? undefined : index)
-    this.root.markStructure(this)
-  }
-
-  remove(child: HostNode) {
-    const index = this.children.indexOf(child)
-    if (index < 0) {
-      return
-    }
-    this.children.splice(index, 1)
-    child.parent = null
-    this.root.unregisterTree(child)
-    this.root.markStructure(this)
-  }
-
-  serialize(): SerializedHostNode {
-    const className = this.props.className ?? this.props.class
-    const serialized: SerializedHostNode = {
-      nn: this.type,
-      sid: this.sid,
-    }
-    if (this.children.length > 0) {
-      serialized.cn = this.children.map(child => child.serialize())
-    }
-    if (typeof className === 'string' && className) {
-      serialized.cl = className
-    }
-    const style = serializeStyle(this.props.style)
-    if (style) {
-      serialized.st = style
-    }
-    const props = serializeProps(this.props)
-    if (props) {
-      serialized.p = props
-    }
-    return serialized
-  }
-
-  updateProps(props: HostProps, notify = true) {
-    this.props = props
-    if (notify) {
-      this.root.markNode(this)
-    }
-  }
-}
+export type HostRenderMode = 'static-bindings' | 'tree'
 
 export class HostRoot {
   readonly children: HostNode[] = []
+  readonly renderMode: HostRenderMode
   private dirtyNodes = new Set<HostNode>()
   private dirtyStructures = new Set<HostParent>()
   private mounted = false
@@ -141,9 +19,30 @@ export class HostRoot {
   private nodes = new Map<string, HostNode>()
   private pendingFlush = false
   private readonly adapter: MiniProgramPageAdapter
+  private readonly staticBindings = new StaticBindingState()
+  private staticMismatch: Error | undefined
+  private unmounting = false
 
-  constructor(adapter: MiniProgramPageAdapter) {
+  constructor(adapter: MiniProgramPageAdapter, renderMode: HostRenderMode = 'tree') {
     this.adapter = adapter
+    this.renderMode = renderMode
+  }
+
+  beginUnmount() {
+    this.unmounting = true
+  }
+
+  assertStaticTemplateValid() {
+    if (!this.staticMismatch) {
+      return
+    }
+    const error = this.staticMismatch
+    this.staticMismatch = undefined
+    throw error
+  }
+
+  createElementSid(props: HostProps) {
+    return this.renderMode === 'static-bindings' ? readStaticSlot(props) : this.nextSid()
   }
 
   nextSid() {
@@ -152,6 +51,9 @@ export class HostRoot {
   }
 
   register(node: HostNode) {
+    if (this.renderMode === 'static-bindings' && node instanceof HostElement && this.nodes.has(node.sid)) {
+      throw new Error(`static template slot 冲突：${node.sid}`)
+    }
     this.nodes.set(node.sid, node)
   }
 
@@ -167,13 +69,13 @@ export class HostRoot {
   }
 
   append(child: HostNode) {
-    attach(this, child)
+    attachHostNode(this, child)
     this.markStructure(this)
   }
 
   insertBefore(child: HostNode, before: HostNode) {
     const index = this.children.indexOf(before)
-    attach(this, child, index < 0 ? undefined : index)
+    attachHostNode(this, child, index < 0 ? undefined : index)
     this.markStructure(this)
   }
 
@@ -199,7 +101,27 @@ export class HostRoot {
     this.scheduleFlush()
   }
 
+  markElementProps(element: HostElement, previous: HostProps, next: HostProps) {
+    if (this.renderMode === 'static-bindings') {
+      this.staticBindings.markProps(element, previous, next)
+      this.scheduleFlush()
+      return
+    }
+    this.markNode(element)
+  }
+
+  markStaticText(element: HostElement) {
+    this.staticBindings.markField(element, 'text')
+    this.scheduleFlush()
+  }
+
   markStructure(parent: HostParent) {
+    if (this.renderMode === 'static-bindings') {
+      if (this.mounted && !this.unmounting) {
+        this.staticMismatch = new Error('static template 运行时结构发生变化，需要切换 dynamic island fallback')
+      }
+      return
+    }
     this.dirtyStructures.add(parent)
     this.scheduleFlush()
   }
@@ -242,8 +164,39 @@ export class HostRoot {
     }
   }
 
+  shouldNotifyPropUpdate(previous: HostProps, next: HostProps) {
+    return this.renderMode === 'static-bindings'
+      ? hasStaticBindingChanges(previous, next)
+      : hasSerializedPropChanges(previous, next)
+  }
+
+  private staticElements() {
+    return Array.from(this.nodes.values()).filter((node): node is HostElement => node instanceof HostElement)
+  }
+
+  private flushStaticBindings() {
+    if (this.staticMismatch) {
+      this.staticBindings.clear()
+      return
+    }
+    if (!this.mounted) {
+      this.mounted = true
+      this.staticBindings.clear()
+      this.adapter.setData({ slots: this.staticBindings.snapshot(this.staticElements()) })
+      return
+    }
+    const payload = this.staticBindings.takePayload()
+    if (Object.keys(payload).length > 0 && !this.unmounting) {
+      this.adapter.setData(payload)
+    }
+  }
+
   flush() {
     this.pendingFlush = false
+    if (this.renderMode === 'static-bindings') {
+      this.flushStaticBindings()
+      return
+    }
     if (!this.mounted) {
       this.mounted = true
       this.dirtyNodes.clear()

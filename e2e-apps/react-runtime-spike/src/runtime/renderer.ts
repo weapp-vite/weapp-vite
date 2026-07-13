@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
+import type { HostRenderMode } from './hostTree'
 import type { HostProps, MiniProgramEventLike, MiniProgramPageAdapter } from './types'
 import { createContext } from 'react'
 import Reconciler from 'react-reconciler'
 import { DefaultEventPriority, NoEventPriority } from 'react-reconciler/constants'
 import { dispatchHostEvent } from './event'
-import { hasSerializedPropChanges, HostElement, HostRoot, HostText } from './hostTree'
+import { HostElement, HostRoot, HostText } from './hostTree'
 
 function propsChanged(previous: HostProps, next: HostProps) {
   const previousKeys = Object.keys(previous).filter(key => key !== 'children')
@@ -74,10 +75,10 @@ const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
     if (!propsChanged(previous, next)) {
       return
     }
-    element.updateProps(next, hasSerializedPropChanges(previous, next))
+    element.updateProps(next, element.root.shouldNotifyPropUpdate(previous, next))
   },
   createInstance(type: string, props: HostProps, root: HostRoot) {
-    return new HostElement(root, root.nextSid(), type, props)
+    return new HostElement(root, root.createElementSid(props), type, props)
   },
   createTextInstance(text: string, root: HostRoot) {
     return new HostText(root, root.nextSid(), text)
@@ -206,6 +207,10 @@ export interface ReactMiniProgramRoot {
   unmount: () => void
 }
 
+export interface ReactMiniProgramRootOptions {
+  renderMode?: HostRenderMode
+}
+
 function createContainer(root: HostRoot) {
   return renderer.createContainer(
     root,
@@ -225,13 +230,17 @@ function createContainer(root: HostRoot) {
   )
 }
 
-export function createReactMiniProgramRoot(adapter: MiniProgramPageAdapter): ReactMiniProgramRoot {
-  const root = new HostRoot(adapter)
+export function createReactMiniProgramRoot(
+  adapter: MiniProgramPageAdapter,
+  options: ReactMiniProgramRootOptions = {},
+): ReactMiniProgramRoot {
+  const root = new HostRoot(adapter, options.renderMode)
   const container = createContainer(root)
 
   return {
     dispatchEvent(event) {
       renderer.flushSyncFromReconciler(() => dispatchHostEvent(root, event))
+      root.assertStaticTemplateValid()
       root.flush()
     },
     flush() {
@@ -244,9 +253,11 @@ export function createReactMiniProgramRoot(adapter: MiniProgramPageAdapter): Rea
     render(element) {
       renderer.updateContainerSync(element, container, null)
       renderer.flushSyncWork()
+      root.assertStaticTemplateValid()
       root.flush()
     },
     unmount() {
+      root.beginUnmount()
       renderer.updateContainerSync(null, container, null)
       renderer.flushSyncWork()
       root.flush()

@@ -1,4 +1,4 @@
-import type { SerializedHostNode } from './types'
+import type { HostProps, SerializedHostNode } from './types'
 import { createElement, useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import { Button, Text, View } from './components'
@@ -133,5 +133,79 @@ describe('react runtime spike renderer', () => {
 
     expect(Object.keys(calls[1]!)).toEqual(['root.cn[0].cn'])
     expect((calls[1]!['root.cn[0].cn'] as SerializedHostNode[])[0]?.cn?.[0]?.v).toBe('a')
+  })
+
+  it('persists only compiled binding fields in static template mode', () => {
+    const calls: Record<string, unknown>[] = []
+
+    function Counter() {
+      const [count, setCount] = useState(0)
+      return createElement('view', {
+        __bindingFields: 'className',
+        __slot: 's0',
+        className: `count-${count}`,
+      } satisfies HostProps, createElement('text', {
+        __bindingFields: 'text',
+        __slot: 's1',
+      } satisfies HostProps, `count:${count}`), createElement('button', {
+        __slot: 's2',
+        onTap: () => setCount(value => value + 1),
+      } satisfies HostProps, 'increment'))
+    }
+
+    const root = createReactMiniProgramRoot({
+      setData(payload) {
+        calls.push(payload)
+      },
+    }, { renderMode: 'static-bindings' })
+
+    root.render(createElement(Counter))
+    expect(calls[0]).toEqual({
+      slots: {
+        s0: { className: 'count-0' },
+        s1: { text: 'count:0' },
+      },
+    })
+
+    root.dispatchEvent({
+      currentTarget: {
+        dataset: {
+          sid: 's2',
+        },
+      },
+      type: 'tap',
+    })
+
+    expect(calls).toHaveLength(2)
+    expect(calls[1]).toEqual({
+      'slots.s0.className': 'count-1',
+      'slots.s1.text': 'count:1',
+    })
+  })
+
+  it('rejects runtime structure changes in static template mode', () => {
+    function Conditional() {
+      const [visible, setVisible] = useState(true)
+      return createElement('view', { __slot: 's0' } satisfies HostProps, createElement('button', {
+        __slot: 's1',
+        onTap: () => setVisible(false),
+      } satisfies HostProps, 'hide'), visible
+        ? createElement('text', { __slot: 's2' } satisfies HostProps, 'visible')
+        : null)
+    }
+
+    const root = createReactMiniProgramRoot({
+      setData() {},
+    }, { renderMode: 'static-bindings' })
+    root.render(createElement(Conditional))
+
+    expect(() => root.dispatchEvent({
+      currentTarget: {
+        dataset: {
+          sid: 's1',
+        },
+      },
+      type: 'tap',
+    })).toThrow('需要切换 dynamic island fallback')
   })
 })
