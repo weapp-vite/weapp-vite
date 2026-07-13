@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.5.4
+
+### Patch Changes
+
+- 🐛 **upgrade weapp-tailwindcss** [`a7f7b91`](https://github.com/weapp-vite/weapp-vite/commit/a7f7b91b7087d2e62441bc8a0ba2730e2acc105c) by @sonofmagic
+
 ## 2.5.3
 
 ### Patch Changes
