@@ -138,7 +138,7 @@ function findOffset(source: string, text: string, occurrence = 0) {
 }
 
 describe('Volar navigation', () => {
-  it('preserves import, template prop and event handler definitions through default parser ownership', () => {
+  it('preserves import, template prop and event handler definitions through lightweight parser ownership', () => {
     const fixtureDir = normalizeFileName(path.resolve('packages/volar/test/fixtures/navigation'))
     const parentFile = `${fixtureDir}/Parent.vue`
     const childFile = `${fixtureDir}/Child.vue`
@@ -179,5 +179,34 @@ defineEmits<{ selectgoods: [] }>()
     )
     expect(handlerDefinitions?.some(definition => definition.fileName === parentFile
       && definition.name === 'onGoodsSelect')).toBe(true)
+  })
+
+  it('preserves Vue import definitions through defineOptions parser ownership', () => {
+    const fixtureDir = normalizeFileName(path.resolve('packages/volar/test/fixtures/define-options-navigation'))
+    const parentFile = `${fixtureDir}/Parent.vue`
+    const childFile = `${fixtureDir}/Child.vue`
+    const parentSource = `<script setup lang="ts">
+import CouponCard from './Child.vue'
+defineOptions({
+  methods: {
+    onCouponSelect() {},
+  },
+})
+</script>
+<template><CouponCard @select="onCouponSelect" /></template>`
+    const childSource = `<script setup lang="ts">
+defineOptions({ properties: { title: String } })
+</script>
+<template><view>{{ title }}</view></template>`
+    const service = createNavigationService(new Map([
+      [parentFile, parentSource],
+      [childFile, childSource],
+    ]))
+
+    const definitions = service.getDefinitionAtPosition(
+      parentFile,
+      findOffset(parentSource, './Child.vue') + 3,
+    )
+    expect(definitions?.some(definition => definition.fileName === childFile)).toBe(true)
   })
 })

@@ -1,4 +1,5 @@
 export const BLOCK_TYPE = 'json'
+export const DEFINE_OPTIONS_CACHE_MAX = 128
 export const JS_LANG = 'js'
 export const JSONC_LANG = 'jsonc'
 export const JSON_LANG = 'json'

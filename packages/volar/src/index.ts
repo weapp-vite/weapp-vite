@@ -1,11 +1,12 @@
-import type { VueLanguagePlugin } from '@vue/language-core'
+import type { SFCParseResult, VueLanguagePlugin } from '@vue/language-core'
 import type ts from 'typescript'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { name } from '../package.json'
-import { PLUGIN_VERSION } from './constants'
+import { DEFINE_OPTIONS_CACHE_MAX, PLUGIN_VERSION } from './constants'
 import { getEmbeddedCodesFromCustomBlocks, resolveEmbeddedJsonBlock } from './jsonBlock'
+import { parseSfc, updateSfc } from './parseSfc'
 import {
   appendScriptSetupDeclarations,
   appendWxsDeclarations,
@@ -31,32 +32,81 @@ catch {
   hasSchematicsTypes = false
 }
 
-function parseVueSfc(content: string, filename = 'component.vue') {
-  try {
-    const compilerSfc = require('@vue/compiler-sfc') as typeof import('@vue/compiler-sfc')
-    return compilerSfc.parse(content, { filename })
-  }
-  catch {
-    return undefined
-  }
-}
-
-function isSfcEnhancementCandidate(content: string) {
-  return /<wxs(?:\s|>)/i.test(content) || content.includes('defineOptions')
+interface RawSfcState {
+  hadScriptSetup: boolean
+  scriptSetupContent?: string
+  scriptSetupSource?: string
 }
 
 /**
  * Volar 语言插件：为 weapp 配置块提供类型与 schema 提示。
  */
 const plugin: VueLanguagePlugin = (ctx) => {
-  // TypeScript module is optional in tests; fall back to a lazy require when missing.
-  let tsModule: typeof ts | undefined = ctx?.modules?.typescript
-  if (!tsModule) {
-    try {
-      tsModule = require('typescript') as typeof ts
+  const tsModule: typeof ts | undefined = ctx?.modules?.typescript
+  const compilerDom = ctx?.modules?.['@vue/compiler-dom']
+  const rawSfcStates = new WeakMap<SFCParseResult, RawSfcState>()
+  const defineOptionsDeclarationsCache = new Map<string, string>()
+
+  function getDefineOptionsDeclarations(code: string, lang: string) {
+    if (!tsModule) {
+      return ''
     }
-    catch {
-      tsModule = undefined
+    const key = `${lang}\0${code}`
+    const cached = defineOptionsDeclarationsCache.get(key)
+    if (cached !== undefined) {
+      defineOptionsDeclarationsCache.delete(key)
+      defineOptionsDeclarationsCache.set(key, cached)
+      return cached
+    }
+    const declarations = createDefineOptionsTemplateDeclarations(code, tsModule, lang)
+    if (defineOptionsDeclarationsCache.size >= DEFINE_OPTIONS_CACHE_MAX) {
+      const oldestKey = defineOptionsDeclarationsCache.keys().next().value
+      if (oldestKey !== undefined) {
+        defineOptionsDeclarationsCache.delete(oldestKey)
+      }
+    }
+    defineOptionsDeclarationsCache.set(key, declarations)
+    return declarations
+  }
+
+  function restoreRawSfc(parsed: SFCParseResult) {
+    const state = rawSfcStates.get(parsed)
+    const scriptSetup = parsed.descriptor.scriptSetup
+    if (state && !state.hadScriptSetup) {
+      parsed.descriptor.scriptSetup = null
+    }
+    else if (state && scriptSetup && state.scriptSetupContent !== undefined) {
+      scriptSetup.content = state.scriptSetupContent
+      scriptSetup.loc.source = state.scriptSetupSource ?? state.scriptSetupContent
+    }
+  }
+
+  function enhanceSfc(parsed: SFCParseResult) {
+    const descriptor = parsed.descriptor
+    const scriptSetup = descriptor.scriptSetup
+    rawSfcStates.set(parsed, {
+      hadScriptSetup: Boolean(scriptSetup),
+      scriptSetupContent: scriptSetup?.content,
+      scriptSetupSource: scriptSetup?.loc.source,
+    })
+    const wxsModuleNames = collectWxsModuleNames(descriptor.template?.content)
+    const scriptSetupLang = resolveScriptSetupLang(scriptSetup?.lang)
+    const defineOptionsDeclarations = scriptSetup?.content.includes('defineOptions')
+      ? getDefineOptionsDeclarations(scriptSetup.content, scriptSetupLang)
+      : ''
+
+    if (!wxsModuleNames.length && !defineOptionsDeclarations) {
+      return
+    }
+    if (scriptSetup) {
+      scriptSetup.content = appendScriptSetupDeclarations(
+        appendWxsDeclarations(scriptSetup.content, wxsModuleNames),
+        defineOptionsDeclarations,
+      )
+      syncScriptBlockSource(scriptSetup)
+    }
+    else {
+      descriptor.scriptSetup = createSyntheticScriptSetup(wxsModuleNames) as NonNullable<typeof descriptor.scriptSetup>
     }
   }
 
@@ -65,39 +115,21 @@ const plugin: VueLanguagePlugin = (ctx) => {
     version: PLUGIN_VERSION,
     order: -1,
     parseSFC2(fileName, languageId, content) {
-      if (languageId !== 'vue' || !isSfcEnhancementCandidate(content)) {
+      if (languageId !== 'vue' || !compilerDom) {
         return
       }
-
-      const parsed = parseVueSfc(content, fileName)
-      if (!parsed) {
-        return
-      }
-
-      const descriptor = parsed.descriptor
-      const wxsModuleNames = collectWxsModuleNames(descriptor.template?.content)
-      const scriptSetup = descriptor.scriptSetup
-      const scriptSetupLang = resolveScriptSetupLang(scriptSetup?.lang)
-      const defineOptionsDeclarations = scriptSetup?.content.includes('defineOptions') && tsModule
-        ? createDefineOptionsTemplateDeclarations(scriptSetup.content, tsModule, scriptSetupLang)
-        : ''
-
-      if (!wxsModuleNames.length && !defineOptionsDeclarations) {
-        return
-      }
-
-      if (descriptor.scriptSetup) {
-        descriptor.scriptSetup.content = appendScriptSetupDeclarations(
-          appendWxsDeclarations(descriptor.scriptSetup.content, wxsModuleNames),
-          defineOptionsDeclarations,
-        )
-        syncScriptBlockSource(descriptor.scriptSetup)
-      }
-      else {
-        descriptor.scriptSetup = createSyntheticScriptSetup(wxsModuleNames) as unknown as NonNullable<typeof descriptor.scriptSetup>
-      }
-
+      const parsed = parseSfc(compilerDom, content, fileName)
+      enhanceSfc(parsed)
       return parsed
+    },
+    updateSFC(oldResult, change) {
+      restoreRawSfc(oldResult)
+      const updated = updateSfc(oldResult, change)
+      if (!updated) {
+        return
+      }
+      enhanceSfc(updated)
+      return updated
     },
     getEmbeddedCodes(_, sfc) {
       return getEmbeddedCodesFromCustomBlocks(sfc)

@@ -1,5 +1,6 @@
 import type { VueVirtualCode } from '@vue/language-core'
 import { forEachEmbeddedCode } from '@volar/language-core'
+import * as compilerDom from '@vue/compiler-dom'
 import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import plugin from '../src/index'
@@ -112,11 +113,14 @@ function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) 
   }
 }
 
-function getPluginParser(tsModule: typeof ts = ts) {
+function getPluginParser(
+  tsModule: typeof ts = ts,
+  compilerDomModule: typeof compilerDom = compilerDom,
+) {
   const result = plugin({
     modules: {
       'typescript': tsModule,
-      '@vue/compiler-dom': {} as any,
+      '@vue/compiler-dom': compilerDomModule,
     },
   } as any)
   const items = Array.isArray(result) ? result : [result]
@@ -139,7 +143,7 @@ describe('@weapp-vite/volar plugin', () => {
     }
   })
 
-  it('lets the default Vue parser own ordinary SFCs without creating an extra TypeScript AST', () => {
+  it('parses ordinary SFCs without creating an enhancement TypeScript AST', () => {
     let sourceFileCount = 0
     const countingTs = new Proxy(ts, {
       get(target, property, receiver) {
@@ -163,7 +167,7 @@ function onTap() {}
 <template><view :title="props.title" @tap="onTap" /></template>`,
     )
 
-    expect(parsed).toBeUndefined()
+    expect(parsed).toBeTruthy()
     expect(sourceFileCount).toBe(0)
 
     const { generated, root } = getGeneratedServiceScript(`<script setup lang="ts">
@@ -176,6 +180,39 @@ function onTap() {}
     const serviceCode = Array.from(forEachEmbeddedCode(root), code => code)
       .find(code => code.id === 'script_ts')
     expect(serviceCode?.mappings.some(mapping => mapping.data.navigation)).toBe(true)
+  })
+
+  it('activates defineOptions enhancement after an incremental script edit', () => {
+    let sourceFileCount = 0
+    const countingTs = new Proxy(ts, {
+      get(target, property, receiver) {
+        if (property === 'createSourceFile') {
+          return (...args: Parameters<typeof ts.createSourceFile>) => {
+            sourceFileCount += 1
+            return target.createSourceFile(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const parser = getPluginParser(countingTs)
+    const source = `<script setup lang="ts">
+const title = 'demo'
+</script>
+<template><view>{{ title }}</view></template>`
+    const parsed = parser?.parseSFC2?.('fixture.vue', 'vue', source)
+    expect(parsed).toBeTruthy()
+    expect(sourceFileCount).toBe(0)
+
+    const insertionOffset = source.indexOf('</script>')
+    const updated = parser?.updateSFC?.(parsed!, {
+      start: insertionOffset,
+      end: insertionOffset,
+      newText: `defineOptions({ data: { loading: false } })\n`,
+    })
+
+    expect(sourceFileCount).toBe(1)
+    expect(updated?.descriptor.scriptSetup?.content).toContain('const loading: boolean = null as any')
   })
 
   it('keeps json and TypeScript config blocks embedded when the default parser owns the SFC', () => {
@@ -239,14 +276,18 @@ const title = 'demo'
 
   it('creates a synthetic script setup block for wxs modules when no script exists', () => {
     const parser = getPluginParser()
-
-    const parsed = parser?.parseSFC2?.(
-      'fixture.vue',
-      'vue',
-      `<template><wxs src="./util.wxs" module="util" /><view>{{ util.foo() }}</view></template>`,
-    )
+    const source = `<template><wxs src="./util.wxs" module="util" /><view>{{ util.foo() }}</view></template>`
+    const parsed = parser?.parseSFC2?.('fixture.vue', 'vue', source)
 
     expect(parsed?.descriptor.scriptSetup?.content).toContain(`const util = {} as Record<string, (...args: any[]) => any>`)
+
+    const insertionOffset = source.indexOf('{{ util.foo() }}') + 2
+    const updated = parser?.updateSFC?.(parsed!, {
+      start: insertionOffset,
+      end: insertionOffset,
+      newText: ' ',
+    })
+    expect(updated?.descriptor.scriptSetup?.content.match(/const util =/g)).toHaveLength(1)
   })
 
   it('deduplicates wxs modules without parsing script setup as TypeScript', () => {
@@ -293,10 +334,7 @@ const title = 'demo'
       },
     })
     const parser = getPluginParser(countingTs)
-    const parsed = parser?.parseSFC2?.(
-      'fixture.vue',
-      'vue',
-      `<script setup lang="ts">
+    const source = `<script setup lang="ts">
 const total = 2
 defineOptions({
   data: { total: 1, loading: false },
@@ -305,8 +343,8 @@ defineOptions({
   properties: { enabled: Boolean },
 })
 </script>
-<template><view @tap="onSubmit">{{ total }} {{ loading }} {{ summary }} {{ enabled }}</view></template>`,
-    )
+<template><view @tap="onSubmit">{{ total }} {{ loading }} {{ summary }} {{ enabled }}</view></template>`
+    const parsed = parser?.parseSFC2?.('fixture.vue', 'vue', source)
     const content = parsed?.descriptor.scriptSetup?.content ?? ''
 
     expect(sourceFileCount).toBe(1)
@@ -315,6 +353,59 @@ defineOptions({
     expect(content).toContain('const summary: string = null as any')
     expect(content).toContain('const onSubmit: (...args: any[]) => any = null as any')
     expect(content).toContain('const enabled: boolean = null as any')
+
+    parser?.parseSFC2?.('fixture-copy.vue', 'vue', source)
+    expect(sourceFileCount).toBe(1)
+
+    parser?.parseSFC2?.('fixture-updated.vue', 'vue', source.replace('loading: false', 'loading: true'))
+    expect(sourceFileCount).toBe(2)
+  })
+
+  it('updates templates incrementally without reparsing the SFC or defineOptions', () => {
+    let parseCount = 0
+    let sourceFileCount = 0
+    const countingCompilerDom = new Proxy(compilerDom, {
+      get(target, property, receiver) {
+        if (property === 'parse') {
+          return (...args: Parameters<typeof compilerDom.parse>) => {
+            parseCount += 1
+            return target.parse(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const countingTs = new Proxy(ts, {
+      get(target, property, receiver) {
+        if (property === 'createSourceFile') {
+          return (...args: Parameters<typeof ts.createSourceFile>) => {
+            sourceFileCount += 1
+            return target.createSourceFile(...args)
+          }
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const parser = getPluginParser(countingTs, countingCompilerDom)
+    const source = `<script setup lang="ts">
+defineOptions({ data: { title: 'demo' } })
+</script>
+<template><view>{{ title }}</view></template>`
+    const parsed = parser?.parseSFC2?.('fixture.vue', 'vue', source)
+    expect(parsed).toBeTruthy()
+    expect(parseCount).toBe(1)
+    expect(sourceFileCount).toBe(1)
+
+    const insertionOffset = source.indexOf('{{ title }}') + 2
+    const updated = parser?.updateSFC?.(parsed!, {
+      start: insertionOffset,
+      end: insertionOffset,
+      newText: ' ',
+    })
+
+    expect(updated?.descriptor.template?.content).toContain('{{  title }}')
+    expect(parseCount).toBe(1)
+    expect(sourceFileCount).toBe(1)
   })
 
   it('injects defineOptions data, methods and properties into script setup bindings for template type checking', () => {
