@@ -19,12 +19,16 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
+import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath } from './workspace-hmr/scenarios'
 
 const execFile = promisify(execFileCallback)
 
 interface PackageJson {
   name?: string
   scripts?: Record<string, string>
+  workspaceHmr?: {
+    runtime?: WorkspaceHmrRuntime
+  }
 }
 
 interface ProjectCase {
@@ -34,6 +38,7 @@ interface ProjectCase {
   distRoot: string
   sourceRoot: string
   platform: RuntimePlatform
+  hmrRuntime: WorkspaceHmrRuntime
 }
 
 type RuntimePlatform = 'weapp' | 'alipay'
@@ -42,6 +47,7 @@ type WorkspaceHmrProjectKind = 'apps' | 'templates' | 'e2e-apps'
 type WorkspaceHmrScope = 'apps,e2e-apps' | 'apps' | 'e2e-apps' | 'templates' | 'workspace'
 type WorkspaceHmrWriteMode = 'write' | 'rename'
 type WorkspaceHmrPollingMode = 'native' | 'polling'
+type WorkspaceHmrRuntime = 'standard' | 'stateful'
 
 interface ScenarioCase {
   id: string
@@ -50,6 +56,7 @@ interface ScenarioCase {
   outputPath: string
   expectedMarker?: (marker: string) => string
   mutate: (source: string, marker: string) => string
+  statefulClient?: boolean
 }
 
 interface HmrProfileSample {
@@ -401,6 +408,7 @@ async function discoverProjects(): Promise<ProjectCase[]> {
         distRoot: await resolveDistRoot(root, platform),
         sourceRoot,
         platform,
+        hmrRuntime: packageJson.workspaceHmr?.runtime === 'stateful' ? 'stateful' : 'standard',
       })
     }
   }
@@ -552,9 +560,17 @@ async function warmupProjectHmr(
 
   const profileLineCount = await countJsonlLines(profilePath)
   await writeScenarioSource(scenario.sourcePath, updated)
+  if (scenario.statefulClient) {
+    await publishStatefulHmrUpdate(project)
+  }
   await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
-  await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+  if (project.hmrRuntime === 'standard') {
+    await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+  }
   await writeScenarioSource(scenario.sourcePath, original)
+  if (scenario.statefulClient) {
+    await publishStatefulHmrUpdate(project)
+  }
   await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
@@ -605,11 +621,16 @@ async function auditScenario(
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
     await writeScenarioSource(scenario.sourcePath, updated)
+    if (scenario.statefulClient) {
+      await publishStatefulHmrUpdate(project)
+    }
     await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
+    result.observedMs = performance.now() - startedAt
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
-    result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
-    result.observedMs = performance.now() - startedAt
+    if (project.hmrRuntime === 'standard') {
+      result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
+    }
     result.totalMs = result.profile?.totalMs ?? result.observedMs
     result.impact = diffDistSnapshots(before, after)
   }
@@ -619,8 +640,13 @@ async function auditScenario(
   finally {
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
     await writeScenarioSource(scenario.sourcePath, original).catch(() => {})
+    if (scenario.statefulClient) {
+      await publishStatefulHmrUpdate(project).catch(() => {})
+    }
     await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
-    await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+    if (project.hmrRuntime === 'standard') {
+      await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+    }
     await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs).catch(() => {})
     await sleep(settleMs)
   }
@@ -676,7 +702,8 @@ function createNativeScriptScenario(project: ProjectCase, sourcePath: string): S
     id: 'native-script',
     label: 'native script',
     sourcePath,
-    outputPath: resolveOutputPath(project, sourcePath, 'js'),
+    outputPath: resolveHmrScriptOutputPath(project, sourcePath),
+    statefulClient: project.hmrRuntime === 'stateful',
     mutate: (source, marker) => `${source.trimEnd()}\nconsole.log('${marker}')\n`,
   }
 }
@@ -694,7 +721,7 @@ function createNativeStyleScenario(project: ProjectCase, sourcePath: string): Sc
 
 function createVueScenarios(project: ProjectCase, sourcePath: string, source: string): ScenarioCase[] {
   const templateOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].template)
-  const scriptOutput = resolveOutputPath(project, sourcePath, 'js')
+  const scriptOutput = resolveHmrScriptOutputPath(project, sourcePath)
   const styleOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].style)
   return [
     {
@@ -709,6 +736,7 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
       label: 'Vue SFC script',
       sourcePath,
       outputPath: scriptOutput,
+      statefulClient: project.hmrRuntime === 'stateful',
       mutate: (source, marker) => insertBeforeClosingTag(source, 'script', `\nconsole.log('${marker}')\n`),
     },
     {
@@ -756,6 +784,53 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
   const relative = path.relative(project.sourceRoot, sourcePath)
   const parsed = path.parse(relative)
   return path.join(project.distRoot, parsed.dir, `${parsed.name}.${outputExt}`)
+}
+
+async function publishStatefulHmrUpdate(project: ProjectCase) {
+  const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
+  const deadline = Date.now() + scenarioTimeoutMs
+  let lastError: unknown
+  while (Date.now() < deadline) {
+    try {
+      const control = parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
+      const sessionId = `workspace-hmr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+      const report = async (action: 'poll' | 'register') => {
+        const response = await fetch(control.url, {
+          body: JSON.stringify({
+            action,
+            buildId: control.buildId,
+            sessionId,
+            token: control.token,
+            version: 0,
+          }),
+          headers: { 'content-type': 'application/json' },
+          method: 'POST',
+          signal: AbortSignal.timeout(Math.max(1, Math.min(30_000, deadline - Date.now()))),
+        })
+        if (!response.ok) {
+          throw new Error(`Stateful HMR audit client ${action} failed with HTTP ${response.status}.`)
+        }
+        return await response.json() as { type?: string }
+      }
+
+      await report('register')
+      while (Date.now() < deadline) {
+        const response = await report('poll')
+        if (response.type === 'batch-published') {
+          return
+        }
+        if (response.type === 'rebuilding') {
+          break
+        }
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await sleep(100)
+  }
+  const detail = lastError instanceof Error ? ` Last error: ${lastError.message}` : ''
+  throw new Error(`Timed out waiting for the stateful HMR server to publish a patch batch.${detail}`)
 }
 
 function scoreSourceFile(sourceRoot: string, filePath: string) {

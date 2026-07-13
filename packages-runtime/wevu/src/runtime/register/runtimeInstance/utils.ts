@@ -16,7 +16,7 @@ import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod } from '../../nativeBridge'
 
 export type AdapterWithSetData = Required<MiniProgramAdapter> & {
-  __wevu_enableSetData?: () => void
+  __wevu_enableSetData?: (discardPending?: boolean) => void
   __wevu_setVisibility?: (visible: boolean) => void
 }
 

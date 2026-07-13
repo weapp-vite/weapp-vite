@@ -32,8 +32,9 @@ import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
-import { createRuntimeState } from '../runtimeState'
+import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { runStatefulHmrDev } from '../statefulHmr/session'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
@@ -1135,74 +1136,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return requestedConfigRestartBuilds.delete(target)
   }
 
-  function resetRuntimeStateForConfigRestart() {
-    const fresh = createRuntimeState()
-
-    const autoRoutes = ctx.runtimeState.autoRoutes
-    autoRoutes.routes = fresh.autoRoutes.routes
-    autoRoutes.serialized = fresh.autoRoutes.serialized
-    autoRoutes.moduleCode = fresh.autoRoutes.moduleCode
-    autoRoutes.typedDefinition = fresh.autoRoutes.typedDefinition
-    autoRoutes.watchFiles.clear()
-    autoRoutes.watchDirs.clear()
-    autoRoutes.dirty = fresh.autoRoutes.dirty
-    autoRoutes.initialized = fresh.autoRoutes.initialized
-    autoRoutes.candidates.clear()
-    autoRoutes.needsFullRescan = fresh.autoRoutes.needsFullRescan
-    autoRoutes.loadingAppConfig = fresh.autoRoutes.loadingAppConfig
-
-    const autoImport = ctx.runtimeState.autoImport
-    autoImport.registry.clear()
-    autoImport.resolvedResolverComponents.clear()
-    autoImport.matcher = undefined
-    autoImport.matcherKey = fresh.autoImport.matcherKey
-    autoImport.version += 1
-    autoImport.pendingEntriesByImporter.clear()
-
-    ctx.runtimeState.build.hmr = fresh.build.hmr
-
-    const json = ctx.runtimeState.json
-    json.cache.cache.clear()
-    json.cache.mtimeMap.clear()
-    json.cache.signatureMap.clear()
-    json.emittedSource.clear()
-
-    const asset = ctx.runtimeState.asset
-    asset.emittedBuffer.clear()
-    asset.scopedSlotGenerics.clear()
-
-    const css = ctx.runtimeState.css
-    css.importerToDependencies.clear()
-    css.dependencyToImporters.clear()
-    css.emittedSource.clear()
-
-    const wxml = ctx.runtimeState.wxml
-    wxml.depsMap.clear()
-    wxml.importerMap.clear()
-    wxml.tokenMap.clear()
-    wxml.componentsMap.clear()
-    wxml.aggregatedComponentsMap.clear()
-    wxml.templatePathMap.clear()
-    wxml.cache.cache.clear()
-    wxml.cache.mtimeMap.clear()
-    wxml.cache.signatureMap.clear()
-    wxml.emittedCode.clear()
-
-    const scan = ctx.runtimeState.scan
-    scan.subPackageMap.clear()
-    scan.independentSubPackageMap.clear()
-    scan.warnedMessages.clear()
-    scan.appEntry = undefined
-    scan.pluginJson = undefined
-    scan.pluginJsonPath = undefined
-    scan.isDirty = fresh.scan.isDirty
-    scan.independentDirtyRoots.clear()
-
-    const lib = ctx.runtimeState.lib
-    lib.enabled = fresh.lib.enabled
-    lib.entries.clear()
-  }
-
   async function runDev(target: BuildTarget) {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
@@ -1210,7 +1143,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
     // eslint-disable-next-line ts/no-use-before-define
-    const buildOptions = appendHmrMetricsPlugin(applyTargetBuildOverride(
+    const createDevBuildOptions = () => appendHmrMetricsPlugin(applyTargetBuildOverride(
       configService.merge(
         undefined,
         createSharedBuildConfig(configService, scanService),
@@ -1219,9 +1152,47 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ),
       target,
     ))
+    let buildOptions = createDevBuildOptions()
     buildOptions.build = {
       ...(buildOptions.build ?? {}),
       write: true,
+    }
+    if (target === 'app' && configService.weappViteConfig.hmr?.runtime === 'stateful-experimental') {
+      const snapshotBuildOptions: InlineConfig = {
+        ...buildOptions,
+        build: {
+          ...(buildOptions.build ?? {}),
+          watch: undefined,
+        },
+      }
+      await build(snapshotBuildOptions)
+      resetRuntimeStateForFreshBuild(ctx.runtimeState)
+      await scanService.loadAppEntry()
+      scanService.loadSubPackages()
+      buildOptions = createDevBuildOptions()
+      buildOptions.build = {
+        ...(buildOptions.build ?? {}),
+        write: true,
+      }
+      const workerPromise = hasWorkersDir && workersDir
+        ? devWorkers(configService, watcherService, workersDir)
+        : Promise.resolve()
+      let statefulWatcher: RolldownWatcher | undefined
+      const [watcher] = await Promise.all([
+        runStatefulHmrDev(ctx, buildOptions, async () => {
+          await statefulWatcher?.close()
+          logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
+          resetRuntimeStateForFreshBuild(ctx.runtimeState)
+          await scanService.loadAppEntry()
+          scanService.loadSubPackages()
+          await runDev(target)
+          logger.success('微信状态保持 HMR 构建已完成完整重载。')
+        }),
+        workerPromise,
+      ])
+      statefulWatcher = watcher
+      watcherService.setRollupWatcher(watcher, '/')
+      return watcher
     }
     const snapshotBuildOptions: InlineConfig = {
       ...buildOptions,
@@ -1441,7 +1412,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (shouldRestart) {
             await watcher.close()
             logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
-            resetRuntimeStateForConfigRestart()
+            resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             try {
               const supportFiles = await syncProjectSupportFiles(ctx)

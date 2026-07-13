@@ -282,6 +282,24 @@ export default defineConfig({
 
 不要在 `srcRoot`、路由来源、分包边界都没确认前就先调 chunk 策略。
 
+### `hmr.runtime`
+
+默认值为 `classic`。微信项目可实验性开启状态保持型热更新：
+
+```ts
+export default defineConfig({
+  weapp: {
+    hmr: {
+      runtime: 'stateful-experimental',
+    },
+  },
+})
+```
+
+安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
+
+该模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载，并设置 `project.private.config.json` 的 `setting.compileHotReLoad: true`。需要既有写盘/刷新行为时保持 `classic`。
+
 ### `hmr.logLevel` / `hmr.profileJson`
 
 排查开发态热更新慢、共享 chunk 回退或 DevTools 热重载不稳定时，可以临时打开：

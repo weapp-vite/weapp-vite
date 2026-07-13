@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/native/index",
+    "pages/component/index",
+    "pages/wevu/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Stateful HMR"
+  }
+}

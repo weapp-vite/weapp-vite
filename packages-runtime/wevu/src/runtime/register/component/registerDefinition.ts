@@ -10,6 +10,7 @@ import type {
 } from '../../types'
 import type { WatchMap } from '../watch'
 import {
+  WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEVU_LAYOUT_HOST_BRIDGE_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
@@ -21,7 +22,7 @@ import { callHookList } from '../../hooks'
 import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
-import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -113,7 +114,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     }
   }
 
-  Component({
+  const componentDefinition = {
     ...restOptions,
     ...pageLifecycleHooks,
     observers: finalObservers,
@@ -302,5 +303,23 @@ export function registerComponentDefinition<D extends object, C extends Computed
       ...finalMethods,
     },
     options: finalOptions,
-  })
+  }
+  const statefulHmrBridge = (globalThis as Record<string, any>)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  if (typeof statefulHmrBridge?.trackWevuComponent === 'function') {
+    const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (instance: InternalRuntimeState) => {
+      refreshRuntimeInstance(instance, runtimeApp, watch, setup, {
+        snapshotOmitKeys: directPropsDerivedKeys,
+      })
+      syncWevuPropsFromInstance(instance)
+      attachPageLayoutSetter(instance)
+      attachRuntimeLayoutHosts(instance)
+      enableDeferredSetData(instance)
+    })
+    if (!statefulHmrBridge.isApplying()) {
+      Component(definition)
+    }
+  }
+  else {
+    Component(componentDefinition)
+  }
 }

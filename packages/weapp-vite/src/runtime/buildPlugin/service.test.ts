@@ -52,6 +52,7 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigChanged: false,
   managedTsconfigWarnings: [],
 })))
+const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
@@ -84,6 +85,10 @@ vi.mock('../../utils/projectConfig', () => ({
 
 vi.mock('../supportFiles', () => ({
   syncProjectSupportFiles: syncProjectSupportFilesMock,
+}))
+
+vi.mock('../statefulHmr/session', () => ({
+  runStatefulHmrDev: runStatefulHmrDevMock,
 }))
 
 vi.mock('../libDts', () => ({
@@ -272,6 +277,7 @@ describe('runtime buildPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     buildMock.mockReset()
+    runStatefulHmrDevMock.mockReset()
     resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
       return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
@@ -317,6 +323,33 @@ describe('runtime buildPlugin service', () => {
     const runtimeState = createRuntimeState()
 
     expect(() => createBuildService({ runtimeState } as any)).toThrow('构建服务需要先初始化 config、watcher、npm 和 scan 服务。')
+  })
+
+  it('seeds complete outputs before stateful dev and recreates the plugin graph on full reload', async () => {
+    const firstWatcher = { close: vi.fn(async () => {}) }
+    const secondWatcher = { close: vi.fn(async () => {}) }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock
+      .mockResolvedValueOnce(firstWatcher)
+      .mockResolvedValueOnce(secondWatcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const service = createBuildService(ctx)
+
+    await service.build({ skipNpm: true })
+
+    expect(buildMock).toHaveBeenCalledTimes(1)
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    const restart = runStatefulHmrDevMock.mock.calls[0]![2]
+
+    await restart()
+
+    expect(firstWatcher.close).toHaveBeenCalledOnce()
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
+    expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
   })
 
   it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {

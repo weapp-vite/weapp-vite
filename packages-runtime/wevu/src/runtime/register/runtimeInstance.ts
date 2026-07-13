@@ -23,6 +23,7 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
+import { isRef } from '../../reactivity'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
@@ -190,8 +191,11 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         return undefined
       },
     }
-    adapter.__wevu_enableSetData = () => {
+    adapter.__wevu_enableSetData = (discardPending = false) => {
       enabled = true
+      if (discardPending) {
+        pending = undefined
+      }
       const setData = resolveNativeSetData(instance)
       if (pending && Object.keys(pending).length && setData) {
         const payload = pending
@@ -424,8 +428,75 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   return runtime
 }
 
+function preserveRuntimeFacadeIdentity<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  previousRuntime: RuntimeInstance<D, C, M>,
+  nextRuntime: RuntimeInstance<D, C, M>,
+) {
+  for (const key of Reflect.ownKeys(previousRuntime)) {
+    if (!Reflect.has(nextRuntime, key)) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(previousRuntime, key)
+      if (descriptor?.configurable) {
+        Reflect.deleteProperty(previousRuntime, key)
+      }
+    }
+  }
+  for (const key of Reflect.ownKeys(nextRuntime)) {
+    const descriptor = Reflect.getOwnPropertyDescriptor(nextRuntime, key)
+    if (!descriptor) {
+      continue
+    }
+    try {
+      Reflect.defineProperty(previousRuntime, key, descriptor)
+    }
+    catch {
+      try {
+        ;(previousRuntime as any)[key] = (nextRuntime as any)[key]
+      }
+      catch {
+        // 宿主包装对象仍持有旧 runtime 时，保留无法覆盖的只读字段。
+      }
+    }
+  }
+  attachRuntimeRef(previousRuntime.state as Record<string, any>, previousRuntime)
+  target.__wevu = previousRuntime
+  Object.defineProperty(target, WEVU_PUBLIC_RUNTIME_KEY, {
+    value: previousRuntime,
+    configurable: true,
+    enumerable: false,
+    writable: false,
+  })
+  return previousRuntime
+}
+
+/**
+ * 重建运行时实例，同时保持宿主包装对象持有的 runtime facade 身份稳定。
+ * @internal
+ */
+export function refreshRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  runtimeApp: RuntimeApp<D, C, M>,
+  watchMap: WatchMap | undefined,
+  setup?: RuntimeSetupFunction<D, C, M>,
+  options?: { snapshotOmitKeys?: string[] },
+) {
+  const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
+  // eslint-disable-next-line ts/no-use-before-define
+  teardownRuntimeInstance(target, { skipHooks: true })
+  const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
+    deferSetData: true,
+    snapshotOmitKeys: options?.snapshotOmitKeys,
+  })
+  if (!previousRuntime || previousRuntime === nextRuntime) {
+    return nextRuntime
+  }
+  return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
+}
+
 function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
-  const runtimeState = target.__wevu?.state as Record<string, any> | undefined
+  const runtime = target.__wevu
+  const runtimeState = runtime?.state as Record<string, any> | undefined
+  const setupState = runtime?.setupState as Record<string, any> | undefined
   const nativeData = (target as any).data as Record<string, any> | undefined
   if (!runtimeState || typeof runtimeState !== 'object' || !nativeData || typeof nativeData !== 'object') {
     return
@@ -436,6 +507,11 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
     }
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
       try {
+        const setupBinding = setupState?.[key]
+        if (isRef(setupBinding)) {
+          setupBinding.value = value
+          continue
+        }
         runtimeState[key] = value
       }
       catch {
@@ -448,10 +524,10 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
 export function enableDeferredSetData(target: InternalRuntimeState) {
   const adapter = (target as any).__wevu?.adapter
   syncRuntimeStateFromNativeData(target)
-  ;(target as any).__wevu?.__wevu_flushSetupSnapshotSync?.()
   if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
-    ;(adapter as any).__wevu_enableSetData()
+    ;(adapter as any).__wevu_enableSetData(true)
   }
+  ;(target as any).__wevu?.__wevu_flushSetupSnapshotSync?.()
 }
 
 export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visible: boolean) {
@@ -465,7 +541,7 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  * 卸载运行时实例（框架内部注册流程使用）。
  * @internal
  */
-export function teardownRuntimeInstance(target: InternalRuntimeState) {
+export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
   const runtime = target.__wevu
   const ownerId = (target as any)[WEVU_SLOT_OWNER_ID_KEY]
   if (ownerId) {
@@ -473,7 +549,7 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
   }
   clearTemplateRefs(target)
   // 触发卸载钩子（仅在 teardown 首次执行时触发）
-  if (runtime && target[WEVU_HOOKS_KEY]) {
+  if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
     callHookList(target, 'onUnload', [])
   }
   // 清理注册的生命周期钩子

@@ -52,7 +52,14 @@ const vueCompilerOptions = {
   experimentalModelPropName: {},
 } as const
 
+function normalizeFileName(fileName: string) {
+  return fileName.replace(/\\/g, '/')
+}
+
 function createNavigationService(files: Map<string, string>) {
+  const normalizedFiles = new Map(
+    [...files].map(([fileName, content]) => [normalizeFileName(fileName), content]),
+  )
   const compilerOptions: ts.CompilerOptions = {
     allowNonTsExtensions: true,
     module: ts.ModuleKind.ESNext,
@@ -71,30 +78,38 @@ function createNavigationService(files: Map<string, string>) {
     [languagePlugin],
     new Map(),
     (id) => {
-      const content = files.get(id) ?? ts.sys.readFile(id)
+      const normalizedId = normalizeFileName(id)
+      const content = normalizedFiles.get(normalizedId) ?? ts.sys.readFile(normalizedId)
       if (content !== undefined) {
         language.scripts.set(
-          id,
+          normalizedId,
           ts.ScriptSnapshot.fromString(content),
-          id.endsWith('.vue') ? 'vue' : 'typescript',
+          normalizedId.endsWith('.vue') ? 'vue' : 'typescript',
         )
       }
     },
   )
 
   const host: ts.LanguageServiceHost = {
-    fileExists: fileName => files.has(fileName) || ts.sys.fileExists(fileName),
+    fileExists(fileName) {
+      const normalizedFileName = normalizeFileName(fileName)
+      return normalizedFiles.has(normalizedFileName) || ts.sys.fileExists(normalizedFileName)
+    },
     getCompilationSettings: () => compilerOptions,
     getCurrentDirectory: () => process.cwd(),
     getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
-    getScriptFileNames: () => [...files.keys()],
+    getScriptFileNames: () => [...normalizedFiles.keys()],
     getScriptSnapshot(fileName) {
-      const content = files.get(fileName) ?? ts.sys.readFile(fileName)
+      const normalizedFileName = normalizeFileName(fileName)
+      const content = normalizedFiles.get(normalizedFileName) ?? ts.sys.readFile(normalizedFileName)
       return content === undefined ? undefined : ts.ScriptSnapshot.fromString(content)
     },
     getScriptVersion: () => '0',
     readDirectory: ts.sys.readDirectory,
-    readFile: fileName => files.get(fileName) ?? ts.sys.readFile(fileName),
+    readFile(fileName) {
+      const normalizedFileName = normalizeFileName(fileName)
+      return normalizedFiles.get(normalizedFileName) ?? ts.sys.readFile(normalizedFileName)
+    },
     resolveModuleNameLiterals(moduleLiterals, containingFile, redirectedReference, options) {
       return moduleLiterals.map(moduleLiteral => ts.resolveModuleName(
         moduleLiteral.text,
@@ -124,9 +139,9 @@ function findOffset(source: string, text: string, occurrence = 0) {
 
 describe('Volar navigation', () => {
   it('preserves import, template prop and event handler definitions through default parser ownership', () => {
-    const fixtureDir = path.resolve('packages/volar/test/fixtures/navigation')
-    const parentFile = path.join(fixtureDir, 'Parent.vue')
-    const childFile = path.join(fixtureDir, 'Child.vue')
+    const fixtureDir = normalizeFileName(path.resolve('packages/volar/test/fixtures/navigation'))
+    const parentFile = `${fixtureDir}/Parent.vue`
+    const childFile = `${fixtureDir}/Child.vue`
     const parentSource = `<script setup lang="ts">
 import CartGroup from './Child.vue'
 const props = defineProps<{ storeGoods: string[] }>()

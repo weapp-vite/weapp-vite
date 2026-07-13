@@ -30,6 +30,11 @@ describe('getWeappViteConfig', () => {
     expect(config.hmr?.sharedChunks).toBe('auto')
   })
 
+  it('defaults hmr.runtime to classic', () => {
+    const config = getWeappViteConfig()
+    expect(config.hmr?.runtime).toBe('classic')
+  })
+
   it('defaults hmr.touchAppWxss to auto', () => {
     const config = getWeappViteConfig()
     expect(config.hmr?.touchAppWxss).toBe('auto')

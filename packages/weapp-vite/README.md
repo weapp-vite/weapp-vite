@@ -26,10 +26,25 @@
   - [详细文档 →](./test/vue/README.md)
 
 - ⚡️ **Vite 构建**：带来了 `typescript` / `scss` / `less` 等等的原生支持
+- ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 
 ## 快速开始
+
+微信项目可选择开启实验性状态保持热更新：
+
+```ts
+export default defineConfig({
+  weapp: {
+    hmr: {
+      runtime: 'stateful-experimental',
+    },
+  },
+})
+```
+
+默认仍为 `classic`。实验模式要求微信开发者工具开启热重载；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
 
