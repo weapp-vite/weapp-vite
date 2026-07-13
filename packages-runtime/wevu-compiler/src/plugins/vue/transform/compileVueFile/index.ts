@@ -8,6 +8,8 @@ import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetu
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
 
+export { refreshVueFileJsonConfig } from './jsonOnly'
+
 export type {
   AutoImportTagsOptions,
   AutoUsingComponentsOptions,
@@ -140,6 +142,13 @@ export async function compileVueFile(
     result,
     warn: options?.warn,
   })
+
+  result.meta!.jsonConfigCache = {
+    autoUsingComponentsMap: { ...scriptPhase.autoUsingComponentsMap },
+    autoImportTagsMap: componentSourceInfo.autoImportTagsMap
+      ? { ...componentSourceInfo.autoImportTagsMap }
+      : undefined,
+  }
 
   finalizeResult(result, {
     scriptSetupMacroHash: parsed.scriptSetupMacroHash,
