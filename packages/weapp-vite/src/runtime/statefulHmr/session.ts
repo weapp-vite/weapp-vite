@@ -26,6 +26,7 @@ const maxRetainedDeltaBytes = 16 * 1024 * 1024
 export async function runStatefulHmrDev(
   ctx: MutableCompilerContext,
   buildOptions: InlineConfig,
+  restart: () => Promise<void>,
 ): Promise<RolldownWatcher> {
   const configService = ctx.configService!
   if (configService.platform !== 'weapp') {
@@ -36,8 +37,9 @@ export async function runStatefulHmrDev(
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
     configureServer(server) {
-      session = new StatefulHmrSession(ctx, server)
-      session.install()
+      const currentSession = new StatefulHmrSession(ctx, server, restart)
+      session = currentSession
+      currentSession.install()
     },
     transform(code, id) {
       if (!isStatefulHmrBoundary(id, configService.absoluteSrcRoot) || code.includes('import.meta.hot.accept')) {
@@ -87,10 +89,12 @@ class StatefulHmrSession {
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
   private rebuildTimer?: ReturnType<typeof setTimeout>
+  private restartTimer?: ReturnType<typeof setTimeout>
 
   constructor(
     private readonly ctx: MutableCompilerContext,
     private readonly server: ViteDevServer,
+    private readonly restart: () => Promise<void>,
   ) {
     this.transport = new StatefulHmrTransport(
       server,
@@ -124,6 +128,9 @@ class StatefulHmrSession {
   async close(): Promise<void> {
     if (this.rebuildTimer) {
       clearTimeout(this.rebuildTimer)
+    }
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer)
     }
     this.transport.close()
     await this.outputChain
@@ -163,8 +170,8 @@ class StatefulHmrSession {
   }
 
   private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
-    if (!isSafeJavaScriptPatch(files, output)) {
-      this.requestFullBuild()
+    if (!isSafeJavaScriptPatch(files, output, this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+      this.requestServerRestart()
       return false
     }
     this.adapter.registerPatchModules(output.code)
@@ -195,6 +202,18 @@ class StatefulHmrSession {
       this.rebuildTimer = undefined
       void this.adapter.rebuild().catch((error) => {
         this.server.config.logger.error('[weapp-vite] stateful HMR full rebuild failed', { error })
+      })
+    }, 100)
+  }
+
+  private requestServerRestart(): void {
+    if (this.restartTimer) {
+      return
+    }
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = undefined
+      void this.restart().catch((error) => {
+        this.server.config.logger.error('[weapp-vite] stateful HMR server restart failed', { error })
       })
     }, 100)
   }
@@ -265,10 +284,12 @@ export function redirectNativeComponentRegistration(code: string): string {
 export function isSafeJavaScriptPatch(
   files: string[],
   output: StatefulHmrDevEngineUpdate,
+  dirtyReasonSummary: string[] = [],
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
   return output.type === 'Patch'
     && output.hmrBoundaries.length > 0
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
+    && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason))
 }
 
 export function shouldResetStatefulHmrRetention(

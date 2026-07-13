@@ -2,6 +2,9 @@
   "name": "e2e-app-stateful-hmr",
   "version": "0.0.0",
   "private": true,
+  "workspaceHmr": {
+    "runtime": "stateful"
+  },
   "scripts": {
     "build": "wv build",
     "dev": "wv dev",

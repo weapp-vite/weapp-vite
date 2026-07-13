@@ -36,6 +36,10 @@ describe('stateful hmr session', () => {
     } as any
 
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], patch)).toBe(true)
+    expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-direct:1'])).toBe(true)
+    expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-local-asset:1'])).toBe(false)
+    expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-style-only:1'])).toBe(false)
+    expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-json-only:1'])).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.css'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/app.json'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], { type: 'FullReload', reason: 'boundary' } as any)).toBe(false)
