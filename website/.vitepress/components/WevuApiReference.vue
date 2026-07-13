@@ -210,7 +210,12 @@ onBeforeUnmount(() => {
             :checked="selectedCompatibilities.includes(option.value)"
             @change="toggleCompatibility(option.value)"
           >
-          <Icon icon="mdi:check" aria-hidden="true" />
+          <Icon
+            class="wevu-api-reference__compatibility-icon"
+            :class="{ 'is-selected': selectedCompatibilities.includes(option.value) }"
+            :icon="selectedCompatibilities.includes(option.value) ? 'mdi:check-circle' : 'mdi:checkbox-blank-circle-outline'"
+            aria-hidden="true"
+          />
           <span>{{ option.shortLabel || option.label }}</span>
         </label>
       </div>
