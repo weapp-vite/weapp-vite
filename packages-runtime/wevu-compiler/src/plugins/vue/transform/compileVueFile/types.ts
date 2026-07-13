@@ -35,6 +35,15 @@ export interface VueTransformResult {
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
     styleBlocks?: SFCStyleBlock[]
+    /**
+     * JSON-only HMR 重算所需的稳定编译输入。
+     *
+     * @internal
+     */
+    jsonConfigCache?: {
+      autoImportTagsMap?: Record<string, string>
+      autoUsingComponentsMap: Record<string, string>
+    }
   }
 }
 

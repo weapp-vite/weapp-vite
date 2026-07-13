@@ -56,7 +56,7 @@ export type {
 } from './plugins/vue/compiler/template/types'
 
 export { buildClassStyleComputedCode } from './plugins/vue/transform/classStyleComputed'
-export { compileVueFile as compileSfc, compileVueFile } from './plugins/vue/transform/compileVueFile'
+export { compileVueFile as compileSfc, compileVueFile, refreshVueFileJsonConfig } from './plugins/vue/transform/compileVueFile'
 export type {
   AutoImportTagsOptions,
   AutoUsingComponentsOptions,
