@@ -184,8 +184,8 @@ catalogs:
       specifier: ^3.3.7
       version: 3.3.7
     weapp-tailwindcss:
-      specifier: ^5.1.14
-      version: 5.1.14
+      specifier: ^5.1.15
+      version: 5.1.15
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -206,8 +206,8 @@ catalogs:
       version: 1.15.3
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.1.14
-      version: 5.1.14
+      specifier: 5.1.15
+      version: 5.1.15
 
 importers:
 
@@ -511,8 +511,8 @@ importers:
         specifier: ^4.23.1
         version: 4.23.1
       turbo:
-        specifier: ^2.10.4
-        version: 2.10.4
+        specifier: ^2.10.5
+        version: 2.10.5
       type-fest:
         specifier: ^5.8.0
         version: 5.8.0
@@ -757,7 +757,7 @@ importers:
         version: 3.3.7(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -933,7 +933,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1046,7 +1046,7 @@ importers:
         version: 12.0.2(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(srvx@0.11.22)(typescript@6.0.3)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(less@4.6.7)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.34.1)(tsx@4.23.1)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1070,7 +1070,7 @@ importers:
         version: 4.3.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1114,7 +1114,7 @@ importers:
         version: 4.3.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1163,7 +1163,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1181,7 +1181,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1314,7 +1314,7 @@ importers:
         version: 3.3.7(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1516,7 +1516,7 @@ importers:
         version: 4.3.2
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1534,7 +1534,7 @@ importers:
         version: 4.3.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1797,7 +1797,7 @@ importers:
         version: 3.3.7(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2601,7 +2601,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2652,7 +2652,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2707,7 +2707,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2801,7 +2801,7 @@ importers:
         version: 3.3.7(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2856,7 +2856,7 @@ importers:
         version: 3.3.7(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2990,7 +2990,7 @@ importers:
         version: 4.3.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
+        version: 5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -7749,33 +7749,33 @@ packages:
     resolution: {integrity: sha512-mSMM0QtEPdMd+rdMDd17yCUYD4yI3pKHap89+jEZrZ3KIO5PhDofBjER0OtgHdvOXF74KMLO3fyD6k3Hz0v03A==}
     engines: {node: '>=14.17'}
 
-  '@turbo/darwin-64@2.10.4':
-    resolution: {integrity: sha512-m1MUEI4MJ69r5CwfMYxmHi0H0rrgiYCBOp0tgBZ9x/YVvOb5uu/lRIDyDwdtH054R2yWeQaIigUGu6aCX9f8cA==}
+  '@turbo/darwin-64@2.10.5':
+    resolution: {integrity: sha512-ENvPwy3x5yS7MwNYHeWjqOBXkwIMp39Pd+/zXC6PoiNzF8EIvvLZOZZ+ny6L9x4WgS5vxUii2LM5gM+zjPdnWw==}
     cpu: [x64]
     os: [darwin]
 
-  '@turbo/darwin-arm64@2.10.4':
-    resolution: {integrity: sha512-VQ1Yxs5zkPT+2z7t1P4mvn6JmcKLkOCAsPuK9XbOvuVj0DlTlETfIXNisX0771v/vTWHOQqiwoGi+TtAUq8efw==}
+  '@turbo/darwin-arm64@2.10.5':
+    resolution: {integrity: sha512-rqROo9zsF/P9RqsdtbLD1nFJicjSrYyvQ9kNJC38AbxA3pAs6VAlATvtvOFx7bqOv6vicf20SP9kF33avJjy2w==}
     cpu: [arm64]
     os: [darwin]
 
-  '@turbo/linux-64@2.10.4':
-    resolution: {integrity: sha512-IzV1QovmwX7mfGnVinmE++2IB8tbeo38weltiuH5zNqwCTBjLs/DytyRKx+bmnhHdXIq9SheR8p0Nip/LBUPHg==}
+  '@turbo/linux-64@2.10.5':
+    resolution: {integrity: sha512-RoSSiNFUxi27zLJuM9F6GyWWjHgLch9t6nwD6K0FkXRirZkTLlzIj6IhFnK8H9++nefLtdFqylE4vGjZAv6AAA==}
     cpu: [x64]
     os: [linux]
 
-  '@turbo/linux-arm64@2.10.4':
-    resolution: {integrity: sha512-rfujSQkP5aYiRn0PgTM7F00WkJCP/bKDVZbOx3WmrZwa/vHA0bplhCl328kpX7VI9HH2vI90ISGwuSVgJgoqTw==}
+  '@turbo/linux-arm64@2.10.5':
+    resolution: {integrity: sha512-4ZComcpzmHGmVynQqvvi+iZOSq/tBvY1SltXB8g4NZRsrA01W8E+yRL8RNM+PLoyWsrCnJa8xa+DkWkv+xg4iQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@turbo/windows-64@2.10.4':
-    resolution: {integrity: sha512-NnspP7Wd5fa3Wwnqv9bKfhegqZzuHBgbPxdZU/idTLQcazx/vgKu95JlCx2YHY0hdvKCnPcARrDwM+KEUmaO7A==}
+  '@turbo/windows-64@2.10.5':
+    resolution: {integrity: sha512-eL2Iyj4DbMINq1Sr1w0iAi6nAiZOF16KSlRGwCJpVh+IWZeY33MAsLHVOBMj1xoFtncVJXclCVpTPL2nBoYkFg==}
     cpu: [x64]
     os: [win32]
 
-  '@turbo/windows-arm64@2.10.4':
-    resolution: {integrity: sha512-Iv02YgOpaEShc2OkG7mgCJ2pEw1RUKiKbs0h8W5wAf4jZ5vpmraTEjuGTgHRuOORQnC1GN3KHo5WB+hu1abRMA==}
+  '@turbo/windows-arm64@2.10.5':
+    resolution: {integrity: sha512-sog+wP+8YSJrdWZ/rUJg8xghVTrwoG+BrSlDQpnK5fzSgJHn1INRWXbVWRH0d3vX8dBI01E3yxXRre9Dn+OXQA==}
     cpu: [arm64]
     os: [win32]
 
@@ -8399,8 +8399,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.1.10':
-    resolution: {integrity: sha512-fkhffTwSUtn7XIhaptP0XRf4j8UVLJNnC1/oAlLdeVxrVHMUcgzMA2yKptzwecjli+D9J/cWIbh6aWL/SmDVGQ==}
+  '@weapp-tailwindcss/postcss@3.1.11':
+    resolution: {integrity: sha512-aQgmLJFsiQ+S//XrwNvTGirXC4Nr0McyHOBT9LrQK3Iiv1e565KYYEgF+eBt0MqyjkVSf9Uy/FUNYhcvtv/kQA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/reset@0.1.1':
@@ -15068,8 +15068,8 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  turbo@2.10.4:
-    resolution: {integrity: sha512-GQpduILaKjoaGljw097ScsSyKTtZSY7cZ3bJktzfTkPMyCf3ShKLuXK2IaOEN2Plziml+ArR7WJ1m+V4VbnaKQ==}
+  turbo@2.10.5:
+    resolution: {integrity: sha512-07Y/C7OUp23l4P92PJoYtFNbHjLhftrZH5Ce7dbczS4kX2Re+wtbXvZLoxn/pUtzgsQaRCBaRuZPJp4zmAn0WQ==}
     hasBin: true
 
   tweetnacl@0.14.5:
@@ -15665,10 +15665,15 @@ packages:
     resolution: {integrity: sha512-tc4s7+OlKKg4343Bfm/ZkhBhnvRJbpP4Wyr97p8lTIPVkGQTerWWVhUO/WAcSg+mKbEGey2Zzm54gok7V6mL6A==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  weapp-tailwindcss@5.1.14:
-    resolution: {integrity: sha512-xaQtMpWdGdDmhicl9gsD5qG2BvQ6uaqp7JxrVDcPHhRCSbYjwcTYiICh8CIeZe7uJRnOKf/q4opuxe+tbF8ETA==}
+  weapp-tailwindcss@5.1.15:
+    resolution: {integrity: sha512-vhgFwK43lToI9//rhISGlRr0fKV46np7TcwPxMzYf3vCsK4TOz0u9ELXnf45AbLdumspfiIuE/j2rlWVGQKpRw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
+    peerDependencies:
+      '@mpxjs/webpack-plugin': '>=2.0.0 <3.0.0'
+    peerDependenciesMeta:
+      '@mpxjs/webpack-plugin':
+        optional: true
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
@@ -20596,22 +20601,22 @@ snapshots:
 
   '@tsd/typescript@5.9.2': {}
 
-  '@turbo/darwin-64@2.10.4':
+  '@turbo/darwin-64@2.10.5':
     optional: true
 
-  '@turbo/darwin-arm64@2.10.4':
+  '@turbo/darwin-arm64@2.10.5':
     optional: true
 
-  '@turbo/linux-64@2.10.4':
+  '@turbo/linux-64@2.10.5':
     optional: true
 
-  '@turbo/linux-arm64@2.10.4':
+  '@turbo/linux-arm64@2.10.5':
     optional: true
 
-  '@turbo/windows-64@2.10.4':
+  '@turbo/windows-64@2.10.5':
     optional: true
 
-  '@turbo/windows-arm64@2.10.4':
+  '@turbo/windows-arm64@2.10.5':
     optional: true
 
   '@tybys/wasm-util@0.10.3':
@@ -21387,7 +21392,7 @@ snapshots:
       postcss-selector-parser: 7.1.4
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.1.10(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)(yaml@2.9.0)':
+  '@weapp-tailwindcss/postcss@3.1.11(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)(yaml@2.9.0)':
     dependencies:
       '@tailwindcss-mangle/engine': 0.1.3(tailwindcss@4.3.2)
       '@weapp-core/escape': 8.0.0
@@ -29019,14 +29024,14 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  turbo@2.10.4:
+  turbo@2.10.5:
     optionalDependencies:
-      '@turbo/darwin-64': 2.10.4
-      '@turbo/darwin-arm64': 2.10.4
-      '@turbo/linux-64': 2.10.4
-      '@turbo/linux-arm64': 2.10.4
-      '@turbo/windows-64': 2.10.4
-      '@turbo/windows-arm64': 2.10.4
+      '@turbo/darwin-64': 2.10.5
+      '@turbo/darwin-arm64': 2.10.5
+      '@turbo/linux-64': 2.10.5
+      '@turbo/linux-arm64': 2.10.5
+      '@turbo/windows-64': 2.10.5
+      '@turbo/windows-arm64': 2.10.5
 
   tweetnacl@0.14.5: {}
 
@@ -29704,7 +29709,7 @@ snapshots:
       '@weapp-tailwindcss/shared': 2.0.0
       micromatch: 4.0.8
 
-  weapp-tailwindcss@5.1.14(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1):
+  weapp-tailwindcss@5.1.15(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1):
     dependencies:
       '@babel/parser': 7.29.7
       '@babel/traverse': 7.29.7
@@ -29713,7 +29718,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.39
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.0
-      '@weapp-tailwindcss/postcss': 3.1.10(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)(yaml@2.9.0)
+      '@weapp-tailwindcss/postcss': 3.1.11(jiti@2.7.0)(tailwindcss@4.3.2)(tsx@4.23.1)(yaml@2.9.0)
       '@weapp-tailwindcss/reset': 0.1.1(tailwindcss@4.3.2)
       '@weapp-tailwindcss/shared': 2.0.0
       comment-json: 5.0.0
