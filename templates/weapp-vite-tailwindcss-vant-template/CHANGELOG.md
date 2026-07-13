@@ -1,5 +1,11 @@
 # weapp-vite-tailwindcss-vant-template
 
+## 1.0.9
+
+### Patch Changes
+
+- 🐛 **修复后处理插件覆盖原生页面 layout 分支的问题，并修正 Vant 模板的按钮事件绑定，使 Tailwind 模板可以在运行时正常切换布局。** [`3822635`](https://github.com/weapp-vite/weapp-vite/commit/3822635e618a36101bfc0d9e668d96a37d8db564) by @sonofmagic
+
 ## 1.0.8
 
 ### Patch Changes
