@@ -1,5 +1,11 @@
 # @weapp-vite/volar
 
+## 2.1.1
+
+### Patch Changes
+
+- 🐛 **改用轻量 SFC parser，并通过增量更新和有界缓存复用 `defineOptions` 分析结果，减少 Volar 冷启动与项目失效重建时的重复解析，提升跳转和模板语言服务的首次响应性能。** [`1da0fdf`](https://github.com/weapp-vite/weapp-vite/commit/1da0fdf3c0c838c838f3ad7e14ceb7aa161f825c) by @sonofmagic
+
 ## 2.1.0
 
 ### Minor Changes

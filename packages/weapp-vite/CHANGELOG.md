@@ -1,5 +1,22 @@
 # weapp-vite
 
+## 6.18.2
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`040c361`](https://github.com/weapp-vite/weapp-vite/commit/040c361c7756d5e3cfaa5effe703fda78f014108) by @sonofmagic
+  - 默认 catalog 变更键：postcss。命名 catalog 变更键：无。
+
+- 🐛 **修复后处理插件覆盖原生页面 layout 分支的问题，并修正 Vant 模板的按钮事件绑定，使 Tailwind 模板可以在运行时正常切换布局。** [`3822635`](https://github.com/weapp-vite/weapp-vite/commit/3822635e618a36101bfc0d9e668d96a37d8db564) by @sonofmagic
+
+- 🐛 **新增微信开发者工具实验性状态保持热更新，可在安全的 JavaScript 与 Vue 更新中保留原生 Page、原生 Component 和 wevu 页面状态，并在不兼容更新时自动回退完整重载。** [#717](https://github.com/weapp-vite/weapp-vite/pull/717) by @sonofmagic
+- 📦 Updated 6 dependencies [`1da0fdf`](https://github.com/weapp-vite/weapp-vite/commit/1da0fdf3c0c838c838f3ad7e14ceb7aa161f825c)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/volar@2.1.1`, `@weapp-core/constants@0.1.13`, `wevu@6.18.2`, `@weapp-vite/web@1.3.35`, `@wevu/web-apis@1.2.27`, `@weapp-vite/ast@6.18.2`
+
+  </details>
+
 ## 6.18.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.5.2
+
+### Patch Changes
+
+- 🐛 **修复后处理插件覆盖原生页面 layout 分支的问题，并修正 Vant 模板的按钮事件绑定，使 Tailwind 模板可以在运行时正常切换布局。** [`3822635`](https://github.com/weapp-vite/weapp-vite/commit/3822635e618a36101bfc0d9e668d96a37d8db564) by @sonofmagic
+
+- 🐛 **新增微信开发者工具实验性状态保持热更新，可在安全的 JavaScript 与 Vue 更新中保留原生 Page、原生 Component 和 wevu 页面状态，并在不兼容更新时自动回退完整重载。** [#717](https://github.com/weapp-vite/weapp-vite/pull/717) by @sonofmagic
+
 ## 2.5.1
 
 ### Patch Changes
