@@ -1269,7 +1269,7 @@ importers:
         version: link:../../packages-runtime/wevu
       zustand:
         specifier: ^5.0.14
-        version: 5.0.14(@types/react@18.3.31)(react@18.3.1)
+        version: 5.0.14(@types/react@19.2.17)(react@19.2.7)
 
   apps/wevu-vue-demo:
     devDependencies:
@@ -1581,18 +1581,21 @@ importers:
   e2e-apps/react-runtime-spike:
     dependencies:
       react:
-        specifier: 18.3.1
-        version: 18.3.1
+        specifier: 19.2.7
+        version: 19.2.7
       react-reconciler:
-        specifier: 0.29.2
-        version: 0.29.2(react@18.3.1)
+        specifier: 0.33.0
+        version: 0.33.0(react@19.2.7)
     devDependencies:
+      '@swc/core':
+        specifier: 1.15.43
+        version: 1.15.43
       '@types/react':
-        specifier: 18.3.31
-        version: 18.3.31
+        specifier: 19.2.17
+        version: 19.2.17
       '@types/react-reconciler':
-        specifier: 0.28.9
-        version: 0.28.9(@types/react@18.3.31)
+        specifier: 0.33.0
+        version: 0.33.0(@types/react@19.2.17)
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.1
@@ -8037,22 +8040,19 @@ packages:
   '@types/pnpapi@0.0.5':
     resolution: {integrity: sha512-tjymquatF9seZGE3GcN1barqNqpmyEpqIN0rBKTcoZWwgDC0SgBp5LFqCRJE6YhzXA7TjpXbpTdcL5A8cwyryw==}
 
-  '@types/prop-types@15.7.15':
-    resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
-
   '@types/qs@6.14.0':
     resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
 
   '@types/range-parser@1.2.7':
     resolution: {integrity: sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==}
 
-  '@types/react-reconciler@0.28.9':
-    resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
+  '@types/react-reconciler@0.33.0':
+    resolution: {integrity: sha512-HZOXsKT0tGI9LlUw2LuedXsVeB88wFa536vVL0M6vE8zN63nI+sSr1ByxmPToP5K5bukaVscyeCJcF9guVNJ1g==}
     peerDependencies:
       '@types/react': '*'
 
-  '@types/react@18.3.31':
-    resolution: {integrity: sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw==}
+  '@types/react@19.2.17':
+    resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -12101,10 +12101,6 @@ packages:
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
-  loose-envify@1.4.0:
-    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
-    hasBin: true
-
   lowercase-keys@1.0.0:
     resolution: {integrity: sha512-RPlX0+PHuvxVDZ7xX+EBVAp4RsVxP/TdDSN2mJYdiq1Lc4Hz7EUSjUI7RZrKKlmrIzVhf6Jo2stj7++gVarS0A==}
     engines: {node: '>=0.10.0'}
@@ -13701,14 +13697,14 @@ packages:
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
 
-  react-reconciler@0.29.2:
-    resolution: {integrity: sha512-zZQqIiYgDCTP/f1N/mAR10nJGrPD2ZR+jDSEsKWJHYC7Cm2wodlwbR3upZRdC3cjIjSlTLNVyO7Iu0Yy7t2AYg==}
+  react-reconciler@0.33.0:
+    resolution: {integrity: sha512-KetWRytFv1epdpJc3J4G75I4WrplZE5jOL7Yq0p34+OVOKF4Se7WrdIdVC45XsSSmUTlht2FM/fM1FZb1mfQeA==}
     engines: {node: '>=0.10.0'}
     peerDependencies:
-      react: ^18.3.1
+      react: ^19.2.0
 
-  react@18.3.1:
-    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
+  react@19.2.7:
+    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
     engines: {node: '>=0.10.0'}
 
   read-cmd-shim@4.0.0:
@@ -14179,8 +14175,8 @@ packages:
     resolution: {integrity: sha512-6R3J5M4AcbtLUdZmRv2SygeVaM7IhrLXu9BmnOGmmACak8fiUtOsYNWUS4uK7upbmHIBbLBeFeI//477BKLBzA==}
     engines: {node: '>=11.0.0'}
 
-  scheduler@0.23.2:
-    resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
+  scheduler@0.27.0:
+    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
   scslre@0.3.0:
     resolution: {integrity: sha512-3A6sD0WYP7+QrjbfNA2FN3FsOaGGFoekCVgTyypy53gPxhbkCIjtO6YWgdrfM+n/8sI8JeXZOIxsHjMTNxQ4nQ==}
@@ -20870,19 +20866,16 @@ snapshots:
 
   '@types/pnpapi@0.0.5': {}
 
-  '@types/prop-types@15.7.15': {}
-
   '@types/qs@6.14.0': {}
 
   '@types/range-parser@1.2.7': {}
 
-  '@types/react-reconciler@0.28.9(@types/react@18.3.31)':
+  '@types/react-reconciler@0.33.0(@types/react@19.2.17)':
     dependencies:
-      '@types/react': 18.3.31
+      '@types/react': 19.2.17
 
-  '@types/react@18.3.31':
+  '@types/react@19.2.17':
     dependencies:
-      '@types/prop-types': 15.7.15
       csstype: 3.2.3
 
   '@types/resolve@1.20.2': {}
@@ -25498,10 +25491,6 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  loose-envify@1.4.0:
-    dependencies:
-      js-tokens: 4.0.0
-
   lowercase-keys@1.0.0: {}
 
   lowercase-keys@1.0.1: {}
@@ -27340,15 +27329,12 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-reconciler@0.29.2(react@18.3.1):
+  react-reconciler@0.33.0(react@19.2.7):
     dependencies:
-      loose-envify: 1.4.0
-      react: 18.3.1
-      scheduler: 0.23.2
+      react: 19.2.7
+      scheduler: 0.27.0
 
-  react@18.3.1:
-    dependencies:
-      loose-envify: 1.4.0
+  react@19.2.7: {}
 
   read-cmd-shim@4.0.0: {}
 
@@ -27928,9 +27914,7 @@ snapshots:
 
   sax@1.6.0: {}
 
-  scheduler@0.23.2:
-    dependencies:
-      loose-envify: 1.4.0
+  scheduler@0.27.0: {}
 
   scslre@0.3.0:
     dependencies:
@@ -29974,9 +29958,9 @@ snapshots:
     dependencies:
       tslib: 2.3.0
 
-  zustand@5.0.14(@types/react@18.3.31)(react@18.3.1):
+  zustand@5.0.14(@types/react@19.2.17)(react@19.2.7):
     optionalDependencies:
-      '@types/react': 18.3.31
-      react: 18.3.1
+      '@types/react': 19.2.17
+      react: 19.2.7
 
   zwitch@2.0.4: {}

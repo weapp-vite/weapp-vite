@@ -65,14 +65,13 @@ describe('react runtime spike renderer', () => {
 
   it('replaces the nearest child array for keyed list structure changes', () => {
     const calls: Record<string, unknown>[] = []
-    let append!: () => void
 
     function List() {
       const [items, setItems] = useState(['a', 'b'])
-      append = () => setItems(previous => [...previous, 'c'])
       return (
         <View>
           {items.map(item => <Text key={item}>{item}</Text>)}
+          <Button id="append" onTap={() => setItems(previous => [...previous, 'c'])}>append</Button>
         </View>
       )
     }
@@ -84,8 +83,15 @@ describe('react runtime spike renderer', () => {
     })
 
     root.render(createElement(List))
-    append()
-    root.flush()
+    const button = findNode(root.getSnapshot().cn, node => node.p?.id === 'append')
+    root.dispatchEvent({
+      currentTarget: {
+        dataset: {
+          sid: button!.sid,
+        },
+      },
+      type: 'tap',
+    })
 
     expect(calls).toHaveLength(2)
     expect(Object.keys(calls[1]!)).toEqual(['root.cn[0].cn'])
@@ -97,12 +103,15 @@ describe('react runtime spike renderer', () => {
 
   it('supports keyed insertion before an existing host child', () => {
     const calls: Record<string, unknown>[] = []
-    let prepend!: () => void
 
     function List() {
       const [items, setItems] = useState(['b', 'c'])
-      prepend = () => setItems(previous => ['a', ...previous])
-      return <View>{items.map(item => <Text key={item}>{item}</Text>)}</View>
+      return (
+        <View>
+          {items.map(item => <Text key={item}>{item}</Text>)}
+          <Button id="prepend" onTap={() => setItems(previous => ['a', ...previous])}>prepend</Button>
+        </View>
+      )
     }
 
     const root = createReactMiniProgramRoot({
@@ -112,8 +121,15 @@ describe('react runtime spike renderer', () => {
     })
 
     root.render(createElement(List))
-    prepend()
-    root.flush()
+    const button = findNode(root.getSnapshot().cn, node => node.p?.id === 'prepend')
+    root.dispatchEvent({
+      currentTarget: {
+        dataset: {
+          sid: button!.sid,
+        },
+      },
+      type: 'tap',
+    })
 
     expect(Object.keys(calls[1]!)).toEqual(['root.cn[0].cn'])
     expect((calls[1]!['root.cn[0].cn'] as SerializedHostNode[])[0]?.cn?.[0]?.v).toBe('a')

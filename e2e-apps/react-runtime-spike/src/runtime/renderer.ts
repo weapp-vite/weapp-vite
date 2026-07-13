@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import type { HostProps, MiniProgramEventLike, MiniProgramPageAdapter } from './types'
+import { createContext } from 'react'
 import Reconciler from 'react-reconciler'
-import { DefaultEventPriority } from 'react-reconciler/constants'
+import { DefaultEventPriority, NoEventPriority } from 'react-reconciler/constants'
 import { dispatchHostEvent } from './event'
 import { hasSerializedPropChanges, HostElement, HostRoot, HostText } from './hostTree'
 
@@ -14,11 +15,37 @@ function propsChanged(previous: HostProps, next: HostProps) {
   return nextKeys.some(key => previous[key] !== next[key])
 }
 
-interface HostUpdatePayload {
-  setData: boolean
+type HostContext = Record<string, never>
+type HostNode = HostElement | HostText
+type MiniProgramHostConfig = Reconciler.HostConfig<
+  string,
+  HostProps,
+  HostRoot,
+  HostElement,
+  HostText,
+  never,
+  never,
+  never,
+  HostNode,
+  HostContext,
+  never,
+  ReturnType<typeof setTimeout>,
+  -1,
+  null
+>
+
+interface React19HostConfigExtensions {
+  getSuspendedCommitReason: () => null
+  maySuspendCommitInSyncRender: () => false
+  maySuspendCommitOnUpdate: () => false
 }
 
-const hostConfig = {
+let currentUpdatePriority = NoEventPriority
+const hostContext: HostContext = {}
+
+const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
+  HostTransitionContext: createContext(null) as never,
+  NotPendingTransition: null,
   afterActiveInstanceBlur() {},
   appendChild(parent: HostElement, child: HostElement | HostText) {
     parent.append(child)
@@ -40,12 +67,14 @@ const hostConfig = {
   },
   commitUpdate(
     element: HostElement,
-    updatePayload: HostUpdatePayload,
     _type: string,
-    _previous: HostProps,
+    previous: HostProps,
     next: HostProps,
   ) {
-    element.updateProps(next, updatePayload.setData)
+    if (!propsChanged(previous, next)) {
+      return
+    }
+    element.updateProps(next, hasSerializedPropChanges(previous, next))
   },
   createInstance(type: string, props: HostProps, root: HostRoot) {
     return new HostElement(root, root.nextSid(), type, props)
@@ -57,11 +86,11 @@ const hostConfig = {
   finalizeInitialChildren() {
     return false
   },
-  getChildHostContext(parentContext: Record<string, never>) {
+  getChildHostContext(parentContext: HostContext) {
     return parentContext
   },
-  getCurrentEventPriority() {
-    return DefaultEventPriority
+  getCurrentUpdatePriority() {
+    return currentUpdatePriority
   },
   getInstanceFromNode() {
     return null
@@ -72,8 +101,11 @@ const hostConfig = {
   getPublicInstance(instance: HostElement | HostText) {
     return instance
   },
-  getRootHostContext() {
-    return {}
+  getRootHostContext(): HostContext {
+    return hostContext
+  },
+  getSuspendedCommitReason() {
+    return null
   },
   hideInstance(instance: HostElement) {
     instance.updateProps({
@@ -91,24 +123,36 @@ const hostConfig = {
     parent.insertBefore(child, before)
   },
   isPrimaryRenderer: true,
+  maySuspendCommit() {
+    return false
+  },
+  maySuspendCommitInSyncRender() {
+    return false
+  },
+  maySuspendCommitOnUpdate() {
+    return false
+  },
   noTimeout: -1,
+  preloadInstance() {
+    return true
+  },
   prepareForCommit() {
     return null
   },
   preparePortalMount() {},
   prepareScopeUpdate() {},
-  prepareUpdate(
-    _instance: HostElement,
-    _type: string,
-    previous: HostProps,
-    next: HostProps,
-  ) {
-    if (!propsChanged(previous, next)) {
-      return null
-    }
-    return {
-      setData: hasSerializedPropChanges(previous, next),
-    }
+  requestPostPaintCallback(callback: (time: number) => void) {
+    setTimeout(() => callback(Date.now()), 0)
+  },
+  resetFormInstance() {},
+  resolveEventTimeStamp() {
+    return -1.1
+  },
+  resolveEventType() {
+    return null
+  },
+  resolveUpdatePriority() {
+    return currentUpdatePriority === NoEventPriority ? DefaultEventPriority : currentUpdatePriority
   },
   removeChild(parent: HostElement, child: HostElement | HostText) {
     parent.remove(child)
@@ -124,6 +168,12 @@ const hostConfig = {
     Promise.resolve().then(callback)
   },
   scheduleTimeout: setTimeout,
+  setCurrentUpdatePriority(priority: number) {
+    currentUpdatePriority = priority
+  },
+  shouldAttemptEagerTransition() {
+    return false
+  },
   shouldSetTextContent() {
     return false
   },
@@ -131,16 +181,22 @@ const hostConfig = {
   supportsMicrotasks: true,
   supportsMutation: true,
   supportsPersistence: false,
+  suspendInstance() {},
+  startSuspendingCommit() {},
+  trackSchedulerEvent() {},
   unhideInstance(instance: HostElement, props: HostProps) {
     instance.updateProps(props)
   },
   unhideTextInstance(instance: HostText, text: string) {
     instance.setValue(text)
   },
+  waitForCommitToBeReady() {
+    return null
+  },
   warnsIfNotActing: true,
 }
 
-const renderer = Reconciler(hostConfig as never)
+const renderer = Reconciler(hostConfig)
 
 export interface ReactMiniProgramRoot {
   dispatchEvent: (event: MiniProgramEventLike) => void
@@ -161,7 +217,11 @@ function createContainer(root: HostRoot) {
     (error) => {
       throw error
     },
-    null,
+    () => {},
+    (error) => {
+      throw error
+    },
+    () => {},
   )
 }
 
@@ -171,20 +231,24 @@ export function createReactMiniProgramRoot(adapter: MiniProgramPageAdapter): Rea
 
   return {
     dispatchEvent(event) {
-      dispatchHostEvent(root, event)
+      renderer.flushSyncFromReconciler(() => dispatchHostEvent(root, event))
+      root.flush()
     },
     flush() {
+      renderer.flushSyncFromReconciler()
       root.flush()
     },
     getSnapshot() {
       return root.snapshot()
     },
     render(element) {
-      renderer.updateContainer(element, container, null)
+      renderer.updateContainerSync(element, container, null)
+      renderer.flushSyncWork()
       root.flush()
     },
     unmount() {
-      renderer.updateContainer(null, container, null)
+      renderer.updateContainerSync(null, container, null)
+      renderer.flushSyncWork()
       root.flush()
     },
   }

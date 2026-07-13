@@ -1,14 +1,15 @@
 import type { Plugin } from 'vite'
+import type { ReactTransformMode } from './config/reactTransform.ts'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { transformWithOxc } from 'vite'
 import { defineConfig } from 'weapp-vite'
+import { transformReactTsx } from './config/reactTransform.ts'
 
 const REACT_PAGE_ID = 'virtual:react-runtime-spike-page'
 const RESOLVED_REACT_PAGE_ID = '\0react-runtime-spike-page'
 const REACT_PAGE_FILENAME = path.resolve(import.meta.dirname, 'src/pages/index/view.tsx')
 
-function reactSpikeJsxPlugin(): Plugin {
+function reactSpikeJsxPlugin(transformMode: ReactTransformMode): Plugin {
   return {
     name: 'react-runtime-spike:jsx',
     enforce: 'pre',
@@ -28,27 +29,24 @@ function reactSpikeJsxPlugin(): Plugin {
 
       this.addWatchFile(REACT_PAGE_FILENAME)
       const source = await readFile(REACT_PAGE_FILENAME, 'utf8')
-      return await transformWithOxc(source, REACT_PAGE_FILENAME, {
-        jsx: {
-          importSource: 'react',
-          runtime: 'automatic',
-        },
-        lang: 'tsx',
-        sourcemap: true,
-      })
+      return await transformReactTsx(source, REACT_PAGE_FILENAME, transformMode)
     },
   }
 }
 
-export default defineConfig({
-  build: {
-    minify: true,
-  },
-  define: {
-    'process.env.NODE_ENV': JSON.stringify('production'),
-  },
-  plugins: [reactSpikeJsxPlugin()],
-  weapp: {
-    srcRoot: 'src',
-  },
+export default defineConfig(({ mode }) => {
+  const transformMode: ReactTransformMode = mode === 'baseline' ? 'oxc' : 'swc-react-compiler'
+
+  return {
+    build: {
+      minify: true,
+    },
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
+    plugins: [reactSpikeJsxPlugin(transformMode)],
+    weapp: {
+      srcRoot: 'src',
+    },
+  }
 })
