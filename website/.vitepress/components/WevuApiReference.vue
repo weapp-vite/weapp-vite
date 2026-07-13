@@ -3,7 +3,7 @@ import type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiPhase, ApiScope, CoreA
 import { Icon } from '@iconify/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuApiGroups, wevuCoreCategories } from '../data/wevuApiCatalog'
-import { resetWevuApiFacets } from '../data/wevuApiReferenceState'
+import { DEFAULT_API_COMPATIBILITIES, hasDefaultApiCompatibilities, resetWevuApiFacets, toggleWevuApiCompatibility } from '../data/wevuApiReferenceState'
 
 interface FilterOption<T extends string> {
   value: T
@@ -49,7 +49,7 @@ const scopeOptions: FilterOption<ApiScope>[] = [
 const query = ref('')
 const activeEntry = ref<ApiEntryTab>('core')
 const activeCategory = ref<CoreApiCategory>('all')
-const selectedCompatibility = ref<'all' | ApiCompatibility>('all')
+const selectedCompatibilities = ref<ApiCompatibility[]>([...DEFAULT_API_COMPATIBILITIES])
 const selectedScope = ref<'all' | ApiScope>('all')
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
@@ -63,13 +63,13 @@ const availableCompatibilityOptions = computed(() => compatibilityOptions.filter
 const availableScopeOptions = computed(() => scopeOptions.filter(option => activeItems.value.some(item => item.scopes?.includes(option.value))))
 const hasFilters = computed(() => Boolean(
   normalizedQuery.value
-  || selectedCompatibility.value !== 'all'
+  || !hasDefaultApiCompatibilities(selectedCompatibilities.value)
   || selectedScope.value !== 'all',
 ))
 
 const filteredItems = computed(() => activeItems.value.filter((item) => {
   return matchesWevuApiSearch(item, normalizedQuery.value)
-    && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
+    && selectedCompatibilities.value.includes(item.compatibility)
     && (selectedScope.value === 'all' || item.scopes?.includes(selectedScope.value))
 }))
 
@@ -84,11 +84,11 @@ const viewKey = computed(() => `${activeEntry.value}:${activeCategory.value}`)
 function clearFacetFilters() {
   const nextState = resetWevuApiFacets({
     query: query.value,
-    compatibility: selectedCompatibility.value,
+    compatibilities: selectedCompatibilities.value,
     scope: selectedScope.value,
   })
   query.value = nextState.query
-  selectedCompatibility.value = nextState.compatibility
+  selectedCompatibilities.value = nextState.compatibilities
   selectedScope.value = nextState.scope
 }
 
@@ -127,6 +127,18 @@ function compatibilityOption(value: ApiCompatibility) {
   return compatibilityOptions.find(option => option.value === value)
 }
 
+function toggleCompatibility(value: ApiCompatibility) {
+  selectedCompatibilities.value = toggleWevuApiCompatibility(selectedCompatibilities.value, value)
+}
+
+function selectedEntryCount(entry: ApiEntry) {
+  return wevuApiCatalog.filter(item => item.entry === entry && selectedCompatibilities.value.includes(item.compatibility)).length
+}
+
+function selectedCategoryCount(group?: string) {
+  return entryItems.value.filter(item => (!group || item.group === group) && selectedCompatibilities.value.includes(item.compatibility)).length
+}
+
 onMounted(() => {
   syncEntryFromHistory()
   window.addEventListener('popstate', syncEntryFromHistory)
@@ -154,7 +166,7 @@ onBeforeUnmount(() => {
       >
         <Icon :icon="tab.icon" aria-hidden="true" />
         <span>{{ tab.label }}</span>
-        <small>{{ wevuApiCatalog.filter(item => item.entry === tab.entry).length }}</small>
+        <small>{{ selectedEntryCount(tab.entry) }}</small>
       </a>
     </nav>
 
@@ -167,7 +179,7 @@ onBeforeUnmount(() => {
         @click.prevent="selectCategory(category.value)"
       >
         <span>{{ category.label }}</span>
-        <small>{{ category.group ? entryItems.filter(item => item.group === category.group).length : entryItems.length }}</small>
+        <small>{{ selectedCategoryCount(category.group) }}</small>
       </a>
     </nav>
 
@@ -187,24 +199,20 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="wevu-api-reference__compatibility" aria-label="按迁移兼容性筛选">
-        <button
-          type="button"
-          :aria-pressed="selectedCompatibility === 'all'"
-          @click="selectedCompatibility = 'all'"
-        >
-          全部
-        </button>
-        <button
+        <label
           v-for="option in availableCompatibilityOptions"
           :key="option.value"
-          type="button"
           :title="option.description"
           :data-compatibility="option.value"
-          :aria-pressed="selectedCompatibility === option.value"
-          @click="selectedCompatibility = option.value"
         >
-          {{ option.shortLabel || option.label }}
-        </button>
+          <input
+            type="checkbox"
+            :checked="selectedCompatibilities.includes(option.value)"
+            @change="toggleCompatibility(option.value)"
+          >
+          <Icon icon="mdi:check" aria-hidden="true" />
+          <span>{{ option.shortLabel || option.label }}</span>
+        </label>
       </div>
 
       <div class="wevu-api-reference__secondary-filters">

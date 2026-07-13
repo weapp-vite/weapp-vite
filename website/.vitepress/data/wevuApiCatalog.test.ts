@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/src/shared/compositionApiCoverage'
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
-import { resetWevuApiFacets } from './wevuApiReferenceState'
+import { DEFAULT_API_COMPATIBILITIES, hasDefaultApiCompatibilities, resetWevuApiFacets, toggleWevuApiCompatibility } from './wevuApiReferenceState'
 import { wevuApiSidebarItems } from './wevuApiSidebar'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
@@ -123,13 +123,24 @@ describe('wevu API catalog', () => {
   it('preserves the search query when category navigation resets facets', () => {
     expect(resetWevuApiFacets({
       query: 'v-model',
-      compatibility: 'vue-different',
+      compatibilities: ['vue-different', 'unsupported'],
       scope: 'component',
     })).toEqual({
       query: 'v-model',
-      compatibility: 'all',
+      compatibilities: DEFAULT_API_COMPATIBILITIES,
       scope: 'all',
     })
+  })
+
+  it('uses compatibility tags as a multi-select with unsupported hidden by default', () => {
+    expect(DEFAULT_API_COMPATIBILITIES).not.toContain('unsupported')
+    expect(hasDefaultApiCompatibilities(DEFAULT_API_COMPATIBILITIES)).toBe(true)
+
+    const withUnsupported = toggleWevuApiCompatibility(DEFAULT_API_COMPATIBILITIES, 'unsupported')
+    expect(withUnsupported).toContain('unsupported')
+    expect(hasDefaultApiCompatibilities(withUnsupported)).toBe(false)
+
+    expect(toggleWevuApiCompatibility(withUnsupported, 'unsupported')).toEqual(DEFAULT_API_COMPATIBILITIES)
   })
 
   it('keeps the root, router, and store entry tabs populated', () => {

@@ -209,7 +209,11 @@
   gap: 6px;
 }
 
-.wevu-api-reference__compatibility button {
+.wevu-api-reference__compatibility label {
+  position: relative;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
   min-height: 34px;
   padding: 6px 10px;
   font-size: 12px;
@@ -221,15 +225,41 @@
   border-radius: 6px;
 }
 
-.wevu-api-reference__compatibility button:hover {
+.wevu-api-reference__compatibility label:hover {
   color: var(--vp-c-text-1);
   border-color: var(--vp-c-text-3);
 }
 
-.wevu-api-reference__compatibility button[aria-pressed='true'] {
+.wevu-api-reference__compatibility label:has(input:checked) {
   color: var(--vp-c-brand-1);
   background: var(--vp-c-brand-soft);
   border-color: var(--vp-c-brand-1);
+}
+
+.wevu-api-reference__compatibility input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  clip-path: inset(50%);
+}
+
+.wevu-api-reference__compatibility svg {
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.wevu-api-reference__compatibility label:has(input:checked) svg {
+  opacity: 1;
+}
+
+.wevu-api-reference__compatibility label:focus-within {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
 }
 
 .wevu-api-reference__secondary-filters {
@@ -326,8 +356,9 @@
     padding-top: 0;
   }
 
-  .wevu-api-reference__compatibility button {
+  .wevu-api-reference__compatibility label {
     flex: 1 0 calc(33.333% - 6px);
+    justify-content: center;
   }
 
   .wevu-api-reference__entry-tabs a {
