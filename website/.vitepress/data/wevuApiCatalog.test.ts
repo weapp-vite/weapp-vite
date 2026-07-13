@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMPOSITION_API_E2E_NAMES } from '../../../e2e-apps/wevu-runtime-e2e/src/shared/compositionApiCoverage'
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuCoreCategories } from './wevuApiCatalog'
+import { DEFAULT_API_COMPATIBILITIES, hasDefaultApiCompatibilities, resetWevuApiFacets, toggleWevuApiCompatibility } from './wevuApiReferenceState'
 import { wevuApiSidebarItems } from './wevuApiSidebar'
 
 const websiteRoot = path.resolve(import.meta.dirname, '../..')
@@ -88,7 +89,7 @@ describe('wevu API catalog', () => {
     expect(new Set(identifiers).size).toBe(identifiers.length)
 
     const names = new Set(wevuApiCatalog.map(item => item.name))
-    for (const macro of ['defineProps()', 'withDefaults()', 'defineEmits()', 'defineSlots()', 'defineExpose()', 'defineModel()', 'defineOptions()', 'definePageMeta()', 'defineAppSetup()']) {
+    for (const macro of ['defineProps()', 'withDefaults()', 'defineEmits()', 'defineSlots()', 'defineExpose()', 'defineModel()', 'defineOptions()', 'definePageMeta()', 'defineAppSetup()', 'defineAppJson()', 'definePageJson()', 'defineComponentJson()', 'defineSitemapJson()', 'defineThemeJson()']) {
       expect(names, `missing macro ${macro}`).toContain(macro)
     }
     for (const option of ['props', 'emits', 'data', 'setup', 'computed', 'methods', 'watch', 'properties', 'lifetimes', 'pageLifetimes', 'features', 'setData', 'setupLifecycle']) {
@@ -110,6 +111,36 @@ describe('wevu API catalog', () => {
     expect(matchesWevuApiSearch(patch, '批量修改')).toBe(true)
     expect(matchesWevuApiSearch(onError, '异常型')).toBe(true)
     expect(matchesWevuApiSearch(patch, '前置守卫')).toBe(false)
+  })
+
+  it('searches application methods, directives, transformed tags, and types', () => {
+    expect(wevuApiCatalog.some(item => matchesWevuApiSearch(item, 'globalProperties'))).toBe(true)
+    expect(wevuApiCatalog.some(item => matchesWevuApiSearch(item, 'v-model'))).toBe(true)
+    expect(wevuApiCatalog.some(item => item.name === '<div>' && matchesWevuApiSearch(item, 'view'))).toBe(true)
+    expect(wevuApiCatalog.some(item => matchesWevuApiSearch(item, 'PropType'))).toBe(true)
+  })
+
+  it('preserves the search query when category navigation resets facets', () => {
+    expect(resetWevuApiFacets({
+      query: 'v-model',
+      compatibilities: ['vue-different', 'unsupported'],
+      scope: 'component',
+    })).toEqual({
+      query: 'v-model',
+      compatibilities: DEFAULT_API_COMPATIBILITIES,
+      scope: 'all',
+    })
+  })
+
+  it('uses compatibility tags as a multi-select with unsupported hidden by default', () => {
+    expect(DEFAULT_API_COMPATIBILITIES).not.toContain('unsupported')
+    expect(hasDefaultApiCompatibilities(DEFAULT_API_COMPATIBILITIES)).toBe(true)
+
+    const withUnsupported = toggleWevuApiCompatibility(DEFAULT_API_COMPATIBILITIES, 'unsupported')
+    expect(withUnsupported).toContain('unsupported')
+    expect(hasDefaultApiCompatibilities(withUnsupported)).toBe(false)
+
+    expect(toggleWevuApiCompatibility(withUnsupported, 'unsupported')).toEqual(DEFAULT_API_COMPATIBILITIES)
   })
 
   it('keeps the root, router, and store entry tabs populated', () => {
@@ -174,6 +205,31 @@ describe('wevu API catalog', () => {
     ]
 
     expect(storeNames).toEqual(new Set(expectedNames))
+  })
+
+  it('covers RuntimeApp, template directives, HTML mappings, and type helpers', () => {
+    const names = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu').map(item => item.name))
+    for (const name of ['app.mount()', 'app.unmount()', 'app.onUnmount()', 'app.use()', 'app.provide()', 'app.config', 'app.config.globalProperties', 'app.version']) {
+      expect(names, `missing RuntimeApp member ${name}`).toContain(name)
+    }
+    for (const name of ['v-text', 'v-html', 'v-show', 'v-if', 'v-else-if', 'v-else', 'v-for', 'v-on', 'v-bind', 'v-model', 'v-slot', 'v-pre', 'v-once', 'v-memo', 'v-cloak', 'v-custom']) {
+      expect(names, `missing directive ${name}`).toContain(name)
+    }
+    for (const name of ['<component>', '<slot>', '<template>', '<Transition>', '<KeepAlive>', '<Teleport>', '<Suspense>', '<div>', '<span>', '<img>', '<a>']) {
+      expect(names, `missing template entry ${name}`).toContain(name)
+    }
+    for (const name of ['PropType<T>', 'MaybeRef<T>', 'MaybeRefOrGetter<T>', 'ExtractPropTypes<T>', 'ExtractPublicPropTypes<T>', 'RuntimeApp', 'AppConfig', 'WevuPlugin']) {
+      expect(names, `missing type ${name}`).toContain(name)
+    }
+  })
+
+  it('records Vue gaps as unsupported official references', () => {
+    for (const name of ['createSSRApp()', 'app.component()', 'app.directive()', 'app.mixin()', 'app.runWithContext()', 'onWatcherCleanup()', 'useId()', '<Teleport>', 'h()', 'defineCustomElement()', 'renderToString()', 'createRenderer()']) {
+      const item = wevuApiCatalog.find(candidate => candidate.name === name)
+      expect(item, `missing Vue baseline entry ${name}`).toBeDefined()
+      expect(item?.compatibility).toBe('unsupported')
+      expect(item?.vueHref).toMatch(/^https:\/\/cn\.vuejs\.org\/api\//)
+    }
   })
 
   it('covers the complete public Router surface', () => {
@@ -277,7 +333,11 @@ describe('wevu API catalog', () => {
           .replace(/<!--.*?-->/gs, '')
           .replace(/[#*`[\](){}:|>-]/g, '')
           .replace(/\s+/g, '')
-        expect(prose.length, `description is too terse for ${item.entry}:${item.name}`).toBeGreaterThanOrEqual(45)
+        const minimumDescriptionLength = item.href.startsWith('/wevu/api/') && item.kind !== 'type' ? 45 : 15
+        expect(prose.length, `description is too terse for ${item.entry}:${item.name}`).toBeGreaterThanOrEqual(minimumDescriptionLength)
+        if (!item.href.startsWith('/wevu/api/') || item.kind === 'type') {
+          continue
+        }
         expect(hasSignature(section), `missing signature for ${item.entry}:${item.name}`).toBe(true)
         expect(hasExample(section), `missing example for ${item.entry}:${item.name}`).toBe(true)
         const group = getContainingH2Section(source, anchor)
@@ -296,10 +356,11 @@ describe('wevu API catalog', () => {
   })
 
   it('keeps API anchors in the sidebar instead of adding controls to the article', async () => {
-    const pagePaths = new Set(wevuApiCatalog.map(item => item.href.split('#')[0]))
+    const apiItems = wevuApiCatalog.filter(item => item.href.startsWith('/wevu/api/'))
+    const pagePaths = new Set(apiItems.map(item => item.href.split('#')[0]))
     const sidebarLinks = new Set(collectSidebarLinks())
 
-    for (const item of wevuApiCatalog) {
+    for (const item of apiItems) {
       expect(sidebarLinks, `missing sidebar link for ${item.entry}:${item.name}`).toContain(item.href)
     }
 
@@ -308,7 +369,7 @@ describe('wevu API catalog', () => {
       const source = await readMarkdownWithIncludes(sourcePath)
       const pageSource = await fs.readFile(sourcePath, 'utf8')
 
-      expect(pageSource, `missing H2-only outline for ${pathname}`).toContain('level: [2, 2]')
+      expect(pageSource, `missing fixed outline depth for ${pathname}`).toMatch(/level: \[(?:2, 2|3, 3)\]/)
       expect(source, `article contains obsolete disclosure controls for ${pathname}`).not.toMatch(/WevuApiDoc(?:Page|Group)/)
     }
   })

@@ -56,6 +56,13 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 pnpm --filter @weapp-vite/volar build
 pnpm --filter @weapp-vite/volar test
 pnpm --filter @weapp-vite/volar typecheck
+pnpm --filter @weapp-vite/volar benchmark
+```
+
+benchmark 会为普通 SFC 和 `defineOptions` SFC 创建全新的 content 与 snapshot，并强制生成 service script 和全部 embedded code。对比修改前构建时可传入基线插件：
+
+```bash
+pnpm --filter @weapp-vite/volar benchmark -- --baseline /path/to/baseline/dist/index.mjs
 ```
 
 ## 7. 相关链接

@@ -120,15 +120,7 @@ function collectBindingNames(
   }
 }
 
-function collectTopLevelBindingNames(code: string, tsModule: typeof ts, lang: string) {
-  const scriptKind = lang === TS_LANG ? TS_SCRIPT_KIND_TS : TS_SCRIPT_KIND_JS
-  const sourceFile = tsModule.createSourceFile(
-    `bindings.${lang}`,
-    code,
-    TS_SCRIPT_TARGET_LATEST,
-    true,
-    scriptKind,
-  )
+function collectTopLevelBindingNames(sourceFile: ts.SourceFile, tsModule: typeof ts) {
   const bindings = new Set<string>()
 
   for (const statement of sourceFile.statements) {
@@ -423,16 +415,7 @@ function getFunctionLikeReturnTypeText(
     : 'any'
 }
 
-function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts, lang: string) {
-  const scriptKind = lang === TS_LANG ? TS_SCRIPT_KIND_TS : TS_SCRIPT_KIND_JS
-  const sourceFile = tsModule.createSourceFile(
-    `script-setup.${lang}`,
-    code,
-    TS_SCRIPT_TARGET_LATEST,
-    true,
-    scriptKind,
-  )
-
+function collectDefineOptionsTemplateBindings(sourceFile: ts.SourceFile, tsModule: typeof ts) {
   const valueBindings = new Map<string, string>()
   const functionBindings = new Map<string, string>()
 
@@ -582,8 +565,16 @@ export function createDefineOptionsTemplateDeclarations(
   tsModule: typeof ts,
   lang: string,
 ) {
-  const topLevelBindings = collectTopLevelBindingNames(code, tsModule, lang)
-  const bindings = collectDefineOptionsTemplateBindings(code, tsModule, lang)
+  const scriptKind = lang === TS_LANG ? TS_SCRIPT_KIND_TS : TS_SCRIPT_KIND_JS
+  const sourceFile = tsModule.createSourceFile(
+    `script-setup.${lang}`,
+    code,
+    TS_SCRIPT_TARGET_LATEST,
+    true,
+    scriptKind,
+  )
+  const topLevelBindings = collectTopLevelBindingNames(sourceFile, tsModule)
+  const bindings = collectDefineOptionsTemplateBindings(sourceFile, tsModule)
   const declarations: string[] = []
 
   for (const [name, typeText] of bindings.values) {

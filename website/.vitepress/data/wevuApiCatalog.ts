@@ -1,39 +1,24 @@
+import type { ApiCompatibility, ApiEntryTab, ApiKind, ApiScope, CoreApiCategory, CoreApiCategoryOption, WevuApiItem, WevuApiSeed } from './wevuApiCatalogTypes'
 import { getWevuApiDescription } from './wevuApiDescriptions'
+import { wevuDirectiveSeeds, wevuElementSeeds, wevuHtmlTagSeeds } from './wevuApiTemplateMatrix'
+import { wevuTypeSeeds } from './wevuApiTypeMatrix'
+import { wevuApplicationApiSeeds, wevuVueGapSeeds } from './wevuApiVueBaseline'
 
-export type ApiCompatibility = 'vue-compatible' | 'vue-different' | 'miniprogram-bridge' | 'wevu-extension'
-export type ApiKind = 'global' | 'macro' | 'reactivity' | 'lifecycle' | 'setup' | 'options' | 'store' | 'runtime' | 'type'
-export type ApiScope = 'app' | 'page' | 'component'
-export type ApiEntry = 'wevu' | 'wevu/router' | 'wevu/store'
-export type ApiEntryTab = 'core' | 'router' | 'store'
-export type CoreApiCategory = 'all' | 'core' | 'macros' | 'reactivity' | 'lifecycle' | 'setup' | 'template' | 'options' | 'runtime'
-
-export interface CoreApiCategoryOption {
-  value: CoreApiCategory
-  label: string
-  group?: string
-}
-
-export interface WevuApiItem {
-  name: string
-  description: string
-  href: string
-  group: string
-  kind: ApiKind
-  compatibility: ApiCompatibility
-  entry: ApiEntry
-  scopes?: ApiScope[]
-  keywords?: string[]
-}
+export type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiKind, ApiPhase, ApiScope, CoreApiCategory, CoreApiCategoryOption, WevuApiItem } from './wevuApiCatalogTypes'
 
 export const wevuCoreCategories: CoreApiCategoryOption[] = [
   { value: 'all', label: '全部' },
-  { value: 'core', label: '入口与组件', group: '入口与 Vue 兼容' },
+  { value: 'application', label: '应用与通用', group: '应用与通用 API' },
   { value: 'macros', label: '编译宏', group: 'Script Setup 宏' },
   { value: 'reactivity', label: '响应式', group: '响应式与调度' },
   { value: 'lifecycle', label: '生命周期', group: '生命周期' },
   { value: 'setup', label: 'Setup 与宿主', group: 'Setup 与宿主能力' },
-  { value: 'template', label: '模板与模型', group: '模板与模型工具' },
   { value: 'options', label: 'Options', group: 'Options API' },
+  { value: 'instances', label: '组件实例', group: '组件实例' },
+  { value: 'directives', label: '模板指令', group: '模板指令' },
+  { value: 'elements', label: '特殊元素', group: '特殊元素与内置组件' },
+  { value: 'html-tags', label: 'HTML 标签', group: 'HTML 标签转换' },
+  { value: 'types', label: 'TypeScript', group: 'TypeScript 类型' },
   { value: 'runtime', label: '运行时桥接', group: '运行时桥接' },
 ]
 
@@ -61,7 +46,7 @@ export function matchesWevuApiSearch(item: WevuApiItem, query: string) {
   if (!normalizedQuery) {
     return true
   }
-  const searchText = [item.name, item.description, item.group, item.entry, ...(item.keywords || [])].join(' ').toLowerCase()
+  const searchText = [item.name, item.description, item.group, item.entry, item.kind, item.phase, item.transform, ...(item.keywords || [])].join(' ').toLowerCase()
   return searchText.includes(normalizedQuery)
 }
 
@@ -71,7 +56,7 @@ function api(
   group: string,
   kind: ApiKind,
   compatibility: ApiCompatibility,
-  options: Pick<WevuApiItem, 'entry' | 'scopes' | 'keywords'> = { entry: 'wevu' },
+  options: Pick<WevuApiItem, 'entry' | 'scopes' | 'keywords'> & Partial<Pick<WevuApiItem, 'phase' | 'vueHref' | 'transform'>> = { entry: 'wevu' },
 ): WevuApiItem {
   const entry = options.entry
   return {
@@ -80,14 +65,24 @@ function api(
     href,
     group,
     kind,
+    phase: options.phase || (kind === 'macro' ? 'compile' : kind === 'type' ? 'type' : 'runtime'),
     compatibility,
     entry,
     scopes: options.scopes,
     keywords: options.keywords,
+    vueHref: options.vueHref,
+    transform: options.transform,
   }
 }
 
-const vueCore = (name: string, anchor = name.toLowerCase()) => api(`${name}()`, `/wevu/api/core#${anchor}`, '入口与 Vue 兼容', 'global', 'vue-compatible')
+function fromSeed(seed: WevuApiSeed): WevuApiItem {
+  return {
+    ...seed,
+    entry: seed.entry || 'wevu',
+  }
+}
+
+const vueCore = (name: string, anchor = name.toLowerCase()) => api(`${name}()`, `/wevu/api/core#${anchor}`, '应用与通用 API', 'global', 'vue-compatible')
 const reactivity = (name: string, compatibility: ApiCompatibility = 'vue-compatible') => api(`${name}()`, `/wevu/api/reactivity#${name.toLowerCase()}`, '响应式与调度', 'reactivity', compatibility)
 const lifecycle = (name: string, compatibility: ApiCompatibility, scopes: ApiScope[]) => api(`${name}()`, `/wevu/api/lifecycle#${name.toLowerCase()}`, '生命周期', 'lifecycle', compatibility, { entry: 'wevu', scopes })
 const setup = (name: string, anchor = name.toLowerCase(), compatibility: ApiCompatibility = 'wevu-extension') => api(`${name}()`, `/wevu/api/setup-context#${anchor}`, 'Setup 与宿主能力', 'setup', compatibility)
@@ -107,10 +102,28 @@ function routerType(name: string, group: string, compatibility: ApiCompatibility
 }
 
 export const wevuApiCatalog: WevuApiItem[] = [
-  api('createApp()', '/wevu/api/core#createapp', '入口与 Vue 兼容', 'global', 'vue-different'),
+  api('createApp()', '/wevu/api/core#createapp', '应用与通用 API', 'global', 'vue-different'),
   vueCore('defineComponent'),
+  ...wevuApplicationApiSeeds.map(fromSeed),
   ...['defineProps', 'withDefaults', 'defineEmits', 'defineSlots', 'defineExpose', 'defineModel', 'defineOptions']
     .map(name => api(`${name}()`, `/wevu/api/core#${name.toLowerCase()}`, 'Script Setup 宏', 'macro', 'vue-compatible')),
+  ...[
+    ['defineAppJson()', 'defineappjson', '声明并提取 app.json 配置。'],
+    ['definePageJson()', 'definepagejson', '声明并提取页面 JSON 配置。'],
+    ['defineComponentJson()', 'definecomponentjson', '声明并提取组件 JSON 配置。'],
+    ['defineSitemapJson()', 'definesitemapjson', '以类型安全函数声明 sitemap 配置。'],
+    ['defineThemeJson()', 'definethemejson', '以类型安全函数声明主题配置。'],
+  ].map(([name, anchor, description]) => ({
+    name,
+    description,
+    href: `/wevu/api/core#${anchor}`,
+    group: 'Script Setup 宏',
+    kind: 'macro' as const,
+    phase: 'compile' as const,
+    compatibility: 'wevu-extension' as const,
+    entry: 'wevu' as const,
+    keywords: ['JSON', 'weapp-vite', '配置宏'],
+  })),
   api('definePageMeta()', '/wevu/api/core#definepagemeta', 'Script Setup 宏', 'macro', 'wevu-extension'),
   api('defineAppSetup()', '/wevu/api/core#defineappsetup', 'Script Setup 宏', 'macro', 'wevu-extension'),
   ...['ref', 'customRef', 'reactive', 'shallowRef', 'shallowReactive', 'readonly', 'shallowReadonly', 'computed', 'watch', 'watchEffect', 'watchPostEffect', 'watchSyncEffect', 'effectScope', 'getCurrentScope', 'onScopeDispose', 'toRef', 'toRefs', 'unref', 'toValue', 'triggerRef', 'toRaw', 'markRaw', 'isRef', 'isReactive', 'isShallowRef', 'isShallowReactive', 'isRaw', 'isReadonly', 'isProxy', 'nextTick']
@@ -158,11 +171,16 @@ export const wevuApiCatalog: WevuApiItem[] = [
       return setup(name, sharedAnchor[name] || name.toLowerCase(), name.startsWith('provide') || name.startsWith('inject') ? 'wevu-extension' : 'miniprogram-bridge')
     }),
   ...['use', 'mergeModels', 'useModel', 'useAttrs', 'useSlots', 'useTemplateRef', 'normalizeClass', 'normalizeStyle']
-    .map(name => api(`${name}()`, `/wevu/api/core#${name.toLowerCase()}`, '模板与模型工具', 'setup', name === 'use' ? 'wevu-extension' : 'vue-compatible')),
+    .map(name => api(`${name}()`, `/wevu/api/core#${name.toLowerCase()}`, 'Setup 与宿主能力', 'setup', name === 'use' ? 'wevu-extension' : 'vue-compatible')),
   ...['props', 'emits', 'data', 'setup', 'computed', 'methods', 'watch']
     .map(name => api(name, `/wevu/api/options-api#${name}`, 'Options API', 'options', 'vue-different', { entry: 'wevu', scopes: ['page', 'component'] })),
   ...['properties', 'behaviors', 'lifetimes', 'pageLifetimes', 'externalClasses', 'options', 'observers', 'relations', 'features', 'setData', 'setupLifecycle']
     .map(name => api(name, `/wevu/api/options-api#${name.toLowerCase()}`, 'Options API', 'options', 'miniprogram-bridge', { entry: 'wevu', scopes: ['page', 'component'] })),
+  ...wevuVueGapSeeds.map(fromSeed),
+  ...wevuDirectiveSeeds.map(fromSeed),
+  ...wevuElementSeeds.map(fromSeed),
+  ...wevuHtmlTagSeeds.map(fromSeed),
+  ...wevuTypeSeeds.map(fromSeed),
   api('defineStore()', '/wevu/api/store#definestore', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '定义'] }),
   api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
   api('storeToRefs()', '/wevu/api/store#storetorefs', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '解构', '响应式'] }),

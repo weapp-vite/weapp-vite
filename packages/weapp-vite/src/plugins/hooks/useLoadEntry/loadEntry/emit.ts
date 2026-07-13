@@ -15,6 +15,7 @@ import path from 'pathe'
 import logger from '../../../../logger'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLayout'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
 import {
@@ -465,6 +466,13 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       const layoutPlan = resolvedPageLayoutPlan === undefined
         ? await resolvePageLayoutPlan(code, id, configService as any)
         : resolvedPageLayoutPlan ?? undefined
+      registerNativePageLayoutOutput({
+        configService,
+        runtimeState,
+        pageId: id,
+        templatePath,
+        plan: layoutPlan,
+      })
       if (layoutPlan) {
         const layoutDependencies = new Set<string>()
         for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {

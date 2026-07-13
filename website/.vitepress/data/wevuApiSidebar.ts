@@ -106,7 +106,7 @@ export const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       apiPage('Router API', 'router'),
       apiPage('Router 类型', 'router-types'),
-      { text: 'Type Reference', link: '/wevu/api/types' },
+      apiPage('Type Reference', 'types'),
     ],
   },
 ]

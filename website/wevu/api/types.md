@@ -16,6 +16,18 @@ keywords:
 
 ## 组件与应用
 
+### `RuntimeApp` {#runtimeapp}
+
+`createApp()` 的返回类型，公开 `mount/use/provide/onUnmount/unmount/config/version`。它不是 Vue DOM App 的完整类型，不包含 `component/directive/mixin/runWithContext`。
+
+### `AppConfig` {#appconfig}
+
+Wevu 应用配置类型，当前公开 `globalProperties: Record<string, any>`。
+
+### `WevuPlugin` {#wevuplugin}
+
+插件可以是 `(app, ...options) => any` 函数，也可以是带 `install(app, ...options)` 的对象。
+
 ### `CreateAppOptions` {#createappoptions}
 
 `createApp()` 的参数类型。
@@ -44,6 +56,14 @@ keywords:
 
 ## 响应式与监听
 
+### `PropType<T>` {#proptype}
+
+用于给运行时 props 构造器附加 TypeScript 值类型，语义与 Vue `PropType<T>` 对齐。
+
+### `MaybeRef<T>` {#mayberef}
+
+表示普通值、`Ref`、`ShallowRef` 或可写计算值，适合声明可接受响应式输入的组合式函数。
+
 ### `Ref` {#ref-type}
 
 基础响应式引用类型。
@@ -63,6 +83,18 @@ watch 停止句柄类型。
 ### `MaybeRefOrGetter` {#maybereforgetter}
 
 可接收值、Ref 或 getter 的联合类型。
+
+### `ExtractPropTypes<T>` {#extractproptypes}
+
+从 Wevu `ComponentPropsOptions` 推导组件内部可见的 props 类型。
+
+### `ExtractPublicPropTypes<T>` {#extractpublicproptypes}
+
+从 Wevu props 配置推导父组件可传入的公开 props 类型。
+
+### `ComponentCustomProps` {#componentcustomprops}
+
+沿用 Vue 的组件自定义 props 扩展类型，可通过模块增强补充跨组件属性。
 
 ## Store
 

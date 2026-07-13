@@ -124,6 +124,25 @@
   color: var(--vp-c-text-2);
 }
 
+.wevu-api-reference__transform {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--vp-c-text-3);
+}
+
+.wevu-api-reference__transform svg {
+  width: 13px;
+  height: 13px;
+}
+
+.wevu-api-reference__transform code {
+  color: var(--vp-c-text-2);
+  background: transparent;
+}
+
 .wevu-api-reference__meta {
   display: flex;
   gap: 7px;
@@ -141,24 +160,19 @@
   font-size: 10px;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--vp-c-text-2);
-  background: var(--vp-c-default-soft);
+  color: var(--compatibility-color);
+  background: var(--compatibility-background);
   border-radius: 4px;
 }
 
-.wevu-api-reference__tag[data-compatibility="vue-compatible"] {
-  color: var(--vp-c-green-1);
-  background: var(--vp-c-green-soft);
-}
-
-.wevu-api-reference__tag[data-compatibility="vue-different"] {
-  color: var(--vp-c-warning-1);
-  background: var(--vp-c-warning-soft);
-}
-
-.wevu-api-reference__tag[data-compatibility="miniprogram-bridge"] {
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
+.wevu-api-reference__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 7px;
+  justify-content: flex-end;
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  color: var(--vp-c-text-3);
 }
 
 .wevu-api-reference__scopes {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-12T21:21:51.206Z",
+  "generatedAt": "2026-07-13T03:54:39.159Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -6178,7 +6178,8 @@
         "api",
         "reference",
         "core",
-        "Vue SFC"
+        "Vue SFC",
+        "配置"
       ],
       "headings": [
         "Core API（入口、组件、宏）",
@@ -6186,13 +6187,13 @@
         "createApp() {#createapp}",
         "defineComponent() {#definecomponent}",
         "本组示例 {#example-core-entry}",
-        "Script Setup 宏",
-        "defineProps() {#defineprops}",
-        "withDefaults() {#withdefaults}",
-        "defineEmits() {#defineemits}",
-        "defineSlots() {#defineslots}",
-        "defineExpose() {#defineexpose}",
-        "defineModel() {#definemodel}"
+        "应用实例",
+        "app.mount() {#app-mount}",
+        "app.unmount() {#app-unmount}",
+        "app.onUnmount() {#app-onunmount}",
+        "app.use() {#app-use}",
+        "app.provide() {#app-provide}",
+        "app.config {#app-config}"
       ],
       "updatedAt": "2026-07-13",
       "source": "wevu/api/core.md"
@@ -6483,16 +6484,16 @@
       "headings": [
         "Type Reference（类型总览）",
         "组件与应用",
+        "RuntimeApp {#runtimeapp}",
+        "AppConfig {#appconfig}",
+        "WevuPlugin {#wevuplugin}",
         "CreateAppOptions {#createappoptions}",
         "DefineComponentOptions {#definecomponentoptions}",
         "ComponentDefinition {#componentdefinition}",
         "SetupContext {#setupcontext}",
         "RuntimeInstance {#runtimeinstance}",
         "MiniProgram* / HostMiniProgram* {#miniprogram-types}",
-        "响应式与监听",
-        "Ref {#ref-type}",
-        "ShallowRef {#shallowref-type}",
-        "WatchOptions {#watchoptions}"
+        "响应式与监听"
       ],
       "updatedAt": "2026-07-13",
       "source": "wevu/api/types.md"
@@ -6970,7 +6971,8 @@
         "给生成的 wrapper 加 class/style",
         "单根真实节点下推",
         "block 和内容承载限制",
-        "延伸阅读"
+        "Vue 模板兼容矩阵",
+        "内置指令"
       ],
       "updatedAt": "2026-07-13",
       "source": "wevu/vue-sfc/template.md"

@@ -41,7 +41,7 @@ describe.sequential('template: Tailwind CSS Iconify build output', () => {
     await Promise.all(fixtureRoots.map(async fixtureRoot => await fs.remove(fixtureRoot)))
   })
 
-  it.each(TEMPLATE_CASES)('keeps Iconify base mask rules for i-mdi utility icons in $name', async (templateCase) => {
+  it.each(TEMPLATE_CASES)('keeps Iconify rules and native layout branches in $name', async (templateCase) => {
     const fixtureRoot = await createTemplateFixture(templateCase.root, templateCase.name)
     fixtureRoots.push(fixtureRoot)
 
@@ -55,6 +55,7 @@ describe.sequential('template: Tailwind CSS Iconify build output', () => {
 
     const appWxss = await fs.readFile(path.join(fixtureRoot, 'dist/app.wxss'), 'utf8')
     const indexWxml = await fs.readFile(path.join(fixtureRoot, 'dist/pages/index/index.wxml'), 'utf8')
+    const layoutWxml = await fs.readFile(path.join(fixtureRoot, 'dist/pages/layouts/index.wxml'), 'utf8')
 
     expect(indexWxml).toContain('iconify')
     expect(indexWxml).toContain('i-mdi-moon-waxing-crescent')
@@ -66,5 +67,9 @@ describe.sequential('template: Tailwind CSS Iconify build output', () => {
     expect(appWxss).toContain('mask-image: var(--svg)')
     expect(appWxss).toContain('.i-mdi-moon-waxing-crescent')
     expect(appWxss).toContain('.i-mdi-weather-sunny')
+    expect(layoutWxml).toContain('<weapp-layout-default')
+    expect(layoutWxml).toContain('<weapp-layout-admin')
+    expect(layoutWxml).toContain('<block wx:else>')
+    expect(layoutWxml).toContain('tracking-_b0_d2em_B')
   }, 120_000)
 })

@@ -12,6 +12,14 @@ function createBundleAssetEmitter(bundle: OutputBundle) {
   }
 }
 
+function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin>, bundle: OutputBundle) {
+  const hook = plugin.generateBundle
+  const handler = typeof hook === 'function' ? hook : hook?.handler
+  handler?.call({
+    emitFile: createBundleAssetEmitter(bundle),
+  } as any, {} as any, bundle, false)
+}
+
 describe('weapp-vite output finalizer', () => {
   it('drops duplicate preprocessor style assets', () => {
     const bundle = {
@@ -179,11 +187,10 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({
-      emitFile: createBundleAssetEmitter(bundle),
-    } as any, {} as any, bundle, false)
+    runGenerateBundle(plugin, bundle)
 
     expect(plugin.enforce).toBe('post')
+    expect(typeof plugin.generateBundle === 'object' && plugin.generateBundle.order).toBe('post')
     expect(bundle['app.scss']).toBeUndefined()
     expect(bundle['app.wxss']).toMatchObject({
       type: 'asset',
@@ -228,9 +235,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({
-      emitFile: createBundleAssetEmitter(bundle),
-    } as any, {} as any, bundle, false)
+    runGenerateBundle(plugin, bundle)
 
     expect((bundle['app.js'] as any).source).toContain('require("./weapp-vendors/wevu-watch.js")')
     expect((bundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
@@ -274,9 +279,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({
-      emitFile: createBundleAssetEmitter(fullBundle),
-    } as any, {} as any, fullBundle, false)
+    runGenerateBundle(plugin, fullBundle)
 
     const hmrBundle = {
       'app.js': {
@@ -286,9 +289,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({
-      emitFile: createBundleAssetEmitter(hmrBundle),
-    } as any, {} as any, hmrBundle, false)
+    runGenerateBundle(plugin, hmrBundle)
 
     expect((hmrBundle['app.js'] as any).source).toContain('require("./weapp-vendors/wevu-watch.js")')
     expect((hmrBundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
@@ -333,9 +334,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    plugin.generateBundle?.call({
-      emitFile: createBundleAssetEmitter(bundle),
-    } as any, {} as any, bundle, false)
+    runGenerateBundle(plugin, bundle)
 
     const finalSource = (bundle['app.js'] as any).source
     expect(finalSource).toContain('require("./weapp-vendors/wevu-watch.js")')

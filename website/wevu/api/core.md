@@ -16,6 +16,8 @@ keywords:
 
 <!--@include: ../../.partials/wevu-api/core/01-入口与组件定义.md-->
 
+<!--@include: ../../.partials/wevu-api/core/01b-应用实例.md-->
+
 <!--@include: ../../.partials/wevu-api/core/02-script-setup-宏.md-->
 
 <!--@include: ../../.partials/wevu-api/core/03-模板工具.md-->

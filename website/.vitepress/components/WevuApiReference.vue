@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiScope, CoreApiCategory } from '../data/wevuApiCatalog'
+import type { ApiCompatibility, ApiEntry, ApiEntryTab, ApiPhase, ApiScope, CoreApiCategory } from '../data/wevuApiCatalog'
 import { Icon } from '@iconify/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getApiEntryHref, getCoreCategoryHref, matchesWevuApiSearch, resolveWevuApiNavigation, wevuApiCatalog, wevuApiGroups, wevuCoreCategories } from '../data/wevuApiCatalog'
+import { DEFAULT_API_COMPATIBILITIES, hasDefaultApiCompatibilities, resetWevuApiFacets, toggleWevuApiCompatibility } from '../data/wevuApiReferenceState'
 
 interface FilterOption<T extends string> {
   value: T
@@ -26,10 +27,18 @@ const entryTabs: EntryTabOption[] = [
 
 const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
   { value: 'vue-compatible', label: 'Vue 完全兼容', shortLabel: 'Vue 兼容', description: '名称、参数和主要行为与 Vue 对应 API 保持一致' },
+  { value: 'vue-compatible-with-notes', label: 'Vue 兼容（有宿主差异）', shortLabel: '兼容有说明', description: '常见迁移结果一致，但运行载体或内部机制存在无害差异' },
   { value: 'vue-different', label: 'Vue 同名有差异', shortLabel: 'Vue 差异', description: '名称相同，但参数、时机或宿主行为存在差异' },
   { value: 'miniprogram-bridge', label: '小程序桥接', shortLabel: '宿主桥接', description: '连接小程序生命周期或宿主能力，不属于 Vue API' },
   { value: 'wevu-extension', label: 'Wevu 扩展', description: 'Wevu 提供的框架扩展能力' },
+  { value: 'unsupported', label: '当前不支持', shortLabel: '不支持', description: 'Vue 提供该能力，Wevu 当前没有对应实现' },
 ]
+
+const phaseOptions: Record<ApiPhase, string> = {
+  compile: '编译期',
+  runtime: '运行时',
+  type: '类型层',
+}
 
 const scopeOptions: FilterOption<ApiScope>[] = [
   { value: 'app', label: 'App' },
@@ -40,7 +49,7 @@ const scopeOptions: FilterOption<ApiScope>[] = [
 const query = ref('')
 const activeEntry = ref<ApiEntryTab>('core')
 const activeCategory = ref<CoreApiCategory>('all')
-const selectedCompatibility = ref<'all' | ApiCompatibility>('all')
+const selectedCompatibilities = ref<ApiCompatibility[]>([...DEFAULT_API_COMPATIBILITIES])
 const selectedScope = ref<'all' | ApiScope>('all')
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
@@ -54,13 +63,13 @@ const availableCompatibilityOptions = computed(() => compatibilityOptions.filter
 const availableScopeOptions = computed(() => scopeOptions.filter(option => activeItems.value.some(item => item.scopes?.includes(option.value))))
 const hasFilters = computed(() => Boolean(
   normalizedQuery.value
-  || selectedCompatibility.value !== 'all'
+  || !hasDefaultApiCompatibilities(selectedCompatibilities.value)
   || selectedScope.value !== 'all',
 ))
 
 const filteredItems = computed(() => activeItems.value.filter((item) => {
   return matchesWevuApiSearch(item, normalizedQuery.value)
-    && (selectedCompatibility.value === 'all' || item.compatibility === selectedCompatibility.value)
+    && selectedCompatibilities.value.includes(item.compatibility)
     && (selectedScope.value === 'all' || item.scopes?.includes(selectedScope.value))
 }))
 
@@ -72,10 +81,20 @@ const groupedItems = computed(() => wevuApiGroups
   .filter(group => group.items.length > 0))
 const viewKey = computed(() => `${activeEntry.value}:${activeCategory.value}`)
 
+function clearFacetFilters() {
+  const nextState = resetWevuApiFacets({
+    query: query.value,
+    compatibilities: selectedCompatibilities.value,
+    scope: selectedScope.value,
+  })
+  query.value = nextState.query
+  selectedCompatibilities.value = nextState.compatibilities
+  selectedScope.value = nextState.scope
+}
+
 function clearFilters() {
   query.value = ''
-  selectedCompatibility.value = 'all'
-  selectedScope.value = 'all'
+  clearFacetFilters()
 }
 
 function selectEntry(value: ApiEntryTab) {
@@ -84,7 +103,7 @@ function selectEntry(value: ApiEntryTab) {
   }
   activeEntry.value = value
   activeCategory.value = 'all'
-  clearFilters()
+  clearFacetFilters()
   window.history.pushState({}, '', getApiEntryHref(value))
 }
 
@@ -93,7 +112,7 @@ function selectCategory(value: CoreApiCategory) {
     return
   }
   activeCategory.value = value
-  clearFilters()
+  clearFacetFilters()
   window.history.pushState({}, '', getCoreCategoryHref(value))
 }
 
@@ -101,11 +120,23 @@ function syncEntryFromHistory() {
   const navigation = resolveWevuApiNavigation(new URL(window.location.href))
   activeEntry.value = navigation.entry
   activeCategory.value = navigation.category
-  clearFilters()
+  clearFacetFilters()
 }
 
 function compatibilityOption(value: ApiCompatibility) {
   return compatibilityOptions.find(option => option.value === value)
+}
+
+function toggleCompatibility(value: ApiCompatibility) {
+  selectedCompatibilities.value = toggleWevuApiCompatibility(selectedCompatibilities.value, value)
+}
+
+function selectedEntryCount(entry: ApiEntry) {
+  return wevuApiCatalog.filter(item => item.entry === entry && selectedCompatibilities.value.includes(item.compatibility)).length
+}
+
+function selectedCategoryCount(group?: string) {
+  return entryItems.value.filter(item => (!group || item.group === group) && selectedCompatibilities.value.includes(item.compatibility)).length
 }
 
 onMounted(() => {
@@ -135,7 +166,7 @@ onBeforeUnmount(() => {
       >
         <Icon :icon="tab.icon" aria-hidden="true" />
         <span>{{ tab.label }}</span>
-        <small>{{ wevuApiCatalog.filter(item => item.entry === tab.entry).length }}</small>
+        <small>{{ selectedEntryCount(tab.entry) }}</small>
       </a>
     </nav>
 
@@ -148,7 +179,7 @@ onBeforeUnmount(() => {
         @click.prevent="selectCategory(category.value)"
       >
         <span>{{ category.label }}</span>
-        <small>{{ category.group ? entryItems.filter(item => item.group === category.group).length : entryItems.length }}</small>
+        <small>{{ selectedCategoryCount(category.group) }}</small>
       </a>
     </nav>
 
@@ -168,24 +199,25 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="wevu-api-reference__compatibility" aria-label="按迁移兼容性筛选">
-        <button
-          type="button"
-          :aria-pressed="selectedCompatibility === 'all'"
-          @click="selectedCompatibility = 'all'"
-        >
-          全部
-        </button>
-        <button
+        <label
           v-for="option in availableCompatibilityOptions"
           :key="option.value"
-          type="button"
           :title="option.description"
           :data-compatibility="option.value"
-          :aria-pressed="selectedCompatibility === option.value"
-          @click="selectedCompatibility = option.value"
         >
-          {{ option.shortLabel || option.label }}
-        </button>
+          <input
+            type="checkbox"
+            :checked="selectedCompatibilities.includes(option.value)"
+            @change="toggleCompatibility(option.value)"
+          >
+          <Icon
+            class="wevu-api-reference__compatibility-icon"
+            :class="{ 'is-selected': selectedCompatibilities.includes(option.value) }"
+            :icon="selectedCompatibilities.includes(option.value) ? 'mdi:check-circle' : 'mdi:checkbox-blank-circle-outline'"
+            aria-hidden="true"
+          />
+          <span>{{ option.shortLabel || option.label }}</span>
+        </label>
       </div>
 
       <div class="wevu-api-reference__secondary-filters">
@@ -204,7 +236,7 @@ onBeforeUnmount(() => {
     <Transition name="wevu-api-view" mode="out-in">
       <div :key="viewKey" class="wevu-api-reference__view">
         <div class="wevu-api-reference__result-bar" aria-live="polite">
-          <span><strong>{{ filteredItems.length }}</strong> 个 API</span>
+          <span><strong>{{ filteredItems.length }}</strong> 个条目</span>
           <button v-if="hasFilters" type="button" @click="clearFilters">
             重置筛选
           </button>
@@ -218,10 +250,19 @@ onBeforeUnmount(() => {
             </div>
             <ul>
               <li v-for="item in group.items" :key="`${item.entry}:${item.name}`">
-                <a :href="item.href" class="wevu-api-reference__item-link">
+                <a
+                  :href="item.href"
+                  class="wevu-api-reference__item-link"
+                  :target="item.href.startsWith('https://') ? '_blank' : undefined"
+                  :rel="item.href.startsWith('https://') ? 'noreferrer' : undefined"
+                >
                   <span class="wevu-api-reference__item-main">
                     <code>{{ item.name }}</code>
                     <Icon icon="mdi:arrow-top-right" aria-hidden="true" />
+                  </span>
+                  <span v-if="item.transform" class="wevu-api-reference__transform">
+                    <Icon icon="mdi:arrow-right" aria-hidden="true" />
+                    <code>{{ item.transform }}</code>
                   </span>
                   <span class="wevu-api-reference__description">{{ item.description }}</span>
                   <span class="wevu-api-reference__meta">
@@ -232,8 +273,12 @@ onBeforeUnmount(() => {
                     >
                       {{ compatibilityOption(item.compatibility)?.shortLabel || compatibilityOption(item.compatibility)?.label }}
                     </span>
-                    <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
-                      {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
+                    <span class="wevu-api-reference__details">
+                      <span>{{ phaseOptions[item.phase] }}</span>
+                      <span v-if="item.kind === 'type'">TypeScript</span>
+                      <span v-if="item.scopes?.length" class="wevu-api-reference__scopes">
+                        {{ item.scopes.map(scope => scopeOptions.find(option => option.value === scope)?.shortLabel || scope).join(' / ') }}
+                      </span>
                     </span>
                   </span>
                 </a>
