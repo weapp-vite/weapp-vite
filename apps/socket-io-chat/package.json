@@ -31,7 +31,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "tailwindcss": "catalog:tailwind4",
-    "tsx": "^4.23.0",
+    "tsx": "^4.23.1",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
