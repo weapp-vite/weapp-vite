@@ -1,0 +1,172 @@
+import type { ApiCompatibility, WevuApiSeed } from './wevuApiCatalogTypes'
+
+const vueApi = 'https://cn.vuejs.org/api'
+const templateDocs = '/wevu/vue-sfc/template'
+
+function directive(
+  name: string,
+  compatibility: ApiCompatibility,
+  description: string,
+  anchor: string,
+  keywords: string[] = [],
+): WevuApiSeed {
+  return {
+    name,
+    description,
+    href: `${templateDocs}#${anchor}`,
+    vueHref: `${vueApi}/built-in-directives.html#${name.slice(2)}`,
+    group: '模板指令',
+    kind: 'directive',
+    phase: 'compile',
+    compatibility,
+    scopes: ['page', 'component'],
+    keywords: ['模板', '编译', ...keywords],
+  }
+}
+
+export const wevuDirectiveSeeds: WevuApiSeed[] = [
+  directive('v-text', 'vue-compatible-with-notes', '编译为小程序文本插值，结果与常见 Vue 用法一致。', 'directive-v-text'),
+  directive('v-html', 'unsupported', '小程序模板不支持直接注入 HTML，请改用 rich-text。', 'directive-v-html', ['rich-text']),
+  directive('v-show', 'vue-compatible-with-notes', '编译为 display 样式切换，不销毁小程序节点。', 'directive-v-show'),
+  directive('v-if', 'vue-compatible-with-notes', '编译为宿主条件渲染指令。', 'directive-v-if', ['wx:if']),
+  directive('v-else-if', 'vue-compatible-with-notes', '编译为宿主条件分支指令。', 'directive-v-else-if', ['wx:elif']),
+  directive('v-else', 'vue-compatible-with-notes', '编译为宿主兜底条件分支。', 'directive-v-else', ['wx:else']),
+  directive('v-for', 'vue-compatible-with-notes', '编译为宿主列表指令并规范化 key 与索引。', 'directive-v-for', ['wx:for']),
+  directive('v-on', 'vue-different', '映射为小程序事件，事件名和修饰符受宿主限制。', 'directive-v-on', ['@', 'bind', 'catch']),
+  directive('v-bind', 'vue-different', '支持显式属性绑定，不支持 v-bind 对象展开。', 'directive-v-bind', [':', 'object spread']),
+  directive('v-model', 'vue-different', '转换为小程序属性与赋值事件，支持范围受控。', 'directive-v-model'),
+  directive('v-slot', 'vue-different', '转换为小程序 slot/generic，具名转发存在宿主边界。', 'directive-v-slot', ['slot', 'generic']),
+  directive('v-pre', 'unsupported', '当前没有 Vue v-pre 的跳过编译语义。', 'directive-v-pre'),
+  directive('v-once', 'vue-different', '当前会按普通元素渲染并产生编译警告。', 'directive-v-once'),
+  directive('v-memo', 'unsupported', '当前没有 Vue v-memo 的模板缓存语义。', 'directive-v-memo'),
+  directive('v-cloak', 'vue-different', '编译时忽略该标记，不提供浏览器闪烁治理语义。', 'directive-v-cloak'),
+  directive('v-custom', 'vue-different', '自定义指令按小程序属性形式输出，不执行 DOM 钩子。', 'directive-custom', ['自定义指令']),
+]
+
+function element(
+  name: string,
+  compatibility: ApiCompatibility,
+  description: string,
+  anchor: string,
+  page = 'built-in-special-elements',
+): WevuApiSeed {
+  return {
+    name,
+    description,
+    href: `${templateDocs}#${anchor}`,
+    vueHref: `${vueApi}/${page}.html#${name.replace(/[<>]/g, '').toLowerCase()}`,
+    group: '特殊元素与内置组件',
+    kind: 'element',
+    phase: 'compile',
+    compatibility,
+    scopes: ['page', 'component'],
+    keywords: ['模板元素', '内置组件'],
+  }
+}
+
+export const wevuElementSeeds: WevuApiSeed[] = [
+  element('<component>', 'vue-different', '动态组件能力受小程序组件注册与模板语法约束。', 'element-component'),
+  element('<slot>', 'vue-different', '转换为小程序插槽并处理具名插槽转发。', 'element-slot'),
+  element('<template>', 'vue-different', '结构指令场景转为 block，原生模板属性继续保留。', 'element-template'),
+  element('<Transition>', 'vue-different', '仅渲染子节点并警告，不提供 Vue 过渡运行时。', 'element-transition', 'built-in-components'),
+  element('<TransitionGroup>', 'unsupported', '当前不提供 Vue 列表过渡运行时。', 'element-transition-group', 'built-in-components'),
+  element('<KeepAlive>', 'vue-different', '输出标记容器，不提供完整实例缓存语义。', 'element-keep-alive', 'built-in-components'),
+  element('<Teleport>', 'unsupported', '小程序模板不支持 Vue Teleport 目标挂载。', 'element-teleport', 'built-in-components'),
+  element('<Suspense>', 'unsupported', '当前不提供 Vue Suspense 边界。', 'element-suspense', 'built-in-components'),
+  {
+    name: 'key',
+    description: '用于稳定列表节点身份，并转换为宿主 key 属性。',
+    href: `${templateDocs}#attribute-key`,
+    vueHref: `${vueApi}/built-in-special-attributes.html#key`,
+    group: '特殊元素与内置组件',
+    kind: 'element',
+    phase: 'compile',
+    compatibility: 'vue-compatible-with-notes',
+    scopes: ['page', 'component'],
+    keywords: ['特殊属性', 'wx:key'],
+  },
+  {
+    name: 'ref attribute',
+    description: '注册小程序节点或组件引用，由 useTemplateRef 读取。',
+    href: `${templateDocs}#attribute-ref`,
+    vueHref: `${vueApi}/built-in-special-attributes.html#ref`,
+    group: '特殊元素与内置组件',
+    kind: 'element',
+    phase: 'compile',
+    compatibility: 'vue-different',
+    scopes: ['page', 'component'],
+    keywords: ['特殊属性', 'template ref'],
+  },
+  {
+    name: 'is attribute',
+    description: '受小程序动态组件与原生 template is 语义限制。',
+    href: `${templateDocs}#attribute-is`,
+    vueHref: `${vueApi}/built-in-special-attributes.html#is`,
+    group: '特殊元素与内置组件',
+    kind: 'element',
+    phase: 'compile',
+    compatibility: 'vue-different',
+    scopes: ['page', 'component'],
+    keywords: ['特殊属性', '动态组件'],
+  },
+]
+
+const htmlTagMap: Record<string, string> = {
+  a: 'navigator',
+  article: 'view',
+  aside: 'view',
+  b: 'text',
+  blockquote: 'view',
+  br: 'view',
+  button: 'button',
+  code: 'text',
+  dd: 'view',
+  div: 'view',
+  dl: 'view',
+  dt: 'view',
+  em: 'text',
+  figcaption: 'view',
+  figure: 'view',
+  footer: 'view',
+  form: 'form',
+  h1: 'view',
+  h2: 'view',
+  h3: 'view',
+  h4: 'view',
+  h5: 'view',
+  h6: 'view',
+  header: 'view',
+  hr: 'view',
+  i: 'text',
+  img: 'image',
+  input: 'input',
+  label: 'label',
+  li: 'view',
+  main: 'view',
+  nav: 'view',
+  ol: 'view',
+  p: 'view',
+  pre: 'view',
+  section: 'view',
+  small: 'text',
+  span: 'text',
+  strong: 'text',
+  textarea: 'textarea',
+  u: 'text',
+  ul: 'view',
+}
+
+export const wevuHtmlTagSeeds: WevuApiSeed[] = Object.entries(htmlTagMap).map(([name, transform]) => ({
+  name: `<${name}>`,
+  description: name === transform
+    ? `保留为小程序内置 <${transform}> 标签。`
+    : `默认编译为小程序 <${transform}> 标签。`,
+  href: `${templateDocs}#html-tag-mapping`,
+  group: 'HTML 标签转换',
+  kind: 'tag',
+  phase: 'compile',
+  compatibility: name === transform ? 'vue-compatible-with-notes' : 'vue-different',
+  scopes: ['page', 'component'],
+  keywords: ['HTML', 'WXML', name, transform],
+  transform: name === transform ? undefined : `<${transform}>`,
+}))

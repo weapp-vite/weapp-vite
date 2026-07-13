@@ -150,6 +150,81 @@ definePageMeta({
 - 用途：声明 App 级 setup 初始化逻辑。
 - 说明：适合把插件安装、全局 provide、全局 router 初始化等 App 级逻辑收敛到一个同步入口。
 
+### `defineAppJson()` {#defineappjson}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('weapp-vite/json')['defineAppJson']`
+
+**运行时说明：** 在 `app.vue` 中作为顶层编译宏使用时，配置会被提取并合并到 `app.json`，运行时零开销。
+
+**示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
+
+支持直接对象或接收编译上下文的函数；一个 App SFC 应只保留一套 App JSON 声明。
+
+### `definePageJson()` {#definepagejson}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('weapp-vite/json')['definePageJson']`
+
+**运行时说明：** 在页面 SFC 中提取为页面 JSON，可与 `definePageMeta()` 分别声明宿主配置和布局元信息。
+
+**示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
+
+常用于导航栏、下拉刷新和 `usingComponents` 等页面配置。
+
+### `defineComponentJson()` {#definecomponentjson}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('weapp-vite/json')['defineComponentJson']`
+
+**运行时说明：** 在组件 SFC 中提取为组件 JSON，并参与原生组件注册与选项合并。
+
+**示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
+
+组件角色只使用该宏，不要与页面或 App JSON 宏混用。
+
+### `defineSitemapJson()` {#definesitemapjson}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('weapp-vite/json')['defineSitemapJson']`
+
+**编译期说明：** 这是 `weapp-vite/json` 导出的类型安全配置辅助函数，不是 Vue SFC 自动提取宏。
+
+**示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
+
+它返回原配置，适合在独立 sitemap 配置模块中获得结构类型提示。
+
+### `defineThemeJson()` {#definethemejson}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('weapp-vite/json')['defineThemeJson']`
+
+**编译期说明：** 这是 `weapp-vite/json` 导出的主题配置辅助函数，不是 Vue SFC 自动提取宏。
+
+**示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
+
+它用于约束 theme 配置结构，本身不注册 Wevu 运行时能力。
+
+### 本组示例 {#example-json-macros}
+
+页面 SFC 中直接使用对应角色的 JSON 宏，无需保留额外 `<json>` 块。
+
+```vue
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '订单',
+  enablePullDownRefresh: true,
+})
+
+definePageMeta({ layout: 'default' })
+</script>
+```
+
 ### `use()` {#use}
 
 <!-- api-reference-details -->

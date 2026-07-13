@@ -393,6 +393,8 @@ export default defineConfig({
 - `block` 会被编译器拒绝并回退到 `view`。
 - 你选择的 wrapper 必须能承载实际内容。
 
+<!--@include: ../../.partials/wevu-template/compatibility-matrix.md-->
+
 ## 延伸阅读
 
 - [class/style 绑定能力](/wevu/vue-sfc/class-style)

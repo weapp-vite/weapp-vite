@@ -62,7 +62,7 @@
   transform: translateY(-1px);
 }
 
-.wevu-api-reference__entry-tabs a[aria-current="page"] {
+.wevu-api-reference__entry-tabs a[aria-current='page'] {
   color: var(--vp-c-brand-1);
   background: var(--vp-c-bg);
   border-color: var(--vp-c-border);
@@ -119,7 +119,7 @@
   background: color-mix(in srgb, var(--vp-c-bg) 70%, transparent);
 }
 
-.wevu-api-reference__category-tabs a[aria-current="page"] {
+.wevu-api-reference__category-tabs a[aria-current='page'] {
   color: var(--vp-c-brand-1);
   background: var(--vp-c-bg);
   border-color: var(--vp-c-border);
@@ -226,7 +226,7 @@
   border-color: var(--vp-c-text-3);
 }
 
-.wevu-api-reference__compatibility button[aria-pressed="true"] {
+.wevu-api-reference__compatibility button[aria-pressed='true'] {
   color: var(--vp-c-brand-1);
   background: var(--vp-c-brand-soft);
   border-color: var(--vp-c-brand-1);
