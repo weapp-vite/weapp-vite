@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.18.3
+
+### Patch Changes
+
+- 🐛 **优化 Vue SFC 页面配置热更新：仅修改 JSON 宏或 `<json>` 时复用已编译的脚本、模板与样式结果，避免重复执行完整 Vue 编译，并在混合变更或缓存不可用时自动回退。** [#719](https://github.com/weapp-vite/weapp-vite/pull/719) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.18.3`
+
 ## 6.18.2
 
 ### Patch Changes
