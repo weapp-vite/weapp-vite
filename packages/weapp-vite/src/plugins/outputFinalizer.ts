@@ -9,6 +9,7 @@ import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
+import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
@@ -299,21 +300,25 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
-    generateBundle(_options, bundle) {
-      const outputBundle = bundle as unknown as OutputBundle
-      rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
-      stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
-      const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
-      normalizePreprocessorStyleAssetEntries(
-        outputBundle,
-        assetEntries.preprocessorStyleAssets,
-        ctx.configService.outputExtensions?.wxss,
-        asset => this.emitFile(asset),
-      )
-      normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets)
-      pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
-        runtimeRewriteDone: true,
-      })
+    generateBundle: {
+      order: 'post',
+      handler(_options, bundle) {
+        const outputBundle = bundle as unknown as OutputBundle
+        rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
+        stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
+        restoreNativePageLayoutOutputs(ctx, outputBundle)
+        const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
+        normalizePreprocessorStyleAssetEntries(
+          outputBundle,
+          assetEntries.preprocessorStyleAssets,
+          ctx.configService.outputExtensions?.wxss,
+          asset => this.emitFile(asset),
+        )
+        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets)
+        pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
+          runtimeRewriteDone: true,
+        })
+      },
     },
   }
 }

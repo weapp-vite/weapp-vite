@@ -383,73 +383,165 @@ wx-root-portal-content {
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages from app config > weapp-vite-tailwindcss-vant-template::pages/index/index 1`] = `
-"<view
-  class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
-  <view class="flex flex-col items-center pt-20 space-y-10">
-    <view class="flex space-x-8">
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
+  <view
+    class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+    <view class="flex flex-col items-center pt-20 space-y-10">
+      <view class="flex space-x-8">
+        <view
+          class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+        <view
+          class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      </view>
       <view
-        class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+        class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+        weapp-vite & weapp-tailwindcss
+      </view>
+      <HelloWorld
+        title="{{hello.title}}"
+        description="{{hello.description}}"
+        docs="{{hello.docs}}"
+        links="{{hello.links}}" />
       <view
-        class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
-    </view>
-    <view
-      class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
-      weapp-vite & weapp-tailwindcss
-    </view>
-    <HelloWorld
-      title="{{hello.title}}"
-      description="{{hello.description}}"
-      docs="{{hello.docs}}"
-      links="{{hello.links}}" />
-    <view
-      class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl"></view>
-    <view class="underline" mark:url="https://vite.icebreaker.top">
-      https://vite.icebreaker.top
-    </view>
-    <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
-    <view>
-      <van-button type="default">Vant 按钮</van-button>
-    </view>
-    <view>
-      <van-button type="primary" plain>打开布局演示页</van-button>
+        class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl"></view>
+      <view class="underline" mark:url="https://vite.icebreaker.top">
+        https://vite.icebreaker.top
+      </view>
+      <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
+      <view>
+        <van-button type="default" bind:click="showDialog">Vant 按钮</van-button>
+      </view>
+      <view>
+        <van-button type="primary" plain bind:click="goToLayouts">打开布局演示页</van-button>
+      </view>
     </view>
   </view>
-</view>
-<van-dialog id="van-dialog" />
+  <van-dialog id="van-dialog" />
+</weapp-layout-default>
 "
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages from app config > weapp-vite-tailwindcss-vant-template::pages/layouts/index 1`] = `
-"<view class="min-h-screen bg-slate-100 px-4 py-5">
-  <view class="rounded-2xl bg-white p-5 shadow-sm">
-    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-rose-700">
-      Native Layouts
-    </view>
-    <view class="mt-3 text-2xl font-bold text-slate-900">Vant 原生模板已接入 layouts</view>
-    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
-  </view>
+"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
+  <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="min-h-screen bg-slate-100 px-4 py-5">
+      <view class="rounded-2xl bg-white p-5 shadow-sm">
+        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-rose-700">
+          Native Layouts
+        </view>
+        <view class="mt-3 text-2xl font-bold text-slate-900">Vant 原生模板已接入 layouts</view>
+        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+      </view>
 
-  <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-    <view class="layout-actions">
-      <view class="layout-actions__item">
-        <van-button block type="primary">使用 default 布局</van-button>
+      <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="layout-actions">
+          <view class="layout-actions__item">
+            <van-button block type="primary" bind:click="applyDefaultLayout">
+              使用 default 布局
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="danger" plain bind:click="applyAdminLayout">
+              切到 admin 布局
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="default" plain bind:click="clearLayout">关闭布局</van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="success" plain bind:click="showState">查看当前状态</van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="default" bind:click="backHome">返回首页</van-button>
+          </view>
+        </view>
       </view>
-      <view class="layout-actions__item">
-        <van-button block type="danger" plain>切到 admin 布局</van-button>
+
+      <van-dialog id="van-dialog" />
+    </view>
+  </weapp-layout-admin>
+</block>
+<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
+  <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="min-h-screen bg-slate-100 px-4 py-5">
+      <view class="rounded-2xl bg-white p-5 shadow-sm">
+        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-rose-700">
+          Native Layouts
+        </view>
+        <view class="mt-3 text-2xl font-bold text-slate-900">Vant 原生模板已接入 layouts</view>
+        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
       </view>
-      <view class="layout-actions__item">
-        <van-button block type="default" plain>关闭布局</van-button>
+
+      <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="layout-actions">
+          <view class="layout-actions__item">
+            <van-button block type="primary" bind:click="applyDefaultLayout">
+              使用 default 布局
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="danger" plain bind:click="applyAdminLayout">
+              切到 admin 布局
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="default" plain bind:click="clearLayout">关闭布局</van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="success" plain bind:click="showState">查看当前状态</van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button block type="default" bind:click="backHome">返回首页</van-button>
+          </view>
+        </view>
       </view>
-      <view class="layout-actions__item">
-        <van-button block type="success" plain>查看当前状态</van-button>
+
+      <van-dialog id="van-dialog" />
+    </view>
+  </weapp-layout-default>
+</block>
+<block wx:else>
+  <view class="min-h-screen bg-slate-100 px-4 py-5">
+    <view class="rounded-2xl bg-white p-5 shadow-sm">
+      <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-rose-700">
+        Native Layouts
       </view>
-      <view class="layout-actions__item">
-        <van-button block type="default">返回首页</van-button>
+      <view class="mt-3 text-2xl font-bold text-slate-900">Vant 原生模板已接入 layouts</view>
+      <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+    </view>
+
+    <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+      <view class="layout-actions">
+        <view class="layout-actions__item">
+          <van-button block type="primary" bind:click="applyDefaultLayout">
+            使用 default 布局
+          </van-button>
+        </view>
+        <view class="layout-actions__item">
+          <van-button block type="danger" plain bind:click="applyAdminLayout">
+            切到 admin 布局
+          </van-button>
+        </view>
+        <view class="layout-actions__item">
+          <van-button block type="default" plain bind:click="clearLayout">关闭布局</van-button>
+        </view>
+        <view class="layout-actions__item">
+          <van-button block type="success" plain bind:click="showState">查看当前状态</van-button>
+        </view>
+        <view class="layout-actions__item">
+          <van-button block type="default" bind:click="backHome">返回首页</van-button>
+        </view>
       </view>
     </view>
-  </view>
 
-  <van-dialog id="van-dialog" />
-</view>
+    <van-dialog id="van-dialog" />
+  </view>
+</block>
 "
 `;
