@@ -29,9 +29,9 @@ const compatibilityOptions: FilterOption<ApiCompatibility>[] = [
   { value: 'vue-compatible', label: 'Vue 完全兼容', shortLabel: 'Vue 兼容', description: '名称、参数和主要行为与 Vue 对应 API 保持一致' },
   { value: 'vue-compatible-with-notes', label: 'Vue 兼容（有宿主差异）', shortLabel: '兼容有说明', description: '常见迁移结果一致，但运行载体或内部机制存在无害差异' },
   { value: 'vue-different', label: 'Vue 同名有差异', shortLabel: 'Vue 差异', description: '名称相同，但参数、时机或宿主行为存在差异' },
-  { value: 'unsupported', label: '当前不支持', shortLabel: '不支持', description: 'Vue 提供该能力，Wevu 当前没有对应实现' },
   { value: 'miniprogram-bridge', label: '小程序桥接', shortLabel: '宿主桥接', description: '连接小程序生命周期或宿主能力，不属于 Vue API' },
   { value: 'wevu-extension', label: 'Wevu 扩展', description: 'Wevu 提供的框架扩展能力' },
+  { value: 'unsupported', label: '当前不支持', shortLabel: '不支持', description: 'Vue 提供该能力，Wevu 当前没有对应实现' },
 ]
 
 const phaseOptions: Record<ApiPhase, string> = {

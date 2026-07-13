@@ -209,6 +209,42 @@
   gap: 6px;
 }
 
+.wevu-api-reference__compatibility label,
+.wevu-api-reference__tag {
+  --compatibility-color: var(--vp-c-text-2);
+  --compatibility-background: var(--vp-c-default-soft);
+}
+
+.wevu-api-reference__compatibility label[data-compatibility='vue-compatible'],
+.wevu-api-reference__tag[data-compatibility='vue-compatible'] {
+  --compatibility-color: var(--vp-c-green-1);
+  --compatibility-background: var(--vp-c-green-soft);
+}
+
+.wevu-api-reference__compatibility label[data-compatibility='vue-compatible-with-notes'],
+.wevu-api-reference__tag[data-compatibility='vue-compatible-with-notes'] {
+  --compatibility-color: var(--vp-c-green-1);
+  --compatibility-background: color-mix(in srgb, var(--vp-c-green-soft) 76%, var(--vp-c-warning-soft));
+}
+
+.wevu-api-reference__compatibility label[data-compatibility='vue-different'],
+.wevu-api-reference__tag[data-compatibility='vue-different'] {
+  --compatibility-color: var(--vp-c-warning-1);
+  --compatibility-background: var(--vp-c-warning-soft);
+}
+
+.wevu-api-reference__compatibility label[data-compatibility='miniprogram-bridge'],
+.wevu-api-reference__tag[data-compatibility='miniprogram-bridge'] {
+  --compatibility-color: var(--vp-c-brand-1);
+  --compatibility-background: var(--vp-c-brand-soft);
+}
+
+.wevu-api-reference__compatibility label[data-compatibility='unsupported'],
+.wevu-api-reference__tag[data-compatibility='unsupported'] {
+  --compatibility-color: var(--vp-c-danger-1);
+  --compatibility-background: var(--vp-c-danger-soft);
+}
+
 .wevu-api-reference__compatibility label {
   position: relative;
   display: inline-flex;
@@ -218,22 +254,21 @@
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 650;
-  color: var(--vp-c-text-2);
+  color: var(--compatibility-color);
   cursor: pointer;
   background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-border);
+  border: 1px solid color-mix(in srgb, var(--compatibility-color) 36%, var(--vp-c-border));
   border-radius: 6px;
 }
 
 .wevu-api-reference__compatibility label:hover {
-  color: var(--vp-c-text-1);
-  border-color: var(--vp-c-text-3);
+  border-color: var(--compatibility-color);
 }
 
 .wevu-api-reference__compatibility label:has(input:checked) {
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand-1);
+  color: var(--compatibility-color);
+  background: var(--compatibility-background);
+  border-color: var(--compatibility-color);
 }
 
 .wevu-api-reference__compatibility input {
