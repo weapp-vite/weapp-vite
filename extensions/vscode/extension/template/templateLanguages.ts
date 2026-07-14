@@ -22,6 +22,11 @@ export const TEMPLATE_DOCUMENT_SELECTORS: vscode.DocumentSelector = [
   { language: MINI_PROGRAM_TEMPLATE_LANGUAGE_ID, scheme: 'file' },
 ]
 
+export const MINI_PROGRAM_TEMPLATE_DOCUMENT_SELECTORS: vscode.DocumentSelector = [
+  { language: 'wxml', scheme: 'file' },
+  { language: MINI_PROGRAM_TEMPLATE_LANGUAGE_ID, scheme: 'file' },
+]
+
 export function isMiniProgramTemplatePath(filePath: string) {
   const extension = path.extname(filePath).toLowerCase()
   return MINI_PROGRAM_TEMPLATE_EXTENSIONS.includes(extension as typeof MINI_PROGRAM_TEMPLATE_EXTENSIONS[number])

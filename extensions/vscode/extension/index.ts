@@ -68,6 +68,7 @@ import {
   TemplateDecorationController,
 } from './template/templateDecorations'
 import {
+  MINI_PROGRAM_TEMPLATE_DOCUMENT_SELECTORS,
   TEMPLATE_DOCUMENT_SELECTORS,
 } from './template/templateLanguages'
 import {
@@ -626,7 +627,7 @@ export function activate(context: any) {
       vueDocumentLinkProvider,
     ),
     vscode.languages.registerDocumentFormattingEditProvider(
-      { language: 'wxml', scheme: 'file' },
+      MINI_PROGRAM_TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDocumentFormattingProvider,
     ),
     vscode.languages.registerDocumentLinkProvider(
