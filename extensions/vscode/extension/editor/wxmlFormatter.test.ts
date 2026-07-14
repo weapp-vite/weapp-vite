@@ -117,6 +117,45 @@ const upstreamExampleMaterials = [
   '<!-- 测试 text 标签多属性换行 -->\n\n<!-- 测试1: 3个属性 -->\n<text class="title" data-id="123" bind:tap="handleTap">这是文本内容</text>\n\n<!-- 测试2: 4个属性 -->\n<text class="asda" tabindex assdassd asd>asdasdasdsaaszdasd asdasdasd asdasd asd asd asd asd asd asd asd a</text>\n\n<!-- 测试3: 长内容 -->\n<text class="a" data-id="b" style="color:red">这是一段很长很长很长很长很长很长的文本内容</text>\n\n<!-- 对比: view 标签 3个属性 -->\n<view class="container" data-id="123" bind:tap="handleTap">这是内容</view>\n\n<!-- 对比: button 标签 4个属性 -->\n<button class="btn" data-id="123" bind:tap="handleTap" disabled>按钮文本</button>',
 ]
 
+const platformSyntaxCases = [
+  {
+    platform: 'weapp',
+    input: '<view wx:if="{{count > 0}}" bindtap="onTap" mark:item-id="{{item.id}}">微信</view>',
+  },
+  {
+    platform: 'alipay',
+    input: '<view a:if="{{count > 0}}" onTap="onTap"><import-sjs name="helper" from="./helper.sjs" /></view>',
+  },
+  {
+    platform: 'tt',
+    input: '<view tt:if="{{count > 0}}" bindtap="onTap"><sjs module="helper">module.exports = { bigger: (a, b) => a > b }</sjs></view>',
+  },
+  {
+    platform: 'swan',
+    input: '<view s-if="{{count > 0}}" bindtap="onTap"><filter module="helper">export default { bigger(a, b) { return a > b } }</filter></view>',
+  },
+  {
+    platform: 'qq',
+    input: '<view qq:if="{{count > 0}}" bindtap="onTap">QQ</view>',
+  },
+  {
+    platform: 'jd',
+    input: '<view jd:if="{{count > 0}}" bindtap="onTap">京东</view>',
+  },
+  {
+    platform: 'ks',
+    input: '<view ks:if="{{count > 0}}" bindtap="onTap">快手</view>',
+  },
+  {
+    platform: 'xhs',
+    input: '<view xhs:if="{{count > 0}}" bindtap="onTap">小红书</view>',
+  },
+  {
+    platform: 'ty',
+    input: '<view ty:if="{{count > 0}}" bindtap="onTap">涂鸦</view>',
+  },
+]
+
 describe('formatWxmlText', () => {
   for (const testCase of exactCases) {
     it(testCase.name, () => {
@@ -142,6 +181,92 @@ describe('formatWxmlText', () => {
       assert.equal(output.includes('__WEAPP_VITE_WXML_'), false)
       assert.match(output, /<[\w-]+|<!--/u)
       assert.match(output, /\n$/u)
+    }
+  })
+
+  it('preserves significant text whitespace and comparison operators inside expressions', () => {
+    const input = '<view title="{{count > 0 ? \'a > b\' : \'c\'}}">A  B {{ count < limit ? \'<\' : \'>\' }}</view>'
+    const output = format(input)
+
+    assert.match(output, /title="\{\{count > 0 \? 'a > b' : 'c'\}\}"/u)
+    assert.match(output, />A {2}B \{\{ count < limit \? '<' : '>' \}\}<\/view>/u)
+    assert.equal(format(output), output)
+  })
+
+  it('keeps mixed text and nested tags semantically unchanged', () => {
+    const input = '<view>Hello  <text>{{name}}</text>, welcome back.</view>'
+
+    assert.equal(format(input), `${input}\n`)
+  })
+
+  it('preserves inline script modules as opaque source', () => {
+    const script = `const compare = (a, b) => a < b && "a  b" !== "a b"
+module.exports = { compare }`
+    const input = `<wxs module="tools">${script}</wxs><view wx:if="{{tools.compare(a, b)}}">ok</view>`
+    const output = format(input)
+
+    assert.match(output, new RegExp(script.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'))
+    assert.match(output, /<view wx:if="\{\{tools\.compare\(a, b\)\}\}">ok<\/view>/u)
+    assert.equal(format(output), output)
+  })
+
+  it('does not terminate script modules on closing-tag text inside strings', () => {
+    const input = '<wxs module="tools">const marker = "</wxs>"; module.exports = { marker }</wxs><view>{{tools.marker}}</view>'
+    const output = format(input)
+
+    assert.match(output, /const marker = "<\/wxs>"; module\.exports = \{ marker \}<\/wxs>/u)
+    assert.match(output, /\n<view>\{\{tools\.marker\}\}<\/view>\n$/u)
+    assert.equal(format(output), output)
+  })
+
+  it('preserves nested object literals and unquoted Mustache attributes', () => {
+    const input = '<view data-state={{ ({ ok: count > 0, nested: { value: count } }).nested.value }}>{{ ({ left: "<", right: ">" }).left }}</view>'
+    const output = format(input)
+
+    assert.match(output, /data-state=\{\{ \(\{ ok: count > 0, nested: \{ value: count \} \}\)\.nested\.value \}\}/u)
+    assert.match(output, />\{\{ \(\{ left: "<", right: ">" \}\)\.left \}\}<\/view>/u)
+    assert.equal(format(output), output)
+  })
+
+  it('keeps top-level Mustache text idempotent without accumulating blank lines', () => {
+    const input = '<import src="/shared.wxml"/>\n{{a}}{{b}}{{sum}}\n<button bindtap="add">Add</button>'
+    const output = format(input)
+
+    assert.equal(output, '<import src="/shared.wxml" />\n{{a}}{{b}}{{sum}}\n<button bindtap="add">Add</button>\n')
+    assert.equal(format(output), output)
+  })
+
+  it('preserves declarations, CDATA and conditional compilation comments', () => {
+    const input = '<?xml version="1.0"?><![CDATA[a < b && c > d]]><!-- #ifdef WEAPP --><view>微信</view><!-- #endif -->'
+    const output = format(input)
+
+    assert.match(output, /^<\?xml version="1\.0"\?>\n<!\[CDATA\[a < b && c > d\]\]>\n<!-- #ifdef WEAPP -->/u)
+    assert.match(output, /<!-- #endif -->\n$/u)
+  })
+
+  it('covers platform directives, events and script-module syntax without rewriting them', () => {
+    for (const testCase of platformSyntaxCases) {
+      const output = format(testCase.input)
+
+      assert.equal(output.includes('undefined'), false, testCase.platform)
+      assert.equal(output.includes('__WEAPP_VITE_WXML_'), false, testCase.platform)
+      assert.equal(format(output), output, testCase.platform)
+      for (const attribute of testCase.input.match(/[\w-]+(?::[\w-]+)?="[^"]*"/gu) ?? []) {
+        assert.equal(output.includes(attribute), true, `${testCase.platform}: ${attribute}`)
+      }
+    }
+  })
+
+  it('returns malformed or ambiguous templates unchanged', () => {
+    const cases = [
+      '<view><text>missing close</view>',
+      '<view title="unterminated>content</view>',
+      '<!-- unterminated comment',
+      '<wxs module="tools">const value = 1',
+    ]
+
+    for (const input of cases) {
+      assert.equal(format(input), input)
     }
   })
 })
