@@ -71,6 +71,20 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - native fast path 必须显式启用、可选依赖、失败回退 Babel/Oxc/Vue compiler，并配 correctness 对齐测试与 profile。
 7. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
 
+## 近期能力决策
+
+- 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
+- 状态保持 HMR 仅适用于微信小程序：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
+- Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
+- 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
+
+## 参考决策表
+
+- HMR 行为：`references/stateful-hmr-playbook.md`
+- 插件双产物：`references/plugin-build-playbook.md`
+- Web runtime 与 URL：`references/web-runtime-compatibility.md`
+- native AST：`references/native-ast-performance-checklist.md`
+
 ## 约束
 
 - 不要在 `srcRoot` 和页面来源没确认前先调 chunk 策略。
@@ -105,3 +119,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - `references/cli-dispatch-playbook.md`
 - `references/ide-command-playbook.md`
 - `references/ide-i18n-config-playbook.md`
+- `references/stateful-hmr-playbook.md`
+- `references/plugin-build-playbook.md`
+- `references/web-runtime-compatibility.md`
+- `references/native-ast-performance-checklist.md`

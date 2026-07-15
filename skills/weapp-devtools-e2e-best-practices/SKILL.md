@@ -44,6 +44,13 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
    - 目标 IDE e2e 文件
    - 需要视觉回归时再补 `wv screenshot --json`、`wv compare --json`、`wv ide logs --open`
 
+## 环境治理与已知边界
+
+- 仓库级 E2E 入口互斥运行；启动前先检查并清理残留 DevTools、automator、watch 和本地验证服务进程。
+- 长时间 IDE suite 在 macOS 使用 `caffeinate -dimsu -- ...`，避免机器休眠导致假失败。
+- 若 native `fetch` 通过而 axios/graphql-request 在 DevTools 报 `URL is not a constructor` 或同类构造器错误，先做最小复现并记录为 DevTools 兼容缺陷；只 skip 受影响场景，保留 native fetch 覆盖。
+- stateful HMR、plugin 输出和 MCP runtime tools 的断言优先使用路由、文本、结构化 bridge 返回值等稳定语义，不匹配压缩变量名或 hash。
+
 ## 约束
 
 - 不要在同一 `e2e-app` 重复启动 automator。

@@ -1,13 +1,9 @@
 interface:
-  display_name: Vue SFC Best Practices
-  short_description: 小程序 Vue SFC 宏、页面元信息、模板兼容与类型支持文件
+  display_name: Weapp-vite Vue SFC Best Practices
+  short_description: Vue SFC 宏、模板兼容、Volar 类型和 JSON HMR
   default_prompt: >-
-    当任务主轴是编写或重构小程序 `.vue` 文件、JSON 宏、`definePageMeta`、layout、
-    `defineModel`、`usingComponents`、模板指令兼容性，或 SFC 编译/类型产物排障时，
-    使用 $weapp-vite-vue-sfc-best-practices。优先采用 `<script setup lang="ts">`
-    与宏约定，并结合项目根 `AGENTS.md` 与本地 packaged docs。若主轴是 wevu runtime，
-    切到 $wevu-best-practices；若主轴是项目级配置与构建，切到
-    $weapp-vite-best-practices。
+    当任务主轴是小程序 Vue SFC、JSON 宏、definePageMeta、usingComponents、模板兼容、Volar、.weapp-vite 或 JSON HMR 时，
+    使用 $weapp-vite-vue-sfc-best-practices。先判断问题阶段，再给出 SFC 级改动和最小验证。
 
 policy:
   allow_implicit_invocation: true

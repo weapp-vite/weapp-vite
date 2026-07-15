@@ -41,6 +41,8 @@ npx skills add sonofmagic/skills
 | `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                          |
 | `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                |
 
+近期能力按主题归入现有 skill：stateful HMR、pluginRoot/dist-plugin、Web runtime 和 native AST 归 `$weapp-vite-best-practices`；`wevu/router` 归 `$wevu-best-practices`；DevTools URL 构造器兼容和真实运行时隔离归 `$weapp-devtools-e2e-best-practices`。
+
 ## 任务路由建议
 
 | 用户意图                                                 | 主 skill                                | 常见次 skill                                           |
@@ -52,6 +54,8 @@ npx skills add sonofmagic/skills
 | “`.vue` 宏、模板或 `usingComponents` 不生效”             | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
 | “wevu 生命周期、store 或页面切换行为异常”                | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
 | “原生项目先接入 weapp-vite，或逐步迁移到 Vue SFC / wevu” | `$native-to-weapp-vite-wevu-migration`  | `$weapp-vite-best-practices` 或 `$wevu-best-practices` |
+| “微信状态保持 HMR、插件双产物或 native AST profile”      | `$weapp-vite-best-practices`            | `$weapp-devtools-e2e-best-practices`                   |
+| “wevu/router 导航、前进失败或 layout host”               | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
 
 ## 给 AI 的推荐提示词
 
