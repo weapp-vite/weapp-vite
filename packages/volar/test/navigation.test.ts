@@ -1,3 +1,4 @@
+import type { VueCompilerOptions } from '@vue/language-core'
 import path from 'node:path'
 import { createLanguage } from '@volar/language-core'
 import { createProxyLanguageService, decorateLanguageServiceHost } from '@volar/typescript'
@@ -27,6 +28,7 @@ const vueCompilerOptions = {
   inferTemplateDollarSlots: false,
   skipTemplateCodegen: false,
   fallthroughAttributes: false,
+  checkRequiredFallthroughAttributes: false,
   resolveStyleImports: false,
   resolveStyleClassNames: false,
   fallthroughComponentNames: [],
@@ -50,7 +52,7 @@ const vueCompilerOptions = {
   },
   plugins: [plugin],
   experimentalModelPropName: {},
-} as const
+} satisfies VueCompilerOptions
 
 function normalizeFileName(fileName: string) {
   return fileName.replace(/\\/g, '/')

@@ -62,6 +62,7 @@ function createLanguagePlugin(skipTemplateCodegen = false) {
       inferTemplateDollarSlots: false,
       skipTemplateCodegen,
       fallthroughAttributes: false,
+      checkRequiredFallthroughAttributes: false,
       resolveStyleImports: false,
       resolveStyleClassNames: false,
       fallthroughComponentNames: [],

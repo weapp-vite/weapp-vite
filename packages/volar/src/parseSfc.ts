@@ -1,6 +1,9 @@
-import type * as CompilerDOM from '@vue/compiler-dom'
-import type { SFCParseResult } from '@vue/language-core'
+import type { SFCParseResult, VueLanguagePlugin } from '@vue/language-core'
 
+type CompilerDOM = Parameters<VueLanguagePlugin>[0]['modules']['@vue/compiler-dom']
+type CompilerRootNode = ReturnType<CompilerDOM['parse']>
+type CompilerElementNode = Extract<CompilerRootNode['children'][number], { tag: string }>
+type CompilerAttributeNode = Extract<CompilerElementNode['props'][number], { value?: unknown }>
 type SfcDescriptor = SFCParseResult['descriptor']
 type SfcBlock = SfcDescriptor['customBlocks'][number]
 type SfcScriptBlock = NonNullable<SfcDescriptor['scriptSetup']>
@@ -14,8 +17,8 @@ export interface SfcTextChange {
 }
 
 function parseAttr(
-  property: CompilerDOM.AttributeNode,
-  node: CompilerDOM.ElementNode,
+  property: CompilerAttributeNode,
+  node: CompilerElementNode,
 ) {
   if (!property.value) {
     return true
@@ -54,8 +57,8 @@ function repairIncompleteTemplate(
 }
 
 function createBlock(
-  compilerDom: typeof CompilerDOM,
-  node: CompilerDOM.ElementNode,
+  compilerDom: CompilerDOM,
+  node: CompilerElementNode,
   source: string,
 ): SfcBlock {
   const type = node.tag
@@ -127,7 +130,7 @@ function createBlock(
 }
 
 export function parseSfc(
-  compilerDom: typeof CompilerDOM,
+  compilerDom: CompilerDOM,
   source: string,
   filename: string,
 ): SFCParseResult {
