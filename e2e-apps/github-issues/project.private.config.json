@@ -664,6 +664,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-724/index",
+          "pathName": "pages/issue-724/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
