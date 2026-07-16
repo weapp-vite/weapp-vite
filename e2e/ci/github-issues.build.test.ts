@@ -14,6 +14,7 @@ const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
 const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
+const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
 let standardBuildPromise: Promise<void> | null = null
@@ -314,6 +315,26 @@ async function runIssue642Build() {
   distVariant = null
 }
 
+async function runIssue724Build() {
+  standardBuildPromise = null
+  await fs.remove(ISSUE_724_DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue724',
+    outDir: 'dist-issue-724',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_724_PROBE: 'true',
+    },
+  })
+
+  distVariant = null
+}
+
 interface AppJsonWithSubPackages {
   pages?: string[]
   subPackages?: Array<{ root?: string, pages?: string[] }>
@@ -368,6 +389,40 @@ async function runSlotFallbackCompilerOffBuild() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #724: keeps Vue SFC script, template, and style requests isolated', async () => {
+    await runIssue724Build()
+
+    const pageBase = path.join(ISSUE_724_DIST_ROOT, 'pages/issue-724/index')
+    const componentBase = path.join(ISSUE_724_DIST_ROOT, 'components/issue-724/RoutingProbe/index')
+    const pageJs = await fs.readFile(`${pageBase}.js`, 'utf-8')
+    const pageWxml = await fs.readFile(`${pageBase}.wxml`, 'utf-8')
+    const pageWxss = await fs.readFile(`${pageBase}.wxss`, 'utf-8')
+    const pageJson = await fs.readJSON(`${pageBase}.json`) as { usingComponents?: Record<string, string> }
+    const componentJs = await fs.readFile(`${componentBase}.js`, 'utf-8')
+    const componentWxml = await fs.readFile(`${componentBase}.wxml`, 'utf-8')
+    const componentWxss = await fs.readFile(`${componentBase}.wxss`, 'utf-8')
+
+    expect(pageJs).toContain('issue-724-script-marker')
+    expect(pageWxml).toContain('issue-724-template-marker')
+    expect(pageWxml).toContain('<Issue724RoutingProbe />')
+    expect(pageWxss).toContain('.issue-724-page')
+    expect(pageWxss).toContain('.issue-724-template-marker')
+    expect(pageWxss).toContain('.issue-724-style-src')
+    expect(pageWxss).not.toContain('.issue-724-component')
+    expect(pageJson.usingComponents).toMatchObject({
+      Issue724RoutingProbe: '/components/issue-724/RoutingProbe/index',
+    })
+
+    expect(componentJs).toContain('issue-724-component-script-marker')
+    expect(componentWxml).toContain('issue-724-component-template-marker')
+    expect(componentWxss).toContain('.issue-724-component')
+    expect(componentWxss).not.toContain('.issue-724-page')
+
+    for (const output of [pageJs, pageWxml, pageWxss, componentJs, componentWxml, componentWxss]) {
+      expect(output).not.toMatch(/<(?:template|script|style)(?:\s|>)/)
+    }
+  })
+
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
     await runBuild()
 

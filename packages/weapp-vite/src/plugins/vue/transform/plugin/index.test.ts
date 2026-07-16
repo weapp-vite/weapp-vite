@@ -183,11 +183,14 @@ describe('createVueTransformPlugin lifecycle', () => {
     } as any)
 
     const load = getHookHandler(plugin.load as any)
-    const result = await load.call({ loader: true } as any, 'virtual:style')
+    const result = await load.call(
+      { loader: true } as any,
+      '/project/src/demo.vue?weapp-vite-vue&type=style&index=0&lang.css',
+    )
 
     expect(loadTransformStyleBlockMock).toHaveBeenCalledTimes(1)
     expect(loadTransformStyleBlockMock).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'virtual:style',
+      id: '/project/src/demo.vue?weapp-vite-vue&type=style&index=0&lang.css',
       pluginCtx: { loader: true },
       configService: { cwd: '/project' },
     }))
@@ -203,7 +206,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     } as any)
 
     const transform = getHookHandler(plugin.transform as any)
-    await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.ts')).resolves.toBeNull()
+    await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.jsx')).resolves.toBeNull()
     await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.vue')).resolves.toEqual({
       code: 'transformed',
       map: null,
@@ -290,41 +293,34 @@ describe('createVueTransformPlugin lifecycle', () => {
     } as any)
 
     const resolveId = getHookHandler(plugin.resolveId as any)
-    expect(resolveId('virtual:slot')).toBe('resolved:virtual:slot')
-    expect(resolveScopedSlotVirtualIdMock).toHaveBeenCalledWith('virtual:slot')
+    const scopedSlotId = '\0weapp-vite:scoped-slot:pages/home.__scoped-slot-0'
+    expect(resolveId(scopedSlotId)).toBe(`resolved:${scopedSlotId}`)
+    expect(resolveScopedSlotVirtualIdMock).toHaveBeenCalledWith(scopedSlotId)
     expect(profile).toEqual(expect.objectContaining({
       pluginResolveMs: expect.any(Number),
       resolveCount: 1,
     }))
   })
 
-  it('declares rolldown filters for hot transform paths', async () => {
+  it('keeps SFC routing on deterministic hooks with local fast guards', async () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({} as any)
 
-    expect(plugin.transform).toEqual(expect.objectContaining({
-      filter: {
-        id: expect.any(RegExp),
-      },
-      handler: expect.any(Function),
-    }))
-    expect(plugin.load).toEqual(expect.objectContaining({
-      filter: {
-        id: expect.any(RegExp),
-      },
-      handler: expect.any(Function),
-    }))
-    expect(plugin.resolveId).toEqual(expect.objectContaining({
-      filter: {
-        id: expect.any(RegExp),
-      },
-      handler: expect.any(Function),
-    }))
+    expect(plugin.transform).toEqual(expect.any(Function))
+    expect(plugin.load).toEqual(expect.any(Function))
+    expect(plugin.resolveId).toEqual(expect.any(Function))
 
-    expect((plugin.transform as any).filter.id.test('/project/src/pages/home.vue')).toBe(true)
-    expect((plugin.transform as any).filter.id.test('/project/src/utils/plain.ts')).toBe(false)
-    expect((plugin.load as any).filter.id.test('\0weapp-vite:scoped-slot:pages/home.__scoped-slot-0')).toBe(true)
-    expect((plugin.load as any).filter.id.test('/project/src/pages/home.vue?weapp-vite-vue&type=style&index=0')).toBe(true)
-    expect((plugin.resolveId as any).filter.id.test('\0weapp-vite:scoped-slot:pages/home.__scoped-slot-0')).toBe(true)
+    const transform = getHookHandler(plugin.transform as any)
+    const load = getHookHandler(plugin.load as any)
+    const resolveId = getHookHandler(plugin.resolveId as any)
+
+    await expect(transform.call({}, 'const value = 1', '/project/src/utils/plain.ts')).resolves.toBeNull()
+    await expect(load.call({}, '/project/src/utils/plain.ts')).resolves.toBeNull()
+    expect(resolveId.call({}, '/project/src/utils/plain.ts')).toBeNull()
+
+    expect(isVueLikeIdMock).not.toHaveBeenCalled()
+    expect(transformVueLikeFileMock).not.toHaveBeenCalled()
+    expect(loadTransformStyleBlockMock).not.toHaveBeenCalled()
+    expect(resolveScopedSlotVirtualIdMock).not.toHaveBeenCalled()
   })
 })

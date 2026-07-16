@@ -11,6 +11,7 @@ const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED
 const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
+const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -160,6 +161,14 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue724ProbeEnabled) {
+    return {
+      include: [
+        'pages/issue-724/**',
+        'components/issue-724/**',
+      ],
+    }
+  }
   if (issue510AugmentedEnabled) {
     return {
       include: [
@@ -307,7 +316,41 @@ function resolveGithubIssuesNpm() {
   }
 }
 
+const issue724ProbePlugins = issue724ProbeEnabled
+  ? [
+      {
+        name: 'github-issues:issue-724-style-load-probe',
+        enforce: 'pre' as const,
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/issue-724/') || !id.includes('?weapp-vite-vue&type=style')) {
+            return null
+          }
+          if (/<(?:template|script|style)(?:\s|>)/.test(code)) {
+            throw new Error(`issue #724 style request leaked another SFC block: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+      {
+        name: 'github-issues:issue-724-post-transform-probe',
+        enforce: 'post' as const,
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/issue-724/') || !normalizedId.endsWith('.vue')) {
+            return null
+          }
+          if (/<(?:template|script|style)(?:\s|>)/.test(code)) {
+            throw new Error(`issue #724 downstream JS received a raw SFC: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+    ]
+  : []
+
 export default defineConfig({
+  plugins: issue724ProbePlugins,
   define: {
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
@@ -341,6 +384,7 @@ export default defineConfig({
         {
           components: {
             Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+            Issue724RoutingProbe: '/components/issue-724/RoutingProbe/index',
           },
         },
         {
@@ -403,29 +447,35 @@ export default defineConfig({
           minify: false,
         },
       }
-    : issue510AugmentedEnabled
+    : issue724ProbeEnabled
       ? {
           build: {
-            outDir: 'dist-issue-510',
+            outDir: 'dist-issue-724',
           },
         }
-      : slotFallbackCompilerOffEnabled
+      : issue510AugmentedEnabled
         ? {
             build: {
-              outDir: 'dist-slot-fallback-compiler-off',
+              outDir: 'dist-issue-510',
             },
           }
-        : issue595ScopedBuildEnabled
+        : slotFallbackCompilerOffEnabled
           ? {
               build: {
-                outDir: 'dist-issue-595',
+                outDir: 'dist-slot-fallback-compiler-off',
               },
             }
-          : issue642ScopedBuildEnabled
+          : issue595ScopedBuildEnabled
             ? {
                 build: {
-                  outDir: 'dist-issue-642',
+                  outDir: 'dist-issue-595',
                 },
               }
-            : {}),
+            : issue642ScopedBuildEnabled
+              ? {
+                  build: {
+                    outDir: 'dist-issue-642',
+                  },
+                }
+              : {}),
 })
