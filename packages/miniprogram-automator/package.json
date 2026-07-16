@@ -52,7 +52,7 @@
   "dependencies": {
     "@weapp-vite/qr": "workspace:*",
     "obug": "catalog:",
-    "ws": "^8.21.0"
+    "ws": "^8.21.1"
   },
   "publishConfig": {
     "access": "public",

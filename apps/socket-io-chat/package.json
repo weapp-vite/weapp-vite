@@ -23,7 +23,7 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "vue": "catalog:",
-    "vue-router": "5.1.0"
+    "vue-router": "5.2.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",

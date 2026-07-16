@@ -44,7 +44,7 @@
     "tailwind-merge": "catalog:",
     "tailwind-variants": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.1.0"
+    "vue-router": "5.2.0"
   },
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
