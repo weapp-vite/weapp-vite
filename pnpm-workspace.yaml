@@ -104,6 +104,9 @@ minimumReleaseAge: 0
 
 optimisticRepeatInstall: false
 
+overrides:
+  rolldown: 'catalog:'
+
 allowBuilds:
   '@parcel/watcher': false
   '@swc/core': true
