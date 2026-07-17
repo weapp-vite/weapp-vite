@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.5.5
+
+### Patch Changes
+
+- 🐛 **修复复杂插件调度下 Vue SFC 主请求与样式虚拟请求可能跳过编译分流的问题，避免原始 `<template>`、`<script>` 或 `<style>` 内容进入 Babel 与 Vite CSS 处理阶段。** [#725](https://github.com/weapp-vite/weapp-vite/pull/725) by @sonofmagic
+
+- 🐛 **对齐公开 AI skills 与当前 weapp-vite 实现，补充状态保持型 HMR、插件双产物、wevu/router、Web runtime、DevTools runtime e2e 和 native AST 性能边界，并同步脚手架指引与触发回归入口。** [`b3c1865`](https://github.com/weapp-vite/weapp-vite/commit/b3c1865d6ab58ef39b30dd9a30b7ef4005893a87) by @sonofmagic
+
 ## 2.5.4
 
 ### Patch Changes
