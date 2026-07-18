@@ -60,7 +60,7 @@
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",
     "dayjs": "catalog:",
-    "magic-string": "^0.30.21",
+    "magic-string": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "miniprogram-simulate": "^1.6.2",
     "postcss": "catalog:",

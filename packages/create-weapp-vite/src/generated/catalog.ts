@@ -14,7 +14,7 @@ export const TEMPLATE_CATALOG = {
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/vite': '^4.3.2',
+  '@tailwindcss/vite': '^4.3.3',
   '@types/node': '^26.1.1',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
@@ -29,7 +29,7 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
   'lru-cache': '^11.5.2',
-  'magic-string': '^0.30.21',
+  'magic-string': '^1.0.0',
   'miniprogram-api-typings': '^5.2.1',
   'oxc-parser': '^0.140.0',
   'oxc-walker': '^1.0.0',
@@ -42,7 +42,7 @@ export const TEMPLATE_CATALOG = {
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.7',
   'weapp-tailwindcss': '^5.1.16',
-  autoprefixer: '^10.5.3',
+  autoprefixer: '^10.5.4',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
   echarts: '^6.1.0',
@@ -52,13 +52,13 @@ export const TEMPLATE_CATALOG = {
   htmlparser2: '^12.0.0',
   lodash: '^4.18.1',
   merge: '^2.1.1',
-  obug: '^2.1.3',
+  obug: '^2.1.4',
   pathe: '^2.0.3',
   postcss: '^8.5.19',
   rolldown: '1.1.5',
   sass: '^1.101.0',
   stylelint: '^17.14.0',
-  tailwindcss: '^4.3.2',
+  tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.1.5',
@@ -81,6 +81,6 @@ export const TEMPLATE_NAMED_CATALOG = {
     tailwindcss: '^3.4.19'
   },
   tailwind4: {
-    tailwindcss: '^4.3.2'
+    tailwindcss: '^4.3.3'
   }
 } as const
