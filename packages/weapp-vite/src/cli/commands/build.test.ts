@@ -11,12 +11,39 @@ import {
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
 const isUiEnabledMock = vi.hoisted(() => vi.fn(() => true))
-const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  runMini: true,
-  runWeb: false,
-  platform: 'weapp',
-  rawPlatform: 'weapp',
-})))
+const resolveRuntimeTargetsMock = vi.hoisted(() => {
+  const miniBackend = {
+    descriptor: {
+      id: 'miniprogram',
+      runtime: 'miniprogram',
+      aliases: ['weapp'],
+      capabilities: {
+        build: true,
+        dev: true,
+        ide: true,
+        analyze: true,
+        npm: true,
+        workers: true,
+        lib: true,
+      },
+    },
+    driver: {
+      build: (ctx: any, options: any) => ctx.buildService.build(options),
+      close: (ctx: any) => ctx.watcherService.closeAll(),
+    },
+    platform: 'weapp',
+  }
+  return vi.fn(() => ({
+    kind: 'miniprogram',
+    label: 'weapp',
+    entries: [miniBackend],
+    platform: 'weapp',
+    rawPlatform: 'weapp',
+    get: (id: string) => id === 'miniprogram' ? miniBackend : undefined,
+    has: (capability: string) => Boolean((miniBackend.descriptor.capabilities as any)[capability]),
+    select: (capability: string) => (miniBackend.descriptor.capabilities as any)[capability] ? [miniBackend] : [],
+  }))
+})
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
@@ -242,6 +269,58 @@ describe('build cli command', () => {
     })).rejects.toThrow(buildError)
 
     expect(closeAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('executes a web-only build through the web backend capability', async () => {
+    const webBuild = vi.fn().mockResolvedValue(undefined)
+    const webClose = vi.fn().mockResolvedValue(undefined)
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { build: true, ide: false },
+      },
+      driver: {
+        build: webBuild,
+        close: webClose,
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+      has: () => true,
+      select: (capability: string) => capability === 'build' ? [webBackend] : [],
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      buildService: { build: vi.fn() },
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'production',
+        outDir: '/project/dist',
+        mpDistRoot: '/project/dist',
+        packageManager: { agent: 'pnpm' },
+        relativeCwd: (input: string) => input.replace('/project/', ''),
+        weappViteConfig: { packageSizeWarningBytes: 0 },
+        weappWebConfig: {
+          enabled: true,
+          outDir: '/project/dist/web',
+        },
+      },
+      scanService: { subPackageMap: new Map() },
+      watcherService: { closeAll: vi.fn() },
+      webService: { build: vi.fn(), close: vi.fn() },
+    })
+    const action = createBuildActionHandler()
+
+    await action('/project', { platform: 'web' })
+
+    expect(webBuild).toHaveBeenCalledTimes(1)
+    expect(webClose).toHaveBeenCalledTimes(1)
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('Web 构建完成'))
   })
 
   it('schedules process exit only for completed one-shot production cli builds', () => {

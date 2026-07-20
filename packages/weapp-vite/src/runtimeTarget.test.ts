@@ -33,6 +33,12 @@ describe('runtime target', () => {
       runWeb: true,
       label: 'weapp + web',
     })
+    expect(resolveWeappViteTarget('both')).toMatchObject({
+      kind: 'all',
+      runMini: true,
+      runWeb: true,
+      label: 'weapp + web',
+    })
   })
 
   it('reports web aliases and supported target platforms', () => {

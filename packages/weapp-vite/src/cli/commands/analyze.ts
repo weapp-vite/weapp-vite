@@ -10,6 +10,7 @@ import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
 import { createAnalyzeBudgetCheck, createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
+import { getBackendForCapability } from '../../backends'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
@@ -348,7 +349,7 @@ export function registerAnalyzeCommand(cli: CAC) {
       }
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const targets = resolveRuntimeTargets(options)
-      const inlineConfig = createInlineConfig(targets.platform)
+      const inlineConfig = createInlineConfig(targets)
       try {
         const ctx = await createCompilerContext({
           cwd: root,
@@ -389,7 +390,8 @@ export function registerAnalyzeCommand(cli: CAC) {
           }
           return
         }
-        if (targets.runWeb) {
+        const webBackend = getBackendForCapability(targets, 'web', 'analyze')
+        if (webBackend) {
           const webResult = createWebAnalyzeResult(ctx.configService, {
             platform: 'web',
           })
@@ -405,7 +407,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           return
         }
 
-        if (!targets.runMini) {
+        if (!getBackendForCapability(targets, 'miniprogram', 'analyze')) {
           logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform web 指定目标。')
           return
         }

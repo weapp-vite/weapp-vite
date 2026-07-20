@@ -8,12 +8,25 @@ import { registerAnalyzeCommand } from './analyze'
 
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
-const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  runMini: true,
-  runWeb: false,
-  platform: 'weapp',
-  rawPlatform: 'weapp',
-})))
+const resolveRuntimeTargetsMock = vi.hoisted(() => {
+  const miniBackend = {
+    descriptor: {
+      id: 'miniprogram',
+      capabilities: {
+        analyze: true,
+      },
+    },
+    platform: 'weapp',
+  }
+  return vi.fn(() => ({
+    kind: 'miniprogram',
+    label: 'weapp',
+    entries: [miniBackend],
+    platform: 'weapp',
+    rawPlatform: 'weapp',
+    get: (id: string) => id === 'miniprogram' ? miniBackend : undefined,
+  }))
+})
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
@@ -377,5 +390,47 @@ describe('analyze cli command', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('组件依赖：1 个组件，1 条分包优化建议')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('components/detail-card'))
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the web analyze capability without running mini analysis', async () => {
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { analyze: true },
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        relativeCwd: (input: string) => input.replace('/project/', ''),
+        weappViteConfig: { hmr: { profileJson: false } },
+        weappWebConfig: {
+          enabled: true,
+          root: '/project/web',
+          srcDir: 'src',
+          outDir: '/project/dist/web',
+          pluginOptions: {
+            executionMode: 'compat',
+          },
+        },
+      },
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { platform: 'web' })
+
+    expect(analyzeSubpackages).not.toHaveBeenCalled()
+    expect(loggerMock.success).toHaveBeenCalledWith('Web 静态分析完成')
   })
 })

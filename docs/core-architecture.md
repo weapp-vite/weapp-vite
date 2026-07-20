@@ -29,6 +29,7 @@ packages/weapp-vite/
 ├── src/                          # 源代码目录
 │   ├── cli/                      # CLI 命令实现
 │   │   └── commands/             # 各个子命令（build, serve, npm 等）
+│   ├── backends/                 # 内部平台后端 contract、registry 与内置 driver
 │   ├── context/                  # 编译器上下文管理
 │   ├── plugins/                  # 核心 Vite 插件
 │   ├── runtime/                  # 运行时服务实现
@@ -53,9 +54,14 @@ packages/weapp-vite/
 
 ### 1. 整体架构
 
-weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**，通过 `CompilerContext` 将各个服务协调起来：
+weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**。CLI 先通过内部 platform backend registry 生成有序执行计划，再由 backend driver 委托 `CompilerContext` 中的既有服务：
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│ PlatformBackendRegistry / ResolvedBackendExecution          │
+│ miniprogram backend → web backend（按 capability 过滤）      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ driver delegation
 ┌─────────────────────────────────────────────────────────────┐
 │                     CompilerContext                         │
 ├─────────────────────────────────────────────────────────────┤
@@ -73,6 +79,8 @@ weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**，通
 │  └──────────────┘  └──────────────┘                        │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+platform backend 是 CLI 与服务层之间的内部编排边界，不是第三方注册 API。第一阶段的详细 contract、执行顺序与后续阶段边界见 [平台后端运行时架构](./architecture/platform-backend-runtime.md)。
 
 ### 2. 入口文件
 
@@ -307,6 +315,18 @@ JSON 配置处理服务。
 
 Web 运行时服务，用于 H5 平台构建。
 
+### 11. **Platform Backend** (`src/backends/`)
+
+平台后端层负责：
+
+- 通过 `PlatformBackendDescriptor` 声明 backend id、别名、runtime 和 capabilities。
+- 通过 `PlatformBackendRegistry` 校验唯一性、解析平台别名并确定执行顺序。
+- 通过 `ResolvedBackendExecution` 向 CLI 提供单一执行计划，替代散落的 `runMini` / `runWeb` 控制流。
+- 通过内置 driver 生成目标 inline config，并委托 `BuildService`、`WebService` 与现有 config merge 实现。
+- 在命令结束时关闭 backend 持有的 watcher 或 Vite dev server 资源。
+
+`runtimeTarget.ts` 继续保留公开兼容门面，但其目标解析来自 backend registry。六个小程序平台的标识、别名与静态平台能力仍统一来自 `@weapp-core/shared` 的 `MiniProgramPlatformDescriptor`。
+
 ---
 
 ## Chunk 共享策略
@@ -343,6 +363,7 @@ type SharedChunkStrategy = 'hoist' | 'duplicate'
 | `src/context/CompilerContext.ts` | 14-29 | 上下文类型定义 |
 | `src/types/config.ts` | 329-477 | 配置类型定义 |
 | `src/runtime/buildPlugin.ts` | 31-374 | 构建服务实现 |
+| `src/backends/` | - | 内部平台后端 contract、registry、执行计划与内置 driver |
 
 ---
 
