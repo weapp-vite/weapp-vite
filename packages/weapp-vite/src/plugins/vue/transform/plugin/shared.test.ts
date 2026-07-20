@@ -1220,10 +1220,9 @@ console.log(pages, routeSubPackages)
     })
 
     styleBlocksCache.clear()
-    fsReadFileMock.mockResolvedValueOnce('.external{}')
     readAndParseSfc.mockResolvedValueOnce({
       descriptor: {
-        styles: [{ content: '', src: './external.css' }],
+        styles: [{ content: '.external{}', src: 'vant/es/space/index.css' }],
       },
     })
     await expect(loadTransformStyleBlock({
@@ -1241,7 +1240,7 @@ console.log(pages, routeSubPackages)
       code: '.external{}',
       map: null,
     })
-    expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/external.css', 'utf8')
+    expect(fsReadFileMock).not.toHaveBeenCalled()
 
     await expect(loadTransformStyleBlock({
       id: 'virtual:none',
