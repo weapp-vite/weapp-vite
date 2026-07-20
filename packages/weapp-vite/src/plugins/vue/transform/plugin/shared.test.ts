@@ -1219,7 +1219,9 @@ console.log(pages, routeSubPackages)
       map: null,
     })
 
-    styleBlocksCache.clear()
+    styleBlocksCache.set('/project/src/components/card.vue', [
+      { content: '.stale{}', src: 'vant/es/space/index.css' },
+    ])
     readAndParseSfc.mockResolvedValueOnce({
       descriptor: {
         styles: [{ content: '.external{}', src: 'vant/es/space/index.css' }],
@@ -1240,6 +1242,10 @@ console.log(pages, routeSubPackages)
       code: '.external{}',
       map: null,
     })
+    expect(readAndParseSfc).toHaveBeenLastCalledWith('/project/src/components/card.vue', {})
+    expect(styleBlocksCache.get('/project/src/components/card.vue')).toEqual([
+      { content: '.external{}', src: 'vant/es/space/index.css' },
+    ])
     expect(fsReadFileMock).not.toHaveBeenCalled()
 
     await expect(loadTransformStyleBlock({

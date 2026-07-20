@@ -221,15 +221,22 @@ export async function loadTransformStyleBlock(options: {
   }
 
   const { filename, index } = parsed
+  const loadStyleBlocks = async (target: string) => (
+    await readAndParseSfc(target, {
+      ...createReadAndParseSfcOptions(pluginCtx, configService),
+    })
+  ).descriptor.styles
   let styles: SFCStyleBlock[]
   try {
+    const cachedStyles = styleBlocksCache.get(filename)
     styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
-      load: async target => (
-        await readAndParseSfc(target, {
-          ...createReadAndParseSfcOptions(pluginCtx, configService),
-        })
-      ).descriptor.styles,
+      load: loadStyleBlocks,
     })
+    const cachedBlock = cachedStyles?.[index]
+    if (typeof cachedBlock?.src === 'string' && cachedBlock.src.trim()) {
+      styles = await loadStyleBlocks(filename)
+      styleBlocksCache.set(filename, styles)
+    }
   }
   catch {
     return null
