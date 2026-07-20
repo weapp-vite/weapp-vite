@@ -1,8 +1,14 @@
 import path from 'node:path'
 import { expect, it } from 'vitest'
 import { bundleRequire, loadFromBundledFile } from '@/index'
+import { formatExternalizedFileId } from '../src/externalize'
 
 const normalize = (filePath: string) => filePath.replaceAll('\\', '/')
+
+it('uses forward slashes for externalized CJS paths on Windows', () => {
+  expect(formatExternalizedFileId('D:\\a\\repo\\dist\\json.mjs', '', false))
+    .toBe('D:/a/repo/dist/json.mjs')
+})
 
 it('externalizes hoisted deps but bundles nested node_modules', async () => {
   const fixtureDir = path.join(__dirname, './fixture/externalize-paths')

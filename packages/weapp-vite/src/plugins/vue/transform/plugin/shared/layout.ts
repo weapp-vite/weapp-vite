@@ -1,8 +1,6 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
-import { fs } from '@weapp-core/shared/fs'
-import path from 'pathe'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
@@ -223,15 +221,22 @@ export async function loadTransformStyleBlock(options: {
   }
 
   const { filename, index } = parsed
+  const loadStyleBlocks = async (target: string) => (
+    await readAndParseSfc(target, {
+      ...createReadAndParseSfcOptions(pluginCtx, configService),
+    })
+  ).descriptor.styles
   let styles: SFCStyleBlock[]
   try {
+    const cachedStyles = styleBlocksCache.get(filename)
     styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
-      load: async target => (
-        await readAndParseSfc(target, {
-          ...createReadAndParseSfcOptions(pluginCtx, configService),
-        })
-      ).descriptor.styles,
+      load: loadStyleBlocks,
     })
+    const cachedBlock = cachedStyles?.[index]
+    if (typeof cachedBlock?.src === 'string' && cachedBlock.src.trim()) {
+      styles = await loadStyleBlocks(filename)
+      styleBlocksCache.set(filename, styles)
+    }
   }
   catch {
     return null
@@ -244,20 +249,6 @@ export async function loadTransformStyleBlock(options: {
 
   const dependencies = syncVueSfcStyleDependencies(ctx, filename, styles)
   addNormalizedWatchFiles(options.pluginCtx, dependencies)
-
-  if (typeof block.src === 'string' && block.src.trim()) {
-    const srcPath = path.resolve(path.dirname(filename), block.src.trim())
-    try {
-      const source = await fs.readFile(srcPath, 'utf8')
-      return {
-        code: source,
-        map: null,
-      }
-    }
-    catch {
-      return null
-    }
-  }
 
   return {
     code: block.content,
