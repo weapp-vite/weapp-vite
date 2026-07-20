@@ -7,6 +7,7 @@ import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
+import { buildQuickApp } from '../../quickapp'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { formatDuration } from '../formatDuration'
 import { logBuildAppFinish } from '../logBuildAppFinish'
@@ -73,7 +74,8 @@ export function registerBuildCommand(cli: CAC) {
     .command('build [root]', 'build for production')
     .option('--target <target>', `[string] transpile target (default: 'modules')`)
     .option('--outDir <dir>', `[string] output directory (default: dist)`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | web | all)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web | quickapp | all)`)
+    .option('--quickapp-e2e', `[boolean] enable hap-toolkit official E2E injection`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option(
       '--sourcemap [output]',
@@ -105,6 +107,19 @@ export function registerBuildCommand(cli: CAC) {
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         const targets = resolveRuntimeTargets(options)
+        if (targets.runQuickApp) {
+          logRuntimeTarget(targets)
+          const quickAppStartedAt = Date.now()
+          const result = await buildQuickApp({
+            cwd,
+            configFile,
+            mode: options.mode ?? 'production',
+            e2e: options.quickappE2e,
+          })
+          logger.success(`QuickApp 构建完成，输出目录：${colors.green(result.config.outDir)}，RPK：${result.rpkFiles.length}，耗时：${colors.green(formatDuration(Date.now() - quickAppStartedAt))}`)
+          buildCompleted = true
+          return
+        }
         const inlineConfig = createInlineConfig(targets.platform, options.scope)
         ctx = await createCompilerContext({
           cwd,

@@ -1,6 +1,7 @@
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/node/types/vite.ts
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/public/config.ts
 import type { ConfigEnv, UserConfig as ViteUserConfig } from 'vite'
+import type { QuickAppConfig } from './quickapp'
 import type { WeappViteConfig } from './types'
 
 export * from './json'
@@ -9,7 +10,7 @@ export * from './pluginHost'
 /**
  * @description weapp-vite 的用户配置（扩展 Vite UserConfig）
  */
-export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
+export type UserConfig = ViteUserConfig & { quickapp?: QuickAppConfig, weapp?: WeappViteConfig }
 
 export type UserConfigFnNoEnvPlain<T extends UserConfig = UserConfig> = () => T
 
@@ -33,6 +34,7 @@ export type UserConfigExport<T extends UserConfig = UserConfig>
 // 扩展 vite 的 UserConfig
 declare module 'vite' {
   interface UserConfig {
+    quickapp?: QuickAppConfig
     weapp?: WeappViteConfig
   }
 }
@@ -49,5 +51,6 @@ export function defineConfig(config: UserConfigExport): UserConfigExport {
 }
 
 export type {
+  QuickAppConfig,
   WeappViteConfig,
 }

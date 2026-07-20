@@ -27,6 +27,16 @@ describe('plugin host metadata', () => {
     })
   })
 
+  it('marks QuickApp host metadata with its independent runtime', () => {
+    const config = applyWeappViteHostMeta({}, 'quickapp', 'quickapp')
+
+    expect(resolveWeappViteHostMeta(config)).toEqual({
+      name: 'weapp-vite',
+      runtime: 'quickapp',
+      platform: 'quickapp',
+    })
+  })
+
   it('returns undefined for ordinary vite config', () => {
     expect(isWeappViteHost({})).toBe(false)
     expect(resolveWeappViteHostMeta({

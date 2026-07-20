@@ -33,6 +33,12 @@ const docEntries = [
     summary: 'defineConfig 类型重载与配置推导说明。',
   },
   {
+    source: path.join(packageRoot, 'docs', 'quickapp.md'),
+    output: 'quickapp.md',
+    title: 'QuickApp Guide',
+    summary: '实验性 QuickApp 独立后端、Vue SFC 支持边界与 E2E 方案。',
+  },
+  {
     source: path.join(packagedDocsDir, 'getting-started.md'),
     output: 'getting-started.md',
     title: 'Getting Started',
@@ -92,7 +98,8 @@ function createIndex(entries) {
     '4. 涉及 `vite.config.ts`、`weapp` 配置与 chunk 策略时读 `weapp-config.md`。',
     '5. 涉及 wevu 运行时与页面/组件/store 约束时读 `wevu-authoring.md`。',
     '6. 涉及 Vue SFC 宏、模板约束与编辑器提示时读 `vue-sfc.md`、`volar.md` 与 `define-config-overloads.md`。',
-    '7. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
+    '7. 涉及原生 QuickApp、Vue 到 `.ux` 或 Android 设备 E2E 时读 `quickapp.md`。',
+    '8. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
     '',
     '## Included Docs',
     '',

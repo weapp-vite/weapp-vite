@@ -27,6 +27,18 @@ describe('runtime target', () => {
       platform: 'web',
       label: 'web',
     })
+    expect(resolveWeappViteTarget('quickapp')).toMatchObject({
+      kind: 'quickapp',
+      runMini: false,
+      runQuickApp: true,
+      runWeb: false,
+      platform: 'quickapp',
+      label: 'quickapp',
+    })
+    expect(resolveWeappViteTarget('hap')).toMatchObject({
+      kind: 'quickapp',
+      platform: 'quickapp',
+    })
     expect(resolveWeappViteTarget('all')).toMatchObject({
       kind: 'all',
       runMini: true,
@@ -41,6 +53,7 @@ describe('runtime target', () => {
     expect(isWebPlatform('weapp')).toBe(false)
     expect(getSupportedWeappVitePlatforms()).toContain('weapp')
     expect(getSupportedWeappVitePlatforms()).toContain('web')
+    expect(getSupportedWeappVitePlatforms()).toContain('quickapp')
   })
 
   it('falls back to default mini-program target for unknown input', () => {

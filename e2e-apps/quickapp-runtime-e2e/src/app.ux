@@ -1,0 +1,11 @@
+<script>
+  export default {
+    onCreate() {
+      console.info('[quickapp-e2e] app created')
+    }
+  }
+</script>
+
+<style>
+  @import './Common/base.css';
+</style>

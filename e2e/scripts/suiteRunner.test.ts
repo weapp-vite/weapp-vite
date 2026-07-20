@@ -308,6 +308,7 @@ describe('suiteRunner', () => {
   it('uses env-based target file selection for suite vitest tasks', async () => {
     const [firstIdeSmokeTask] = await getSuiteTasks('ide-smoke')
     const [firstHeadlessSmokeTask] = await getSuiteTasks('ide-headless-smoke')
+    const [quickAppTask] = await getSuiteTasks('quickapp')
 
     expect(firstIdeSmokeTask).toMatchObject({
       label: 'ide/index.test.ts',
@@ -327,6 +328,14 @@ describe('suiteRunner', () => {
         WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
       },
     })
+    expect(quickAppTask).toMatchObject({
+      label: 'quickapp/quickapp.runtime.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', expect.stringContaining('vitest.e2e.quickapp.config.ts')],
+      env: {
+        [E2E_TARGET_FILE_ENV]: 'quickapp/quickapp.runtime.test.ts',
+      },
+    })
   })
 
   it('lists suite metadata for layered ide execution', async () => {
@@ -337,6 +346,7 @@ describe('suiteRunner', () => {
     const ideHeadlessSmoke = suites.find(suite => suite.name === 'ide-headless-smoke')
     const ideHeadlessGate = suites.find(suite => suite.name === 'ide-headless-gate')
     const ideHeadlessFull = suites.find(suite => suite.name === 'ide-headless-full')
+    const quickApp = suites.find(suite => suite.name === 'quickapp')
 
     expect(ideSmoke).toBeDefined()
     expect(ideGate).toBeDefined()
@@ -344,6 +354,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessSmoke).toBeDefined()
     expect(ideHeadlessGate).toBeDefined()
     expect(ideHeadlessFull).toBeDefined()
+    expect(quickApp).toBeDefined()
     expect(ideSmoke!.taskCount).toBeGreaterThan(0)
     expect(ideSmoke!.taskCount).toBeLessThan(ideGate!.taskCount)
     expect(ideGate!.taskCount).toBeLessThan(ideFull!.taskCount)
@@ -351,6 +362,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGate!.taskCount).toBeLessThanOrEqual(ideHeadlessFull!.taskCount)
     expect(ideSmoke!.labels).toContain('ide/index.test.ts')
     expect(ideHeadlessSmoke!.labels).toContain('ide/template-weapp-vite-template.test.ts')
+    expect(quickApp!.labels).toEqual(['quickapp/quickapp.runtime.test.ts'])
   })
 
   it('writes a suite report that preserves child report links across tasks', () => {

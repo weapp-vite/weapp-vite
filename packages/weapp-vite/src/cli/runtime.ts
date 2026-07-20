@@ -6,6 +6,7 @@ import { resolveWeappViteTarget } from '../runtimeTarget'
 
 export interface RuntimeTargets {
   runMini: boolean
+  runQuickApp: boolean
   runWeb: boolean
   platform?: MpPlatform
   label: string
@@ -43,6 +44,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
 
   return {
     runMini: target.runMini,
+    runQuickApp: target.runQuickApp,
     runWeb: target.runWeb,
     platform: target.kind === 'miniprogram' ? target.platform as MpPlatform | undefined : undefined,
     label: target.label,

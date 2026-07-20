@@ -46,6 +46,7 @@
 - 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、Wevu、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
 - 存量项目：通过手动集成或 `wv init` 接入现有小程序，保留原有页面结构和平台能力。
 - Vue SFC：在小程序里使用 `.vue`、`<script setup>`、JSON 宏、class/style 绑定和 Wevu 响应式运行时。
+- QuickApp：实验性支持原生快应用源码与 Vue SFC 直接编译为 `.ux`，不做微信小程序到快应用的转换。
 - 工程体验：支持构建、开发监听、HMR、组件自动导入、自动路由、分包策略、npm 构建和产物分析。
 - IDE 与验收：集成 WeChat DevTools 打开、日志、截图、截图对比、预览和上传等工作流。
 - AI 友好：提供 MCP、packaged docs、skills 指引和面向真实小程序运行时的检查入口。
@@ -80,6 +81,8 @@ pnpm build:apps
 pnpm build:templates
 pnpm build:docs
 ```
+
+QuickApp 实验后端的使用范围、配置和 E2E 方案见 [QuickApp 支持说明](packages/weapp-vite/docs/quickapp.md)。
 
 ## 仓库结构
 

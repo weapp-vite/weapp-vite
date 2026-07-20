@@ -19,6 +19,7 @@ export type {
   LayoutHostResolver,
   WevuComponentOptions,
 } from './plugins/vue/runtime'
+export * from './quickapp'
 export * from './runtimeTarget'
 
 export * from './types/external'

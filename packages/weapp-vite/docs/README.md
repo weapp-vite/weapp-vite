@@ -10,11 +10,12 @@
 - `mcp.md`
 - `volar.md`
 - `define-config-overloads.md`
+- `quickapp.md`
 - `packaged/*.md`
 
 其中：
 
-- `mcp.md`、`volar.md`、`define-config-overloads.md` 会直接同步到 `dist/docs/`。
+- `mcp.md`、`volar.md`、`define-config-overloads.md`、`quickapp.md` 会直接同步到 `dist/docs/`。
 - `packaged/*.md` 是 `dist/docs/` 的维护源文件，不要再把生成结果反向放回本目录。
 
 不属于 npm 包内交付文档的内容，例如：

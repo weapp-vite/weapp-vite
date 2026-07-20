@@ -2,14 +2,16 @@ import type { MpPlatform } from './types'
 import { DEFAULT_MP_PLATFORM, getSupportedMiniProgramPlatforms, normalizeMiniPlatform, resolveMiniPlatform } from './platform'
 
 export type WebPlatform = 'web'
-export type WeappViteRuntime = 'miniprogram' | 'web'
-export type WeappVitePlatform = MpPlatform | WebPlatform
+export type QuickAppPlatform = 'quickapp'
+export type WeappViteRuntime = 'miniprogram' | 'web' | 'quickapp'
+export type WeappVitePlatform = MpPlatform | WebPlatform | QuickAppPlatform
 export type WeappViteTargetInput = WeappVitePlatform | 'h5' | 'all' | 'both' | (string & {})
 export type WeappViteTargetKind = WeappViteRuntime | 'all'
 
 export interface ResolvedWeappViteTarget {
   kind: WeappViteTargetKind
   runMini: boolean
+  runQuickApp: boolean
   runWeb: boolean
   platform?: WeappVitePlatform
   label: string
@@ -29,6 +31,7 @@ export interface WeappViteTargetDescriptor {
 }
 
 export const WEB_PLATFORM_ALIASES = Object.freeze(['web', 'h5'])
+export const QUICKAPP_PLATFORM_ALIASES = Object.freeze(['quickapp', 'hap'])
 
 export function isWebPlatform(input?: string | null): boolean {
   if (!input) {
@@ -51,6 +54,12 @@ export function getSupportedWeappViteTargetDescriptors(): readonly WeappViteTarg
       aliases: WEB_PLATFORM_ALIASES,
       label: 'web',
     },
+    {
+      platform: 'quickapp',
+      runtime: 'quickapp' as const,
+      aliases: QUICKAPP_PLATFORM_ALIASES,
+      label: 'quickapp',
+    },
   ]
 }
 
@@ -67,6 +76,7 @@ export function resolveWeappViteTarget(
     return {
       kind: 'miniprogram',
       runMini: true,
+      runQuickApp: false,
       runWeb: false,
       label: 'config',
       raw,
@@ -79,6 +89,7 @@ export function resolveWeappViteTarget(
     return {
       kind: 'all',
       runMini: true,
+      runQuickApp: false,
       runWeb: true,
       label: 'weapp + web',
       raw,
@@ -89,9 +100,22 @@ export function resolveWeappViteTarget(
     return {
       kind: 'web',
       runMini: false,
+      runQuickApp: false,
       runWeb: true,
       platform: 'web',
       label: 'web',
+      raw,
+    }
+  }
+
+  if (QUICKAPP_PLATFORM_ALIASES.includes(lowerRaw)) {
+    return {
+      kind: 'quickapp',
+      runMini: false,
+      runQuickApp: true,
+      runWeb: false,
+      platform: 'quickapp',
+      label: 'quickapp',
       raw,
     }
   }
@@ -101,6 +125,7 @@ export function resolveWeappViteTarget(
     return {
       kind: 'miniprogram',
       runMini: true,
+      runQuickApp: false,
       runWeb: false,
       platform,
       label: platform,
@@ -113,6 +138,7 @@ export function resolveWeappViteTarget(
   return {
     kind: 'miniprogram',
     runMini: true,
+    runQuickApp: false,
     runWeb: false,
     platform: fallbackMiniPlatform,
     label: fallbackMiniPlatform,

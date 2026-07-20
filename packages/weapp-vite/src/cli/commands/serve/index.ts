@@ -6,6 +6,7 @@ import process from 'node:process'
 import { detectAiDevelopmentEnvironment } from '../../../aiEnvironment'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
+import { serveQuickApp } from '../../../quickapp'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
 import { startDevHotkeys } from '../../devHotkeys'
 import { formatDuration } from '../../formatDuration'
@@ -29,7 +30,8 @@ export function registerServeCommand(cli: CAC) {
     .alias('dev') // 与脚本名对齐的别名
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | web | all)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | web | quickapp | all)`)
+    .option('--quickapp-e2e', `[boolean] enable hap-toolkit official E2E injection`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
@@ -47,6 +49,27 @@ export function registerServeCommand(cli: CAC) {
       const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
+      if (targets.runQuickApp) {
+        logRuntimeTarget(targets)
+        const session = await serveQuickApp({
+          cwd,
+          configFile,
+          mode: options.mode ?? 'development',
+          e2e: options.quickappE2e,
+          watch: true,
+        })
+        logger.success(`QuickApp 开发监听已启动，生成工程：${session.config.outDir}`)
+        try {
+          await Promise.race([
+            waitForServeShutdownSignal(),
+            session.waitForExit(),
+          ])
+        }
+        finally {
+          await session.close()
+        }
+        return
+      }
       let inlineConfig = createInlineConfig(targets.platform, options.scope)
       if (targets.runWeb) {
         const host = resolveWebHost(options.host)

@@ -1,8 +1,19 @@
-import type { UserConfig } from '.'
+import type { QuickAppConfig, UserConfig } from '.'
 import { expectAssignable, expectError } from 'tsd'
 import { defineConfig } from '.'
 
 const objectConfig = defineConfig({
+  quickapp: {
+    srcDir: 'src',
+    outDir: 'dist/quickapp',
+    testDir: 'test',
+    toolkit: {
+      enabled: true,
+      e2e: true,
+      devtool: 'source-map',
+      args: ['--stats'],
+    },
+  },
   weapp: {
     srcRoot: 'src',
     wevu: {
@@ -89,6 +100,7 @@ const objectConfig = defineConfig({
     },
   },
 })
+expectAssignable<QuickAppConfig | undefined>(objectConfig.quickapp)
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.minify)
@@ -123,6 +135,12 @@ expectAssignable<{
   }
 } | undefined>(objectConfig.weapp?.analyze)
 expectAssignable<UserConfig>({
+  quickapp: {
+    testDir: false,
+    toolkit: {
+      devtool: false,
+    },
+  },
   weapp: {
     mcp: {
       autoStart: 'ai',
@@ -130,6 +148,11 @@ expectAssignable<UserConfig>({
     },
   },
 })
+expectError(defineConfig({
+  quickapp: {
+    testDir: 1,
+  },
+}))
 expectAssignable<string | string[] | {
   includeMainPackage?: boolean
   include?: string[]
@@ -162,6 +185,11 @@ const promiseConfig = defineConfig(Promise.resolve({
 expectAssignable<Promise<UserConfig>>(promiseConfig)
 
 const syncNoEnvConfig = defineConfig(() => ({
+  quickapp: {
+    toolkit: {
+      e2e: true,
+    },
+  },
   weapp: {
     srcRoot: 'src',
     platform: 'alipay',
@@ -173,6 +201,7 @@ const syncNoEnvConfig = defineConfig(() => ({
 }))
 const syncNoEnvResolved = syncNoEnvConfig()
 expectAssignable<string | undefined>(syncNoEnvResolved.weapp?.srcRoot)
+expectAssignable<boolean | undefined>(syncNoEnvResolved.quickapp?.toolkit?.e2e)
 expectAssignable<'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' | undefined>(syncNoEnvResolved.weapp?.platform)
 expectError(syncNoEnvResolved.then(() => {}))
 
