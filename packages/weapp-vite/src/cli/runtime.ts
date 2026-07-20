@@ -1,14 +1,12 @@
 import type { InlineConfig } from 'vite'
+import type { ResolvedBackendExecution } from '../backends'
 import type { MpPlatform } from '../types'
+import { defu } from '@weapp-core/shared'
+import { resolveBackendExecution } from '../backends'
 import logger, { colors } from '../logger'
-import { createBuildScopeConfigFromCli } from '../runtime/buildScope'
-import { resolveWeappViteTarget } from '../runtimeTarget'
 
-export interface RuntimeTargets {
-  runMini: boolean
-  runWeb: boolean
+export interface RuntimeTargets extends ResolvedBackendExecution {
   platform?: MpPlatform
-  label: string
   rawPlatform?: string
 }
 
@@ -37,28 +35,35 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
     : typeof options.p === 'string'
       ? options.p
       : undefined
-  const target = resolveWeappViteTarget(rawPlatform, {
+  const execution = resolveBackendExecution(rawPlatform, {
     warn: message => logger.warn(message),
   })
+  const miniBackend = execution.get('miniprogram')
 
   return {
-    runMini: target.runMini,
-    runWeb: target.runWeb,
-    platform: target.kind === 'miniprogram' ? target.platform as MpPlatform | undefined : undefined,
-    label: target.label,
+    ...execution,
+    platform: miniBackend?.platform as MpPlatform | undefined,
     rawPlatform,
   }
 }
 
-export function createInlineConfig(platform: MpPlatform | undefined, scope?: string): InlineConfig | undefined {
-  const buildScope = createBuildScopeConfigFromCli(scope)
-  if (!platform && !buildScope) {
+export function createInlineConfig(
+  execution: RuntimeTargets,
+  options: { scope?: string, host?: string | boolean } = {},
+): InlineConfig | undefined {
+  const configs = execution.entries
+    .map(entry => entry.driver.createInlineConfig({
+      execution,
+      platform: entry.platform,
+      scope: options.scope,
+      host: options.host,
+    }))
+    .filter((config): config is InlineConfig => Boolean(config))
+  if (configs.length === 0) {
     return undefined
   }
-  return {
-    weapp: {
-      ...(platform ? { platform } : {}),
-      ...(buildScope ? { buildScope } : {}),
-    },
-  }
+  return configs.slice(1).reduce(
+    (merged, config) => defu<InlineConfig, InlineConfig[]>(merged, config),
+    configs[0],
+  )
 }

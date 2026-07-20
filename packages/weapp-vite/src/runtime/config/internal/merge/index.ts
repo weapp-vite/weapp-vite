@@ -3,6 +3,7 @@ import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { LoadConfigResult } from '../../types'
+import { platformBackendRegistry } from '../../../../backends'
 import { createSharedBuildOutput } from '../../../sharedBuildConfig'
 import { ensureConfigService, mergeInlineConfig } from './inline'
 import { mergeMiniprogram } from './miniprogram'
@@ -58,51 +59,63 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
 
   function mergeFactory(subPackageMeta: SubPackageMetaValue | undefined, ...configs: Partial<InlineConfig | undefined>[]) {
     ensureConfigService(ctx)
+    const backend = platformBackendRegistry.get('miniprogram')
+    if (!backend) {
+      throw new Error('小程序平台后端未注册。')
+    }
     const currentOptions = getOptions()
-    return mergeMiniprogram({
-      ctx,
-      subPackageMeta,
-      config: currentOptions.config,
-      cwd: currentOptions.cwd,
-      srcRoot: currentOptions.srcRoot,
-      mpDistRoot: currentOptions.mpDistRoot,
-      configFileDependencies: currentOptions.configFileDependencies,
-      packageJson: currentOptions.packageJson,
-      isDev: currentOptions.isDev,
-      applyRuntimePlatform,
-      injectBuiltinAliases,
-      getDefineImportMetaEnv,
-      setOptions: next => setOptions({
-        ...currentOptions,
-        ...next,
-      }),
-      oxcRolldownPlugin,
-    }, ...configs)
+    return backend.driver.mergeConfig({
+      merge: (...backendConfigs) => mergeMiniprogram({
+        ctx,
+        subPackageMeta,
+        config: currentOptions.config,
+        cwd: currentOptions.cwd,
+        srcRoot: currentOptions.srcRoot,
+        mpDistRoot: currentOptions.mpDistRoot,
+        configFileDependencies: currentOptions.configFileDependencies,
+        packageJson: currentOptions.packageJson,
+        isDev: currentOptions.isDev,
+        applyRuntimePlatform,
+        injectBuiltinAliases,
+        getDefineImportMetaEnv,
+        setOptions: next => setOptions({
+          ...currentOptions,
+          ...next,
+        }),
+        oxcRolldownPlugin,
+      }, ...backendConfigs),
+    }, ...configs)!
   }
 
   function mergeWebFactory(...configs: Partial<InlineConfig | undefined>[]) {
     ensureConfigService(ctx)
+    const backend = platformBackendRegistry.get('web')
+    if (!backend) {
+      throw new Error('Web 平台后端未注册。')
+    }
     const currentOptions = getOptions()
     const configService = ctx.configService!
     const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
     const sharedOutput = configService.options.chunksConfigured
       ? createSharedBuildOutput(configService, () => subPackageRoots)
       : undefined
-    return mergeWeb({
-      config: currentOptions.config,
-      web: currentOptions.weappWeb,
-      mode: currentOptions.mode,
-      isDev: currentOptions.isDev,
-      applyRuntimePlatform,
-      injectBuiltinAliases,
-      getDefineImportMetaEnv,
-    }, sharedOutput
-      ? {
-          build: {
-            rolldownOptions: { output: sharedOutput },
-          },
-        }
-      : {}, ...configs)
+    return backend.driver.mergeConfig({
+      merge: (...backendConfigs) => mergeWeb({
+        config: currentOptions.config,
+        web: currentOptions.weappWeb,
+        mode: currentOptions.mode,
+        isDev: currentOptions.isDev,
+        applyRuntimePlatform,
+        injectBuiltinAliases,
+        getDefineImportMetaEnv,
+      }, sharedOutput
+        ? {
+            build: {
+              rolldownOptions: { output: sharedOutput },
+            },
+          }
+        : {}, ...backendConfigs),
+    }, ...configs)
   }
 
   function mergeInlineFactory(...configs: Partial<InlineConfig>[]) {

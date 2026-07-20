@@ -5,6 +5,7 @@ import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
+import { getBackendForCapability } from '../../backends'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
@@ -99,13 +100,14 @@ export function registerBuildCommand(cli: CAC) {
     .action(async (root: string, options: GlobalCLIOptions) => {
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
+      let targets: ReturnType<typeof resolveRuntimeTargets> | undefined
       let buildCompleted = false
       try {
         filterDuplicateOptions(options)
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
-        const targets = resolveRuntimeTargets(options)
-        const inlineConfig = createInlineConfig(targets.platform, options.scope)
+        targets = resolveRuntimeTargets(options)
+        const inlineConfig = createInlineConfig(targets, { scope: options.scope })
         ctx = await createCompilerContext({
           cwd,
           mode: options.mode ?? 'production',
@@ -116,59 +118,66 @@ export function registerBuildCommand(cli: CAC) {
           emitDefaultAutoImportOutputs: false,
           preloadAppEntry: false,
         })
-        const { buildService, configService, webService } = ctx
+        const { configService } = ctx
+        const miniBackend = getBackendForCapability(targets, 'miniprogram', 'build')
+        const webBackend = getBackendForCapability(targets, 'web', 'build')
         logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
-        const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
-        if (targets.runMini) {
-          const miniBuildStartedAt = Date.now()
-          const output = await buildService.build(options)
-          const miniBuildDurationMs = Date.now() - miniBuildStartedAt
-          logger.success(`小程序构建完成，耗时：${colors.green(formatDuration(miniBuildDurationMs))}`)
-          if (!Array.isArray(output) && 'output' in output) {
-            logBuildPackageSizeReport({
-              output,
-              subPackageMap: ctx.scanService?.subPackageMap,
-              warningBytes: configService.weappViteConfig.packageSizeWarningBytes,
-            })
+        const enableAnalyze = Boolean(isUiEnabled(options) && miniBackend)
+        for (const backend of targets.select('build')) {
+          if (backend.descriptor.id === 'miniprogram') {
+            const miniBuildStartedAt = Date.now()
+            const output = await backend.driver.build(ctx, options) as Awaited<ReturnType<typeof ctx.buildService.build>>
+            const miniBuildDurationMs = Date.now() - miniBuildStartedAt
+            logger.success(`小程序构建完成，耗时：${colors.green(formatDuration(miniBuildDurationMs))}`)
+            if (!Array.isArray(output) && 'output' in output) {
+              logBuildPackageSizeReport({
+                output,
+                subPackageMap: ctx.scanService?.subPackageMap,
+                warningBytes: configService.weappViteConfig.packageSizeWarningBytes,
+              })
+            }
+            if (enableAnalyze) {
+              const analyzeStartedAt = Date.now()
+              const previousAnalyzeResult = await readLatestAnalyzeHistorySnapshot(configService)
+              const analyzeResult = await analyzeSubpackages(ctx)
+              await writeAnalyzeHistorySnapshot(analyzeResult, configService)
+              const analyzeDurationMs = Date.now() - analyzeStartedAt
+              analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
+                watch: true,
+                artifactRoot: configService.outDir,
+                cwd: configService.cwd,
+                packageManagerAgent: configService.packageManager.agent,
+                previousResult: previousAnalyzeResult,
+                initialEvents: [
+                  {
+                    kind: 'build',
+                    level: 'success',
+                    title: 'mini build completed',
+                    detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
+                    durationMs: miniBuildDurationMs,
+                    tags: ['build', 'mini'],
+                  },
+                  {
+                    kind: 'build',
+                    level: 'success',
+                    title: 'analyze completed',
+                    detail: `分析已完成，当前包含 ${analyzeResult.packages.length} 个包与 ${analyzeResult.modules.length} 个模块。`,
+                    durationMs: analyzeDurationMs,
+                    tags: ['build', 'analyze'],
+                  },
+                ],
+              }) ?? undefined
+            }
+            continue
           }
-          if (enableAnalyze) {
-            const analyzeStartedAt = Date.now()
-            const previousAnalyzeResult = await readLatestAnalyzeHistorySnapshot(configService)
-            const analyzeResult = await analyzeSubpackages(ctx)
-            await writeAnalyzeHistorySnapshot(analyzeResult, configService)
-            const analyzeDurationMs = Date.now() - analyzeStartedAt
-            analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
-              watch: true,
-              artifactRoot: configService.outDir,
-              cwd: configService.cwd,
-              packageManagerAgent: configService.packageManager.agent,
-              previousResult: previousAnalyzeResult,
-              initialEvents: [
-                {
-                  kind: 'build',
-                  level: 'success',
-                  title: 'mini build completed',
-                  detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
-                  durationMs: miniBuildDurationMs,
-                  tags: ['build', 'mini'],
-                },
-                {
-                  kind: 'build',
-                  level: 'success',
-                  title: 'analyze completed',
-                  detail: `分析已完成，当前包含 ${analyzeResult.packages.length} 个包与 ${analyzeResult.modules.length} 个模块。`,
-                  durationMs: analyzeDurationMs,
-                  tags: ['build', 'analyze'],
-                },
-              ],
-            }) ?? undefined
+
+          const webConfig = configService.weappWebConfig
+          if (backend.descriptor.id !== 'web' || !webConfig?.enabled) {
+            continue
           }
-        }
-        const webConfig = configService.weappWebConfig
-        if (targets.runWeb && webConfig?.enabled) {
           const webBuildStartedAt = Date.now()
           try {
-            await webService?.build()
+            await backend.driver.build(ctx, options)
             const webBuildDurationMs = Date.now() - webBuildStartedAt
             logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}，耗时：${colors.green(formatDuration(webBuildDurationMs))}`)
             emitDashboardEvents(analyzeHandle, [
@@ -197,10 +206,10 @@ export function registerBuildCommand(cli: CAC) {
             throw error
           }
         }
-        if (targets.runMini) {
-          logBuildAppFinish(configService, undefined, { skipWeb: !targets.runWeb })
+        if (miniBackend) {
+          logBuildAppFinish(configService, undefined, { skipWeb: !webBackend })
         }
-        if (options.open && targets.runMini) {
+        if (options.open && getBackendForCapability(targets, 'miniprogram', 'ide')) {
           emitDashboardEvents(analyzeHandle, [
             {
               kind: 'command',
@@ -222,7 +231,11 @@ export function registerBuildCommand(cli: CAC) {
         buildCompleted = true
       }
       finally {
-        ctx?.watcherService?.closeAll()
+        if (ctx && targets) {
+          for (const backend of [...targets.select('build')].reverse()) {
+            await backend.driver.close(ctx)
+          }
+        }
         terminateStaleSassEmbeddedProcess()
         if (buildCompleted) {
           scheduleCompletedProductionBuildExit(options, analyzeHandle)

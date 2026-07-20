@@ -6,10 +6,25 @@ const resolveIdeCommandContextMock = vi.hoisted(() => vi.fn())
 const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn())
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
-const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  platform: 'weapp',
-  rawPlatform: 'weapp',
-})))
+const resolveRuntimeTargetsMock = vi.hoisted(() => {
+  const miniBackend = {
+    descriptor: {
+      id: 'miniprogram',
+      capabilities: {
+        ide: true,
+      },
+    },
+    platform: 'weapp',
+  }
+  return vi.fn(() => ({
+    kind: 'miniprogram',
+    label: 'weapp',
+    entries: [miniBackend],
+    platform: 'weapp',
+    rawPlatform: 'weapp',
+    get: (id: string) => id === 'miniprogram' ? miniBackend : undefined,
+  }))
+})
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
 const maybeStartDetachedMcpServerMock = vi.hoisted(() => vi.fn())
 const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
@@ -160,5 +175,26 @@ describe('open cli command', () => {
       nonInteractive: true,
       trustProject: false,
     })
+  })
+
+  it('rejects a backend without ide capability', async () => {
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { ide: false },
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    const action = createOpenActionHandler()
+
+    await expect(action(undefined, { platform: 'web' })).rejects.toThrow('`weapp-vite open` 当前仅支持小程序平台。')
+    expect(resolveIdeCommandContextMock).not.toHaveBeenCalled()
   })
 })

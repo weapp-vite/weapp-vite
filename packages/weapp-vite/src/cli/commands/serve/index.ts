@@ -4,6 +4,7 @@ import type { AnalyzeDashboardHandle } from '../../analyze/dashboard'
 import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
 import { detectAiDevelopmentEnvironment } from '../../../aiEnvironment'
+import { getBackendForCapability } from '../../../backends'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
@@ -47,40 +48,12 @@ export function registerServeCommand(cli: CAC) {
       const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      let inlineConfig = createInlineConfig(targets.platform, options.scope)
-      if (targets.runWeb) {
-        const host = resolveWebHost(options.host)
-        if (host !== undefined) {
-          inlineConfig = {
-            ...inlineConfig,
-            server: {
-              ...(inlineConfig?.server ?? {}),
-              host,
-            },
-          }
-        }
-        if (targets.runMini) {
-          const existingServer = inlineConfig?.server ?? {}
-          inlineConfig = {
-            ...inlineConfig,
-            build: {
-              ...(inlineConfig?.build ?? {}),
-              watch: typeof inlineConfig?.build?.watch === 'object' && inlineConfig.build.watch
-                ? { ...inlineConfig.build.watch }
-                : {},
-            },
-            server: {
-              ...existingServer,
-              ...(existingServer.port === undefined ? { port: 0 } : {}),
-              watch: {
-                ...(existingServer.watch ?? {}),
-                usePolling: true,
-                interval: 100,
-              },
-            },
-          }
-        }
-      }
+      const webBackend = getBackendForCapability(targets, 'web', 'dev')
+      const host = webBackend ? resolveWebHost(options.host) : undefined
+      const inlineConfig = createInlineConfig(targets, {
+        scope: options.scope,
+        host,
+      })
       const ctx = await createCompilerContext({
         cwd,
         mode: options.mode ?? 'development',
@@ -92,15 +65,16 @@ export function registerServeCommand(cli: CAC) {
         syncAutoImportSupportFiles: false,
         projectConfigPath: options.projectConfig,
       })
-      const { buildService, configService, webService } = ctx
+      const { configService } = ctx
+      const miniBackend = getBackendForCapability(targets, 'miniprogram', 'dev')
       const aiEnvironment = await detectAiDevelopmentEnvironment()
       const mcpConfig = applyMcpCliOptions(configService.weappViteConfig?.mcp, options)
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
-      const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
+      const enableAnalyze = Boolean(isUiEnabled(options) && miniBackend)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       const miniProgramDevActions = createServeMiniProgramDevActions({
         build: async () => {
-          await buildService.build(options)
+          await miniBackend?.driver.dev(ctx, options)
         },
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath, openOptions) => {
@@ -129,7 +103,7 @@ export function registerServeCommand(cli: CAC) {
           })
         },
       })
-      const devHotkeysSession = targets.runMini
+      const devHotkeysSession = miniBackend
         ? startDevHotkeys({
             cwd: configService.cwd,
             agentName: aiEnvironment.agentName,
@@ -154,38 +128,43 @@ export function registerServeCommand(cli: CAC) {
           targets,
         })
 
-        if (targets.runMini) {
-          const miniBuildStartedAt = Date.now()
-          const buildResult = await buildService.build(options)
-          const miniBuildDurationMs = Date.now() - miniBuildStartedAt
-          logger.success(`小程序初次构建完成，耗时：${formatDuration(miniBuildDurationMs)}`)
-          void ctx.autoImportService?.syncSupportFileResolverComponents().catch((error) => {
-            const message = error instanceof Error ? error.message : String(error)
-            logger.warn(`[prepare] 后台同步 .weapp-vite 支持文件失败：${message}`)
-          })
-
-          if (enableAnalyze) {
-            await analyzeController.startDashboard(startAnalyzeDashboard)
-            analyzeHandle = analyzeController.getHandle()
-            analyzeController.emitRuntimeEvents([
-              {
-                kind: 'build',
-                level: 'success',
-                title: 'mini initial build completed',
-                detail: '小程序开发态初次构建已完成，dashboard 可继续监听后续刷新。',
-                durationMs: miniBuildDurationMs,
-                tags: ['dev', 'mini', 'initial'],
-              },
-            ])
-            const watcherControl = analyzeController.bindWatcher(buildResult)
-            await watcherControl.runInitialUpdate()
-          }
-        }
         let webServer: ViteDevServer | undefined
-        if (targets.runWeb) {
+        for (const backend of targets.select('dev')) {
+          if (backend.descriptor.id === 'miniprogram') {
+            const miniBuildStartedAt = Date.now()
+            const buildResult = await backend.driver.dev(ctx, options)
+            const miniBuildDurationMs = Date.now() - miniBuildStartedAt
+            logger.success(`小程序初次构建完成，耗时：${formatDuration(miniBuildDurationMs)}`)
+            void ctx.autoImportService?.syncSupportFileResolverComponents().catch((error) => {
+              const message = error instanceof Error ? error.message : String(error)
+              logger.warn(`[prepare] 后台同步 .weapp-vite 支持文件失败：${message}`)
+            })
+
+            if (enableAnalyze) {
+              await analyzeController.startDashboard(startAnalyzeDashboard)
+              analyzeHandle = analyzeController.getHandle()
+              analyzeController.emitRuntimeEvents([
+                {
+                  kind: 'build',
+                  level: 'success',
+                  title: 'mini initial build completed',
+                  detail: '小程序开发态初次构建已完成，dashboard 可继续监听后续刷新。',
+                  durationMs: miniBuildDurationMs,
+                  tags: ['dev', 'mini', 'initial'],
+                },
+              ])
+              const watcherControl = analyzeController.bindWatcher(buildResult)
+              await watcherControl.runInitialUpdate()
+            }
+            continue
+          }
+
+          if (backend.descriptor.id !== 'web') {
+            continue
+          }
           const webServerStartedAt = Date.now()
           try {
-            webServer = await webService?.startDevServer()
+            webServer = await backend.driver.dev(ctx, options) as ViteDevServer | undefined
             logger.success(`Web 开发服务启动完成，耗时：${formatDuration(Date.now() - webServerStartedAt)}`)
             analyzeController.emitRuntimeEvents([
               {
@@ -213,17 +192,17 @@ export function registerServeCommand(cli: CAC) {
             throw error
           }
         }
-        if (targets.runMini) {
+        if (miniBackend) {
           logBuildAppFinish(configService, webServer, {
-            skipWeb: !targets.runWeb,
+            skipWeb: !webBackend,
             uiUrls: analyzeHandle?.urls,
           })
           devHotkeysSession?.restore()
         }
-        else if (targets.runWeb) {
+        else if (webBackend) {
           logBuildAppFinish(configService, webServer, { skipMini: true })
         }
-        if (options.open && targets.runMini) {
+        if (options.open && getBackendForCapability(targets, 'miniprogram', 'ide')) {
           analyzeController.emitRuntimeEvents([
             {
               kind: 'command',
@@ -248,13 +227,15 @@ export function registerServeCommand(cli: CAC) {
         if (analyzeHandle) {
           await analyzeController.waitForExit()
         }
-        else if (targets.runMini || targets.runWeb) {
+        else if (targets.has('dev')) {
           await waitForServeShutdownSignal()
         }
       }
       finally {
         devHotkeysSession?.close()
-        ctx.watcherService?.closeAll()
+        for (const backend of [...targets.select('dev')].reverse()) {
+          await backend.driver.close(ctx)
+        }
       }
     })
 }

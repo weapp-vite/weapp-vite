@@ -1,5 +1,7 @@
 import type { MpPlatform } from './types'
-import { DEFAULT_MP_PLATFORM, getSupportedMiniProgramPlatforms, normalizeMiniPlatform, resolveMiniPlatform } from './platform'
+import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared'
+import { platformBackendRegistry, resolveBackendExecution } from './backends'
+import { DEFAULT_MP_PLATFORM } from './platform'
 
 export type WebPlatform = 'web'
 export type WeappViteRuntime = 'miniprogram' | 'web'
@@ -34,23 +36,30 @@ export function isWebPlatform(input?: string | null): boolean {
   if (!input) {
     return false
   }
-  return WEB_PLATFORM_ALIASES.includes(input.trim().toLowerCase())
+  return resolveBackendExecution(input).kind === 'web'
 }
 
 export function getSupportedWeappViteTargetDescriptors(): readonly WeappViteTargetDescriptor[] {
+  const supportedBackends = platformBackendRegistry.getExecutionOrder()
+  const miniprogramBackend = supportedBackends.find(backend => backend.descriptor.runtime === 'miniprogram')
+  const webBackend = supportedBackends.find(backend => backend.descriptor.runtime === 'web')
   return [
-    ...getSupportedMiniProgramPlatforms().map(platform => ({
-      platform,
+    ...MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => ({
+      platform: descriptor.id,
       runtime: 'miniprogram' as const,
-      aliases: [platform],
-      label: platform,
+      aliases: miniprogramBackend?.descriptor.aliases.includes(descriptor.id)
+        ? [descriptor.id]
+        : [],
+      label: descriptor.id,
     })),
-    {
-      platform: 'web',
-      runtime: 'web',
-      aliases: WEB_PLATFORM_ALIASES,
-      label: 'web',
-    },
+    ...webBackend
+      ? [{
+          platform: 'web' as const,
+          runtime: 'web' as const,
+          aliases: webBackend.descriptor.aliases,
+          label: 'web',
+        }]
+      : [],
   ]
 }
 
@@ -62,60 +71,19 @@ export function resolveWeappViteTarget(
   input?: WeappViteTargetInput | null,
   options: ResolveWeappViteTargetOptions = {},
 ): ResolvedWeappViteTarget {
-  const raw = typeof input === 'string' ? input : undefined
-  if (!raw) {
-    return {
-      kind: 'miniprogram',
-      runMini: true,
-      runWeb: false,
-      label: 'config',
-      raw,
-    }
-  }
-
-  const normalized = normalizeMiniPlatform(raw)
-  const lowerRaw = raw.trim().toLowerCase()
-  if (lowerRaw === 'all' || lowerRaw === 'both') {
-    return {
-      kind: 'all',
-      runMini: true,
-      runWeb: true,
-      label: 'weapp + web',
-      raw,
-    }
-  }
-
-  if (isWebPlatform(normalized ?? lowerRaw)) {
-    return {
-      kind: 'web',
-      runMini: false,
-      runWeb: true,
-      platform: 'web',
-      label: 'web',
-      raw,
-    }
-  }
-
-  const platform = resolveMiniPlatform(normalized ?? raw)
-  if (platform) {
-    return {
-      kind: 'miniprogram',
-      runMini: true,
-      runWeb: false,
-      platform,
-      label: platform,
-      raw,
-    }
-  }
-
   const fallbackMiniPlatform = options.fallbackMiniPlatform ?? DEFAULT_MP_PLATFORM
-  options.warn?.(`未识别的平台 "${raw}"，已回退到 ${fallbackMiniPlatform}`)
+  const execution = resolveBackendExecution(input, {
+    fallbackMiniPlatform,
+    warn: options.warn,
+  })
+  const mini = execution.get('miniprogram')
+  const web = execution.get('web')
   return {
-    kind: 'miniprogram',
-    runMini: true,
-    runWeb: false,
-    platform: fallbackMiniPlatform,
-    label: fallbackMiniPlatform,
-    raw,
+    kind: execution.kind,
+    runMini: Boolean(mini),
+    runWeb: Boolean(web),
+    platform: (mini?.platform ?? web?.platform) as WeappVitePlatform | undefined,
+    label: execution.label,
+    raw: execution.raw,
   }
 }

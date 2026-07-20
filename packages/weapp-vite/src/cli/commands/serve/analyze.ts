@@ -192,7 +192,7 @@ export function createAnalyzeController(options: {
         mode: configService.mode,
         isDev: false,
         configFile,
-        inlineConfig: createInlineConfig(targets.platform),
+        inlineConfig: createInlineConfig(targets),
         cliPlatform: targets.rawPlatform,
         projectConfigPath: cliOptions.projectConfig,
         syncSupportFiles: false,
