@@ -77,6 +77,7 @@ defineAppJson({ pages: ['pages/index/index'] })
     const srcRoot = path.join(root, 'src')
     const pageDir = path.join(srcRoot, 'pages', 'index')
     const componentDir = path.join(srcRoot, 'components')
+    const packageDir = path.join(root, 'node_modules', 'issue-724-style-package')
     const pageFile = path.join(pageDir, 'index.vue')
     const componentFile = path.join(componentDir, 'RoutingProbe.vue')
     const styleInputs = new Map<string, string>()
@@ -85,6 +86,19 @@ defineAppJson({ pages: ['pages/index/index'] })
     try {
       await fs.ensureDir(pageDir)
       await fs.ensureDir(componentDir)
+      await fs.ensureDir(packageDir)
+      await fs.writeJson(path.join(packageDir, 'package.json'), {
+        name: 'issue-724-style-package',
+        version: '1.0.0',
+        exports: {
+          './index.css': './index.css',
+        },
+      })
+      await fs.writeFile(
+        path.join(packageDir, 'index.css'),
+        '.issue-724-package-style { align-items: center; }',
+        'utf8',
+      )
       await fs.writeFile(path.join(pageDir, 'logic.ts'), [
         'import RoutingProbe from \'../../components/RoutingProbe.vue\'',
         'export const issue724ScriptMarker = \'issue-724-script-marker\'',
@@ -95,10 +109,11 @@ defineAppJson({ pages: ['pages/index/index'] })
         '.issue-724-style-src { color: $issue724Color; }',
       ].join('\n'), 'utf8')
       await fs.writeFile(pageFile, [
-        '<template><view class="issue-724-inline issue-724-style-src">issue-724-template-marker<RoutingProbe /></view></template>',
+        '<template><view class="issue-724-inline issue-724-style-src issue-724-package-style">issue-724-template-marker<RoutingProbe /></view></template>',
         '<script lang="ts" src="./logic.ts"></script>',
         '<style>.issue-724-inline { display: block; }</style>',
         '<style lang="scss" src="./external.scss"></style>',
+        '<style src="issue-724-style-package/index.css"></style>',
       ].join('\n'), 'utf8')
       await fs.writeFile(componentFile, [
         '<template><view class="issue-724-component">component marker</view></template>',
@@ -164,12 +179,15 @@ defineAppJson({ pages: ['pages/index/index'] })
               cssFileName: 'issue-724-routing',
             },
             rolldownOptions: {
-              external: id => !id.startsWith('.') && !path.isAbsolute(id) && !id.startsWith('\0'),
+              external: id => id !== 'issue-724-style-package/index.css'
+                && !id.startsWith('.')
+                && !path.isAbsolute(id)
+                && !id.startsWith('\0'),
             },
           },
         })
 
-        expect(styleInputs.size).toBe(3)
+        expect(styleInputs.size).toBe(4)
         const findVueInput = (filename: string) => [...vueInputs]
           .find(([id]) => id.includes(filename))?.[1]
         expect(findVueInput(pageFile)).toContain('issue-724-script-marker')
@@ -177,6 +195,7 @@ defineAppJson({ pages: ['pages/index/index'] })
         expect([...styleInputs.values()]).toEqual(expect.arrayContaining([
           expect.stringContaining('.issue-724-inline'),
           expect.stringContaining('.issue-724-style-src'),
+          expect.stringContaining('.issue-724-package-style'),
           expect.stringContaining('.issue-724-component'),
         ]))
         for (const styleCode of styleInputs.values()) {
