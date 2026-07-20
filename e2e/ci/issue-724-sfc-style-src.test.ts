@@ -18,9 +18,6 @@ describe.sequential('issue #724 user reproduction repository', () => {
       cwd: APP_ROOT,
       label: 'ci:issue-724-sfc-style-src',
       skipNpm: true,
-      env: {
-        DEBUG: 'weapp-vite:context',
-      },
     })
 
     const pageBase = path.join(DIST_ROOT, 'pages/index/index')

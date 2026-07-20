@@ -2,7 +2,6 @@ import { platform } from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import { posix as path } from 'pathe'
 import { assert, expect, vi } from 'vitest'
-import { normalizeEntryFileName } from '@/bundler'
 import { bundleRequire } from '@/index'
 
 const isWin = platform() === 'win32'
@@ -141,11 +140,6 @@ it('loads overridden entry source without changing filepath semantics', async ()
   expect(mod.default.a.filename.endsWith('a.ts')).toBe(true)
   expect(mod.default.filename.replaceAll('\\', '/')).toBe(entry.replaceAll('\\', '/'))
   expect(mod.default.dirname.replaceAll('\\', '/')).toBe(path.dirname(entry).replaceAll('\\', '/'))
-})
-
-it('matches Windows entry ids with Rolldown leading slash', () => {
-  expect(normalizeEntryFileName('D:\\a\\repo\\src\\app.json.ts')).toBe('d:/a/repo/src/app.json.ts')
-  expect(normalizeEntryFileName('/D:/a/repo/src/app.json.ts')).toBe('d:/a/repo/src/app.json.ts')
 })
 
 it('does not mutate the caller options object', async () => {

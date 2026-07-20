@@ -9,7 +9,6 @@ import { getModuleSyncConditionEnabled } from './module-sync'
 import { safeRealpathSync } from './utils'
 
 const JS_TS_EXT_RE = /\.[cm]?[jt]s$/
-const WINDOWS_DRIVE_FILE_RE = /^\/?[A-Z]:\//i
 
 export async function bundleFile(
   fileName: string,
@@ -166,29 +165,20 @@ function createEntrySourcePlugin({
       : {
           filter: { id: JS_TS_EXT_RE },
           async handler(_code: string, id: string) {
-            return entryFileNames.has(normalizeEntryFileName(id)) ? { code: source, map: null } : null
+            return entryFileNames.has(path.resolve(id)) ? { code: source, map: null } : null
           },
         },
   }
 }
 
 function collectEntryFileNames(fileName: string) {
-  const fileNames = new Set([normalizeEntryFileName(fileName)])
+  const fileNames = new Set([path.resolve(fileName)])
   try {
-    fileNames.add(normalizeEntryFileName(safeRealpathSync(fileName)))
+    fileNames.add(safeRealpathSync(fileName))
   }
   catch {
   }
   return fileNames
-}
-
-export function normalizeEntryFileName(fileName: string) {
-  const normalized = fileName.replaceAll('\\', '/')
-  if (WINDOWS_DRIVE_FILE_RE.test(normalized)) {
-    const drivePath = normalized.startsWith('/') ? normalized.slice(1) : normalized
-    return `${drivePath[0].toLowerCase()}${drivePath.slice(1)}`
-  }
-  return path.resolve(fileName).replaceAll('\\', '/')
 }
 
 function createFileScopeVariablesPlugin({

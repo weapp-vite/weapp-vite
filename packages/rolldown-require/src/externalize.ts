@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { slash } from './sharedUtils'
 import { isNodeBuiltin, isNodeLikeBuiltin } from './utils'
 
 const NON_RELATIVE_NON_HASH_RE = /^[^.#].*/
@@ -91,10 +92,7 @@ export function createExternalizeDepsPlugin({
           entryResolveCache,
         )
 
-        let idOut = resolvedPath + query
-        if (isImport && shouldExternalize) {
-          idOut = pathToFileURL(resolvedPath).href + query
-        }
+        const idOut = formatExternalizedFileId(resolvedPath, query, isImport && shouldExternalize)
 
         const result = { id: idOut, external: shouldExternalize }
         externalizeCache.set(cacheKey, result)
@@ -102,6 +100,16 @@ export function createExternalizeDepsPlugin({
       },
     },
   }
+}
+
+export function formatExternalizedFileId(
+  resolvedPath: string,
+  query: string,
+  asFileUrl: boolean,
+) {
+  return asFileUrl
+    ? pathToFileURL(resolvedPath).href + query
+    : slash(resolvedPath) + query
 }
 
 export function shouldExternalizeBareImport(
