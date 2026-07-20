@@ -65,7 +65,8 @@ wv [root]
 | --------------------------- | ------------------------------------------ |
 | `--skipNpm`                 | 跳过 npm 构建                              |
 | `-o, --open`                | 构建后尝试打开 IDE                         |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5` \| `quickapp`）  |
+| `--quickapp-e2e`            | QuickApp 场景启用官方 toolkit E2E 注入     |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径          |
 | `--host [host]`             | Web dev server host（`h5` 场景）           |
 | `--analyze`                 | 启动分包分析仪表盘（实验特性，小程序场景） |
@@ -76,6 +77,7 @@ wv [root]
 - 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`wv dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
 - 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
+- `quickapp` 会进入独立后端，不创建小程序 `CompilerContext`；需要项目安装 `hap-toolkit@2.1.0`。
 
 ### 2) `build`
 
@@ -91,7 +93,8 @@ wv build [root]
 | --------------------------- | ---------------------------------------------- |
 | `--target <target>`         | 构建目标（默认 `modules`）                     |
 | `--outDir <dir>`            | 输出目录（默认 `dist`）                        |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                    |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5` \| `quickapp`）      |
+| `--quickapp-e2e`            | QuickApp 场景启用官方 toolkit E2E 注入         |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径              |
 | `--sourcemap [output]`      | 产出 sourcemap（`true/inline/hidden`）         |
 | `--minify [minifier]`       | 代码压缩开关或压缩器（`false/terser/esbuild`） |

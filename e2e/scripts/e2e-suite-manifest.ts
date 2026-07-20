@@ -10,6 +10,7 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
+const QUICKAPP_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.quickapp.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
@@ -309,6 +310,15 @@ export function getHmrRegressionTasks() {
   ] satisfies SuiteTask[]
 }
 
+export function getQuickAppTasks() {
+  return [
+    createVitestTask(
+      QUICKAPP_CONFIG_PATH,
+      path.resolve(ROOT, 'quickapp/quickapp.runtime.test.ts'),
+    ),
+  ]
+}
+
 export function getFullTasks() {
   return [
     {
@@ -404,6 +414,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'hmr-regression',
     description: 'Complete HMR regression flow: IDE template HMR plus CI dev-watch HMR guards',
     tasks: getHmrRegressionTasks,
+  },
+  'quickapp': {
+    name: 'quickapp',
+    description: 'QuickApp runtime E2E on one connected Android device or emulator',
+    tasks: getQuickAppTasks,
   },
   'full': {
     name: 'full',

@@ -1,0 +1,23 @@
+.page {
+  flex-direction: column;
+  padding: 32px;
+  background-color: #f5f7fa;
+}
+
+.title {
+  font-size: 40px;
+  color: #182230;
+}
+
+.value {
+  margin-top: 24px;
+  font-size: 32px;
+  color: #0866ff;
+}
+
+.action {
+  padding: 20px;
+  margin-top: 24px;
+  color: #fff;
+  background-color: #0866ff;
+}

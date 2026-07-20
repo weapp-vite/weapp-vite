@@ -22,6 +22,7 @@ describe('cli runtime target resolution', () => {
     const targets = resolveRuntimeTargets({})
 
     expect(targets.runMini).toBe(true)
+    expect(targets.runQuickApp).toBe(false)
     expect(targets.runWeb).toBe(false)
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('config')
@@ -31,6 +32,7 @@ describe('cli runtime target resolution', () => {
     const targets = resolveRuntimeTargets({ platform: 'alipay' })
 
     expect(targets.runMini).toBe(true)
+    expect(targets.runQuickApp).toBe(false)
     expect(targets.runWeb).toBe(false)
     expect(targets.platform).toBe('alipay')
     expect(targets.label).toBe('alipay')
@@ -40,6 +42,7 @@ describe('cli runtime target resolution', () => {
     const targets = resolveRuntimeTargets({ platform: 'h5' })
 
     expect(targets.runMini).toBe(false)
+    expect(targets.runQuickApp).toBe(false)
     expect(targets.runWeb).toBe(true)
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('web')
@@ -49,9 +52,20 @@ describe('cli runtime target resolution', () => {
     const targets = resolveRuntimeTargets({ platform: 'all' })
 
     expect(targets.runMini).toBe(true)
+    expect(targets.runQuickApp).toBe(false)
     expect(targets.runWeb).toBe(true)
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('weapp + web')
+  })
+
+  it('resolves quickapp without entering mini-program or web runtimes', () => {
+    const targets = resolveRuntimeTargets({ platform: 'quickapp' })
+
+    expect(targets.runMini).toBe(false)
+    expect(targets.runQuickApp).toBe(true)
+    expect(targets.runWeb).toBe(false)
+    expect(targets.platform).toBeUndefined()
+    expect(targets.label).toBe('quickapp')
   })
 
   it('does not inject mini platform into inline config when platform is omitted', () => {

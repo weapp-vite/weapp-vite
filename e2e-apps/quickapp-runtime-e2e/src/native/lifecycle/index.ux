@@ -1,0 +1,20 @@
+<template>
+  <div class="page">
+    <text id="lifecycle" class="value">{{lifecycle}}</text>
+  </div>
+</template>
+
+<script>
+  export default {
+    private: {
+      lifecycle: 'created'
+    },
+    onReady() {
+      this.lifecycle = 'mounted'
+    }
+  }
+</script>
+
+<style>
+  @import '../../Common/base.css';
+</style>

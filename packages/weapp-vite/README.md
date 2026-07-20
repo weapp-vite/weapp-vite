@@ -29,6 +29,7 @@
 - ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
+- 📱 **实验性 QuickApp 后端**：支持原生快应用源码和 Vue SFC 直接编译为 `.ux`
 
 ## 快速开始
 
@@ -47,6 +48,20 @@ export default defineConfig({
 默认仍为 `classic`。实验模式要求微信开发者工具开启热重载；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
+
+### QuickApp（实验性）
+
+QuickApp 是独立构建后端，不属于 `weapp.platform`。项目需要直接提供 `manifest.json`、`app.ux` 和原生 `.ux`，也可以混用直接编译为 `.ux` 的 Vue SFC。
+
+```bash
+pnpm add -D hap-toolkit@2.1.0
+wv build --platform quickapp
+wv dev --platform quickapp
+```
+
+明确不支持把微信小程序转换成快应用：`app.json`、WXML、WXSS、WXS、`wx.*`、`App/Page/Component` 和 `setData` 都不在此后端的兼容范围内。
+
+完整配置、Vue 支持矩阵和 E2E 方案见 [docs/quickapp.md](./docs/quickapp.md)。
 
 ### Vue 项目
 

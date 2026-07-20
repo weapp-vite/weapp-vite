@@ -24,6 +24,7 @@ export interface GlobalCLIOptions {
   'p'?: string
   'platform'?: string
   'projectConfig'?: string
+  'quickappE2e'?: boolean
   'ticket'?: string
   'trustProject'?: boolean
   'openRecovery'?: boolean

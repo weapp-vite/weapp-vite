@@ -1,0 +1,21 @@
+<template>
+  <div class="page">
+    <text class="title">Native list</text>
+    <text class="value" for="{{items}}">{{$idx}}:{{$item.name}}</text>
+  </div>
+</template>
+
+<script>
+  export default {
+    private: {
+      items: [
+        { name: 'alpha' },
+        { name: 'beta' }
+      ]
+    }
+  }
+</script>
+
+<style>
+  @import '../../Common/base.css';
+</style>

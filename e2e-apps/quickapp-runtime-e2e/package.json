@@ -1,0 +1,19 @@
+{
+  "name": "e2e-quickapp-runtime",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wv build --platform quickapp",
+    "dev": "wv dev --platform quickapp",
+    "build:native": "hap build --devtool=source-map",
+    "build:native:e2e": "hap build --devtool=source-map --enable-e2e"
+  },
+  "devDependencies": {
+    "hap-toolkit": "2.1.0",
+    "weapp-vite": "workspace:*"
+  },
+  "browserslist": [
+    "chrome 65"
+  ]
+}

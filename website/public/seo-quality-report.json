@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-07-15T16:02:14.768Z",
+  "generatedAt": "2026-07-20T04:52:42.993Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 271,
-    "docs": 256,
+    "files": 272,
+    "docs": 257,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 271,
+    "withFrontmatter": 272,
     "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 271,
-      "title": 271,
-      "description": 271,
-      "keywords": 271,
+      "total": 272,
+      "title": 272,
+      "description": 272,
+      "keywords": 272,
       "date": 11
     },
     "docs": {
-      "total": 256,
-      "title": 256,
-      "description": 256,
-      "keywords": 256,
+      "total": 257,
+      "title": 257,
+      "description": 257,
+      "keywords": 257,
       "date": 3
     },
     "blog": {
@@ -44,7 +44,7 @@
       "title": 100,
       "description": 100,
       "keywords": 100,
-      "date": 4.1
+      "date": 4
     },
     "docs": {
       "title": 100,
@@ -101,13 +101,13 @@
   },
   "llmAssets": {
     "llmsEntry": true,
-    "llmsFullDist": true,
-    "llmsTxtDist": true,
+    "llmsFullDist": false,
+    "llmsTxtDist": false,
     "llmsIndexPublic": true,
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 271,
+    "checked": 272,
     "issues": []
   },
   "qualityIssueCounts": {}

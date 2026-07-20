@@ -10,6 +10,18 @@ export interface AutoImportComponentsConfig {
   }>
 }
 
+export interface QuickAppConfig {
+  srcDir?: string
+  outDir?: string
+  testDir?: string | false
+  toolkit?: {
+    enabled?: boolean
+    e2e?: boolean
+    devtool?: string | false
+    args?: string[]
+  }
+}
+
 export interface WeappViteConfig {
   srcRoot?: string
   platform?: 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
@@ -72,6 +84,7 @@ export interface WeappViteConfig {
 }
 
 export interface UserConfig {
+  quickapp?: QuickAppConfig
   weapp?: WeappViteConfig
   customFeature?: {
     enabled: boolean

@@ -1,0 +1,23 @@
+<template>
+  <div class="page">
+    <text id="api-result" class="value">{{result}}</text>
+    <text id="api-run" class="action" onclick="readDevice">read device</text>
+  </div>
+</template>
+
+<script>
+  import device from '@system.device'
+
+  export default {
+    private: {
+      result: 'idle'
+    },
+    readDevice() {
+      this.result = device.getInfo ? 'supported' : 'missing'
+    }
+  }
+</script>
+
+<style>
+  @import '../../Common/base.css';
+</style>

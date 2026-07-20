@@ -113,6 +113,7 @@ allowBuilds:
   '@weapp-tailwindcss/merge': true
   bufferutil: false
   cos-wx-sdk-v5: false
+  ejs: false
   esbuild: false
   gridstack: set this to true or false
   minidev: false

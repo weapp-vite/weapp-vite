@@ -1,0 +1,29 @@
+<template>
+  <div class="page">
+    <text class="title">Native reactivity</text>
+    <text id="count" class="value">count={{count}}</text>
+    <text id="double" class="value">double={{double}}</text>
+    <text id="increment" class="action" onclick="increment">increment</text>
+  </div>
+</template>
+
+<script>
+  export default {
+    private: {
+      count: 1,
+      double: 2
+    },
+    increment() {
+      this.count += 1
+      this.double = this.count * 2
+    }
+  }
+</script>
+
+<style>
+  @import '../../Common/base.css';
+
+  .page {
+    flex: 1;
+  }
+</style>

@@ -43,7 +43,7 @@ export function resolveWeappViteHostMeta(
   if (meta.name !== WEAPP_VITE_HOST_NAME) {
     return undefined
   }
-  if (meta.runtime !== 'miniprogram' && meta.runtime !== 'web') {
+  if (meta.runtime !== 'miniprogram' && meta.runtime !== 'web' && meta.runtime !== 'quickapp') {
     return undefined
   }
   if (meta.platform !== undefined && typeof meta.platform !== 'string') {

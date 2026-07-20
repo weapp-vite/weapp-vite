@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
+import { buildQuickApp } from '../../quickapp'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import {
   registerBuildCommand,
@@ -26,6 +27,7 @@ const logBuildPackageSizeReportMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+const buildQuickAppMock = vi.hoisted(() => vi.fn())
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV
 const ORIGINAL_VITEST = process.env.VITEST
@@ -54,6 +56,10 @@ vi.mock('../runtime', () => ({
 
 vi.mock('../../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
+}))
+
+vi.mock('../../quickapp', () => ({
+  buildQuickApp: buildQuickAppMock,
 }))
 
 vi.mock('../../analyze/subpackages', () => ({
@@ -154,6 +160,38 @@ describe('build cli command', () => {
       close: vi.fn().mockResolvedValue(undefined),
       urls: ['http://127.0.0.1:4173/'],
     })
+    buildQuickAppMock.mockResolvedValue({
+      config: {
+        outDir: '/project/dist/quickapp',
+      },
+      rpkFiles: ['/project/dist/quickapp/dist/app.rpk'],
+    })
+  })
+
+  it('routes QuickApp builds to the independent backend with official E2E enabled', async () => {
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      runMini: false,
+      runQuickApp: true,
+      runWeb: false,
+      platform: undefined,
+      rawPlatform: 'quickapp',
+      label: 'quickapp',
+    })
+    const action = createBuildActionHandler()
+
+    await action('/project', {
+      platform: 'quickapp',
+      quickappE2e: true,
+    })
+
+    expect(buildQuickApp).toHaveBeenCalledWith({
+      cwd: '/project',
+      configFile: undefined,
+      mode: 'production',
+      e2e: true,
+    })
+    expect(createCompilerContext).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('QuickApp 构建完成'))
   })
 
   it('emits mini build lifecycle event when ui analyze dashboard is enabled', async () => {

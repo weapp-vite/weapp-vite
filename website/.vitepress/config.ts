@@ -141,6 +141,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '多平台构建', link: '/guide/multi-platform' },
+      { text: 'QuickApp', link: '/guide/quickapp' },
       { text: 'WXS 增强', link: '/guide/wxs' },
       { text: 'Web 兼容矩阵', link: '/guide/web-compat-matrix' },
     ],
