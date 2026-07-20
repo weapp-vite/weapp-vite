@@ -313,7 +313,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       syncWevuPropsFromInstance(instance)
       attachPageLayoutSetter(instance)
       attachRuntimeLayoutHosts(instance)
-      enableDeferredSetData(instance)
+      enableDeferredSetData(instance, { rehydrateSetupState: true })
     })
     if (!statefulHmrBridge.isApplying()) {
       Component(definition)

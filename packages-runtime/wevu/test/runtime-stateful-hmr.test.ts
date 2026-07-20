@@ -39,7 +39,7 @@ describe('runtime: stateful HMR', () => {
             fn: (ctx: any) => ctx.increment(),
           },
         },
-      },
+      } as any,
       setup() {
         const count = ref(0)
         const increment = () => {

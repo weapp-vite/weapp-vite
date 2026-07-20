@@ -493,7 +493,10 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
 }
 
-function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
+function syncRuntimeStateFromNativeData(
+  target: InternalRuntimeState,
+  options?: { includeSetupState?: boolean },
+) {
   const runtime = target.__wevu
   const runtimeState = runtime?.state as Record<string, any> | undefined
   const setupState = runtime?.setupState as Record<string, any> | undefined
@@ -508,6 +511,9 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
       try {
         const setupBinding = setupState?.[key]
+        if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
+          continue
+        }
         if (isRef(setupBinding)) {
           setupBinding.value = value
           continue
@@ -521,9 +527,14 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
   }
 }
 
-export function enableDeferredSetData(target: InternalRuntimeState) {
+export function enableDeferredSetData(
+  target: InternalRuntimeState,
+  options?: { rehydrateSetupState?: boolean },
+) {
   const adapter = (target as any).__wevu?.adapter
-  syncRuntimeStateFromNativeData(target)
+  syncRuntimeStateFromNativeData(target, {
+    includeSetupState: options?.rehydrateSetupState,
+  })
   if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
     ;(adapter as any).__wevu_enableSetData(true)
   }

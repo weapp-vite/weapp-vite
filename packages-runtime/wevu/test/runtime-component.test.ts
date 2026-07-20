@@ -11,6 +11,7 @@ import {
   onRouteDone,
   onShow,
   onTabItemTap,
+  ref,
   resetWevuDefaults,
   setWevuDefaults,
 } from '@/index'
@@ -244,6 +245,36 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     await Promise.resolve()
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
+  })
+
+  it('keeps synchronous setup ref mutations over native initial data when attached', async () => {
+    defineComponent({
+      data: () => ({
+        ready: false,
+      }),
+      setupLifecycle: 'created',
+      setup() {
+        const ready = ref(false)
+        ready.value = true
+        return { ready }
+      },
+    })
+    const opts = registeredComponents[0]
+    const setData = vi.fn(function setData(this: any, payload: Record<string, any>) {
+      Object.assign(this.data, payload)
+    })
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      setData,
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    expect(inst.__wevu.setupState.ready.value).toBe(true)
+    expect(inst.data.ready).toBe(true)
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ ready: true }))
   })
 
   it('keeps created lifecycle native data updates when deferred setData is enabled', async () => {

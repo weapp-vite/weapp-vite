@@ -21,6 +21,7 @@ const WEVU_SOURCE = path.join(APP_ROOT, 'src/pages/wevu/index.vue')
 const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
 const WEVU_ROUTE = '/pages/wevu/index?source=e2e'
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 
 interface RuntimeState {
@@ -36,6 +37,7 @@ let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalComponentSource = ''
 let originalNativeSource = ''
 let originalWevuSource = ''
+let previousAutomatorLaunchMode: string | undefined
 let previousBridgePostConnectRefresh: string | undefined
 
 function normalizeFixtureSource(source: string, runtime: 'component' | 'native' | 'wevu'): string {
@@ -150,8 +152,10 @@ async function readClientVersion(): Promise<number> {
 
 describe.sequential('stateful HMR in real WeChat DevTools', () => {
   beforeAll(async () => {
+    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
-    process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'
+    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
+    delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
@@ -205,6 +209,12 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     }
     if (originalWevuSource) {
       await fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8')
+    }
+    if (previousAutomatorLaunchMode === undefined) {
+      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    }
+    else {
+      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
     }
     if (previousBridgePostConnectRefresh === undefined) {
       delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]

@@ -815,10 +815,15 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-500 page')
       }
 
-      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-500/index', '_runE2E')
-      expect(runtime?.ok).toBe(true)
-      expect(runtime?.continuationText).toBe('continued')
-      expect(runtime?.missingType).toBe('fallback')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtime = await callRoutePageMethodWithOptions(activeMiniProgram, '/pages/issue-500/index', '_runE2E', {
+        protocolTimeoutMs: 12_000,
+      })
+      expect(runtime).toMatchObject({
+        continuationText: 'continued',
+        missingType: 'fallback',
+        ok: true,
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

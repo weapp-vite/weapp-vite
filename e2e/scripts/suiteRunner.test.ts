@@ -255,6 +255,7 @@ describe('suiteRunner', () => {
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const coreHmrTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
+    const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
@@ -267,6 +268,7 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
     expect(coreHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(wevuRuntimeTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(ideHeadlessSmokeLabels).toEqual([
       'ide/index.test.ts',
       'ide/template-weapp-vite-template.test.ts',

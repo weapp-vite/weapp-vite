@@ -48,6 +48,80 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('index')
   })
 
+  it('runs Component() pages in browser simulator runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Component({
+  data() {
+    return { lifecycleLog: [] }
+  },
+  lifetimes: {
+    created() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'created'] })
+    },
+    attached() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'attached'] })
+    },
+    ready() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'ready'] })
+    },
+  },
+  pageLifetimes: {
+    show() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'show'] })
+    },
+    hide() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'hide'] })
+    },
+    resize(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'resize:' + options.size.windowWidth] })
+    },
+    routeDone(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'routeDone:' + options.from] })
+    },
+  },
+  methods: {
+    onLoad(query) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'load:' + query.from] })
+    },
+    snapshot() {
+      this.setData({ snapshot: this.data.lifecycleLog.join('|') })
+    },
+    openNext() {
+      wx.navigateTo({ url: '/pages/next/index' })
+    },
+  },
+})
+`],
+      ['pages/index/index.wxml', '<view>{{snapshot}}</view>'],
+      ['pages/next/index.js', 'Page({})'],
+      ['pages/next/index.wxml', '<view>next</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index?from=browser')
+    session.triggerRouteDone({ from: 'browser' })
+    session.triggerResize({ size: { windowWidth: 412 } })
+    page.openNext()
+    session.navigateBack()
+    page.snapshot()
+
+    expect(page.data.lifecycleLog).toEqual([
+      'created',
+      'attached',
+      'load:browser',
+      'show',
+      'ready',
+      'routeDone:browser',
+      'resize:412',
+      'hide',
+      'show',
+    ])
+    expect(session.renderCurrentPage().wxml).toContain('routeDone:browser|resize:412|hide|show')
+  })
+
   it('runs wx.nextTick callbacks after page setData in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

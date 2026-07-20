@@ -62,6 +62,101 @@ describe('HeadlessSession', () => {
     })
   })
 
+  it('runs Component() page methods and lifecycles in headless runtime', () => {
+    const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-component-page-'))
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/component/index', 'pages/next/index'],
+    }))
+    writeFixtureFile(path.join(projectPath, 'project.config.json'), JSON.stringify({
+      appid: 'wx1234567890abcdef',
+      miniprogramRoot: 'dist/',
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/component/index.js'), `
+Component({
+  data() {
+    return { lifecycleLog: [] }
+  },
+  lifetimes: {
+    created() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'created'] })
+    },
+    attached() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'attached'] })
+    },
+    ready() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'ready'] })
+    },
+    detached() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'detached'] })
+    },
+  },
+  pageLifetimes: {
+    show() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'show'] })
+    },
+    hide() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'hide'] })
+    },
+    resize(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'resize:' + options.size.windowWidth] })
+    },
+    routeDone(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'routeDone:' + options.from] })
+    },
+  },
+  methods: {
+    onLoad(query) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'load:' + query.from] })
+    },
+    openNext() {
+      wx.navigateTo({ url: '/pages/next/index' })
+    },
+    runE2E() {
+      return this.data.lifecycleLog.slice()
+    },
+  },
+})
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/component/index.wxml'), '<view>{{lifecycleLog}}</view>')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/next/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/next/index.wxml'), '<view>next</view>')
+
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/component/index?from=e2e')
+
+    expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready'])
+    session.triggerRouteDone({ from: 'headless' })
+    session.triggerResize({ size: { windowWidth: 390 } })
+    page.openNext()
+    expect(page.runE2E()).toEqual([
+      'created',
+      'attached',
+      'load:e2e',
+      'show',
+      'ready',
+      'routeDone:headless',
+      'resize:390',
+      'hide',
+    ])
+
+    session.navigateBack()
+    session.reLaunch('/pages/next/index')
+    expect(page.runE2E()).toEqual([
+      'created',
+      'attached',
+      'load:e2e',
+      'show',
+      'ready',
+      'routeDone:headless',
+      'resize:390',
+      'hide',
+      'show',
+      'detached',
+    ])
+  })
+
   it('runs unload and recreates the page on reLaunch', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

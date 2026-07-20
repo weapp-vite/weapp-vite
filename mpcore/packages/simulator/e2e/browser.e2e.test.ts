@@ -1,5 +1,5 @@
 import type { App as VueApp } from 'vue'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
 import '../../../demos/web/src/styles.css'
@@ -96,6 +96,7 @@ function parseJsonString<T>(value: string): T {
 
 describe.sequential('simulator browser e2e', () => {
   let app: VueApp | undefined
+  let defaultViewportSize = { height: 812, width: 375 }
   let mountNode: HTMLDivElement | undefined
 
   beforeAll(async () => {
@@ -110,6 +111,7 @@ describe.sequential('simulator browser e2e', () => {
       () => getBridge(),
       bridge => typeof bridge?.getState === 'function',
     )
+    defaultViewportSize = getBridge()!.getState().viewportSize
   })
 
   beforeEach(async () => {
@@ -120,6 +122,10 @@ describe.sequential('simulator browser e2e', () => {
       state => state.currentScenarioId === 'wechat-template' && state.currentRoute === 'pages/index/index',
       20_000,
     )
+  })
+
+  afterEach(() => {
+    getBridge()?.triggerResize(defaultViewportSize.width, defaultViewportSize.height)
   })
 
   afterAll(() => {
@@ -133,6 +139,67 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.currentRoute).toBe('pages/index/index')
     expect(state.pageStack).toEqual(['pages/index/index'])
     expect(state.previewMarkup).toContain('page')
+  })
+
+  it('runs Component() page methods and lifecycles through the browser bridge', async () => {
+    const bridge = getBridge()!
+    const initialResizeMarker = `resize:${bridge.getState().viewportSize.width}`
+    bridge.pickScenario('component-page')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-page' && state.currentRoute === 'pages/index/index',
+      20_000,
+    )
+    bridge.triggerRouteDone({ from: 'browser-e2e' })
+    bridge.triggerResize(412, 915)
+    bridge.runPageMethod('snapshotLifecycle')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.previewMarkup.includes('routeDone:browser-e2e|resize:412'),
+      20_000,
+    )
+    expect(state.errorMessage).toBe('')
+    expect(state.previewMarkup).toContain('data-scenario="component-page"')
+    expect(parseJsonString<Record<string, any>>(state.pageData)).toMatchObject({
+      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
+      snapshot: `created|attached|load|show|ready|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
+    })
+
+    bridge.runPageMethod('openNext')
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/next/index' && nextState.pageStack.length === 2,
+      20_000,
+    )
+    bridge.navigateBack()
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/index/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+    bridge.runPageMethod('snapshotLifecycle')
+
+    const resumedState = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.previewMarkup.includes('resize:412|hide|show'),
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(resumedState.pageData)).toMatchObject({
+      lifecycleLog: [
+        'created',
+        'attached',
+        'load',
+        'show',
+        'ready',
+        initialResizeMarker,
+        'routeDone:browser-e2e',
+        'resize:412',
+        'hide',
+        'show',
+      ],
+    })
   })
 
   it('switches scenarios and keeps browser session runtime functional', async () => {

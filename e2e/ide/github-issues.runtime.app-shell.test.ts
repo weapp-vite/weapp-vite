@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethod,
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
@@ -78,7 +79,8 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
       await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
 
       const pageWxml = await readDistWxml('pages/issue-448/index.wxml')
-      const runtime = await page._runE2E()
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-448/index', '_runE2E')
       expect(pageWxml).toContain('<weapp-app-shell')
       expect(pageWxml).toContain('issue448-page')
       expect(pageWxml).not.toContain('<weapp-layout-default')

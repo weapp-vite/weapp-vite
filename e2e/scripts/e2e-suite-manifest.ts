@@ -14,6 +14,7 @@ const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
+  ['ide/wevu-runtime.weapp.test.ts', '600000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
