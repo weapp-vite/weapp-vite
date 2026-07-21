@@ -1,4 +1,4 @@
-import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
+import type { HotUpdateOptions, InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../context'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { parse as parseSfc } from 'vue/compiler-sfc'
@@ -15,6 +15,11 @@ const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
 
 export interface DevModuleGraphProvider {
   close: () => Promise<void>
+}
+
+export interface DevModuleGraphChange {
+  event: Exclude<HotUpdateOptions['type'], 'delete'>
+  file: string
 }
 
 function isInternalPlugin(plugin: unknown): plugin is { name: string } {
@@ -74,7 +79,7 @@ async function isExternalRequest(
 function createProviderPlugin(
   ctx: CompilerContext,
   config: InlineConfig,
-  onChange: (file: string) => void,
+  onChange: (change: DevModuleGraphChange) => void,
 ): Plugin {
   const npmExternalPackages = new Set(
     ctx.configService?.packageJson
@@ -141,7 +146,10 @@ function createProviderPlugin(
       }
       return await transformVueSource(code, id)
     },
-    async handleHotUpdate({ file, read }) {
+    async hotUpdate({ type, file, read }) {
+      if (this.environment.name !== 'client' || type === 'delete') {
+        return
+      }
       try {
         await read()
       }
@@ -151,7 +159,7 @@ function createProviderPlugin(
         }
         throw error
       }
-      onChange(file)
+      onChange({ event: type, file })
     },
   }
 }
@@ -159,7 +167,7 @@ function createProviderPlugin(
 export async function createDevModuleGraphProvider(
   ctx: CompilerContext,
   buildConfig: InlineConfig,
-  onChange: (file: string) => void,
+  onChange: (change: DevModuleGraphChange) => void,
 ): Promise<DevModuleGraphProvider> {
   const server: ViteDevServer = await createServer({
     ...buildConfig,

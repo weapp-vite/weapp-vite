@@ -1,4 +1,4 @@
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -56,10 +56,18 @@ describe('dev module graph provider integration', () => {
       expect(moduleGraphService.collectAffectedEntries(templateId)).toEqual(new Set([normalizedPageId]))
       expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set([normalizedPageId]))
 
-      await writeFile(templateId, '<view>updated</view>\n', 'utf8')
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(normalizeSourceId(templateId)))
+      const replacementTemplateId = `${templateId}.tmp`
+      await writeFile(replacementTemplateId, '<view>updated</view>\n', 'utf8')
+      await rename(replacementTemplateId, templateId)
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({
+        event: expect.stringMatching(/^(?:create|update)$/),
+        file: normalizeSourceId(templateId),
+      }))
       await writeFile(styleId, '.page { color: blue; }\n', 'utf8')
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(normalizeSourceId(styleId)))
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({
+        event: 'update',
+        file: normalizeSourceId(styleId),
+      }))
     }
     finally {
       await provider.close()

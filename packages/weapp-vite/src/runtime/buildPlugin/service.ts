@@ -1441,17 +1441,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
 
     const moduleGraphProvider = target === 'app'
-      ? await createDevModuleGraphProvider(ctx, buildOptions, (id) => {
+      ? await createDevModuleGraphProvider(ctx, buildOptions, ({ event, file: id }) => {
           if (isDevOutputFile(id)) {
             return
           }
           const hasModule = ctx.moduleGraphService.hasModule(id)
-          debug?.(`[module-graph-provider] change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+          debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
           if (!hasModule) {
             return
           }
           const startedAt = performance.now()
-          scheduleSnapshotBuild({ event: 'update', file: id }, startedAt)
+          scheduleSnapshotBuild({ event, file: id }, startedAt)
         })
       : undefined
 
@@ -1597,6 +1597,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
         if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency) {
+          return
+        }
+        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {

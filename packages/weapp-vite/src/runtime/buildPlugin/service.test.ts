@@ -71,7 +71,7 @@ const createDevBuildWatcherMock = vi.hoisted(() => vi.fn(() => {
   return { watcher, emitEvent: vi.fn() }
 }))
 const moduleGraphProviderChange = vi.hoisted(() => ({
-  handler: undefined as undefined | ((file: string) => void),
+  handler: undefined as undefined | ((change: { event: 'create' | 'update', file: string }) => void),
 }))
 const createDevModuleGraphProviderMock = vi.hoisted(() => vi.fn(async (_ctx, _config, onChange) => {
   moduleGraphProviderChange.handler = onChange
@@ -597,7 +597,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     nowValue = 20
-    moduleGraphProviderChange.handler?.('/project/src/pages/logs/index.wxml')
+    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     nowValue = 28
     await waitForMockCalls(loggerSuccessMock, 1)
 
@@ -640,7 +640,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
     touchMock.mockClear()
 
-    moduleGraphProviderChange.handler?.('/project/src/pages/logs/index.wxml')
+    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     await waitForMockCalls(buildMock, 2)
 
     expect(buildMock).toHaveBeenCalledTimes(2)
@@ -680,7 +680,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.('/project/src/pages/logs/hello.css')
+    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/hello.css' })
     await waitForMockCalls(buildMock, 2)
 
     expect(dirtySummaries).toEqual([['css-importer:1']])
@@ -722,8 +722,8 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.('/project/src/pages/logs/index.wxml')
-    moduleGraphProviderChange.handler?.('/project/src/pages/about/index.wxss')
+    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
+    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/about/index.wxss' })
     await waitForMockCalls(buildMock, 2)
 
     expect(buildMock).toHaveBeenCalledTimes(2)
@@ -759,6 +759,7 @@ describe('runtime buildPlugin service', () => {
     ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([
       '/project/src/pages/logs/index.vue',
     ]))
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
     const service = createBuildService(ctx)
 
     const firstBuild = service.build({ skipNpm: true })
@@ -778,6 +779,43 @@ describe('runtime buildPlugin service', () => {
       '/project/src/pages/logs/index.vue',
     ]))
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.size).toBe(0)
+    expect(forceFullValues).toEqual(['1'])
+    expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      build: expect.objectContaining({ emptyOutDir: true }),
+    }))
+  })
+
+  it('routes known atomic creates through the module graph provider only once', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const forceFullValues: Array<string | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        return { output: [] }
+      })
+    const ctx = createMockContext()
+    const file = '/project/src/pages/logs/index.wxml'
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    moduleGraphProviderChange.handler?.({ event: 'create', file })
+    sidecarWatcher.emit('add', file)
+    await waitForMockCalls(buildMock, 2)
+
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledOnce()
+    expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledWith(file, 'create')
     expect(forceFullValues).toEqual(['1'])
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
       build: expect.objectContaining({ emptyOutDir: true }),
@@ -808,7 +846,9 @@ describe('runtime buildPlugin service', () => {
     await waitForMockCalls(buildMock, 2)
     await waitForMockCalls(loggerErrorMock, 1)
 
-    sidecarWatcher.emit('add', '/project/src/pages/logs/index.wxss')
+    const restoredFile = '/project/src/pages/logs/index.wxss'
+    sidecarWatcher.emit('add', restoredFile)
+    moduleGraphProviderChange.handler?.({ event: 'create', file: restoredFile })
     await waitForMockCalls(buildMock, 3)
     await waitForMockCalls(loggerSuccessMock, 1)
 
@@ -883,7 +923,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.(layoutId)
+    moduleGraphProviderChange.handler?.({ event: 'update', file: layoutId })
     await waitForMockCalls(buildMock, 2)
 
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([layoutId, pageId]))

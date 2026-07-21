@@ -54,18 +54,59 @@ describe('dev module graph provider', () => {
     expect(bindDevServer).toHaveBeenCalledWith(server)
     const providerPlugin = config.plugins[0] as Plugin
     const read = vi.fn(async () => '<view />')
-    await (providerPlugin.handleHotUpdate as any)({
-      file: '/project/src/page.wxml',
-      read,
-    })
+    await (providerPlugin.hotUpdate as any).call(
+      { environment: { name: 'client' } },
+      {
+        type: 'update',
+        file: '/project/src/page.wxml',
+        read,
+      },
+    )
     expect(read).toHaveBeenCalled()
-    expect(onChange).toHaveBeenCalledWith('/project/src/page.wxml')
+    expect(onChange).toHaveBeenCalledWith({
+      event: 'update',
+      file: '/project/src/page.wxml',
+    })
+    expect(providerPlugin.handleHotUpdate).toBeUndefined()
     expect(watcher.on).not.toHaveBeenCalled()
 
     await provider.close()
     expect(watcher.off).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalled()
     expect(bindDevServer).toHaveBeenLastCalledWith(undefined)
+  })
+
+  it('handles atomic create once and leaves delete topology changes to the topology watcher', async () => {
+    const { createDevModuleGraphProvider } = await import('./devProvider')
+    const ctx = {
+      moduleGraphService: {
+        bindDevServer: vi.fn(),
+        getEntryDependencies: vi.fn(() => []),
+      },
+    } as any
+    const onChange = vi.fn()
+    await createDevModuleGraphProvider(ctx, {}, onChange)
+    const config = createServerMock.mock.calls[0]![0]
+    const providerPlugin = config.plugins[0] as Plugin
+    const options = {
+      type: 'create',
+      file: '/project/src/page.wxml',
+      read: vi.fn(async () => '<view />'),
+    }
+
+    await (providerPlugin.hotUpdate as any).call({ environment: { name: 'client' } }, options)
+    await (providerPlugin.hotUpdate as any).call({ environment: { name: 'ssr' } }, options)
+    await (providerPlugin.hotUpdate as any).call(
+      { environment: { name: 'client' } },
+      { ...options, type: 'delete' },
+    )
+
+    expect(options.read).toHaveBeenCalledOnce()
+    expect(onChange).toHaveBeenCalledOnce()
+    expect(onChange).toHaveBeenCalledWith({
+      event: 'create',
+      file: '/project/src/page.wxml',
+    })
   })
 
   it('leaves missing-file topology changes to the topology watcher', async () => {
@@ -82,10 +123,14 @@ describe('dev module graph provider', () => {
     const providerPlugin = config.plugins[0] as Plugin
     const error = Object.assign(new Error('missing'), { code: 'ENOENT' })
 
-    await expect((providerPlugin.handleHotUpdate as any)({
-      file: '/project/src/page.wxml',
-      read: vi.fn(async () => Promise.reject(error)),
-    })).resolves.toBeUndefined()
+    await expect((providerPlugin.hotUpdate as any).call(
+      { environment: { name: 'client' } },
+      {
+        type: 'create',
+        file: '/project/src/page.wxml',
+        read: vi.fn(async () => Promise.reject(error)),
+      },
+    )).resolves.toBeUndefined()
     expect(onChange).not.toHaveBeenCalled()
   })
 
