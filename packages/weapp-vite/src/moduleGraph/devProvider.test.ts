@@ -52,10 +52,13 @@ describe('dev module graph provider', () => {
     expect(config.build).toMatchObject({ watch: undefined, write: false })
     expect(config.plugins).toEqual([expect.objectContaining({ name: 'weapp-vite:module-graph-provider' }), resolver])
     expect(bindDevServer).toHaveBeenCalledWith(server)
-    expect(watcher.on).toHaveBeenCalledWith('change', onChange)
+    const handleChange = watcher.on.mock.calls[0]![1]
+    expect(handleChange).not.toBe(onChange)
+    handleChange('/project/src/page.wxml', { size: 1 })
+    expect(onChange).toHaveBeenCalledWith('/project/src/page.wxml')
 
     await provider.close()
-    expect(watcher.off).toHaveBeenCalledWith('change', onChange)
+    expect(watcher.off).toHaveBeenCalledWith('change', handleChange)
     expect(close).toHaveBeenCalled()
     expect(bindDevServer).toHaveBeenLastCalledWith(undefined)
   })

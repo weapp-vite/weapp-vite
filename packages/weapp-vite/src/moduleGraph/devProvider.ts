@@ -166,11 +166,12 @@ export async function createDevModuleGraphProvider(
     },
   })
   ctx.moduleGraphService.bindDevServer(server)
-  server.watcher.on('change', onChange)
+  const handleChange = (file: string) => onChange(file)
+  server.watcher.on('change', handleChange)
 
   return {
     async close() {
-      server.watcher.off('change', onChange)
+      server.watcher.off('change', handleChange)
       await server.close()
       ctx.moduleGraphService.bindDevServer(undefined)
     },
