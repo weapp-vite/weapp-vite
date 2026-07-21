@@ -1,4 +1,5 @@
 import type { ResolveSharedChunkNameOptions } from './chunkStrategy'
+import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveSharedChunkName } from './chunkStrategy'
 
 export type AdvancedChunkNameResolver = (
@@ -40,6 +41,9 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
   const isVendor = testByReg2DExpList(vendorsMatchers)
 
   return (id, ctx) => {
+    if (parseSidecarSourceRequest(id)) {
+      return undefined
+    }
     const subPackageRoots = Array.from(getSubPackageRoots())
     const relativeId = relativeAbsoluteSrcRoot(id)
     const resolvedMode = resolveSharedMode ? resolveSharedMode(relativeId, id) : sharedMode

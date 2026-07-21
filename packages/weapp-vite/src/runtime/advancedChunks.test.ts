@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createSidecarModuleId, createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { __clearSharedChunkDiagnosticsForTest, DEFAULT_SHARED_CHUNK_STRATEGY, SHARED_CHUNK_VIRTUAL_PREFIX } from './chunkStrategy'
 
@@ -154,5 +155,24 @@ describe('advanced chunk resolvers', () => {
 
     expect(resolveAdvancedChunkName(`${ROOT}/utils/feature.ts`, ctx)).toBe('utils/feature')
     expect(resolveAdvancedChunkName(`${ROOT}/shared.ts`, ctx)).toBe('common')
+  })
+
+  it('keeps source-graph-only sidecars out of output chunk naming', () => {
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
+      relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => ['packageA'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+      sharedMode: 'path',
+    })
+    const ownerId = `${ROOT}/components/card.ts`
+    const targetId = `${ROOT}/packageA/components/location.ts`
+    const sidecarId = createSidecarModuleId(ownerId, targetId, 'using-component')
+    const sidecarSourceId = createSidecarSourceSpecifier(ownerId, targetId, 'using-component')
+    const ctx = createCtx({
+      [sidecarSourceId]: [sidecarId, `${sidecarId}:duplicate-importer`],
+    })
+
+    expect(resolveAdvancedChunkName(sidecarSourceId, ctx)).toBeUndefined()
   })
 })
