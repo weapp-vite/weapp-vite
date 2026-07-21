@@ -22,6 +22,11 @@ describe('module graph protocol', () => {
       'C:\\project\\src\\pages\\home\\index.wxml',
       'template',
     )
+    const styleSourceId = createSidecarSourceSpecifier(
+      'C:\\project\\src\\app.ts',
+      'C:\\project\\src\\app.css',
+      'style',
+    )
 
     expect(parseLogicalEntryId(entryId)).toEqual({
       sourceId: 'C:/project/src/pages/home/index.ts',
@@ -36,6 +41,12 @@ describe('module graph protocol', () => {
       kind: 'template',
       ownerId: 'C:/project/src/pages/home/index.ts',
       sourceId: 'C:/project/src/pages/home/index.wxml',
+    })
+    expect(styleSourceId).toBe('C:/project/src/app.css?weapp-vite-sidecar-owner=C%3A%2Fproject%2Fsrc%2Fapp.ts&weapp-vite-sidecar=style&lang.css')
+    expect(parseSidecarSourceRequest(styleSourceId)).toEqual({
+      kind: 'style',
+      ownerId: 'C:/project/src/app.ts',
+      sourceId: 'C:/project/src/app.css',
     })
   })
 })

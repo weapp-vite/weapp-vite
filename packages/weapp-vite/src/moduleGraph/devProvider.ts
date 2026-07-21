@@ -124,6 +124,9 @@ function createProviderPlugin(ctx: CompilerContext, config: InlineConfig): Plugi
       }
       const sidecarSource = parseSidecarSourceRequest(id)
       if (sidecarSource) {
+        if (sidecarSource.kind === 'style') {
+          return null
+        }
         return `export default ${JSON.stringify(sidecarSource.sourceId)};`
       }
       return null

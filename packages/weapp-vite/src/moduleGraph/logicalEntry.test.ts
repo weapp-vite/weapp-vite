@@ -51,4 +51,12 @@ describe('logical entry module source', () => {
       'template',
     )).toBe('import "/project/src/pages/home/index.wxml?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Fhome%2Findex.ts&weapp-vite-sidecar=template&lang.js";\nexport default "/project/src/pages/home/index.wxml";\n')
   })
+
+  it('links style sidecars through the native CSS pipeline', () => {
+    expect(createSidecarModuleCode(
+      '/project/src/app.ts',
+      '/project/src/app.css',
+      'style',
+    )).toBe('import "/project/src/app.css?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fapp.ts&weapp-vite-sidecar=style&lang.css";\nexport default "/project/src/app.css";\n')
+  })
 })

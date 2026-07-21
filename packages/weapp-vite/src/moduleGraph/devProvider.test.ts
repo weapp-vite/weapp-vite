@@ -64,6 +64,7 @@ describe('dev module graph provider', () => {
     const { createDevModuleGraphProvider } = await import('./devProvider')
     const pageId = '/project/src/pages/home/index.ts'
     const templateId = '/project/src/pages/home/index.wxml'
+    const styleId = '/project/src/pages/home/index.css'
     const ctx = {
       moduleGraphService: {
         bindDevServer: vi.fn(),
@@ -78,12 +79,16 @@ describe('dev module graph provider', () => {
     const sidecarSourceId = createSidecarSourceSpecifier(pageId, templateId, 'template')
     const resolvedSidecarSource = await (plugin.resolveId as any).call({}, sidecarSourceId)
     const sidecarSourceCode = await (plugin.load as any).call({}, sidecarSourceId)
+    const styleSourceId = createSidecarSourceSpecifier(pageId, styleId, 'style')
+    const styleSourceCode = await (plugin.load as any).call({}, styleSourceId)
 
     expect(logicalCode).toContain(JSON.stringify(pageId))
     expect(logicalCode).toContain(createSidecarModuleId(pageId, templateId, 'template'))
     expect(sidecarCode).toContain(`${templateId}?raw&`)
     expect(resolvedSidecarSource).toBe(sidecarSourceId)
     expect(sidecarSourceCode).toContain(JSON.stringify(templateId))
+    expect(styleSourceId).toContain('&lang.css')
+    expect(styleSourceCode).toBeNull()
   })
 
   it('stubs build externals while leaving normal resolver requests untouched', async () => {

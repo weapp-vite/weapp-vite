@@ -38,7 +38,8 @@ export interface SidecarSourceRequest {
 }
 
 const VIRTUAL_MODULE_SUFFIX = ':module.js'
-const SIDECAR_SOURCE_MODULE_SUFFIX = '&lang.js'
+const SIDECAR_SOURCE_JS_SUFFIX = '&lang.js'
+const SIDECAR_SOURCE_STYLE_SUFFIX = '&lang.css'
 
 function normalizeProtocolPath(id: string) {
   const normalized = path.normalize(id.replaceAll('\\', '/'))
@@ -144,31 +145,36 @@ export function parseSidecarModuleId(id: string): SidecarModuleRequest | undefin
 }
 
 export function createSidecarSourceSpecifier(ownerId: string, sourceId: string, kind: SidecarModuleKind) {
-  return `${normalizeProtocolPath(sourceId)}?raw&${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=${encodePath(ownerId)}&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=${kind}${SIDECAR_SOURCE_MODULE_SUFFIX}`
+  const queryPrefix = kind === 'style' ? '?' : '?raw&'
+  const suffix = kind === 'style' ? SIDECAR_SOURCE_STYLE_SUFFIX : SIDECAR_SOURCE_JS_SUFFIX
+  return `${normalizeProtocolPath(sourceId)}${queryPrefix}${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=${encodePath(ownerId)}&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=${kind}${suffix}`
 }
 
 export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | undefined {
-  const marker = `&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=`
-  const markerIndex = id.lastIndexOf(marker)
-  const ownerMarker = `&${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=`
-  const ownerMarkerIndex = id.lastIndexOf(ownerMarker)
-  if (
-    markerIndex < 0
-    || ownerMarkerIndex < 0
-    || ownerMarkerIndex > markerIndex
-    || !id.endsWith(SIDECAR_SOURCE_MODULE_SUFFIX)
-  ) {
+  const queryIndex = id.indexOf('?')
+  if (queryIndex < 0) {
     return
   }
-  const kind = id.slice(markerIndex + marker.length, -SIDECAR_SOURCE_MODULE_SUFFIX.length)
-  if (!['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)) {
+  const query = new URLSearchParams(id.slice(queryIndex + 1))
+  const kind = query.get(WEAPP_VITE_SIDECAR_QUERY_MARKER)
+  const ownerId = query.get(WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER)
+  if (!kind || !['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)) {
     return
   }
-  const rawSourceId = id.slice(0, ownerMarkerIndex)
+  if (!ownerId) {
+    return
+  }
+  const isStyle = kind === 'style'
+  const hasExpectedLang = query.has(isStyle ? 'lang.css' : 'lang.js')
+  const hasUnexpectedLang = query.has(isStyle ? 'lang.js' : 'lang.css')
+  const hasExpectedRawMode = query.has('raw') !== isStyle
+  if (!hasExpectedLang || hasUnexpectedLang || !hasExpectedRawMode) {
+    return
+  }
   return {
     kind: kind as SidecarModuleKind,
-    ownerId: decodePath(id.slice(ownerMarkerIndex + ownerMarker.length, markerIndex)),
-    sourceId: normalizeProtocolPath(rawSourceId.endsWith('?raw') ? rawSourceId.slice(0, -4) : rawSourceId),
+    ownerId: normalizeProtocolPath(ownerId),
+    sourceId: normalizeProtocolPath(id.slice(0, queryIndex)),
   }
 }
 
