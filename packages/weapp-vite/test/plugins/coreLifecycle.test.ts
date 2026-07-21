@@ -5,7 +5,6 @@ import { createRuntimeState } from '@/runtime/runtimeState'
 const invalidateEntryForSidecarSpy = vi.fn()
 const ensureSidecarWatcherSpy = vi.fn()
 const useLoadEntryMock = vi.fn()
-const findJsEntryMock = vi.fn()
 
 vi.mock('@/plugins/utils/invalidateEntry', () => {
   return {
@@ -20,14 +19,6 @@ vi.mock('@/plugins/hooks/useLoadEntry', () => {
   }
 })
 
-vi.mock('@/utils/file', async () => {
-  const actual = await vi.importActual<typeof import('@/utils/file')>('@/utils/file')
-  return {
-    ...actual,
-    findJsEntry: findJsEntryMock,
-  }
-})
-
 let weappVite: typeof import('@/plugins/core').weappVite
 
 beforeAll(async () => {
@@ -39,7 +30,6 @@ describe('core plugin watchChange', () => {
     invalidateEntryForSidecarSpy.mockClear()
     ensureSidecarWatcherSpy.mockClear()
     useLoadEntryMock.mockReset()
-    findJsEntryMock.mockReset()
   })
 
   function createPlugin(options: {
@@ -49,6 +39,7 @@ describe('core plugin watchChange', () => {
     const loadedEntrySet = options.loadedEntrySet ?? new Set<string>()
     const markEntryDirty = vi.fn()
     const wxmlService = options.wxmlService ?? { scan: vi.fn() }
+    let topologyRescan: { files: Set<string>, reasons: Set<string> } | undefined
     useLoadEntryMock.mockReturnValueOnce({
       loadEntry: vi.fn(),
       loadedEntrySet,
@@ -57,7 +48,6 @@ describe('core plugin watchChange', () => {
       jsonEmitFilesMap: new Map(),
       entriesMap: new Map(),
       resolvedEntryMap: new Map(),
-      layoutEntryDependents: new Map(),
     })
     const ctx = {
       runtimeState: createRuntimeState(),
@@ -86,6 +76,27 @@ describe('core plugin watchChange', () => {
       },
       watcherService: {
         setRollupWatcher: vi.fn(),
+      },
+      moduleGraphService: {
+        bindBuildContext: vi.fn(),
+        bindPluginContext: vi.fn(),
+        consumeTopologyRescan: vi.fn(() => {
+          const request = topologyRescan
+          topologyRescan = undefined
+          return request
+        }),
+        hasModule: vi.fn(() => false),
+        invalidate: vi.fn((file: string) => new Set(
+          /\.(?:json(?:\.ts)?|s?css|wxml|wxss)$/.test(file)
+            ? ['/project/src/pages/index/index.ts']
+            : [],
+        )),
+        requestTopologyRescan: vi.fn((reason: string, file: string) => {
+          topologyRescan = {
+            files: new Set([file]),
+            reasons: new Set([reason]),
+          }
+        }),
       },
       wxmlService,
     }
@@ -128,10 +139,6 @@ describe('core plugin watchChange', () => {
   })
 
   it('rescans templates and invalidates entries on wxml updates', async () => {
-    findJsEntryMock.mockResolvedValue({
-      path: '/project/src/pages/index/index.ts',
-      predictions: [],
-    })
     const { corePlugin, markEntryDirty, wxmlService } = createPlugin()
 
     await corePlugin
@@ -142,7 +149,6 @@ describe('core plugin watchChange', () => {
       )
 
     expect(wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/index/index.wxml')
-    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
     expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts', 'metadata')
   })
 
@@ -152,10 +158,6 @@ describe('core plugin watchChange', () => {
     { label: 'json', filePath: '/project/src/pages/index/index.json' },
     { label: 'json-ts', filePath: '/project/src/pages/index/index.json.ts' },
   ])('invalidates entry on %s updates', async ({ filePath }) => {
-    findJsEntryMock.mockResolvedValue({
-      path: '/project/src/pages/index/index.ts',
-      predictions: [],
-    })
     const { corePlugin, markEntryDirty } = createPlugin()
 
     await corePlugin
@@ -165,7 +167,6 @@ describe('core plugin watchChange', () => {
         { event: 'update' } as any,
       )
 
-    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
     expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts', 'metadata')
   })
 

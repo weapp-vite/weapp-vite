@@ -1,5 +1,6 @@
 import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
 import { useLoadEntry } from './index'
 
 const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
@@ -29,11 +30,12 @@ function createContext() {
           dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
           resolvedEntryMap: new Map<string, { id: string }>(),
           entriesMap: new Map<string, any>(),
-          layoutEntryDependents: new Map<string, Set<string>>(),
-          entryLayoutDependencies: new Map<string, Set<string>>(),
           profile: {},
         },
       },
+    },
+    moduleGraphService: {
+      replaceEntryDependencies: vi.fn(),
     },
     configService: {
       isDev: true,
@@ -63,6 +65,19 @@ function createContext() {
       resolve: vi.fn(() => null),
     },
   } as any
+}
+
+function expectEmittedEntry(pluginCtx: { emitFile: ReturnType<typeof vi.fn> }, sourceId: string) {
+  const emitted = pluginCtx.emitFile.mock.calls.some(([asset]) => {
+    return asset.type === 'chunk' && (parseLogicalEntryId(asset.id)?.sourceId ?? asset.id) === sourceId
+  })
+  expect(emitted).toBe(true)
+}
+
+function countEmittedEntries(pluginCtx: { emitFile: ReturnType<typeof vi.fn> }, sourceId: string) {
+  return pluginCtx.emitFile.mock.calls.filter(([asset]) => {
+    return asset.type === 'chunk' && (parseLogicalEntryId(asset.id)?.sourceId ?? asset.id) === sourceId
+  }).length
 }
 
 function createPluginContext() {
@@ -117,10 +132,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(loadEntryMock).not.toHaveBeenCalled()
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expectEmittedEntry(pluginCtx, id)
   })
 
   it('emits all entries in full mode', async () => {
@@ -175,9 +187,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      id: currentId,
-    }))
+    expectEmittedEntry(pluginCtx, currentId)
     expect(hook.dirtyEntrySet.has(previousId)).toBe(true)
     expect(hook.dirtyEntrySet.has(currentId)).toBe(false)
   })
@@ -751,10 +761,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'component')
-    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expect(countEmittedEntries(pluginCtx, id)).toBe(0)
     expect(hook.loadedEntrySet.has(id)).toBe(true)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
   })
@@ -783,10 +790,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
-    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expect(countEmittedEntries(pluginCtx, id)).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
@@ -815,10 +819,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     try {
       await hook.emitDirtyEntries.call(pluginCtx)
 
-      expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'chunk',
-        id,
-      }))
+      expectEmittedEntry(pluginCtx, id)
       expect(ctx.wxmlService.getAggregatedAutoImportComponents).toHaveBeenCalledWith(
         '/project/src/pages/home/home',
       )
@@ -854,10 +855,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'component')
-    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expect(countEmittedEntries(pluginCtx, id)).toBe(0)
     expect(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('/project/src/components/x-child/index.wxss')).toBe(true)
   })
 
@@ -963,10 +961,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
-    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expect(countEmittedEntries(pluginCtx, id)).toBe(0)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([id]))
   })
@@ -995,10 +990,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(loadEntryMock).toHaveBeenCalledWith(id, 'page')
-    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id,
-    }))
+    expect(countEmittedEntries(pluginCtx, id)).toBe(0)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
   })
 
@@ -1099,10 +1091,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[0],
-    }))
+    expectEmittedEntry(pluginCtx, ids[0]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1159,10 +1148,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[1],
-    }))
+    expectEmittedEntry(pluginCtx, ids[1]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1218,10 +1204,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(loadEntryMock).toHaveBeenCalledWith(appEntry, 'app')
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[1],
-    }))
+    expectEmittedEntry(pluginCtx, ids[1]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([appEntry, ids[1]]))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(2)
@@ -1256,10 +1239,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(loadEntryMock).toHaveBeenCalledWith(appEntry, 'app')
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: pageEntry,
-    }))
+    expectEmittedEntry(pluginCtx, pageEntry)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([pageEntry]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([appEntry, pageEntry]))
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(2)
@@ -1290,10 +1270,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[0],
-    }))
+    expectEmittedEntry(pluginCtx, ids[0]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1330,10 +1307,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[0],
-    }))
+    expectEmittedEntry(pluginCtx, ids[0]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1375,10 +1349,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(loadEntryMock).not.toHaveBeenCalledWith(appEntry, 'app')
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: pageEntry,
-    }))
+    expectEmittedEntry(pluginCtx, pageEntry)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([pageEntry]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1459,10 +1430,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[1],
-    }))
+    expectEmittedEntry(pluginCtx, ids[1]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1511,10 +1479,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: ids[0],
-    }))
+    expectEmittedEntry(pluginCtx, ids[0]!)
     expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
@@ -1771,6 +1736,26 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(hook.dirtyEntrySet.has(id)).toBe(false)
   })
 
+  it.each([
+    ['page', '/project/src/pages/index/index.ts', 'pages/index/index'],
+    ['component', '/project/src/components/card/index.ts', 'components/card/index'],
+  ] as const)('preloads %s logical roots with their declared entry type', async (type, id, entryKey) => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+        rootInputIds: new Set([id]),
+      },
+    })
+    hook.entriesMap.set(entryKey, { type, path: id })
+    seedResolvedEntries(hook.resolvedEntryMap, [id])
+    hook.markEntryDirty(id, 'direct')
+
+    await hook.emitDirtyEntries.call(createPluginContext())
+
+    expect(loadEntryMock).toHaveBeenCalledWith(id, type)
+  })
+
   it('deduplicates repeated chunk emits in the same hmr pass', async () => {
     const ctx = createContext()
     const id = '/project/src/pages/index/index.ts'
@@ -1790,7 +1775,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile.mock.calls.filter(([asset]) => asset.id === id)).toHaveLength(1)
+    expect(countEmittedEntries(pluginCtx, id)).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.chunkEmitCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.entryChunkEmitMs).toBeGreaterThanOrEqual(0)
     expect(ctx.runtimeState.build.hmr.profile.entryChunkLoadMs).toBeGreaterThanOrEqual(0)

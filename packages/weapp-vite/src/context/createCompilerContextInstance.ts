@@ -1,4 +1,5 @@
 import type { CompilerContext, MutableCompilerContext } from './CompilerContext'
+import { createModuleGraphService } from '../moduleGraph'
 import { createAutoImportServicePlugin } from '../runtime/autoImportPlugin'
 import { createAutoRoutesServicePlugin } from '../runtime/autoRoutesPlugin'
 import { createBuildServicePlugin } from '../runtime/buildPlugin'
@@ -13,6 +14,7 @@ import { createWxmlServicePlugin } from '../runtime/wxmlPlugin'
 
 export function createCompilerContextInstance(): CompilerContext {
   const context = {
+    moduleGraphService: createModuleGraphService(),
     runtimeState: createRuntimeState(),
   } as MutableCompilerContext
 

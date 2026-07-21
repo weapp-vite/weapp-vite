@@ -7,7 +7,7 @@ import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { applyAppShell } from '../appShell'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
+import { emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
 
 function isFallbackEntryPending(
   entryId: string,
@@ -136,8 +136,6 @@ export async function emitFallbackPageAssets(
       continue
     }
     const { relativeBase, entryFilePath } = emitState
-
-    addBundleWatchFile(pluginCtx, entryFilePath)
 
     try {
       await emitResolvedFallbackPageEntryAssets({

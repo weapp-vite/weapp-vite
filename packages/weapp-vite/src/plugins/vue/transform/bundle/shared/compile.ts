@@ -5,7 +5,7 @@ import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/co
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
-import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
+import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
@@ -48,7 +48,7 @@ export async function compileVueLikeFile(options: {
         applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
           platform: configService.platform,
         })
-        await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
+        await registerResolvedPageLayoutDependencies(ctx, filename, resolvedLayoutPlan.layouts)
       }
     }
     return result
@@ -61,7 +61,7 @@ export async function compileVueLikeFile(options: {
       applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
         platform: configService.platform,
       })
-      await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
+      await registerResolvedPageLayoutDependencies(ctx, filename, resolvedLayoutPlan.layouts)
     }
   }
   return result

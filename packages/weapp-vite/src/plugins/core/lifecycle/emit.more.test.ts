@@ -19,7 +19,6 @@ import {
 } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
-import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
 
@@ -39,7 +38,6 @@ const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<str
 const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
-const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
@@ -78,7 +76,6 @@ vi.mock('../helpers', () => ({
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
   flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: formatBytesMock,
-  refreshModuleGraph: refreshModuleGraphMock,
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
@@ -125,8 +122,6 @@ function createState(overrides: Record<string, any> = {}) {
     },
     entriesMap: new Map(),
     pendingIndependentBuilds: [],
-    moduleImporters: new Map(),
-    entryModuleIds: new Set(),
     watchFilesSnapshot: [],
     hmrState: {
       didEmitAllEntries: false,
@@ -241,7 +236,7 @@ describe('core lifecycle emit hook extra branches', () => {
     })).toBe(false)
   })
 
-  it('creates renderStart runtime and stores watch files snapshot', async () => {
+  it('creates renderStart runtime without forwarding module dependencies as watch files', async () => {
     emitWxmlAssetsWithCacheMock.mockImplementationOnce(({ runtime }) => {
       runtime.addWatchFile?.('foo\\\\bar//main.wxml')
       runtime.emitFile({ type: 'asset', fileName: 'a.wxml', source: '<view />' })
@@ -259,7 +254,7 @@ describe('core lifecycle emit hook extra branches', () => {
     })
 
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('foo\\\\bar//main.wxml'))
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'a.wxml',
@@ -469,10 +464,9 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
     expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
-    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
   })
 
-  it('drops js chunks during metadata-only dev hmr to keep stable shared chunks on disk', async () => {
+  it('drops graph-only chunks during metadata-only dev hmr', async () => {
     const state = createState({
       subPackageMeta: undefined,
       ctx: {
@@ -514,10 +508,6 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(refreshSharedChunkImportersMock).not.toHaveBeenCalled()
     expect(refreshPartialSharedChunkImportersMock).not.toHaveBeenCalled()
     expect(applySharedChunkStrategyMock).not.toHaveBeenCalled()
-    expect(applyRuntimeChunkLocalizationMock).not.toHaveBeenCalled()
-    expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
-    expect(syncChunkImportsFromRequireCallsMock).not.toHaveBeenCalled()
-    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
   })
 
   it('drops incomplete stable shared chunks during partial dev hmr rebuilds', async () => {
@@ -866,7 +856,6 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.hmrState.hasBuiltOnce).toBe(true)
     expect(state.watchFilesSnapshot).toEqual([])
     expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
-    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
   })
 
   it('uses partial shared chunk importer refresh during hmr incremental builds', async () => {

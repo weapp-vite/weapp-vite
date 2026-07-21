@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -45,7 +45,7 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
 })))
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
-const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
+const registerResolvedPageLayoutDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
 const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
 vi.mock('./platform', async (importOriginal) => {
@@ -100,7 +100,7 @@ vi.mock('../../../utils/pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../utils/pageLayout')>()
   return {
     ...actual,
-    addResolvedPageLayoutWatchFiles: addResolvedPageLayoutWatchFilesMock,
+    registerResolvedPageLayoutDependencies: registerResolvedPageLayoutDependenciesMock,
   }
 })
 
@@ -202,8 +202,8 @@ describe('emitSharedVueEntryAssets', () => {
     resolvePageLayoutPlanMock.mockResolvedValue(undefined)
     applyPageLayoutPlanMock.mockReset()
     applyPageLayoutPlanMock.mockImplementation((result: any) => result)
-    addResolvedPageLayoutWatchFilesMock.mockReset()
-    addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
+    registerResolvedPageLayoutDependenciesMock.mockReset()
+    registerResolvedPageLayoutDependenciesMock.mockResolvedValue(undefined)
     resolveVueSfcStyleIndependentSignatureMock.mockReset()
     resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
   })
@@ -954,8 +954,9 @@ describe('emitSharedVueEntryAssets', () => {
         platform: 'weapp',
       },
     )
-    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
-      pluginCtx,
+    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      '/project/src/pages/index/index.vue',
       [{ kind: 'native', file: '/layouts/default/index' }],
     )
   })
@@ -1021,8 +1022,9 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
     expect(compileVueFileMock).not.toHaveBeenCalled()
-    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
-      pluginCtx,
+    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      '/project/src/pages/index/index.tsx',
       [{ kind: 'vue', file: '/layouts/default/index.vue' }],
     )
   })
@@ -1618,22 +1620,6 @@ describe('emitSharedVueEntryAssets', () => {
       ]),
       pathExists,
     })).resolves.toBeUndefined()
-  })
-
-  it('adds normalized watch file through bundle helper', () => {
-    const addWatchFile = vi.fn()
-
-    addBundleWatchFile({
-      addWatchFile,
-    }, 'C:\\project\\src\\pages\\demo\\index.vue')
-
-    expect(addWatchFile).toHaveBeenCalledWith('C:/project/src/pages/demo/index.vue')
-  })
-
-  it('skips bundle watch registration when plugin context cannot watch files', () => {
-    expect(() => {
-      addBundleWatchFile({}, '/project/src/pages/demo/index.vue')
-    }).not.toThrow()
   })
 
   it('loads fallback page entry compilation through shared read-and-compile flow', async () => {

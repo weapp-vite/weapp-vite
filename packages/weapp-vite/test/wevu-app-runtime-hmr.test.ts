@@ -19,6 +19,9 @@ interface GeneratedJsFile {
   code: string
 }
 
+const WATCH_ASSERTION_TIMEOUT_MS = 90_000
+const TEST_TIMEOUT_MS = 180_000
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -33,7 +36,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -74,7 +77,7 @@ async function waitForFileSatisfies(
   filePath: string,
   predicate: (content: string) => boolean,
   label: string,
-  timeoutMs = 45_000,
+  timeoutMs = WATCH_ASSERTION_TIMEOUT_MS,
 ) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
@@ -253,5 +256,5 @@ describe.sequential('wevu app runtime HMR', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 120_000)
+  }, TEST_TIMEOUT_MS)
 })

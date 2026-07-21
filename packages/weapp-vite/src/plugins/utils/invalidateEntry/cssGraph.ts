@@ -225,19 +225,28 @@ export function syncVueSfcStyleDependencies(
   filename: string,
   styleBlocks: SFCStyleBlock[] | undefined,
 ) {
-  const dependencies = new Set<string>()
-  for (const block of styleBlocks ?? []) {
-    if (block.content) {
-      for (const dependency of collectCssDependenciesFromContent(ctx, filename, block.content)) {
-        dependencies.add(dependency)
+  const graphDependencies = new Set<string>()
+  const moduleDependencies = new Set<string>()
+  const addDependencies = (dependencies: Iterable<string>) => {
+    for (const dependency of dependencies) {
+      graphDependencies.add(dependency)
+      if (path.extname(dependency)) {
+        moduleDependencies.add(dependency)
       }
     }
+  }
+  for (const block of styleBlocks ?? []) {
+    if (block.content) {
+      addDependencies(collectCssDependenciesFromContent(ctx, filename, block.content))
+    }
     if (typeof block.src === 'string' && block.src.trim()) {
+      const dependencies = new Set<string>()
       addResolvedCssSpecifier(ctx, dependencies, filename, block.src.trim())
+      addDependencies(dependencies)
     }
   }
-  registerCssImports(ctx, filename, dependencies)
-  return dependencies
+  registerCssImports(ctx, filename, graphDependencies)
+  return moduleDependencies
 }
 
 function collectCssImporters(

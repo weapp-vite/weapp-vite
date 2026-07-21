@@ -3,8 +3,7 @@ import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcSty
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
-const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
-const emitNativeLayoutScriptChunkIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
+const registerResolvedPageLayoutDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
   transformed: false,
   code,
@@ -49,11 +48,7 @@ vi.mock('../pageLayout', async (importOriginal) => {
 })
 
 vi.mock('../../../utils/pageLayout', () => ({
-  addResolvedPageLayoutWatchFiles: addResolvedPageLayoutWatchFilesMock,
-}))
-
-vi.mock('../bundle', () => ({
-  emitNativeLayoutScriptChunkIfNeeded: emitNativeLayoutScriptChunkIfNeededMock,
+  registerResolvedPageLayoutDependencies: registerResolvedPageLayoutDependenciesMock,
 }))
 
 vi.mock('../injectPageFeatures', () => ({
@@ -111,10 +106,8 @@ describe('vue transform plugin shared helpers', () => {
     resolvePageLayoutPlanMock.mockReset()
     resolvePageLayoutPlanMock.mockResolvedValue(undefined)
     applyPageLayoutPlanMock.mockReset()
-    addResolvedPageLayoutWatchFilesMock.mockReset()
-    addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
-    emitNativeLayoutScriptChunkIfNeededMock.mockReset()
-    emitNativeLayoutScriptChunkIfNeededMock.mockResolvedValue(undefined)
+    registerResolvedPageLayoutDependenciesMock.mockReset()
+    registerResolvedPageLayoutDependenciesMock.mockResolvedValue(undefined)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockReset()
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,
@@ -349,11 +342,10 @@ describe('vue transform plugin shared helpers', () => {
     }))
   })
 
-  it('resolves transform filename only for absolute paths and registers watch files when supported', () => {
+  it('resolves transform filename only for absolute paths', () => {
     const pluginCtx = {
       addWatchFile: vi.fn(),
     }
-    const addWatchFile = vi.fn()
 
     expect(resolveTransformFilename({
       id: '/project/src/components/demo.vue',
@@ -362,10 +354,7 @@ describe('vue transform plugin shared helpers', () => {
       } as any,
       pluginCtx,
       getSourceFromVirtualId: vi.fn(id => id),
-      addWatchFile,
     })).toBe('/project/src/components/demo.vue')
-
-    expect(addWatchFile).toHaveBeenCalledWith(pluginCtx, '/project/src/components/demo.vue')
 
     expect(resolveTransformFilename({
       id: 'virtual:demo',
@@ -374,7 +363,6 @@ describe('vue transform plugin shared helpers', () => {
       } as any,
       pluginCtx: {},
       getSourceFromVirtualId: vi.fn(() => 'relative/demo.vue'),
-      addWatchFile,
     })).toBeNull()
   })
 
@@ -513,17 +501,11 @@ describe('vue transform plugin shared helpers', () => {
         platform: undefined,
       },
     )
-    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
+    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
       expect.anything(),
+      '/project/src/pages/home/index.vue',
       resolved.layouts,
     )
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledWith({
-      pluginCtx: expect.anything(),
-      layoutBasePath: '/project/src/layouts/default',
-      configService: { outputExtensions: { js: 'js' } },
-      outputExtensions: { js: 'js' },
-    })
   })
 
   it('returns early from transform entry page layout flow when config service or layout plan is missing', async () => {
@@ -544,11 +526,10 @@ describe('vue transform plugin shared helpers', () => {
     })).resolves.toBeUndefined()
 
     expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
-    expect(addResolvedPageLayoutWatchFilesMock).not.toHaveBeenCalled()
-    expect(emitNativeLayoutScriptChunkIfNeededMock).not.toHaveBeenCalled()
+    expect(registerResolvedPageLayoutDependenciesMock).not.toHaveBeenCalled()
   })
 
-  it('registers native layout chunks for entries through shared layout flow', async () => {
+  it('registers native layout dependencies for entries through shared layout flow', async () => {
     resolvePageLayoutPlanMock.mockResolvedValue({
       layouts: [
         { kind: 'native', file: '/project/src/layouts/default' },
@@ -567,8 +548,7 @@ describe('vue transform plugin shared helpers', () => {
     )
 
     expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
-    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledTimes(1)
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
+    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledTimes(1)
   })
 
   it('finalizes transform entry scripts through shared diagnostics and injection flow', async () => {
@@ -1118,6 +1098,9 @@ console.log(pages, routeSubPackages)
         configService: {
           outputExtensions: { js: 'js' },
         },
+        moduleGraphService: {
+          replaceEntryDependencies: vi.fn(),
+        },
       } as any,
       configService: {
         outputExtensions: { js: 'js' },
@@ -1132,7 +1115,6 @@ console.log(pages, routeSubPackages)
     expect(collectFallbackPageEntryIds).toHaveBeenCalledTimes(1)
     expect(findFirstResolvedVueLikeEntry).toHaveBeenCalledTimes(2)
     expect(readFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue', 'utf8')
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 
   it('preloads native layout entries concurrently', async () => {
@@ -1193,7 +1175,11 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:scoped-slot',
       pluginCtx: {},
-      ctx: {} as any,
+      ctx: {
+        moduleGraphService: {
+          replaceEntryDependencies: vi.fn(),
+        },
+      } as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -1206,7 +1192,11 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:style',
       pluginCtx: {},
-      ctx: {} as any,
+      ctx: {
+        moduleGraphService: {
+          replaceEntryDependencies: vi.fn(),
+        },
+      } as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -1230,7 +1220,11 @@ console.log(pages, routeSubPackages)
     await expect(loadTransformStyleBlock({
       id: 'virtual:style',
       pluginCtx: {},
-      ctx: {} as any,
+      ctx: {
+        moduleGraphService: {
+          replaceEntryDependencies: vi.fn(),
+        },
+      } as any,
       configService: {} as any,
       styleBlocksCache,
       loadScopedSlotModule,
@@ -1275,7 +1269,7 @@ console.log(pages, routeSubPackages)
     } as any
     const compilationCache = new Map<string, any>()
     const scopedSlotEmitter = vi.fn()
-    const addWatchFile = vi.fn()
+    const replaceEntryDependencies = vi.fn()
     resolvePageLayoutPlanMock.mockResolvedValue({
       layouts: [
         { kind: 'native', file: '/project/src/layouts/default' },
@@ -1305,6 +1299,9 @@ console.log(pages, routeSubPackages)
             },
           },
         },
+        moduleGraphService: {
+          replaceEntryDependencies,
+        },
       } as any,
       pluginCtx,
       filename: '/project/src/pages/home/index.vue',
@@ -1321,12 +1318,15 @@ console.log(pages, routeSubPackages)
       isApp: false,
       scopedSlotModules: new Map(),
       emittedScopedSlotChunks: new Set(),
-      addWatchFile,
       emitScopedSlotChunks: scopedSlotEmitter,
     })).resolves.toBe(result)
 
-    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledTimes(1)
-    expect(addWatchFile).toHaveBeenCalledWith(pluginCtx, '/project/src/components/card.vue')
+    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledTimes(1)
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
+      '/project/src/pages/home/index.vue',
+      'style',
+      ['/project/src/components/card.vue'],
+    )
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
     expect(compilationCache.get('/project/src/pages/home/index.vue')).toEqual({
       result,

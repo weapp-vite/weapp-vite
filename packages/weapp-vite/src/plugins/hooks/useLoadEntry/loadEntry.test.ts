@@ -265,6 +265,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const dirtyEntrySet = new Set<string>()
   const resolvedEntryMap = new Map<string, any>()
   const replaceLayoutDependencies = vi.fn()
+  const replaceEntryDependencies = vi.fn()
 
   const emitEntriesChunks = vi.fn((_resolvedIds: any[]) => {
     return _resolvedIds.map(async () => {})
@@ -303,6 +304,9 @@ function createLoader(options?: CreateLoaderOptions) {
     configService,
     scanService,
     runtimeState,
+    moduleGraphService: {
+      replaceEntryDependencies,
+    },
   } as any
 
   if (options?.withWxmlService) {
@@ -334,6 +338,7 @@ function createLoader(options?: CreateLoaderOptions) {
     loadedEntrySet,
     resolvedEntryMap,
     replaceLayoutDependencies,
+    replaceEntryDependencies,
     emitEntriesChunks,
     registerJsonAsset,
     scanTemplateEntry,
@@ -551,7 +556,7 @@ describe('createEntryLoader', () => {
 
     expect(jsonService.cache.get).not.toHaveBeenCalled()
     expect(jsonService.read).toHaveBeenCalledWith(jsonPath)
-    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith(jsonPath)
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(jsonPath)
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath,
       json: freshJson,
@@ -1278,7 +1283,13 @@ describe('createEntryLoader', () => {
       return target === '/project/src/pages/home.wxss'
     })
 
-    const { loader, jsonService, emitEntriesChunks } = createLoader()
+    const {
+      loader,
+      jsonService,
+      emitEntriesChunks,
+      entriesMap,
+      replaceEntryDependencies,
+    } = createLoader()
     jsonService.read.mockResolvedValue({
       usingComponents: {
         card: '/components/card/index',
@@ -1306,9 +1317,20 @@ describe('createEntryLoader', () => {
 
     releaseChildChunks?.()
     await loading
+
+    expect(entriesMap.get('pages/home')).toEqual(expect.objectContaining({
+      path: pageScript,
+      jsonPath: '/project/src/pages/home.json',
+      type: 'page',
+    }))
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
+      pageScript,
+      'using-component',
+      ['/project/src/components/card/index'],
+    )
   })
 
-  it('memoises filesystem lookups for repeated watch targets', async () => {
+  it('memoises filesystem lookups without watching resolved module dependencies', async () => {
     const existsCalls = new Map<string, number>()
     existsMock.mockImplementation(async (target: string) => {
       existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
@@ -1339,7 +1361,7 @@ describe('createEntryLoader', () => {
     expect(existsCalls.get('/project/src/app.json')).toBeUndefined()
     const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
     const watchedJson = addWatchMock.mock.calls.filter(call => normalizeWatchCall(call[0]) === '/project/src/app.json')
-    expect(watchedJson).toHaveLength(1)
+    expect(watchedJson).toHaveLength(0)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()
   })
@@ -1446,7 +1468,7 @@ describe('createEntryLoader', () => {
 
     expect(jsonService.read).toHaveBeenCalledWith('/project/src/pages/home/index.json')
     expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
-    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue')
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith('/project/src/pages/home/index.vue')
   })
 
   it('reads resolved json while predicted watch targets are still being checked', async () => {
@@ -1571,7 +1593,7 @@ describe('createEntryLoader', () => {
 
     const addWatchFile = pluginCtx.addWatchFile as Mock
     const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
-    expect(watched).toContain(stylesheet)
+    expect(watched).not.toContain(stylesheet)
 
     const initialPrependCount = magicStringPrependMock.mock.calls.length
 
@@ -1591,7 +1613,7 @@ describe('createEntryLoader', () => {
     expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)
   })
 
-  it('adds watch targets for resolved component entries', async () => {
+  it('does not duplicate resolved component entries as watch targets', async () => {
     const pageScript = '/project/src/pages/home.js'
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/pages/home.json',
@@ -1609,7 +1631,7 @@ describe('createEntryLoader', () => {
 
     const addWatchFile = pluginCtx.addWatchFile as Mock
     const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
-    expect(watched).toContain('/project/src/components/hello/index.vue')
+    expect(watched).not.toContain('/project/src/components/hello/index.vue')
   })
 
   it('merges pending auto-import entries for the current importer once', async () => {
@@ -2795,7 +2817,6 @@ import { VueCard } from '../../components'
       2,
       '/project/src/pages/index/index.ts',
       new Set([
-        '/project/src/layouts/default/index',
         '/project/src/layouts/default/index.json',
         '/project/src/layouts/default/index.wxml',
         '/project/src/layouts/default/index.wxss',
@@ -2816,12 +2837,6 @@ import { VueCard } from '../../components'
     })
     expect(emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'asset',
-      fileName: 'layouts/default/index.js',
-    }))
-
-    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'chunk',
-      id: '/project/src/layouts/default/index.ts',
       fileName: 'layouts/default/index.js',
     }))
   })
@@ -3069,14 +3084,16 @@ import { VueCard } from '../../components'
       return 'console.log("page-entry")'
     })
 
-    const { loader, emitEntriesChunks, normalizeEntry } = createLoader()
+    const { loader, emitEntriesChunks, normalizeEntry, replaceEntryDependencies } = createLoader()
     const pluginCtx = createPluginContext()
 
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
-    const addWatchFile = pluginCtx.addWatchFile as Mock
-    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
-    expect(watched).toContain('/project/src/layouts/default.vue')
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
+      '/project/src/pages/index/index.ts',
+      'layout',
+      new Set(['/project/src/layouts/default.vue']),
+    )
     expect(normalizeEntry).toHaveBeenCalledWith('/layouts/default', '/project/src/pages/index/index.json')
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
@@ -3129,14 +3146,16 @@ import { VueCard } from '../../components'
       return 'Page({})'
     })
 
-    const { loader, emitEntriesChunks, normalizeEntry } = createLoader()
+    const { loader, emitEntriesChunks, normalizeEntry, replaceEntryDependencies } = createLoader()
     const pluginCtx = createPluginContext()
 
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
-    const addWatchFile = pluginCtx.addWatchFile as Mock
-    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
-    expect(watched).toContain('/project/src/layouts/default.vue')
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
+      '/project/src/pages/index/index.ts',
+      'layout',
+      new Set(['/project/src/layouts/default.vue']),
+    )
     expect(normalizeEntry).toHaveBeenCalledWith('/layouts/default', '/project/src/pages/index/index.json')
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',

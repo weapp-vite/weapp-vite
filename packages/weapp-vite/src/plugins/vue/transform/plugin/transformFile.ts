@@ -7,7 +7,6 @@ import { performance } from 'node:perf_hooks'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { readFile as readFileCached } from '../../../utils/cache'
-import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
@@ -74,7 +73,6 @@ export async function transformVueLikeFile(options: {
     configService,
     pluginCtx,
     getSourceFromVirtualId,
-    addWatchFile: addNormalizedWatchFile,
   })
   if (!filename) {
     return null

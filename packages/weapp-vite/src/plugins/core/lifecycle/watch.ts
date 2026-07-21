@@ -17,12 +17,12 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
-import { collectAffectedScriptsAndImporters, extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
+import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
 import { configSuffixes, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
-import { collectAffectedEntries, collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
+import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
@@ -153,7 +153,7 @@ async function normalizeWatchEvent(
   options: {
     emittedJsonPaths?: Set<string>
     loadedEntrySet: Set<string>
-    moduleImporters?: Map<string, Set<string>>
+    hasModule?: (id: string) => boolean
     resolvedEntryMap: Map<string, unknown>
     sharedChunkSourceModuleIds?: Set<string>
   },
@@ -165,7 +165,7 @@ async function normalizeWatchEvent(
   if (
     event === 'create'
     && (
-      options.moduleImporters?.has(id)
+      options.hasModule?.(id)
       || options.sharedChunkSourceModuleIds?.has(id)
     )
     && await fs.pathExists(id)
@@ -211,8 +211,29 @@ export function createBuildStartHook(state: CorePluginState) {
   return async function buildStart(this: any) {
     const startedAt = performance.now()
     try {
+      ctx.moduleGraphService?.bindBuildContext(state, this)
+      ctx.moduleGraphService?.bindPluginContext(this)
       resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
       if (configService.isDev) {
+        let sharedChunkAffectedEntryCount = 0
+        for (const change of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
+          const sharedChunkAffected = collectAffectedSharedChunkEntriesAndChunks(state, change.file)
+          state.hmrState.affectedSharedChunkIds ??= new Set<string>()
+          for (const chunkId of sharedChunkAffected.affectedChunks) {
+            state.hmrState.affectedSharedChunkIds.add(chunkId)
+          }
+          for (const entryId of sharedChunkAffected.affectedEntries) {
+            state.markEntryDirty(entryId, 'dependency')
+            sharedChunkAffectedEntryCount += 1
+          }
+        }
+        if (sharedChunkAffectedEntryCount) {
+          const profile = ctx.runtimeState.build.hmr.profile
+          profile.dirtyReasonSummary = [
+            ...(profile.dirtyReasonSummary ?? []).filter(reason => !reason.startsWith('shared-chunk-source:')),
+            `shared-chunk-source:${sharedChunkAffectedEntryCount}`,
+          ]
+        }
         addNormalizedWatchFiles(this, configService.configFileDependencies)
         if (isPluginBuild) {
           if (configService.absolutePluginRoot) {
@@ -262,7 +283,10 @@ async function processChangedFile(
   if (isSkippableResolvedId(normalizedId)) {
     return
   }
-  const importerGraphAffectedEntryIds = new Set<string>()
+  const sidecarDirtyFiles = ctx.runtimeState.watcher?.sidecarDirtyFiles
+  const sidecarDirtyCause = sidecarDirtyFiles?.get(normalizedId)
+  sidecarDirtyFiles?.delete(normalizedId)
+  const importerGraphAffectedEntryIds = ctx.moduleGraphService.invalidate(normalizedId)
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const dirtyReasonStats = new Map<string, number>()
@@ -283,7 +307,6 @@ async function processChangedFile(
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
-  const isTemplateSidecar = Boolean(pathKind.extension && pathKind.isTemplate)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
@@ -293,66 +316,6 @@ async function processChangedFile(
     : undefined
   let isAppShellTopologyChanged = false
   let handledSidecarMetadataUpdate = false
-
-  const addWxmlImporterEntries = async (startId: string) => {
-    const wxmlService = ctx.wxmlService
-    if (!wxmlService || typeof wxmlService.getImporters !== 'function') {
-      return
-    }
-
-    const visited = new Set<string>()
-    const queue: Array<{ id: string, importOnly: boolean }> = [{ id: startId, importOnly: true }]
-
-    for (let index = 0; index < queue.length; index += 1) {
-      const current = queue[index]!
-      const visitKey = `${current.id}\0${current.importOnly ? 'import' : 'fallback'}`
-      if (visited.has(visitKey)) {
-        continue
-      }
-      visited.add(visitKey)
-
-      const importers = wxmlService.getImporters(current.id)
-      for (const importer of importers) {
-        const normalizedImporter = normalizeFsResolvedId(importer)
-        const dependencyKind = typeof wxmlService.getImporterDependencyKind === 'function'
-          ? wxmlService.getImporterDependencyKind(current.id, normalizedImporter)
-          : undefined
-        const nextImportOnly = current.importOnly && dependencyKind === 'template-import'
-        const nextVisitKey = `${normalizedImporter}\0${nextImportOnly ? 'import' : 'fallback'}`
-        if (!visited.has(nextVisitKey)) {
-          queue.push({
-            id: normalizedImporter,
-            importOnly: nextImportOnly,
-          })
-        }
-
-        const ext = path.extname(normalizedImporter)
-        if (!ext) {
-          continue
-        }
-        const basePath = normalizedImporter.slice(0, -ext.length)
-        const primaryScript = await findJsEntry(basePath)
-        if (!primaryScript.path) {
-          continue
-        }
-        const primaryScriptId = normalizeFsResolvedId(primaryScript.path)
-        const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(primaryScriptId))
-          ? 'dependency'
-          : 'direct'
-        if (reason === 'dependency') {
-          affectedLayoutEntryIds.add(primaryScriptId)
-        }
-        else {
-          markEntryDirtyWithCause(
-            primaryScriptId,
-            'metadata',
-            nextImportOnly ? 'wxml-importer-import' : 'wxml-importer',
-          )
-          handledSidecarMetadataUpdate = true
-        }
-      }
-    }
-  }
 
   const markScriptDirty = (scriptId: string, cause: string) => {
     const normalizedScriptId = normalizeFsResolvedId(scriptId)
@@ -439,29 +402,6 @@ async function processChangedFile(
     return true
   }
 
-  const addCssImporterEntries = async (startId: string) => {
-    const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, startId)
-    let affectedCount = 0
-
-    for (const importer of importers) {
-      const normalizedImporter = normalizeFsResolvedId(importer)
-      if (
-        isCurrentSubPackageFile(configService.relativeAbsoluteSrcRoot(normalizedImporter), subPackageMeta)
-        && (loadedEntrySet.has(normalizedImporter) || resolvedEntryMap.has(normalizedImporter))
-      ) {
-        markScriptDirty(normalizedImporter, 'css-importer')
-        affectedCount += 1
-      }
-    }
-
-    for (const script of scripts) {
-      markScriptDirty(script, 'css-importer')
-      affectedCount += 1
-    }
-
-    return affectedCount
-  }
-
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
@@ -520,26 +460,54 @@ async function processChangedFile(
   }
 
   invalidateFileCache(normalizedId)
-  const isSidecarCreate = event === 'create'
-    && (pathKind.isStyle || pathKind.isTemplate || pathKind.isHtmlTemplate || isScriptModuleSidecar)
-  const shouldHandleUpdateLikeSidecar = event === 'update' || isSidecarCreate
+  const isSidecarPath = Boolean(
+    pathKind.isStyle
+    || pathKind.isTemplate
+    || pathKind.isHtmlTemplate
+    || pathKind.configSuffix
+    || isScriptModuleSidecar,
+  )
+  const isSidecarCreate = event === 'create' && isSidecarPath
+  const shouldHandleUpdateLikeSidecar = event === 'update' || isSidecarCreate || (isDeletedMissingSelf && isSidecarPath)
   if (shouldHandleUpdateLikeSidecar) {
-    if (pathKind.isStyle) {
+    if (pathKind.isStyle && !isDeletedMissingSelf) {
       await extractCssImportDependencies(ctx, normalizedId)
     }
 
-    if (pathKind.isTemplate) {
+    if (pathKind.isTemplate && !isDeletedMissingSelf) {
       const wxmlService = ctx.wxmlService
       if (wxmlService) {
         await wxmlService.scan(normalizedId)
       }
     }
 
-    if (isTemplateSidecar || isScriptModuleSidecar) {
-      await addWxmlImporterEntries(normalizedId)
+    if (isSidecarPath && importerGraphAffectedEntryIds.size) {
+      const cause = pathKind.configSuffix
+        ? 'json-sidecar'
+        : pathKind.isStyle
+          ? 'style-sidecar'
+          : 'sidecar-direct'
+      const isLayoutChange = isLayoutSourcePath(relativeSrc)
+        || Array.from(importerGraphAffectedEntryIds).some(entryId =>
+          isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(entryId)),
+        )
+      for (const entryId of importerGraphAffectedEntryIds) {
+        markEntryDirtyWithCause(
+          entryId,
+          isLayoutChange ? 'dependency' : 'metadata',
+          isLayoutChange
+            ? isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(entryId)) ? 'layout-self' : 'layout-dependent'
+            : cause,
+        )
+      }
+      handledSidecarMetadataUpdate = true
     }
-
-    if (pathKind.isTemplate || pathKind.configSuffix || pathKind.isStyle || pathKind.isHtmlTemplate) {
+    else if (isSidecarPath && event === 'update') {
+      // Rolldown build-watch 在 watchChange 阶段不暴露上一轮 module graph；
+      // 当前 physical id 会在 buildEnd 的有效 graph 生命周期中完成入口追溯。
+      handledSidecarMetadataUpdate = true
+    }
+    else if (isSidecarPath && (event === 'create' || isDeletedMissingSelf)) {
       const basePath = pathKind.configSuffix
         ? normalizedId.slice(0, -pathKind.configSuffix.length)
         : pathKind.extension ? normalizedId.slice(0, -pathKind.extension.length) : normalizedId
@@ -552,16 +520,22 @@ async function processChangedFile(
       else if (pathKind.configSuffix && markAppEntryForJsonEmit()) {
         handledSidecarMetadataUpdate = true
       }
-      else if (pathKind.isStyle) {
-        const affectedCount = await addCssImporterEntries(normalizedId)
-        if (affectedCount === 0 && resolvedEntryMap.size) {
+      else {
+        ctx.moduleGraphService.requestTopologyRescan(
+          event === 'create' ? 'sidecar-create' : 'sidecar-delete',
+          normalizedId,
+        )
+        const topologyRescan = ctx.moduleGraphService.consumeTopologyRescan()
+        if (topologyRescan) {
+          scanService.markDirty()
+          ;(loadEntry as any)?.invalidateResolveCache?.()
           for (const entryId of resolvedEntryMap.keys()) {
             if (isCurrentSubPackageFile(configService.relativeAbsoluteSrcRoot(entryId), subPackageMeta)) {
-              markEntryDirtyWithCause(entryId, 'dependency', 'css-importer-fallback')
+              markEntryDirtyWithCause(entryId, 'dependency', 'topology-full-rescan')
             }
           }
+          handledSidecarMetadataUpdate = true
         }
-        handledSidecarMetadataUpdate = true
       }
     }
   }
@@ -582,30 +556,12 @@ async function processChangedFile(
       return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
     }
 
-    const dependentEntryIds = new Set<string>()
-
-    for (const layoutEntryId of affectedLayoutEntryIds) {
-      const dependents = state.layoutEntryDependents.get(layoutEntryId)
-      if (!dependents?.size) {
-        continue
-      }
-      for (const entryId of dependents) {
-        dependentEntryIds.add(entryId)
-      }
-    }
-
-    if (dependentEntryIds.size) {
-      for (const entryId of affectedLayoutEntryIds) {
-        markEntryDirtyWithCause(entryId, 'dependency', 'layout-self')
-      }
-      for (const entryId of dependentEntryIds) {
-        markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
-      }
-      return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
-    }
-
-    for (const entryId of resolvedEntryMap.keys()) {
-      markEntryDirtyWithCause(entryId, 'dependency', 'layout-fallback-full')
+    for (const entryId of importerGraphAffectedEntryIds) {
+      markEntryDirtyWithCause(
+        entryId,
+        'dependency',
+        affectedLayoutEntryIds.has(entryId) ? 'layout-self' : 'layout-dependent',
+      )
     }
     return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
   }
@@ -633,52 +589,28 @@ async function processChangedFile(
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isLocalAssetOnlyUpdate() : false)
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
-    markChangedEntryDirty(
-      (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct',
-      isJsonOnlyVueEntryUpdate
+    const directDirtyReason = sidecarDirtyCause
+      ? 'metadata'
+      : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
+    const directDirtyCause = sidecarDirtyCause
+      ?? (isJsonOnlyVueEntryUpdate
         ? isAutoRoutesStaleAppEntry ? 'entry-auto-routes' : 'entry-json-only'
         : isAppShellTopologyChanged
           ? 'entry-direct'
           : isLocalAssetOnlyVueEntryUpdate
             ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
-            : 'entry-direct',
+            : 'entry-direct')
+    markChangedEntryDirty(
+      directDirtyReason,
+      directDirtyCause,
     )
   }
-  else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
-    const affectedEntries = state.layoutEntryDependents.get(normalizedId)
-    for (const entryId of affectedEntries!) {
-      markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
-    }
-  }
-  else if (!handledSidecarMetadataUpdate && state.moduleImporters.size && state.entryModuleIds.size) {
-    const affected = collectAffectedEntries(state, normalizedId)
-    if (affected.size) {
-      for (const entryId of affected) {
-        importerGraphAffectedEntryIds.add(entryId)
-        markEntryDirtyWithCause(entryId, 'dependency', 'importer-graph')
-      }
+  else if (!handledSidecarMetadataUpdate && importerGraphAffectedEntryIds.size) {
+    for (const entryId of importerGraphAffectedEntryIds) {
+      markEntryDirtyWithCause(entryId, 'dependency', 'importer-graph')
     }
   }
   await markAppEntryForTailwindContent()
-  const shouldExpandSharedChunkAffected = !dirtyReasonStats.has('sidecar-direct')
-    && !dirtyReasonStats.has('json-sidecar')
-    && !dirtyReasonStats.has('style-sidecar')
-    && !dirtyReasonStats.has('css-importer')
-  const sharedChunkAffected = shouldExpandSharedChunkAffected
-    ? collectAffectedSharedChunkEntriesAndChunks(state, normalizedId)
-    : undefined
-  if (sharedChunkAffected?.affectedEntries.size) {
-    state.hmrState.affectedSharedChunkIds ??= new Set<string>()
-    for (const chunkId of sharedChunkAffected.affectedChunks) {
-      state.hmrState.affectedSharedChunkIds.add(chunkId)
-    }
-    for (const entryId of sharedChunkAffected.affectedEntries) {
-      if (importerGraphAffectedEntryIds.has(entryId)) {
-        continue
-      }
-      markEntryDirtyWithCause(entryId, 'dependency', 'shared-chunk-source')
-    }
-  }
   const relativeCwd = configService.relativeCwd(normalizedId)
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
@@ -751,6 +683,8 @@ export function createWatchChangeHook(state: CorePluginState) {
     const startedAt = performance.now()
     const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)
+    state.ctx.moduleGraphService?.bindPluginContext(this)
+    state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, change.event)
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
@@ -766,7 +700,7 @@ export function createWatchChangeHook(state: CorePluginState) {
     const event = await normalizeWatchEvent(normalizedId, change.event, {
       emittedJsonPaths,
       loadedEntrySet: state.loadedEntrySet,
-      moduleImporters: state.moduleImporters,
+      hasModule: changedId => state.ctx.moduleGraphService.hasModule(changedId),
       resolvedEntryMap: state.resolvedEntryMap,
       sharedChunkSourceModuleIds: state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds,
     })

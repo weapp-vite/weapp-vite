@@ -5,7 +5,6 @@ import type { ResolvedAppShell } from '../../appShell'
 import type { TransformStageMeasurer, VueCompilationCache, VueHmrStageMeasurer, VueStyleBlocksCache } from './types'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
-import { addNormalizedWatchFile } from '../../../../utils/watchFiles'
 import { emitScopedSlotChunks, registerScopedSlotHostGenerics } from '../../scopedSlot'
 import { finalizeTransformCompiledResult, finalizeTransformEntryCode } from '../shared'
 import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from '../styleOnlyRefresh'
@@ -105,9 +104,7 @@ export async function finalizeVueTransform(options: {
     filename,
     currentStyleBlocks,
   )
-  for (const dependency of sfcStyleDependencies) {
-    addNormalizedWatchFile(pluginCtx, dependency)
-  }
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', sfcStyleDependencies)
   registerScopedSlotHostGenerics(ctx, result.scopedSlotComponents, parseUsingComponents(result.config))
 
   await measureVueHmrStage('finalizeCompiledResult', 'vueFinalizeCompiledMs', async () => {
@@ -129,7 +126,6 @@ export async function finalizeVueTransform(options: {
       sourceMap,
       scopedSlotModules,
       emittedScopedSlotChunks,
-      addWatchFile: addNormalizedWatchFile,
       emitScopedSlotChunks,
     })
   })

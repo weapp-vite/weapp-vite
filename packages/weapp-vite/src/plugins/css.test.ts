@@ -4,6 +4,7 @@ import type { SubPackageStyleEntry } from '../types'
 import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLogicalEntryId } from '../moduleGraph/protocol'
 import { normalizeWatchPath } from '../utils/path'
 
 const readFileMock = vi.fn(async () => '.sidecar{color:red}')
@@ -559,13 +560,13 @@ describe('css plugin shared style injection', () => {
     expect(graph.dependencyToImporters.get(sharedStylePath.slice(0, -'.scss'.length))).toEqual(new Set([originalStylePath]))
   })
 
-  it('emits wxss from css asset via chunk viteMetadata (no originalFileNames)', async () => {
+  it('maps logical entry facades back to physical wxss owners', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
       'app.js': {
         type: 'chunk',
         fileName: 'app.js',
-        facadeModuleId: resolve(absoluteSrcRoot, 'app.vue'),
+        facadeModuleId: createLogicalEntryId(resolve(absoluteSrcRoot, 'app.vue'), 'app'),
         code: '',
         map: null,
         imports: [],

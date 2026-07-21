@@ -5,8 +5,6 @@ import { injectGlobalSlotFallbackWrapperUsingComponent } from '../slotFallbackWr
 import { emitCompiledVueEntryAssets } from './emitCompiledEntry'
 import { emitFallbackPageAssets } from './emitFallbackPage'
 
-export { emitNativeLayoutScriptChunkIfNeeded } from './layoutAssets'
-
 export type { CompilationCacheEntry, VueBundleState } from './shared'
 
 function isAutoRoutesAppRefreshHmrUpdate(hmrState: NonNullable<VueBundleState['ctx']['runtimeState']>['build']['hmr'] | undefined) {

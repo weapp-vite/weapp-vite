@@ -67,4 +67,6 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   const lib = runtimeState.lib
   lib.enabled = fresh.lib.enabled
   lib.entries.clear()
+
+  runtimeState.watcher.sidecarDirtyFiles.clear()
 }

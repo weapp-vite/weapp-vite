@@ -120,17 +120,12 @@ export function resolveTransformFilename(options: {
   configService: NonNullable<CompilerContext['configService']>
   pluginCtx: any
   getSourceFromVirtualId: (id: string) => string
-  addWatchFile: (pluginCtx: any, file: string) => void
 }) {
-  const { id, configService, pluginCtx, getSourceFromVirtualId, addWatchFile } = options
+  const { id, configService, getSourceFromVirtualId } = options
   const sourceId = getSourceFromVirtualId(id)
   const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
   if (!filename || !path.isAbsolute(filename)) {
     return null
-  }
-
-  if (typeof pluginCtx.addWatchFile === 'function') {
-    addWatchFile(pluginCtx, filename)
   }
 
   return filename
